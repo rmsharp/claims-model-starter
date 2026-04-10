@@ -1,0 +1,86 @@
+Build an initial model, to be later refined, with the following 6 step process:
+
+	1.	The business has an idea for a model they would like to create
+	2.	They go to go/modelintake and there is a guided discussion for them to have with an agent, who will ask them questions to get a clear answer to:
+        a. business problem
+        b. proposed solution
+        c. model solution (target and potential inputs)
+        d. estimated value
+	3.	The agent from (2) writes a report to summarize the results and hands it off to another agent that is responsible for creating a query or queries to collect the relevant data. This agent is also responsible for writing queries to check on the quality of the data and confirm expectations about what the data represent.
+	4.	The agent from (3) writes a report to summarize the queries and hands it (and the queries) to another agent, who is now responsible for creating an initial model website that contains a draft of many of the sections of the website, such as:
+	    •	“Business Understanding”
+	    •	“Implementation Plans & Measuring Value”
+	    •	the data section that explains the query, our efforts to validate it, and EDA
+	    •	the start of the model build and evaluation that includes the initial feature engineering and selection and an initial set of models
+	5.	The agent from Step 4 delivers the result as a GitLab project that contains the website and the results from Steps 2, 3, and 4, along with ideas about additional ideas to test and potential extensions on the idea.
+	6.	Data science team begins its work.
+
+Example for Step 2: The prompt for the LLM tool:
+
+You are an expert data scientist, business analyst, and consultant focused on a claims organization with a property and casualty insurance company that sell auto and property policies. Interview me with a focus on writing a document. Continue asking me questions until you can write a reasonable draft of this document or up to 10 questions. which ever comes first. You should ask me one question at a time.
+
+The drafted document should be focused and as short as possible, while addressing the items in the format below. Finally, the format should be as follows: 
+
+
+⸻
+## Definitions
+
+### Business Problem:
+
+Describes the business problem.
+
+### Proposed Solution:
+
+Describes the solution with a focus on solving the business problem.
+
+### Model Solution:
+
+Describes the model that will support the proposed solution. (This document will enable the data scientist team to begin working on the project.) This section should specifically:
+highlight the target variable and the concept that will be modeled in an effort to accurately predict the target.
+Alternatively, if it is an unsupervised approach, it should thoroughly explain how the resulting model will be helpful in informing a specific decision and/or the proposed solution.
+
+### Estimated Value:
+
+This section is a rough estimate of the value based on the interviewee’s understanding of the problem and solution, but guided and informed by the interviewer’s expertise.
+
+## One example output 
+
+That’s a comprehensive response. Based on your answers, here’s a draft document:
+
+### Business Problem:
+
+Lower subrogation outcomes due to a new claims system’s deficiencies in capturing essential information during the intake and investigation phases. This results in a reduced ability to recover costs from at-fault parties. The root causes are inadequate adjuster training on the new system, a poorly designed user interface within the claims system which hinders efficient information capture, and a lack of performance metrics tied to subrogation success for adjusters.
+
+### Proposed Solution:
+
+Implement a system of prompts and/or external systems that guide adjusters through the claims intake and investigation process, ensuring the capture of all necessary information for successful subrogation. This will involve creating structured prompts within the existing claims system (if possible) to remind adjusters to collect specific pieces of information and possibly incorporating an external system to collect information from external sources like police departments or other insurance providers. This will enhance adjuster training and improve efficiency. The design of the prompts will use best practices from human-centered design to maximize adoption and ease of use. Finally, adjuster performance metrics should be modified to include subrogation recovery rates, tying compensation to improved outcomes.
+
+### Model Solution:
+
+This project will employ a supervised machine learning approach, focusing on predicting the probability of successful subrogation based on various claim attributes.
+	•	Target Variable: Successful Subrogation (Binary: 0 = Unsuccessful, 1 = Successful)
+	•	Concept to be Modeled: We will model the likelihood of successful subrogation based on features like:
+	•	Completeness of collected information (e.g., presence/absence of police report, other party’s insurance information). This will be quantified through a custom scoring system.
+	•	Adjuster experience and training level (categorical).
+	•	Claim type (categorical).
+	•	Time elapsed between incident and claim filing.
+	•	Type and amount of damages.
+	•	Evidence of fault (categorical).
+
+A classification model (e.g., Logistic Regression, Random Forest, Gradient Boosting) will be trained to predict the probability of successful subrogation based on the chosen features. This will allow for early identification of claims likely to result in low subrogation outcomes, enabling proactive intervention. The model’s performance will be evaluated using metrics such as AUC, precision, recall, and F1-score. Furthermore, a rigorous validation plan will be included to establish trustworthiness before deployment.
+
+### Estimated Value:
+
+Based on the current loss in subrogation recovery, which needs further quantification, a 10% improvement in subrogation recovery rates (a conservative estimate given the proposed improvements) could yield significant cost savings annually, likely in the hundreds of thousands or even millions of dollars, depending on the overall claim volume and average claim value. The exact value will be calculated using historic data once the model has been deployed.
+
+### Note:
+
+This is a preliminary draft. The detailed model specification and the exact value estimation will depend on further data analysis and refinement of the project scope.
+
+Does this accurately reflect your understanding of the problem and the proposed solution? If so, we can move on to the next step. If not, please clarify any areas needing adjustment. (edited)
+
+*********************
+
+## Example for Step 3
+
+This same basic agent would likely be useful for just writing queries in general. Many analysts teams (esp. DAs) spend a lot of their time just doing this. Helping them by speeding this up as quickly as possible would enable more exploratory analysis that is too difficult to even consider today given the time it takes to work on queries,
