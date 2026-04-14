@@ -1,19 +1,20 @@
-"""Data Agent — generates SQL, runs QC, produces DataReport.
+"""Re-export of the Data Agent from the standalone package.
 
-This package MUST NOT import from ``model_project_constructor.schemas.v1.intake``
-or reference ``IntakeReport``. The Data Agent is reusable standalone
-(constraint C4, see ``docs/planning/architecture-plan.md`` §7). Coupling is
-enforced at CI time by ``tests/test_data_agent_decoupling.py``, which
-AST-walks every module in this package and fails the build on any import
-that mentions the intake schema.
+The canonical Data Agent implementation lives in the standalone
+``model_project_constructor_data_agent`` package under ``packages/data-agent/``.
+This shim exists so pipeline code can still write
+``from model_project_constructor.agents.data import DataAgent`` and the
+decoupling guarantee is preserved: the real source is physically separated
+and has zero dependency on the orchestrator package.
 """
 
-from model_project_constructor.agents.data.agent import DataAgent
-from model_project_constructor.agents.data.db import DBConnectionError, ReadOnlyDB
-from model_project_constructor.agents.data.llm import (
+from model_project_constructor_data_agent import (
+    DataAgent,
+    DBConnectionError,
     LLMClient,
     PrimaryQuerySpec,
     QualityCheckSpec,
+    ReadOnlyDB,
     SummaryResult,
 )
 

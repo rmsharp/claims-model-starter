@@ -13,14 +13,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from model_project_constructor.agents.data.db import ReadOnlyDB
-from model_project_constructor.agents.data.graph import build_graph
-from model_project_constructor.agents.data.llm import (
+from model_project_constructor_data_agent.db import ReadOnlyDB
+from model_project_constructor_data_agent.graph import build_graph
+from model_project_constructor_data_agent.llm import (
     LLMClient,
     PrimaryQuerySpec,
     SummaryResult,
 )
-from model_project_constructor.schemas.v1.data import (
+from model_project_constructor_data_agent.schemas import (
     DataReport,
     DataRequest,
     Datasheet,

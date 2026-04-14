@@ -10,6 +10,7 @@ authors = [
 ]
 dependencies = [
     "pydantic>=2.6,<3",
+    "model-project-constructor-data-agent",
 ]
 
 [project.optional-dependencies]
@@ -34,6 +35,12 @@ dev = [
     "ruff>=0.5",
 ]
 
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+model-project-constructor-data-agent = { workspace = true }
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -43,11 +50,14 @@ packages = ["src/model_project_constructor"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
-addopts = "-ra --cov=model_project_constructor --cov-report=term-missing --cov-fail-under=80"
+pythonpath = ["src", "packages/data-agent/src"]
+addopts = "-ra --cov=model_project_constructor --cov=model_project_constructor_data_agent --cov-report=term-missing --cov-fail-under=80"
 
 [tool.coverage.run]
-source = ["src/model_project_constructor"]
+source = [
+    "src/model_project_constructor",
+    "packages/data-agent/src/model_project_constructor_data_agent",
+]
 branch = true
 
 [tool.coverage.report]
@@ -69,4 +79,5 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.mypy]
 python_version = "3.11"
 strict = true
-packages = ["model_project_constructor"]
+packages = ["model_project_constructor", "model_project_constructor_data_agent"]
+mypy_path = ["src", "packages/data-agent/src"]

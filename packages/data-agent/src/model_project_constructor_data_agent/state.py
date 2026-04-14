@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from model_project_constructor.agents.data.llm import (
+from model_project_constructor_data_agent.llm import (
     PrimaryQuerySpec,
     SummaryResult,
 )
-from model_project_constructor.schemas.v1.data import (
+from model_project_constructor_data_agent.schemas import (
     DataRequest,
     Datasheet,
     QualityCheck,

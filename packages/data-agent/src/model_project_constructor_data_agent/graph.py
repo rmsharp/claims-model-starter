@@ -6,9 +6,9 @@ from typing import Any
 
 from langgraph.graph import END, START, StateGraph
 
-from model_project_constructor.agents.data.db import ReadOnlyDB
-from model_project_constructor.agents.data.llm import LLMClient
-from model_project_constructor.agents.data.nodes import (
+from model_project_constructor_data_agent.db import ReadOnlyDB
+from model_project_constructor_data_agent.llm import LLMClient
+from model_project_constructor_data_agent.nodes import (
     fail_execution_invalid_sql,
     make_datasheet,
     make_execute_qc,
@@ -18,7 +18,7 @@ from model_project_constructor.agents.data.nodes import (
     retry_once,
     route_after_generate_queries,
 )
-from model_project_constructor.agents.data.state import DataAgentState
+from model_project_constructor_data_agent.state import DataAgentState
 
 
 def build_graph(llm: LLMClient, db: ReadOnlyDB | None) -> Any:

@@ -24,11 +24,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from model_project_constructor.agents.data.db import DBConnectionError, ReadOnlyDB
-from model_project_constructor.agents.data.llm import LLMClient
-from model_project_constructor.agents.data.sql_validation import validate_sql
-from model_project_constructor.agents.data.state import DataAgentState
-from model_project_constructor.schemas.v1.data import QualityCheck
+from model_project_constructor_data_agent.db import DBConnectionError, ReadOnlyDB
+from model_project_constructor_data_agent.llm import LLMClient
+from model_project_constructor_data_agent.schemas import QualityCheck
+from model_project_constructor_data_agent.sql_validation import validate_sql
+from model_project_constructor_data_agent.state import DataAgentState
 
 MAX_SQL_RETRIES = 1
 
@@ -133,10 +133,6 @@ def make_execute_qc(
                         )
                     )
                     continue
-                # Phase 2A interpretation: ≥1 row ⇒ PASSED, 0 rows ⇒ FAILED.
-                # This is a coarse proxy for "did the data-presence expectation
-                # hold" and is sufficient to exercise all four execution_status
-                # values end-to-end. A richer expectation evaluator is future work.
                 status = "PASSED" if rows else "FAILED"
                 new_group.append(
                     QualityCheck(

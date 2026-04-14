@@ -1,10 +1,15 @@
 """Enforce §7 of architecture-plan.md: the Data Agent knows nothing about IntakeReport.
 
-AST-walks every module under ``src/model_project_constructor/agents/data/``
-and fails the build if any ``import`` or ``from ... import ...`` statement
-references the intake schema. This is the structural guarantee that lets the
-Data Agent be reused standalone (constraint C4) and that lets its standalone
-package be distributed without pulling in the orchestrator.
+AST-walks every module under the standalone package
+``packages/data-agent/src/model_project_constructor_data_agent/`` and fails
+the build if any ``import`` or ``from ... import ...`` statement references
+the intake schema. This is the structural guarantee that lets the Data Agent
+be reused standalone (constraint C4) and that lets its standalone wheel be
+distributed without pulling in the orchestrator.
+
+The main ``model_project_constructor.agents.data.*`` modules are thin
+re-export shims and are also walked here as defense in depth — a shim that
+accidentally started importing ``IntakeReport`` would defeat the guarantee.
 """
 
 from __future__ import annotations
@@ -13,7 +18,10 @@ import ast
 import pathlib
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-DATA_AGENT_DIR = REPO_ROOT / "src" / "model_project_constructor" / "agents" / "data"
+STANDALONE_DIR = (
+    REPO_ROOT / "packages" / "data-agent" / "src" / "model_project_constructor_data_agent"
+)
+SHIM_DIR = REPO_ROOT / "src" / "model_project_constructor" / "agents" / "data"
 
 FORBIDDEN_SUBSTRINGS = (
     "IntakeReport",
@@ -22,9 +30,9 @@ FORBIDDEN_SUBSTRINGS = (
 )
 
 
-def test_data_agent_does_not_import_intake_report() -> None:
-    files = sorted(DATA_AGENT_DIR.rglob("*.py"))
-    assert files, f"expected python files under {DATA_AGENT_DIR}"
+def _walk_imports(root: pathlib.Path) -> list[str]:
+    files = sorted(root.rglob("*.py"))
+    assert files, f"expected python files under {root}"
 
     offenders: list[str] = []
     for path in files:
@@ -38,9 +46,22 @@ def test_data_agent_does_not_import_intake_report() -> None:
                             f"{path.relative_to(REPO_ROOT)}: {imported!r} "
                             f"contains forbidden token {forbidden!r}"
                         )
+    return offenders
 
+
+def test_standalone_package_does_not_import_intake_report() -> None:
+    offenders = _walk_imports(STANDALONE_DIR)
     assert not offenders, (
-        "Data Agent decoupling violation — the following imports reference "
-        "the intake schema, breaking §7 of architecture-plan.md:\n  - "
+        "Standalone Data Agent decoupling violation — the following imports "
+        "reference the intake schema, breaking §7 of architecture-plan.md:\n  - "
+        + "\n  - ".join(offenders)
+    )
+
+
+def test_main_package_data_agent_shim_does_not_import_intake_report() -> None:
+    offenders = _walk_imports(SHIM_DIR)
+    assert not offenders, (
+        "Main-package Data Agent shim decoupling violation — the following "
+        "imports reference the intake schema, breaking §7 of architecture-plan.md:\n  - "
         + "\n  - ".join(offenders)
     )
