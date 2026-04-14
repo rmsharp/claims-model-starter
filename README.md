@@ -12,7 +12,7 @@ Early implementation. Phases and session boundaries are tracked in `SESSION_NOTE
 |------:|-------|-------|
 | 1 | Repo skeleton + v1 Pydantic schemas + envelope + registry | Complete |
 | 2A | Data Agent core + LangGraph flow + AST decoupling test | Complete |
-| 2B | Data Agent standalone package + CLI + Python API | Not started |
+| 2B | Data Agent standalone package + CLI + Python API | Complete |
 | 3 | Intake Agent + Web UI | Not started |
 | 4 | Website Agent (GitLab scaffolding) | Not started |
 | 5 | Orchestrator + adapters + end-to-end | Not started |
@@ -38,24 +38,36 @@ Stakeholder ──▶ Intake Agent ──▶ IntakeReport ──▶ adapter ─�
                                                        GitLab project (draft)
 ```
 
-Each agent internally uses LangGraph for state management while the top-level orchestrator is a sequential script. The Data Agent is structurally decoupled from `IntakeReport` (constraint C4) so it can be reused standalone by analysts for ad-hoc query generation; an AST-based test in `tests/test_data_agent_decoupling.py` enforces this at CI time.
+Each agent internally uses LangGraph for state management while the top-level orchestrator is a sequential script. The Data Agent is structurally decoupled from `IntakeReport` (constraint C4) so it can be reused standalone by analysts for ad-hoc query generation; it is distributed as a separate installable package `model-project-constructor-data-agent` under `packages/data-agent/` with its own `pyproject.toml`, CLI (`model-data-agent run`), and `USAGE.md`. An AST-based test in `tests/test_data_agent_decoupling.py` enforces the decoupling at CI time.
 
 ## Repository layout
 
 ```
-src/model_project_constructor/
-  schemas/v1/           # IntakeReport, DataRequest, DataReport, GitLab*, governance types
-  schemas/envelope.py   # HandoffEnvelope
-  schemas/registry.py   # payload registry for versioned hand-offs
-  agents/data/          # Data Agent (LangGraph flow, nodes, SQL validation, SQLAlchemy wrapper)
+src/model_project_constructor/          # main "orchestrator" package
+  schemas/v1/                           # IntakeReport, GitLab*, governance types
+  schemas/v1/data.py                    # re-exports data schemas from the standalone
+  schemas/envelope.py                   # HandoffEnvelope
+  schemas/registry.py                   # payload registry for versioned hand-offs
+  agents/data/                          # thin re-export shims onto the standalone package
+packages/data-agent/                    # standalone: model-project-constructor-data-agent
+  pyproject.toml                        # independent distribution
+  USAGE.md                              # CLI + Python API documentation
+  src/model_project_constructor_data_agent/
+    agent.py, graph.py, nodes.py, state.py   # LangGraph flow
+    schemas.py                                # DataRequest, DataReport, PrimaryQuery, QC, Datasheet
+    db.py, sql_validation.py, llm.py          # Protocol + SQLAlchemy wrapper + sqlparse
+    anthropic_client.py                       # concrete LLMClient using Claude
+    cli.py, __main__.py                       # typer CLI (model-data-agent run)
 tests/
-  schemas/              # 88 schema tests
-  agents/data/          # 12 end-to-end Data Agent tests
-  test_data_agent_decoupling.py  # structural decoupling guarantee
-docs/planning/          # architecture-approaches.md, architecture-plan.md
-SESSION_RUNNER.md       # per-session operating procedure
-SAFEGUARDS.md           # commit discipline and blast-radius rules
-SESSION_NOTES.md        # session-by-session continuity log
+  schemas/                              # 88 schema tests
+  agents/data/                          # 12 end-to-end Data Agent tests
+  data_agent_package/                   # 21 CLI + AnthropicLLMClient tests
+  fixtures/sample_request.json          # canonical DataRequest fixture
+  test_data_agent_decoupling.py         # structural decoupling guarantee (2 tests)
+docs/planning/                          # architecture-approaches.md, architecture-plan.md
+SESSION_RUNNER.md                       # per-session operating procedure
+SAFEGUARDS.md                           # commit discipline and blast-radius rules
+SESSION_NOTES.md                        # session-by-session continuity log
 ```
 
 ## Getting started
@@ -67,7 +79,16 @@ uv sync --extra agents --extra dev
 uv run pytest
 ```
 
-All 101 tests should pass with coverage above 80%.
+All 123 tests should pass with coverage above 80% (currently ≈96%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+
+To use the standalone Data Agent CLI (requires `ANTHROPIC_API_KEY` in the environment):
+
+```bash
+uv run model-data-agent run --request request.json --output report.json \
+    --db-url "sqlite:///claims.db"
+```
+
+Add `--fake-llm` for smoke tests that don't hit the real API. Full usage is in `packages/data-agent/USAGE.md`.
 
 ## Documents worth reading
 
