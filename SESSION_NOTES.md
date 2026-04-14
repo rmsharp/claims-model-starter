@@ -6,7 +6,7 @@
 
 ## ACTIVE TASK
 **Task:** Phase 3B of the architecture plan — Intake Agent Web UI (FastAPI + SSE + minimal HTMX frontend + SQLite session persistence)
-**Status:** Phase 3A complete on `master`. The Intake Agent ships as `src/model_project_constructor/agents/intake/` with a full LangGraph flow (plan → ask_user interrupt → evaluate → draft → governance → await_review interrupt → revise/finalize), a `FixtureLLMClient` for deterministic replay, an `AnthropicLLMClient` for production runs, and a single-command typer CLI (`python -m model_project_constructor.agents.intake --fixture ...`). 179 tests pass at 96.18% coverage. Commits: `<session-6-commit-hash-pending>` (Phase 3A + close-out).
+**Status:** Phase 3A complete on `master`. The Intake Agent ships as `src/model_project_constructor/agents/intake/` with a full LangGraph flow (plan → ask_user interrupt → evaluate → draft → governance → await_review interrupt → revise/finalize), a `FixtureLLMClient` for deterministic replay, an `AnthropicLLMClient` for production runs, and a single-command typer CLI (`python -m model_project_constructor.agents.intake --fixture ...`). 179 tests pass at 96.18% coverage. Commits: `64b8a99` (Phase 3A implementation + tests + fixtures + close-out).
 **Plan:** `docs/planning/architecture-plan.md` §14 Phase 3B defines DONE criteria and verification commands. §9.3 "Web UI (Intake Agent)" defines the stack (FastAPI + SSE + HTMX). §10 Intake Agent LangGraph and §4.1 governance cadence still govern — the web UI is a driver over the **same** compiled graph Phase 3A shipped.
 **Priority:** HIGH
 
