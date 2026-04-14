@@ -85,7 +85,7 @@ LangGraph for agent orchestration (state machines with typed state, built-in che
 - **Interview:** FastAPI + WebSocket, LangGraph's `interrupt_before`/`interrupt_after` for human-in-the-loop pauses
 - **SQL execution:** Read-only SQLAlchemy tool registered in LangGraph, `sqlparse` validation
 - **GitLab:** `python-gitlab` library
-- **EDA/Models:** Code generation only -- agent produces Jupyter notebooks committed to GitLab, not executed in pipeline
+- **EDA/Models:** Code generation only -- agent produces Quarto markdown documents (.qmd) and unit-tested Python/R functions committed to GitLab, not executed in pipeline
 
 **Pros:**
 - LangGraph's state machine formalism enforces handoff protocol structurally
@@ -97,7 +97,7 @@ LangGraph for agent orchestration (state machines with typed state, built-in che
 **Cons:**
 - LangGraph learning curve and rapid API churn -- risk in a slow-upgrade corporate environment
 - LangChain ecosystem dependency (some enterprise teams find it over-abstracted)
-- Code-generation-only EDA means the delivered GitLab project has no actual plots/metrics -- data science team must run the notebooks first
+- Code-generation-only EDA means the delivered GitLab project has no actual plots/metrics -- data science team must render the Quarto documents first
 - WebSocket adds operational complexity over simpler alternatives
 
 **Best for:** Teams comfortable with LangGraph who want framework-provided checkpointing and human-in-the-loop without building it from scratch.
@@ -246,7 +246,7 @@ How the Website Agent produces analysis and initial models for the GitLab projec
 
 ### Approach A: Code Generation Only
 
-The Website Agent generates Python scripts and Jupyter notebooks but does NOT execute them. Notebooks include data loading (using Data Agent's SQL), EDA, feature engineering, model training (scikit-learn), evaluation. Committed to GitLab as executable artifacts.
+The Website Agent generates Quarto markdown documents (.qmd) that call unit-tested Python/R functions for data loading (using Data Agent's SQL), EDA, feature engineering, model training (scikit-learn), and evaluation. The .qmd files and their supporting function modules are committed to GitLab as renderable artifacts, but are NOT executed in the pipeline.
 
 **Pros:**
 - No execution risk -- no LLM-generated code runs against corporate databases in production
