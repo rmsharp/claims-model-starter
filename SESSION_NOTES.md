@@ -55,6 +55,11 @@ Your handoff will be scored on:
 
 *Session history accumulates below this line. Newest session at the top.*
 
+### What Session 4 Did
+**Deliverable:** Phase 2A of architecture plan — Data Agent core + LangGraph (IN PROGRESS)
+**Started:** 2026-04-14
+**Status:** Session claimed. Phase 0 orientation complete. Work beginning on environment bootstrap (uv + Python 3.11) and re-reading plan §4.2/§7/§10.2/§12/§14 Phase 2A before any code.
+
 ### What Session 3 Did
 **Deliverable:** Phase 1 of architecture plan — Repo Skeleton + Schemas (COMPLETE)
 **Started:** 2026-04-14
