@@ -1,0 +1,46 @@
+schema: intake_fixture/v1
+stakeholder_id: stakeholder_test_rev
+session_id: intake_test_rev_001
+domain: pc_claims
+
+qa_pairs:
+  - question: "Describe the business problem."
+    answer: "Short answer."
+  - question: "Any more context?"
+    answer: "Not much."
+
+draft_after: 2
+
+draft:
+  business_problem: "placeholder business problem"
+  proposed_solution: "placeholder solution"
+  model_solution:
+    target_variable: "placeholder"
+    target_definition: "placeholder"
+    candidate_features: ["x"]
+    model_type: other
+    evaluation_metrics: ["metric"]
+    is_supervised: true
+  estimated_value:
+    narrative: "placeholder"
+    annual_impact_usd_low: null
+    annual_impact_usd_high: null
+    confidence: low
+    assumptions: ["placeholder"]
+
+governance:
+  cycle_time: tactical
+  cycle_time_rationale: "placeholder"
+  risk_tier: tier_4_low
+  risk_tier_rationale: "placeholder"
+  regulatory_frameworks: []
+  affects_consumers: false
+  uses_protected_attributes: false
+
+# Stakeholder rejects three times in a row, hitting the revision cap.
+# The agent should return DRAFT_INCOMPLETE with revision_cap_reached.
+review_sequence:
+  - "Please expand the business problem section."
+  - "Still too thin — add value rationale."
+  - "Not there yet."
+  - "Not accepting this either."

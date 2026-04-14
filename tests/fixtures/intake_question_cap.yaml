@@ -1,0 +1,62 @@
+schema: intake_fixture/v1
+stakeholder_id: stakeholder_test_cap
+session_id: intake_test_cap_001
+domain: pc_claims
+
+# 11 QA pairs, but draft_after is set higher than MAX_QUESTIONS (10),
+# so believe_enough_info never flips true and the hard 10-question cap
+# from the agent is the thing that stops the interview.
+qa_pairs:
+  - question: "Q1"
+    answer: "A1"
+  - question: "Q2"
+    answer: "A2"
+  - question: "Q3"
+    answer: "A3"
+  - question: "Q4"
+    answer: "A4"
+  - question: "Q5"
+    answer: "A5"
+  - question: "Q6"
+    answer: "A6"
+  - question: "Q7"
+    answer: "A7"
+  - question: "Q8"
+    answer: "A8"
+  - question: "Q9"
+    answer: "A9"
+  - question: "Q10"
+    answer: "A10"
+  - question: "Q11 (should never be asked)"
+    answer: "A11"
+
+draft_after: 99
+
+draft:
+  business_problem: "cap test"
+  proposed_solution: "cap test"
+  model_solution:
+    target_variable: null
+    target_definition: "cap test"
+    candidate_features: []
+    model_type: other
+    evaluation_metrics: []
+    is_supervised: false
+  estimated_value:
+    narrative: "cap test"
+    annual_impact_usd_low: null
+    annual_impact_usd_high: null
+    confidence: low
+    assumptions: []
+
+governance:
+  cycle_time: tactical
+  cycle_time_rationale: "cap test"
+  risk_tier: tier_4_low
+  risk_tier_rationale: "cap test"
+  regulatory_frameworks: []
+  affects_consumers: false
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT

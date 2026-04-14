@@ -10,6 +10,7 @@ authors = [
 ]
 dependencies = [
     "pydantic>=2.6,<3",
+    "pyyaml>=6",
     "model-project-constructor-data-agent",
 ]
 
@@ -34,6 +35,9 @@ dev = [
     "mypy>=1.10",
     "ruff>=0.5",
 ]
+
+[project.scripts]
+model-intake-agent = "model_project_constructor.agents.intake.cli:app"
 
 [tool.uv.workspace]
 members = ["packages/*"]

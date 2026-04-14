@@ -13,7 +13,8 @@ Early implementation. Phases and session boundaries are tracked in `SESSION_NOTE
 | 1 | Repo skeleton + v1 Pydantic schemas + envelope + registry | Complete |
 | 2A | Data Agent core + LangGraph flow + AST decoupling test | Complete |
 | 2B | Data Agent standalone package + CLI + Python API | Complete |
-| 3 | Intake Agent + Web UI | Not started |
+| 3A | Intake Agent core + LangGraph + CLI | Complete |
+| 3B | Intake Agent Web UI | Not started |
 | 4 | Website Agent (GitLab scaffolding) | Not started |
 | 5 | Orchestrator + adapters + end-to-end | Not started |
 | 6 | Production hardening | Not started |
@@ -49,6 +50,12 @@ src/model_project_constructor/          # main "orchestrator" package
   schemas/envelope.py                   # HandoffEnvelope
   schemas/registry.py                   # payload registry for versioned hand-offs
   agents/data/                          # thin re-export shims onto the standalone package
+  agents/intake/                        # Intake Agent: LangGraph flow + CLI (Phase 3A)
+    state.py, protocol.py, nodes.py, graph.py
+    agent.py                            # IntakeAgent facade (fixture + scripted modes)
+    fixture.py                          # FixtureLLMClient + YAML loader
+    anthropic_client.py                 # concrete IntakeLLMClient using Claude
+    cli.py, __main__.py                 # typer CLI (model-intake-agent / python -m)
 packages/data-agent/                    # standalone: model-project-constructor-data-agent
   pyproject.toml                        # independent distribution
   USAGE.md                              # CLI + Python API documentation
@@ -61,8 +68,14 @@ packages/data-agent/                    # standalone: model-project-constructor-
 tests/
   schemas/                              # 88 schema tests
   agents/data/                          # 12 end-to-end Data Agent tests
+  agents/intake/                        # 56 intake tests (graph, nodes, CLI, Anthropic)
   data_agent_package/                   # 21 CLI + AnthropicLLMClient tests
   fixtures/sample_request.json          # canonical DataRequest fixture
+  fixtures/subrogation.yaml             # canonical intake fixture (§4.1 worked example)
+  fixtures/pricing_optimization.yaml    # strategic/tier-2 governance scenario
+  fixtures/fraud_triage.yaml            # continuous/tier-1 governance scenario
+  fixtures/intake_question_cap.yaml     # 10-question cap exhaustion scenario
+  fixtures/intake_revision_cap.yaml     # 3-revision cap exhaustion scenario
   test_data_agent_decoupling.py         # structural decoupling guarantee (2 tests)
 docs/planning/                          # architecture-approaches.md, architecture-plan.md
 SESSION_RUNNER.md                       # per-session operating procedure
@@ -79,7 +92,7 @@ uv sync --extra agents --extra dev
 uv run pytest
 ```
 
-All 123 tests should pass with coverage above 80% (currently ≈96%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 179 tests should pass with coverage above 90% (currently ≈96%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
 
 To use the standalone Data Agent CLI (requires `ANTHROPIC_API_KEY` in the environment):
 
@@ -89,6 +102,15 @@ uv run model-data-agent run --request request.json --output report.json \
 ```
 
 Add `--fake-llm` for smoke tests that don't hit the real API. Full usage is in `packages/data-agent/USAGE.md`.
+
+To run the Intake Agent against a fixture (Phase 3A is fixture-driven; Phase 3B will ship the interactive web UI):
+
+```bash
+uv run python -m model_project_constructor.agents.intake \
+    --fixture tests/fixtures/subrogation.yaml --output intake.json
+```
+
+This drives a synthetic interview via the real LangGraph interrupt/resume loop and writes a validated `IntakeReport` JSON document.
 
 ## Documents worth reading
 

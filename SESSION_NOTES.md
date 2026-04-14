@@ -5,79 +5,222 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Phase 3A of the architecture plan — Intake Agent core + LangGraph + CLI
-**Status:** Phase 2B complete on `master`. Data Agent now lives as the standalone `model-project-constructor-data-agent` package under `packages/data-agent/` with its own CLI (`model-data-agent run`), concrete `AnthropicLLMClient`, and `USAGE.md`. Main package re-exports it via thin shims so all Phase 2A imports keep working. 123 tests pass at 96.45% coverage. Commits: `4982332` (refactor move) + `aca858a` (CLI + Anthropic + docs).
-**Plan:** `docs/planning/architecture-plan.md` §14 Phase 3 (Sub-phase 3A) defines DONE criteria and verification commands. §4.1 and §10 Intake Agent LangGraph govern the flow. §5.1 defines the `IntakeReport` schema (already shipped in Phase 1).
+**Task:** Phase 3B of the architecture plan — Intake Agent Web UI (FastAPI + SSE + minimal HTMX frontend + SQLite session persistence)
+**Status:** Phase 3A complete on `master`. The Intake Agent ships as `src/model_project_constructor/agents/intake/` with a full LangGraph flow (plan → ask_user interrupt → evaluate → draft → governance → await_review interrupt → revise/finalize), a `FixtureLLMClient` for deterministic replay, an `AnthropicLLMClient` for production runs, and a single-command typer CLI (`python -m model_project_constructor.agents.intake --fixture ...`). 179 tests pass at 96.18% coverage. Commits: `<session-6-commit-hash-pending>` (Phase 3A + close-out).
+**Plan:** `docs/planning/architecture-plan.md` §14 Phase 3B defines DONE criteria and verification commands. §9.3 "Web UI (Intake Agent)" defines the stack (FastAPI + SSE + HTMX). §10 Intake Agent LangGraph and §4.1 governance cadence still govern — the web UI is a driver over the **same** compiled graph Phase 3A shipped.
 **Priority:** HIGH
 
 ### What You Must Do
-1. **Re-read the plan sections that govern Phase 3A before writing any code:**
-   - §4.1 Intake Agent — scope, 10-question cap, 3-revision cap, governance sub-prompt
-   - §10 — Intake Agent LangGraph (diagram + nodes; specifically the `AWAIT_REVIEW` interrupt node)
-   - §5.1 `IntakeReport` schema — `business_problem`, `proposed_solution`, `model_solution`, `estimated_value`, `governance_metadata`. Already implemented at `src/model_project_constructor/schemas/v1/intake.py`.
-   - §14 Phase 3A — explicit DONE criteria and verification commands.
-2. Execute **only Sub-phase 3A** from §14:
-   - `src/model_project_constructor/agents/intake/` — the LangGraph flow from §10
-   - CLI: `python -m model_project_constructor.agents.intake --fixture tests/fixtures/subrogation.yaml` producing a valid `IntakeReport`
-   - Interview with synthetic stakeholder responses from a fixture
-   - 10-question cap enforced, 3-revision cap enforced
-   - Governance sub-prompt produces sensible `cycle_time`/`risk_tier` classifications for 3 test scenarios
-3. **Verify the LangGraph interrupt pattern on a toy graph BEFORE wiring the real intake flow.** Phase 2A only used `StateGraph` + `add_conditional_edges`. The `AWAIT_REVIEW` node requires `interrupt` / `Command(resume=...)`, which is different machinery. Build a 3-node toy graph that interrupts, resumes via user input, and re-enters a loop. Confirm it works on langgraph 0.2.76 before committing any real intake code. Failure mode: you write 400 lines of agent code against an API that doesn't exist on the installed version.
-4. **Do NOT start Phase 3B (Web UI).** That is a separate session.
-5. **Do NOT touch the Data Agent package.** Phase 2B moved it to `packages/data-agent/`; the intake agent should import NOTHING from the data agent. Symmetric to §7 in the other direction.
+1. **Re-read the plan sections that govern Phase 3B before writing any code:**
+   - §9.3 "Web UI (Intake Agent)" — FastAPI + SSE + HTMX stack, SQLite session persistence, resume-by-session-id
+   - §14 Phase 3B — explicit DONE criteria and verification commands
+   - §4.1 — cycle-time-driven governance still applies; the UI must surface the draft for review
+   - §10 — Intake Agent LangGraph (you are driving the EXISTING compiled graph, not rewriting it)
+2. Execute **only Sub-phase 3B** from §14:
+   - `src/model_project_constructor/ui/intake/` — FastAPI app with SSE endpoint
+   - Minimal HTMX frontend: question display + answer input + draft review page
+   - SQLite checkpointer (swap `MemorySaver` → `langgraph.checkpoint.sqlite.SqliteSaver`) so session state survives server restart
+   - Resume by `session_id` works across server restart
+3. **Verification commands (from §14):**
+   - `uv run uvicorn model_project_constructor.ui.intake:app` starts
+   - Manual test: complete an interview end-to-end in the browser
+   - `curl` smoke tests for SSE endpoint
+4. **Do NOT rewrite the graph.** Phase 3A's `build_intake_graph()` in `src/model_project_constructor/agents/intake/graph.py` is the canonical flow. You only need to:
+   (a) parameterize the checkpointer choice so you can pass a SQLite-backed one,
+   (b) drive interrupts from HTTP requests instead of a scripted list,
+   (c) wrap the `AnthropicLLMClient` from `anthropic_client.py` so users can hit a real API.
+5. **Do NOT start Phase 4 (Website Agent).** That is a separate session.
+6. **Do NOT touch the Data Agent package.** The intake → data decoupling symmetry is now tested indirectly — intake agent imports from the data agent would be caught by code review, not the AST test, since the AST test only walks the data agent side. If you need the symmetric test, add one that walks `src/model_project_constructor/agents/intake/` for imports matching `model_project_constructor_data_agent`. Session 6 deliberately did NOT add this because it would be testing non-existent behavior — the intake agent has zero reason to import data-agent code right now.
 
-### Key Files to Reuse (Phase 1 + 2B)
-- `src/model_project_constructor/schemas/v1/intake.py` — `IntakeReport`, `ModelSolution`, `EstimatedValue`, `GovernanceMetadata`. All `StrictBase` subclasses. `schema_version: Literal["1.0.0"]`.
-- `src/model_project_constructor/schemas/v1/common.py` — `StrictBase`, `CycleTime`, `RiskTier`, `ModelType`, `SCHEMA_VERSION`. Use these for the governance sub-prompt's typed output.
-- `src/model_project_constructor/schemas/envelope.py`, `registry.py` — handoff envelope protocol. Register intake output under `("IntakeReport", "1.0.0")` (already done in `registry.py:27`).
-- `packages/data-agent/src/model_project_constructor_data_agent/llm.py` — the `LLMClient` Protocol pattern is a good template for the intake agent's own LLM boundary. The intake agent should define its own Protocol, not share the data agent's.
-- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` — working concrete example of Claude 4.6 via SDK 0.94.1, with prompt construction, code-fence stripping (`_extract_json`), and `LLMParseError`. Copy the parsing utilities but give the intake agent its own `AnthropicLLMClient` since the prompts are completely different.
-- `packages/data-agent/src/model_project_constructor_data_agent/cli.py` — typer CLI pattern with `@app.callback()` + `@app.command()` is the working shape for a single-subcommand app. Do not forget the callback — typer collapses single-command apps otherwise.
+### Key Files Shipped in Phase 3A — Read Before Starting 3B
+- `src/model_project_constructor/agents/intake/__init__.py:27-41` — the public API. Import from here, not from submodules.
+- `src/model_project_constructor/agents/intake/state.py:28-54` — `IntakeState` TypedDict (no reducers, all deltas). `MAX_QUESTIONS=10`, `MAX_REVISIONS=3` are the cap constants.
+- `src/model_project_constructor/agents/intake/protocol.py:64-84` — `IntakeLLMClient` Protocol with 4 methods. `AnthropicLLMClient` is the production implementation at `anthropic_client.py:51-151`.
+- `src/model_project_constructor/agents/intake/nodes.py:33-150` — 8 graph nodes. **Critical:** `plan_next_question` and `ask_user` are split on purpose. `plan_next_question` calls the LLM; `ask_user` ONLY calls `interrupt()`. On resume, the interrupted node re-executes from the top, so putting the LLM call in `ask_user` would double-bill. See the next bullet.
+- `src/model_project_constructor/agents/intake/graph.py:18-56` — `build_intake_graph(llm)` returns the compiled graph with `MemorySaver`. **For Phase 3B you MUST parameterize the checkpointer** so the web UI can pass a SQLite-backed saver. Either add a `checkpointer=None` kwarg or split into `make_graph_builder()` + `build_intake_graph(llm, checkpointer)`. Preserve the current API for tests.
+- `src/model_project_constructor/agents/intake/agent.py:51-125` — `IntakeAgent.run_scripted()` is the headless driver. It loops `graph.get_state(config).tasks[0].interrupts` → `Command(resume=...)` → `graph.invoke(...)`. The web UI driver follows the same shape but one HTTP request at a time instead of from an in-memory list.
+- `src/model_project_constructor/agents/intake/cli.py` — single-command typer app. **NO `@app.callback()`** — intake is one command so typer's auto-collapse is what we want. This is the OPPOSITE call from the data agent CLI, which DOES need the callback because it has a `run` subcommand.
+- `tests/fixtures/subrogation.yaml` — canonical tier-3/tactical worked example (from `initial_purpose.txt`). Keep it as your Phase 3B smoke-test fixture — if the web UI can run this end-to-end with a real `AnthropicLLMClient`, you're done.
+- `tests/fixtures/pricing_optimization.yaml` — tier-2/strategic governance scenario.
+- `tests/fixtures/fraud_triage.yaml` — tier-1/continuous governance scenario.
+- `tests/fixtures/intake_question_cap.yaml`, `tests/fixtures/intake_revision_cap.yaml` — cap-exhaustion scenarios used to assert `DRAFT_INCOMPLETE` behavior.
+- `tests/agents/intake/test_graph.py:30-97` — end-to-end interrupt+resume tests. These exercise the real LangGraph interrupt machinery on langgraph 0.2.76. Copy this shape for the web-UI integration tests.
 
-### Phase 2B — What Changed
-- **New standalone package:** `packages/data-agent/` with its own `pyproject.toml`, `src/model_project_constructor_data_agent/` (9 source modules + `__main__.py`), `USAGE.md`. Standalone has ZERO runtime dependency on the main package (its own minimal `StrictBase`, its own schemas).
-- **Main package shims:**
-  - `src/model_project_constructor/agents/data/__init__.py` re-exports `DataAgent`, `LLMClient`, etc. from the standalone.
-  - `src/model_project_constructor/agents/data/db.py` and `llm.py` are submodule shims so `from model_project_constructor.agents.data.db import ReadOnlyDB` still works.
-  - `src/model_project_constructor/schemas/v1/data.py` re-exports `DataRequest`/`DataReport`/etc. from `model_project_constructor_data_agent.schemas`. The canonical definitions live in the standalone.
-  - Deleted: `agents/data/agent.py`, `graph.py`, `nodes.py`, `state.py`, `sql_validation.py` (moved to standalone).
-- **Workspace wiring:** `pyproject.toml:26-30` adds `[tool.uv.workspace] members = ["packages/*"]` and `[tool.uv.sources] model-project-constructor-data-agent = { workspace = true }`. `uv sync` builds both packages editable. `uv.lock` updated.
-- **Pytest/coverage/mypy:** `pyproject.toml:51-61,79-83` — coverage now tracks both packages, pythonpath includes both source trees, mypy packages list includes both.
-- **Decoupling test:** `tests/test_data_agent_decoupling.py` rewritten to walk the standalone's source (new canonical location) AND the main-package shims (defense in depth). Verified the test still fires on injected violation. Two test functions now; previously one.
-- **AnthropicLLMClient:** `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py`. Implements all four `LLMClient` protocol methods. Default model `claude-sonnet-4-6`. Parses JSON responses, strips code fences, raises `LLMParseError` on malformed output. Client injected via constructor for testability.
-- **typer CLI:** `packages/data-agent/src/model_project_constructor_data_agent/cli.py`. Exposes `model-data-agent run --request ... --output ... [--db-url ...] [--model ...] [--fake-llm]`. Registered as console script. `__main__.py` supports `python -m model_project_constructor_data_agent`.
-- **Tests added:** `tests/data_agent_package/test_anthropic_client.py` (16 tests, all mocked at SDK boundary), `tests/data_agent_package/test_cli.py` (5 tests via `CliRunner` + subprocess for `python -m`). `tests/fixtures/sample_request.json` is the canonical `DataRequest` fixture used by CLI tests and `USAGE.md` examples.
+### How Session 6 Verified the LangGraph Interrupt Pattern
+Session 6 ran a standalone toy graph (3 nodes: ask → decide → finalize, looping via `interrupt()` + `Command(resume=...)`) before writing any intake code. **Confirmed behaviors on langgraph 0.2.76:**
+- `from langgraph.types import interrupt, Command` works.
+- `from langgraph.checkpoint.memory import MemorySaver` works (resolves to `InMemorySaver` internally — both names work).
+- `interrupt({"payload": ...})` pauses the graph; `state.tasks[0].interrupts[0].value` is the payload.
+- `graph.invoke(Command(resume=value), config=...)` resumes; inside the node, `interrupt()` returns `value`.
+- Loop-back through an interrupt node works — the same node interrupts multiple times in one run.
+
+**Two pitfalls documented in the intake code and relevant to Phase 3B:**
+1. **Interrupted nodes re-execute from the top on resume.** Never put a non-idempotent side effect before the `interrupt()` call in a node. Intake's solution: a `plan_next_question` node before `ask_user`. The first does the LLM call, the second only interrupts. Keep this split when wiring the Web UI.
+2. **`Annotated[list, add]` reducers + nodes returning the full state dict = duplication.** Intake state deliberately has NO reducers; every node returns only a delta. If you add fields for the web UI session store (e.g. a list of audit events), do NOT use `operator.add` as the reducer — append in the node instead.
 
 ### Gotchas — Read These First
 - **`origin` is still the GitHub remote** `https://github.com/rmsharp/claims-model-starter.git`. Push discipline applies — do not force-push master. GitHub issue tracker will be populated once UAT begins; until then `gh issue list` is expected to be empty (see `~/.claude/projects/-Users-rmsharp-Development-model-project-constructor/memory/project_issue_tracker.md`).
-- **`methodology_dashboard.py` does not exist in the repo.** SESSION_RUNNER.md Phase 0 step 5 references it. Session 5 skipped this step with a flag; treat the dashboard as an undelivered tool unless a future session creates it.
+- **`methodology_dashboard.py` does not exist in the repo.** SESSION_RUNNER.md Phase 0 step 5 references it. Sessions 5 and 6 skipped this step with a flag; treat the dashboard as an undelivered tool unless a future session creates it.
 - **Python is still 3.13.5 in `.venv`**, not 3.11. `requires-python = ">=3.11"` is inclusive. The code is 3.11-compatible; if you need to pin 3.11 hard, use `uv venv --python 3.11` and re-run `uv sync`.
-- **LangGraph 0.2.76 interrupt pattern is STILL not verified.** Phase 2B did not exercise it (no interrupt needed). Phase 3A MUST verify on a toy graph before wiring the real intake flow. The interrupt/resume API may differ between langgraph 0.2.x and 0.3.x; your toy must use the installed version's actual API, not docs from a newer release.
-- **`claude-sonnet-4-6` is hardcoded as the default model** in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:39` (`DEFAULT_MODEL`). If you discover at runtime that this model ID is wrong (the anthropic SDK rejects it), fall back to `claude-sonnet-4-5-20250929` or whatever is current. This was set from system-reminder context at session time and was not verified against a live API call (no `ANTHROPIC_API_KEY` in this session). The CLI `--model` flag lets users override, and the tests mock the SDK so they don't care.
-- **The AnthropicLLMClient was never exercised against a real API.** All 16 of its tests mock `anthropic.Anthropic().messages.create`. First real run will need to verify: (a) model ID is accepted, (b) Claude actually returns JSON in the format the prompts request, (c) the code-fence stripping regex covers what Claude emits. Session 3 of the intake agent is a good opportunity to do a single real-API smoke test for the data agent.
-- **Two `StrictBase` classes exist in the codebase now.** One at `src/model_project_constructor/schemas/v1/common.py:12` (used by intake, gitlab), one at `packages/data-agent/src/model_project_constructor_data_agent/schemas.py:28` (used by the standalone data schemas). They are deliberately duplicated — the standalone must not depend on the main package. Do not "DRY" them up.
-- **`agents/data/__init__.py`, `db.py`, `llm.py` in the main package are NOT implementations** — they are thin re-exports. Do not add logic to them. Any change to data agent behavior belongs in `packages/data-agent/src/model_project_constructor_data_agent/`.
-- **Typer single-command-app trap:** a typer app with one `@app.command()` and no `@app.callback()` auto-collapses the subcommand. `model-data-agent run ...` fails with "Got unexpected extra argument (run)". The fix is `@app.callback() def _main(): ...` above the command. This bit me in Session 5 on the first CLI test; fixed in `packages/data-agent/src/model_project_constructor_data_agent/cli.py:46-48`. Do the same for the intake CLI.
-- **Plan verification commands for 3A say `uv run python -m model_project_constructor.agents.intake --fixture ...`.** The fixture format is not defined in the plan. Pick YAML or JSON and document it in the intake agent's USAGE/README. The data agent used JSON (`tests/fixtures/sample_request.json`); YAML is more comfortable for multi-turn dialogs. The plan suggests YAML (`tests/fixtures/subrogation.yaml`).
-- **Coverage gate is `--cov-fail-under=80`**, currently at 96.45%. Phase 3A's intake agent will initially drop coverage if you write lots of new code without tests. Add tests as you go.
-- **Schema-plan reconciliation decisions from Phase 2A are still load-bearing** (see the Phase 2A section below). Do not change the `DataReport` status interpretations without updating the data agent's Phase 2A tests.
-- **README.md at repo root is minimal** and points to the architecture plan. Do not treat it as authoritative — `docs/planning/architecture-plan.md` wins on conflicts.
+- **LangGraph 0.2.76 interrupt pattern IS NOW VERIFIED** (Session 6, subrogation + all 5 fixtures through `build_intake_graph()`). The toy-graph verification step is DONE; don't redo it unless you bump langgraph versions.
+- **`claude-sonnet-4-6` is hardcoded as the default model** in both `packages/data-agent/.../anthropic_client.py:43` and `src/model_project_constructor/agents/intake/anthropic_client.py:36`. STILL not verified against a live API (Session 6 did not have an API key either). If Phase 3B does its first real-API smoke test and the model ID is rejected, fall back to `claude-sonnet-4-5-20250929` or whatever is current, and flag it in the next handoff. The CLI's future `--model` flag should let users override; intake's CLI doesn't expose one yet.
+- **Neither `AnthropicLLMClient` has been exercised against a real API.** All tests mock at `client.messages.create`. First real-API run of the intake agent during Phase 3B will be the first real-API run of anything in this repo. Expect either a working response or a model-ID-related 404/400 — both are easy fixes.
+- **Two `StrictBase` classes exist in the codebase.** One at `src/model_project_constructor/schemas/v1/common.py:12` (used by intake, gitlab), one at `packages/data-agent/src/model_project_constructor_data_agent/schemas.py:28` (used by the standalone data schemas). They are deliberately duplicated — the standalone must not depend on the main package. Do not "DRY" them up.
+- **`agents/data/__init__.py`, `db.py`, `llm.py` in the main package are NOT implementations** — they are thin re-exports of the standalone. Do not add logic to them. Any change to data agent behavior belongs in `packages/data-agent/src/model_project_constructor_data_agent/`.
+- **Typer single-command trap works both ways.** The data agent CLI needs `@app.callback()` because it has `run` as a subcommand. The intake agent CLI does NOT have a callback because it has exactly one command and we WANT typer to auto-collapse so the plan's `python -m ... --fixture X` literal works. If you add a second intake subcommand in Phase 3B (e.g. `serve`), you MUST add `@app.callback()` at the same time or `python -m ... --fixture X` will break.
+- **Intake fixture schema is `intake_fixture/v1`** (defined in `src/model_project_constructor/agents/intake/fixture.py:36`). The YAML must include `schema`, `stakeholder_id`, `session_id`, `qa_pairs`, `draft`, `governance`. Optional: `initial_problem`, `domain`, `draft_after`, `review_sequence`, `revised_draft`. The loader raises `IntakeLLMError` on any missing required field — exercised by `tests/agents/intake/test_fixture.py:49-63`.
+- **Coverage gate is `--cov-fail-under=90`**, currently at 96.18%. Phase 3B's web UI + new test surface may temporarily drop this; add tests as you go or you will hit the floor.
+- **Schema-plan reconciliation decisions from Phase 2A are still load-bearing.** Do not change the `DataReport` status interpretations without updating the data agent's Phase 2A tests.
+- **README.md at repo root** is now updated through Phase 3A (repo layout, test count 179, coverage ≈96%, phase-3A-complete row). Update it again when Phase 3B ships.
 - **QC "PASSED/FAILED" is still a coarse proxy** in the data agent (≥1 row = PASSED). Explicit future work for Phase 6 hardening. Not blocking for Phase 3.
 - **`packages/data-agent/USAGE.md` is the standalone's README.** It's registered in its `pyproject.toml` as `readme = "USAGE.md"`. If you rename or delete it, `uv sync` fails on the workspace build.
-- **The `--fake-llm` CLI flag is a CI escape hatch, not user-facing.** It is visible in `--help` but documented in USAGE.md as "smoke-test only". The intake agent should have an equivalent for its fixture-mode interview (the plan already requires fixture mode, so this is natural).
+- **Intake agent has NO `USAGE.md` yet** — Phase 3A's verification commands are in the main README. Consider adding `src/model_project_constructor/agents/intake/USAGE.md` in Phase 3B to document the web UI and the fixture format together.
+- **`_DummyLLM` in `src/model_project_constructor/agents/intake/cli.py:85-99`** is a placeholder passed to `IntakeAgent()` that `run_with_fixture` immediately replaces. It only exists because typer instantiates the agent outside the LLM context. If Phase 3B builds a long-lived `IntakeAgent` per session, delete `_DummyLLM` and require a real client up-front.
+- **mypy is not in §14 Phase 3A verification commands** but was run by Session 6 on the intake package alone — clean (0 errors in 10 source files). The rest of the repo has 33 pre-existing strict-mypy errors (mostly the Anthropic SDK's `ContentBlock` union for `anthropic_client.py`, plus one `QualityCheck.execution_status` `arg-type` error in the data agent). Phase 3B should not let these grow; running `uv run mypy src/model_project_constructor/agents/intake/` before committing is cheap and catches regressions on the intake side.
+- **Intake graph re-entry does NOT leak state across sessions** as long as each session uses a unique `thread_id` in `config["configurable"]`. Session 6 uses `session_id` verbatim as `thread_id` in `agent.py:86`. Phase 3B should do the same — one HTTP session ↔ one `thread_id`.
 
 ### How You Will Be Evaluated
 Your handoff will be scored on:
 1. Was the ACTIVE TASK block sufficient to orient the next session?
-2. Did you verify the LangGraph interrupt pattern on a toy graph BEFORE writing real code? (If this is still unverified after your session, that's a protocol violation — Session 4 flagged it; Session 5 didn't need it; Session 6 must.)
-3. Did you preserve the data-agent/intake decoupling symmetry? The intake agent should not import anything from `model_project_constructor_data_agent` or the Phase 2B shims.
+2. Did you reuse `build_intake_graph()` instead of re-implementing the flow? (If Phase 3B re-implements nodes/graph, that's a regression on Session 6's split of flow vs. driver.)
+3. Did you parameterize the checkpointer so the web UI gets SQLite persistence without breaking the CLI's in-memory mode?
 4. Are key files listed with file:line references?
-5. Did you complete Phase 3A as defined, or did you bundle 3B (Web UI)?
-6. Were the Phase 2A + 2B gotchas preserved for Session 7 without dilution?
+5. Did you complete Phase 3B as defined, or did you bundle Phase 4 (Website Agent)?
+6. Were the Phase 2A + 2B + 3A gotchas preserved for Session 8 without dilution?
+7. Did you do the first real-API smoke test OR explicitly defer it with a reason?
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
+
+### What Session 6 Did
+**Deliverable:** Phase 3A of architecture plan — Intake Agent core + LangGraph + CLI (COMPLETE)
+**Started:** 2026-04-14
+**Completed:** 2026-04-14
+**Commits:** Session-6 single commit (pending at close-out) — Phase 3A implementation + tests + fixtures + README/SESSION_NOTES updates.
+
+**What was done (chronological):**
+1. Phase 0 orientation — read SAFEGUARDS, SESSION_NOTES Session 5 block, architecture-plan §4.1/§5.1/§10/§14 Phase 3A, checked git, confirmed `methodology_dashboard.py` still absent (Session 5 precedent) and `gh issue list` still empty (UAT-only, per memory note). Reported findings, waited for user direction.
+2. Phase 1B session stub written to SESSION_NOTES.md before any technical work (`claimed Session 6, work beginning`).
+3. **LangGraph interrupt-pattern toy-graph verification** — Session 5's hard prerequisite. Built a throwaway 3-node graph (ask → decide → finalize) on langgraph 0.2.76 using `from langgraph.types import interrupt, Command` and `from langgraph.checkpoint.memory import MemorySaver`. Ran invoke → pause (interrupts surface via `state.tasks[0].interrupts[0].value`) → resume (`Command(resume=...)`) → loop → resume → finalize. Confirmed two critical behaviors: (a) interrupted node re-executes from the top on resume, so LLM calls CANNOT sit in the same node as `interrupt()`; (b) `Annotated[list, add]` reducers plus a later node returning full state causes list duplication. Both shaped the design below.
+4. Created 12 TaskCreate items covering design, toy verification, implementation phases, tests, verification, and close-out.
+5. Designed the intake state as a plain `TypedDict` with NO reducers — nodes return deltas only. Deliberate, documented in `state.py`.
+6. Designed `IntakeLLMClient` as a 4-method Protocol (`next_question`, `draft_report`, `classify_governance`, `revise_report`) with dataclass result types (`NextQuestionResult`, `DraftReportResult`, `GovernanceClassification`, `InterviewContext`). Separate from the data agent's LLMClient by design — they share no methods and the data agent package cannot be imported from anyway (Phase 2B).
+7. Implemented 8 graph nodes in `nodes.py` — split `plan_next_question` (LLM call, idempotent-relative) from `ask_user` (interrupt only). Same split for the review step: `await_review` has only `interrupt()`, no side effects. `evaluate_interview` enforces the 10-question cap. `revise` increments `revision_cycles` AND re-runs `classify_governance` because governance can shift when the draft changes. `finalize` computes `missing_fields` based on which caps were hit (`questions_cap_reached`, `revision_cap_reached`) and validates the full `IntakeReport` through Pydantic via `build_intake_report()`.
+8. Built the compiled graph in `graph.py` using `StateGraph(IntakeState)` + `MemorySaver`. Routing: `evaluate_interview` → `draft_report` or back to `plan_next_question`; `await_review` → `revise` or `finalize` based on `review_accepted` and cap.
+9. Built `FixtureLLMClient` and `load_fixture()` in `fixture.py` with schema validation (`intake_fixture/v1`), missing-field checks, and `revised_draft` override to exercise revision cycles. Wrote `IntakeAgent.run_scripted()` in `agent.py` — it drives the compiled graph one interrupt at a time against a scripted answer list, with an explicit max-turns safety so a buggy graph can't infinite-loop a test run.
+10. Smoke-tested the full flow against an in-memory fixture before writing any tests or fixtures. Printed `status=COMPLETE, Q=7, tier=tier_3_moderate, target=successful_subrogation, value_low=2000000`. That proved interrupt/resume + the whole node chain works end-to-end on the installed langgraph version.
+11. Built the CLI as a typer app. **Initial mistake:** I used the `@app.callback()` + `@app.command("run")` pattern (copying the data agent exactly), which meant the CLI required `python -m ... run --fixture`. The plan literally specifies `python -m ... --fixture` with no subcommand. Ran the plan's verification command, caught the discrepancy, rewrote the CLI as a single `@app.command()` with NO callback so typer auto-collapses. Added to handoff gotchas that the two CLIs take OPPOSITE decisions on the callback.
+12. Registered `model-intake-agent` console script in `pyproject.toml`. Added `pyyaml>=6` as an explicit dependency (was already transitively installed). Ran `uv sync` and confirmed the script works.
+13. Wrote `anthropic_client.py` — concrete `AnthropicLLMClient` implementing all 4 Protocol methods with prompts for each. Mirrors the structure of the data agent's Anthropic client (code-fence stripping, JSON parsing, `IntakeLLMError` on bad shapes) but with interview-specific prompts. Injected SDK client for test mocking; lazy-imports `anthropic` when constructed without a client.
+14. Wrote 5 fixtures: `subrogation.yaml` (tier-3 tactical, the canonical worked example from `initial_purpose.txt`), `pricing_optimization.yaml` (tier-2 strategic, consumer-facing auto pricing), `fraud_triage.yaml` (tier-1 continuous, SIU routing), `intake_question_cap.yaml` (11 QA pairs + `draft_after: 99` forces the 10-question hard cap), `intake_revision_cap.yaml` (4 rejection reviews forces the 3-revision hard cap). Smoke-tested all 5 end-to-end; every plan §14 Phase 3A DONE criterion is observable from this fixture set.
+15. Wrote 56 tests across 5 test files:
+    - `test_fixture.py` (15 tests) — fixture loader happy path, schema mismatch, missing fields, wrong shape; `FixtureLLMClient` question dispensing, draft/governance return, revise-default vs revise-override, answer/review helpers, error paths for draft and governance missing fields.
+    - `test_nodes.py` (14 tests) — unit tests for each node with a hand-rolled `_StaticLLM`, plus router tests for both conditional edges, plus `build_intake_report` end-state assembly tests at both the `COMPLETE` and `DRAFT_INCOMPLETE` path.
+    - `test_graph.py` (9 tests) — end-to-end interrupt+resume runs against all 5 fixtures, including the two cap scenarios, plus error paths for under-supplied answer/review scripts and a review-accept-token variants test.
+    - `test_cli.py` (7 tests) — `CliRunner` tests for help, happy-path stdout + file output, missing fixture, `--anthropic` not-yet-wired error, revision cap fixture producing `DRAFT_INCOMPLETE`, and a real `subprocess.run(['python', '-m', ...])` that matches the plan's literal verification command.
+    - `test_anthropic_client.py` (14 tests, all mocked) — every Protocol method's happy path, missing-key errors, non-object-response errors, code-fence stripping, garbage-JSON errors, and the lazy-import default constructor path via `monkeypatch` on `anthropic.Anthropic`.
+16. **First pytest run caught one bug:** `review_sequence_from_fixture({"review_sequence": []})` returned `["ACCEPT"]` instead of raising because `seq or ["ACCEPT"]` treated `[]` as falsy. Fixed to distinguish `None` (default) from `[]` (error). All 56 intake tests green after the fix.
+17. Ran full suite: **179 passed, 96.18% coverage** (123 → 179; +56 intake tests). Coverage floor of 90% met. Intake package coverage: `nodes.py` 94%, `fixture.py` 100%, `graph.py` 100%, `anthropic_client.py` 98%, `cli.py` 100%, `agent.py` 90%, `protocol.py` 91%, `state.py` 100%, `__init__.py` 100%.
+18. Ran both plan §14 Phase 3A verification commands LITERALLY:
+    - `uv run pytest tests/agents/intake/ -v` → 56 passed.
+    - `uv run python -m model_project_constructor.agents.intake --fixture tests/fixtures/subrogation.yaml` → writes a `COMPLETE` `IntakeReport` JSON; `status=COMPLETE, Q=7, tier=tier_3_moderate, cycle=tactical`.
+19. Ran `uv run mypy src/model_project_constructor/agents/intake/` — initially 20 errors across 5 files. Fixed the easy wins (nodes None-guards, graph.py return annotation, cli.py helper method annotations, anthropic_client.py `list` generic parameter, one `# type: ignore[union-attr]` for the SDK's content block union mirroring the data agent's pattern, `# type: ignore[import-untyped]` on `import yaml`, `# type: ignore[arg-type]` on the `_DummyLLM` injection). **Final: 0 errors in 10 source files on the intake package alone.** The rest of the repo still has 33 pre-existing strict-mypy errors that predate Session 6 (most in the data agent's anthropic_client.py, same content-block union issue).
+20. Updated `README.md`: added Phase 3A row (Complete), added Phase 3B row (Not started), added `agents/intake/` to the repo layout with a short module breakdown, added `tests/agents/intake/` to the tests section, added all 5 intake fixtures, updated test count 123 → 179, updated coverage floor 80% → 90%, added an intake agent CLI quick-start block pointing at the subrogation fixture.
+21. Rewrote the `ACTIVE TASK` block for Phase 3B with: plan sections to re-read, DONE criteria, explicit instruction to reuse `build_intake_graph()` rather than re-implement, key Phase 3A files with file:line references, the LangGraph interrupt pattern verification results (so Session 7 doesn't redo the toy graph), all gotchas from Phase 2B + new ones from Phase 3A (CLI callback asymmetry, fixture schema, `_DummyLLM` disposability, mypy status, thread_id = session_id convention).
+22. Close-out commit pending: all Phase 3A code + tests + fixtures + README + SESSION_NOTES as a single commit.
+
+**Key design calls:**
+- **Split `plan_next_question` from `ask_user`.** The plan's §10 diagram shows one `ASK_NEXT_Q` → `WAIT_FOR_ANS` node pair. I split them because the toy graph proved that interrupted nodes re-run from the top on resume, which would double-call the LLM if `interrupt()` sat in the same node. This is the single highest-leverage correctness decision in Phase 3A — getting it wrong would have caused silent cost doubling and potentially non-deterministic questions on resume.
+- **No state reducers.** `Annotated[list, add]` is a footgun when a later node returns full state (the toy demonstrated this). All intake state fields are replaced wholesale by the node that owns them, and the `qa_pairs` append is done manually inside `ask_user`. Documented in the `IntakeState` docstring.
+- **Fixture is NOT the CLI's production path, but it IS the verification path.** `--anthropic` is a real flag on the CLI that currently errors out with "interactive terminal not shipped in Phase 3A — use the web UI from Phase 3B". This keeps the CLI from locking in a headless-interview pattern that Phase 3B will supersede. The fixture path is the ONLY way to drive the CLI today.
+- **`AnthropicLLMClient` is its own class, not shared with the data agent.** Different prompts, different result shapes, different system prompts. Session 5's handoff explicitly warned against "DRYing" the LLM boundaries and I followed it.
+- **Default model `claude-sonnet-4-6` without live-API verification.** Same caveat as Session 5's data agent anthropic client. Documented in handoff as a likely first-real-run fixable.
+- **`IntakeAgent.run_scripted()` with a hard max-turns cap.** A cap of `MAX_QUESTIONS + MAX_REVISIONS + 5 = 18` stops a buggy graph from spinning forever in tests. Hit the cap in the revision-cap fixture before I noticed the count — it triggered a `RuntimeError` with a clear message rather than hanging.
+- **Fixture schema is `intake_fixture/v1`** with strict field validation in the loader. Tests cover schema-version mismatch, non-mapping YAML, missing required fields, and missing nested draft/governance fields. Fails loud, which is the §12 contract.
+- **Review-accept tokens are a fixed set** — `"accept"`, `"yes"`, `"approve"`, `"approved"`, `"ok"`, `"looks good"` (case-insensitive). Anything else is treated as revision feedback. This is a heuristic, and the web UI in Phase 3B should use a button rather than text matching; the CLI path uses it because a fixture driver needs something to script.
+- **Single-command typer app for intake CLI, the OPPOSITE of the data agent CLI.** The data agent has `run` as an explicit subcommand, which requires `@app.callback()` to defeat typer's auto-collapse. The intake agent has exactly one entry point, so the auto-collapse is what we want — without the callback, `python -m ... --fixture X` works directly and matches the plan's literal verification command. If Phase 3B adds a `serve` subcommand, the callback must be added simultaneously or the CLI verification breaks.
+
+**Files created (16):**
+- `src/model_project_constructor/agents/intake/__init__.py`
+- `src/model_project_constructor/agents/intake/__main__.py`
+- `src/model_project_constructor/agents/intake/state.py`
+- `src/model_project_constructor/agents/intake/protocol.py`
+- `src/model_project_constructor/agents/intake/nodes.py`
+- `src/model_project_constructor/agents/intake/graph.py`
+- `src/model_project_constructor/agents/intake/fixture.py`
+- `src/model_project_constructor/agents/intake/agent.py`
+- `src/model_project_constructor/agents/intake/anthropic_client.py`
+- `src/model_project_constructor/agents/intake/cli.py`
+- `tests/agents/intake/__init__.py`
+- `tests/agents/intake/conftest.py`
+- `tests/agents/intake/test_fixture.py`
+- `tests/agents/intake/test_nodes.py`
+- `tests/agents/intake/test_graph.py`
+- `tests/agents/intake/test_cli.py`
+- `tests/agents/intake/test_anthropic_client.py`
+- `tests/fixtures/subrogation.yaml`
+- `tests/fixtures/pricing_optimization.yaml`
+- `tests/fixtures/fraud_triage.yaml`
+- `tests/fixtures/intake_question_cap.yaml`
+- `tests/fixtures/intake_revision_cap.yaml`
+
+**Files modified (3):**
+- `pyproject.toml` — added `pyyaml>=6`, added `[project.scripts] model-intake-agent`
+- `uv.lock` — regenerated by `uv sync`
+- `README.md` — Phase 3A complete, repo layout updated, test count 179, coverage 90% floor, intake CLI quick-start
+- `SESSION_NOTES.md` — this file
+
+**Session 5 Handoff Evaluation (Session 6 scoring Session 5):**
+- **Score: 10/10**
+- **What helped (ranked by how much time each saved):**
+  1. The "LangGraph 0.2.76 interrupt pattern STILL not verified" gotcha with explicit "Build a 3-node toy graph before any real intake code. Failure mode: you write 400 lines of agent code against an API that doesn't exist on the installed version" — this was the single most load-bearing note in the entire handoff. I did exactly that, found two pitfalls (node re-execution on resume, reducer duplication), and the whole agent design downstream was shaped by those findings. Without this I would have put the LLM call in `ask_user` and shipped a broken-on-resume agent.
+  2. The `How You Will Be Evaluated` section — pre-declared six success criteria. I used it as a close-out self-check. Items 2 (toy graph first) and 5 (don't bundle 3B) were the ones I was most tempted to shortcut.
+  3. The typer single-command-trap gotcha with exact file:line — I initially copied the data agent's pattern (callback + run subcommand), then the plan's literal verification command forced me to flip it. Session 5's warning framed the trap so I recognised my error within minutes of first `pytest` instead of spending 20 minutes debugging.
+  4. The "fixture format not defined in plan, YAML is more comfortable" guidance — took the decision off my plate.
+  5. Key files with file:line references (`intake.py`, `common.py`, `llm.py:1-94`, `anthropic_client.py`) — I read each one cold and knew exactly where to look.
+  6. The empty-`gh issue list` + dashboard-missing protocol notes — orientation step completed in about 30 seconds because Session 5 had already established these as non-blocking.
+- **What was missing (minor):**
+  1. Session 5 didn't specify whether the intake agent's CLI should reuse the data agent's `run` subcommand pattern or match the plan literal. I chose the data agent pattern first (wrong) and had to redo the CLI. A one-liner saying "plan's Phase 3A verification command is top-level flags, NOT a subcommand" would have saved about 10 minutes.
+  2. Nothing about how the fixture's review_sequence should handle the cap-exhaustion case. I invented the `intake_revision_cap.yaml` pattern (review_sequence with 4 rejections) from first principles, which worked but could have been pre-decided.
+- **What was wrong:** Nothing. Every claim about existing code matched the repo state. The Session 5 `--fake-llm` escape-hatch framing correctly predicted that the intake agent would need its own fixture mode.
+- **ROI:** Enormous. I estimate the handoff saved 60-90 minutes of re-derivation — the LangGraph verification guidance alone saved a full session of "why does my agent behave weirdly on resume". Read-cost was maybe 15 minutes.
+- **Process notes:** Session 5 produced a 10/10 handoff by (a) pre-declaring evaluation criteria, (b) giving the next session an explicit technical risk to de-risk first, (c) naming traps with file:line breadcrumbs, (d) distinguishing "do these things" from "do not do these things" cleanly. I have copied all four patterns into my own handoff.
+
+**Session 6 Self-Assessment:**
+- (+) Completed Phase 0 orientation in full before any file touch. Wrote Phase 1B stub before any technical work. Reported findings and waited for user direction on a task-in-prompt turn.
+- (+) Verified the LangGraph interrupt pattern on a toy graph BEFORE writing real agent code, per Session 5's explicit instruction. Caught two pitfalls (node re-execution, reducer duplication) that shaped the final design.
+- (+) Split `plan_next_question` from `ask_user` at design time rather than after an expensive bug — direct result of the toy-graph discovery. This is the correctness decision I'm most proud of.
+- (+) All 3 governance scenarios in tests hit distinct tiers (tier-1 continuous, tier-2 strategic, tier-3 tactical) with distinct rationales. Plan's "sensible classifications for 3 test scenarios" criterion is met with distinct, non-overlapping cases.
+- (+) Both cap enforcement mechanisms have dedicated fixtures and dedicated tests. The 10-question cap and 3-revision cap are BOTH verified end-to-end through the real graph, not just at the node level.
+- (+) Ran the plan's §14 Phase 3A verification commands LITERALLY. When my first CLI design didn't match the plan's literal command (it required `run` as a subcommand), I rewrote the CLI instead of updating the plan. Plan literal wins.
+- (+) 56 new tests, 179 total, 96.18% coverage — comfortably above the 90% floor. Every intake source file is at ≥90% coverage; `fixture.py`, `graph.py`, `cli.py`, `state.py`, `__init__.py` are at 100%.
+- (+) Ran mypy on the intake package and fixed every error — 0 errors in 10 files. Session 5 flagged not running mypy as a minor gap; I closed it. Did NOT fix the 33 pre-existing errors elsewhere in the repo — out of scope, noted in handoff.
+- (+) Scope discipline: Phase 3A only. Did not start Phase 3B. Did not touch the Data Agent. Did not DRY the two `AnthropicLLMClient`s or the two `StrictBase` classes.
+- (+) Recovered from three self-inflicted errors without user intervention: (1) wrong CLI subcommand pattern → rewrote as single command, (2) `review_sequence_from_fixture` treating empty list as None → fixed to distinguish, (3) mypy errors from missing type annotations → fixed with minimal `# type: ignore` use matching the data agent's patterns. All three documented in the chronological log and relevant ones in the handoff gotchas.
+- (+) Used TaskCreate throughout — 12 tasks created up-front, each moved to in_progress when started, completed when done. No batching.
+- (+) Handoff for Session 7 includes all required items: ACTIVE TASK updated with Phase 3B scope, what's done + commit reference, what's next with file:line references, key files, gotchas, evaluation criteria, LangGraph verification results so Session 7 doesn't redo it. Specifically guides Session 7 to REUSE `build_intake_graph()` rather than re-implement the flow.
+- (−) I wrote the CLI twice — first with the data agent's callback+subcommand pattern, then as a single command. That cost ~10 minutes. Could have been avoided by reading the plan's verification command literal first, which I did but mis-interpreted. Self-inflicted, recoverable.
+- (−) The `_DummyLLM` in `cli.py` is an ugly workaround for `IntakeAgent.__init__` requiring a client even when `run_with_fixture` will immediately replace it. A cleaner design would have `IntakeAgent` construct the graph lazily on first run. Noted for Phase 3B to clean up if a long-lived agent makes sense there.
+- (−) The `AnthropicLLMClient` was never exercised against a real API. Same caveat as Session 5's data agent client. I did not attempt a live smoke test (no API key available in this session). Flagged in the handoff, but someone will discover whether `claude-sonnet-4-6` is a valid model ID on first real run.
+- (−) I did NOT add a symmetric AST decoupling test for the intake agent (walking `src/model_project_constructor/agents/intake/` for imports matching `model_project_constructor_data_agent`). Session 5's handoff didn't require it, and the decoupling direction the plan enforces is data-agent-does-not-depend-on-main-package, not the reverse. Adding a symmetric test would be testing a non-existing relationship. Explicitly decided not to add it; noted in handoff.
+- (−) The three governance fixtures are a MINIMUM — two of the four cycle-time values are covered (tactical, strategic, continuous) but `operational` is not. If a future Phase 3B or 3A polish session wants comprehensive governance-matrix coverage, that's an easy add.
+- (−) I moved the toy graph work out of process before writing a test for it — the verification was shell output, not a committed test. The test files exercise the `interrupt` machinery implicitly through `test_graph.py`, so the pattern IS tested, but there's no standalone "langgraph 0.2.76 interrupt API exists" test. This is intentional (the implicit coverage is sufficient) but worth noting — if langgraph bumps major version and the API shifts, that test suite will fail loudly but the error might blame the intake code rather than the library.
+- (−) No `USAGE.md` for the intake agent. The data agent has one (it's a separate distributable package so it needs its own readme); the intake agent lives in the main package and is documented in the main README. This is consistent but a dedicated document would be more discoverable for web-UI users in Phase 3B. Not in scope for 3A.
+
+**Score: 9.5/10.** Phase 3A delivered with:
+- Full LangGraph flow from §10 correctly implemented (with the interrupt-re-execution pitfall avoided)
+- Both plan §14 verification commands passing literally
+- 3 distinct governance scenarios tested end-to-end
+- Both hard caps enforced end-to-end with dedicated fixtures
+- Full Pydantic validation at the boundary
+- 56 new tests, 96.18% coverage
+- mypy clean on the intake package (which Session 5 flagged as a gap)
+- Session 7 handoff that reuses Session 5's pattern language
+
+Loses half a point for the CLI rewrite (self-inflicted, recovered without user intervention) and for not attempting a real-API smoke test of `AnthropicLLMClient`. The `_DummyLLM` ugliness and missing `USAGE.md` are intentional debts rather than mistakes.
+
+---
 
 ### What Session 5 Did
 **Deliverable:** Phase 2B of architecture plan — Data Agent standalone subpackage + CLI + Python API + AnthropicLLMClient (COMPLETE)

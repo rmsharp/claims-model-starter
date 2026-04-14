@@ -1,0 +1,89 @@
+schema: intake_fixture/v1
+stakeholder_id: stakeholder_pricing_001
+session_id: intake_pricing_001
+domain: pc_claims
+initial_problem: >-
+  We want a model that optimizes renewal premium for auto policies to
+  improve retention without eroding combined ratio. This directly
+  affects what consumers are charged.
+
+qa_pairs:
+  - question: "What's the core business problem?"
+    answer: >-
+      We are losing profitable customers at renewal because our pricing
+      doesn't reflect their likelihood to shop.
+  - question: "What decision will the model drive?"
+    answer: >-
+      It feeds the renewal rating engine — the output directly changes
+      the premium a consumer is quoted for the next term.
+  - question: "What's the target variable?"
+    answer: >-
+      A regression: predicted elasticity (percent change in retention
+      per percent change in premium).
+  - question: "What data and features are available?"
+    answer: >-
+      Full policy history, prior claims, demographic fields (excluding
+      protected attributes), competitor price signals.
+  - question: "What's the estimated value?"
+    answer: >-
+      Retention lift of 1 pt on a $2B book is roughly $20M of retained
+      premium. Upside is $15-25M annually.
+
+draft_after: 5
+
+draft:
+  business_problem: >-
+    Auto renewal retention is degrading among profitable segments
+    because price elasticity is not incorporated into the rating
+    engine. The current approach uses a flat loadings table.
+  proposed_solution: >-
+    Build a regression model estimating price elasticity per policy,
+    consume it in the renewal rating engine to set the final renewal
+    premium. Directly impacts consumer-facing pricing.
+  model_solution:
+    target_variable: premium_elasticity
+    target_definition: >-
+      Continuous: percent change in retention probability per percent
+      change in premium, estimated from historical renewals.
+    candidate_features:
+      - prior_claim_count
+      - policy_tenure_years
+      - competitor_price_delta
+      - vehicle_value
+      - paid_in_full_flag
+    model_type: supervised_regression
+    evaluation_metrics:
+      - rmse
+      - mape
+      - out_of_sample_lift_curve
+    is_supervised: true
+  estimated_value:
+    narrative: >-
+      Retention lift of one percentage point on the $2B auto book
+      corresponds to approximately $20M of retained premium. Range
+      brackets conservative and optimistic deployment scenarios.
+    annual_impact_usd_low: 15000000
+    annual_impact_usd_high: 25000000
+    confidence: medium
+    assumptions:
+      - "Auto book gross written premium is ~$2B/year."
+      - "One point of retention maps linearly to ~$20M."
+
+governance:
+  cycle_time: strategic
+  cycle_time_rationale: >-
+    Model drives a pricing strategy refreshed quarterly with annual
+    regulatory filings. Strategic cadence matches the business cycle.
+  risk_tier: tier_2_high
+  risk_tier_rationale: >-
+    Directly affects prices charged to consumers and interacts with
+    rate filings. High business and regulatory exposure; auto-decisioned
+    but with rate-cap guardrails.
+  regulatory_frameworks:
+    - SR_11_7
+    - NAIC_AIS
+  affects_consumers: true
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT

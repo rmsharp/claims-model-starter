@@ -1,0 +1,86 @@
+schema: intake_fixture/v1
+stakeholder_id: stakeholder_siu_001
+session_id: intake_fraud_001
+domain: pc_claims
+initial_problem: >-
+  Real-time fraud triage on first notice of loss to route high-suspicion
+  claims to our Special Investigations Unit before adjuster assignment.
+
+qa_pairs:
+  - question: "What business outcome are you trying to move?"
+    answer: >-
+      Reduce leakage to fraudulent claims by routing high-suspicion
+      FNOLs directly to SIU at intake instead of after adjuster triage.
+  - question: "How time-sensitive is this scoring?"
+    answer: >-
+      Needs to run at first notice of loss, within seconds, inline with
+      the FNOL flow. Scores update continuously as new signals arrive.
+  - question: "What's the target and feature set?"
+    answer: >-
+      Binary classification: 1 = confirmed fraud by SIU investigation,
+      0 = not. Features are structured FNOL fields and prior-claim
+      history, no protected attributes.
+  - question: "What's the annual value?"
+    answer: >-
+      Fraud leakage is estimated at $80M/year across all lines. A 15%
+      reduction is roughly $12M. Low end $8M, high end $15M.
+
+draft_after: 4
+
+draft:
+  business_problem: >-
+    Fraudulent claims are identified too late in the claims lifecycle.
+    By the time SIU investigates, payments have already begun, leading
+    to recoverable but costly leakage.
+  proposed_solution: >-
+    A streaming fraud-risk score computed at FNOL from structured
+    intake data. High-scoring claims are routed directly to SIU with
+    human-in-the-loop confirmation before any decisioning.
+  model_solution:
+    target_variable: confirmed_fraud
+    target_definition: >-
+      Binary: 1 if SIU investigation confirmed fraud within 90 days of
+      FNOL, 0 otherwise.
+    candidate_features:
+      - prior_claim_count_12m
+      - time_to_notice_hours
+      - reported_loss_amount
+      - incident_reporting_channel
+      - policy_tenure_days
+    model_type: supervised_classification
+    evaluation_metrics:
+      - AUC
+      - precision_at_top_percentile
+      - fpr_at_high_score
+    is_supervised: true
+  estimated_value:
+    narrative: >-
+      Current fraud leakage is ~$80M/year. A 15% reduction is roughly
+      $12M annually, bracketing $8M-$15M.
+    annual_impact_usd_low: 8000000
+    annual_impact_usd_high: 15000000
+    confidence: medium
+    assumptions:
+      - "Annual fraud leakage is approximately $80M."
+      - "Early routing captures 15% of currently missed fraud."
+
+governance:
+  cycle_time: continuous
+  cycle_time_rationale: >-
+    Scores are produced in the FNOL streaming path within seconds of
+    first notice and update as new signals arrive. Continuous cadence.
+  risk_tier: tier_1_critical
+  risk_tier_rationale: >-
+    Adverse scores influence how consumer claims are handled; SIU
+    routing has material downstream effects on claimants. Consumer-
+    facing, adverse-action-adjacent, and subject to insurance fraud
+    statutes. Requires the strictest governance tier.
+  regulatory_frameworks:
+    - SR_11_7
+    - NAIC_AIS
+    - EU_AI_ACT_ART_9
+  affects_consumers: true
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT
