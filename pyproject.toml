@@ -2,6 +2,7 @@
 name = "model-project-constructor"
 version = "0.1.0"
 description = "Multi-agent pipeline that turns a business model idea into a governance-scaffolded GitLab project (intake → data → website)."
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
 authors = [

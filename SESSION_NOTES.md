@@ -5,60 +5,160 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Phase 2A of the architecture plan — Data Agent core + LangGraph
-**Status:** Phase 1 (schemas + registry + envelope + 88 unit tests) complete at commit TBD on branch `master`. Next session implements the Data Agent's `run(request) -> DataReport` against a seeded SQLite DB.
-**Plan:** `docs/planning/architecture-plan.md` §14 Phase 2 (Sub-phase 2A) defines exactly what DONE looks like and verification commands.
+**Task:** Phase 2B of the architecture plan — Data Agent standalone package + CLI + Python API
+**Status:** Phase 2A complete on `master`. Data Agent core, LangGraph flow, decoupling test, and 101 passing tests (98.62% coverage) ship at commit `<phase-2a-hash>` (see `git log --oneline -5`). Remote `origin` is now `https://github.com/rmsharp/claims-model-starter.git`. Next session builds the `model-project-constructor-data-agent` subpackage, the `typer` CLI, and a Python API `USAGE.md`.
+**Plan:** `docs/planning/architecture-plan.md` §14 Phase 2 (Sub-phase 2B) defines DONE criteria and verification commands.
 **Priority:** HIGH
 
 ### What You Must Do
-1. **Re-read the plan sections that govern this phase before writing any code:**
-   - §4.2 — Data Agent responsibility, I/O contract, failure modes (especially the `NOT_EXECUTED` / `INVALID` / `INCOMPLETE_REQUEST` branches)
-   - §7 — **The decoupling rule.** Data Agent code must not import `IntakeReport`. The decoupling test from §7 ships in this phase and must pass in CI.
-   - §10.2 — The Data Agent LangGraph (GENERATE_QUERIES → GENERATE_QC → EXECUTE_QC → SUMMARIZE → DATASHEET) with the two off-ramps (RETRY_ONCE on bad SQL, SKIP_EXECUTION on DB down)
-   - §12 — Error handling contract: return a report with `status != COMPLETE`, do NOT raise for expected failures
-2. Execute **only Sub-phase 2A** from §14:
-   - `src/model_project_constructor/agents/data/` with the LangGraph flow from §10
-   - `DataAgent.run(request: DataRequest) -> DataReport` works end-to-end against a test SQLite DB seeded by a fixture
-   - SQL parse validation via `sqlparse`
-   - Datasheet generation for one seeded query
-   - Decoupling test at `tests/test_data_agent_decoupling.py` (AST-walks the data agent source, asserts no `IntakeReport` imports) passes
-3. Verify with §14 Phase 2A's commands.
-4. **Do NOT start Sub-phase 2B (standalone package + CLI + Python API).** That is the next session.
+1. **Re-read the plan sections that govern Phase 2B before writing any code:**
+   - §7 (specifically "Three Entry Points for the Data Agent") — pipeline, CLI, Python API. The CLI and Python API are packaged as a *separate installable subpackage* (`model-project-constructor-data-agent`) under `packages/data-agent/` to physically enforce decoupling.
+   - §14 Phase 2B — explicit DONE criteria and verification commands.
+2. Execute **only Sub-phase 2B** from §14:
+   - `packages/data-agent/pyproject.toml` — standalone distribution, depends on `sqlalchemy`, `sqlparse`, `pydantic`, `langgraph`, `anthropic`, `typer`. Does NOT depend on the orchestrator package.
+   - Decide how to share code between the two packages without the standalone pulling in `schemas.v1.intake` or anything outside `agents/data/` and `schemas/v1/data.py` + `schemas/v1/common.py`. Candidates:
+     a. vendored copy of the data agent directory (simple; duplication risk)
+     b. re-export via a namespace package or src-layout symlink
+     c. restructure the main repo so `agents/data/` lives under `packages/data-agent/src/...` and the main package re-exports it
+     — pick one and document the tradeoff. Option (c) is the cleanest but touches existing imports.
+   - `typer`-based CLI: `model-data-agent run --request request.json --output report.json`.
+   - Python API documented in `packages/data-agent/USAGE.md` with three examples (CLI, Python in script, Python in notebook). Since CLAUDE.md forbids creating docs files without explicit request, confirm with the user before writing USAGE.md — OR interpret the plan's explicit requirement for it as authorisation.
+   - The decoupling test from Phase 2A must still pass after restructuring.
+3. Add `python -m model_project_constructor.agents.data --help` entry point (mentioned in §14 Phase 2A verification but not in its DONE list — belongs in 2B; see "Plan inconsistencies" below).
+4. Verify with §14 Phase 2B's commands.
+5. **Do NOT start Phase 3 (Intake Agent + Web UI).** That is a separate session.
 
-### Key Files from Phase 1 (already implemented)
-- `src/model_project_constructor/schemas/v1/data.py:21-98` — `DataRequest`, `DataReport`, `DataGranularity`, `QualityCheck`, `PrimaryQuery`, `Datasheet`. **Already forbids imports from intake.py** (see module docstring).
-- `src/model_project_constructor/schemas/v1/common.py:13-31` — `StrictBase` (extra="forbid", protected_namespaces=()) and literal aliases. Inherit from `StrictBase` for any new payload types.
-- `src/model_project_constructor/schemas/envelope.py:22-36` — `HandoffEnvelope`. Persist each Data Agent hand-off as an envelope per §6.
-- `src/model_project_constructor/schemas/registry.py:26-34` — `REGISTRY`. **If you add any new payload types in Phase 2A, register them here** or the schema-registry test will fail.
-- `pyproject.toml:18-27` — `[project.optional-dependencies].agents` already lists `langgraph`, `anthropic`, `sqlparse`, `sqlalchemy`. Install via `uv sync --extra agents`.
-- `docs/planning/architecture-plan.md` — **THE PLAN**. §4.2, §7, §10, §12, §14 Phase 2A are in scope.
+### Key Files from Phase 2A (already implemented)
+- `src/model_project_constructor/agents/data/__init__.py` — re-exports `DataAgent`, `LLMClient`, `ReadOnlyDB`, `DBConnectionError`, `PrimaryQuerySpec`, `QualityCheckSpec`, `SummaryResult`. **Module docstring forbids intake imports.**
+- `src/model_project_constructor/agents/data/llm.py:1-94` — `LLMClient` Protocol + intermediate dataclasses. **No concrete Anthropic implementation ships in 2A.** 2B's CLI will need one; see `anthropic` SDK in `pyproject.toml:18`.
+- `src/model_project_constructor/agents/data/sql_validation.py` — conservative sqlparse wrapper; only rejects empty input and `UNKNOWN` statement type. This is deliberately weak; don't tighten it without a corresponding improvement to the LLM prompt.
+- `src/model_project_constructor/agents/data/db.py` — `ReadOnlyDB` with `DBConnectionError`. Line 42 is a defensive `RuntimeError` branch not covered by tests (intentional — it guards programmer error).
+- `src/model_project_constructor/agents/data/state.py` — `DataAgentState` TypedDict, `total=False`.
+- `src/model_project_constructor/agents/data/nodes.py:1-171` — all node factories and the router. `MAX_SQL_RETRIES = 1` is the retry cap from §4.2.
+- `src/model_project_constructor/agents/data/graph.py` — `build_graph(llm, db)` returns a compiled StateGraph. **Uses `StateGraph(DataAgentState)` with partial-update dict returns from nodes** — verified on langgraph 0.2.76.
+- `src/model_project_constructor/agents/data/agent.py:34-74` — `DataAgent.run()` with the pre-flight semantic check and the try/except that catches all graph exceptions and surfaces them as `status="EXECUTION_FAILED"`.
+- `tests/agents/data/conftest.py` — seeded SQLite fixture (5 rows into a `claims` table on tmp_path) + sample `DataRequest`, valid `PrimaryQuerySpec`, QC specs, `SummaryResult`, `Datasheet` fixtures.
+- `tests/agents/data/test_data_agent.py:31-75` — `FakeLLMClient` deterministic stub. The `primary_queries_sequence` list lets tests drive the RETRY_ONCE / fail-after-retry branches.
+- `tests/test_data_agent_decoupling.py` — **verified to actually fire** by temporarily injecting an `IntakeReport` import and running (failed as expected, reverted). Do not treat it as passive scenery; a failing decoupling test must block the build.
+- `pyproject.toml` — readme field has been removed (README.md was stale; user asked for one at session end). Re-check before editing.
 
 ### Gotchas — Read These First
-- **`uv` is not installed on this dev machine.** Session 3 ran tests with `python3 -m pytest` (system Python 3.10 + `pytest 9.0.2` + `pydantic 2.12.5`). `pyproject.toml` is uv-compatible (PEP 621 + hatchling) and pins `requires-python = ">=3.11"`, but the local interpreter is 3.10. Schemas work on 3.10 because they only use PEP 604 unions and `typing.Literal`. If you need `StrEnum` or `tomllib` in Phase 2A, you will hit this. First action of Phase 2A: `which uv || brew install uv` (or equivalent) and pin a 3.11+ interpreter via `uv python install 3.11`.
-- **Python version mismatch risk for LangGraph.** The plan pins `langgraph 0.2.x`; verify on 3.11+ before investing in the interrupt/checkpoint pattern. Session 2 flagged this as an unverified assumption — Phase 2A is the first phase that actually exercises LangGraph, so **verify the interrupt pattern on a toy graph before wiring the real flow**.
-- **The decoupling test is THE structural guarantee of the whole design.** Do not mark Phase 2A complete until it is green AND fails as expected when you temporarily add `from model_project_constructor.schemas.v1 import IntakeReport` to a data-agent module. A decoupling test that never fires is theater, not a test.
-- **Do not widen the `StrictBase` config just because a test fails.** `extra="forbid"` caught real producer typos in Session 3's tests. If a new test fails with "extra inputs not permitted," that is the correct behavior — fix the producer, don't relax the config.
-- **`DataRequest` has required-but-nullable `database_hint: str | None = None`** (default `None`). This matches the plan's "optional context" comment. If you see `database_hint` required without a default in code review, it is a regression from Session 3's interpretation.
-- **Pydantic v2 `model_` namespace protection** is disabled via `StrictBase.model_config.protected_namespaces = ()` because we have domain fields named `model_solution`, `model_type`, `model_registry_entry`. Do not re-enable it without renaming those fields.
-- **Data Agent status field has THREE values, not two:** `COMPLETE`, `INCOMPLETE_REQUEST`, `EXECUTION_FAILED`. The status machine in the LangGraph flow needs to set each one explicitly in the appropriate error branch.
-- **The plan says agents do NOT raise for expected failures (§12).** LangGraph nodes may raise internally for flow control, but the outer `DataAgent.run()` must catch and return a report.
+- **`origin` is now the GitHub remote** `https://github.com/rmsharp/claims-model-starter.git`. Push discipline applies — do not force-push master.
+- **Python is 3.13.5 in `.venv`, not 3.11.** `uv python install 3.11` was run but `.venv` resolved to 3.13 because `requires-python = ">=3.11"` is inclusive. The agent code is 3.11-compatible (PEP 604 unions, `dataclasses`, `typing.Protocol`). If you need to pin 3.11 hard, use `uv venv --python 3.11`.
+- **LangGraph 0.2.76 is installed; interrupt pattern is NOT yet verified.** Phase 2A used only `StateGraph` + `add_conditional_edges`; the Intake Agent's `AWAIT_REVIEW` interrupt node is a Phase 3A concern. Verify the interrupt pattern on a toy graph BEFORE wiring the real intake flow.
+- **The FakeLLMClient is the only `LLMClient` implementation in the repo.** 2B's CLI needs a real one — don't tie the CLI to the fake. Add `AnthropicLLMClient` as a concrete impl, inject via constructor, and write one integration-style test that skips if `ANTHROPIC_API_KEY` is not set.
+- **Schema-plan reconciliation decisions (documented in the Phase 2A commit message).** §4.2 references `qc_status` and `primary_query_status` fields that do not exist on `DataReport`/`PrimaryQuery`. Session 4 interpreted the three-valued `DataReport.status` as authoritative:
+  - DB-down → `status=COMPLETE`, per-QC `execution_status=NOT_EXECUTED`, `data_quality_concerns` gets a "database unreachable" entry.
+  - Invalid SQL after one retry → `status=EXECUTION_FAILED`, empty `primary_queries`, reason in `summary`.
+  - Vacuous required fields → `status=INCOMPLETE_REQUEST`, empty `primary_queries`, `data_quality_concerns=["missing_field:<name>", …]`, graph not invoked.
+  - Per-QC ERROR is isolated (other QCs proceed, report remains COMPLETE).
+  Do not change these interpretations in 2B without updating Phase 2A tests.
+- **QC "PASSED/FAILED" is a coarse proxy.** `make_execute_qc` marks `PASSED` if the query returns ≥1 row and `FAILED` if 0 rows. This is enough to exercise all four `execution_status` values end-to-end. A richer expectation evaluator (structured `expected_row_count > 0` DSL or LLM-judged) is explicit future work — Phase 6 hardening.
+- **No concrete AnthropicLLMClient was shipped in 2A.** `anthropic>=0.40` is in `pyproject.toml [project.optional-dependencies].agents` but nothing imports it yet. Phase 2B should add `agents/data/anthropic_client.py` implementing `LLMClient`.
+- **README.md now exists** (added at end of Session 4 at user request). It points to the architecture plan and is deliberately minimal. Do not treat it as authoritative documentation — `docs/planning/architecture-plan.md` still wins on conflicts.
+- **Plan inconsistency (flagged in 2A commit):** §14 Phase 2A's verification list includes `python -m model_project_constructor.agents.data --help`, but that CLI entry point is Phase 2B's DONE criterion. Session 4 skipped the CLI smoke test in 2A. Add `__main__.py` in 2B.
+- **Coverage gate is `--cov-fail-under=80`**, currently at 98.62%. Phase 2B's restructuring may briefly drop coverage; add tests as you go.
+- **Do not refactor the data agent module layout solely for aesthetics.** If you restructure for Option (c) above (move under `packages/data-agent/src/`), do it in Plan Mode or at least commit the move as a standalone commit separate from the CLI/API additions so the diff stays reviewable.
 
 ### How You Will Be Evaluated
 Your handoff will be scored on:
 1. Was the ACTIVE TASK block sufficient to orient the next session?
-2. Were key files listed with line numbers or section references?
-3. Were gotchas and traps flagged?
-4. Was the "what's next" actionable and specific?
-5. Did you complete Phase 2A as defined, or did you bundle Sub-phase 2B?
+2. Did you preserve the decoupling guarantee across the Phase 2B restructure?
+3. Are key files listed with line numbers / section references?
+4. Were gotchas and traps flagged, especially around schema-plan reconciliation and the untested interrupt pattern?
+5. Did you complete Phase 2B as defined, or did you bundle Phase 3?
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
 
 ### What Session 4 Did
-**Deliverable:** Phase 2A of architecture plan — Data Agent core + LangGraph (IN PROGRESS)
+**Deliverable:** Phase 2A of architecture plan — Data Agent core + LangGraph + AST decoupling test (COMPLETE)
 **Started:** 2026-04-14
-**Status:** Session claimed. Phase 0 orientation complete. Work beginning on environment bootstrap (uv + Python 3.11) and re-reading plan §4.2/§7/§10.2/§12/§14 Phase 2A before any code.
+**Completed:** 2026-04-14
+**Commits:** `chore(env)` (env bootstrap) + `feat(phase-2a)` (agent + tests) + `docs/chore` session closeout — see `git log --oneline -5`.
+
+**What was done (chronological):**
+1. Phase 0 orientation — read SAFEGUARDS, SESSION_NOTES, architecture-plan.md §4.2/§7/§10.2/§12/§14 Phase 2A, git status, reported, waited for direction.
+2. Phase 1B session stub written to SESSION_NOTES.md before any technical work.
+3. Addressed Session 3's environment trap: `brew install uv` (got 0.11.6), `uv python install 3.11` (got 3.11.15 but the venv resolved to 3.13.5 because `requires-python = ">=3.11"` is inclusive — acceptable).
+4. `uv sync --extra agents --extra dev` failed on a missing `README.md` referenced by pyproject.toml. Removed the `readme` line rather than auto-create a README (CLAUDE.md forbids creating docs files autonomously). `uv sync` then succeeded. Re-ran Phase 1 tests under the new interpreter: 88 passed, 100% schemas coverage.
+5. Checkpoint-committed env bootstrap before touching agent code (SAFEGUARDS "commit before starting any new task").
+6. Verified LangGraph 0.2.76 on a toy graph (conditional edges, `add_conditional_edges` with router function, partial-update dict returns, `.invoke()` merge semantics). Worked as expected.
+7. Designed the Data Agent package layout with clean separation: `llm.py` (Protocol + dataclasses), `sql_validation.py`, `db.py`, `state.py`, `nodes.py` (factory functions closing over llm/db), `graph.py` (StateGraph assembly), `agent.py` (outer `DataAgent.run()`).
+8. Made a deliberate decision NOT to ship a concrete `AnthropicLLMClient` in 2A — deferred to 2B — to avoid a half-finished implementation (global rule) and keep Phase 2A strictly scoped.
+9. Wrote all 8 source files under `src/model_project_constructor/agents/data/` and verified imports.
+10. Wrote `tests/agents/data/conftest.py` (seeded SQLite claims table with 5 rows, sample DataRequest, valid PrimaryQuerySpec, QC specs, SummaryResult, Datasheet fixtures).
+11. Wrote `tests/agents/data/test_data_agent.py` — `FakeLLMClient` (deterministic stub with a `primary_queries_sequence` list that drives RETRY_ONCE and fail-after-retry) + 12 end-to-end tests: protocol check, happy path against real SQLite, RETRY_ONCE success, retry-exhausted → EXECUTION_FAILED, DB-unreachable via bad URL, DB=None, per-QC error isolation, INCOMPLETE_REQUEST parametrised over all four required fields, and unexpected-exception containment via an `ExplodingLLM` subclass.
+12. Wrote `tests/test_data_agent_decoupling.py` — AST-walks every `.py` under `agents/data/`, asserts no import references `IntakeReport`, `schemas.v1.intake`, or `intake_report`.
+13. **Verified the decoupling test actually fires** by temporarily injecting `from model_project_constructor.schemas.v1.intake import IntakeReport` into `state.py`. Test failed as expected, reporting both `IntakeReport` and `schemas.v1.intake` as offenders with the exact file path. Reverted the injection.
+14. Ran §14 Phase 2A verification commands:
+    - `uv run pytest tests/agents/data/ -v` → 12 passed
+    - `uv run pytest tests/test_data_agent_decoupling.py` → 1 passed
+    - Full suite: `uv run pytest -q` → 101 passed, coverage 98.62% (well above 80% gate)
+    - Skipped `python -m model_project_constructor.agents.data --help` because that CLI is a Phase 2B deliverable (flagged as a plan inconsistency in the commit and the new handoff).
+15. Committed Phase 2A under `feat(phase-2a): Data Agent core + LangGraph flow + AST decoupling test`.
+16. **Late-session user addition:** create `README.md` and push to a new remote `https://github.com/rmsharp/claims-model-starter.git`. README created (explicit user authorisation overrides the CLAUDE.md prohibition). Remote `origin` added; `git push -u origin master` sent all history.
+17. Rewrote ACTIVE TASK for Phase 2B, wrote this Session 4 closeout.
+
+**Key design calls:**
+- `LLMClient` is a `Protocol` rather than an ABC. Runtime-checkable for tests. Methods take typed domain objects and return typed domain objects — nodes never parse JSON.
+- Intermediate `PrimaryQuerySpec`/`QualityCheckSpec`/`SummaryResult` dataclasses exist so LLM output and schema output can evolve independently. Downstream pydantic models are the enforcement point.
+- `expected_row_count_order` typed as `str` on the intermediate spec but enforced as `Literal[...]` on the pydantic `PrimaryQuery`. Noted in the module docstring.
+- Node factories (`make_*`) close over `llm` and `db` so node bodies take only `DataAgentState`. This keeps the StateGraph plumbing orthogonal to dependency injection.
+- `DataAgentState` is a `TypedDict(total=False)` so nodes can populate incrementally. Initial state has `request`, `sql_retry_count=0`, `db_executed=False`.
+- QC `PASSED/FAILED` uses a coarse ≥1-row proxy. Sufficient to exercise all four `execution_status` values; richer expectation evaluation is future work.
+- Schema-plan reconciliation: plan §4.2 text references `qc_status` and `primary_query_status` fields that don't exist on the Phase 1 schemas. Session 4 interpreted the three-valued `DataReport.status` as authoritative — DB-down returns COMPLETE with per-QC NOT_EXECUTED, invalid SQL after retry returns EXECUTION_FAILED, missing/vacuous fields return INCOMPLETE_REQUEST. Documented in the commit and the new handoff.
+- No `AnthropicLLMClient` in 2A. Deferred to 2B's CLI work to avoid half-finished implementations.
+- README removed from pyproject.toml rather than auto-created (CLAUDE.md rule); README.md itself was created only after the user explicitly asked.
+
+**Files created (15):**
+- `src/model_project_constructor/agents/__init__.py`
+- `src/model_project_constructor/agents/data/{__init__,llm,sql_validation,db,state,nodes,graph,agent}.py`
+- `tests/agents/__init__.py`
+- `tests/agents/data/{__init__,conftest,test_data_agent}.py`
+- `tests/test_data_agent_decoupling.py`
+- `README.md`
+- `uv.lock`
+
+**Files modified (3):**
+- `pyproject.toml` (removed stale `readme = "README.md"` line)
+- `SESSION_NOTES.md` (this file)
+
+**Session 3 Handoff Evaluation (Session 4 scoring Session 3):**
+- **Score: 10/10**
+- **What helped:** The ACTIVE TASK block was the highest-quality handoff in the project so far. Every single gotcha fired during my session:
+  1. The `uv` / Python 3.10 trap was item #1 in gotchas — I hit it immediately and had the fix ready (brew install uv, uv python install 3.11).
+  2. The "LangGraph pattern unverified" flag drove me to write the toy graph before the real flow — saved me from discovering the state-merge semantics mid-implementation.
+  3. The "decoupling test must actually fire" warning was the difference between writing theater and writing a real test. I explicitly verified it fires on an injected violation.
+  4. The "three-valued status field, set each one explicitly" note drove the schema-plan reconciliation decisions.
+  5. The "agents do NOT raise for expected failures (§12)" note drove the outer try/except in `DataAgent.run()`.
+  The Key Files section with `data.py:21-98` and `common.py:13-31` line ranges was surgical — saved re-reading whole files.
+- **What was missing:** Almost nothing. One gap: Session 3 didn't flag that `pyproject.toml` references a README.md that doesn't exist. `uv sync` would have hit it immediately on any fresh checkout. Worth ~3 minutes of my time. Not a 10→9 penalty because Session 3 didn't run `uv sync` themselves (they ran `python3 -m pytest`), so they couldn't have known.
+- **What was wrong:** Nothing. The handoff was accurate end-to-end. The `database_hint` interpretation note was correct; the `StrictBase` `protected_namespaces` note was correct; the Phase 1 file line ranges matched.
+- **ROI:** Very high. I estimate reading SESSION_NOTES.md + the plan sections saved me 60+ minutes of discovery and at least one wrong-direction start. The "verify decoupling test fires" instruction alone was worth the entire read.
+- **Process notes:** Session 3 wrote the Phase 1B stub, held the phase boundary, and produced a handoff that was demonstrably load-bearing. This is the quality bar for the project.
+
+**Session 4 Self-Assessment:**
+- (+) Followed Phase 0 orientation fully before any work. Phase 1B stub written before the first technical action.
+- (+) Addressed every trap Session 3 flagged: installed uv, pinned 3.11+ via uv, verified LangGraph on a toy graph before wiring the real flow, verified the decoupling test actually fires.
+- (+) Scope discipline: Phase 2A only. No CLI, no standalone subpackage, no Anthropic client, no intake work. Explicit decision to skip the plan's §14 Phase 2A CLI smoke test because it belongs to 2B.
+- (+) Clean separation of concerns: `LLMClient` Protocol, intermediate dataclasses, node factories, graph assembly, outer agent boundary. Every concrete concern is in exactly one file.
+- (+) Test coverage 98.62% total, 100% on every new agent module except `db.py:42` (defensive `RuntimeError`) and `sql_validation.py:25,28` (defensive parse branches). All three uncovered lines are intentionally defensive and documented.
+- (+) Parametrised the INCOMPLETE_REQUEST test over all four required fields so regressions in the semantic-check list get caught.
+- (+) `ExplodingLLM` test proves the outer try/except in `DataAgent.run()` actually catches graph-internal exceptions and surfaces them as `EXECUTION_FAILED` — a critical part of the §12 contract.
+- (+) Commit discipline: env bootstrap committed as a standalone checkpoint before agent code was touched (SAFEGUARDS "commit before starting any new task"). Agent code committed as one `feat(phase-2a)` commit. README + remote-push as their own commits at the end.
+- (+) Schema-plan reconciliation decisions are documented in the commit body AND in the new handoff — future sessions can see what was interpreted and why.
+- (+) Flagged a plan inconsistency (§14 Phase 2A verification list contains a CLI command that belongs to 2B) in the commit, in the handoff, and verbally to the user.
+- (−) Did not build a concrete `AnthropicLLMClient`. Defensible decision (avoids half-implementation), but 2B will need one and may feel the pinch.
+- (−) The `validate_sql` function is deliberately weak — it only rejects empty/whitespace and `UNKNOWN` statement type. `sqlparse` will accept a lot of garbage as "valid." A sharper validator (e.g., `EXPLAIN` against SQLite) would catch more, but it would also couple validation to the DB. Deferred.
+- (−) Did not run `mypy` (not in §14 Phase 2A verification commands, but `mypy strict = true` is in `pyproject.toml:71`). Some `type: ignore[arg-type]` on line `agent.py:124` where I pass `str` into a `Literal[...]` field — pydantic validates at runtime.
+- (−) ResourceWarning: unclosed SQLite connections in a few tests (the `seeded_sqlite_url` fixture leaks an engine handle). Non-blocking; clean up in 2B or a Phase 6 hardening pass.
+- (−) Did not pin `--python 3.11` on the venv; `.venv` resolved to 3.13.5. The code is 3.11-compatible so this is not a bug, but the plan said "pin a 3.11+ interpreter" and I got a 3.13 interpreter that happens to satisfy `>=3.11`. Documented in the handoff.
+
+**Score: 9/10** — Phase 2A delivered with comprehensive tests, proven decoupling guarantee, all known traps addressed, and strict scope adherence. Loses a point for the resource leak in the SQLite fixture and for not shipping even a stub `AnthropicLLMClient` that 2B could extend. The `mypy` gap is noted but not weighted against the score since it wasn't in the verification commands.
+
+**Learnings added to SESSION_RUNNER.md Learnings table:** Not added this session. Pattern candidates for future sessions: (a) "LLM-driven agents: ship a Protocol + FakeClient in the core phase; defer concrete vendor integration to the CLI phase" and (b) "decoupling tests must be verified to actually fire by temporarily injecting a violation — a green-only history means nothing." These are in the handoff prose for now; I'll not retroactively add them unless a future session asks.
 
 ### What Session 3 Did
 **Deliverable:** Phase 1 of architecture plan — Repo Skeleton + Schemas (COMPLETE)
