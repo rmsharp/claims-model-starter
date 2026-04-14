@@ -5,45 +5,120 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Phase 1 of the architecture plan — Repo Skeleton + Schemas
-**Status:** Formal architecture plan complete (`docs/planning/architecture-plan.md`). Next session is the first implementation session: Phase 1 per §14 of the plan.
-**Plan:** `docs/planning/architecture-plan.md` §14 Phase 1 defines exactly what DONE looks like and the verification commands.
+**Task:** Phase 2A of the architecture plan — Data Agent core + LangGraph
+**Status:** Phase 1 (schemas + registry + envelope + 88 unit tests) complete at commit TBD on branch `master`. Next session implements the Data Agent's `run(request) -> DataReport` against a seeded SQLite DB.
+**Plan:** `docs/planning/architecture-plan.md` §14 Phase 2 (Sub-phase 2A) defines exactly what DONE looks like and verification commands.
 **Priority:** HIGH
 
 ### What You Must Do
-1. Read `docs/planning/architecture-plan.md` **in full**. It is ~1000 lines and covers: agent boundaries (§4), Pydantic schemas (§5), envelope protocol (§6), Data Agent reuse (§7), governance integration (§8), tech stack (§9), LangGraph patterns (§10), repo structure (§11), error handling (§12), failure modes (§13), and per-phase completion criteria (§14).
-2. Execute **only Phase 1** from §14:
-   - Create `pyproject.toml` with `uv` + dependencies from §9.1
-   - Implement all Pydantic schemas in §5 under `src/model_project_constructor/schemas/v1/`
-   - Implement the schema registry and `load_payload()` from §6
-   - Write unit tests covering required/optional fields, literal constraints, and serialization round-trip
-3. Verify with the commands in Phase 1's "Verification commands" block.
-4. **Do NOT start Phase 2.** Phase 1 is one session. Close out when Phase 1 is done.
+1. **Re-read the plan sections that govern this phase before writing any code:**
+   - §4.2 — Data Agent responsibility, I/O contract, failure modes (especially the `NOT_EXECUTED` / `INVALID` / `INCOMPLETE_REQUEST` branches)
+   - §7 — **The decoupling rule.** Data Agent code must not import `IntakeReport`. The decoupling test from §7 ships in this phase and must pass in CI.
+   - §10.2 — The Data Agent LangGraph (GENERATE_QUERIES → GENERATE_QC → EXECUTE_QC → SUMMARIZE → DATASHEET) with the two off-ramps (RETRY_ONCE on bad SQL, SKIP_EXECUTION on DB down)
+   - §12 — Error handling contract: return a report with `status != COMPLETE`, do NOT raise for expected failures
+2. Execute **only Sub-phase 2A** from §14:
+   - `src/model_project_constructor/agents/data/` with the LangGraph flow from §10
+   - `DataAgent.run(request: DataRequest) -> DataReport` works end-to-end against a test SQLite DB seeded by a fixture
+   - SQL parse validation via `sqlparse`
+   - Datasheet generation for one seeded query
+   - Decoupling test at `tests/test_data_agent_decoupling.py` (AST-walks the data agent source, asserts no `IntakeReport` imports) passes
+3. Verify with §14 Phase 2A's commands.
+4. **Do NOT start Sub-phase 2B (standalone package + CLI + Python API).** That is the next session.
 
-### Key Files
-- `docs/planning/architecture-plan.md` — **THE PLAN**. §14 Phase 1 is your scope. Do not stray into Phase 2.
-- `docs/planning/architecture-approaches.md` — Context for why each approach was chosen
-- `initial_purpose.txt` — Original vision; referenced by §1 of the plan
-- `docs/methodology/workstreams/DEVELOPMENT_WORKSTREAM.md` — Implementation workstream governance
+### Key Files from Phase 1 (already implemented)
+- `src/model_project_constructor/schemas/v1/data.py:21-98` — `DataRequest`, `DataReport`, `DataGranularity`, `QualityCheck`, `PrimaryQuery`, `Datasheet`. **Already forbids imports from intake.py** (see module docstring).
+- `src/model_project_constructor/schemas/v1/common.py:13-31` — `StrictBase` (extra="forbid", protected_namespaces=()) and literal aliases. Inherit from `StrictBase` for any new payload types.
+- `src/model_project_constructor/schemas/envelope.py:22-36` — `HandoffEnvelope`. Persist each Data Agent hand-off as an envelope per §6.
+- `src/model_project_constructor/schemas/registry.py:26-34` — `REGISTRY`. **If you add any new payload types in Phase 2A, register them here** or the schema-registry test will fail.
+- `pyproject.toml:18-27` — `[project.optional-dependencies].agents` already lists `langgraph`, `anthropic`, `sqlparse`, `sqlalchemy`. Install via `uv sync --extra agents`.
+- `docs/planning/architecture-plan.md` — **THE PLAN**. §4.2, §7, §10, §12, §14 Phase 2A are in scope.
 
-### Gotchas
-- **The plan includes governance fields in `IntakeReport` that are NOT in `initial_purpose.txt`.** `GovernanceMetadata` (`cycle_time`, `risk_tier`, `regulatory_frameworks`, `affects_consumers`, `uses_protected_attributes`) was added in Session 2 based on review of the `model_governance` project. These fields are load-bearing for §8 (Governance Integration) — do not omit them.
-- **The decoupling test is structural, not stylistic.** Do not implement it yet (that's Phase 2), but keep in mind: the Data Agent's code must never import `IntakeReport`. Any helper that converts between them belongs in `orchestrator/adapters.py`, not in the Data Agent.
-- **Schema versioning is 1.0.0 baseline.** Every schema has a `schema_version: Literal["1.0.0"] = "1.0.0"` field. The envelope (`HandoffEnvelope`) has `envelope_version` separately.
-- **Phase 1 does NOT include any agent implementations or LangGraph flows.** Only schemas + registry + envelope + tests. Resist scope creep.
-- **`uv` is the package manager, not `pip` or `poetry`.** See §9.1.
+### Gotchas — Read These First
+- **`uv` is not installed on this dev machine.** Session 3 ran tests with `python3 -m pytest` (system Python 3.10 + `pytest 9.0.2` + `pydantic 2.12.5`). `pyproject.toml` is uv-compatible (PEP 621 + hatchling) and pins `requires-python = ">=3.11"`, but the local interpreter is 3.10. Schemas work on 3.10 because they only use PEP 604 unions and `typing.Literal`. If you need `StrEnum` or `tomllib` in Phase 2A, you will hit this. First action of Phase 2A: `which uv || brew install uv` (or equivalent) and pin a 3.11+ interpreter via `uv python install 3.11`.
+- **Python version mismatch risk for LangGraph.** The plan pins `langgraph 0.2.x`; verify on 3.11+ before investing in the interrupt/checkpoint pattern. Session 2 flagged this as an unverified assumption — Phase 2A is the first phase that actually exercises LangGraph, so **verify the interrupt pattern on a toy graph before wiring the real flow**.
+- **The decoupling test is THE structural guarantee of the whole design.** Do not mark Phase 2A complete until it is green AND fails as expected when you temporarily add `from model_project_constructor.schemas.v1 import IntakeReport` to a data-agent module. A decoupling test that never fires is theater, not a test.
+- **Do not widen the `StrictBase` config just because a test fails.** `extra="forbid"` caught real producer typos in Session 3's tests. If a new test fails with "extra inputs not permitted," that is the correct behavior — fix the producer, don't relax the config.
+- **`DataRequest` has required-but-nullable `database_hint: str | None = None`** (default `None`). This matches the plan's "optional context" comment. If you see `database_hint` required without a default in code review, it is a regression from Session 3's interpretation.
+- **Pydantic v2 `model_` namespace protection** is disabled via `StrictBase.model_config.protected_namespaces = ()` because we have domain fields named `model_solution`, `model_type`, `model_registry_entry`. Do not re-enable it without renaming those fields.
+- **Data Agent status field has THREE values, not two:** `COMPLETE`, `INCOMPLETE_REQUEST`, `EXECUTION_FAILED`. The status machine in the LangGraph flow needs to set each one explicitly in the appropriate error branch.
+- **The plan says agents do NOT raise for expected failures (§12).** LangGraph nodes may raise internally for flow control, but the outer `DataAgent.run()` must catch and return a report.
 
 ### How You Will Be Evaluated
-The user rates every session's handoff. Your handoff will be scored on:
+Your handoff will be scored on:
 1. Was the ACTIVE TASK block sufficient to orient the next session?
 2. Were key files listed with line numbers or section references?
 3. Were gotchas and traps flagged?
 4. Was the "what's next" actionable and specific?
-5. Did you actually complete Phase 1 as defined, or did you bundle it with Phase 2?
+5. Did you complete Phase 2A as defined, or did you bundle Sub-phase 2B?
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
+
+### What Session 3 Did
+**Deliverable:** Phase 1 of architecture plan — Repo Skeleton + Schemas (COMPLETE)
+**Started:** 2026-04-14
+**Completed:** 2026-04-14
+**Commit:** See git log for hash
+
+**What was done (chronological):**
+1. Phase 0 orientation — read SAFEGUARDS, SESSION_NOTES, architecture-plan.md in full (both halves), checked git, reported, waited for direction.
+2. Phase 1B session stub written to SESSION_NOTES.md before any technical work.
+3. Probed environment: `uv` not installed; system Python is 3.10.12 with pydantic 2.12.5 and pytest 9.0.2 already available. Decided to keep `pyproject.toml` strictly compliant with the plan (requires-python >=3.11, uv-ready) and run local tests via `python3 -m pytest`, flagging the Python-version gap for Phase 2A.
+4. Wrote `pyproject.toml` — PEP 621 + hatchling, `model-project-constructor` package at `src/model_project_constructor`, core dep `pydantic>=2.6,<3`, optional groups `agents` / `ui` / `dev`. Pytest config includes `pythonpath = ["src"]` so tests run without manual `PYTHONPATH`. Per-session-3 user directive, added `pytest-cov` with `--cov-fail-under=80`.
+5. Implemented `schemas/v1/common.py` (`StrictBase` with `extra="forbid"`, `protected_namespaces=()`, plus `CycleTime`, `RiskTier`, `ModelType`, `SCHEMA_VERSION`).
+6. Implemented `schemas/v1/intake.py` — `ModelSolution`, `EstimatedValue`, `GovernanceMetadata`, `IntakeReport`. All inherit `StrictBase`.
+7. Implemented `schemas/v1/data.py` — `DataGranularity`, `DataRequest`, `QualityCheck`, `Datasheet`, `PrimaryQuery`, `DataReport`. Module docstring forbids importing from `intake.py` (runtime AST test comes in Phase 2A per the plan).
+8. Implemented `schemas/v1/gitlab.py` — `GitLabTarget`, `GovernanceManifest`, `GitLabProjectResult`.
+9. Implemented `schemas/v1/__init__.py` re-exporting everything public.
+10. Implemented `schemas/envelope.py` — `HandoffEnvelope` with its own `envelope_version="1.0.0"` and `payload: dict[str, Any]` (resolved by registry, not by envelope).
+11. Implemented `schemas/registry.py` — `REGISTRY`, `SchemaKey`, `UnknownPayloadError(KeyError)`, `load_payload(envelope)`.
+12. Wrote `tests/schemas/fixtures.py` — `make_*` factories for every schema.
+13. Wrote `tests/schemas/test_intake.py`, `test_data.py`, `test_gitlab.py`, `test_envelope_and_registry.py` — 88 tests total.
+14. `python3 -m pytest tests/schemas/ -v` → **88 passed in 0.13s**. Coverage on the `schemas` package is 100%.
+15. Ran §14 Phase 1 smoke tests — both import checks pass; `len(REGISTRY) == 5`.
+16. Rewrote ACTIVE TASK for Phase 2A and wrote this closeout.
+
+**Key design calls:**
+- `StrictBase` centralizes `ConfigDict(extra="forbid", protected_namespaces=())`. Avoids 14 copies of model_config and avoids the `model_` warning on `model_solution`/`model_type`/`model_registry_entry`.
+- `UnknownPayloadError` inherits from `KeyError` (dict-lookup semantics); pydantic `ValidationError` remains separate for bad payloads.
+- `target_variable: str | None` and `annual_impact_usd_low/high: float | None` are **required-nullable** (no default) — matches the plan's literal code. If Phase 2A finds this too strict, relax to `= None`.
+- `database_hint` and `regulatory_mapping` have explicit defaults because the plan marks them "optional context."
+- Decoupling rule is enforced textually in `data.py`'s docstring; runtime AST test is a Phase 2A deliverable per §14.
+- Tests use `pytest.mark.parametrize` on every literal-enum field so adding a value is a one-line test change. Explicit regression guard against `default_factory` aliasing on `GovernanceManifest.regulatory_mapping`.
+
+**Files created (17):**
+- `pyproject.toml`
+- `src/model_project_constructor/{__init__.py, schemas/__init__.py, schemas/envelope.py, schemas/registry.py, schemas/v1/{__init__,common,intake,data,gitlab}.py}`
+- `tests/{__init__.py, schemas/{__init__,fixtures,test_intake,test_data,test_gitlab,test_envelope_and_registry}.py}`
+
+**Session 2 Handoff Evaluation (Session 3 scoring Session 2):**
+- **Score: 9/10**
+- **What helped:** The ACTIVE TASK block was surgical — task, plan location, exact subsections to obey, explicit "do NOT start Phase 2," five-bullet evaluation rubric. The Gotchas section flagged four concrete traps; three were load-bearing for Session 3. Reading the plan + handoff took ~8 minutes and saved an estimated 45+ minutes of discovery.
+- **What was missing:**
+  - **No mention that `uv` was not installed on this machine.** Session 2 wrote "`uv` is the package manager" as a directive but did not verify it was available. ~2 minutes of probing.
+  - **No flag that local Python is 3.10 while the plan pins 3.11+.** Latent trap for Phase 2A if LangGraph needs 3.11-only features.
+  - The plan's `| None` comment syntax is ambiguous about required-nullable vs. optional-with-default. I had to make judgment calls on `target_variable`, the annual-impact bounds, and `database_hint`.
+- **What was wrong:** Nothing factually wrong. Minor gap: the handoff references the `model_governance` project as the source of `GovernanceMetadata` but does not give its path.
+- **ROI:** Very high. The plan was the valuable artifact; the handoff was a precise index.
+- **Process note:** Session 2 correctly wrote a Phase 1B stub and held the planning-vs-implementation line.
+
+**Session 3 Self-Assessment:**
+- (+) Scope discipline. Phase 1 only. No agent code, no LangGraph, no adapters, no decoupling test — all Phase 2A.
+- (+) Phase 1B stub written before any technical work.
+- (+) All §14 Phase 1 verification commands green (pytest + both imports + `len(REGISTRY)`).
+- (+) Tests exercise non-obvious cases: extra-field rejection, every literal value, serialization round-trip for every top-level schema, `load_payload` happy paths plus three failure modes, mutable-default aliasing regression guard.
+- (+) Proactive abstractions (`StrictBase`, `SchemaKey`) only where they prevented repetition; no speculative generalization.
+- (+) Module-level decoupling comment in `data.py` captures the §7 rule textually even without the runtime test.
+- (+) Phase 2A gotchas are concrete: `uv`/Python 3.10 mismatch, unverified LangGraph interrupt pattern, three-valued status field, `extra="forbid"` discipline, `model_` namespace override, decoupling test must actually fire.
+- (−) Did not install `uv`. Tests ran via `python3 -m pytest`; equivalent to `uv run pytest` but not the literal plan commands.
+- (−) Local Python is 3.10; pyproject targets 3.11+. Works today because the schema code is 3.10-compatible; may bite Phase 2A.
+- (−) `annual_impact_usd_low/high` are required-nullable. If intake agent has to pass `None` 80% of the time, relax to `= None` in Phase 2A or 3A.
+- (−) No grep-based inventory — greenfield, so not mandatory per SESSION_RUNNER.md.
+
+**Score: 9/10** — Deliverable met with comprehensive tests, explicit gotchas, scope discipline. Loses a point for not installing `uv` and for punting on the annual-impact default interpretation.
+
+**Learnings added to SESSION_RUNNER.md Learnings table:** None this session. The schema code and tests are the Phase 1 institutional memory.
 
 ### What Session 2 Did
 **Deliverable:** Formal architecture plan at `docs/planning/architecture-plan.md` (COMPLETE)
