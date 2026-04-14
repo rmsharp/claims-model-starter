@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0.0",
+  "target_description": "subrogation recovery amount on TX auto claims",
+  "target_granularity": {
+    "unit": "claim",
+    "time_grain": "event"
+  },
+  "required_features": [
+    "paid_amount",
+    "state",
+    "loss_date"
+  ],
+  "population_filter": "TX auto claims with loss in 2024",
+  "time_range": "2024-01-01 to 2024-12-31",
+  "database_hint": "claims",
+  "data_quality_concerns": [],
+  "source": "standalone",
+  "source_ref": "sample-fixture"
+}
