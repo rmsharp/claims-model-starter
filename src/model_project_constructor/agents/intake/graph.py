@@ -16,13 +16,18 @@ from model_project_constructor.agents.intake.protocol import IntakeLLMClient
 from model_project_constructor.agents.intake.state import IntakeState
 
 
-def build_intake_graph(llm: IntakeLLMClient) -> Any:
-    """Compile the intake graph with an in-memory checkpointer.
+def build_intake_graph(
+    llm: IntakeLLMClient,
+    *,
+    checkpointer: Any | None = None,
+) -> Any:
+    """Compile the intake graph.
 
     The checkpointer is REQUIRED — LangGraph's ``interrupt`` mechanism
-    assumes the graph is checkpointed so it can resume. For the CLI /
-    fixture mode we use ``MemorySaver``; the Phase 3B Web UI will swap in a
-    SQLite checkpointer.
+    assumes the graph is checkpointed so it can resume. If the caller does
+    not supply one, we default to an in-memory ``MemorySaver`` which is the
+    right choice for the CLI / fixture mode. The Phase 3B Web UI passes a
+    ``SqliteSaver`` so interview state survives server restart.
     """
 
     nodes = make_nodes(llm)
@@ -58,4 +63,4 @@ def build_intake_graph(llm: IntakeLLMClient) -> Any:
     g.add_edge("revise", "await_review")
     g.add_edge("finalize", END)
 
-    return g.compile(checkpointer=MemorySaver())
+    return g.compile(checkpointer=checkpointer or MemorySaver())

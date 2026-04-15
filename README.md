@@ -14,7 +14,7 @@ Early implementation. Phases and session boundaries are tracked in `SESSION_NOTE
 | 2A | Data Agent core + LangGraph flow + AST decoupling test | Complete |
 | 2B | Data Agent standalone package + CLI + Python API | Complete |
 | 3A | Intake Agent core + LangGraph + CLI | Complete |
-| 3B | Intake Agent Web UI | Not started |
+| 3B | Intake Agent Web UI (FastAPI + SSE + HTMX + SQLite) | Complete |
 | 4 | Website Agent (GitLab scaffolding) | Not started |
 | 5 | Orchestrator + adapters + end-to-end | Not started |
 | 6 | Production hardening | Not started |
@@ -56,6 +56,10 @@ src/model_project_constructor/          # main "orchestrator" package
     fixture.py                          # FixtureLLMClient + YAML loader
     anthropic_client.py                 # concrete IntakeLLMClient using Claude
     cli.py, __main__.py                 # typer CLI (model-intake-agent / python -m)
+  ui/intake/                            # Intake Agent Web UI (Phase 3B)
+    app.py                              # FastAPI app + routes + SSE endpoint
+    runner.py                           # IntakeSessionStore: SqliteSaver + per-session graph
+    templates.py                        # minimal HTMX pages (question/review/complete)
 packages/data-agent/                    # standalone: model-project-constructor-data-agent
   pyproject.toml                        # independent distribution
   USAGE.md                              # CLI + Python API documentation
@@ -69,6 +73,7 @@ tests/
   schemas/                              # 88 schema tests
   agents/data/                          # 12 end-to-end Data Agent tests
   agents/intake/                        # 56 intake tests (graph, nodes, CLI, Anthropic)
+  ui/intake/                            # 22 web UI tests (FastAPI, runner, SQLite resume, SSE)
   data_agent_package/                   # 21 CLI + AnthropicLLMClient tests
   fixtures/sample_request.json          # canonical DataRequest fixture
   fixtures/subrogation.yaml             # canonical intake fixture (§4.1 worked example)
@@ -92,7 +97,13 @@ uv sync --extra agents --extra dev
 uv run pytest
 ```
 
-All 179 tests should pass with coverage above 90% (currently ≈96%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 201 tests should pass with coverage above 90% (currently ≈96%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+
+To run the web UI tests as well, add the `ui` extra:
+
+```bash
+uv sync --extra agents --extra ui --extra dev
+```
 
 To use the standalone Data Agent CLI (requires `ANTHROPIC_API_KEY` in the environment):
 
@@ -103,7 +114,7 @@ uv run model-data-agent run --request request.json --output report.json \
 
 Add `--fake-llm` for smoke tests that don't hit the real API. Full usage is in `packages/data-agent/USAGE.md`.
 
-To run the Intake Agent against a fixture (Phase 3A is fixture-driven; Phase 3B will ship the interactive web UI):
+To run the Intake Agent against a fixture (headless / CLI mode):
 
 ```bash
 uv run python -m model_project_constructor.agents.intake \
@@ -111,6 +122,15 @@ uv run python -m model_project_constructor.agents.intake \
 ```
 
 This drives a synthetic interview via the real LangGraph interrupt/resume loop and writes a validated `IntakeReport` JSON document.
+
+To start the Intake Agent **web UI** (Phase 3B, requires `ANTHROPIC_API_KEY` to drive a real interview):
+
+```bash
+uv sync --extra agents --extra ui --extra dev
+uv run uvicorn model_project_constructor.ui.intake:app --reload
+```
+
+Then open `http://localhost:8000/`. The UI is a minimal HTMX frontend over the same LangGraph flow used by the CLI; session state is checkpointed to a SQLite file (`intake_sessions.db` by default, override via `INTAKE_DB_PATH`) so interviews survive server restart. Resume via `GET /sessions/{session_id}`. A server-sent-events endpoint at `/sessions/{session_id}/events` emits the current phase snapshot for scripting/monitoring.
 
 ## Documents worth reading
 

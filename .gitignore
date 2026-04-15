@@ -12,3 +12,6 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+intake_sessions.db
+intake_sessions.db-shm
+intake_sessions.db-wal

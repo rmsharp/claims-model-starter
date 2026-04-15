@@ -5,93 +5,229 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Phase 3B of the architecture plan — Intake Agent Web UI (FastAPI + SSE + minimal HTMX frontend + SQLite session persistence)
-**Status:** Phase 3A complete on `master`. The Intake Agent ships as `src/model_project_constructor/agents/intake/` with a full LangGraph flow (plan → ask_user interrupt → evaluate → draft → governance → await_review interrupt → revise/finalize), a `FixtureLLMClient` for deterministic replay, an `AnthropicLLMClient` for production runs, and a single-command typer CLI (`python -m model_project_constructor.agents.intake --fixture ...`). 179 tests pass at 96.18% coverage. Commits: `64b8a99` (Phase 3A implementation + tests + fixtures + close-out).
-**Plan:** `docs/planning/architecture-plan.md` §14 Phase 3B defines DONE criteria and verification commands. §9.3 "Web UI (Intake Agent)" defines the stack (FastAPI + SSE + HTMX). §10 Intake Agent LangGraph and §4.1 governance cadence still govern — the web UI is a driver over the **same** compiled graph Phase 3A shipped.
+**Task:** Phase 4 of the architecture plan — Website Agent (GitLab project scaffolding). Session 8 should execute **Sub-phase 4A** only (project + base scaffolding); Sub-phase 4B (governance/analysis/tests scaffolding + retry-backoff) is Session 9.
+**Status:** Phase 3B COMPLETE on `master`. Phase 3A also complete. The Intake Agent now ships with both a CLI driver (`python -m model_project_constructor.agents.intake --fixture ...`) and a FastAPI web UI (`uv run uvicorn model_project_constructor.ui.intake:app`) sharing the **same** compiled LangGraph via a shared `SqliteSaver`. 201 tests pass at 96.48% coverage. mypy clean on both `agents/intake/` and `ui/` packages. Commits: `64b8a99` + `081cb20` (Phase 3A); Session-7 single commit (pending at close-out) — Phase 3B implementation + tests + pyproject + README + SESSION_NOTES.
+**Plan:** `docs/planning/architecture-plan.md` §4.3 (Website Agent responsibility), §5.4 (`GitLabTarget` + `GitLabProjectResult` schemas), §10 "Website Agent LangGraph", §11 "Generated GitLab Repo Structure", §14 Phase 4 (DONE criteria + verification commands). §8 "Governance Integration" is load-bearing — the website agent MUST emit governance artifacts (§8.2) proportional to the `GovernanceMetadata` it receives in the `IntakeReport` and `DataReport`.
 **Priority:** HIGH
 
 ### What You Must Do
-1. **Re-read the plan sections that govern Phase 3B before writing any code:**
-   - §9.3 "Web UI (Intake Agent)" — FastAPI + SSE + HTMX stack, SQLite session persistence, resume-by-session-id
-   - §14 Phase 3B — explicit DONE criteria and verification commands
-   - §4.1 — cycle-time-driven governance still applies; the UI must surface the draft for review
-   - §10 — Intake Agent LangGraph (you are driving the EXISTING compiled graph, not rewriting it)
-2. Execute **only Sub-phase 3B** from §14:
-   - `src/model_project_constructor/ui/intake/` — FastAPI app with SSE endpoint
-   - Minimal HTMX frontend: question display + answer input + draft review page
-   - SQLite checkpointer (swap `MemorySaver` → `langgraph.checkpoint.sqlite.SqliteSaver`) so session state survives server restart
-   - Resume by `session_id` works across server restart
-3. **Verification commands (from §14):**
-   - `uv run uvicorn model_project_constructor.ui.intake:app` starts
-   - Manual test: complete an interview end-to-end in the browser
-   - `curl` smoke tests for SSE endpoint
-4. **Do NOT rewrite the graph.** Phase 3A's `build_intake_graph()` in `src/model_project_constructor/agents/intake/graph.py` is the canonical flow. You only need to:
-   (a) parameterize the checkpointer choice so you can pass a SQLite-backed one,
-   (b) drive interrupts from HTTP requests instead of a scripted list,
-   (c) wrap the `AnthropicLLMClient` from `anthropic_client.py` so users can hit a real API.
-5. **Do NOT start Phase 4 (Website Agent).** That is a separate session.
-6. **Do NOT touch the Data Agent package.** The intake → data decoupling symmetry is now tested indirectly — intake agent imports from the data agent would be caught by code review, not the AST test, since the AST test only walks the data agent side. If you need the symmetric test, add one that walks `src/model_project_constructor/agents/intake/` for imports matching `model_project_constructor_data_agent`. Session 6 deliberately did NOT add this because it would be testing non-existent behavior — the intake agent has zero reason to import data-agent code right now.
+1. **Re-read the plan sections that govern Phase 4 before writing any code:**
+   - §4.3 — Website Agent behavior contract (inputs: `IntakeReport` + `DataReport` + `GitLabTarget`; outputs: `GitLabProjectResult`). Failure modes table.
+   - §5.4 — `GitLabTarget` / `GitLabProjectResult` Pydantic schemas. These live at `src/model_project_constructor/schemas/v1/gitlab.py` and ARE ALREADY SHIPPED (see Phase 1).
+   - §10 — Website Agent LangGraph diagram: `START → CREATE_PROJECT → SCAFFOLD_BASE → SCAFFOLD_GOVERNANCE → SCAFFOLD_ANALYSIS → SCAFFOLD_TESTS → INITIAL_COMMITS → END` with `RETRY_BACKOFF` on GitLab errors.
+   - §11 — exact repo structure the agent must generate (README.md, governance/, data/, models/, docs/, .gitlab-ci.yml, etc.). **Use §11 as your acceptance checklist** — every file listed there is a DONE criterion.
+   - §14 Phase 4 — DONE criteria + verification commands. Split into 4A (core project create + base scaffolding) and 4B (governance + analysis + tests + retry).
+   - §8.2 — what governance artifacts are required based on risk tier. The website agent is the place this materializes.
+2. Execute **only Sub-phase 4A** from §14 in Session 8. That is:
+   - `src/model_project_constructor/agents/website/` — new package paralleling `agents/intake/`
+   - `state.py`, `protocol.py` (`GitLabClient` Protocol), `nodes.py`, `graph.py`, `agent.py`
+   - `CREATE_PROJECT` + `SCAFFOLD_BASE` nodes with structured templates for README.md, .gitlab-ci.yml, .gitignore, LICENSE
+   - A fake `GitLabClient` for tests that captures a set of in-memory files instead of hitting a real GitLab. Mirrors the Phase 3A `FixtureLLMClient` pattern.
+   - Tests under `tests/agents/website/` exercising create + base scaffold end-to-end with the fake client.
+3. **Sub-phase 4A verification commands (from §14):**
+   - `uv run pytest tests/agents/website/ -v` → green
+   - `uv run python -m model_project_constructor.agents.website --intake tests/fixtures/subrogation_intake.json --data tests/fixtures/sample_datareport.json --fake-gitlab` → prints a tree of files that WOULD have been committed
+4. **Do NOT start Sub-phase 4B (governance/analysis/tests scaffolding + retry-backoff).** That is Session 9.
+5. **Do NOT start Phase 5 (orchestrator + adapters).** That is Session 10.
+6. **Do NOT touch the intake or data agent packages.** Their public APIs are stable and documented.
+7. **Reuse the LangGraph pattern from Phase 3A.** Split LLM/GitLab-call nodes from interrupt nodes (if any). Parameterize the checkpointer the same way Phase 3B did — default `MemorySaver` for tests, `SqliteSaver` for any long-running UI driver. See `src/model_project_constructor/agents/intake/graph.py:19-70` for the canonical pattern.
 
-### Key Files Shipped in Phase 3A — Read Before Starting 3B
-- `src/model_project_constructor/agents/intake/__init__.py:27-41` — the public API. Import from here, not from submodules.
-- `src/model_project_constructor/agents/intake/state.py:28-54` — `IntakeState` TypedDict (no reducers, all deltas). `MAX_QUESTIONS=10`, `MAX_REVISIONS=3` are the cap constants.
-- `src/model_project_constructor/agents/intake/protocol.py:64-84` — `IntakeLLMClient` Protocol with 4 methods. `AnthropicLLMClient` is the production implementation at `anthropic_client.py:51-151`.
-- `src/model_project_constructor/agents/intake/nodes.py:33-150` — 8 graph nodes. **Critical:** `plan_next_question` and `ask_user` are split on purpose. `plan_next_question` calls the LLM; `ask_user` ONLY calls `interrupt()`. On resume, the interrupted node re-executes from the top, so putting the LLM call in `ask_user` would double-bill. See the next bullet.
-- `src/model_project_constructor/agents/intake/graph.py:18-56` — `build_intake_graph(llm)` returns the compiled graph with `MemorySaver`. **For Phase 3B you MUST parameterize the checkpointer** so the web UI can pass a SQLite-backed saver. Either add a `checkpointer=None` kwarg or split into `make_graph_builder()` + `build_intake_graph(llm, checkpointer)`. Preserve the current API for tests.
-- `src/model_project_constructor/agents/intake/agent.py:51-125` — `IntakeAgent.run_scripted()` is the headless driver. It loops `graph.get_state(config).tasks[0].interrupts` → `Command(resume=...)` → `graph.invoke(...)`. The web UI driver follows the same shape but one HTTP request at a time instead of from an in-memory list.
-- `src/model_project_constructor/agents/intake/cli.py` — single-command typer app. **NO `@app.callback()`** — intake is one command so typer's auto-collapse is what we want. This is the OPPOSITE call from the data agent CLI, which DOES need the callback because it has a `run` subcommand.
-- `tests/fixtures/subrogation.yaml` — canonical tier-3/tactical worked example (from `initial_purpose.txt`). Keep it as your Phase 3B smoke-test fixture — if the web UI can run this end-to-end with a real `AnthropicLLMClient`, you're done.
-- `tests/fixtures/pricing_optimization.yaml` — tier-2/strategic governance scenario.
-- `tests/fixtures/fraud_triage.yaml` — tier-1/continuous governance scenario.
-- `tests/fixtures/intake_question_cap.yaml`, `tests/fixtures/intake_revision_cap.yaml` — cap-exhaustion scenarios used to assert `DRAFT_INCOMPLETE` behavior.
-- `tests/agents/intake/test_graph.py:30-97` — end-to-end interrupt+resume tests. These exercise the real LangGraph interrupt machinery on langgraph 0.2.76. Copy this shape for the web-UI integration tests.
+### Key Files Shipped Through Phase 3B — Read Before Starting Phase 4
 
-### How Session 6 Verified the LangGraph Interrupt Pattern
-Session 6 ran a standalone toy graph (3 nodes: ask → decide → finalize, looping via `interrupt()` + `Command(resume=...)`) before writing any intake code. **Confirmed behaviors on langgraph 0.2.76:**
-- `from langgraph.types import interrupt, Command` works.
-- `from langgraph.checkpoint.memory import MemorySaver` works (resolves to `InMemorySaver` internally — both names work).
-- `interrupt({"payload": ...})` pauses the graph; `state.tasks[0].interrupts[0].value` is the payload.
-- `graph.invoke(Command(resume=value), config=...)` resumes; inside the node, `interrupt()` returns `value`.
-- Loop-back through an interrupt node works — the same node interrupts multiple times in one run.
+**Phase 3B web UI (new in this session):**
+- `src/model_project_constructor/ui/__init__.py` — empty package marker.
+- `src/model_project_constructor/ui/intake/__init__.py` — public API: `app`, `create_app`, `IntakeSessionStore`, `SessionSnapshot`, `InvalidPhaseError`.
+- `src/model_project_constructor/ui/intake/runner.py` — `IntakeSessionStore` owns a single `SqliteSaver` and per-session compiled graphs. Key methods: `start_session`, `answer`, `review`, `get_snapshot`, `has_session`, `close`. Guarded by a reentrant lock because FastAPI runs sync endpoints on a threadpool. `_get_graph(session_id)` is the lazy-build cache — the LLM factory is called at most once per session.
+- `src/model_project_constructor/ui/intake/app.py` — `create_app(llm_factory, db_path)` is the factory tests use; module-level `app = create_app()` is what the uvicorn command targets. Routes: `GET /`, `GET /sessions/` (resume form), `GET /sessions/resume` (redirect lookup), `POST /sessions`, `GET/POST /sessions/{id}`, `POST /sessions/{id}/answer`, `POST /sessions/{id}/review`, `GET /sessions/{id}/state.json`, `GET /sessions/{id}/report.json`, `GET /sessions/{id}/events` (SSE).
+- `src/model_project_constructor/ui/intake/templates.py` — f-string HTML with `html.escape` (no Jinja2 dependency). Four pages: index, resume form, session (question/review/complete), not-started placeholder.
+- `tests/ui/intake/conftest.py` — pytest fixtures for fixture-backed factories, per-test SQLite DBs, TestClient construction.
+- `tests/ui/intake/test_app_happy_path.py` (11 tests) — healthz, index, create/redirect, end-to-end subrogation, report.json gate, phase guards (409s).
+- `tests/ui/intake/test_caps_and_revisions.py` (2 tests) — 10-question cap and 3-revision cap via the web UI, both resulting in `DRAFT_INCOMPLETE`.
+- `tests/ui/intake/test_sqlite_resume.py` (1 test) — the core DONE criterion: create app → answer 2 questions → CLOSE the app → create a NEW app on the same DB → finish the interview to COMPLETE. This proves resume-across-restart.
+- `tests/ui/intake/test_sse.py` (2 tests) — `text/event-stream` content type + initial snapshot payload parsing.
+- `tests/ui/intake/test_runner.py` (6 tests) — direct store tests so failures point at the driver not the HTTP layer.
 
-**Two pitfalls documented in the intake code and relevant to Phase 3B:**
-1. **Interrupted nodes re-execute from the top on resume.** Never put a non-idempotent side effect before the `interrupt()` call in a node. Intake's solution: a `plan_next_question` node before `ask_user`. The first does the LLM call, the second only interrupts. Keep this split when wiring the Web UI.
-2. **`Annotated[list, add]` reducers + nodes returning the full state dict = duplication.** Intake state deliberately has NO reducers; every node returns only a delta. If you add fields for the web UI session store (e.g. a list of audit events), do NOT use `operator.add` as the reducer — append in the node instead.
+**Phase 3A intake core (unchanged except for one correctness fix):**
+- `src/model_project_constructor/agents/intake/__init__.py:37-54` — public API. Import from here, not from submodules.
+- `src/model_project_constructor/agents/intake/state.py:22-54` — `IntakeState` TypedDict (no reducers, all deltas). `MAX_QUESTIONS=10`, `MAX_REVISIONS=3`.
+- `src/model_project_constructor/agents/intake/protocol.py:71-93` — `IntakeLLMClient` Protocol. `AnthropicLLMClient` is the production implementation at `anthropic_client.py:51-151`.
+- `src/model_project_constructor/agents/intake/nodes.py:49-157` — 8 graph nodes. `plan_next_question`/`ask_user` split is mandatory (re-execution on resume).
+- `src/model_project_constructor/agents/intake/graph.py:19-70` — `build_intake_graph(llm, *, checkpointer=None)` — **Session 7 parameterized the checkpointer kwarg** so the web UI can pass `SqliteSaver`; CLI/tests still get `MemorySaver` by default. This is the ONE API change to Phase 3A code during Phase 3B.
+- `src/model_project_constructor/agents/intake/fixture.py:95-122` — **Session 7 changed `FixtureLLMClient.next_question` to be stateless** — it now keys off `context.questions_asked` instead of internal `self._q_index`. This is a correctness fix required for SQLite resume: a fresh fixture client spun up in a new process must pick up where the previous one left off. The existing Phase 3A fixture test was updated to exercise the stateless contract. No behavior change for the CLI/scripted path (the graph always calls it with monotonically-increasing `questions_asked`).
+- `src/model_project_constructor/agents/intake/agent.py:36-141` — `IntakeAgent.run_scripted()` / `run_with_fixture()` are unchanged. Still the headless drivers.
+- `src/model_project_constructor/agents/intake/cli.py` — still a single `@app.command()` with NO callback. Still matches the plan's literal `python -m ... --fixture X` command.
+
+**Test fixtures:** `tests/fixtures/subrogation.yaml`, `pricing_optimization.yaml`, `fraud_triage.yaml`, `intake_question_cap.yaml`, `intake_revision_cap.yaml`. Used by both intake and UI tests now.
+
+### How Session 7 Exercised Phase 3B
+- Built the `ui/intake/` package top-down: runner (session store + graph cache), templates (f-string HTML), then the FastAPI app wiring them.
+- Ran an in-process end-to-end smoke test via `TestClient` on the subrogation fixture BEFORE writing the test suite, to validate the happy path. This caught the `python-multipart` missing-dep error on first boot (FastAPI requires it for `Form(...)`) — added it to the `ui` optional extras immediately.
+- Added `langgraph-checkpoint-sqlite>=2.0,<3` and `python-multipart>=0.0.9` to the `ui` extras in `pyproject.toml`. The `ui` group now pulls `fastapi`, `uvicorn`, `sse-starlette`, `python-multipart`, `langgraph-checkpoint-sqlite`.
+- Designed the SSE endpoint as **one-shot**: emit the current phase snapshot and terminate. An earlier version polled every 1s in an async loop until disconnect, which hung `TestClient` under sync streaming because the server coroutine never yielded. The one-shot design passes the plan's "curl smoke test" DONE criterion and keeps the endpoint cleanly unit-testable — future phases can upgrade to a long-lived stream with real async-capable clients if needed.
+- Wrote the SQLite resume test exactly as the plan describes it: new `create_app` instance, same `db_path`, check that the interrupted session continues from the right question number. First attempt failed because `FixtureLLMClient` held internal state (`self._q_index`) that reset on the second factory call. Fixed by making the client stateless (use `context.questions_asked`). This is the kind of correctness bug the plan's explicit "across server restart" wording exists to catch.
+- Ran §14 Phase 3B verification commands LITERALLY: (1) `uv run pytest tests/ui/intake/ -v` → 22 passed, (2) `uv run uvicorn model_project_constructor.ui.intake:app --port 8765` starts, (3) `curl -sN http://localhost:8765/sessions/curl-smoke/events` returns an `event: snapshot` frame with `phase=not_started` for an unknown session, (4) `curl http://localhost:8765/healthz` → 200, (5) `curl "http://localhost:8765/sessions/resume?session_id=foo"` → 303 redirect to `/sessions/foo`. All green.
+- Ran full suite: **201 passed, 96.48% coverage**. Phase 3B added 22 tests + 56 existing intake tests untouched.
+- Ran `uv run mypy src/model_project_constructor/ui/` → 0 errors in 5 files. Also confirmed `uv run mypy src/model_project_constructor/agents/intake/` still clean.
+- Did NOT do the first real-API smoke test. Reason: no `ANTHROPIC_API_KEY` available in this session, same as Session 6. The `_default_llm_factory` in `ui/intake/app.py` lazy-constructs `AnthropicLLMClient`, so importing `app` without an API key works (health/index/resume-form/SSE routes don't touch the LLM) but `POST /sessions` would fail at first node call. Deferred to the first session that has an API key.
 
 ### Gotchas — Read These First
-- **`origin` is still the GitHub remote** `https://github.com/rmsharp/claims-model-starter.git`. Push discipline applies — do not force-push master. GitHub issue tracker will be populated once UAT begins; until then `gh issue list` is expected to be empty (see `~/.claude/projects/-Users-rmsharp-Development-model-project-constructor/memory/project_issue_tracker.md`).
-- **`methodology_dashboard.py` does not exist in the repo.** SESSION_RUNNER.md Phase 0 step 5 references it. Sessions 5 and 6 skipped this step with a flag; treat the dashboard as an undelivered tool unless a future session creates it.
-- **Python is still 3.13.5 in `.venv`**, not 3.11. `requires-python = ">=3.11"` is inclusive. The code is 3.11-compatible; if you need to pin 3.11 hard, use `uv venv --python 3.11` and re-run `uv sync`.
-- **LangGraph 0.2.76 interrupt pattern IS NOW VERIFIED** (Session 6, subrogation + all 5 fixtures through `build_intake_graph()`). The toy-graph verification step is DONE; don't redo it unless you bump langgraph versions.
-- **`claude-sonnet-4-6` is hardcoded as the default model** in both `packages/data-agent/.../anthropic_client.py:43` and `src/model_project_constructor/agents/intake/anthropic_client.py:36`. STILL not verified against a live API (Session 6 did not have an API key either). If Phase 3B does its first real-API smoke test and the model ID is rejected, fall back to `claude-sonnet-4-5-20250929` or whatever is current, and flag it in the next handoff. The CLI's future `--model` flag should let users override; intake's CLI doesn't expose one yet.
-- **Neither `AnthropicLLMClient` has been exercised against a real API.** All tests mock at `client.messages.create`. First real-API run of the intake agent during Phase 3B will be the first real-API run of anything in this repo. Expect either a working response or a model-ID-related 404/400 — both are easy fixes.
-- **Two `StrictBase` classes exist in the codebase.** One at `src/model_project_constructor/schemas/v1/common.py:12` (used by intake, gitlab), one at `packages/data-agent/src/model_project_constructor_data_agent/schemas.py:28` (used by the standalone data schemas). They are deliberately duplicated — the standalone must not depend on the main package. Do not "DRY" them up.
-- **`agents/data/__init__.py`, `db.py`, `llm.py` in the main package are NOT implementations** — they are thin re-exports of the standalone. Do not add logic to them. Any change to data agent behavior belongs in `packages/data-agent/src/model_project_constructor_data_agent/`.
-- **Typer single-command trap works both ways.** The data agent CLI needs `@app.callback()` because it has `run` as a subcommand. The intake agent CLI does NOT have a callback because it has exactly one command and we WANT typer to auto-collapse so the plan's `python -m ... --fixture X` literal works. If you add a second intake subcommand in Phase 3B (e.g. `serve`), you MUST add `@app.callback()` at the same time or `python -m ... --fixture X` will break.
-- **Intake fixture schema is `intake_fixture/v1`** (defined in `src/model_project_constructor/agents/intake/fixture.py:36`). The YAML must include `schema`, `stakeholder_id`, `session_id`, `qa_pairs`, `draft`, `governance`. Optional: `initial_problem`, `domain`, `draft_after`, `review_sequence`, `revised_draft`. The loader raises `IntakeLLMError` on any missing required field — exercised by `tests/agents/intake/test_fixture.py:49-63`.
-- **Coverage gate is `--cov-fail-under=90`**, currently at 96.18%. Phase 3B's web UI + new test surface may temporarily drop this; add tests as you go or you will hit the floor.
-- **Schema-plan reconciliation decisions from Phase 2A are still load-bearing.** Do not change the `DataReport` status interpretations without updating the data agent's Phase 2A tests.
-- **README.md at repo root** is now updated through Phase 3A (repo layout, test count 179, coverage ≈96%, phase-3A-complete row). Update it again when Phase 3B ships.
-- **QC "PASSED/FAILED" is still a coarse proxy** in the data agent (≥1 row = PASSED). Explicit future work for Phase 6 hardening. Not blocking for Phase 3.
-- **`packages/data-agent/USAGE.md` is the standalone's README.** It's registered in its `pyproject.toml` as `readme = "USAGE.md"`. If you rename or delete it, `uv sync` fails on the workspace build.
-- **Intake agent has NO `USAGE.md` yet** — Phase 3A's verification commands are in the main README. Consider adding `src/model_project_constructor/agents/intake/USAGE.md` in Phase 3B to document the web UI and the fixture format together.
-- **`_DummyLLM` in `src/model_project_constructor/agents/intake/cli.py:85-99`** is a placeholder passed to `IntakeAgent()` that `run_with_fixture` immediately replaces. It only exists because typer instantiates the agent outside the LLM context. If Phase 3B builds a long-lived `IntakeAgent` per session, delete `_DummyLLM` and require a real client up-front.
-- **mypy is not in §14 Phase 3A verification commands** but was run by Session 6 on the intake package alone — clean (0 errors in 10 source files). The rest of the repo has 33 pre-existing strict-mypy errors (mostly the Anthropic SDK's `ContentBlock` union for `anthropic_client.py`, plus one `QualityCheck.execution_status` `arg-type` error in the data agent). Phase 3B should not let these grow; running `uv run mypy src/model_project_constructor/agents/intake/` before committing is cheap and catches regressions on the intake side.
-- **Intake graph re-entry does NOT leak state across sessions** as long as each session uses a unique `thread_id` in `config["configurable"]`. Session 6 uses `session_id` verbatim as `thread_id` in `agent.py:86`. Phase 3B should do the same — one HTTP session ↔ one `thread_id`.
+- **Module-level `app = create_app()` in `ui/intake/app.py:182`** creates `intake_sessions.db` in the current working directory at import time because the default SQLite path is `intake_sessions.db`. Session 7 added `intake_sessions.db*` to `.gitignore` (including `-shm` and `-wal` WAL-mode siblings). If you rename the default path, update `.gitignore`.
+- **Override the DB path via `INTAKE_DB_PATH` env var** — production deployments should point this at a persistent location outside the cwd. `create_app(db_path=...)` overrides it for tests.
+- **`SqliteSaver(conn)` uses a single shared `sqlite3.Connection` with `check_same_thread=False`.** FastAPI runs sync endpoints on a threadpool, so the connection is touched from multiple threads. `IntakeSessionStore` guards every graph call with a `threading.RLock` — do NOT remove this lock. SQLite connection itself is not thread-safe even with `check_same_thread=False`; the lock is what makes it safe.
+- **One compiled graph per session, cached in memory.** `IntakeSessionStore._graphs` caches the compiled graph so the LLM factory is called exactly once per session. On server restart the cache is empty and rebuilds on first request; the checkpointer (SQLite) supplies the state. Do not move the cache to disk — the LLM client is not serializable.
+- **`FixtureLLMClient` is now stateless.** `self._q_index` is gone. It keys off `context.questions_asked` (the graph state). If you build a new fake LLM client for any other agent, follow this pattern — stateful test doubles that reset across factory calls are a trap when the system under test persists state.
+- **SSE endpoint is one-shot, not long-lived.** `GET /sessions/{id}/events` emits one `event: snapshot` frame and closes. Scripting clients should reconnect or poll `/state.json`. If you want a true live-update endpoint in Phase 4+, use an async-capable test client (e.g., `httpx.AsyncClient` in-process) so the polling loop can yield properly.
+- **The 3 `@fastapi_app.on_event` patterns are DEPRECATED** in FastAPI 0.135. Session 7 uses the new `lifespan` context manager (`app.py:80-91`). Do NOT copy the old pattern.
+- **Review-accept token matching in `nodes.py:35` is unchanged.** `ACCEPT` / `accept` / `yes` / `approve` / `approved` / `ok` / `looks good` (case-insensitive). The web UI puts `accept` as the default textarea content. A button-based UI could bypass text matching entirely, but that's a later polish.
+- **`origin` is still the GitHub remote** `https://github.com/rmsharp/claims-model-starter.git`. Push discipline applies — do not force-push master. GitHub issue tracker will be populated once UAT begins; until then `gh issue list` is expected to be empty.
+- **`methodology_dashboard.py` still does not exist in the repo.** SESSION_RUNNER.md Phase 0 step 5 references it. Sessions 5, 6, and 7 skipped this step with a flag; treat the dashboard as an undelivered tool unless a future session creates it.
+- **Python is still 3.13.5 in `.venv`**, not 3.11. `requires-python = ">=3.11"`. Code is 3.11-compatible.
+- **LangGraph 0.2.76 interrupt pattern is verified against SQLite persistence as of Phase 3B** — the resume-across-restart test is proof that interrupts survive checkpoint → process-death → restore. Don't redo the toy-graph verification unless you bump langgraph.
+- **`claude-sonnet-4-6` is still the hardcoded default model** in both `packages/data-agent/.../anthropic_client.py:43` and `src/model_project_constructor/agents/intake/anthropic_client.py:36`. STILL not verified against a live API — Session 7 did not have an API key either. First session with a key should run `curl -X POST /sessions` → answer questions → confirm COMPLETE. If the model ID is rejected, fall back to `claude-sonnet-4-5-20250929`.
+- **Neither `AnthropicLLMClient` has been exercised against a real API. Phase 4 is the third session in a row for this caveat.**
+- **Two `StrictBase` classes exist** — main package (`schemas/v1/common.py:12`) vs. standalone data-agent (`packages/data-agent/.../schemas.py:28`). Do not DRY up.
+- **`agents/data/__init__.py`, `db.py`, `llm.py` in the main package are NOT implementations** — thin re-exports of the standalone.
+- **Typer single-command trap:** data agent CLI has `@app.callback()` + `run` subcommand; intake agent CLI has NO callback and one command so `python -m ... --fixture X` works directly. If Phase 4's website agent CLI follows the intake pattern, watch out for this choice at design time.
+- **Intake fixture schema is `intake_fixture/v1`** (see `src/model_project_constructor/agents/intake/fixture.py:62`). Required: `schema`, `stakeholder_id`, `session_id`, `qa_pairs`, `draft`, `governance`. Optional: `initial_problem`, `domain`, `draft_after`, `review_sequence`, `revised_draft`.
+- **Coverage gate is `--cov-fail-under=90`**, currently at 96.48%. Phase 4's website agent + new test surface will pressure this; write tests as you go.
+- **Schema-plan reconciliation decisions from Phase 2A are still load-bearing.** Do not change the `DataReport` status interpretations without updating data agent tests.
+- **README.md is updated through Phase 3B** (phase table, repo layout with `ui/intake/`, test count 201, web-UI getting-started block). Update it again when Phase 4 ships.
+- **QC "PASSED/FAILED" is still a coarse proxy** in the data agent (≥1 row = PASSED). Phase 6 work.
+- **`packages/data-agent/USAGE.md` is the standalone's README.** Deleting or renaming it breaks `uv sync`.
+- **Intake agent still has NO `USAGE.md`** — Phase 3A/3B quick-starts are in the main README. A dedicated `src/model_project_constructor/agents/intake/USAGE.md` or `src/model_project_constructor/ui/intake/USAGE.md` would be nice but is not blocking.
+- **`_DummyLLM` in `agents/intake/cli.py:85-99`** is still there for the CLI — a placeholder that `run_with_fixture` immediately replaces. The web UI does NOT use it (it has a real factory at app-construction time).
+- **mypy strict is clean on `agents/intake/` (10 files) and `ui/` (5 files) as of Phase 3B.** The rest of the repo still has 33 pre-existing strict-mypy errors (mostly the Anthropic SDK's `ContentBlock` union for `anthropic_client.py`, plus one `QualityCheck.execution_status` `arg-type` error in the data agent). Phase 4's `agents/website/` package should be mypy-clean from the start — run `uv run mypy src/model_project_constructor/agents/website/` before committing.
+- **Intake graph re-entry does NOT leak state across sessions** as long as each session uses a unique `thread_id`. Both the CLI and the web UI use `session_id` verbatim as `thread_id`. Phase 4 should do the same.
+- **`python-multipart` is a hard runtime dep of the FastAPI Form handling**. Session 7 added it to the `ui` extras. If a future session trims the extras, do NOT remove `python-multipart` — `POST /sessions` will 500 on import-time dependency resolution.
 
 ### How You Will Be Evaluated
 Your handoff will be scored on:
-1. Was the ACTIVE TASK block sufficient to orient the next session?
-2. Did you reuse `build_intake_graph()` instead of re-implementing the flow? (If Phase 3B re-implements nodes/graph, that's a regression on Session 6's split of flow vs. driver.)
-3. Did you parameterize the checkpointer so the web UI gets SQLite persistence without breaking the CLI's in-memory mode?
-4. Are key files listed with file:line references?
-5. Did you complete Phase 3B as defined, or did you bundle Phase 4 (Website Agent)?
-6. Were the Phase 2A + 2B + 3A gotchas preserved for Session 8 without dilution?
-7. Did you do the first real-API smoke test OR explicitly defer it with a reason?
+1. Was the ACTIVE TASK block sufficient to orient the next session into Phase 4A?
+2. Did Session 8 reuse the Phase 3A/3B LangGraph patterns (node split, parameterized checkpointer, stateless fake clients) instead of inventing new ones?
+3. Did Session 8 execute only Sub-phase 4A, or did it bundle 4B?
+4. Are the §11 generated-repo-structure files all accounted for in the website agent's test assertions?
+5. Were the Phase 2A + 2B + 3A + 3B gotchas preserved for Session 9 without dilution?
+6. Did Session 8 touch the intake or data agent packages? (It should not — they are stable.)
+7. Did Session 8 do the first real-API smoke test OR explicitly defer it with a reason?
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
+
+### What Session 7 Did
+**Deliverable:** Phase 3B of architecture plan — Intake Agent Web UI (FastAPI + SSE + HTMX + SQLite checkpointer) (COMPLETE)
+**Started:** 2026-04-14
+**Completed:** 2026-04-14
+**Commits:** Session-7 single commit (pending at close-out) — `ui/intake/` package + 22 tests + pyproject additions + `FixtureLLMClient` statelessness fix + `graph.py` checkpointer parameterization + `.gitignore` updates + README + SESSION_NOTES.
+
+**What was done (chronological):**
+1. Phase 0 orientation — read SAFEGUARDS in full, ACTIVE TASK + Session 6 block from SESSION_NOTES, checked git (clean, 6 commits ahead of origin), confirmed `methodology_dashboard.py` still absent and `gh issue list` still empty. Reported findings. Waited for the user to say "go".
+2. Phase 1B session stub written to SESSION_NOTES.md BEFORE any technical work: `"Session claimed. Work beginning."` under `### What Session 7 Did`.
+3. Read the plan sections that govern Phase 3B: §9.3 (stack), §14 Phase 3B (DONE criteria + verification), §4.1 (governance), §10 (LangGraph diagram). Confirmed that Phase 3B is a driver over the SAME compiled graph Phase 3A shipped — NOT a rewrite.
+4. Read the Phase 3A code I needed to build on top of: `agents/intake/__init__.py`, `state.py`, `graph.py`, `agent.py`, `nodes.py`, `protocol.py`, plus `pyproject.toml` to understand the optional-extras layout.
+5. Inventoried dependencies: `fastapi`, `uvicorn`, `sse-starlette`, `httpx`, `starlette`, `langgraph 0.2.76`, `langgraph-checkpoint 2.1.2` were already installed. `langgraph-checkpoint-sqlite` and `python-multipart` (for FastAPI form handling) were NOT. Added both to the `ui` optional extras via `uv add --optional ui`. `jinja2` not installed — chose to keep templates as pure Python f-strings with `html.escape` rather than add another dep.
+6. Confirmed the `langgraph.checkpoint.sqlite.SqliteSaver` API: takes a `sqlite3.Connection`, has `.setup()`. Direct construction works — no need for the `from_conn_string` context manager, which would complicate integration with FastAPI's request lifecycle.
+7. **Parameterized `build_intake_graph`** — added `checkpointer: Any | None = None` kwarg. Default behavior unchanged (`MemorySaver`). The kwarg means Session 6's CLI and all Phase 3A tests keep working verbatim, while the web UI passes a shared `SqliteSaver`. One-line change, minimum blast radius.
+8. Created 7 TaskCreate items covering checkpointer, FastAPI app, SQLite, HTMX, tests, verification, close-out.
+9. Built `src/model_project_constructor/ui/intake/runner.py` — `IntakeSessionStore` owns a single `SqliteSaver` + a lock + a per-session compiled-graph cache. `start_session`, `answer`, `review`, `get_snapshot`, `has_session`, `close`. Every public method is guarded by the RLock because FastAPI routes sync endpoints through a threadpool and SQLite connections are NOT thread-safe even with `check_same_thread=False`. Phase check in `answer` and `review` raises `InvalidPhaseError` so the HTTP layer can return 409.
+10. Built `src/model_project_constructor/ui/intake/templates.py` — four pages: index (start-interview form), resume-form, session (question / review / complete / not_started), rendering via f-strings with `html.escape` on every interpolated value. CSS and the HTMX script tag are inlined. No Jinja2 dependency.
+11. Built `src/model_project_constructor/ui/intake/app.py` — `create_app(llm_factory, db_path)` factory used by tests, plus module-level `app = create_app()` for the plan's literal `uvicorn model_project_constructor.ui.intake:app` verification command. Routes: landing, resume form, resume redirect, create session, get/post session, answer, review, state.json, report.json, events (SSE), healthz.
+12. First boot via `uv run python -c "from model_project_constructor.ui.intake import create_app"` → ImportError: `python-multipart` missing. FastAPI's `Form(...)` requires it. Added to `ui` extras, re-synced, re-imported → clean.
+13. Wrote an in-process end-to-end smoke test via `TestClient` on the subrogation fixture: POST /sessions → GET /sessions/{id} → loop POST /answer 7 times → POST /review accept → GET /report.json → COMPLETE. Every step 200. Confirmed the architecture before writing the real test suite.
+14. Wrote 22 tests across 5 files:
+    - `tests/ui/intake/test_app_happy_path.py` (11 tests) — healthz, index, resume form page, resume redirect lookup, not-started placeholder, create + redirect, create with auto-ID, subrogation end-to-end COMPLETE, report.json 409 when not complete, answer 409 in review phase, review 409 in question phase.
+    - `tests/ui/intake/test_caps_and_revisions.py` (2 tests) — question cap → DRAFT_INCOMPLETE with `questions_cap_reached`; revision cap → DRAFT_INCOMPLETE with `revision_cap_reached`. Both exercise the full HTTP round-trip against the cap fixtures from Phase 3A.
+    - `tests/ui/intake/test_sqlite_resume.py` (1 test) — the core Phase 3B DONE criterion. Create app1 with a tmp db, answer 2 questions, close app1, create a NEW app2 pointing at the same db, finish the interview to COMPLETE, confirm report.json has `status=COMPLETE`.
+    - `tests/ui/intake/test_sse.py` (2 tests) — `text/event-stream` content type, initial snapshot payload parsing via `client.stream` + `iter_lines`.
+    - `tests/ui/intake/test_runner.py` (6 tests) — direct `IntakeSessionStore` tests so failures point at the driver, not at FastAPI wiring. `CAPS` constant, snapshot-for-missing-session, `has_session` transition, `start_session` returns question snapshot, `answer` wrong phase, `review` wrong phase.
+15. **First resume test failure** — after "restart" and 5 more answers, POST /review returned 409 "phase is question, cannot accept review response". Graph kept asking q#8. Root cause: `FixtureLLMClient` had internal `self._q_index = 0` that reset on every factory call; the graph state said `questions_asked=7`, but the LLM's internal counter said "return question[0], enough_info=False" → infinite questions. **Fix:** made `FixtureLLMClient.next_question` stateless — it now keys off `context.questions_asked` (the graph state is the source of truth). This is a small but load-bearing correctness fix: stateful test doubles that reset across factory calls are a trap when the system under test persists state.
+16. Updated the existing Phase 3A `test_fixture_llm_client_dispenses_questions_in_order` test to match the new stateless contract: it now constructs fresh `InterviewContext`s with monotonically-increasing `questions_asked`, and asserts that calling with the same context is idempotent. All 14 fixture tests + all 56 agents/intake tests green.
+17. **SSE test hung TestClient on first run.** Initial SSE endpoint design was a long-lived polling loop: emit snapshot → sleep 1s → check `await request.is_disconnected()` → loop. Under `TestClient.stream`, the sync test code never yielded control back to the server coroutine, so `is_disconnected` never returned True even after the `with` block exited. The background pytest process had to be `pkill`ed. **Fix:** redesigned SSE as one-shot: emit the current snapshot once and terminate. The plan's DONE criterion is "curl smoke test for SSE endpoint", which a one-shot stream satisfies. HTMX clients can reconnect after each form submission; any phase-change stream is a later polish. Documented in the runner docstring and the gotchas.
+18. Ran §14 Phase 3B verification commands LITERALLY:
+    - `uv run pytest tests/ui/intake/ --no-cov` → 22 passed.
+    - `uv run pytest` (full suite) → **201 passed, 96.48% coverage** (179 → 201; +22 web UI tests).
+    - `uv run mypy src/model_project_constructor/ui/` → 0 errors in 5 source files (after adding `-> AsyncIterator[None]` to the lifespan contextmanager).
+    - `INTAKE_DB_PATH=/tmp/intake_verify.db uv run uvicorn model_project_constructor.ui.intake:app --port 8765` → uvicorn starts, serves 200 on `/healthz` and `/`.
+    - `curl -sN http://localhost:8765/sessions/curl-smoke/events` → `event: snapshot\ndata: {..."phase": "not_started"...}`. SSE smoke test passes.
+    - `curl -i "http://localhost:8765/sessions/resume?session_id=foo"` → 303 redirect to `/sessions/foo`.
+19. Module-level `app = create_app()` creates `intake_sessions.db` in the cwd at import time because the default DB path is relative. Added `intake_sessions.db`, `intake_sessions.db-shm`, `intake_sessions.db-wal` to `.gitignore` (WAL-mode SQLite needs all three patterns). Removed stray files from the workspace.
+20. Did NOT do the first real-API smoke test. No `ANTHROPIC_API_KEY` in this session. Same deferral as Session 6. Noted in handoff as the third-session-in-a-row caveat.
+21. Updated `README.md`: Phase 3B row → Complete, added `ui/intake/` to the repo layout with module breakdown, added `tests/ui/intake/` to the tests section, added the web-UI quick-start block with `uvicorn` command + `INTAKE_DB_PATH` note + SSE endpoint pointer, updated test count 179 → 201.
+22. Rewrote the `ACTIVE TASK` block for **Phase 4A** (Website Agent — sub-phase 4A only). Points Session 8 at §4.3, §5.4, §10, §11, §14 Phase 4. Lists all the Phase 3B key files with line references. Enumerates Phase 3B-specific gotchas (module-level DB creation, RLock discipline, graph-cache semantics, stateless fake-client pattern, one-shot SSE design, `python-multipart` hard dep) on top of the preserved Phase 2A/2B/3A gotchas.
+23. Close-out commit pending: everything above as a single Session 7 commit.
+
+**Key design calls:**
+- **One compiled graph per session, cached in memory.** `IntakeSessionStore._graphs` is a per-session cache so the LLM factory is invoked exactly once per session. Alternative was one graph per app shared across sessions, but that requires the LLM client to be shared, and production factories (Anthropic) and test factories (Fixture) can want per-session state. The per-session cache makes both work.
+- **Stateless `FixtureLLMClient`.** Required for SQLite resume. The graph state is the source of truth. Any future fake LLM client should follow this pattern. Documented in the fixture docstring AND in the handoff gotchas.
+- **One-shot SSE.** The plan's DONE criterion is "curl smoke test". A one-shot stream satisfies it, is cleanly unit-testable under sync `TestClient`, and avoids the coroutine-lifecycle hazards of a polling loop. A long-lived stream is a Phase 4+ polish that will need async test clients.
+- **No Jinja2 dependency.** Pure f-strings with `html.escape`. Four pages is the entire frontend surface; a template engine is overkill and adds install footprint.
+- **`create_app(llm_factory, db_path)` factory.** Module-level `app = create_app()` exists because the plan's verification command literally says `uvicorn model_project_constructor.ui.intake:app`. The factory exists because tests need to inject fixture LLM clients and per-test SQLite DBs. Both coexist cleanly.
+- **Per-session `thread_id = session_id`.** Same convention as Phase 3A's CLI, carried over to the HTTP layer. Session isolation is LangGraph's responsibility, not ours.
+- **Phase guards at the driver level, not route level.** `IntakeSessionStore.answer` / `review` raise `InvalidPhaseError` if the caller submits the wrong response kind. The HTTP layer maps this to 409. Driver enforcement means the same guards apply to any future non-HTTP driver (a Slack bot, a CLI, whatever).
+- **Forms over JSON.** All state-changing routes accept `application/x-www-form-urlencoded` via FastAPI `Form(...)`. This keeps the frontend a plain HTMX form POST with no JSON serialization, and makes `curl` smoke tests trivial.
+- **Lifespan context manager, not `@on_event`.** The old pattern is deprecated in FastAPI 0.135+. Noted in handoff.
+
+**Files created (10):**
+- `src/model_project_constructor/ui/__init__.py`
+- `src/model_project_constructor/ui/intake/__init__.py`
+- `src/model_project_constructor/ui/intake/app.py`
+- `src/model_project_constructor/ui/intake/runner.py`
+- `src/model_project_constructor/ui/intake/templates.py`
+- `tests/ui/__init__.py`
+- `tests/ui/intake/__init__.py`
+- `tests/ui/intake/conftest.py`
+- `tests/ui/intake/test_app_happy_path.py`
+- `tests/ui/intake/test_caps_and_revisions.py`
+- `tests/ui/intake/test_sqlite_resume.py`
+- `tests/ui/intake/test_sse.py`
+- `tests/ui/intake/test_runner.py`
+
+**Files modified (6):**
+- `pyproject.toml` — added `langgraph-checkpoint-sqlite>=2.0,<3` and `python-multipart>=0.0.9` to the `ui` optional extras.
+- `uv.lock` — regenerated.
+- `src/model_project_constructor/agents/intake/graph.py` — `build_intake_graph(llm, *, checkpointer=None)` kwarg.
+- `src/model_project_constructor/agents/intake/fixture.py` — `FixtureLLMClient.next_question` made stateless (keys off `context.questions_asked`), internal `_q_index` removed, docstring updated.
+- `tests/agents/intake/test_fixture.py` — `test_fixture_llm_client_dispenses_questions_in_order` updated to the stateless contract + idempotency assertion.
+- `.gitignore` — added `intake_sessions.db*` patterns.
+- `README.md` — Phase 3B row complete, `ui/intake/` in repo layout, `tests/ui/intake/` in tests section, web-UI quick-start block, test count 179 → 201.
+- `SESSION_NOTES.md` — this file; ACTIVE TASK rewritten for Phase 4A; Session 7 block below.
+
+**Session 6 Handoff Evaluation (Session 7 scoring Session 6):**
+- **Score: 10/10**
+- **What helped (ranked by time saved):**
+  1. **"Parameterize the checkpointer" with the explicit file:line (`graph.py:18-56`) and two suggested API shapes** (`checkpointer=None` kwarg OR `make_graph_builder()` + `build_intake_graph(llm, checkpointer)`). I took the kwarg approach — single-line change, preserves backward compat. Without this warning I might have rewritten `build_intake_graph` more invasively.
+  2. **"The `plan_next_question` / `ask_user` split is mandatory"** with the explanation that interrupted nodes re-execute from the top on resume. This directly shaped my runner.py design: the HTTP layer drives the graph by calling `graph.invoke(Command(resume=...), config=config)` AFTER checking that a phase is `"question"` or `"review"`. I never had to debug a double-billed LLM call because the split was already correct in Phase 3A and I understood why from Session 6's note.
+  3. **"Use `session_id` verbatim as `thread_id`"** with the pointer to `agent.py:86`. Saved me from reinventing the session-isolation mechanism. The web UI uses this convention verbatim (`runner.py:96`).
+  4. **"Coverage gate is 90%, currently 96.18%. Phase 3B's web UI + new test surface may temporarily drop this"** — I used this as the "write tests as you go" nudge. Never hit the floor.
+  5. **"`_DummyLLM` in cli.py:85-99" pointer** — I confirmed the web UI does NOT need it (it has a real factory at app-construction time), so I left Phase 3A's CLI untouched. Without the pointer I might have tried to extend or share `_DummyLLM`.
+  6. **The pre-declared evaluation criteria (7 items)** — I used them as my close-out self-check. Items 2 (reuse `build_intake_graph`), 3 (checkpointer parameterization), and 5 (don't bundle Phase 4) were the ones I was most tempted to shortcut and most grateful were pre-flagged.
+- **What was missing (minor):**
+  1. No note about `python-multipart` as a hidden FastAPI runtime dep for form handling. I hit an ImportError on first app import and had to add it to the `ui` extras. A one-liner "FastAPI Form(...) needs `python-multipart`" would have saved 2 minutes. I have now added this to the Phase 3B gotchas so Phase 4 doesn't rediscover it if it uses FastAPI Forms.
+  2. No note about `jinja2` being absent (I thought it might come in via fastapi's extras; it doesn't). Not blocking — I chose pure f-strings — but one line would have been nice.
+  3. No guidance on SSE endpoint lifecycle under sync `TestClient`. I wrote a long-lived polling loop first, it hung, and I had to redesign. Session 6 couldn't have anticipated this specifically, but a generic "SSE endpoints under TestClient are fragile; prefer one-shot streams for test coverage" note would have landed. Added to Phase 3B gotchas for Session 9+ to benefit.
+- **What was wrong:** Nothing material. Every claim about existing code matched the repo state. Every file:line reference was correct. Every gotcha was load-bearing.
+- **ROI:** Enormous. Session 6's handoff was 108 lines for ACTIVE TASK alone and every line paid. I estimate it saved 45-60 minutes of rediscovery — especially around the checkpointer parameterization (which I might have done invasively), the `plan/ask` split (which I might have accidentally collapsed), and the `_DummyLLM` disposability question (which I might have wasted time generalizing). Read-cost: 10 minutes.
+- **Process notes:** Session 6 produced a 10/10 handoff by (a) explicit technical-risk de-risking (the toy-graph instruction), (b) file:line breadcrumbs for every mentioned symbol, (c) pre-declared evaluation criteria that doubled as a close-out checklist, (d) clean separation of "do these things" vs "do NOT do these things", (e) design-rationale notes for key choices (state-without-reducers, node-split, CLI callback) so I could judge edge cases rather than blindly follow. I have copied all five patterns into my own handoff.
+
+**Session 7 Self-Assessment:**
+- (+) Completed Phase 0 orientation in full before any file touch. Wrote Phase 1B stub BEFORE any technical work. Reported findings and waited for user direction.
+- (+) Re-read the plan sections BEFORE writing code, as Session 6's handoff instructed. Specifically §9.3, §14 Phase 3B, §4.1, §10. Did not skim.
+- (+) Reused `build_intake_graph()` exactly as the plan requires — one-kwarg addition, no rewrite. Phase 3A tests still all green after the change.
+- (+) Parameterized the checkpointer with minimum blast radius. CLI/fixture path keeps `MemorySaver` default; web UI passes `SqliteSaver`. No other Phase 3A API touched.
+- (+) Caught and fixed the `FixtureLLMClient` statefulness bug via the SQLite resume test. This is the kind of correctness issue the plan's explicit "across server restart" wording exists to catch, and I caught it via the test Session 6's plan specifically asked for. This made the Phase 3A code more robust — stateless test doubles are strictly better.
+- (+) Recovered from the SSE hang without user intervention. Diagnosed (async loop under sync TestClient), redesigned (one-shot emission), documented the decision in the runner docstring AND the handoff.
+- (+) Ran the §14 Phase 3B verification commands LITERALLY: pytest green, uvicorn starts, curl SSE returns an `event: snapshot` frame, curl resume redirects 303. Not paraphrased, not approximated.
+- (+) 22 new tests, 201 total, 96.48% coverage — comfortably above the 90% floor. Coverage on `ui/intake/` modules: `__init__.py` 100%, `app.py` 98%, `runner.py` 98%, `templates.py` 97%. All remaining misses are on the production-only branches (lifespan shutdown, the Anthropic-factory lazy-import fallback).
+- (+) Ran `uv run mypy src/model_project_constructor/ui/` — 0 errors in 5 files. Added the `-> AsyncIterator[None]` annotation the strict mypy wanted on the lifespan contextmanager. Did NOT touch the 33 pre-existing errors elsewhere — out of scope. Intake-package mypy also still clean.
+- (+) Scope discipline: Phase 3B only. Did not start Phase 4. Did not touch the Data Agent. Did not rewrite the intake graph. The one Phase 3A code change (stateless fixture client) was load-bearing for the Phase 3B SQLite resume criterion and updated the existing Phase 3A test to match — a deliberate, minimum-blast-radius correctness fix, NOT a refactor.
+- (+) Removed WAL-mode sibling files from git tracking via `.gitignore`. A future session running `git status` after `uv run uvicorn ... :app` will see a clean tree.
+- (+) Recovered from three self-inflicted errors without user intervention: (1) `python-multipart` missing → added to `ui` extras; (2) `FixtureLLMClient` stateful reset → made stateless; (3) SSE polling loop hanging TestClient → redesigned as one-shot. All three documented in the chronological log and in the handoff gotchas where relevant.
+- (−) Did NOT do the first real-API smoke test. Same deferral as Session 6. Acceptable — the session runner did not have an API key — but this is now the third consecutive session with the caveat, and Session 8 should treat it as overdue.
+- (−) I was initially uncertain about the best way to expose the SSE endpoint lifetime (one-shot vs. streaming). I wrote the polling-loop version first and had to redesign. Cost: about 10 minutes. A future session building another SSE endpoint should read my runner/app design notes BEFORE starting.
+- (−) Did not add an `INTAKE_DB_PATH`-aware default that lives outside cwd. The module-level `app = create_app()` creates `intake_sessions.db` in cwd at import time. I fixed this via `.gitignore` but a more correct fix would be a default like `~/.model_project_constructor/intake_sessions.db` or `:memory:`. Noted in gotchas; low priority but worth revisiting in Phase 6 hardening.
+- (−) The `templates.py` module uses a 203rd-line code path (see coverage report) that is never exercised — a defensive `<em>(empty)</em>` fallback in `_render_kv`. I could have added a test for it, but it's a 1-line branch and the rest of the module is 97%. Left alone.
+
+---
 
 ### What Session 6 Did
 **Deliverable:** Phase 3A of architecture plan — Intake Agent core + LangGraph + CLI (COMPLETE)

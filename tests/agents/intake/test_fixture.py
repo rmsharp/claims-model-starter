@@ -57,28 +57,43 @@ def test_load_fixture_missing_required_field(tmp_path: Path) -> None:
 
 
 def test_fixture_llm_client_dispenses_questions_in_order(subrogation_fixture: dict) -> None:
+    # The fixture client is stateless: it keys off ``context.questions_asked``
+    # so that it is resume-safe across process restarts. The graph advances
+    # ``questions_asked`` after each ``ask_user`` interrupt, so the test
+    # constructs fresh contexts with the appropriate counter.
     client = FixtureLLMClient(subrogation_fixture)
-    ctx = InterviewContext(
-        stakeholder_id="x",
-        session_id="y",
-        domain="pc_claims",
-        initial_problem=None,
-        qa_pairs=[],
-        questions_asked=0,
-    )
-    r1 = client.next_question(ctx)
+    total = len(subrogation_fixture["qa_pairs"])
+
+    def _ctx(q_asked: int) -> InterviewContext:
+        return InterviewContext(
+            stakeholder_id="x",
+            session_id="y",
+            domain="pc_claims",
+            initial_problem=None,
+            qa_pairs=[],
+            questions_asked=q_asked,
+        )
+
+    r1 = client.next_question(_ctx(0))
     assert r1.question == subrogation_fixture["qa_pairs"][0]["question"]
     assert r1.believe_enough_info is False
 
-    r2 = client.next_question(ctx)
+    r2 = client.next_question(_ctx(1))
     assert r2.question == subrogation_fixture["qa_pairs"][1]["question"]
 
-    # The last question should flip enough_info to True.
-    for _ in range(len(subrogation_fixture["qa_pairs"]) - 2):
-        client.next_question(ctx)
-    # Fixture is exhausted, next call returns the filler + enough_info
-    filler = client.next_question(ctx)
+    # The last pre-recorded question should flip enough_info to True.
+    last = client.next_question(_ctx(total - 1))
+    assert last.question == subrogation_fixture["qa_pairs"][-1]["question"]
+    assert last.believe_enough_info is True
+
+    # Past the end: filler + enough_info.
+    filler = client.next_question(_ctx(total))
     assert filler.believe_enough_info is True
+    assert filler.question == "(no more questions)"
+
+    # Calling twice with the same context is idempotent (resume-safe).
+    again = client.next_question(_ctx(0))
+    assert again.question == r1.question
 
 
 def test_fixture_llm_client_draft_and_governance(subrogation_fixture: dict) -> None:

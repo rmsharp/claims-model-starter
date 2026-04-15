@@ -85,7 +85,11 @@ class FixtureLLMClient:
 
     * ``next_question`` dispenses the pre-recorded questions in order; flips
       ``believe_enough_info`` once ``draft_after`` questions have been asked
-      (default: the length of ``qa_pairs``).
+      (default: the length of ``qa_pairs``). The question index is derived
+      from ``context.questions_asked`` (the graph state), NOT from internal
+      instance state, so the client is stateless and resume-safe — a fresh
+      instance spun up after a process restart picks up where the previous
+      one left off.
     * ``draft_report`` returns the canned draft.
     * ``classify_governance`` returns the canned governance block.
     * ``revise_report`` returns ``revised_draft`` if present, otherwise the
@@ -99,16 +103,15 @@ class FixtureLLMClient:
         self._draft = fixture["draft"]
         self._governance = fixture["governance"]
         self._revised = fixture.get("revised_draft")
-        self._q_index = 0
 
     def next_question(self, context: InterviewContext) -> NextQuestionResult:
-        i = self._q_index
+        i = context.questions_asked
         if i >= len(self._qa_pairs):
             # Fixture exhausted — tell the agent we're done.
             return NextQuestionResult(question="(no more questions)", believe_enough_info=True)
         pair = self._qa_pairs[i]
-        self._q_index += 1
-        enough = self._q_index >= self._draft_after
+        # After returning this question, questions_asked will become i+1.
+        enough = (i + 1) >= self._draft_after
         return NextQuestionResult(question=pair["question"], believe_enough_info=enough)
 
     def draft_report(self, context: InterviewContext) -> DraftReportResult:
