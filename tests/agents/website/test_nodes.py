@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from model_project_constructor.agents.website.fake_client import FakeRepoClient
 from model_project_constructor.agents.website.nodes import (
     build_repo_project_result,
@@ -282,13 +284,22 @@ class TestRouting:
 
 
 class TestBuildRepoProjectResult:
+    @pytest.mark.parametrize(
+        "ci_path",
+        [".gitlab-ci.yml", ".github/workflows/ci.yml"],
+    )
     def test_complete_state_produces_valid_result(
-        self, intake_report: Any
+        self, intake_report: Any, ci_path: str
     ) -> None:
         """4B: build_repo_project_result filters files_created into
         governance artifacts and populates the manifest. Pass a mixed
         files_created list and verify only governance paths land in
         artifacts_created.
+
+        Parametrized over the CI artifact path so the build-result test
+        covers both Phase B platforms — `.gitlab-ci.yml` and
+        `.github/workflows/ci.yml`. Both are classified as governance
+        regardless of which produced the repo.
         """
 
         state = {
@@ -304,7 +315,7 @@ class TestBuildRepoProjectResult:
                 "governance/model_registry.json",
                 "governance/three_pillar_validation.md",
                 "data/datasheet_q1.md",  # governance datasheet — included
-                ".gitlab-ci.yml",  # governance — included
+                ci_path,  # governance — included (platform-specific)
                 "src/subrogation_recovery_model/models.py",  # base — excluded
             ],
             "status": "COMPLETE",
@@ -323,7 +334,15 @@ class TestBuildRepoProjectResult:
         assert "governance/model_registry.json" in artifacts
         assert "governance/three_pillar_validation.md" in artifacts
         assert "data/datasheet_q1.md" in artifacts
-        assert ".gitlab-ci.yml" in artifacts
+        assert ci_path in artifacts
+        # The OTHER platform's CI file was never in files_created — make
+        # sure the classifier doesn't hallucinate it into the manifest.
+        other_ci = (
+            ".github/workflows/ci.yml"
+            if ci_path == ".gitlab-ci.yml"
+            else ".gitlab-ci.yml"
+        )
+        assert other_ci not in artifacts
         assert "README.md" not in artifacts
         assert "src/subrogation_recovery_model/models.py" not in artifacts
 

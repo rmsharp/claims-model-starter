@@ -25,7 +25,9 @@ composition entry point; everything else is private.
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Literal
+
+CIPlatform = Literal["gitlab", "github"]
 
 # ---------------------------------------------------------------------------
 # Tier ordering helpers
@@ -539,6 +541,53 @@ def render_gitlab_ci() -> str:
     )
 
 
+def render_github_actions_ci() -> str:
+    return (
+        "name: ci\n"
+        "\n"
+        "on:\n"
+        "  push:\n"
+        "    branches: [main]\n"
+        "  pull_request:\n"
+        "    branches: [main]\n"
+        "\n"
+        "jobs:\n"
+        "  lint:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+        "      - uses: actions/setup-python@v5\n"
+        "        with:\n"
+        "          python-version: '3.11'\n"
+        "      - run: pip install uv\n"
+        "      - run: uv sync\n"
+        "      - run: uv run ruff check .\n"
+        "\n"
+        "  test:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+        "      - uses: actions/setup-python@v5\n"
+        "        with:\n"
+        "          python-version: '3.11'\n"
+        "      - run: pip install uv\n"
+        "      - run: uv sync\n"
+        "      - run: uv run pytest -q\n"
+        "\n"
+        "  governance:\n"
+        "    runs-on: ubuntu-latest\n"
+        "    steps:\n"
+        "      - uses: actions/checkout@v4\n"
+        "      - uses: actions/setup-python@v5\n"
+        "        with:\n"
+        "          python-version: '3.11'\n"
+        "      - run: pip install uv\n"
+        "      - run: uv sync\n"
+        '      - run: uv run python -c "import json; json.load(open('
+        "'governance/model_registry.json'))\"\n"
+    )
+
+
 def render_pre_commit_config() -> str:
     return (
         "repos:\n"
@@ -656,6 +705,7 @@ def build_governance_files(
     data: dict[str, Any],
     project_name: str,
     project_slug: str,
+    ci_platform: CIPlatform = "gitlab",
 ) -> dict[str, str]:
     """Return every governance file this project emits.
 
@@ -680,7 +730,10 @@ def build_governance_files(
         intake=intake, project_name=project_name
     )
     files["governance/change_log.md"] = render_change_log(intake=intake)
-    files[".gitlab-ci.yml"] = render_gitlab_ci()
+    if ci_platform == "gitlab":
+        files[".gitlab-ci.yml"] = render_gitlab_ci()
+    else:
+        files[".github/workflows/ci.yml"] = render_github_actions_ci()
     files[".pre-commit-config.yaml"] = render_pre_commit_config()
 
     # One datasheet per primary query, per Gebru 2021.
@@ -792,7 +845,11 @@ def is_governance_artifact(path: str) -> bool:
         return True
     if path.startswith("data/datasheet_"):
         return True
-    if path in {".gitlab-ci.yml", ".pre-commit-config.yaml"}:
+    if path in {
+        ".gitlab-ci.yml",
+        ".github/workflows/ci.yml",
+        ".pre-commit-config.yaml",
+    }:
         return True
     if path == "analysis/fairness_audit.qmd":
         return True
@@ -804,10 +861,13 @@ def is_governance_artifact(path: str) -> bool:
 
 
 __all__ = [
+    "CIPlatform",
     "build_governance_files",
     "build_analysis_files",
     "build_test_files",
     "build_model_registry_entry",
     "build_regulatory_mapping",
     "is_governance_artifact",
+    "render_github_actions_ci",
+    "render_gitlab_ci",
 ]

@@ -13,7 +13,7 @@ Architecture plan: §4.3, §5.4, §10, §11.
 
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict
 
 
 class WebsiteState(TypedDict, total=False):
@@ -23,6 +23,12 @@ class WebsiteState(TypedDict, total=False):
     intake_report: dict[str, Any]
     data_report: dict[str, Any]
     repo_target: dict[str, Any]
+
+    # CI/governance platform — selects which CI template the governance
+    # scaffold emits ('.gitlab-ci.yml' vs '.github/workflows/ci.yml').
+    # Independent of the RepoClient adapter so a GitHub project can be
+    # scaffolded with a FakeRepoClient in tests.
+    ci_platform: Literal["gitlab", "github"]
 
     # Derived project naming
     project_name: str      # final name after conflict resolution
@@ -67,11 +73,13 @@ def initial_state(
     intake_report: dict[str, Any],
     data_report: dict[str, Any],
     repo_target: dict[str, Any],
+    ci_platform: Literal["gitlab", "github"] = "gitlab",
 ) -> WebsiteState:
     return WebsiteState(
         intake_report=intake_report,
         data_report=data_report,
         repo_target=repo_target,
+        ci_platform=ci_platform,
         files_pending={},
         governance_paths=[],
         files_created=[],

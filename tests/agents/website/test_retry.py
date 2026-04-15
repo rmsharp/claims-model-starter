@@ -150,6 +150,7 @@ class TestRetryEndToEnd:
     ) -> Any:
         agent = WebsiteAgent.__new__(WebsiteAgent)
         agent.client = client
+        agent.ci_platform = "gitlab"
         agent.graph = build_website_graph(client, sleep=lambda _s: None)
         return agent.run(intake_report, data_report, repo_target)
 

@@ -7,7 +7,7 @@ returns a validated :class:`RepoProjectResult`.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from model_project_constructor.agents.website.graph import build_website_graph
 from model_project_constructor.agents.website.nodes import build_repo_project_result
@@ -31,8 +31,14 @@ class WebsiteAgent:
         assert result.status == "COMPLETE"
     """
 
-    def __init__(self, client: RepoClient):
+    def __init__(
+        self,
+        client: RepoClient,
+        *,
+        ci_platform: Literal["gitlab", "github"] = "gitlab",
+    ):
         self.client = client
+        self.ci_platform: Literal["gitlab", "github"] = ci_platform
         self.graph = build_website_graph(client)
 
     def run(
@@ -67,6 +73,7 @@ class WebsiteAgent:
             intake_report=intake_report.model_dump(mode="json"),
             data_report=data_report.model_dump(mode="json"),
             repo_target=repo_target.model_dump(mode="json"),
+            ci_platform=self.ci_platform,
         )
 
         self.graph.invoke(state, config=config)

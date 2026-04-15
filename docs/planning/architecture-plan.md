@@ -517,7 +517,10 @@ Proportional to `risk_tier` + `cycle_time`, the Website Agent scaffolds:
 - `governance/change_log.md` — initialized with creation entry
 - `data/datasheet_<query_name>.md` — one per primary query, per Gebru 2021
 - `.pre-commit-config.yaml` — basic governance hooks (schema validation on registry)
-- `.gitlab-ci.yml` — minimal pipeline (lint + unit tests + registry validation)
+- One CI manifest, **selected by `WebsiteAgent(ci_platform=...)`** (Phase B of `github-gitlab-abstraction-plan.md`):
+  - `ci_platform="gitlab"` (default) → `.gitlab-ci.yml` (lint + unit tests + registry validation across `lint` / `test` / `governance` stages)
+  - `ci_platform="github"` → `.github/workflows/ci.yml` (lint + test + governance jobs on `ubuntu-latest`, identical step shape)
+  - Both files are classified as governance artifacts by `is_governance_artifact()` so the manifest accepts whichever the host produces.
 
 **Tier 3 (moderate) and above, additionally:**
 - `governance/three_pillar_validation.md` — template for conceptual soundness / ongoing monitoring / outcomes analysis
@@ -668,13 +671,13 @@ Each node is a pure function over state. This makes unit testing straightforward
 
 ## 11. Generated Repository Structure
 
-> **Naming note.** The section title previously said "Generated GitLab Repo Structure." Post-Phase-A the Website Agent is host-neutral at the adapter boundary; the CI template filename (`.gitlab-ci.yml`) is still GitLab-specific and stays that way until Phase B of `github-gitlab-abstraction-plan.md` adds `.github/workflows/ci.yml` as a per-host sibling.
+> **Naming note.** The section title previously said "Generated GitLab Repo Structure." Post-Phase-A the Website Agent is host-neutral at the adapter boundary, and Phase B (Session 12) added `.github/workflows/ci.yml` as a sibling renderer. The tree below shows `.gitlab-ci.yml` because that is the default; `WebsiteAgent(ci_platform="github")` substitutes `.github/workflows/ci.yml` in its place. The two never coexist in the same generated repo — `build_governance_files` emits exactly one CI file per project, selected by `ci_platform`.
 
 
 ```
 <project_name>/
 ├── .gitignore
-├── .gitlab-ci.yml                        # minimal pipeline: lint + unit + registry validation
+├── .gitlab-ci.yml                        # minimal pipeline (or .github/workflows/ci.yml when ci_platform="github")
 ├── .pre-commit-config.yaml               # hooks: pydantic validate, ruff, registry schema
 ├── README.md                             # generated from IntakeReport business problem
 ├── pyproject.toml                        # uv-managed; pins Python 3.11+

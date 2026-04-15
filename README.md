@@ -166,6 +166,8 @@ uv run python -m model_project_constructor.agents.website \
 
 The `--fake` mode prints the full file tree that would be committed and dumps a `RepoProjectResult` JSON payload. (`--fake-gitlab`, `--gitlab-url`, and `--group-path` are kept as hidden deprecated aliases for one Phase window and will be removed in Phase D.) Phase 4B scaffolds everything in §11 of `docs/planning/architecture-plan.md`, including governance artifacts proportional to `risk_tier` / `cycle_time` per §8.2. Try the tier-1 fixture (`tests/fixtures/tier1_intake.json`) to see the full fan-out including `governance/audit_log/`, `governance/eu_ai_act_compliance.md`, `governance/lcp_integration.md`, and the fairness-audit scaffolds.
 
+The generated CI file is platform-dependent: the `WebsiteAgent` accepts a `ci_platform: Literal["gitlab", "github"]` constructor kwarg (default `"gitlab"`) which selects either `.gitlab-ci.yml` or `.github/workflows/ci.yml`. Phase B (Session 12) added the GitHub Actions sibling renderer; Phase D will surface a `--ci-platform` CLI flag.
+
 ## Documents worth reading
 
 - `docs/planning/architecture-plan.md` — the authoritative design document. Sections §4 (agent boundaries), §7 (Data Agent decoupling), §10 (per-agent LangGraph flows), and §14 (implementation phases) are load-bearing.

@@ -5,69 +5,176 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 12 is an **IMPLEMENTATION** session. Execute **Phase B** of `docs/planning/github-gitlab-abstraction-plan.md` — add `render_github_actions_ci()` as a sibling of `render_gitlab_ci()`, thread a `ci_platform: Literal["gitlab", "github"]` parameter through `build_governance_files` / `scaffold_governance` / `WebsiteAgent`, extend `is_governance_artifact` to recognize `.github/workflows/ci.yml`, and parametrize tier-gated governance tests to cover both platforms. **Start by raising the pytest coverage floor from 90% to 93% in `pyproject.toml`.**
-**Status:** Phase A landed in Session 11 (commit `8c00e1a`). Master is clean after commit. Baseline for Session 12: **289 tests pass at 96.51% coverage, mypy strict clean on 12 files in `agents/website/`.** All `GitLab*` / `gitlab_target` / `gitlab_url` / `group_path` / `project_id: int` references have been eliminated from `src/` and `tests/`; the surviving GitLab surface is: `gitlab_adapter.py` (concrete), `test_gitlab_adapter.py` (its tests), `.gitlab-ci.yml` artifact emission, `DEFAULT_HOST_URL = "https://gitlab.example.com"` CLI default, and `python-gitlab` in `pyproject.toml`. Phase C (`PyGithubAdapter`) and Phase D (CLI `--host` flag + docs) follow in Sessions 13 and 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11.
-**Priority:** HIGH — Phase B unblocks Phase C which unblocks Phase D which unblocks Phase 5.
+**Task:** Session 13 is an **IMPLEMENTATION** session. Execute **Phase C** of `docs/planning/github-gitlab-abstraction-plan.md` — add a new `agents/website/github_adapter.py` defining `PyGithubAdapter` as a `RepoClient` Protocol-conforming concrete class that wraps `PyGithub`. Phase C is the last source-only phase before Phase D wires it into the CLI.
+**Status:** Phase B landed in Session 12 (commits `e91c9f2` coverage bump, `<TBD-phase-b>` Phase B). Master is clean after commits. Baseline for Session 13: **295 tests pass at 96.53% coverage, mypy strict clean on 12 files in `agents/website/`.** Coverage floor is now **93%** (raised from 90% per Session 11 directive). The `WebsiteAgent` now takes a `ci_platform: Literal["gitlab", "github"]` constructor kwarg (default `"gitlab"`) and emits either `.gitlab-ci.yml` or `.github/workflows/ci.yml`; both are classified as governance artifacts by `is_governance_artifact()`. All Phase B work shipped — Phase D (CLI `--host` flag + docs) follows in Session 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11.
+**Priority:** HIGH — Phase C unblocks Phase D which unblocks Phase 5.
 
-### What Session 12 Must Do
+### What Session 13 Must Do
 
-**Phase B is one session. Close out when DONE. Do NOT start Phase C in the same session.** Failure mode #18.
+**Phase C is one session. Close out when DONE. Do NOT start Phase D in the same session.** Failure mode #18.
 
 1. **Phase 0 — orient:**
    - `SAFEGUARDS.md` (full read).
-   - This ACTIVE TASK block + the "What Session 11 Did" handoff below.
-   - `docs/planning/github-gitlab-abstraction-plan.md` **§7 (Phase B spec)** + **§10 (do-not-change list)**. The plan is now 712 lines; Session 12 should re-read §2.2 Trap 2/3 context but the primary source of truth for this session is §7.
+   - This ACTIVE TASK block + the "What Session 12 Did" handoff below.
+   - `docs/planning/github-gitlab-abstraction-plan.md` **§8 (Phase C spec)** + **§10 (do-not-change list)**. Plan is now 712 lines.
+   - Read `src/model_project_constructor/agents/website/gitlab_adapter.py` end-to-end — Phase C's `PyGithubAdapter` is a structural sibling, so understanding the GitLab adapter's exception-translation pattern (especially `_is_name_conflict` at line 158) is mandatory.
    - Run `git status`, `git log --oneline -5`. Confirm clean working tree on master.
-   - Run pre-flight: `uv run pytest -q` (expect **289 passed @ 96.51%**), `uv run mypy src/model_project_constructor/agents/website/` (expect **Success on 12 files**). Session 11 verified this at close-out; if these numbers have drifted, STOP and investigate before touching code.
+   - Run pre-flight: `uv run pytest -q` (expect **295 passed @ 96.53%**), `uv run mypy src/model_project_constructor/agents/website/` (expect **Success on 12 files**). If numbers have drifted, STOP and investigate before touching code.
 
-2. **Coverage floor bump (FIRST action after Phase 1B stub) — user directive from Session 11:**
-   - Edit `pyproject.toml` and change the pytest coverage floor from `90` to `93`. Grep for `--cov-fail-under=90` or `fail_under = 90` in both `pyproject.toml` and any `[tool.coverage.report]` section; update every occurrence. Run `uv run pytest -q` to confirm **289 tests still pass at 96.51% coverage ≥ 93%**. Commit this bump **separately** from Phase B work so the audit trail is clean: `chore(coverage): raise pytest coverage floor 90% → 93% per session 11 directive`. This is a scoped 1-line-ish change, not a refactor; after this commit the rest of Session 12 proceeds as Phase B.
-   - **Why:** the user asked at the end of Session 11 (verbatim: *"raise the unit test coverage floor to 93% at beginning of next session"*). Baseline is 96.51% so there is a 3.5-point safety margin. Any Phase B code that drops coverage below 93% is a quality regression Session 12 must fix in the same session.
+2. **Phase 1B — write the Session 13 stub** to `SESSION_NOTES.md` BEFORE touching any code.
 
-3. **Phase 1B — write the Session 12 stub** to `SESSION_NOTES.md` BEFORE touching any code.
+3. **Phase C execution** — follow plan §8:
+   - **Add `PyGithub` to `pyproject.toml`** as a dep of the `agents` optional group, alongside `python-gitlab`. Phase C is the first time `github` appears in `src/`.
+   - **Run plan §8.2 PyGithub type-stub check first** — if PyGithub doesn't ship `py.typed`, Phase C must add a stub or `# type: ignore[import-untyped]` comments in the new module. Do this before writing the adapter so the mypy strategy is decided up front.
+   - **New file `src/model_project_constructor/agents/website/github_adapter.py`** — defines `class PyGithubAdapter:` with `create_project(*, name: str, namespace: str, visibility: str) -> ProjectInfo` and `commit_files(*, project_id: str, branch: str, message: str, files: dict[str, str]) -> str` (matches `RepoClient` Protocol). Internal exception translation: `github.GithubException` → `RepoClientError`, 422 "name already exists" → `RepoNameConflictError`. Mirror `_is_name_conflict` from `gitlab_adapter.py` for GitHub's 422 response shape.
+   - **`agents/website/__init__.py`** — re-export `PyGithubAdapter` alongside `PythonGitLabAdapter`. Update `__all__`.
+   - **New tests `tests/agents/website/test_github_adapter.py`** — mock `github.Github` and assert: (a) `create_project` returns a `ProjectInfo` with `id: str`; (b) name-conflict raises `RepoNameConflictError`; (c) generic GitHub error raises `RepoClientError`; (d) `commit_files` produces a single commit and returns the SHA. Filename mirrors `test_gitlab_adapter.py`.
 
-4. **Phase B execution** — follow plan §7:
-   - `governance_templates.py`: add `def render_github_actions_ci() -> str:` as a sibling of `render_gitlab_ci()`. YAML shape: top-level `name:`, `on:` (push + pull_request to main), `jobs:` with `lint` + `test` + `governance` sub-jobs that mirror the GitLab stages. Uses `ubuntu-latest`, installs `uv`, runs `ruff check`, `pytest`, and the `governance/model_registry.json` json-load sanity check.
-   - `governance_templates.py`: extend `build_governance_files` with a `ci_platform: Literal["gitlab", "github"] = "gitlab"` keyword parameter. When `"gitlab"` → emit `.gitlab-ci.yml`; when `"github"` → emit `.github/workflows/ci.yml`. `.pre-commit-config.yaml` is emitted in both cases. **Do NOT merge the two renderers behind a single function** — plan §7.3 explicitly rejects that.
-   - `governance_templates.py`: extend `is_governance_artifact` to recognize `.github/workflows/ci.yml` alongside `.gitlab-ci.yml`. **Both** must be classified as governance artifacts regardless of which platform actually produced the repo (the classifier is used by executor-side tools that may inspect cloned repos of either flavor).
-   - `state.py`: add a `ci_platform` field (`Literal["gitlab", "github"]`, default `"gitlab"`) to `WebsiteState`. Plumb it through `initial_state()`.
-   - `nodes.py`: `scaffold_governance` reads `state.get("ci_platform", "gitlab")` and forwards it to `build_governance_files`.
-   - `agent.py`: `WebsiteAgent.__init__` takes an optional `ci_platform: Literal["gitlab", "github"] = "gitlab"` kwarg; `WebsiteAgent.run` stashes it into the initial state. (Constructor param, not a run-level arg — an agent is configured for one platform.)
-   - `tests/agents/website/test_governance.py`: add `@pytest.mark.parametrize("ci_platform", ["gitlab", "github"])` to at least one tier-3 exercise and assert both positive (`.github/workflows/ci.yml in files_created` for `"github"`) AND negative (`.gitlab-ci.yml not in files_created` for `"github"`, and vice versa). Learning #5 from SESSION_RUNNER.md — always pin tier/flag-gated behavior with both assertions.
-   - `tests/agents/website/test_nodes.py`: the `TestBuildRepoProjectResult.test_complete_state_produces_valid_result` fixture currently pins `.gitlab-ci.yml` in the mixed `files_created` list; add a parallel test case for `.github/workflows/ci.yml` or parametrize the existing one.
+4. **Phase C verification** — run every command in plan §8.4. Additionally: full `uv run pytest -q` must show **300+ passed @ ≥93% coverage**. mypy must remain Success.
 
-5. **Phase B verification** — run every command in plan §7.4. Additionally: after the coverage-floor bump commit (step 2) and again after the Phase B commit, run `uv run pytest --cov=src/model_project_constructor/agents/website --cov-fail-under=93` — must pass both times.
+5. **Phase 3 close-out** — evaluate Session 12's handoff (§3A), self-assess, document learnings, write full Session 13 handoff, commit (expect **one commit** for Phase C), report, STOP.
 
-6. **Phase 3 close-out** — evaluate Session 11's handoff (§3A), self-assess, document learnings, write full Session 12 handoff, commit (expect **two commits** in this session: the coverage bump + Phase B itself), report, STOP.
+### Files Session 13 will touch (from plan §8.5)
 
-### Files Session 12 will touch (from plan §7 + §4.8)
+- **Config (1):** `pyproject.toml` — add `PyGithub` dep.
+- **Source (2):** new `agents/website/github_adapter.py`, edit `agents/website/__init__.py` re-exports.
+- **Tests (1):** new `tests/agents/website/test_github_adapter.py`.
 
-- **Config (1):** `pyproject.toml` — coverage floor 90 → 93.
-- **Source (3):** `agents/website/governance_templates.py` (new renderer + `ci_platform` param + `is_governance_artifact` extension), `state.py` (new field), `nodes.py` + `agent.py` (plumb the field).
-- **Tests (2):** `tests/agents/website/test_governance.py` (parametrize), `tests/agents/website/test_nodes.py` (extend the build-result test).
-- **Docs (2):** `README.md` (one-line note that the generated CI path depends on `ci_platform`), `docs/planning/architecture-plan.md` §8.2 + §11 (CI filename now platform-dependent).
+### Hard rules for Phase C
 
-### Hard rules for Phase B
-
-- **No Phase C work.** No new file `github_adapter.py`, no `PyGithub` in `pyproject.toml`, no import of `github` anywhere. Phase C is Session 13.
-- **Do NOT rename anything.** Phase A's rename is complete — Session 12 adds code, does not touch names. If a rename feels tempting, commit what you have and note it for a future session.
-- **Do NOT change** the do-not-change list in plan §10. The LangGraph topology, retry-backoff loop, governance tier fan-out, `GovernanceManifest` shape, and `website::` thread_id prefix all stay.
-- **Do NOT remove the deprecated CLI aliases** (`--fake-gitlab`, `--gitlab-url`, `--group-path`). Phase D removes them.
-- **Do NOT infer `ci_platform` from the adapter class.** Plan §7.3 is explicit: make it an explicit parameter so a GitHub project can be scaffolded with `FakeRepoClient` in tests.
-- **Do NOT bundle** the coverage-floor bump and Phase B into one commit. Two commits. The coverage bump is a standalone `chore:` commit so Phase B's diff is only Phase B.
+- **No Phase D work.** No new CLI flag, no `--host`, no `--ci-platform` on the CLI, no doc updates beyond the immediate `__init__` and adapter docstrings. Phase D is Session 14.
+- **Do NOT touch** `gitlab_adapter.py`, `protocol.py`, `state.py`, `nodes.py`, `agent.py`, `graph.py`, `cli.py`, or `governance_templates.py`. Phase C is purely additive at the adapter layer.
+- **Do NOT change** the do-not-change list in plan §10.
+- **Mirror, don't merge.** `PyGithubAdapter` is a sibling of `PythonGitLabAdapter`, not a refactor of it. They share no helper code.
+- **PyGithub may need a stub.** Run plan §8.2 first.
 
 ### Expected duration
 
-Plan §7 estimates this as 1 session. Phase B adds ~40–60 LOC of Python plus ~5–10 new parametrized test cases, plus the 1-line coverage-floor bump. Expect ~45–60 minutes of editing + verification + close-out.
+Plan §8 estimates this as 1 session. Phase C adds one new ~150-LOC source file + one new test file. Expect ~60–90 minutes including pre-flight, mypy stub strategy, edits, verification, close-out.
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
 
+### Session 11 Handoff Evaluation (by Session 12)
+**Score: 10/10.** Best handoff in this workstream so far. Phase B was a pure step-execution session because Session 11 left literally nothing to discover.
+
+- **What helped:** (a) The "Carryover gotchas from Session 10 that STILL apply to Phase B" + "New Phase B gotchas" split was the single most valuable artifact — the `WebsiteAgent.__new__` hack note in `test_retry.py:154` told me exactly how Phase B's new `ci_platform` constructor kwarg would interact with the test (an `AttributeError`, which is exactly what happened on the first test run), so I knew the one-line fix immediately instead of diagnosing it. (b) The "every test file under `tests/agents/website/` touched" enumeration in Session 11 step 11 told me which files would *also* need parametrization in Phase B without a separate audit. (c) The verbatim quote of the user's Session 11 directive (*"raise the unit test coverage floor to 93% at beginning of next session"*) made the standalone `chore:` commit decision unambiguous. (d) The pre-flight baseline numbers (289 @ 96.51%, mypy 12 files) let me detect drift in seconds.
+- **What was missing:** Genuinely nothing required for Phase B. The only minor improvement would have been a sentence about the `cast(Literal[...], ...)` pattern needed for tests that take `ci_platform` as a `str` parameter — but that's standard mypy hygiene, not a Phase A quirk. Not deducting.
+- **What was wrong:** Nothing. Every claim verified on disk. Pre-flight numbers matched exactly; gotchas all turned out to be live; the `WebsiteAgent.__new__` warning was load-bearing.
+- **ROI:** Reading the handoff (~5 min) saved at least 30 min of ghost-debugging the test_retry attribute error and the schema/state plumbing surface. Easily 6× ROI.
+
 ### What Session 12 Did
-**Deliverable:** Phase B of `docs/planning/github-gitlab-abstraction-plan.md` — `render_github_actions_ci()` sibling renderer + `ci_platform` plumbing through `WebsiteState`/`WebsiteAgent`/`build_governance_files`, `is_governance_artifact` extension for `.github/workflows/ci.yml`, parametrized governance + nodes tests. Plus standalone coverage-floor bump 90 → 93 per Session 11 directive. (IN PROGRESS)
+**Deliverable:** Phase B of `docs/planning/github-gitlab-abstraction-plan.md` — `render_github_actions_ci()` sibling renderer + `ci_platform` plumbing through `WebsiteState`/`WebsiteAgent`/`build_governance_files`, `is_governance_artifact` extension for `.github/workflows/ci.yml`, parametrized governance + nodes tests with positive AND negative assertions per platform. Plus standalone coverage-floor bump 90 → 93. **COMPLETE.**
 **Started:** 2026-04-15
-**Status:** Session claimed. Phase 0 complete (baseline 289 passed @ 96.51%, mypy clean on 12 files). Work beginning with coverage-floor bump.
+**Completed:** 2026-04-15
+**Commits:** `e91c9f2` (chore: coverage floor 90 → 93 + Session 12 IN PROGRESS stub), `<TBD-phase-b>` (feat: Phase B — `render_github_actions_ci()` + `ci_platform` plumbing).
+
+**Pre-flight baseline (verified on disk):**
+- `uv run pytest -q` → **289 passed, 96.51% coverage**. Matches Session 11 exactly.
+- `uv run mypy src/model_project_constructor/agents/website/` → **Success: no issues found in 12 source files**. Matches.
+- `git status` → clean on `master`, 16 commits ahead of `origin/master`.
+
+**What was done (chronological):**
+
+1. **Phase 0 orientation** — read `SAFEGUARDS.md` in full, `SESSION_NOTES.md` lines 1-200 (ACTIVE TASK + Session 11 handoff), ran `git status` / `git log --oneline -5` / pre-flight pytest + mypy in parallel, confirmed `~/Development/dashboard.html` exists. Reported findings to user and waited for explicit "go" per failure mode #9 + Learning #10. **Did not skip the report-and-wait step even though ACTIVE TASK already described the deliverable.**
+
+2. **User said "go" + clarification on README scoping** — the user added "update README.md near end of this session" as scope clarification on top of the existing ACTIVE TASK; treated that as confirmation to proceed with full Phase B + the README touch deferred until after the source/test work was green. Wrote Session 12 IN-PROGRESS stub to `SESSION_NOTES.md` (Phase 1B ghost-session protection per failure mode #14).
+
+3. **Step 1 — Coverage floor bump (separate `chore:` commit per Session 11 directive):**
+   - `pyproject.toml:60` — `--cov-fail-under=90` → `--cov-fail-under=93`. Single occurrence; no `[tool.coverage.report] fail_under` to update. Verified with `uv run pytest -q` → 289 passed @ 96.51% ≥ 93%.
+   - Committed as `chore(coverage): raise pytest coverage floor 90% → 93%` (`e91c9f2`), bundled with the session stub so the audit trail shows both as "infrastructure / not Phase B."
+
+4. **Step 2 — `governance_templates.py` (the renderer + emitter + classifier):**
+   - Added `from typing import ... Literal` and a module-level `CIPlatform = Literal["gitlab", "github"]` type alias just below the existing imports.
+   - Added `def render_github_actions_ci() -> str:` immediately above `render_pre_commit_config`. YAML shape: top-level `name: ci`, `on: { push: { branches: [main] }, pull_request: { branches: [main] } }`, three jobs (`lint`, `test`, `governance`) on `ubuntu-latest`, each running `actions/checkout@v4` + `actions/setup-python@v5` (Python 3.11) + `pip install uv` + `uv sync` + the stage-specific command (`ruff check .`, `pytest -q`, the `model_registry.json` json-load sanity check). String-literal style mirrors `render_gitlab_ci()` for review-time symmetry.
+   - Extended `build_governance_files` signature with `ci_platform: CIPlatform = "gitlab"` keyword parameter. Inside the function, replaced the unconditional `files[".gitlab-ci.yml"] = render_gitlab_ci()` with an `if ci_platform == "gitlab": ... else: files[".github/workflows/ci.yml"] = render_github_actions_ci()` branch. **Did NOT merge the two renderers** per plan §7.3.
+   - Extended `is_governance_artifact` to recognize `.github/workflows/ci.yml` alongside `.gitlab-ci.yml` (set-membership check, both classified as governance regardless of which the host produced).
+   - Updated `__all__` to export `CIPlatform`, `render_github_actions_ci`, and (for completeness) `render_gitlab_ci`.
+
+5. **Step 3 — `state.py` (TypedDict + initial_state):**
+   - Added `Literal` to the import line.
+   - Added a new TypedDict field `ci_platform: Literal["gitlab", "github"]` with a 4-line comment explaining that it's independent of the `RepoClient` adapter (so a GitHub project can be scaffolded with `FakeRepoClient` in tests, per plan §7.3).
+   - Added `ci_platform: Literal["gitlab", "github"] = "gitlab"` kwarg to `initial_state()` and threaded it into the returned `WebsiteState` dict.
+
+6. **Step 4 — `nodes.py` (`scaffold_governance` reads state and forwards):**
+   - Single-line edit: `scaffold_governance` now passes `ci_platform=state.get("ci_platform", "gitlab")` into `build_governance_files`. The `.get(..., "gitlab")` default protects against state dicts written by tests that don't set the field.
+
+7. **Step 5 — `agent.py` (`WebsiteAgent.__init__` accepts the constructor kwarg):**
+   - Added `Literal` to the import line.
+   - `WebsiteAgent.__init__` signature: `def __init__(self, client: RepoClient, *, ci_platform: Literal["gitlab", "github"] = "gitlab"):`. The kwarg is keyword-only so positional callers (the existing `WebsiteAgent(client)` pattern) still work without modification.
+   - Stored as `self.ci_platform` and passed into `initial_state(...)` inside `run()`.
+
+8. **Step 6 — `tests/agents/website/test_retry.py` (the `__new__` hack fix):**
+   - The `_run_with_client` helper at line 151 uses `WebsiteAgent.__new__(WebsiteAgent)` to bypass `__init__` and inject a graph with no-op sleep. Adding `ci_platform` to `__init__` meant `agent.ci_platform` was never set, so `agent.run()` raised `AttributeError: 'WebsiteAgent' object has no attribute 'ci_platform'` on all 3 retry tests.
+   - **Decision: patched the test, did NOT refactor production code.** Per Session 11's gotcha + Learning #4 from SESSION_RUNNER.md ("don't add a kwarg to production code just for a test-only need"), the hack was already test-only, so the minimal fix is `agent.ci_platform = "gitlab"` immediately after `agent.client = client`. One-line surgical patch. Did not retire the `__new__` hack — it would have required adding an optional `graph` kwarg to production `WebsiteAgent.__init__` for a test-only need, which the gotcha explicitly rejected.
+
+9. **Step 7 — `tests/agents/website/test_governance.py` (parametrize + new tests):**
+   - Added `Literal, cast` to the typing import; added `cast(Literal["gitlab", "github"], ci_platform)` inside `_run_agent` so the helper accepts a `str` parameter (which `pytest.mark.parametrize` produces) and forwards a typed value to `WebsiteAgent`. mypy strict required this.
+   - `_run_agent` signature extended: `_run_agent(intake, data, *, ci_platform: str = "gitlab")`. Default preserves all existing call sites.
+   - Added two new tests inside `TestTier3Moderate`:
+     - `test_tier3_ci_platform_branches[gitlab|github]` — exercises the full agent end-to-end with each platform. Asserts both **positive** (`.github/workflows/ci.yml in files` for `"github"`, `.gitlab-ci.yml in files` for `"gitlab"`) AND **negative** (the other CI file is NOT present), per Learning #5. Also asserts `.pre-commit-config.yaml` is always present and that the tier-3 fan-out (`three_pillar_validation.md` etc.) is unaffected by the switch. Final assertion: exactly one of the two CI artifacts ends up in `governance_manifest.artifacts_created`.
+     - `test_tier3_ci_artifact_in_manifest[gitlab|github]` — narrower assertion that the platform-specific CI file shows up in `GovernanceManifest.artifacts_created` and the other does not. Pins the classifier behavior independently of the file-list assertion.
+   - Parametrized `TestBuildGovernanceFilesUnit.test_tier4_emits_only_always_artifacts` over `ci_platform` — was the only existing test that asserted `".gitlab-ci.yml" in files` directly against `build_governance_files`. Updated to use the parametrized platform with cast, and added negative assertion for the absent CI file.
+   - Extended `test_is_governance_artifact_classification` to assert `is_governance_artifact(".github/workflows/ci.yml")` is True alongside the existing `.gitlab-ci.yml` assertion.
+
+10. **Step 8 — `tests/agents/website/test_nodes.py` (extend the build-result test):**
+    - Added `import pytest` (was not previously imported in this file).
+    - Parametrized `TestBuildRepoProjectResult.test_complete_state_produces_valid_result` over `ci_path: [".gitlab-ci.yml", ".github/workflows/ci.yml"]`. The existing `files_created` mixed list now uses the parametrized value, the corresponding artifact assertion is parametrized, and a new **negative** assertion ensures the OTHER platform's CI file does NOT hallucinate into `artifacts_created` (the classifier could in principle match both — this pins that real `files_created` controls what ends up in the manifest).
+
+11. **Step 9 — Docs:**
+    - `README.md` getting-started section: added a paragraph after the existing Phase 4B description explaining that the generated CI file is platform-dependent, that `WebsiteAgent` accepts `ci_platform: Literal["gitlab", "github"]` (default `"gitlab"`), and that Phase D will surface this as a CLI flag.
+    - `docs/planning/architecture-plan.md` §8.2: replaced the unconditional `.gitlab-ci.yml` bullet under "Always" with a nested bullet structure: "One CI manifest, selected by `WebsiteAgent(ci_platform=...)`" → `gitlab` default → `.gitlab-ci.yml`, `github` → `.github/workflows/ci.yml`, and a third sub-bullet noting both files are classified as governance artifacts.
+    - `docs/planning/architecture-plan.md` §11: rewrote the "Naming note" admonition above the file tree. Old text said "the CI template filename (`.gitlab-ci.yml`) is still GitLab-specific and stays that way until Phase B...adds `.github/workflows/ci.yml`"; new text says Phase B (Session 12) HAS added the GitHub sibling, that the tree shows `.gitlab-ci.yml` because it's the default, that `WebsiteAgent(ci_platform="github")` substitutes the GitHub Actions file, and that the two never coexist in the same generated repo. Updated the inline file-tree comment on the `.gitlab-ci.yml` line to reflect the parenthetical alternative.
+
+12. **Phase B verification (plan §7.4)** — all six commands run at close-out:
+    - **Grep 1** (`def render_gitlab_ci|def render_github_actions_ci`): two hits — `governance_templates.py:513` and `:544`.
+    - **Grep 2** (`\.github/workflows/ci\.yml|\.gitlab-ci\.yml` in `governance_templates.py`): five hits — module docstring (1), the `if/else` in `build_governance_files` (2), the set-membership in `is_governance_artifact` (2). Both renderer-side and classifier-side covered.
+    - **Parametrized governance tests** (`pytest -k "ci_platform"`): 2 passed (the second new test doesn't match the keyword filter; explicit `pytest tests/agents/website/test_governance.py` shows 18 passed including all 4 parametrized cases × 2 tests + the 4 parametrized tier-4 unit cases).
+    - **Full suite**: **295 passed @ 96.53% coverage** (was 289, +6 new parametrized cases). Zero skips, zero xfails, zero deletions.
+    - **mypy strict**: `Success: no issues found in 12 source files`.
+    - **Coverage floor at 93**: explicit `uv run pytest --cov=src/model_project_constructor/agents/website --cov-fail-under=93` passes (96.53% ≥ 93%).
+    - **Tier-1/2/3 fake-CLI smoke**: all three print `Status:  COMPLETE`. Tier-3 emits `.gitlab-ci.yml` (default) — the `.github/workflows/ci.yml` path is exercised exclusively by the parametrized tests since the CLI default is GitLab and Phase D will be the first place a CLI user picks it.
+
+### Key Files Shipped in Session 12
+
+**Config (1):**
+- `pyproject.toml` — `--cov-fail-under=90` → `--cov-fail-under=93` (commit `e91c9f2`)
+
+**Source files edited (4):**
+- `src/model_project_constructor/agents/website/governance_templates.py` — added `CIPlatform`, `render_github_actions_ci`, `ci_platform` param on `build_governance_files`, `.github/workflows/ci.yml` classification, `__all__` updates
+- `src/model_project_constructor/agents/website/state.py` — added `ci_platform` TypedDict field + `initial_state` kwarg
+- `src/model_project_constructor/agents/website/nodes.py` — `scaffold_governance` forwards `state.get("ci_platform", "gitlab")` to `build_governance_files`
+- `src/model_project_constructor/agents/website/agent.py` — `WebsiteAgent.__init__` keyword-only `ci_platform` kwarg, stored as `self.ci_platform`, passed into `initial_state` from `run`
+
+**Test files edited (3):**
+- `tests/agents/website/test_governance.py` — parametrized helper + 2 new tier-3 tests + extended tier-4 unit test + extended `is_governance_artifact` test
+- `tests/agents/website/test_nodes.py` — added `pytest` import, parametrized `test_complete_state_produces_valid_result` over both CI paths
+- `tests/agents/website/test_retry.py` — one-line fix to `__new__` hack helper to set `agent.ci_platform = "gitlab"`
+
+**Docs edited (3):**
+- `README.md` — getting-started note about platform-dependent CI file
+- `docs/planning/architecture-plan.md` §8.2 + §11 — CI file is now per-`ci_platform`; naming note rewritten to reflect Phase B is done
+- `SESSION_NOTES.md` — this file (ACTIVE TASK rewrite for Session 13 + Session 12 handoff + Phase 3A evaluation of Session 11)
+
+**Total: 11 source/test/doc files changed across two commits + the chore commit's 2-file diff.**
+
+### Gotchas — Read These Before Starting Phase C
+
+**Carryover from Session 11 that STILL applies to Phase C:**
+
+- **`WebsiteAgent.__new__` hack in `test_retry.py:151-154` is still there**, and now also manually sets `agent.ci_platform = "gitlab"`. Phase C does not touch `WebsiteAgent`, so this carries forward unchanged. If a future session adds *another* `WebsiteAgent.__init__` attribute, the hack will need *another* manual line — the cost of not refactoring it grows monotonically. Not Phase C's problem.
+- **`retry_backoff` uses `time.sleep()` in production.** Phase C does not touch retry, but any new adapter tests that exercise the create→commit happy path through the LangGraph build_website_graph helper would inherit this — Phase C's tests should mock at the `github.Github` level, NOT through the graph, so this is irrelevant in practice.
+- **`RepoClient` Protocol is NOT `@runtime_checkable`.** Keep it that way. `PyGithubAdapter` should NOT inherit from `RepoClient`; structural conformance is enough. Adapter tests use `callable(getattr(adapter, "create_project"))` patterns.
+- **`_is_name_conflict(exc)` in `gitlab_adapter.py:158` loose-matches GitLab's response shape.** `PyGithubAdapter` needs its own equivalent for GitHub's 422 responses — see plan §8.1 hard rule. GitHub returns `github.GithubException` with `.status == 422` and a JSON body containing `errors[0].message == "name already exists on this account"` (or close variants). Mirror the GitLab pattern: a private `_is_name_conflict` helper returning bool, called from `create_project`'s `except` block.
+
+**New Phase C gotchas (from Phase B work):**
+
+- **`CIPlatform` lives in `governance_templates.py`, not `state.py` or `schemas/v1/common.py`.** I considered putting the `Literal` alias in `common.py` per Session 11's gotcha "If Phase B adds a `CIPlatformLiteral` or similar, put it in `schemas/v1/common.py`," but it's only used inside `governance_templates.py` itself (the WebsiteState/Agent layers spell out the Literal inline because they import from `typing`, not from `governance_templates`). If Phase D needs to surface this on the CLI as `--ci-platform`, the right place to centralize the type alias is then, not now — premature centralization would force `state.py` to import from `governance_templates.py` which it currently does not. **Phase C should not need to touch `CIPlatform`.**
+- **Two test files now use parametrized `ci_platform`.** Phase C's new `test_github_adapter.py` should NOT parametrize anything over `ci_platform` — adapters are platform-bound by definition. The platform-neutral parametrization is exclusively for `governance_templates` / `WebsiteAgent` / `WebsiteState`.
+- **`WebsiteAgent.ci_platform` is a public attribute** (no underscore prefix) because the `__new__` hack in `test_retry.py` sets it directly. If Phase C touches `WebsiteAgent` (it shouldn't), the attribute name must stay `ci_platform`, not `_ci_platform`.
+- **Coverage floor is 93%, not 90%.** Phase C's adapter is plain Python with no LangGraph involvement, so coverage of the new file will likely be ~100% if the tests are written carefully (mocked GitHub client + happy-path + 2 error paths). If coverage drops below 93% it's a Phase C quality regression and must be fixed in the same session.
+- **The `chore:` coverage bump (`e91c9f2`) is a separate commit from Phase B.** This is the second time in the workstream a non-feature commit was bundled in the same session as a feature commit — both times by user directive. The audit trail looks like `chore: ... → feat: ...`, not `feat: ... + bump`. Phase D may include a similar split if there are doc/CLI bumps that need pre-Phase commits.
 
 ### What Session 11 Did
 **Deliverable:** Phase A of `docs/planning/github-gitlab-abstraction-plan.md` — neutral rename across 26 files (plan expected 22 + 4 drift/docs) + `project_id: int → str` widening (Trap 1 fix). **COMPLETE.**

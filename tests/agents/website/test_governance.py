@@ -16,7 +16,7 @@ and the regulatory-mapping computation in ``build_repo_project_result``.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, cast
 
 import pytest
 
@@ -58,7 +58,10 @@ def tier3_intake() -> IntakeReport:
 
 
 def _run_agent(
-    intake: IntakeReport, data: DataReport
+    intake: IntakeReport,
+    data: DataReport,
+    *,
+    ci_platform: str = "gitlab",
 ) -> tuple[Any, FakeRepoClient]:
     client = FakeRepoClient()
     target = RepoTarget(
@@ -67,7 +70,8 @@ def _run_agent(
         project_name_hint=intake.session_id,
         visibility="private",
     )
-    result = WebsiteAgent(client).run(intake, data, target)
+    platform = cast(Literal["gitlab", "github"], ci_platform)
+    result = WebsiteAgent(client, ci_platform=platform).run(intake, data, target)
     return result, client
 
 
@@ -253,6 +257,65 @@ class TestTier3Moderate:
         body = stored["governance/ongoing_monitoring.md"]
         assert "Quarterly review" in body
 
+    @pytest.mark.parametrize("ci_platform", ["gitlab", "github"])
+    def test_tier3_ci_platform_branches(
+        self,
+        tier3_intake: IntakeReport,
+        data_report: DataReport,
+        ci_platform: str,
+    ) -> None:
+        """Phase B: governance scaffold emits exactly one CI file matching
+        ``ci_platform``. Pin both presence (positive) and absence (negative)
+        of each path so a regression that emits both, neither, or the wrong
+        one fails loudly. Tier-3+ artifacts must be unaffected by the switch.
+        """
+        result, _ = _run_agent(tier3_intake, data_report, ci_platform=ci_platform)
+        files = set(result.files_created)
+
+        if ci_platform == "gitlab":
+            assert ".gitlab-ci.yml" in files
+            assert ".github/workflows/ci.yml" not in files
+        else:
+            assert ".github/workflows/ci.yml" in files
+            assert ".gitlab-ci.yml" not in files
+
+        # CI is always classified as a governance artifact regardless
+        # of which file the platform chose.
+        assert ".pre-commit-config.yaml" in files
+
+        # Tier-3 fan-out must be unaffected by the CI switch.
+        assert "governance/three_pillar_validation.md" in files
+        assert "governance/ongoing_monitoring.md" in files
+        assert "governance/deployment_gates.md" in files
+
+        # Manifest count of CI artifacts is unchanged across platforms:
+        # exactly one CI yaml plus the pre-commit config.
+        ci_artifacts = {
+            f
+            for f in result.governance_manifest.artifacts_created
+            if f in {".gitlab-ci.yml", ".github/workflows/ci.yml"}
+        }
+        assert len(ci_artifacts) == 1
+
+    @pytest.mark.parametrize("ci_platform", ["gitlab", "github"])
+    def test_tier3_ci_artifact_in_manifest(
+        self,
+        tier3_intake: IntakeReport,
+        data_report: DataReport,
+        ci_platform: str,
+    ) -> None:
+        """The platform-specific CI file must show up in
+        ``GovernanceManifest.artifacts_created`` because it's classified
+        as governance regardless of which platform produced it."""
+        result, _ = _run_agent(tier3_intake, data_report, ci_platform=ci_platform)
+        artifacts = set(result.governance_manifest.artifacts_created)
+        if ci_platform == "gitlab":
+            assert ".gitlab-ci.yml" in artifacts
+            assert ".github/workflows/ci.yml" not in artifacts
+        else:
+            assert ".github/workflows/ci.yml" in artifacts
+            assert ".gitlab-ci.yml" not in artifacts
+
 
 # ---------------------------------------------------------------------------
 # build_governance_files unit tests (no LangGraph)
@@ -260,11 +323,18 @@ class TestTier3Moderate:
 
 
 class TestBuildGovernanceFilesUnit:
+    @pytest.mark.parametrize("ci_platform", ["gitlab", "github"])
     def test_tier4_emits_only_always_artifacts(
-        self, data_report: DataReport
+        self, data_report: DataReport, ci_platform: str
     ) -> None:
         """A tier 4 low model gets none of the tiered artifacts — only
-        'always' + consumer/fairness conditionals (both off here)."""
+        'always' + consumer/fairness conditionals (both off here).
+
+        Parametrized over ``ci_platform`` so the always-emitted CI file is
+        platform-correct: GitLab → ``.gitlab-ci.yml``,
+        GitHub → ``.github/workflows/ci.yml``. Both positive AND negative
+        assertions are pinned per platform.
+        """
 
         from model_project_constructor.agents.website.governance_templates import (
             build_governance_files,
@@ -284,18 +354,28 @@ class TestBuildGovernanceFilesUnit:
             "model_solution": {"target_variable": "t", "model_type": "other"},
             "proposed_solution": "ps",
         }
+        platform = cast(Literal["gitlab", "github"], ci_platform)
         files = build_governance_files(
             intake=intake,
             data=data_report.model_dump(mode="json"),
             project_name="p",
             project_slug="p",
+            ci_platform=platform,
         )
 
         assert "governance/model_registry.json" in files
         assert "governance/model_card.md" in files
         assert "governance/change_log.md" in files
-        assert ".gitlab-ci.yml" in files
         assert ".pre-commit-config.yaml" in files
+
+        # Platform-gated CI file: pin both presence AND absence.
+        if ci_platform == "gitlab":
+            assert ".gitlab-ci.yml" in files
+            assert ".github/workflows/ci.yml" not in files
+        else:
+            assert ".github/workflows/ci.yml" in files
+            assert ".gitlab-ci.yml" not in files
+
         # None of the tiered artifacts
         assert "governance/three_pillar_validation.md" not in files
         assert "governance/impact_assessment.md" not in files
@@ -352,6 +432,7 @@ class TestBuildGovernanceFilesUnit:
         assert is_governance_artifact("governance/model_card.md")
         assert is_governance_artifact("data/datasheet_foo.md")
         assert is_governance_artifact(".gitlab-ci.yml")
+        assert is_governance_artifact(".github/workflows/ci.yml")
         assert is_governance_artifact(".pre-commit-config.yaml")
         assert is_governance_artifact("analysis/fairness_audit.qmd")
         assert is_governance_artifact("src/proj/fairness/audit.py")

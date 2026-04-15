@@ -144,6 +144,7 @@ def make_nodes(
             data=state["data_report"],
             project_name=state["project_name"],
             project_slug=state["project_slug"],
+            ci_platform=state.get("ci_platform", "gitlab"),
         )
         pending = dict(state.get("files_pending", {}))
         pending.update(files)
