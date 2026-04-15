@@ -64,6 +64,11 @@ Plan §7 estimates this as 1 session. Phase B adds ~40–60 LOC of Python plus ~
 
 *Session history accumulates below this line. Newest session at the top.*
 
+### What Session 12 Did
+**Deliverable:** Phase B of `docs/planning/github-gitlab-abstraction-plan.md` — `render_github_actions_ci()` sibling renderer + `ci_platform` plumbing through `WebsiteState`/`WebsiteAgent`/`build_governance_files`, `is_governance_artifact` extension for `.github/workflows/ci.yml`, parametrized governance + nodes tests. Plus standalone coverage-floor bump 90 → 93 per Session 11 directive. (IN PROGRESS)
+**Started:** 2026-04-15
+**Status:** Session claimed. Phase 0 complete (baseline 289 passed @ 96.51%, mypy clean on 12 files). Work beginning with coverage-floor bump.
+
 ### What Session 11 Did
 **Deliverable:** Phase A of `docs/planning/github-gitlab-abstraction-plan.md` — neutral rename across 26 files (plan expected 22 + 4 drift/docs) + `project_id: int → str` widening (Trap 1 fix). **COMPLETE.**
 **Started:** 2026-04-15
