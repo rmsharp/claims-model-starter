@@ -6,7 +6,7 @@
 
 ## ACTIVE TASK
 **Task:** Session 14 is an **IMPLEMENTATION** session. Execute **Phase D** of `docs/planning/github-gitlab-abstraction-plan.md` — add the `--host` CLI flag to `agents/website/cli.py`, wire it to `PyGithubAdapter` / `PythonGitLabAdapter` / `FakeRepoClient` adapter selection, thread `ci_platform` from `--host`, remove the Phase A deprecated aliases (`--fake-gitlab`, `--gitlab-url`, `--group-path`), grow parametrized CLI tests, and rewrite README + `architecture-plan.md` §14. Phase D unblocks Phase 5 (orchestrator).
-**Status:** Phase C landed in Session 13 (commit `<pending>` — fill in during Session 14's Phase 3A). Master is clean after commit. Baseline for Session 14: **313 tests pass at 96.55% coverage, mypy strict clean on 13 files in `agents/website/`.** Coverage floor is **93%**. `PyGithubAdapter` is now importable from `model_project_constructor.agents.website` alongside `PythonGitLabAdapter`. Both accept `host_url` + `private_token`; `PyGithubAdapter` defaults `host_url="https://api.github.com"`. Both return `ProjectInfo(id: str, url, default_branch)` and `CommitInfo(sha, files_committed)` and translate host-native errors into `RepoClientError` / `RepoNameConflictError`. **`CIPlatform` is still only defined inside `governance_templates.py`** — Phase D should promote it to `schemas/v1/common.py` iff Phase D needs to import it from CLI (the CLI can also spell the `Literal["gitlab","github"]` inline — judge based on diff size). Phase 5 (orchestrator) starts Session 15.
+**Status:** Phase C landed in Session 13 (commit `55745ed` — fill in during Session 14's Phase 3A). Master is clean after commit. Baseline for Session 14: **313 tests pass at 96.55% coverage, mypy strict clean on 13 files in `agents/website/`.** Coverage floor is **93%**. `PyGithubAdapter` is now importable from `model_project_constructor.agents.website` alongside `PythonGitLabAdapter`. Both accept `host_url` + `private_token`; `PyGithubAdapter` defaults `host_url="https://api.github.com"`. Both return `ProjectInfo(id: str, url, default_branch)` and `CommitInfo(sha, files_committed)` and translate host-native errors into `RepoClientError` / `RepoNameConflictError`. **`CIPlatform` is still only defined inside `governance_templates.py`** — Phase D should promote it to `schemas/v1/common.py` iff Phase D needs to import it from CLI (the CLI can also spell the `Literal["gitlab","github"]` inline — judge based on diff size). Phase 5 (orchestrator) starts Session 15.
 **Priority:** HIGH — Phase D is the last phase of the abstraction plan and unblocks Phase 5.
 
 ### What Session 14 Must Do
@@ -74,7 +74,7 @@ Plan §9 estimates this as 1 small session. Phase D is mostly in `cli.py` + test
 **Deliverable:** Phase C of `docs/planning/github-gitlab-abstraction-plan.md` — new `agents/website/github_adapter.py` with `PyGithubAdapter` (a `RepoClient`-subclassing concrete class wrapping `PyGithub`), `PyGithub>=2,<3` added to `pyproject.toml` `agents` extras, re-export from `agents/website/__init__.py`, new `tests/agents/website/test_github_adapter.py` with 18 tests covering the adapter surface. **COMPLETE.**
 **Started:** 2026-04-15
 **Completed:** 2026-04-15
-**Commits:** `<pending>` (Phase C). One commit as predicted by the plan §8.5 session boundary.
+**Commits:** `55745ed` (Phase C). One commit as predicted by the plan §8.5 session boundary.
 
 **Pre-flight baseline (verified on disk):**
 - `uv run pytest -q` → **295 passed, 96.53% coverage**. Matches Session 12 exactly.
