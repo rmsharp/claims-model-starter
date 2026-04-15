@@ -16,7 +16,7 @@ Early implementation. Phases and session boundaries are tracked in `SESSION_NOTE
 | 3A | Intake Agent core + LangGraph + CLI | Complete |
 | 3B | Intake Agent Web UI (FastAPI + SSE + HTMX + SQLite) | Complete |
 | 4A | Website Agent core + GitLab scaffolding (non-governance) | Complete |
-| 4B | Website Agent governance scaffolding + retry-backoff | Not started |
+| 4B | Website Agent governance scaffolding + retry-backoff + python-gitlab adapter | Complete |
 | 5 | Orchestrator + adapters + end-to-end | Not started |
 | 6 | Production hardening | Not started |
 
@@ -61,12 +61,14 @@ src/model_project_constructor/          # main "orchestrator" package
     app.py                              # FastAPI app + routes + SSE endpoint
     runner.py                           # IntakeSessionStore: SqliteSaver + per-session graph
     templates.py                        # minimal HTMX pages (question/review/complete)
-  agents/website/                       # Website Agent (Phase 4A — non-governance base)
+  agents/website/                       # Website Agent (Phase 4A base + 4B governance)
     state.py, protocol.py, nodes.py, graph.py
     agent.py                            # WebsiteAgent facade (run(intake, data, target))
-    templates.py                        # pure-python file content generators
+    templates.py                        # pure-python base file content generators
+    governance_templates.py             # 4B governance artifact generators (§8.2 tier fan-out)
     fake_client.py                      # in-memory GitLab stand-in for tests + CLI
-    cli.py, __main__.py                 # typer CLI (python -m agents.website --fake-gitlab)
+    gitlab_adapter.py                   # 4B production adapter via python-gitlab
+    cli.py, __main__.py                 # typer CLI (--fake-gitlab or --private-token)
 packages/data-agent/                    # standalone: model-project-constructor-data-agent
   pyproject.toml                        # independent distribution
   USAGE.md                              # CLI + Python API documentation
@@ -80,7 +82,7 @@ tests/
   schemas/                              # 88 schema tests
   agents/data/                          # 12 end-to-end Data Agent tests
   agents/intake/                        # 56 intake tests (graph, nodes, CLI, Anthropic)
-  agents/website/                       # 59 website agent tests (templates, fake client, nodes, agent, CLI)
+  agents/website/                       # 88 website agent tests (templates, fake client, nodes, agent, CLI, governance, retry, adapter)
   ui/intake/                            # 22 web UI tests (FastAPI, runner, SQLite resume, SSE)
   data_agent_package/                   # 21 CLI + AnthropicLLMClient tests
   fixtures/sample_request.json          # canonical DataRequest fixture
@@ -89,8 +91,10 @@ tests/
   fixtures/fraud_triage.yaml            # continuous/tier-1 governance scenario
   fixtures/intake_question_cap.yaml     # 10-question cap exhaustion scenario
   fixtures/intake_revision_cap.yaml     # 3-revision cap exhaustion scenario
-  fixtures/subrogation_intake.json      # serialized IntakeReport (Phase 4A website input)
-  fixtures/sample_datareport.json       # serialized DataReport (Phase 4A website input)
+  fixtures/subrogation_intake.json      # serialized IntakeReport (tier 3 moderate, affects_consumers)
+  fixtures/tier1_intake.json            # tier 1 critical + protected attrs + EU AI Act (Phase 4B)
+  fixtures/tier2_intake.json            # tier 2 high + strategic cycle (Phase 4B)
+  fixtures/sample_datareport.json       # serialized DataReport for website agent input
   test_data_agent_decoupling.py         # structural decoupling guarantee (2 tests)
 docs/planning/                          # architecture-approaches.md, architecture-plan.md
 SESSION_RUNNER.md                       # per-session operating procedure
@@ -107,7 +111,7 @@ uv sync --extra agents --extra dev
 uv run pytest
 ```
 
-All 260 tests should pass with coverage above 90% (currently ≈96.9%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 289 tests should pass with coverage above 90% (currently ≈96.5%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
 
 To run the web UI tests as well, add the `ui` extra:
 
@@ -142,16 +146,25 @@ uv run uvicorn model_project_constructor.ui.intake:app --reload
 
 Then open `http://localhost:8000/`. The UI is a minimal HTMX frontend over the same LangGraph flow used by the CLI; session state is checkpointed to a SQLite file (`intake_sessions.db` by default, override via `INTAKE_DB_PATH`) so interviews survive server restart. Resume via `GET /sessions/{session_id}`. A server-sent-events endpoint at `/sessions/{session_id}/events` emits the current phase snapshot for scripting/monitoring.
 
-To run the Website Agent against seeded intake + data reports (Phase 4A, fake-GitLab only — the real `python-gitlab` client lands in 4B):
+To run the Website Agent against seeded intake + data reports:
 
 ```bash
+# Fake GitLab — no credentials required, writes nothing external.
 uv run python -m model_project_constructor.agents.website \
     --intake tests/fixtures/subrogation_intake.json \
     --data tests/fixtures/sample_datareport.json \
     --fake-gitlab
+
+# Real GitLab (Phase 4B) — creates an actual project.
+uv run python -m model_project_constructor.agents.website \
+    --intake tests/fixtures/subrogation_intake.json \
+    --data tests/fixtures/sample_datareport.json \
+    --gitlab-url https://gitlab.example.com \
+    --group-path data-science/model-drafts \
+    --private-token "$GITLAB_TOKEN"
 ```
 
-This prints the file tree that would have been committed (28 base files for the subrogation fixture) and dumps a `GitLabProjectResult` JSON payload. Phase 4A scaffolds everything in §11 of `docs/planning/architecture-plan.md` *except* governance artifacts (`governance/`, `data/datasheet_*.md`, `.gitlab-ci.yml`, `.pre-commit-config.yaml`) — those land in Sub-phase 4B.
+The `--fake-gitlab` mode prints the full file tree that would be committed and dumps a `GitLabProjectResult` JSON payload. Phase 4B scaffolds everything in §11 of `docs/planning/architecture-plan.md`, including governance artifacts proportional to `risk_tier` / `cycle_time` per §8.2. Try the tier-1 fixture (`tests/fixtures/tier1_intake.json`) to see the full fan-out including `governance/audit_log/`, `governance/eu_ai_act_compliance.md`, `governance/lcp_integration.md`, and the fairness-audit scaffolds.
 
 ## Documents worth reading
 

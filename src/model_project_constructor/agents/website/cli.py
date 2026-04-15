@@ -1,4 +1,4 @@
-"""typer CLI for the Website Agent (architecture-plan §14 Phase 4A).
+"""typer CLI for the Website Agent (architecture-plan §14 Phase 4A/4B).
 
 The plan's literal verification command is::
 
@@ -7,9 +7,10 @@ The plan's literal verification command is::
         --data tests/fixtures/sample_datareport.json \\
         --fake-gitlab
 
-The ``--fake-gitlab`` flag is the only supported mode in Phase 4A — a
-real ``python-gitlab`` client lands later alongside the retry/backoff
-node in Sub-phase 4B.
+Phase 4B adds a real ``python-gitlab`` path: pass ``--private-token``
+(and omit ``--fake-gitlab``) to create an actual project on a GitLab
+instance. The default verification mode remains ``--fake-gitlab`` — no
+credentials required.
 
 As with the Phase 3A intake CLI, this is a single-command typer app (no
 ``@app.callback``) so the module literal matches the plan's flags.
@@ -25,11 +26,12 @@ import typer
 
 from model_project_constructor.agents.website.agent import WebsiteAgent
 from model_project_constructor.agents.website.fake_client import FakeGitLabClient
+from model_project_constructor.agents.website.protocol import GitLabClient
 from model_project_constructor.schemas.v1.data import DataReport
 from model_project_constructor.schemas.v1.gitlab import GitLabTarget
 from model_project_constructor.schemas.v1.intake import IntakeReport
 
-app = typer.Typer(add_completion=False, help="Website Agent CLI (Phase 4A)")
+app = typer.Typer(add_completion=False, help="Website Agent CLI (Phase 4A/4B)")
 
 DEFAULT_GROUP = "data-science/model-drafts"
 DEFAULT_GITLAB_URL = "https://gitlab.example.com"
@@ -61,9 +63,16 @@ def run(
         bool,
         typer.Option(
             "--fake-gitlab",
-            help="Use the in-memory FakeGitLabClient (Phase 4A only mode).",
+            help="Use the in-memory FakeGitLabClient (no credentials required).",
         ),
     ] = False,
+    private_token: Annotated[
+        Optional[str],
+        typer.Option(
+            "--private-token",
+            help="GitLab personal access token (required without --fake-gitlab).",
+        ),
+    ] = None,
     group_path: Annotated[
         str,
         typer.Option("--group-path", help="GitLab group path."),
@@ -83,10 +92,10 @@ def run(
 ) -> None:
     """Run the website agent against a seeded intake + data report pair."""
 
-    if not fake_gitlab:
+    if not fake_gitlab and not private_token:
         typer.echo(
-            "ERROR: Phase 4A only supports --fake-gitlab. A real python-gitlab "
-            "client lands in Sub-phase 4B.",
+            "ERROR: pass either --fake-gitlab (in-memory) or --private-token "
+            "(real GitLab via python-gitlab).",
             err=True,
         )
         raise typer.Exit(code=2)
@@ -100,7 +109,20 @@ def run(
         visibility="private",
     )
 
-    client = FakeGitLabClient()
+    client: GitLabClient
+    if fake_gitlab:
+        client = FakeGitLabClient()
+    else:
+        # Real adapter. Imported lazily so the fake path stays free of the
+        # python-gitlab dependency at import time.
+        from model_project_constructor.agents.website.gitlab_adapter import (
+            PythonGitLabAdapter,
+        )
+
+        assert private_token is not None  # narrowed by the guard above
+        client = PythonGitLabAdapter(
+            gitlab_url=gitlab_url, private_token=private_token
+        )
     agent = WebsiteAgent(client)
     result = agent.run(intake_report, data_report, target)
 

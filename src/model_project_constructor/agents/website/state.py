@@ -33,19 +33,33 @@ class WebsiteState(TypedDict, total=False):
     project_url: str
     default_branch: str
 
-    # SCAFFOLD_BASE accumulator — INITIAL_COMMITS flushes this to the client.
+    # SCAFFOLD_* accumulator — INITIAL_COMMITS flushes this to the client.
+    # Phase 4A flows only base files; Phase 4B layers governance/analysis/tests on top.
     files_pending: dict[str, str]
+
+    # Governance bookkeeping (populated by SCAFFOLD_GOVERNANCE in 4B).
+    # Tracks which paths in ``files_pending`` are governance artifacts so the
+    # final ``GovernanceManifest`` can be assembled without re-classifying.
+    governance_paths: list[str]
 
     # INITIAL_COMMITS outputs
     initial_commit_sha: str
     files_created: list[str]
 
+    # INITIAL_COMMITS retry bookkeeping (4B).
+    # Counts how many times ``initial_commits`` has attempted ``commit_files``.
+    # Incremented inside the node; RETRY_BACKOFF uses it to compute the delay.
+    commit_attempts: int
+
     # Terminal
-    status: str            # "COMPLETE" | "PARTIAL" | "FAILED"
+    # "COMPLETE" | "PARTIAL" | "RETRYING" | "FAILED"
+    status: str
     failure_reason: str | None
 
 
 MAX_NAME_CONFLICT_ATTEMPTS = 5
+MAX_COMMIT_ATTEMPTS = 3
+RETRY_BASE_DELAY_SECONDS = 1.0
 
 
 def initial_state(
@@ -59,7 +73,9 @@ def initial_state(
         data_report=data_report,
         gitlab_target=gitlab_target,
         files_pending={},
+        governance_paths=[],
         files_created=[],
+        commit_attempts=0,
         status="PARTIAL",
         failure_reason=None,
     )

@@ -79,22 +79,60 @@ class TestWebsiteAgentRun:
         # Data dictionary
         assert "data/README.md" in files
 
-    def test_governance_artifacts_absent_in_4a(
+    def test_tier3_governance_artifacts_present(
         self,
         fake_client: FakeGitLabClient,
         intake_report: Any,
         data_report: Any,
         gitlab_target: GitLabTarget,
     ) -> None:
+        """4B: tier 3 moderate + affects_consumers=true should emit the
+        tier-3-and-always artifacts plus the consumer-gated eu_ai_act file.
+        Tier 2-only (impact_assessment, regulatory_mapping) and tier 1-only
+        (lcp_integration, audit_log) artifacts MUST NOT appear at tier 3.
+        """
+
         agent = WebsiteAgent(fake_client)
         result = agent.run(intake_report, data_report, gitlab_target)
         files = set(result.files_created)
 
-        assert not any(f.startswith("governance/") for f in files)
-        assert "data/datasheet_subrogation_training_set.md" not in files
-        assert ".gitlab-ci.yml" not in files
-        assert ".pre-commit-config.yaml" not in files
-        assert result.governance_manifest.artifacts_created == []
+        # Always (every tier)
+        assert "governance/model_registry.json" in files
+        assert "governance/model_card.md" in files
+        assert "governance/change_log.md" in files
+        assert ".gitlab-ci.yml" in files
+        assert ".pre-commit-config.yaml" in files
+        assert "data/datasheet_subrogation_training_set.md" in files
+
+        # Tier 3+
+        assert "governance/three_pillar_validation.md" in files
+        assert "governance/ongoing_monitoring.md" in files
+        assert "governance/deployment_gates.md" in files
+
+        # affects_consumers=true in the subrogation fixture
+        assert "governance/eu_ai_act_compliance.md" in files
+
+        # Tier-2-only artifacts MUST NOT appear at tier 3
+        assert "governance/impact_assessment.md" not in files
+        assert "governance/regulatory_mapping.md" not in files
+
+        # Tier-1-only artifacts MUST NOT appear at tier 3
+        assert "governance/lcp_integration.md" not in files
+        assert "governance/audit_log/README.md" not in files
+
+        # uses_protected_attributes=false → no fairness scaffolds
+        assert "analysis/fairness_audit.qmd" not in files
+        assert not any("/fairness/" in f for f in files)
+
+        # Manifest reflects artifact set
+        assert result.governance_manifest.artifacts_created
+        assert "governance/model_card.md" in result.governance_manifest.artifacts_created
+        # Regulatory mapping exposes declared frameworks
+        mapping = result.governance_manifest.regulatory_mapping
+        assert "SR_11_7" in mapping
+        assert "NAIC_AIS" in mapping
+        # SR_11_7 should bind to model_card + three_pillar + ongoing_monitoring
+        assert "governance/model_card.md" in mapping["SR_11_7"]
 
     def test_files_persisted_in_fake_client(
         self,

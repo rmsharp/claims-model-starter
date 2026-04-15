@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "status": "COMPLETE",
+  "missing_fields": [],
+  "business_problem": "Commercial property large-loss reserves are set by adjusters using a mix of prior-loss comparables and gut feel. Reserve adequacy is inconsistent across branches, leading to quarterly reserve adjustments that surprise finance. The CFO has asked for a more defensible reserving aid.",
+  "proposed_solution": "Build a reserving-aid regression model that predicts ultimate loss for open commercial property claims with estimated damage above $250k. The model output is advisory — adjusters retain the reserve decision. Back-test against 5 years of closed claims.",
+  "model_solution": {
+    "target_variable": "ultimate_loss_usd",
+    "target_definition": "Final paid loss + ALAE at claim closure for commercial property claims with initial damage estimate above $250,000.",
+    "candidate_features": [
+      "occupancy_class",
+      "building_age",
+      "construction_type",
+      "cat_cause_flag",
+      "initial_damage_estimate",
+      "prior_loss_history"
+    ],
+    "model_type": "supervised_regression",
+    "evaluation_metrics": [
+      "MAE",
+      "RMSE",
+      "calibration_by_decile"
+    ],
+    "is_supervised": true
+  },
+  "estimated_value": {
+    "narrative": "Better-calibrated reserves reduce the magnitude of quarterly adjustments and improve finance predictability. Not a direct P&L lever, but meaningfully reduces surprise.",
+    "annual_impact_usd_low": null,
+    "annual_impact_usd_high": null,
+    "confidence": "medium",
+    "assumptions": [
+      "Reserving aid is advisory only — no automated posting.",
+      "Adjuster adoption is tracked via an override-rate metric."
+    ]
+  },
+  "governance": {
+    "cycle_time": "strategic",
+    "cycle_time_rationale": "Reserves on large commercial claims move slowly; the book the model is trained on refreshes annually.",
+    "risk_tier": "tier_2_high",
+    "risk_tier_rationale": "Material financial exposure ($250k+ reserves), but humans make every decision and the model is advisory. High but not critical.",
+    "regulatory_frameworks": [
+      "SR_11_7",
+      "ASOP_56"
+    ],
+    "affects_consumers": false,
+    "uses_protected_attributes": false
+  },
+  "stakeholder_id": "stakeholder_commercial_reserves_003",
+  "session_id": "intake_reserves_001",
+  "created_at": "2026-04-14T14:00:00Z",
+  "questions_asked": 6,
+  "revision_cycles": 0
+}

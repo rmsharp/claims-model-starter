@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0.0",
+  "status": "COMPLETE",
+  "missing_fields": [],
+  "business_problem": "Automated decisioning for personal auto policy renewals: the current rules-based engine over-indexes on ZIP code and prior-claim count, producing renewal outcomes that correlate with demographic attributes we are required to audit under state UDAP rules and the EU AI Act. Regulators have opened an informal inquiry.",
+  "proposed_solution": "Replace the rules engine with a supervised classifier that predicts policy profitability at renewal, combined with a fairness constraint during training so adverse outcomes do not disproportionately impact protected groups. The classifier output is used as an advisory score surfaced to underwriters rather than as a direct decision.",
+  "model_solution": {
+    "target_variable": "renewal_profitability_flag",
+    "target_definition": "Binary outcome: 1 if the policy is profitable (loss ratio < 0.65) over the 12-month renewal period, 0 otherwise.",
+    "candidate_features": [
+      "prior_claim_count_3yr",
+      "credit_based_insurance_score",
+      "vehicle_risk_class",
+      "coverage_mix",
+      "tenure_years"
+    ],
+    "model_type": "supervised_classification",
+    "evaluation_metrics": [
+      "AUC",
+      "calibration_slope",
+      "subgroup_AUC_parity"
+    ],
+    "is_supervised": true
+  },
+  "estimated_value": {
+    "narrative": "Replacing the rules engine is primarily a compliance and reputational imperative. Secondary benefit: 2-3% loss ratio improvement on the renewed book, estimated at $8-12M annually on a $400M book.",
+    "annual_impact_usd_low": 8000000.0,
+    "annual_impact_usd_high": 12000000.0,
+    "confidence": "medium",
+    "assumptions": [
+      "Fairness constraint does not degrade headline AUC by more than 2 points.",
+      "Underwriter override rate stays below 15% after model launch."
+    ]
+  },
+  "governance": {
+    "cycle_time": "continuous",
+    "cycle_time_rationale": "Renewal scoring runs nightly on the incoming book; drift and fairness metrics are monitored in near-real-time.",
+    "risk_tier": "tier_1_critical",
+    "risk_tier_rationale": "Active regulatory scrutiny, direct consumer impact on auto insurance renewal pricing, and a standing fairness audit requirement. Critical tier is unambiguous.",
+    "regulatory_frameworks": [
+      "SR_11_7",
+      "NAIC_AIS",
+      "EU_AI_ACT_ART_9",
+      "ASOP_56"
+    ],
+    "affects_consumers": true,
+    "uses_protected_attributes": true
+  },
+  "stakeholder_id": "stakeholder_personal_lines_007",
+  "session_id": "intake_renewals_001",
+  "created_at": "2026-04-14T13:00:00Z",
+  "questions_asked": 9,
+  "revision_cycles": 1
+}

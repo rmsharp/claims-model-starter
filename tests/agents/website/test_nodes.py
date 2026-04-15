@@ -246,14 +246,18 @@ class TestInitialCommits:
         assert delta["status"] == "FAILED"
         assert delta["failure_reason"] == "no_files_scaffolded"
 
-    def test_commit_failure_surfaces(
+    def test_first_commit_failure_goes_to_retrying(
         self,
         intake_report: Any,
         data_report: Any,
         gitlab_target: Any,
     ) -> None:
+        """4B: the first transient commit failure must not set FAILED —
+        the node returns status=RETRYING and routes through RETRY_BACKOFF.
+        """
+
         client = _CommitFlakyClient()
-        nodes = make_nodes(client)
+        nodes = make_nodes(client, sleep=lambda _s: None)
         info = client.create_project(
             group_path="g", name="n", visibility="private"
         )
@@ -267,7 +271,8 @@ class TestInitialCommits:
         state["files_pending"] = {"a.txt": "1"}
 
         delta = nodes["initial_commits"](state)
-        assert delta["status"] == "FAILED"
+        assert delta["status"] == "RETRYING"
+        assert delta["commit_attempts"] == 1
         assert "commit_failed" in (delta.get("failure_reason") or "")
 
 
@@ -283,21 +288,59 @@ class TestBuildGitLabProjectResult:
     def test_complete_state_produces_valid_result(
         self, intake_report: Any
     ) -> None:
+        """4B: build_gitlab_project_result filters files_created into
+        governance artifacts and populates the manifest. Pass a mixed
+        files_created list and verify only governance paths land in
+        artifacts_created.
+        """
+
         state = {
             "intake_report": intake_report.model_dump(mode="json"),
+            "project_name": "subrogation-recovery-model",
+            "project_slug": "subrogation_recovery_model",
             "project_id": 42,
             "project_url": "https://x/y",
             "initial_commit_sha": "abc",
-            "files_created": ["README.md"],
+            "files_created": [
+                "README.md",  # base — excluded
+                "governance/model_card.md",  # governance — included
+                "governance/model_registry.json",
+                "governance/three_pillar_validation.md",
+                "data/datasheet_q1.md",  # governance datasheet — included
+                ".gitlab-ci.yml",  # governance — included
+                "src/subrogation_recovery_model/models.py",  # base — excluded
+            ],
             "status": "COMPLETE",
             "failure_reason": None,
         }
         result = build_gitlab_project_result(state)  # type: ignore[arg-type]
+
         assert result.status == "COMPLETE"
         assert result.project_id == 42
         assert result.governance_manifest.risk_tier == "tier_3_moderate"
         assert result.governance_manifest.cycle_time == "tactical"
-        assert result.governance_manifest.artifacts_created == []
+
+        # Only governance-classified paths land in artifacts_created
+        artifacts = result.governance_manifest.artifacts_created
+        assert "governance/model_card.md" in artifacts
+        assert "governance/model_registry.json" in artifacts
+        assert "governance/three_pillar_validation.md" in artifacts
+        assert "data/datasheet_q1.md" in artifacts
+        assert ".gitlab-ci.yml" in artifacts
+        assert "README.md" not in artifacts
+        assert "src/subrogation_recovery_model/models.py" not in artifacts
+
+        # Registry entry mirrors intake + project naming
+        entry = result.governance_manifest.model_registry_entry
+        assert entry["model_id"] == "subrogation_recovery_model"
+        assert entry["project_name"] == "subrogation-recovery-model"
+        assert entry["risk_tier"] == "tier_3_moderate"
+
+        # Regulatory mapping is computed against the committed governance set
+        mapping = result.governance_manifest.regulatory_mapping
+        assert "SR_11_7" in mapping
+        # three_pillar_validation WAS committed, so SR_11_7 gets it
+        assert "governance/three_pillar_validation.md" in mapping["SR_11_7"]
 
     def test_failed_state_defaults_governance(self) -> None:
         state = {
@@ -308,3 +351,5 @@ class TestBuildGitLabProjectResult:
         assert result.status == "FAILED"
         assert result.failure_reason == "boom"
         assert result.governance_manifest.risk_tier == "tier_4_low"
+        assert result.governance_manifest.artifacts_created == []
+        assert result.governance_manifest.model_registry_entry == {}
