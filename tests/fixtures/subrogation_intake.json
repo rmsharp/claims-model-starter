@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0.0",
+  "status": "COMPLETE",
+  "missing_fields": [],
+  "business_problem": "Subrogation recovery dropped ~20% since deployment of a new claims system, primarily because adjusters no longer capture evidence required to pursue recovery (police reports, third-party insurer, fault evidence). There is no adjuster KPI tying performance to subrogation outcomes and the new UI deprioritizes the relevant intake fields.",
+  "proposed_solution": "Embed structured prompts in the claims workflow so adjusters capture the required evidence during intake, and surface a per-claim subrogation likelihood score so claims likely to recover are prioritized. Success is measured on subrogation recovery rate over a 12-month rolling window.",
+  "model_solution": {
+    "target_variable": "successful_subrogation",
+    "target_definition": "Binary outcome: 1 if a claim resulted in a non-zero subrogation recovery within 18 months of first notice of loss, 0 otherwise.",
+    "candidate_features": [
+      "information_completeness_score",
+      "adjuster_tenure_years",
+      "claim_type",
+      "time_from_incident_to_filing_days",
+      "damage_amount_usd",
+      "fault_evidence_level"
+    ],
+    "model_type": "supervised_classification",
+    "evaluation_metrics": [
+      "AUC",
+      "precision_at_top_decile",
+      "recall"
+    ],
+    "is_supervised": true
+  },
+  "estimated_value": {
+    "narrative": "A 10% lift on the current ~$30M/year subrogation recovery yields approximately $3M annually. The range below brackets conservative and optimistic scenarios.",
+    "annual_impact_usd_low": 2000000.0,
+    "annual_impact_usd_high": 4000000.0,
+    "confidence": "medium",
+    "assumptions": [
+      "Current annual subrogation recovery is approximately $30M.",
+      "10% recovery lift is conservative given the proposed levers.",
+      "Adjuster compliance with prompts reaches 60%+ within 6 months."
+    ]
+  },
+  "governance": {
+    "cycle_time": "tactical",
+    "cycle_time_rationale": "Scores are consumed during claim intake (minutes-to-hours) and adjuster workflows change on weekly cadence. Operational would imply streaming auto-decisioning, which this system is not.",
+    "risk_tier": "tier_3_moderate",
+    "risk_tier_rationale": "Advisory recommendation system only; humans make the subrogation decision. No direct consumer-facing impact. Moderate financial exposure.",
+    "regulatory_frameworks": [
+      "SR_11_7",
+      "NAIC_AIS"
+    ],
+    "affects_consumers": true,
+    "uses_protected_attributes": false
+  },
+  "stakeholder_id": "stakeholder_claims_001",
+  "session_id": "intake_subrogation_001",
+  "created_at": "2026-04-15T01:26:58.890814Z",
+  "questions_asked": 7,
+  "revision_cycles": 0
+}

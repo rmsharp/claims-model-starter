@@ -15,7 +15,8 @@ Early implementation. Phases and session boundaries are tracked in `SESSION_NOTE
 | 2B | Data Agent standalone package + CLI + Python API | Complete |
 | 3A | Intake Agent core + LangGraph + CLI | Complete |
 | 3B | Intake Agent Web UI (FastAPI + SSE + HTMX + SQLite) | Complete |
-| 4 | Website Agent (GitLab scaffolding) | Not started |
+| 4A | Website Agent core + GitLab scaffolding (non-governance) | Complete |
+| 4B | Website Agent governance scaffolding + retry-backoff | Not started |
 | 5 | Orchestrator + adapters + end-to-end | Not started |
 | 6 | Production hardening | Not started |
 
@@ -60,6 +61,12 @@ src/model_project_constructor/          # main "orchestrator" package
     app.py                              # FastAPI app + routes + SSE endpoint
     runner.py                           # IntakeSessionStore: SqliteSaver + per-session graph
     templates.py                        # minimal HTMX pages (question/review/complete)
+  agents/website/                       # Website Agent (Phase 4A — non-governance base)
+    state.py, protocol.py, nodes.py, graph.py
+    agent.py                            # WebsiteAgent facade (run(intake, data, target))
+    templates.py                        # pure-python file content generators
+    fake_client.py                      # in-memory GitLab stand-in for tests + CLI
+    cli.py, __main__.py                 # typer CLI (python -m agents.website --fake-gitlab)
 packages/data-agent/                    # standalone: model-project-constructor-data-agent
   pyproject.toml                        # independent distribution
   USAGE.md                              # CLI + Python API documentation
@@ -73,6 +80,7 @@ tests/
   schemas/                              # 88 schema tests
   agents/data/                          # 12 end-to-end Data Agent tests
   agents/intake/                        # 56 intake tests (graph, nodes, CLI, Anthropic)
+  agents/website/                       # 59 website agent tests (templates, fake client, nodes, agent, CLI)
   ui/intake/                            # 22 web UI tests (FastAPI, runner, SQLite resume, SSE)
   data_agent_package/                   # 21 CLI + AnthropicLLMClient tests
   fixtures/sample_request.json          # canonical DataRequest fixture
@@ -81,6 +89,8 @@ tests/
   fixtures/fraud_triage.yaml            # continuous/tier-1 governance scenario
   fixtures/intake_question_cap.yaml     # 10-question cap exhaustion scenario
   fixtures/intake_revision_cap.yaml     # 3-revision cap exhaustion scenario
+  fixtures/subrogation_intake.json      # serialized IntakeReport (Phase 4A website input)
+  fixtures/sample_datareport.json       # serialized DataReport (Phase 4A website input)
   test_data_agent_decoupling.py         # structural decoupling guarantee (2 tests)
 docs/planning/                          # architecture-approaches.md, architecture-plan.md
 SESSION_RUNNER.md                       # per-session operating procedure
@@ -97,7 +107,7 @@ uv sync --extra agents --extra dev
 uv run pytest
 ```
 
-All 201 tests should pass with coverage above 90% (currently ≈96%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 260 tests should pass with coverage above 90% (currently ≈96.9%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
 
 To run the web UI tests as well, add the `ui` extra:
 
@@ -131,6 +141,17 @@ uv run uvicorn model_project_constructor.ui.intake:app --reload
 ```
 
 Then open `http://localhost:8000/`. The UI is a minimal HTMX frontend over the same LangGraph flow used by the CLI; session state is checkpointed to a SQLite file (`intake_sessions.db` by default, override via `INTAKE_DB_PATH`) so interviews survive server restart. Resume via `GET /sessions/{session_id}`. A server-sent-events endpoint at `/sessions/{session_id}/events` emits the current phase snapshot for scripting/monitoring.
+
+To run the Website Agent against seeded intake + data reports (Phase 4A, fake-GitLab only — the real `python-gitlab` client lands in 4B):
+
+```bash
+uv run python -m model_project_constructor.agents.website \
+    --intake tests/fixtures/subrogation_intake.json \
+    --data tests/fixtures/sample_datareport.json \
+    --fake-gitlab
+```
+
+This prints the file tree that would have been committed (28 base files for the subrogation fixture) and dumps a `GitLabProjectResult` JSON payload. Phase 4A scaffolds everything in §11 of `docs/planning/architecture-plan.md` *except* governance artifacts (`governance/`, `data/datasheet_*.md`, `.gitlab-ci.yml`, `.pre-commit-config.yaml`) — those land in Sub-phase 4B.
 
 ## Documents worth reading
 

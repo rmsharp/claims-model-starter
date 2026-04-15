@@ -5,36 +5,68 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Phase 4 of the architecture plan — Website Agent (GitLab project scaffolding). Session 8 should execute **Sub-phase 4A** only (project + base scaffolding); Sub-phase 4B (governance/analysis/tests scaffolding + retry-backoff) is Session 9.
-**Status:** Phase 3B COMPLETE on `master`. Phase 3A also complete. The Intake Agent now ships with both a CLI driver (`python -m model_project_constructor.agents.intake --fixture ...`) and a FastAPI web UI (`uv run uvicorn model_project_constructor.ui.intake:app`) sharing the **same** compiled LangGraph via a shared `SqliteSaver`. 201 tests pass at 96.48% coverage. mypy clean on both `agents/intake/` and `ui/` packages. Commits: `64b8a99` + `081cb20` (Phase 3A); `1c1141a` (Phase 3B).
-**Plan:** `docs/planning/architecture-plan.md` §4.3 (Website Agent responsibility), §5.4 (`GitLabTarget` + `GitLabProjectResult` schemas), §10 "Website Agent LangGraph", §11 "Generated GitLab Repo Structure", §14 Phase 4 (DONE criteria + verification commands). §8 "Governance Integration" is load-bearing — the website agent MUST emit governance artifacts (§8.2) proportional to the `GovernanceMetadata` it receives in the `IntakeReport` and `DataReport`.
+**Task:** Phase 4 of the architecture plan — Website Agent. Session 9 should execute **Sub-phase 4B** only: governance scaffolding (§8.2) + retry/backoff on GitLab errors + a real `python-gitlab` adapter behind the `GitLabClient` Protocol.
+**Status:** Phase 4A COMPLETE on `master`. The Website Agent core ships with a linear LangGraph (`CREATE_PROJECT → SCAFFOLD_BASE → INITIAL_COMMITS → END`), a `GitLabClient` Protocol, a `FakeGitLabClient` for tests/CLI, pure-Python templates for all 28 non-governance base files, and a typer CLI with `--fake-gitlab`. 260 tests pass at 96.88% coverage. mypy strict clean across the 10-file `agents/website/` package. First real-API smoke test of the Phase 3B intake agent ran successfully at the start of Session 8 (`claude-sonnet-4-6` verified) — the 3-session caveat is retired. Commits: `64b8a99` + `081cb20` (Phase 3A); `1c1141a` + `41449a8` (Phase 3B); `<SESSION_8_HASH>` (Phase 4A).
+**Plan:** `docs/planning/architecture-plan.md` §4.3 (Website Agent responsibility + failure modes table), §5.4 (`GitLabProjectResult.governance_manifest` is the 4B output contract), §8 (full governance integration — **§8.2 is the 4B acceptance checklist**), §10 (the full 4A+4B LangGraph with `RETRY_BACKOFF`), §11 (every file listed under `governance/`, `data/datasheet_*.md`, `.gitlab-ci.yml`, `.pre-commit-config.yaml` is governance-bound), §14 Phase 4B (DONE criteria + verification commands).
 **Priority:** HIGH
 
 ### What You Must Do
-1. **Re-read the plan sections that govern Phase 4 before writing any code:**
-   - §4.3 — Website Agent behavior contract (inputs: `IntakeReport` + `DataReport` + `GitLabTarget`; outputs: `GitLabProjectResult`). Failure modes table.
-   - §5.4 — `GitLabTarget` / `GitLabProjectResult` Pydantic schemas. These live at `src/model_project_constructor/schemas/v1/gitlab.py` and ARE ALREADY SHIPPED (see Phase 1).
-   - §10 — Website Agent LangGraph diagram: `START → CREATE_PROJECT → SCAFFOLD_BASE → SCAFFOLD_GOVERNANCE → SCAFFOLD_ANALYSIS → SCAFFOLD_TESTS → INITIAL_COMMITS → END` with `RETRY_BACKOFF` on GitLab errors.
-   - §11 — exact repo structure the agent must generate (README.md, governance/, data/, models/, docs/, .gitlab-ci.yml, etc.). **Use §11 as your acceptance checklist** — every file listed there is a DONE criterion.
-   - §14 Phase 4 — DONE criteria + verification commands. Split into 4A (core project create + base scaffolding) and 4B (governance + analysis + tests + retry).
-   - §8.2 — what governance artifacts are required based on risk tier. The website agent is the place this materializes.
-2. Execute **only Sub-phase 4A** from §14 in Session 8. That is:
-   - `src/model_project_constructor/agents/website/` — new package paralleling `agents/intake/`
-   - `state.py`, `protocol.py` (`GitLabClient` Protocol), `nodes.py`, `graph.py`, `agent.py`
-   - `CREATE_PROJECT` + `SCAFFOLD_BASE` nodes with structured templates for README.md, .gitlab-ci.yml, .gitignore, LICENSE
-   - A fake `GitLabClient` for tests that captures a set of in-memory files instead of hitting a real GitLab. Mirrors the Phase 3A `FixtureLLMClient` pattern.
-   - Tests under `tests/agents/website/` exercising create + base scaffold end-to-end with the fake client.
-3. **Sub-phase 4A verification commands (from §14):**
-   - `uv run pytest tests/agents/website/ -v` → green
-   - `uv run python -m model_project_constructor.agents.website --intake tests/fixtures/subrogation_intake.json --data tests/fixtures/sample_datareport.json --fake-gitlab` → prints a tree of files that WOULD have been committed
-4. **Do NOT start Sub-phase 4B (governance/analysis/tests scaffolding + retry-backoff).** That is Session 9.
-5. **Do NOT start Phase 5 (orchestrator + adapters).** That is Session 10.
-6. **Do NOT touch the intake or data agent packages.** Their public APIs are stable and documented.
-7. **Reuse the LangGraph pattern from Phase 3A.** Split LLM/GitLab-call nodes from interrupt nodes (if any). Parameterize the checkpointer the same way Phase 3B did — default `MemorySaver` for tests, `SqliteSaver` for any long-running UI driver. See `src/model_project_constructor/agents/intake/graph.py:19-70` for the canonical pattern.
+1. **Re-read the plan sections that govern Phase 4B before writing any code:**
+   - §4.3 — failure modes table. 4B must handle `GitLab API error` (HTTP 401/429/5xx) via retry with exponential backoff, 3 attempts max. Name-conflict handling is already in place (4A).
+   - §8.1 / §8.2 — the governance-field → artifact mapping. Risk tier and cycle time both fan out artifacts. Consumers/protected-attribute flags trigger additional files. §8.3 defines monitoring cadence by cycle time.
+   - §10 — insert `SCAFFOLD_GOVERNANCE`, `SCAFFOLD_ANALYSIS`, `SCAFFOLD_TESTS` between 4A's existing `SCAFFOLD_BASE` and `INITIAL_COMMITS`. Add `RETRY_BACKOFF` as a self-loop off `INITIAL_COMMITS` on `GitLabClientError`.
+   - §11 — the governance files the agent must emit: `governance/model_registry.json`, `model_card.md`, `change_log.md`, `three_pillar_validation.md` (tier 3+), `ongoing_monitoring.md` (tier 3+), `deployment_gates.md` (tier 3+), `impact_assessment.md` (tier 2+), `regulatory_mapping.md` (tier 2+), `lcp_integration.md` (tier 1), `eu_ai_act_compliance.md` (if `affects_consumers`), `audit_log/` (tier 1), plus `data/datasheet_<query>.md` (every tier) and `.gitlab-ci.yml` + `.pre-commit-config.yaml` (every tier — 4A explicitly deferred these to 4B).
+   - §14 Phase 4B — DONE criteria: three fixtures exercise tier 1 / tier 2 / tier 3 paths; `GovernanceManifest` lists every artifact; regulatory mapping populated from `regulatory_frameworks`.
 
-### Key Files Shipped Through Phase 3B — Read Before Starting Phase 4
+2. **Execute ONLY Sub-phase 4B.** Additions to make on top of the 4A package:
+   - New nodes `scaffold_governance`, `scaffold_analysis`, `scaffold_tests` in `src/model_project_constructor/agents/website/nodes.py` (they add files to `state["files_pending"]`, same pattern as `scaffold_base`).
+   - New `retry_backoff` edge/self-loop off `initial_commits` for transient `GitLabClientError`. Track attempt count in state (`commit_attempts: int`).
+   - Governance template module `src/model_project_constructor/agents/website/governance_templates.py` — keep it separate from `templates.py` (which is 4A base) so the 4A→4B split is readable in review. Export a `build_governance_files(intake, data, risk_tier, cycle_time, affects_consumers, uses_protected_attributes)` that returns a dict of path→content, paralleling 4A's `build_base_files`.
+   - `build_gitlab_project_result` in `nodes.py:117` must start populating `GovernanceManifest.artifacts_created`, `regulatory_mapping`, and `model_registry_entry`. **Do this — 4A left the manifest empty and tests assert that. Update those assertions.**
+   - A real `python-gitlab` adapter in `src/model_project_constructor/agents/website/gitlab_adapter.py` implementing the `GitLabClient` Protocol. Wraps `gitlab.Gitlab(url, private_token=...)`. Keep it thin — constructor takes a `gitlab_url` + token, all four operations translate `python-gitlab` exceptions into `ProjectNameConflictError` / `GitLabClientError`. Don't unit-test it against the network; just do the adapter wiring and an import smoke test. The existing `FakeGitLabClient` stays the test workhorse.
 
-**Phase 3B web UI (new in this session):**
+3. **Phase 4B verification commands (from §14):**
+   - `uv run pytest tests/agents/website/ -v` → green (includes new test_governance.py — tier 1 / tier 2 / tier 3)
+   - Manual: generate one tier-1 project via the CLI + fake client; verify `governance/audit_log/` and `eu_ai_act_compliance.md` exist in the file tree.
+   - `uv run mypy src/model_project_constructor/agents/website/` → still clean.
+
+4. **Three new fixtures for the governance paths.** `tests/fixtures/pricing_optimization.yaml` already exists as a strategic/tier-2 intake scenario and `fraud_triage.yaml` is continuous/tier-1. For 4B you can reuse them OR mint dedicated JSON intake-report files the way Session 8 generated `subrogation_intake.json`. **Prefer JSON fixtures** — they're faster to load and don't drag the fixture LLM into governance tests.
+
+5. **Do NOT touch the intake or data agent packages.** Their public APIs are stable.
+
+6. **Do NOT start Phase 5 (orchestrator + adapters).** That is Session 10.
+
+7. **Reuse the accumulator pattern.** 4A deliberately flows ALL files through `state["files_pending"]` and flushes them in `INITIAL_COMMITS`. 4B scaffold nodes should merge into the same dict. Do not bypass this — the retry/backoff loop needs a single source of truth for what's about to be committed.
+
+8. **The commit in `INITIAL_COMMITS` is still one commit in 4B.** The §10 note "Commits initial scaffolding in logical chunks with clear messages (not one giant commit)" is a 4B *polish* not a DONE criterion — one commit is acceptable for now, and the plan's §14 4B verification command doesn't require multi-commit output. If you split, split by governance tier; but it's optional.
+
+### Key Files Shipped Through Phase 4A — Read Before Starting Phase 4B
+
+**Phase 4A website agent (new in Session 8):**
+- `src/model_project_constructor/agents/website/__init__.py` — public API: `WebsiteAgent`, `GitLabClient`, `FakeGitLabClient`, `FakeProject`, `ProjectInfo`, `CommitInfo`, `ProjectNameConflictError`, `GitLabClientError`, `build_website_graph`, `build_gitlab_project_result`, `make_nodes`, `route_after_create`, `WebsiteState`, `initial_state`, `MAX_NAME_CONFLICT_ATTEMPTS`, `build_base_files`, `derive_project_name`, `derive_project_slug`.
+- `src/model_project_constructor/agents/website/state.py` — `WebsiteState` TypedDict. Fields: `intake_report`, `data_report`, `gitlab_target` (all dict-shaped `model_dump(mode="json")`), `project_name`, `project_slug`, `project_id`, `project_url`, `default_branch`, `files_pending: dict[str, str]` (the accumulator), `initial_commit_sha`, `files_created: list[str]`, `status`, `failure_reason`. `MAX_NAME_CONFLICT_ATTEMPTS = 5` (from plan §4.3 failure modes row).
+- `src/model_project_constructor/agents/website/protocol.py` — `GitLabClient` Protocol (`create_project`, `commit_files`), `ProjectInfo` / `CommitInfo` dataclasses, `GitLabClientError` base + `ProjectNameConflictError` subclass. 4B will either add `get_project`/`delete_project` methods or leave them off — 4B only needs create + commit.
+- `src/model_project_constructor/agents/website/templates.py` — pure-Python file-content generators. Public helpers: `derive_project_name`, `derive_project_slug`, and the `render_*` functions. The composition entry point is `build_base_files(intake, data, project_name, project_slug) -> dict[str, str]`. Keep this module the BASE (non-governance) scaffolder. **Session 9 should add `governance_templates.py` as a sibling.**
+- `src/model_project_constructor/agents/website/nodes.py` — `make_nodes(client)` returns `{create_project, scaffold_base, initial_commits}`. `create_project` walks up to `MAX_NAME_CONFLICT_ATTEMPTS` suffix candidates (`name`, `name-v2`, ..., `name-v5`) via `_candidate_names`, catches `ProjectNameConflictError`, and maps other `GitLabClientError`s to `status=FAILED` with a `failure_reason` string tagged `gitlab_error:` or `project_name_conflict:`. `scaffold_base` merges `build_base_files(...)` into `state["files_pending"]`. `initial_commits` calls `client.commit_files(...)` once, sets `initial_commit_sha` + `files_created`, clears `files_pending`, and transitions `status` to `COMPLETE`. The `route_after_create` function sends FAILED states straight to END. `build_gitlab_project_result(state)` assembles the final `GitLabProjectResult` with an **empty** `GovernanceManifest` for 4A — Session 9 populates this.
+- `src/model_project_constructor/agents/website/graph.py` — `build_website_graph(client, *, checkpointer=None)`. Mirrors `build_intake_graph` shape (kwarg checkpointer defaulting to `MemorySaver`). Topology: `START → create_project → (FAILED → END | scaffold_base) → initial_commits → END`. 4B inserts three nodes and a retry-backoff loop.
+- `src/model_project_constructor/agents/website/agent.py` — `WebsiteAgent(client).run(intake, data, target) -> GitLabProjectResult`. Uses `thread_id = f"website::{intake.session_id}"`. **Precondition guard:** if either report has `status != "COMPLETE"`, the agent returns a FAILED `GitLabProjectResult` with `failure_reason=precondition_failed: ...` WITHOUT creating a GitLab project. Two tests assert no project is created in the fake client under these conditions.
+- `src/model_project_constructor/agents/website/fake_client.py` — `FakeGitLabClient` implementing `GitLabClient`. Accepts `existing_names: set[str]` to pre-seed conflicts. `commit_files` derives a deterministic sha1 from `f"{message}|{branch}|" + "|".join(sorted(files))` so identical inputs yield identical shas across instances (the `test_commit_files_deterministic_sha` test pins this). Test helpers: `get_files(project_id)`, `get_project_by_name(name)`, and a `.projects` dict + `.commits` list per project for assertions. Each `FakeProject` has a `full_path` property for `group_path/name`.
+- `src/model_project_constructor/agents/website/cli.py` — single `@app.command()` typer with NO `@app.callback()`, so `python -m ... --intake X --data Y --fake-gitlab` matches the plan's literal verification command. Refuses to run without `--fake-gitlab` (exits with code 2). Reads intake + data JSON via Pydantic `model_validate_json`, constructs a `GitLabTarget` from flags (`--group-path`, `--gitlab-url`) with `project_name_hint=intake_report.session_id`, runs the agent, prints a file tree via `_render_file_tree`, then dumps the `GitLabProjectResult` JSON to stdout (or `--output`). **The indent-by-depth file tree has a cosmetic glitch** (shallow files get 0 indent, deeper get more — it doesn't group visually). Phase 4B or later can make it proper ASCII-art if desired.
+- `src/model_project_constructor/agents/website/__main__.py` — three-line shim for `python -m`.
+
+**Phase 4A tests (59 new tests in Session 8):**
+- `tests/agents/website/conftest.py` — fixtures: `intake_report_path`, `data_report_path`, `intake_report` (parsed `IntakeReport`), `data_report` (parsed `DataReport`), `gitlab_target` (concrete `GitLabTarget`), `fake_client` (fresh `FakeGitLabClient` per test).
+- `tests/agents/website/test_templates.py` (33 tests) — `derive_project_name` / `derive_project_slug` edge cases (punctuation, empty, leading digit), individual renderer smoke tests, `build_base_files` expected-file-set assertion, governance-absent assertion, round-trip through Pydantic for the JSON reports, query-content fidelity, empty-data-report handling.
+- `tests/agents/website/test_fake_client.py` (8 tests) — `create_project` increment, seeded name conflict, double-create conflict, commit stores content, deterministic sha across instances, `get_project_by_name`, multiple-commits tracking with `full_path`.
+- `tests/agents/website/test_nodes.py` (13 tests) — `create_project` happy path, single-conflict suffix, 5-way conflict exhaustion → FAILED, non-conflict `GitLabClientError` → FAILED with `gitlab_error:` prefix; `scaffold_base` populates and preserves pending; `initial_commits` happy path, empty-pending fail, commit-flaky client fail; `route_after_create` both branches; `build_gitlab_project_result` complete + failed shapes.
+- `tests/agents/website/test_agent.py` (8 tests) — happy path, every §11 base file present (names pinned), governance artifacts absent, files persisted in fake client, name-conflict suffix end-to-end, incomplete intake → FAILED + no project created, incomplete data → FAILED + no project created, governance manifest reflects intake tier even with empty artifact list.
+- `tests/agents/website/test_cli.py` (3 tests) — CLI refuses without `--fake-gitlab`, happy path prints tree + parseable JSON, `--output` writes to file.
+
+**Phase 4A test fixtures (new in Session 8):**
+- `tests/fixtures/subrogation_intake.json` — serialized `IntakeReport` generated by running the existing `subrogation.yaml` through `IntakeAgent.run_with_fixture(...)` on the real LangGraph. Status COMPLETE, tier 3 moderate, cycle time tactical. This is the canonical Phase 4 intake input.
+- `tests/fixtures/sample_datareport.json` — hand-written `DataReport` for the subrogation scenario. One primary query (`subrogation_training_set`) with two quality checks (`row_count_sanity`, `target_nullability`). Status COMPLETE, data_quality_concerns populated, expected row count `millions`. This is the canonical Phase 4 data input. **Both fixtures have Pydantic round-trip validation baked into the test fixtures themselves** (they fail loudly if the schemas drift).
+
+**Phase 3B web UI (unchanged since Session 7):**
 - `src/model_project_constructor/ui/__init__.py` — empty package marker.
 - `src/model_project_constructor/ui/intake/__init__.py` — public API: `app`, `create_app`, `IntakeSessionStore`, `SessionSnapshot`, `InvalidPhaseError`.
 - `src/model_project_constructor/ui/intake/runner.py` — `IntakeSessionStore` owns a single `SqliteSaver` and per-session compiled graphs. Key methods: `start_session`, `answer`, `review`, `get_snapshot`, `has_session`, `close`. Guarded by a reentrant lock because FastAPI runs sync endpoints on a threadpool. `_get_graph(session_id)` is the lazy-build cache — the LLM factory is called at most once per session.
@@ -71,6 +103,19 @@
 - Did NOT do the first real-API smoke test. Reason: no `ANTHROPIC_API_KEY` available in this session, same as Session 6. The `_default_llm_factory` in `ui/intake/app.py` lazy-constructs `AnthropicLLMClient`, so importing `app` without an API key works (health/index/resume-form/SSE routes don't touch the LLM) but `POST /sessions` would fail at first node call. Deferred to the first session that has an API key.
 
 ### Gotchas — Read These First
+
+**Phase 4A gotchas (new — Session 9 must read first):**
+- **`INITIAL_COMMITS` expects the accumulator to be non-empty.** If `state["files_pending"]` is `{}` at flush time, the node returns `status=FAILED` with `failure_reason="no_files_scaffolded"`. Session 9's `scaffold_governance` / `scaffold_analysis` / `scaffold_tests` nodes should merge into the dict, never replace. The 4A `scaffold_base` node demonstrates the pattern (`nodes.py:88-98`).
+- **`build_gitlab_project_result` is 4A-aware, not 4B-ready.** It reads `intake["governance"]` for risk_tier/cycle_time but returns `artifacts_created=[]` and `regulatory_mapping={}`. Session 9 MUST update this function AND the two tests that pin the empty values (`test_agent.py::test_governance_artifacts_absent_in_4a` and `test_nodes.py::test_complete_state_produces_valid_result`).
+- **The `.gitlab-ci.yml` and `.pre-commit-config.yaml` omission in 4A is DELIBERATE.** §8.2 classifies both as "always" governance artifacts, so they belong in `scaffold_governance`, not `scaffold_base`. There is a test in `test_agent.py::test_governance_artifacts_absent_in_4a` that asserts they're NOT emitted. Session 9 should delete that assertion and add positive ones to a new `test_governance.py`.
+- **`data/datasheet_<query_name>.md` is governance, not base data.** §8.2 "Always" row includes it. 4A emits `data/README.md` (a plain data dictionary) but NOT the per-query datasheets. Session 9 adds them.
+- **The `FakeGitLabClient.commit_files` produces deterministic sha1s** keyed on message + branch + sorted paths. Session 9's multi-commit option (if you split governance into its own commit) will yield a predictable second sha — pin it in tests or not, your call, but be aware.
+- **Name conflict handling is done.** Don't reinvent it. `_candidate_names` in `nodes.py:28-39` + the `create_project` try/except loop is the canonical spot. 4B's retry/backoff is for a different class of failure (HTTP 429/5xx on COMMIT, not on CREATE).
+- **The precondition guard in `WebsiteAgent.run` returns FAILED without creating a project.** Two `test_agent.py` tests assert `fake_client.projects == {}` after an incomplete-intake / incomplete-data call. Session 9 must preserve this behavior when adding the retry loop: a failed precondition still goes straight to END, not through any scaffold node.
+- **`thread_id` is `f"website::{intake.session_id}"`** (note the `website::` prefix to avoid collisions with the intake agent's thread_ids if both use the same checkpointer). See `agent.py:55`. Session 9 should keep this convention.
+- **First real-API smoke test of Phase 3B intake was done at Session 8 start.** `claude-sonnet-4-6` model ID works. `AnthropicLLMClient` → Anthropic HTTP path is verified end-to-end for `POST /sessions` + one answer. The 3-session-deferred caveat is RETIRED. See "What Session 8 Did" below for the exact commands. The Phase 2B `AnthropicLLMClient` in the standalone data agent is STILL unverified (same `claude-sonnet-4-6` hardcode, different client code path). Session 9 does not need to smoke-test it — save for when the orchestrator lands.
+
+**Phase 3B gotchas (unchanged from Session 7):**
 - **Module-level `app = create_app()` in `ui/intake/app.py:182`** creates `intake_sessions.db` in the current working directory at import time because the default SQLite path is `intake_sessions.db`. Session 7 added `intake_sessions.db*` to `.gitignore` (including `-shm` and `-wal` WAL-mode siblings). If you rename the default path, update `.gitignore`.
 - **Override the DB path via `INTAKE_DB_PATH` env var** — production deployments should point this at a persistent location outside the cwd. `create_app(db_path=...)` overrides it for tests.
 - **`SqliteSaver(conn)` uses a single shared `sqlite3.Connection` with `check_same_thread=False`.** FastAPI runs sync endpoints on a threadpool, so the connection is touched from multiple threads. `IntakeSessionStore` guards every graph call with a `threading.RLock` — do NOT remove this lock. SQLite connection itself is not thread-safe even with `check_same_thread=False`; the lock is what makes it safe.
@@ -89,30 +134,109 @@
 - **`agents/data/__init__.py`, `db.py`, `llm.py` in the main package are NOT implementations** — thin re-exports of the standalone.
 - **Typer single-command trap:** data agent CLI has `@app.callback()` + `run` subcommand; intake agent CLI has NO callback and one command so `python -m ... --fixture X` works directly. If Phase 4's website agent CLI follows the intake pattern, watch out for this choice at design time.
 - **Intake fixture schema is `intake_fixture/v1`** (see `src/model_project_constructor/agents/intake/fixture.py:62`). Required: `schema`, `stakeholder_id`, `session_id`, `qa_pairs`, `draft`, `governance`. Optional: `initial_problem`, `domain`, `draft_after`, `review_sequence`, `revised_draft`.
-- **Coverage gate is `--cov-fail-under=90`**, currently at 96.48%. Phase 4's website agent + new test surface will pressure this; write tests as you go.
+- **Coverage gate is `--cov-fail-under=90`**, currently at 96.88% (260 tests). Phase 4B's new governance/retry test surface should keep this above 95%.
 - **Schema-plan reconciliation decisions from Phase 2A are still load-bearing.** Do not change the `DataReport` status interpretations without updating data agent tests.
-- **README.md is updated through Phase 3B** (phase table, repo layout with `ui/intake/`, test count 201, web-UI getting-started block). Update it again when Phase 4 ships.
+- **README.md is updated through Phase 4A** (phase table split into 4A Complete / 4B Not started, repo layout with `agents/website/`, test count 260, website-agent getting-started block, fixture list). Update it again when Phase 4B ships.
 - **QC "PASSED/FAILED" is still a coarse proxy** in the data agent (≥1 row = PASSED). Phase 6 work.
 - **`packages/data-agent/USAGE.md` is the standalone's README.** Deleting or renaming it breaks `uv sync`.
 - **Intake agent still has NO `USAGE.md`** — Phase 3A/3B quick-starts are in the main README. A dedicated `src/model_project_constructor/agents/intake/USAGE.md` or `src/model_project_constructor/ui/intake/USAGE.md` would be nice but is not blocking.
 - **`_DummyLLM` in `agents/intake/cli.py:85-99`** is still there for the CLI — a placeholder that `run_with_fixture` immediately replaces. The web UI does NOT use it (it has a real factory at app-construction time).
-- **mypy strict is clean on `agents/intake/` (10 files) and `ui/` (5 files) as of Phase 3B.** The rest of the repo still has 33 pre-existing strict-mypy errors (mostly the Anthropic SDK's `ContentBlock` union for `anthropic_client.py`, plus one `QualityCheck.execution_status` `arg-type` error in the data agent). Phase 4's `agents/website/` package should be mypy-clean from the start — run `uv run mypy src/model_project_constructor/agents/website/` before committing.
+- **mypy strict is clean on `agents/intake/` (10 files), `ui/` (5 files), and `agents/website/` (10 files) as of Phase 4A.** The rest of the repo still has ~33 pre-existing strict-mypy errors (mostly the Anthropic SDK's `ContentBlock` union for `anthropic_client.py`, plus one `QualityCheck.execution_status` `arg-type` error in the data agent). Phase 4B's new files should be mypy-clean from the start — run `uv run mypy src/model_project_constructor/agents/website/` before committing.
 - **Intake graph re-entry does NOT leak state across sessions** as long as each session uses a unique `thread_id`. Both the CLI and the web UI use `session_id` verbatim as `thread_id`. Phase 4 should do the same.
 - **`python-multipart` is a hard runtime dep of the FastAPI Form handling**. Session 7 added it to the `ui` extras. If a future session trims the extras, do NOT remove `python-multipart` — `POST /sessions` will 500 on import-time dependency resolution.
 
 ### How You Will Be Evaluated
-Your handoff will be scored on:
-1. Was the ACTIVE TASK block sufficient to orient the next session into Phase 4A?
-2. Did Session 8 reuse the Phase 3A/3B LangGraph patterns (node split, parameterized checkpointer, stateless fake clients) instead of inventing new ones?
-3. Did Session 8 execute only Sub-phase 4A, or did it bundle 4B?
-4. Are the §11 generated-repo-structure files all accounted for in the website agent's test assertions?
-5. Were the Phase 2A + 2B + 3A + 3B gotchas preserved for Session 9 without dilution?
-6. Did Session 8 touch the intake or data agent packages? (It should not — they are stable.)
-7. Did Session 8 do the first real-API smoke test OR explicitly defer it with a reason?
+Your (Session 9's) handoff will be scored on:
+1. Was the ACTIVE TASK block sufficient to orient Session 10 into Phase 5 (orchestrator)?
+2. Did Session 9 execute only Sub-phase 4B, or did it bundle Phase 5?
+3. Does the governance scaffolding match §8.2 exactly for tier 1 / tier 2 / tier 3? Are the tier-gated artifacts proportional?
+4. Does `GovernanceManifest.regulatory_mapping` populate correctly from `regulatory_frameworks`?
+5. Does the retry/backoff loop on `INITIAL_COMMITS` use bounded attempts (max 3 per §4.3) and surface the final failure reason cleanly?
+6. Is the `python-gitlab` adapter thin, typed, and importable without side effects?
+7. Were the Phase 4A gotchas preserved for Session 10 without dilution?
+8. Did Session 9 touch the intake, data, or 4A website base templates? (It should not — `templates.py` is stable; governance lives in `governance_templates.py`.)
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
+
+### What Session 8 Did
+**Deliverable:** Phase 4A of architecture plan — Website Agent core + LangGraph + GitLab scaffolding (non-governance) + `FakeGitLabClient` + typer CLI + 59 tests (COMPLETE)
+**Started:** 2026-04-14
+**Completed:** 2026-04-14
+**Commits:** `<SESSION_8_HASH>` (fill in on commit).
+
+**What was done (chronological):**
+1. Phase 0 orientation — read SAFEGUARDS in full, ACTIVE TASK + Session 7 block from SESSION_NOTES, checked git (clean, 8 commits ahead of origin at session start), confirmed `methodology_dashboard.py` still absent and `gh issue list` still empty. Reported findings. Waited for the user to say "go".
+2. **Real-API smoke test of Phase 3B intake agent (retires 3-session caveat).** User confirmed an `ANTHROPIC_API_KEY` in `.env` (already gitignored). Sourced it, ran `uv run uvicorn model_project_constructor.ui.intake:app --port 8765` with `INTAKE_DB_PATH=/tmp/intake_smoketest.db`, POSTed a subrogation session (`smoke-test-1`), received a contextually-grounded Claude question ("walk me through the current process for identifying which subrogation claims to pursue"), POSTed one answer, received a substantive follow-up ("what does that recovery typically look like in dollar amounts and what percentage of claims result in recovery"). Stopped uvicorn, deleted `/tmp/intake_smoketest.db*`. **`claude-sonnet-4-6` works against the live Anthropic API; the `claude-sonnet-4-5-20250929` fallback is unneeded.** The Phase 2B data-agent `AnthropicLLMClient` remains unverified but is a separate code path — deferring that to Phase 5 (orchestrator session).
+3. Phase 1B session stub written to SESSION_NOTES.md BEFORE any technical work.
+4. Re-read architecture-plan sections governing Phase 4: §4.3 (contract + failure modes), §5.4 (schemas, already shipped in Phase 1), §8 (governance integration — **critical for the 4A↔4B split**), §10 (full LangGraph topology), §11 (file structure acceptance checklist), §14 Phase 4A (DONE criteria + verification commands).
+5. **Resolved the 4A/4B scope ambiguity.** The ACTIVE TASK block from Session 7 paraphrased 4A as "README, .gitlab-ci.yml, .gitignore, LICENSE" — narrower than §14 Phase 4A's "base repo structure (no governance artifacts yet)" + "all .qmd files, all src/ modules, unit test files". I took §14 as authoritative and additionally applied §8.2's classification rule: **anything §8.2 lists as a governance artifact (including `.gitlab-ci.yml`, `.pre-commit-config.yaml`, and `data/datasheet_*.md`) is out-of-scope for 4A**. Everything else in §11 is in-scope. Net result: 28 base files per project, governance files deferred to 4B. This reading is defensible, tests it, and avoids the bundling trap.
+6. Studied the Phase 3A intake agent pattern before writing any website code: `state.py` (TypedDict, no reducers, `initial_state()` helper), `protocol.py` (Protocol + dataclasses for DTOs), `nodes.py` (`make_nodes(client)` closure + per-node pure functions + routing helper + `build_*_report` assembler), `graph.py` (`build_*_graph(client, *, checkpointer=None)`), `agent.py` (facade with `run(...)`), `cli.py` (single `@app.command()` no callback), `__main__.py` (three-line shim). The website agent mirrors this one-for-one.
+7. Built the `agents/website/` package in order: `state.py` → `protocol.py` → `templates.py` (pure file-content generators, ~400 lines) → `nodes.py` → `graph.py` → `fake_client.py` → `agent.py` → `cli.py` → `__main__.py` → `__init__.py` (public API).
+8. **Graph topology decision.** §10 lists `CREATE_PROJECT → SCAFFOLD_BASE → SCAFFOLD_GOVERNANCE → SCAFFOLD_ANALYSIS → SCAFFOLD_TESTS → INITIAL_COMMITS → END`. I chose to implement the FULL accumulator pattern for 4A — `SCAFFOLD_BASE` populates `state["files_pending"]` and `INITIAL_COMMITS` flushes — instead of inlining the commit in `SCAFFOLD_BASE`. That way Session 9 only needs to merge additional entries into `files_pending` before the existing `INITIAL_COMMITS` fires, with zero refactor of 4A nodes. This is the single most important architectural decision of the session.
+9. **Name-conflict handling.** `_candidate_names()` produces `[base, base-v2, base-v3, base-v4, base-v5]`. The `create_project` node walks them in order, catching `ProjectNameConflictError` on each and only surfacing `status=FAILED` with `failure_reason="project_name_conflict:..."` after all 5 are taken. Tested with a pre-seeded `FakeGitLabClient(existing_names=...)` covering single-conflict, 5-way exhaustion, and end-to-end via the agent facade.
+10. **`WebsiteAgent.run` precondition guard.** If `intake_report.status != "COMPLETE"` OR `data_report.status != "COMPLETE"`, returns a FAILED `GitLabProjectResult` with `failure_reason=precondition_failed:intake_status=...` WITHOUT creating any GitLab project. Two tests pin this: `test_incomplete_intake_report_halts` and `test_incomplete_data_report_halts` both assert `fake_client.projects == {}` after the call.
+11. **Fixtures.** Discovered `tests/fixtures/subrogation_intake.json` and `sample_datareport.json` did not exist — the ACTIVE TASK block from Session 7 referenced them in the literal verification command but they were never created. Generated `subrogation_intake.json` by running `tests/fixtures/subrogation.yaml` through `IntakeAgent.run_with_fixture(...)` and dumping the validated `IntakeReport`. Hand-wrote `sample_datareport.json` — one primary query (`subrogation_training_set`) with full SQL, 2 quality checks, a Datasheet, request/summary/expectations populated, all fields conforming to the v1 schema. Validated both via `model_validate_json` round-trip before using them in tests.
+12. **Pre-test smoke run of the whole package** before writing the test suite: `uv run python -m model_project_constructor.agents.website --intake ... --data ... --fake-gitlab` → COMPLETE, 28 files committed, deterministic sha. Validated the happy path architecturally.
+13. Wrote 59 tests across 5 files (`test_templates.py`, `test_fake_client.py`, `test_nodes.py`, `test_agent.py`, `test_cli.py`) + conftest. Tests cover: slug/name derivation edge cases, every individual renderer, full `build_base_files` file set, per-node success + failure paths, name-conflict suffix walking, `WebsiteAgent.run` happy path with all §11 base files asserted by name, precondition guards, governance-absent assertion (to be deleted in 4B), CLI arg validation + happy path + `--output` file.
+14. First test run: **59 passed on the first invocation.** No debugging required. This is unusual and I attribute it directly to how faithfully the website agent mirrors the Phase 3A intake agent's pattern — the 4A graph topology, node signature, and facade shape are 1:1 copies of shapes that already had tests pinning them.
+15. Ran the full suite: **260 passed, 96.88% coverage** (up from 201 @ 96.48%). `templates.py` at 100%, `state.py` at 100%, `agent.py` at 100%, `protocol.py` at 92% (the 2 uncovered lines are the Protocol `...` ellipsis bodies, which mypy treats as reachable for coverage but pytest never executes — acceptable).
+16. Ran `uv run mypy src/model_project_constructor/agents/website/` — 2 errors on first run: unused `# type: ignore[arg-type]` on the `GovernanceManifest` Literal args in `nodes.py:163-164`. Pydantic's v2 Literal coercion of `dict.get(..., "default")` is apparently smarter than I expected. Removed the `type: ignore` comments → **0 errors across 10 source files.**
+17. Ran the literal plan verification command `uv run python -m model_project_constructor.agents.website --intake tests/fixtures/subrogation_intake.json --data tests/fixtures/sample_datareport.json --fake-gitlab` — prints the file tree (28 files) and dumps a valid `GitLabProjectResult` JSON with `status=COMPLETE`, `project_url=https://fake.gitlab.test/data-science/model-drafts/intake-subrogation-001`, deterministic commit sha, all 28 paths in `files_created`. §14 Phase 4A verification satisfied.
+18. Updated README.md: phase table split into 4A Complete / 4B Not started, repo layout extended with `agents/website/` module breakdown, tests section shows `agents/website/ # 59 website agent tests`, fixtures list extended with `subrogation_intake.json` + `sample_datareport.json`, test count updated 201 → 260, coverage note 96% → 96.9%, new "Website Agent CLI" quick-start block with the literal verification command + note about governance deferral to 4B.
+19. Rewrote the `ACTIVE TASK` block for **Phase 4B** (Website Agent governance scaffolding + retry/backoff + real `python-gitlab` adapter). Points Session 9 at §4.3 failure modes, §8.1/8.2/8.3, §10 full topology, §11 governance files, §14 Phase 4B verification. Enumerates the exact tier 1/2/3 artifacts, the `regulatory_mapping` population requirement, and the three nodes to insert between `SCAFFOLD_BASE` and `INITIAL_COMMITS`.
+20. Preserved the Phase 3B gotchas verbatim and prepended a new **"Phase 4A gotchas"** block with 8 new entries (accumulator discipline, `build_gitlab_project_result` 4A-awareness, deliberate `.gitlab-ci.yml` / `.pre-commit-config.yaml` omission, datasheet-as-governance, deterministic fake-client shas, name-conflict is done, precondition guard behavior, `thread_id` prefix convention).
+
+**Key design calls:**
+- **Accumulator pattern in state.** `files_pending: dict[str, str]` lives in the state, not in a closure. `SCAFFOLD_BASE` merges, `INITIAL_COMMITS` flushes. Session 9's three new scaffold nodes will just merge more entries. This makes 4B's expansion a ~50-line diff instead of a refactor.
+- **Separate `templates.py` from `nodes.py`.** Pure-python template functions are trivially unit-testable in isolation (33 of the 59 tests are template-level). Session 9 should add `governance_templates.py` as a sibling instead of bloating `templates.py` — the 4A/4B split stays legible in code review.
+- **Dict-shaped state, not Pydantic-shaped.** `WebsiteState` stores `intake_report`, `data_report`, `gitlab_target` as dicts (`model_dump(mode="json")`) so any LangGraph checkpointer can serialize them without custom codecs. Templates accept dicts directly. The Pydantic models are only touched at the boundary (`WebsiteAgent.run` input + `build_gitlab_project_result` output).
+- **Precondition guard returns FAILED, doesn't raise.** §12 says expected failures → status in return, exceptions only for programming errors. An upstream-incomplete report is an expected failure. Two tests pin the no-side-effect behavior.
+- **`thread_id = f"website::{session_id}"`** instead of plain `session_id`. Avoids collisions if Phase 5's orchestrator ever shares a single checkpointer across agents. Micro-decision but worth calling out.
+- **`FakeGitLabClient` deterministic shas.** `sha1(f"{message}|{branch}|" + "|".join(sorted(files)))`. Same files + same message → same sha. Enables exact pinning in tests if future sessions want it, without making the current tests sensitive to ordering.
+- **CLI refuses to run without `--fake-gitlab`.** Exit code 2 with a clear message pointing at 4B. Real `python-gitlab` adapter is 4B's job; the CLI shouldn't silently succeed with a no-op backend and then confuse the operator when nothing lands in GitLab.
+- **`build_gitlab_project_result` returns an empty but valid `GovernanceManifest`.** `artifacts_created=[]`, `regulatory_mapping={}`, but `risk_tier`/`cycle_time` are read from the intake report so downstream consumers can trust the manifest shape today. 4B will populate the two collections.
+
+**Files created (20):**
+- `src/model_project_constructor/agents/website/__init__.py`
+- `src/model_project_constructor/agents/website/__main__.py`
+- `src/model_project_constructor/agents/website/state.py`
+- `src/model_project_constructor/agents/website/protocol.py`
+- `src/model_project_constructor/agents/website/templates.py`
+- `src/model_project_constructor/agents/website/nodes.py`
+- `src/model_project_constructor/agents/website/graph.py`
+- `src/model_project_constructor/agents/website/fake_client.py`
+- `src/model_project_constructor/agents/website/agent.py`
+- `src/model_project_constructor/agents/website/cli.py`
+- `tests/agents/website/__init__.py`
+- `tests/agents/website/conftest.py`
+- `tests/agents/website/test_templates.py`
+- `tests/agents/website/test_fake_client.py`
+- `tests/agents/website/test_nodes.py`
+- `tests/agents/website/test_agent.py`
+- `tests/agents/website/test_cli.py`
+- `tests/fixtures/subrogation_intake.json`
+- `tests/fixtures/sample_datareport.json`
+
+**Files modified (2):**
+- `README.md` — phase table, repo layout, test count, coverage note, website-agent quick start, fixture list.
+- `SESSION_NOTES.md` — ACTIVE TASK rewritten for Phase 4B; Session 8 block below; Phase 4A gotchas block; Session 7 handoff evaluation.
+
+**Session 7 Handoff Evaluation (Session 8 scoring Session 7):**
+- **Score: 9/10**
+- **What helped (ranked by time saved):**
+  1. **"Reuse the LangGraph pattern from Phase 3A. ... See `src/model_project_constructor/agents/intake/graph.py:19-70` for the canonical pattern."** Exact file:line was gold. I copied the Phase 3A shape one-for-one and the first test run was 59/59. The 1-for-1 fidelity is what made this the fastest phase so far.
+  2. **The full inventory of Phase 3B key files with line numbers** (`ui/intake/runner.py:122->144`, `app.py:182`, `fixture.py:95-122`, etc.). I didn't need any of them for 4A specifically, but the shape of the inventory taught me the target quality bar for my own handoff.
+  3. **"Use §11 as your acceptance checklist — every file listed there is a DONE criterion."** Directly shaped my `test_all_section_11_base_files_scaffolded` test which pins every file by name. Without this sentence I probably would have written a weaker "at least 20 files" test.
+  4. **The "Typer single-command trap"** warning made me pick the `@app.command()`-no-callback pattern for the website CLI in 30 seconds instead of discovering it by trial and error.
+  5. **The `FixtureLLMClient` statelessness story.** I absorbed the general principle ("state lives in graph state, not in client instances") and used it implicitly when designing `FakeGitLabClient`. No accident — I patterned the fake after the fixture.
+- **What was missing (and cost me time):**
+  1. **The 4A/4B scope ambiguity.** The ACTIVE TASK block said "CREATE_PROJECT + SCAFFOLD_BASE nodes with structured templates for README.md, .gitlab-ci.yml, .gitignore, LICENSE" — which is NARROWER than §14 Phase 4A's "base repo structure (no governance artifacts yet)" + "all .qmd files, all src/ modules, unit test files". I had to read §14 + §8.2 carefully to decide. I settled on "§14 + §8.2" as authoritative and delivered the full 28-file base. If Session 7 had either (a) enumerated the 28 files explicitly or (b) stated "§14 is authoritative, ignore the narrower summary above", I would have saved ~10 minutes.
+  2. **`subrogation_intake.json` and `sample_datareport.json` did not exist.** The ACTIVE TASK block quoted a verification command referencing them, but neither Session 6 nor Session 7 created them. I had to generate the intake from `subrogation.yaml` and hand-write the data report. Not hard, but Session 7 could have flagged this. (Fair-minded note: these fixtures are 4A-specific test inputs, so Session 7 legitimately couldn't have created them earlier — the call-out would have been the contribution.)
+- **What was wrong:** Nothing verifiable. The gotchas all held up. The `python-multipart` hard-dep warning was moot for 4A but still valid. The `methodology_dashboard.py` absence was correctly flagged.
+- **ROI:** The handoff was ~100 lines of ACTIVE TASK + ~60 lines of gotchas. Reading it cost ~2 minutes. It saved me an estimated 30–45 minutes of pattern discovery and probably prevented at least one rewrite. Net ROI very positive.
+- **Why not 10/10:** The scope ambiguity in item 1 above is a real cost — it forced me into a judgment call during Phase 2 (Execute) instead of letting me trust the block verbatim. A 10/10 handoff would have told me the final file count up front. Everything else earned the 9.
 
 ### What Session 7 Did
 **Deliverable:** Phase 3B of architecture plan — Intake Agent Web UI (FastAPI + SSE + HTMX + SQLite checkpointer) (COMPLETE)
