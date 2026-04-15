@@ -6,7 +6,7 @@
 
 ## ACTIVE TASK
 **Task:** Phase 4 of the architecture plan — Website Agent (GitLab project scaffolding). Session 8 should execute **Sub-phase 4A** only (project + base scaffolding); Sub-phase 4B (governance/analysis/tests scaffolding + retry-backoff) is Session 9.
-**Status:** Phase 3B COMPLETE on `master`. Phase 3A also complete. The Intake Agent now ships with both a CLI driver (`python -m model_project_constructor.agents.intake --fixture ...`) and a FastAPI web UI (`uv run uvicorn model_project_constructor.ui.intake:app`) sharing the **same** compiled LangGraph via a shared `SqliteSaver`. 201 tests pass at 96.48% coverage. mypy clean on both `agents/intake/` and `ui/` packages. Commits: `64b8a99` + `081cb20` (Phase 3A); Session-7 single commit (pending at close-out) — Phase 3B implementation + tests + pyproject + README + SESSION_NOTES.
+**Status:** Phase 3B COMPLETE on `master`. Phase 3A also complete. The Intake Agent now ships with both a CLI driver (`python -m model_project_constructor.agents.intake --fixture ...`) and a FastAPI web UI (`uv run uvicorn model_project_constructor.ui.intake:app`) sharing the **same** compiled LangGraph via a shared `SqliteSaver`. 201 tests pass at 96.48% coverage. mypy clean on both `agents/intake/` and `ui/` packages. Commits: `64b8a99` + `081cb20` (Phase 3A); `1c1141a` (Phase 3B).
 **Plan:** `docs/planning/architecture-plan.md` §4.3 (Website Agent responsibility), §5.4 (`GitLabTarget` + `GitLabProjectResult` schemas), §10 "Website Agent LangGraph", §11 "Generated GitLab Repo Structure", §14 Phase 4 (DONE criteria + verification commands). §8 "Governance Integration" is load-bearing — the website agent MUST emit governance artifacts (§8.2) proportional to the `GovernanceMetadata` it receives in the `IntakeReport` and `DataReport`.
 **Priority:** HIGH
 
@@ -118,7 +118,7 @@ Your handoff will be scored on:
 **Deliverable:** Phase 3B of architecture plan — Intake Agent Web UI (FastAPI + SSE + HTMX + SQLite checkpointer) (COMPLETE)
 **Started:** 2026-04-14
 **Completed:** 2026-04-14
-**Commits:** Session-7 single commit (pending at close-out) — `ui/intake/` package + 22 tests + pyproject additions + `FixtureLLMClient` statelessness fix + `graph.py` checkpointer parameterization + `.gitignore` updates + README + SESSION_NOTES.
+**Commits:** `1c1141a` (Phase 3B implementation + 22 tests + pyproject + `FixtureLLMClient` statelessness fix + `graph.py` checkpointer parameterization + `.gitignore` + README + SESSION_NOTES).
 
 **What was done (chronological):**
 1. Phase 0 orientation — read SAFEGUARDS in full, ACTIVE TASK + Session 6 block from SESSION_NOTES, checked git (clean, 6 commits ahead of origin), confirmed `methodology_dashboard.py` still absent and `gh issue list` still empty. Reported findings. Waited for the user to say "go".
