@@ -6,7 +6,7 @@
 
 ## ACTIVE TASK
 **Task:** Session 11 is an **IMPLEMENTATION** session. Execute **Phase A** of `docs/planning/github-gitlab-abstraction-plan.md` — the neutral rename pass across the 22-file footprint catalogued in the plan's §4 grep inventory, bundled with the `ProjectInfo.id: int → str` / `WebsiteState.project_id: int → str` / `RepoProjectResult.project_id: int → str` widening (Trap 1 fix). Read the plan document in full before starting; it is the authoritative source of scope, execution order, verification commands, and DONE criteria.
-**Status:** Plan document landed at `docs/planning/github-gitlab-abstraction-plan.md` (Session 10, commit TBD). Master is clean, ~13 commits ahead of `origin/master`. Baseline from commit `f97b530`: **289 tests pass at 96.51% coverage, mypy strict clean on 12 files in `agents/website/`.** Nothing uncommitted. Phases B (CI template branching), C (`PyGithubAdapter`), D (CLI `--host` flag + docs) follow in Sessions 12, 13, 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11 for justification.
+**Status:** Plan document landed at `docs/planning/github-gitlab-abstraction-plan.md` (Session 10, commit `f44f8dc`). Master is clean, 13 commits ahead of `origin/master`. Baseline from commit `f97b530`: **289 tests pass at 96.51% coverage, mypy strict clean on 12 files in `agents/website/`.** Nothing uncommitted. Phases B (CI template branching), C (`PyGithubAdapter`), D (CLI `--host` flag + docs) follow in Sessions 12, 13, 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11 for justification.
 **Priority:** HIGH — Phase A unblocks Phase B which unblocks Phase C which unblocks Phase D which unblocks Phase 5 (orchestrator + end-to-end, currently `architecture-plan.md:916`).
 
 ### What Session 11 Must Do
@@ -91,7 +91,7 @@ Session 9's handoff + Session 10's grep work together identified this as a ~1-se
 **Deliverable:** `docs/planning/github-gitlab-abstraction-plan.md` — multi-phase plan to adapt the Website Agent for GitHub **or** GitLab targets, per `SESSION_RUNNER.md` Planning Sessions protocol. **COMPLETE.**
 **Started:** 2026-04-14
 **Completed:** 2026-04-15
-**Commits:** `TBD` (single commit at close-out containing the plan doc + this handoff + the SESSION_RUNNER.md Learnings additions).
+**Commits:** `f44f8dc` (single commit containing the plan doc + this handoff + the SESSION_RUNNER.md Learnings additions).
 
 **What was done (chronological):**
 1. **Phase 0 orientation** — read `SAFEGUARDS.md` in full, `SESSION_NOTES.md` lines 1-200 (ACTIVE TASK + start of Session 9 handoff), ran `git status` / `git log --oneline -10` / `gh repo view` / dashboard file check. Confirmed baseline: master clean, 12 commits ahead of origin, last session = Session 9 commit `f97b530`, dashboard exists externally at `~/Development/dashboard.html`. Reported findings to user, waited for direction. **Did not skip the report-and-wait step even though the ACTIVE TASK block already described the deliverable** (failure mode #9, task-in-prompt bypass).
