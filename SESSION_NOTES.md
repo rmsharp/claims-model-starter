@@ -5,64 +5,191 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 14 is an **IMPLEMENTATION** session. Execute **Phase D** of `docs/planning/github-gitlab-abstraction-plan.md` — add the `--host` CLI flag to `agents/website/cli.py`, wire it to `PyGithubAdapter` / `PythonGitLabAdapter` / `FakeRepoClient` adapter selection, thread `ci_platform` from `--host`, remove the Phase A deprecated aliases (`--fake-gitlab`, `--gitlab-url`, `--group-path`), grow parametrized CLI tests, and rewrite README + `architecture-plan.md` §14. Phase D unblocks Phase 5 (orchestrator).
-**Status:** Phase C landed in Session 13 (commit `55745ed` — fill in during Session 14's Phase 3A). Master is clean after commit. Baseline for Session 14: **313 tests pass at 96.55% coverage, mypy strict clean on 13 files in `agents/website/`.** Coverage floor is **93%**. `PyGithubAdapter` is now importable from `model_project_constructor.agents.website` alongside `PythonGitLabAdapter`. Both accept `host_url` + `private_token`; `PyGithubAdapter` defaults `host_url="https://api.github.com"`. Both return `ProjectInfo(id: str, url, default_branch)` and `CommitInfo(sha, files_committed)` and translate host-native errors into `RepoClientError` / `RepoNameConflictError`. **`CIPlatform` is still only defined inside `governance_templates.py`** — Phase D should promote it to `schemas/v1/common.py` iff Phase D needs to import it from CLI (the CLI can also spell the `Literal["gitlab","github"]` inline — judge based on diff size). Phase 5 (orchestrator) starts Session 15.
-**Priority:** HIGH — Phase D is the last phase of the abstraction plan and unblocks Phase 5.
+**Task:** Session 15 is an **IMPLEMENTATION** session. Execute **Phase 5** of `docs/planning/architecture-plan.md` §14 — build `src/model_project_constructor/orchestrator/` with `pipeline.py` (`run_pipeline(config)` from §12), `adapters.py` (`intake_report_to_data_request()` + inference helpers), and `checkpoints.py` (envelope persistence). Add an end-to-end test that drives the whole pipeline against `FakeRepoClient` for both `--host gitlab` and `--host github` paths. Verify halt behavior for each `FAILED_AT_*` path. **The GitHub/GitLab abstraction plan (Phases A–D) is fully landed** — Session 15 imports the post-rename types directly.
+**Status:** Phase D landed in Session 14 (commit hash to be filled in during Session 15's Phase 3A). Master is clean after commit. Baseline for Session 15: **323 tests pass at 96.77% coverage, mypy strict clean on 13 files in `agents/website/`.** Coverage floor is **93%**. The CLI exposes `--host {gitlab,github}` with lazy-imported adapters, `--ci-platform` override, and the Phase A deprecated aliases (`--fake-gitlab`, `--gitlab-url`, `--group-path`) are GONE. `WebsiteAgent(client, ci_platform=...)` is the canonical construction. `PyGithubAdapter` and `PythonGitLabAdapter` both expose the same `RepoClient` Protocol surface (`create_project(*, namespace, name, visibility) -> ProjectInfo`, `commit_files(*, project_id, branch, files, message) -> CommitInfo`).
+**Priority:** HIGH — Phase 5 was deferred behind the abstraction plan; with Phase D landed there is no longer a rename cost looming over the orchestrator code.
 
-### What Session 14 Must Do
+### What Session 15 Must Do
 
-**Phase D is one session. Close out when DONE. Do NOT start Phase 5 in the same session.** Failure mode #18.
+**Phase 5 is one session per `architecture-plan.md` §14. Close out when DONE. Do NOT start Phase 6 (production hardening) in the same session.** Failure mode #18.
 
 1. **Phase 0 — orient:**
    - `SAFEGUARDS.md` (full read).
-   - This ACTIVE TASK block + the "What Session 13 Did" handoff below (especially the gotchas section).
-   - `docs/planning/github-gitlab-abstraction-plan.md` **§9 (Phase D spec)** + **§10 (do-not-change list)**. Plan is 712 lines.
-   - Read `src/model_project_constructor/agents/website/cli.py` end-to-end — Phase D lives almost entirely in this file. Identify the existing `--fake-gitlab` / `--gitlab-url` / `--group-path` flags and the current adapter-selection branch.
-   - Read `src/model_project_constructor/agents/website/github_adapter.py` for its exact constructor kwargs (`private_token=`, `host_url="https://api.github.com"`) — these are what the CLI must pass.
-   - Read `README.md`'s getting-started section (Phase B added a paragraph about platform-dependent CI).
-   - Read `docs/planning/architecture-plan.md` §14 Phase 5 block (around line 916) — Phase D's final doc update amends that §14 section to reflect that the abstraction plan landed before Phase 5.
+   - This ACTIVE TASK block + the "What Session 14 Did" handoff below (especially the gotchas + key files sections).
+   - `docs/planning/architecture-plan.md` **§14 Phase 5** (lines ~926-941, including the Session 14 amendment paragraph) and **§12** (`run_pipeline(config)` shape — orchestrator caller).
+   - Skim `agents/intake/agent.py`, `packages/data-agent/.../agent.py`, and `agents/website/agent.py` to confirm each agent's `run(...)` signature. Phase 5 wires them in sequence via the schema handoffs.
+   - `agents/website/cli.py` is the model for how to plumb `--host` selection through a wrapper — the orchestrator's CLI/config will follow the same lazy-import pattern.
    - Run `git status`, `git log --oneline -5`. Confirm clean working tree on master.
-   - Run pre-flight: `uv run pytest -q` (expect **313 passed @ 96.55%**), `uv run mypy src/model_project_constructor/agents/website/` (expect **Success on 13 files**). If drifted, STOP and investigate.
+   - Run pre-flight: `uv run pytest -q` (expect **323 passed @ 96.77%**), `uv run mypy src/model_project_constructor/agents/website/` (expect **Success on 13 files**). If drifted, STOP and investigate.
 
-2. **Phase 1B — write the Session 14 stub** to `SESSION_NOTES.md` BEFORE touching any code.
+2. **Phase 1B — write the Session 15 stub** to `SESSION_NOTES.md` BEFORE touching any code.
 
-3. **Phase D execution** — follow plan §9.1 (the full list of what DONE looks like):
-   - Add `--host typer.Option("--host", ...)` to `cli.py` with default `"gitlab"`, choices `{"gitlab", "github"}`, exit code 2 on invalid.
-   - Adapter selection rewire: `fake → FakeRepoClient()`; `host=="gitlab" → PythonGitLabAdapter(host_url=..., private_token=...)`; `host=="github" → PyGithubAdapter(host_url=..., private_token=...)`. **Lazy-import both adapters** inside the selection branches so `python -m model_project_constructor.agents.website --help` does not eagerly import `gitlab` or `github`.
-   - `ci_platform` derived from `--host`: `gitlab → "gitlab"`, `github → "github"`, and a `--ci-platform` CLI flag to override on the fake path (per plan §9.1).
-   - **Remove** Phase A deprecated aliases `--fake-gitlab`, `--gitlab-url`, `--group-path`. The README deprecation note from Phase A should also be removed.
-   - `tests/agents/website/test_cli.py`: add parametrized cases for `--host gitlab --fake`, `--host github --fake`, `--host gitlab --private-token` (monkeypatched `PythonGitLabAdapter`), `--host github --private-token` (monkeypatched `PyGithubAdapter`), and `--host bogus` → exit 2.
-   - `README.md`: full rewrite of getting-started with both GitLab and GitHub examples side-by-side. Phase-table row 4B updated.
-   - `docs/planning/architecture-plan.md` §14 Phase 5 block: one-paragraph amendment noting the abstraction plan landed before Phase 5; orchestrator work now operates on `RepoTarget` / `RepoProjectResult`.
+3. **Phase 5 execution** — follow `architecture-plan.md` §14 Phase 5 + §12:
+   - Create `src/model_project_constructor/orchestrator/{__init__.py,pipeline.py,adapters.py,checkpoints.py}`.
+   - `pipeline.py:run_pipeline(config)` orchestrates: Intake Agent → IntakeReport → adapter → DataRequest → Data Agent → DataReport → Website Agent → RepoProjectResult. Halts on each `FAILED_AT_*` per §12.
+   - `adapters.py:intake_report_to_data_request()` derives a `DataRequest` from an `IntakeReport`. Inference helpers go here too.
+   - `checkpoints.py` persists `HandoffEnvelope` instances between agents (use `schemas/envelope.py` + `schemas/registry.py`).
+   - Tests: `tests/orchestrator/test_pipeline.py` (end-to-end with seeded fixtures + `FakeRepoClient` for both `--host gitlab` and `--host github`), `tests/orchestrator/test_adapters.py` (intake→data inference), `tests/orchestrator/test_checkpoints.py` (envelope round-trip).
+   - **End-to-end test must cover both ci_platform values** — assert that the GitLab pipeline emits `.gitlab-ci.yml` and the GitHub pipeline emits `.github/workflows/ci.yml`, mirroring the CLI test pattern from `tests/agents/website/test_cli.py`.
 
-4. **Phase D verification** — run every command in plan §9.3. Additionally: full `uv run pytest -q` must show **≥313 passed @ ≥93% coverage**. mypy must remain Success on 13 files.
+4. **Phase 5 verification** — run plan §14's commands (`uv run pytest tests/orchestrator/ -v`). Additionally: full `uv run pytest -q` must show **≥323 passed @ ≥93% coverage**. mypy must extend cleanly to `src/model_project_constructor/orchestrator/`.
 
-5. **Phase 3 close-out** — evaluate Session 13's handoff (§3A), self-assess, document learnings, write full Session 14 handoff (new ACTIVE TASK = Session 15 = Phase 5 orchestrator), commit (expect **one commit** for Phase D), report, STOP.
+5. **Phase 3 close-out** — evaluate Session 14's handoff (§3A), self-assess, document learnings, write full Session 15 handoff (new ACTIVE TASK = Session 16 = Phase 6 production hardening), commit (expect **one feat commit** for Phase 5), report, STOP.
 
-### Files Session 14 will touch (from plan §9)
+### Files Session 15 will touch (from `architecture-plan.md` §14 Phase 5)
 
-- **Source (1):** `agents/website/cli.py` — `--host` flag, adapter selection rewire, deprecated-alias removal.
-- **Tests (1):** `tests/agents/website/test_cli.py` — parametrized `--host` cases.
-- **Docs (2):** `README.md`, `docs/planning/architecture-plan.md` §14 Phase 5 amendment.
-- **Optional (1):** `schemas/v1/common.py` if Phase D decides to promote `CIPlatform` there (judge based on import-graph cleanliness — the CLI currently does not import from `governance_templates`).
+- **NEW Source (4):** `src/model_project_constructor/orchestrator/{__init__.py,pipeline.py,adapters.py,checkpoints.py}`.
+- **NEW Tests (3):** `tests/orchestrator/{test_pipeline.py,test_adapters.py,test_checkpoints.py}` (+ `__init__.py` if needed).
+- **Possibly modified (0–1):** `pyproject.toml` if a `model-project-constructor-orchestrator` console script is added (architecture-plan §14 Phase 5 doesn't require one — judge based on §12 contract).
+- **Docs (1–2):** README phase table row 5 → "Complete", optional README orchestrator usage section.
 
-### Hard rules for Phase D
+### Hard rules for Phase 5
 
-- **No Phase 5 work.** No `orchestrator/` package, no `pipeline.py`, no end-to-end live tests. Phase 5 is Session 15.
-- **Do NOT touch** `gitlab_adapter.py`, `github_adapter.py`, `protocol.py`, `state.py`, `nodes.py`, `agent.py`, `graph.py`, or `governance_templates.py`. Phase D is purely at the CLI + docs layer.
-- **Do NOT change** the do-not-change list in plan §10.
-- **Lazy import both adapters in the CLI.** Eager imports would slow `--help` and pull `gitlab` / `github` into every `python -m ...` invocation. The Phase A work already lazy-imports `PythonGitLabAdapter`; the Phase D rewrite must preserve that and match it for `PyGithubAdapter`.
-- **The deprecated aliases are being REMOVED, not renamed.** `--fake-gitlab`, `--gitlab-url`, `--group-path` go away entirely. Any test or doc that references them must be updated.
+- **No Phase 6 work.** No observability/metrics/config-hardening — Phase 6 is Session 16.
+- **Do NOT touch** `agents/intake/`, `agents/website/`, `packages/data-agent/` source. Phase 5 is purely at the orchestrator layer + handoff adapters.
+- **Use `RepoTarget` / `RepoProjectResult`, NOT `GitLabTarget` / `GitLabProjectResult`** — the abstraction is fully landed (Sessions 11–14). Importing the old names will fail.
+- **End-to-end tests must use `FakeRepoClient` by default**, not real adapters. Live-host tests are explicitly out of scope per `gitlab_adapter.py:14-18` docstring.
+- **Reuse the lazy-import pattern from `cli.py`** for any orchestrator code that needs to construct `PythonGitLabAdapter` or `PyGithubAdapter` — eager imports degrade `--help` performance.
 
 ### Expected duration
 
-Plan §9 estimates this as 1 small session. Phase D is mostly in `cli.py` + tests + README. Expect ~60–90 minutes including pre-flight, the deprecation-removal audit, doc rewrites, verification, close-out.
+`architecture-plan.md` §14 estimates Phase 5 as 1 session. Adapter wiring is mostly mechanical given the existing schema contracts; the end-to-end test is the largest piece. Expect ~90–120 minutes including pre-flight, doc updates, and close-out.
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
 
-### Session 12 Handoff Evaluation (by Session 13)
+### Session 13 Handoff Evaluation (by Session 14)
+**Score: 10/10.** Third consecutive 10. Phase D was a pure step-execution session because Session 13 left no guesswork.
+
+- **What helped:** (a) The "Carryover gotchas + new Phase D gotchas" split was the single highest-leverage artifact. The note "**`PyGithubAdapter.__init__` is kwarg-only and defaults `host_url='https://api.github.com'`**" in contrast to "`PythonGitLabAdapter.__init__` requires `host_url` (no default)" told me before I touched any code that the CLI needed an `Optional[str]` for `--host-url` with a per-host default — I wrote the resolved-host-url branch directly without ever instantiating either adapter to discover the asymmetry. (b) The lazy-import gotcha ("**The adapter selection branch must lazy-import** both `PyGithubAdapter` and `PythonGitLabAdapter`. Neither `import github` nor `import gitlab` should happen at `cli.py` import time") was load-bearing — I never even considered moving the imports up. (c) The pre-flight baseline numbers matched exactly (313 @ 96.55%, 13 mypy files), so I detected zero drift in 8 seconds. (d) The do-not-touch list (`gitlab_adapter.py`, `github_adapter.py`, `protocol.py`, `state.py`, `nodes.py`, `agent.py`, `graph.py`, `governance_templates.py`) gave me explicit permission to ignore everything outside the CLI/test/docs surface — Phase D really was a one-file source change. (e) The "test_github_adapter.py mocks `adapter._gh` directly" gotcha steered me toward the `_StandinAdapter(FakeRepoClient)` monkeypatch pattern instead of trying to instantiate real PyGithub/python-gitlab clients with fake tokens.
+- **What was missing:** Genuinely nothing required for Phase D. The handoff anticipated the `--ci-platform` override flag question (plan §9.1 already specified it), the `CIPlatform` promotion question (Session 13 explicitly left it to Phase D's judgment — I chose to spell `Literal["gitlab", "github"]` inline because the CLI was the only new consumer and the diff stays self-contained), and even the `uv.lock` churn from Phase C (no new churn this session because Phase D added no deps). **Not deducting.**
+- **What was wrong:** Nothing. Every claim verified on disk. Pre-flight numbers matched. The "PyGithub ships `py.typed`" correction from Session 13 was load-bearing — I added zero `# type: ignore` comments and mypy stayed clean across the new lazy-import line.
+- **ROI:** Reading the handoff (~5 min) saved an estimated 30–40 min of Phase D discovery: the host-url asymmetry, the lazy-import pattern, the monkeypatch approach for adapter selection tests, the deprecated-alias removal scope. ~6× ROI, identical to Sessions 12 and 13.
+
+### What Session 14 Did
+**Deliverable:** Phase D of `docs/planning/github-gitlab-abstraction-plan.md` — `--host {gitlab,github}` typer flag in `agents/website/cli.py` with lazy-imported adapter selection, `--ci-platform` override flag, removal of Phase A deprecated aliases (`--fake-gitlab`, `--gitlab-url`, `--group-path`), parametrized CLI tests covering both fake paths, both monkeypatched real-adapter paths, the bogus-host case, and the removed-alias regression. Plus README getting-started rewrite (both GitLab and GitHub examples), README phase-table row 4B update, README repo-layout update, and a one-paragraph amendment to `architecture-plan.md` §14 Phase 5 noting the abstraction landed first. **COMPLETE.**
+**Started:** 2026-04-15
+**Completed:** 2026-04-15
+**Commits:** TBD (one feat commit for Phase D, hash to be filled in by Session 15's Phase 3A).
+
+**Pre-flight baseline (verified on disk):**
+- `uv run pytest -q` → **313 passed, 96.55% coverage**. Matches Session 13 exactly.
+- `uv run mypy src/model_project_constructor/agents/website/` → **Success: no issues found in 13 source files**. Matches.
+- `git status` → clean on `master`, 21 commits ahead of `origin/master`.
+- **Pushed to `origin/master`** at the start of the session per user request — `5c73ed0..72ac527`. After that the branch was 0 commits ahead until Phase D's commit.
+
+**What was done (chronological):**
+
+1. **Phase 0 orientation** — read `SAFEGUARDS.md` in full, `SESSION_NOTES.md` lines 1-280 (ACTIVE TASK + Session 13 handoff + gotchas + Session 12 handoff for comparison), ran `git status` / `git log --oneline -5` / pre-flight pytest + mypy in parallel, confirmed `~/Development/dashboard.html` exists. Reported findings to user and waited for explicit "yes" per failure mode #9 + Learning #10. **Did not skip the report-and-wait step even though ACTIVE TASK already described the deliverable.**
+
+2. **User asked about pushed state** — reported the 21 unpushed commits, asked for explicit authorization (push is shared-state per SAFEGUARDS), pushed on confirmation. Branch is now 0 ahead of `origin/master` until Phase D's feat commit.
+
+3. **User said "yes" to Phase D** — wrote Session 14 IN-PROGRESS stub to `SESSION_NOTES.md` (Phase 1B ghost-session protection per failure mode #14).
+
+4. **Phase D step 1 — Plan re-read + read every Phase D input file:**
+   - Plan §9 (Phase D spec) + §10 (do-not-change list).
+   - `agents/website/cli.py` end-to-end (the existing `--fake-gitlab` / `--gitlab-url` / `--group-path` aliases at lines 17-19 + 69 + 84 + 92, the existing if/else adapter selection at lines 124-137).
+   - `agents/website/github_adapter.py` (constructor signature `(*, private_token: str, host_url: str = "https://api.github.com")` — confirms the kwarg-only + default-host-url contract).
+   - `agents/website/agent.py` (`WebsiteAgent.__init__` signature already accepts `ci_platform: Literal["gitlab", "github"] = "gitlab"` from Phase B — Phase D just needs to pass it).
+   - `tests/agents/website/conftest.py` (the `intake_report_path` / `data_report_path` fixtures used by `test_cli.py`).
+   - `tests/agents/website/test_cli.py` (the existing 3 tests — preserved, not deleted).
+   - `README.md` (full file — getting-started lines 149-169 + repo layout + phase table).
+   - `docs/planning/architecture-plan.md` §14 Phase 4-5 block (lines 880-960).
+
+5. **Phase D step 2 — `cli.py` rewrite (the source-side change):**
+   - Replaced the 168-line file with a 219-line rewrite. Top-level changes:
+     - Added module-level constants `GITLAB_DEFAULT_HOST_URL = "https://gitlab.example.com"`, `GITHUB_DEFAULT_HOST_URL = "https://api.github.com"`, `VALID_HOSTS = frozenset({"gitlab", "github"})`, `VALID_CI_PLATFORMS = frozenset({"gitlab", "github"})`.
+     - **Removed** `"--fake-gitlab"` from the `--fake` typer.Option, `"--group-path"` from `--namespace`, `"--gitlab-url"` from `--host-url`. Phase A's deprecated aliases are gone entirely.
+     - Added `host: str = "gitlab"` typer option with `--host` flag.
+     - Added `ci_platform: Optional[str] = None` typer option with `--ci-platform` flag — defaults to `host` value, can be overridden independently (per plan §9.1).
+     - Made `host_url: Optional[str] = None` (was `str = DEFAULT_HOST_URL`) so the per-host default applies only when the user doesn't explicitly pass `--host-url`.
+     - Validation: `host not in VALID_HOSTS` → exit 2 with sorted-choices error message; `ci_platform not in VALID_CI_PLATFORMS` (when explicitly provided) → exit 2; the existing `not fake and not private_token` guard kept.
+     - `resolved_host_url` computed inline as `host_url if host_url is not None else (GITHUB_DEFAULT_HOST_URL if host == "github" else GITLAB_DEFAULT_HOST_URL)`.
+     - Adapter selection rewritten as `if fake → FakeRepoClient(); elif host == "gitlab" → lazy-import PythonGitLabAdapter; else (host == "github") → lazy-import PyGithubAdapter`. Both lazy imports live INSIDE their respective branches (matches the Phase A pattern, extends it to GitHub).
+     - `WebsiteAgent(client, ci_platform=cast(Literal["gitlab", "github"], ci_platform))` — the `cast` is necessary because `ci_platform` is a `str` after CLI parsing and mypy strict won't narrow it to a `Literal`.
+   - Module docstring rewritten to describe Phase D's new behavior; the "deprecated aliases" paragraph from Phase A is gone.
+
+6. **Phase D step 3 — mypy probe on `cli.py`:**
+   - `uv run mypy src/model_project_constructor/agents/website/cli.py` → `Success: no issues found in 1 source file`. Zero `# type: ignore` comments needed. The `cast` covers the only narrowing site.
+
+7. **Phase D step 4 — CLI smoke checks before writing tests** (sanity check that the rewrite is functional):
+   - `--help` → shows `--host`, `--ci-platform`, `--host-url` with correct help text + per-host default in the `--host-url` description.
+   - `--host gitlab --fake` + subrogation fixture → `Status: COMPLETE`, `.gitlab-ci.yml` in output, no `.github/workflows/ci.yml`.
+   - `--host github --fake` + subrogation fixture → `Status: COMPLETE`, `.github/workflows/ci.yml` in output, no `.gitlab-ci.yml`.
+   - `--host bogus --fake` → exit 2 with `ERROR: --host must be one of ['github', 'gitlab'] (got 'bogus').` (sorted alphabetical).
+   - `--fake-gitlab` (the removed alias) → typer/click rejects with `No such option: --fake-gitlab Did you mean --fake?`.
+
+8. **Phase D step 5 — `tests/agents/website/test_cli.py` rewrite (the test-side change):**
+   - Preserved all 3 baseline tests (`test_cli_requires_fake_or_token`, `test_cli_happy_path_prints_tree_and_result`, `test_cli_writes_output_file`). Renamed the first from `test_cli_requires_fake_flag` to `test_cli_requires_fake_or_token` to reflect Phase D's wording (the error message now mentions both).
+   - Added 10 new tests organized under three section headers:
+     - **Phase D `--host` fan-out (4 tests):**
+       - `test_cli_host_fake_emits_correct_ci_file[gitlab]` and `[github]` — parametrized over `(host, expected_ci, forbidden_ci)`. Asserts the CLI run completes AND the `files_created` list contains the expected CI artifact AND does NOT contain the other one. Mirrors the positive+negative assertion pattern from Learning #5.
+       - `test_cli_ci_platform_overrides_host` — exercises `--host gitlab --fake --ci-platform github` and asserts the CI file is `.github/workflows/ci.yml` (the override wins). Pins the orthogonality of `--host` vs `--ci-platform`.
+       - `test_cli_host_bogus_exits_2` — `--host bogus --fake` → exit code 2.
+       - `test_cli_ci_platform_bogus_exits_2` — `--ci-platform bogus --fake` → exit code 2.
+     - **Phase D real-adapter selection (2 tests, monkeypatched):**
+       - `test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter` — monkeypatches `model_project_constructor.agents.website.gitlab_adapter.PythonGitLabAdapter` to a `_StandinGitLabAdapter` (a `FakeRepoClient` subclass that records `__init__` kwargs in a class-level dict). Invokes the CLI with `--host gitlab --private-token fake-gitlab-token --host-url https://gitlab.example.com`. Asserts `Status: COMPLETE` AND the recorded kwargs are exactly `{"host_url": "https://gitlab.example.com", "private_token": "fake-gitlab-token"}`.
+       - `test_cli_host_github_with_token_invokes_pygithub_adapter` — same pattern for `PyGithubAdapter`. Omits `--host-url` to verify the GitHub default kicks in (`"https://api.github.com"`). Also asserts the resulting `files_created` contains `.github/workflows/ci.yml` (default ci_platform follows `--host github`).
+     - **Phase D removed-alias regression (3 parametrized cases):**
+       - `test_cli_removed_phase_a_aliases[--fake-gitlab|--gitlab-url|--group-path]` — invokes the CLI with each old alias and asserts a non-zero exit + `"no such option"` substring in the combined stdout/stderr. Pins that the removal is permanent.
+   - Added module-level helper class `_StandinAdapter(FakeRepoClient)` with two trivial subclasses (`_StandinGitLabAdapter`, `_StandinGitHubAdapter`) so each test has its own `last_init_kwargs` slot and can run in any order without state pollution.
+   - 13 tests total in `test_cli.py` (was 3 — added 10).
+
+9. **Phase D step 6 — Phase D verification (plan §9.3) — every command run sequentially:**
+   - `uv run python -m model_project_constructor.agents.website --help | grep -- '--host'` → matches the `--host` line + the `--host-url` description's "for --host" mention. Multiple hits ✓.
+   - `uv run python -m model_project_constructor.agents.website --host gitlab --fake ...` → `Status: COMPLETE` + `.gitlab-ci.yml` ✓.
+   - `uv run python -m model_project_constructor.agents.website --host github --fake ...` → `Status: COMPLETE` + `.github/workflows/ci.yml` ✓.
+   - `uv run python -m model_project_constructor.agents.website --fake-gitlab ...` → `No such option: --fake-gitlab Did you mean --fake?` ✓.
+   - `uv run pytest tests/agents/website/test_cli.py -v` → **13 passed**. cli.py at **100% line coverage** in this isolated run.
+   - `uv run pytest -q` → **323 passed @ 96.77% coverage** (was 313 @ 96.55%; +10 tests, +0.22% coverage). Zero skips, zero xfails, zero deletions.
+   - `uv run mypy src/model_project_constructor/agents/website/` → `Success: no issues found in 13 source files` (unchanged from baseline — Phase D added no new source files).
+
+10. **Phase D step 7 — Doc updates:**
+    - `README.md` phase-table row 4B: "...python-gitlab adapter" → "...repo-host adapter (GitHub/GitLab abstraction)".
+    - `README.md` repo-layout block: added `github_adapter.py` line, updated `cli.py` annotation to mention `--host gitlab|github`, updated test count to "122 website agent tests".
+    - `README.md` total test count line: "All 289 tests should pass with coverage above 90%" → "All 323 tests should pass with coverage above 93%" with new percentage "(currently ≈96.8%)".
+    - `README.md` getting-started: full rewrite of the website agent section. Was 4 fenced examples (1 fake + 1 real GitLab) + 2 paragraphs. Now: 4 fenced examples (fake gitlab default, fake github, real GitLab via `--host gitlab`, real GitHub via `--host github`) + 1 consolidated paragraph describing `--host` / `--ci-platform` / governance fan-out. Removed the deprecated-alias paragraph entirely. Removed the forward-reference paragraph that said "Phase D will surface a `--ci-platform` CLI flag" (it now exists).
+    - `docs/planning/architecture-plan.md` §14 Phase 5: inserted a one-paragraph **Amendment** block immediately under the Phase 5 heading. The amendment notes that the GitHub/GitLab abstraction plan landed first (Sessions 11–14), that orchestrator code now imports `RepoTarget` / `RepoProjectResult` from `schemas.v1.repo`, that `WebsiteAgent` accepts a `RepoClient` + `ci_platform` constructor kwarg, that `agents/website/cli.py` is the model for the `--host` plumbing pattern, and that end-to-end testing can run against either real adapter or `FakeRepoClient`. The original Phase 5 bullets are preserved verbatim except that "real GitLab project on test instance" is widened to "real repo project on a test host (GitLab or GitHub)."
+    - `grep -n 'host github\|host gitlab' README.md` → 5+ hits ✓. `grep -n 'RepoTarget\|RepoProjectResult' docs/planning/architecture-plan.md` → multiple hits across §4, §5.4, §14 amendment ✓.
+
+### Key Files Shipped in Session 14
+
+**Source files edited (1):**
+- `src/model_project_constructor/agents/website/cli.py` — rewritten end-to-end (168 → 219 lines). `--host`, `--ci-platform`, lazy-imported dual adapter selection, deprecated-alias removal, per-host `--host-url` default.
+
+**Test files edited (1):**
+- `tests/agents/website/test_cli.py` — 3 baseline tests preserved (one renamed); 10 new tests added across three sections (`--host` fan-out, real-adapter monkeypatched selection, removed-alias regression). Module helper `_StandinAdapter(FakeRepoClient)` + two empty subclasses.
+
+**Docs (3):**
+- `README.md` — phase table row 4B, repo layout block (+`github_adapter.py`, updated `cli.py` annotation, test count), total-test-count sentence, getting-started full rewrite (+ GitHub example), removed deprecated-alias paragraph.
+- `docs/planning/architecture-plan.md` — §14 Phase 5 amendment paragraph.
+- `SESSION_NOTES.md` — this file (ACTIVE TASK rewritten for Session 15 + Session 14 handoff + Phase 3A evaluation of Session 13).
+
+**Total: 5 files changed in one feat commit (no new source modules — the `orchestrator/` package is Session 15's job).**
+
+### Gotchas — Read These Before Starting Session 15 / Phase 5
+
+**Carryover from Sessions 11–13 that STILL applies to Phase 5:**
+
+- **`WebsiteAgent.__new__` hack in `test_retry.py:151-154` is still there**, and manually sets `agent.ci_platform = "gitlab"`. If Phase 5 ever needs to also construct a `WebsiteAgent` via `__new__` (it shouldn't — orchestrator should use the normal factory), remember to set `ci_platform` manually.
+- **`retry_backoff` uses `time.sleep()` in production.** Phase 5 end-to-end tests should mock at the adapter level (or use `FakeRepoClient`) to avoid wall-clock waits. The `make_nodes(client, *, sleep=...)` injection pattern in `nodes.py:79-83` is preserved.
+- **`RepoClient` Protocol is NOT `@runtime_checkable`.** Both production adapters (`PythonGitLabAdapter`, `PyGithubAdapter`) explicitly inherit from it. Don't worry about this — both inherit-and-not-inherit patterns work; the codebase has chosen "inherit" for both adapters.
+- **`_is_name_conflict` lives in each adapter module separately.** Don't refactor these into a common helper — they inspect platform-specific exception shapes.
+- **PyGithub ships `py.typed`.** No `# type: ignore[import-untyped]` is needed when importing `github` anywhere in the tree. If a future session sees a mypy complaint about it, that's a regression in the dep, not in our code.
+- **Both adapters are kwarg-only.** `PythonGitLabAdapter(*, host_url, private_token)` and `PyGithubAdapter(*, host_url="https://api.github.com", private_token)`. Phase 5's orchestrator construction code must use kwargs.
+
+**New Phase 5 gotchas (from Phase D work):**
+
+- **`cli.py` is now 100% line-covered (66/66 statements) and 100% branch-covered (16/16 branches) per the isolated `pytest tests/agents/website/test_cli.py` run.** Phase 5's orchestrator should aim for similar discipline. The orchestrator will likely need lower branch coverage on the actual pipeline-running paths because the end-to-end tests are slower, but the adapter/config/halt-logic surface should stay near 100%.
+- **The `cast(Literal["gitlab", "github"], ci_platform)` pattern** at `cli.py:191` is the canonical way to take a `str` from CLI/config and pass it into `WebsiteAgent(ci_platform=...)`. Phase 5's orchestrator config will hit the same need — copy this pattern, don't try to make the agent take `str` (that would weaken its typing contract).
+- **Lazy imports of both adapters live INSIDE the if/elif branches in `cli.py:165-187`.** This is load-bearing for `--help` performance — eager imports would pull in `gitlab` and `github` packages on every invocation. Phase 5's orchestrator should follow the same pattern: lazy-import the concrete adapter in the branch that selects it, not at module top.
+- **The `_StandinAdapter(FakeRepoClient)` monkeypatch pattern** in `test_cli.py:194-216` is the canonical way to test "the CLI invoked the right adapter constructor with the right kwargs" without instantiating a real adapter. Phase 5's orchestrator tests should copy this pattern when testing adapter selection. Each subclass needs its own `last_init_kwargs` class slot (NOT `last_init_kwargs: dict[str, Any] = {}` shared via the parent — see `_StandinGitLabAdapter` and `_StandinGitHubAdapter` for the per-subclass override pattern).
+- **`--host-url` is now `Optional[str]` with a per-host default.** Phase 5's orchestrator config schema should mirror this — if a user/config omits `host_url`, derive it from `host` (gitlab → `https://gitlab.example.com`, github → `https://api.github.com`). The two constants live in `cli.py:42-43` (`GITLAB_DEFAULT_HOST_URL`, `GITHUB_DEFAULT_HOST_URL`); Phase 5 should either import them or duplicate them in `orchestrator/pipeline.py` (judge based on whether the orchestrator needs to depend on `agents/website/cli.py`).
+- **`RepoTarget` requires `host_url`.** It's a Pydantic field with no default. Phase 5's adapter (intake → orchestrator → website) must populate it; the orchestrator config is the canonical place to resolve "user passed `--host github` and no `--host-url`" → "set `RepoTarget.host_url = 'https://api.github.com'`" before constructing the website agent.
+- **`agent.run(intake_report, data_report, repo_target)` is the canonical website-agent entry point.** It returns a `RepoProjectResult` with `status` ∈ `{"COMPLETE", "FAILED", "PARTIAL"}`. The pipeline orchestrator should branch on this to set its own halt state. Look at `agent.py:44-81` for the exact flow.
+- **`HandoffEnvelope` + `schemas/registry.py` are the persistence layer for inter-agent handoffs.** The registry currently has 5 entries: `IntakeReport`, `DataRequest`, `DataReport`, `RepoTarget`, `RepoProjectResult`. Phase 5 will use these in `checkpoints.py` to round-trip envelopes between agents.
+- **No new `pyproject.toml` deps required for Phase 5** — all the orchestrator's needs are already satisfied by `[project.optional-dependencies].agents` (which includes `python-gitlab`, `PyGithub`, `langgraph`, etc.). No `uv.lock` churn expected.
 **Score: 10/10.** Second consecutive 10. Phase C was a pure step-execution session because Session 12 left no guesswork.
 
 - **What helped:** (a) The "Mirror, don't merge" framing + the explicit note that `_is_name_conflict` in `gitlab_adapter.py:158` loose-matches GitLab's response shape told me exactly what the GitHub equivalent's contract should be — loose match on "already exists" substring inside a 422 payload. I knew the helper shape before I typed a character of adapter code. (b) The "`PyGithub` historically has NOT shipped stubs — expect to need `# type: ignore[import-untyped]`" warning in Phase B's handoff set my expectation appropriately; when the probe returned clean, I had high confidence it wasn't a false negative because I was watching for it. (c) The pre-flight baseline numbers (295 @ 96.53%, mypy 12 files) let me detect drift in seconds — both matched exactly. (d) The "Coverage floor is 93%, not 90%" reminder + the prediction "adapter will likely be ~100% if tests are written carefully" framed the test-design target before I wrote a line of tests.

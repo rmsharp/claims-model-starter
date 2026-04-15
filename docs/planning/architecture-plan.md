@@ -925,12 +925,14 @@ Consolidated across agents:
 
 ### Phase 5: Orchestrator + Adapters + End-to-End (1 session)
 
+**Amendment (Phase D of github-gitlab-abstraction-plan, Session 14, 2026-04-15):** the GitHub/GitLab abstraction plan landed in Sessions 11–14 ahead of Phase 5, so orchestrator code now imports the host-neutral types `RepoTarget` and `RepoProjectResult` (from `schemas.v1.repo`) rather than `GitLabTarget` / `GitLabProjectResult`. The `WebsiteAgent` accepts a `RepoClient` and a `ci_platform: Literal["gitlab", "github"]` constructor kwarg; the `agents/website/cli.py` `--host` flag is the model for how Phase 5's orchestrator should plumb host selection through `pipeline.py`. End-to-end testing can now run against either `PythonGitLabAdapter` or `PyGithubAdapter` (or `FakeRepoClient` for CI). The bullets below are kept in their original wording but should be read with this rename in mind.
+
 **What DONE looks like:**
 - `src/model_project_constructor/orchestrator/` contains:
   - `pipeline.py` with `run_pipeline(config)` from §12
   - `adapters.py` with `intake_report_to_data_request()` and inference helpers
   - `checkpoints.py` for envelope persistence
-- End-to-end test with a seeded intake fixture produces a real GitLab project on test instance
+- End-to-end test with a seeded intake fixture produces a real repo project on a test host (GitLab or GitHub)
 - Halt behavior verified for each `FAILED_AT_*` path
 
 **Verification commands:**

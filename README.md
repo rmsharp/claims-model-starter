@@ -16,7 +16,7 @@ Early implementation. Phases and session boundaries are tracked in `SESSION_NOTE
 | 3A | Intake Agent core + LangGraph + CLI | Complete |
 | 3B | Intake Agent Web UI (FastAPI + SSE + HTMX + SQLite) | Complete |
 | 4A | Website Agent core + GitLab scaffolding (non-governance) | Complete |
-| 4B | Website Agent governance scaffolding + retry-backoff + python-gitlab adapter | Complete |
+| 4B | Website Agent governance scaffolding + retry-backoff + repo-host adapter (GitHub/GitLab abstraction) | Complete |
 | 5 | Orchestrator + adapters + end-to-end | Not started |
 | 6 | Production hardening | Not started |
 
@@ -61,14 +61,15 @@ src/model_project_constructor/          # main "orchestrator" package
     app.py                              # FastAPI app + routes + SSE endpoint
     runner.py                           # IntakeSessionStore: SqliteSaver + per-session graph
     templates.py                        # minimal HTMX pages (question/review/complete)
-  agents/website/                       # Website Agent (Phase 4A base + 4B governance)
+  agents/website/                       # Website Agent (Phase 4A base + 4B governance + GitHub/GitLab abstraction)
     state.py, protocol.py, nodes.py, graph.py
     agent.py                            # WebsiteAgent facade (run(intake, data, target))
     templates.py                        # pure-python base file content generators
     governance_templates.py             # 4B governance artifact generators (§8.2 tier fan-out)
     fake_client.py                      # in-memory repo-host stand-in for tests + CLI
-    gitlab_adapter.py                   # 4B production adapter via python-gitlab
-    cli.py, __main__.py                 # typer CLI (--fake or --private-token)
+    gitlab_adapter.py                   # production adapter via python-gitlab
+    github_adapter.py                   # production adapter via PyGithub
+    cli.py, __main__.py                 # typer CLI (--host gitlab|github, --fake or --private-token)
 packages/data-agent/                    # standalone: model-project-constructor-data-agent
   pyproject.toml                        # independent distribution
   USAGE.md                              # CLI + Python API documentation
@@ -82,7 +83,7 @@ tests/
   schemas/                              # 88 schema tests
   agents/data/                          # 12 end-to-end Data Agent tests
   agents/intake/                        # 56 intake tests (graph, nodes, CLI, Anthropic)
-  agents/website/                       # 88 website agent tests (templates, fake client, nodes, agent, CLI, governance, retry, adapter)
+  agents/website/                       # 122 website agent tests (templates, fake client, nodes, agent, CLI, governance, retry, gitlab + github adapters)
   ui/intake/                            # 22 web UI tests (FastAPI, runner, SQLite resume, SSE)
   data_agent_package/                   # 21 CLI + AnthropicLLMClient tests
   fixtures/sample_request.json          # canonical DataRequest fixture
@@ -111,7 +112,7 @@ uv sync --extra agents --extra dev
 uv run pytest
 ```
 
-All 289 tests should pass with coverage above 90% (currently ≈96.5%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 323 tests should pass with coverage above 93% (currently ≈96.8%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
 
 To run the web UI tests as well, add the `ui` extra:
 
@@ -150,23 +151,40 @@ To run the Website Agent against seeded intake + data reports:
 
 ```bash
 # Fake repo host — no credentials required, writes nothing external.
+# Default --host gitlab; emits .gitlab-ci.yml.
 uv run python -m model_project_constructor.agents.website \
     --intake tests/fixtures/subrogation_intake.json \
     --data tests/fixtures/sample_datareport.json \
     --fake
 
-# Real GitLab (Phase 4B) — creates an actual project.
+# Same fake path, but emit a GitHub Actions CI file instead.
 uv run python -m model_project_constructor.agents.website \
     --intake tests/fixtures/subrogation_intake.json \
     --data tests/fixtures/sample_datareport.json \
+    --host github \
+    --fake
+
+# Real GitLab — creates an actual project via python-gitlab.
+uv run python -m model_project_constructor.agents.website \
+    --intake tests/fixtures/subrogation_intake.json \
+    --data tests/fixtures/sample_datareport.json \
+    --host gitlab \
     --host-url https://gitlab.example.com \
     --namespace data-science/model-drafts \
     --private-token "$GITLAB_TOKEN"
+
+# Real GitHub — creates an actual repo via PyGithub. --host-url defaults
+# to https://api.github.com; pass an enterprise API URL for GHE. Note that
+# GitHub does not support nested namespaces — pass a single owner/org.
+uv run python -m model_project_constructor.agents.website \
+    --intake tests/fixtures/subrogation_intake.json \
+    --data tests/fixtures/sample_datareport.json \
+    --host github \
+    --namespace acme \
+    --private-token "$GITHUB_TOKEN"
 ```
 
-The `--fake` mode prints the full file tree that would be committed and dumps a `RepoProjectResult` JSON payload. (`--fake-gitlab`, `--gitlab-url`, and `--group-path` are kept as hidden deprecated aliases for one Phase window and will be removed in Phase D.) Phase 4B scaffolds everything in §11 of `docs/planning/architecture-plan.md`, including governance artifacts proportional to `risk_tier` / `cycle_time` per §8.2. Try the tier-1 fixture (`tests/fixtures/tier1_intake.json`) to see the full fan-out including `governance/audit_log/`, `governance/eu_ai_act_compliance.md`, `governance/lcp_integration.md`, and the fairness-audit scaffolds.
-
-The generated CI file is platform-dependent: the `WebsiteAgent` accepts a `ci_platform: Literal["gitlab", "github"]` constructor kwarg (default `"gitlab"`) which selects either `.gitlab-ci.yml` or `.github/workflows/ci.yml`. Phase B (Session 12) added the GitHub Actions sibling renderer; Phase D will surface a `--ci-platform` CLI flag.
+The `--fake` mode prints the full file tree that would be committed and dumps a `RepoProjectResult` JSON payload. `--host` selects the repo-host adapter (`gitlab` or `github`); the chosen host also drives the emitted CI manifest (`.gitlab-ci.yml` for `--host gitlab`, `.github/workflows/ci.yml` for `--host github`). Pass `--ci-platform {gitlab,github}` to override the CI manifest independently of the repo host (useful for fake-path testing). Phase 4B scaffolds everything in §11 of `docs/planning/architecture-plan.md`, including governance artifacts proportional to `risk_tier` / `cycle_time` per §8.2. Try the tier-1 fixture (`tests/fixtures/tier1_intake.json`) to see the full fan-out including `governance/audit_log/`, `governance/eu_ai_act_compliance.md`, `governance/lcp_integration.md`, and the fairness-audit scaffolds.
 
 ## Documents worth reading
 
