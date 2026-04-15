@@ -10,7 +10,7 @@ Each tier has a distinct JSON intake fixture under ``tests/fixtures/``:
   uses_protected_attributes=False, cycle_time=tactical, 2 frameworks
 
 Together they exercise every conditional branch in ``build_governance_files``
-and the regulatory-mapping computation in ``build_gitlab_project_result``.
+and the regulatory-mapping computation in ``build_repo_project_result``.
 """
 
 from __future__ import annotations
@@ -21,10 +21,10 @@ from typing import Any
 import pytest
 
 from model_project_constructor.agents.website.agent import WebsiteAgent
-from model_project_constructor.agents.website.fake_client import FakeGitLabClient
+from model_project_constructor.agents.website.fake_client import FakeRepoClient
 from model_project_constructor.schemas.v1.data import DataReport
-from model_project_constructor.schemas.v1.gitlab import GitLabTarget
 from model_project_constructor.schemas.v1.intake import IntakeReport
+from model_project_constructor.schemas.v1.repo import RepoTarget
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures"
 
@@ -59,11 +59,11 @@ def tier3_intake() -> IntakeReport:
 
 def _run_agent(
     intake: IntakeReport, data: DataReport
-) -> tuple[Any, FakeGitLabClient]:
-    client = FakeGitLabClient()
-    target = GitLabTarget(
-        gitlab_url="https://gitlab.example.com",
-        group_path="data-science/model-drafts",
+) -> tuple[Any, FakeRepoClient]:
+    client = FakeRepoClient()
+    target = RepoTarget(
+        host_url="https://gitlab.example.com",
+        namespace="data-science/model-drafts",
         project_name_hint=intake.session_id,
         visibility="private",
     )

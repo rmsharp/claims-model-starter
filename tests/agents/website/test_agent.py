@@ -5,36 +5,36 @@ from __future__ import annotations
 from typing import Any
 
 from model_project_constructor.agents.website.agent import WebsiteAgent
-from model_project_constructor.agents.website.fake_client import FakeGitLabClient
-from model_project_constructor.schemas.v1.gitlab import GitLabTarget
+from model_project_constructor.agents.website.fake_client import FakeRepoClient
+from model_project_constructor.schemas.v1.repo import RepoTarget
 
 
 class TestWebsiteAgentRun:
     def test_happy_path_produces_complete_result(
         self,
-        fake_client: FakeGitLabClient,
+        fake_client: FakeRepoClient,
         intake_report: Any,
         data_report: Any,
-        gitlab_target: GitLabTarget,
+        repo_target: RepoTarget,
     ) -> None:
         agent = WebsiteAgent(fake_client)
-        result = agent.run(intake_report, data_report, gitlab_target)
+        result = agent.run(intake_report, data_report, repo_target)
 
         assert result.status == "COMPLETE"
         assert result.failure_reason is None
         assert result.project_url.endswith("/subrogation-recovery-model")
-        assert result.project_id == 1000
+        assert result.project_id == "1000"
         assert len(result.initial_commit_sha) == 40
 
     def test_all_section_11_base_files_scaffolded(
         self,
-        fake_client: FakeGitLabClient,
+        fake_client: FakeRepoClient,
         intake_report: Any,
         data_report: Any,
-        gitlab_target: GitLabTarget,
+        repo_target: RepoTarget,
     ) -> None:
         agent = WebsiteAgent(fake_client)
-        result = agent.run(intake_report, data_report, gitlab_target)
+        result = agent.run(intake_report, data_report, repo_target)
 
         files = set(result.files_created)
 
@@ -81,10 +81,10 @@ class TestWebsiteAgentRun:
 
     def test_tier3_governance_artifacts_present(
         self,
-        fake_client: FakeGitLabClient,
+        fake_client: FakeRepoClient,
         intake_report: Any,
         data_report: Any,
-        gitlab_target: GitLabTarget,
+        repo_target: RepoTarget,
     ) -> None:
         """4B: tier 3 moderate + affects_consumers=true should emit the
         tier-3-and-always artifacts plus the consumer-gated eu_ai_act file.
@@ -93,7 +93,7 @@ class TestWebsiteAgentRun:
         """
 
         agent = WebsiteAgent(fake_client)
-        result = agent.run(intake_report, data_report, gitlab_target)
+        result = agent.run(intake_report, data_report, repo_target)
         files = set(result.files_created)
 
         # Always (every tier)
@@ -136,13 +136,13 @@ class TestWebsiteAgentRun:
 
     def test_files_persisted_in_fake_client(
         self,
-        fake_client: FakeGitLabClient,
+        fake_client: FakeRepoClient,
         intake_report: Any,
         data_report: Any,
-        gitlab_target: GitLabTarget,
+        repo_target: RepoTarget,
     ) -> None:
         agent = WebsiteAgent(fake_client)
-        result = agent.run(intake_report, data_report, gitlab_target)
+        result = agent.run(intake_report, data_report, repo_target)
 
         stored = fake_client.get_files(result.project_id)
         # README mentions the project and the business problem
@@ -157,45 +157,45 @@ class TestWebsiteAgentRun:
         self,
         intake_report: Any,
         data_report: Any,
-        gitlab_target: GitLabTarget,
+        repo_target: RepoTarget,
     ) -> None:
-        client = FakeGitLabClient(
+        client = FakeRepoClient(
             existing_names={"data-science/model-drafts/subrogation-recovery-model"}
         )
         agent = WebsiteAgent(client)
-        result = agent.run(intake_report, data_report, gitlab_target)
+        result = agent.run(intake_report, data_report, repo_target)
 
         assert result.status == "COMPLETE"
         assert result.project_url.endswith("subrogation-recovery-model-v2")
 
     def test_incomplete_intake_report_halts(
         self,
-        fake_client: FakeGitLabClient,
+        fake_client: FakeRepoClient,
         intake_report: Any,
         data_report: Any,
-        gitlab_target: GitLabTarget,
+        repo_target: RepoTarget,
     ) -> None:
         incomplete = intake_report.model_copy(
             update={"status": "DRAFT_INCOMPLETE", "missing_fields": ["x"]}
         )
         agent = WebsiteAgent(fake_client)
-        result = agent.run(incomplete, data_report, gitlab_target)
+        result = agent.run(incomplete, data_report, repo_target)
 
         assert result.status == "FAILED"
         assert "intake_status" in (result.failure_reason or "")
-        # Nothing was created in GitLab
+        # Nothing was created on the host
         assert fake_client.projects == {}
 
     def test_incomplete_data_report_halts(
         self,
-        fake_client: FakeGitLabClient,
+        fake_client: FakeRepoClient,
         intake_report: Any,
         data_report: Any,
-        gitlab_target: GitLabTarget,
+        repo_target: RepoTarget,
     ) -> None:
         incomplete = data_report.model_copy(update={"status": "EXECUTION_FAILED"})
         agent = WebsiteAgent(fake_client)
-        result = agent.run(intake_report, incomplete, gitlab_target)
+        result = agent.run(intake_report, incomplete, repo_target)
 
         assert result.status == "FAILED"
         assert "data_status" in (result.failure_reason or "")
@@ -203,13 +203,13 @@ class TestWebsiteAgentRun:
 
     def test_governance_manifest_reflects_intake_tier(
         self,
-        fake_client: FakeGitLabClient,
+        fake_client: FakeRepoClient,
         intake_report: Any,
         data_report: Any,
-        gitlab_target: GitLabTarget,
+        repo_target: RepoTarget,
     ) -> None:
         agent = WebsiteAgent(fake_client)
-        result = agent.run(intake_report, data_report, gitlab_target)
+        result = agent.run(intake_report, data_report, repo_target)
 
         # Manifest is empty in 4A but the tier/cycle time must mirror intake
         assert result.governance_manifest.risk_tier == "tier_3_moderate"

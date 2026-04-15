@@ -22,14 +22,14 @@ class WebsiteState(TypedDict, total=False):
     # Inputs (dict-shaped copies of the Pydantic reports / target)
     intake_report: dict[str, Any]
     data_report: dict[str, Any]
-    gitlab_target: dict[str, Any]
+    repo_target: dict[str, Any]
 
     # Derived project naming
     project_name: str      # final name after conflict resolution
     project_slug: str      # python-package-safe (underscores, lowercase)
 
     # CREATE_PROJECT outputs
-    project_id: int
+    project_id: str
     project_url: str
     default_branch: str
 
@@ -66,12 +66,12 @@ def initial_state(
     *,
     intake_report: dict[str, Any],
     data_report: dict[str, Any],
-    gitlab_target: dict[str, Any],
+    repo_target: dict[str, Any],
 ) -> WebsiteState:
     return WebsiteState(
         intake_report=intake_report,
         data_report=data_report,
-        gitlab_target=gitlab_target,
+        repo_target=repo_target,
         files_pending={},
         governance_paths=[],
         files_created=[],

@@ -12,7 +12,7 @@ from model_project_constructor.agents.website.cli import app
 runner = CliRunner()
 
 
-def test_cli_requires_fake_gitlab(
+def test_cli_requires_fake_flag(
     intake_report_path: Path,
     data_report_path: Path,
 ) -> None:
@@ -26,9 +26,7 @@ def test_cli_requires_fake_gitlab(
         ],
     )
     assert result.exit_code == 2
-    assert "Phase 4A only supports --fake-gitlab" in result.stderr or "--fake-gitlab" in (
-        result.stdout + result.stderr
-    )
+    assert "--fake" in (result.stdout + result.stderr)
 
 
 def test_cli_happy_path_prints_tree_and_result(
@@ -42,7 +40,7 @@ def test_cli_happy_path_prints_tree_and_result(
             str(intake_report_path),
             "--data",
             str(data_report_path),
-            "--fake-gitlab",
+            "--fake",
         ],
     )
     assert result.exit_code == 0, result.stdout
@@ -50,7 +48,7 @@ def test_cli_happy_path_prints_tree_and_result(
     assert "Files that would have been committed" in result.stdout
     assert "README.md" in result.stdout
     assert "01_business_understanding.qmd" in result.stdout
-    # JSON blob at the end parses as a GitLabProjectResult dump
+    # JSON blob at the end parses as a RepoProjectResult dump
     json_start = result.stdout.find("{")
     payload = json.loads(result.stdout[json_start:])
     assert payload["status"] == "COMPLETE"
@@ -70,7 +68,7 @@ def test_cli_writes_output_file(
             str(intake_report_path),
             "--data",
             str(data_report_path),
-            "--fake-gitlab",
+            "--fake",
             "--output",
             str(out),
         ],

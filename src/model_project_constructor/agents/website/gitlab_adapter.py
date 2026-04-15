@@ -1,13 +1,13 @@
-"""Thin ``python-gitlab`` adapter for :class:`GitLabClient`.
+"""Thin ``python-gitlab`` adapter for :class:`RepoClient`.
 
-This is the production adapter for the Website Agent. It is intentionally
-thin:
+This is the production adapter for the Website Agent's GitLab path. It is
+intentionally thin:
 
 - The constructor wraps ``gitlab.Gitlab(url, private_token=...)``.
 - ``create_project`` resolves the target group and creates a project
   inside it, translating name collisions to
-  :class:`ProjectNameConflictError` and every other GitLab error to
-  :class:`GitLabClientError`.
+  :class:`RepoNameConflictError` and every other GitLab error to
+  :class:`RepoClientError`.
 - ``commit_files`` issues a single multi-file commit through the
   python-gitlab commits API.
 
@@ -19,7 +19,7 @@ Phase 5 concern.
 
 The import of :mod:`gitlab` is eager here (python-gitlab is already in
 the ``agents`` optional extras). Callers that don't need GitLab should
-use :class:`FakeGitLabClient` and never construct this class.
+use :class:`FakeRepoClient` and never construct this class.
 """
 
 from __future__ import annotations
@@ -31,15 +31,15 @@ from gitlab.exceptions import GitlabCreateError, GitlabError, GitlabGetError
 
 from model_project_constructor.agents.website.protocol import (
     CommitInfo,
-    GitLabClient,
-    GitLabClientError,
     ProjectInfo,
-    ProjectNameConflictError,
+    RepoClient,
+    RepoClientError,
+    RepoNameConflictError,
 )
 
 
-class PythonGitLabAdapter(GitLabClient):
-    """``GitLabClient`` implementation backed by ``python-gitlab``.
+class PythonGitLabAdapter(RepoClient):
+    """``RepoClient`` implementation backed by ``python-gitlab``.
 
     Usage::
 
@@ -47,7 +47,7 @@ class PythonGitLabAdapter(GitLabClient):
             PythonGitLabAdapter, WebsiteAgent,
         )
         client = PythonGitLabAdapter(
-            gitlab_url="https://gitlab.example.com",
+            host_url="https://gitlab.example.com",
             private_token=os.environ["GITLAB_TOKEN"],
         )
         agent = WebsiteAgent(client)
@@ -56,34 +56,34 @@ class PythonGitLabAdapter(GitLabClient):
     def __init__(
         self,
         *,
-        gitlab_url: str,
+        host_url: str,
         private_token: str,
         ssl_verify: bool = True,
     ) -> None:
         self._gl: Any = gitlab.Gitlab(
-            gitlab_url, private_token=private_token, ssl_verify=ssl_verify
+            host_url, private_token=private_token, ssl_verify=ssl_verify
         )
 
     # ------------------------------------------------------------------
-    # GitLabClient protocol
+    # RepoClient protocol
     # ------------------------------------------------------------------
 
     def create_project(
         self,
         *,
-        group_path: str,
+        namespace: str,
         name: str,
         visibility: str,
     ) -> ProjectInfo:
         try:
-            group = self._gl.groups.get(group_path)
+            group = self._gl.groups.get(namespace)
         except GitlabGetError as exc:
-            raise GitLabClientError(
-                f"group lookup failed for {group_path!r}: {exc}"
+            raise RepoClientError(
+                f"group lookup failed for {namespace!r}: {exc}"
             ) from exc
         except GitlabError as exc:
-            raise GitLabClientError(
-                f"group lookup failed for {group_path!r}: {exc}"
+            raise RepoClientError(
+                f"group lookup failed for {namespace!r}: {exc}"
             ) from exc
 
         try:
@@ -98,17 +98,17 @@ class PythonGitLabAdapter(GitLabClient):
         except GitlabCreateError as exc:
             message = str(exc)
             if _is_name_conflict(exc):
-                raise ProjectNameConflictError(name) from exc
-            raise GitLabClientError(
+                raise RepoNameConflictError(name) from exc
+            raise RepoClientError(
                 f"create_project failed for {name!r}: {message}"
             ) from exc
         except GitlabError as exc:
-            raise GitLabClientError(
+            raise RepoClientError(
                 f"create_project failed for {name!r}: {exc}"
             ) from exc
 
         return ProjectInfo(
-            id=int(project.id),
+            id=str(project.id),
             url=str(project.web_url),
             default_branch=str(getattr(project, "default_branch", None) or "main"),
         )
@@ -116,15 +116,15 @@ class PythonGitLabAdapter(GitLabClient):
     def commit_files(
         self,
         *,
-        project_id: int,
+        project_id: str,
         branch: str,
         files: dict[str, str],
         message: str,
     ) -> CommitInfo:
         try:
-            project = self._gl.projects.get(project_id)
+            project = self._gl.projects.get(int(project_id))
         except GitlabError as exc:
-            raise GitLabClientError(
+            raise RepoClientError(
                 f"project lookup failed for id={project_id}: {exc}"
             ) from exc
 
@@ -145,7 +145,7 @@ class PythonGitLabAdapter(GitLabClient):
                 }
             )
         except GitlabError as exc:
-            raise GitLabClientError(
+            raise RepoClientError(
                 f"commit_files failed (project={project_id}, branch={branch}): {exc}"
             ) from exc
 

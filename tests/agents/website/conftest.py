@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from model_project_constructor.agents.website.fake_client import FakeGitLabClient
+from model_project_constructor.agents.website.fake_client import FakeRepoClient
 from model_project_constructor.schemas.v1.data import DataReport
-from model_project_constructor.schemas.v1.gitlab import GitLabTarget
 from model_project_constructor.schemas.v1.intake import IntakeReport
+from model_project_constructor.schemas.v1.repo import RepoTarget
 
 FIXTURES_DIR = Path(__file__).resolve().parents[2] / "fixtures"
 
@@ -35,15 +35,15 @@ def data_report(data_report_path: Path) -> DataReport:
 
 
 @pytest.fixture
-def gitlab_target() -> GitLabTarget:
-    return GitLabTarget(
-        gitlab_url="https://gitlab.example.com",
-        group_path="data-science/model-drafts",
+def repo_target() -> RepoTarget:
+    return RepoTarget(
+        host_url="https://gitlab.example.com",
+        namespace="data-science/model-drafts",
         project_name_hint="Subrogation Recovery Model",
         visibility="private",
     )
 
 
 @pytest.fixture
-def fake_client() -> FakeGitLabClient:
-    return FakeGitLabClient()
+def fake_client() -> FakeRepoClient:
+    return FakeRepoClient()

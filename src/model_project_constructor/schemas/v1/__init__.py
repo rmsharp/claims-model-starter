@@ -19,10 +19,10 @@ from model_project_constructor.schemas.v1.data import (
     PrimaryQuery,
     QualityCheck,
 )
-from model_project_constructor.schemas.v1.gitlab import (
-    GitLabProjectResult,
-    GitLabTarget,
+from model_project_constructor.schemas.v1.repo import (
     GovernanceManifest,
+    RepoProjectResult,
+    RepoTarget,
 )
 from model_project_constructor.schemas.v1.intake import (
     EstimatedValue,
@@ -48,8 +48,8 @@ __all__ = [
     "Datasheet",
     "PrimaryQuery",
     "QualityCheck",
-    # gitlab
-    "GitLabProjectResult",
-    "GitLabTarget",
+    # repo
     "GovernanceManifest",
+    "RepoProjectResult",
+    "RepoTarget",
 ]

@@ -5,7 +5,7 @@ Phase 4B topology:
     START ─▶ CREATE_PROJECT ─▶ SCAFFOLD_BASE ─▶ SCAFFOLD_GOVERNANCE ─▶
              SCAFFOLD_ANALYSIS ─▶ SCAFFOLD_TESTS ─▶ INITIAL_COMMITS ─▶ END
                     │                                     │
-                    └── FAILED ──▶ END                    │ GitLab error
+                    └── FAILED ──▶ END                    │ repo error
                                                            ▼
                                                       RETRY_BACKOFF
                                                            │
@@ -27,12 +27,12 @@ from model_project_constructor.agents.website.nodes import (
     route_after_commit,
     route_after_create,
 )
-from model_project_constructor.agents.website.protocol import GitLabClient
+from model_project_constructor.agents.website.protocol import RepoClient
 from model_project_constructor.agents.website.state import WebsiteState
 
 
 def build_website_graph(
-    client: GitLabClient,
+    client: RepoClient,
     *,
     checkpointer: Any | None = None,
     sleep: Callable[[float], None] | None = None,

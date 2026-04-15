@@ -5,7 +5,7 @@ repo — that's a Phase 5 / CI-with-credentials concern. This module just
 verifies:
 
 - The adapter module imports without side effects.
-- ``PythonGitLabAdapter`` satisfies the ``GitLabClient`` Protocol.
+- ``PythonGitLabAdapter`` satisfies the ``RepoClient`` Protocol.
 - The name-conflict sniff helper correctly classifies representative
   GitLab create-project errors.
 - The constructor does not make network calls (no credentials needed).
@@ -20,18 +20,18 @@ import pytest
 from model_project_constructor.agents.website import PythonGitLabAdapter
 from model_project_constructor.agents.website.gitlab_adapter import _is_name_conflict
 from model_project_constructor.agents.website.protocol import (
-    GitLabClientError,
-    ProjectNameConflictError,
+    RepoClientError,
+    RepoNameConflictError,
 )
 
 
 class TestImport:
     def test_adapter_has_protocol_methods(self) -> None:
-        # ``GitLabClient`` is not runtime_checkable (structural only), so
+        # ``RepoClient`` is not runtime_checkable (structural only), so
         # ``isinstance`` would raise. A duck-type check is sufficient
         # since mypy strict on the module enforces the real contract.
         adapter = PythonGitLabAdapter(
-            gitlab_url="https://gitlab.example.com", private_token="dummy"
+            host_url="https://gitlab.example.com", private_token="dummy"
         )
         assert callable(getattr(adapter, "create_project"))
         assert callable(getattr(adapter, "commit_files"))
@@ -44,7 +44,7 @@ class TestImport:
         """
 
         PythonGitLabAdapter(
-            gitlab_url="https://invalid.example.invalid",
+            host_url="https://invalid.example.invalid",
             private_token="not-a-real-token",
         )
 
@@ -83,13 +83,13 @@ class TestExceptionTranslation:
 
     def _build_adapter_with_fake_gl(self) -> tuple[PythonGitLabAdapter, MagicMock]:
         adapter = PythonGitLabAdapter(
-            gitlab_url="https://gitlab.example.com", private_token="t"
+            host_url="https://gitlab.example.com", private_token="t"
         )
         fake_gl = MagicMock()
         adapter._gl = fake_gl
         return adapter, fake_gl
 
-    def test_create_project_name_conflict_raises_project_name_conflict(self) -> None:
+    def test_create_project_name_conflict_raises_repo_name_conflict(self) -> None:
         from gitlab.exceptions import GitlabCreateError
 
         adapter, fake_gl = self._build_adapter_with_fake_gl()
@@ -100,9 +100,9 @@ class TestExceptionTranslation:
         )
         fake_gl.projects.create.side_effect = conflict
 
-        with pytest.raises(ProjectNameConflictError) as excinfo:
+        with pytest.raises(RepoNameConflictError) as excinfo:
             adapter.create_project(
-                group_path="g", name="foo", visibility="private"
+                namespace="g", name="foo", visibility="private"
             )
         assert excinfo.value.name == "foo"
 
@@ -115,9 +115,9 @@ class TestExceptionTranslation:
             error_message="Internal error", response_code=500
         )
 
-        with pytest.raises(GitLabClientError) as excinfo:
+        with pytest.raises(RepoClientError) as excinfo:
             adapter.create_project(
-                group_path="g", name="foo", visibility="private"
+                namespace="g", name="foo", visibility="private"
             )
         assert "create_project failed" in str(excinfo.value)
 
@@ -129,9 +129,9 @@ class TestExceptionTranslation:
             error_message="404 Group not found", response_code=404
         )
 
-        with pytest.raises(GitLabClientError) as excinfo:
+        with pytest.raises(RepoClientError) as excinfo:
             adapter.create_project(
-                group_path="missing", name="foo", visibility="private"
+                namespace="missing", name="foo", visibility="private"
             )
         assert "group lookup failed" in str(excinfo.value)
 
@@ -145,9 +145,9 @@ class TestExceptionTranslation:
         )
         fake_gl.projects.get.return_value = fake_project
 
-        with pytest.raises(GitLabClientError) as excinfo:
+        with pytest.raises(RepoClientError) as excinfo:
             adapter.commit_files(
-                project_id=1,
+                project_id="1",
                 branch="main",
                 files={"a.txt": "x"},
                 message="test",
@@ -163,7 +163,7 @@ class TestExceptionTranslation:
         fake_gl.projects.get.return_value = fake_project
 
         info = adapter.commit_files(
-            project_id=1,
+            project_id="1",
             branch="main",
             files={"a.txt": "x", "b.txt": "y"},
             message="init",

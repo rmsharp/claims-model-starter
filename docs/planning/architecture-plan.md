@@ -182,18 +182,20 @@ Chosen approaches from `architecture-approaches.md`:
 
 ### 4.3 Website Agent
 
-**Responsibility:** Produce a draft model website as a GitLab project. The website scaffolds the four required sections plus governance artifacts. Code is generated as Quarto documents that call functions in separate, unit-tested modules.
+**Responsibility:** Produce a draft model website as a repository-host project (GitLab today, GitHub via Phase C of the abstraction plan). The website scaffolds the four required sections plus governance artifacts. Code is generated as Quarto documents that call functions in separate, unit-tested modules.
+
+> **Naming note (Phase A of `github-gitlab-abstraction-plan.md`):** the Website Agent's adapter boundary is now neutral. The `RepoClient` Protocol, `RepoTarget` schema, and `RepoProjectResult` schema replace the Phase-4B `GitLab*` names. `PythonGitLabAdapter` is the concrete GitLab implementation and keeps its name; `PyGithubAdapter` arrives in Phase C.
 
 **Inputs:**
 - `IntakeReport`
 - `DataReport`
-- `GitLabTarget` — destination config (group, project name, visibility)
+- `RepoTarget` — destination config (`host_url`, `namespace`, project name, visibility)
 
 **Outputs:**
-- `GitLabProjectResult` — project URL, commit hash of initial push, list of created files, governance manifest
+- `RepoProjectResult` — project URL, opaque string `project_id`, commit hash of initial push, list of created files, governance manifest
 
 **Behavior contract:**
-- Creates a GitLab project using `python-gitlab`
+- Creates a repository on the configured host via the `RepoClient` adapter (currently `PythonGitLabAdapter` over `python-gitlab`)
 - Generates repo contents per the structure in §11
 - All analysis code lives in two places:
   - `src/` — Python/R modules with unit-testable functions
@@ -207,8 +209,8 @@ Chosen approaches from `architecture-approaches.md`:
 
 | Mode | Trigger | Recovery |
 |------|---------|----------|
-| GitLab API error | Auth failure, rate limit, network | Retry with exponential backoff (3 attempts); surface to operator |
-| GitLab project name conflict | Name already exists | Append suffix `-v2`, `-v3`, etc.; max 5 attempts |
+| Repo host API error | Auth failure, rate limit, network | Retry with exponential backoff (3 attempts); surface to operator |
+| Repo project name conflict | Name already exists | Append suffix `-v2`, `-v3`, etc.; max 5 attempts |
 | Incomplete inputs | `IntakeReport` or `DataReport` has `status != COMPLETE` | Halt; orchestrator reports which predecessor failed |
 | Quarto scaffold lint errors | Generated `.qmd` has syntax issues | Pass through; mark file `status=DRAFT_NEEDS_REVIEW` in manifest; do not block commit |
 
@@ -344,13 +346,15 @@ class DataReport(BaseModel):
     created_at: datetime
 ```
 
-### 5.4 `GitLabTarget` and `GitLabProjectResult`
+### 5.4 `RepoTarget` and `RepoProjectResult`
+
+> **Post-Phase-A names.** These replace the Phase-4B `GitLabTarget` / `GitLabProjectResult` types. `project_id` widened from `int` to `str` so the same shape fits GitLab (stringified integer) and GitHub (`"owner/name"`). `GovernanceManifest` is unchanged — already neutral.
 
 ```python
-class GitLabTarget(BaseModel):
+class RepoTarget(BaseModel):
     schema_version: Literal["1.0.0"] = "1.0.0"
-    gitlab_url: str                    # e.g., "https://gitlab.example.com"
-    group_path: str                    # e.g., "data-science/model-drafts"
+    host_url: str                      # e.g., "https://gitlab.example.com"
+    namespace: str                     # e.g., "data-science/model-drafts"
     project_name_hint: str             # Derived from intake if not set
     visibility: Literal["private", "internal", "public"] = "private"
 
@@ -361,11 +365,11 @@ class GovernanceManifest(BaseModel):
     cycle_time: CycleTime
     regulatory_mapping: dict[str, list[str]]  # framework -> artifacts satisfying it
 
-class GitLabProjectResult(BaseModel):
+class RepoProjectResult(BaseModel):
     schema_version: Literal["1.0.0"] = "1.0.0"
     status: Literal["COMPLETE", "PARTIAL", "FAILED"]
     project_url: str
-    project_id: int
+    project_id: str                    # host-opaque: GitLab str(int), GitHub "owner/name"
     initial_commit_sha: str
     files_created: list[str]
     governance_manifest: GovernanceManifest
@@ -662,7 +666,10 @@ Each node is a pure function over state. This makes unit testing straightforward
 
 ---
 
-## 11. Generated GitLab Repo Structure
+## 11. Generated Repository Structure
+
+> **Naming note.** The section title previously said "Generated GitLab Repo Structure." Post-Phase-A the Website Agent is host-neutral at the adapter boundary; the CI template filename (`.gitlab-ci.yml`) is still GitLab-specific and stays that way until Phase B of `github-gitlab-abstraction-plan.md` adds `.github/workflows/ci.yml` as a per-host sibling.
+
 
 ```
 <project_name>/

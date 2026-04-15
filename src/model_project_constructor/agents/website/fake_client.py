@@ -1,9 +1,9 @@
-"""In-memory fake ``GitLabClient`` for tests and the ``--fake-gitlab`` CLI.
+"""In-memory fake ``RepoClient`` for tests and the ``--fake`` CLI.
 
 Mirrors the Phase 3A ``FixtureLLMClient`` pattern: a deterministic,
 stateless-enough double that lets us exercise the whole graph end-to-end
 without network or credentials. Every committed file is captured in
-``FakeGitLabClient.projects`` so tests can assert exact content.
+``FakeRepoClient.projects`` so tests can assert exact content.
 
 SHA generation is deterministic (sha1 of message + sorted paths) so test
 assertions are stable across runs.
@@ -16,17 +16,17 @@ from dataclasses import dataclass, field
 
 from model_project_constructor.agents.website.protocol import (
     CommitInfo,
-    GitLabClient,
     ProjectInfo,
-    ProjectNameConflictError,
+    RepoClient,
+    RepoNameConflictError,
 )
 
 
 @dataclass
 class FakeProject:
-    id: int
+    id: str
     name: str
-    group_path: str
+    namespace: str
     url: str
     default_branch: str
     visibility: str
@@ -35,11 +35,11 @@ class FakeProject:
 
     @property
     def full_path(self) -> str:
-        return f"{self.group_path}/{self.name}"
+        return f"{self.namespace}/{self.name}"
 
 
-class FakeGitLabClient(GitLabClient):
-    """In-memory GitLab stand-in.
+class FakeRepoClient(RepoClient):
+    """In-memory repo host stand-in.
 
     Pre-existing project names can be seeded via ``existing_names`` so
     tests can exercise the name-conflict suffix logic. The client tracks
@@ -51,36 +51,37 @@ class FakeGitLabClient(GitLabClient):
         self,
         *,
         existing_names: set[str] | None = None,
-        base_url: str = "https://fake.gitlab.test",
+        base_url: str = "https://fake.host.test",
     ) -> None:
         self._existing: set[str] = set(existing_names or [])
         self._base_url = base_url
         self._next_id = 1000
-        self.projects: dict[int, FakeProject] = {}
+        self.projects: dict[str, FakeProject] = {}
 
-    # --- GitLabClient protocol --------------------------------------------
+    # --- RepoClient protocol ----------------------------------------------
 
     def create_project(
         self,
         *,
-        group_path: str,
+        namespace: str,
         name: str,
         visibility: str,
     ) -> ProjectInfo:
-        full = f"{group_path}/{name}"
+        full = f"{namespace}/{name}"
         if full in self._existing:
-            raise ProjectNameConflictError(name)
+            raise RepoNameConflictError(name)
         self._existing.add(full)
 
+        project_id = str(self._next_id)
         project = FakeProject(
-            id=self._next_id,
+            id=project_id,
             name=name,
-            group_path=group_path,
-            url=f"{self._base_url}/{group_path}/{name}",
+            namespace=namespace,
+            url=f"{self._base_url}/{namespace}/{name}",
             default_branch="main",
             visibility=visibility,
         )
-        self.projects[self._next_id] = project
+        self.projects[project_id] = project
         self._next_id += 1
 
         return ProjectInfo(
@@ -92,7 +93,7 @@ class FakeGitLabClient(GitLabClient):
     def commit_files(
         self,
         *,
-        project_id: int,
+        project_id: str,
         branch: str,
         files: dict[str, str],
         message: str,
@@ -107,7 +108,7 @@ class FakeGitLabClient(GitLabClient):
 
     # --- test helpers -----------------------------------------------------
 
-    def get_files(self, project_id: int) -> dict[str, str]:
+    def get_files(self, project_id: str) -> dict[str, str]:
         """Return a copy of the files committed to ``project_id``."""
         return dict(self.projects[project_id].files)
 

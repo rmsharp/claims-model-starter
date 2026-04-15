@@ -7,7 +7,7 @@ Phase 4A shipped three nodes (``CREATE_PROJECT`` → ``SCAFFOLD_BASE`` →
 - ``SCAFFOLD_ANALYSIS`` — governance-driven analysis scaffolds (fairness)
 - ``SCAFFOLD_TESTS`` — governance-driven test scaffolds (fairness)
 - A ``RETRY_BACKOFF`` self-loop off ``INITIAL_COMMITS`` for transient
-  ``GitLabClientError`` (HTTP 401/429/5xx), 3 attempts max with
+  ``RepoClientError`` (HTTP 401/429/5xx), 3 attempts max with
   exponential delay.
 
 All scaffold nodes merge into ``state["files_pending"]``; none replace it.
@@ -15,7 +15,7 @@ All scaffold nodes merge into ``state["files_pending"]``; none replace it.
 re-delivers the whole pending dict in one call.
 
 None of these nodes call ``interrupt()`` — the website agent is headless.
-Each node is a pure function over state + the injected ``GitLabClient``
+Each node is a pure function over state + the injected ``RepoClient``
 (plus an injectable ``sleep`` function for test-time determinism on the
 retry path).
 """
@@ -34,9 +34,9 @@ from model_project_constructor.agents.website.governance_templates import (
     is_governance_artifact,
 )
 from model_project_constructor.agents.website.protocol import (
-    GitLabClient,
-    GitLabClientError,
-    ProjectNameConflictError,
+    RepoClient,
+    RepoClientError,
+    RepoNameConflictError,
 )
 from model_project_constructor.agents.website.state import (
     MAX_COMMIT_ATTEMPTS,
@@ -49,9 +49,9 @@ from model_project_constructor.agents.website.templates import (
     derive_project_name,
     derive_project_slug,
 )
-from model_project_constructor.schemas.v1.gitlab import (
-    GitLabProjectResult,
+from model_project_constructor.schemas.v1.repo import (
     GovernanceManifest,
+    RepoProjectResult,
 )
 
 
@@ -66,7 +66,7 @@ def _candidate_names(base: str) -> list[str]:
     """Return up to ``MAX_NAME_CONFLICT_ATTEMPTS`` candidate project names.
 
     Starts with the base name, then ``-v2``, ``-v3``, etc. Per
-    architecture-plan §4.3 failure modes table (row "GitLab project name
+    architecture-plan §4.3 failure modes table (row "repo project name
     conflict"): append suffix up to 5 attempts total.
     """
 
@@ -77,18 +77,18 @@ def _candidate_names(base: str) -> list[str]:
 
 
 def make_nodes(
-    client: GitLabClient,
+    client: RepoClient,
     *,
     sleep: SleepFunc = _default_sleep,
 ) -> dict[str, Any]:
-    """Build the callable nodes bound to a given GitLab client.
+    """Build the callable nodes bound to a given repo client.
 
     ``sleep`` is injectable so tests can exercise ``retry_backoff``
     without real wall-clock delay.
     """
 
     def create_project(state: WebsiteState) -> dict[str, Any]:
-        target = state["gitlab_target"]
+        target = state["repo_target"]
         hint = str(target.get("project_name_hint", "model-project"))
         base_name = derive_project_name(hint)
 
@@ -96,17 +96,17 @@ def make_nodes(
         for candidate in _candidate_names(base_name):
             try:
                 info = client.create_project(
-                    group_path=str(target["group_path"]),
+                    namespace=str(target["namespace"]),
                     name=candidate,
                     visibility=str(target.get("visibility", "private")),
                 )
-            except ProjectNameConflictError as exc:
+            except RepoNameConflictError as exc:
                 last_error = str(exc)
                 continue
-            except GitLabClientError as exc:
+            except RepoClientError as exc:
                 return {
                     "status": "FAILED",
-                    "failure_reason": f"gitlab_error: {exc}",
+                    "failure_reason": f"repo_error: {exc}",
                 }
 
             return {
@@ -206,7 +206,7 @@ def make_nodes(
                 files=pending,
                 message="feat: scaffold model project (intake + data + governance)",
             )
-        except GitLabClientError as exc:
+        except RepoClientError as exc:
             if attempts < MAX_COMMIT_ATTEMPTS:
                 # Transient — route through RETRY_BACKOFF. The loop will
                 # re-enter this node with the same pending dict.
@@ -218,7 +218,7 @@ def make_nodes(
             return {
                 "status": "FAILED",
                 "failure_reason": (
-                    f"gitlab_error_retry_exhausted: {exc} "
+                    f"repo_error_retry_exhausted: {exc} "
                     f"(after {attempts} attempts)"
                 ),
                 "commit_attempts": attempts,
@@ -276,8 +276,8 @@ def route_after_commit(state: WebsiteState) -> str:
     return "end"
 
 
-def build_gitlab_project_result(state: WebsiteState) -> GitLabProjectResult:
-    """Assemble a ``GitLabProjectResult`` from the final graph state.
+def build_repo_project_result(state: WebsiteState) -> RepoProjectResult:
+    """Assemble a ``RepoProjectResult`` from the final graph state.
 
     Phase 4B populates the governance manifest:
 
@@ -324,10 +324,10 @@ def build_gitlab_project_result(state: WebsiteState) -> GitLabProjectResult:
         cycle_time=governance_meta.get("cycle_time", "tactical"),
         regulatory_mapping=regulatory_mapping,
     )
-    return GitLabProjectResult(
+    return RepoProjectResult(
         status=state.get("status", "FAILED"),  # type: ignore[arg-type]
         project_url=state.get("project_url", ""),
-        project_id=state.get("project_id", 0),
+        project_id=state.get("project_id", ""),
         initial_commit_sha=state.get("initial_commit_sha", ""),
         files_created=files_created,
         governance_manifest=manifest,

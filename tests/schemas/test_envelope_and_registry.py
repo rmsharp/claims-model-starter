@@ -16,16 +16,16 @@ from model_project_constructor.schemas.registry import (
 from model_project_constructor.schemas.v1 import (
     DataReport,
     DataRequest,
-    GitLabProjectResult,
-    GitLabTarget,
     IntakeReport,
+    RepoProjectResult,
+    RepoTarget,
 )
 from tests.schemas.fixtures import (
     make_data_report,
     make_data_request,
-    make_gitlab_project_result,
-    make_gitlab_target,
     make_intake_report,
+    make_repo_project_result,
+    make_repo_target,
 )
 
 
@@ -94,8 +94,8 @@ class TestRegistry:
             ("IntakeReport", "1.0.0"),
             ("DataRequest", "1.0.0"),
             ("DataReport", "1.0.0"),
-            ("GitLabTarget", "1.0.0"),
-            ("GitLabProjectResult", "1.0.0"),
+            ("RepoTarget", "1.0.0"),
+            ("RepoProjectResult", "1.0.0"),
         }
         assert set(REGISTRY.keys()) == expected
 
@@ -103,8 +103,8 @@ class TestRegistry:
         assert REGISTRY[("IntakeReport", "1.0.0")] is IntakeReport
         assert REGISTRY[("DataRequest", "1.0.0")] is DataRequest
         assert REGISTRY[("DataReport", "1.0.0")] is DataReport
-        assert REGISTRY[("GitLabTarget", "1.0.0")] is GitLabTarget
-        assert REGISTRY[("GitLabProjectResult", "1.0.0")] is GitLabProjectResult
+        assert REGISTRY[("RepoTarget", "1.0.0")] is RepoTarget
+        assert REGISTRY[("RepoProjectResult", "1.0.0")] is RepoProjectResult
 
     def test_every_value_is_pydantic_basemodel_subclass(self) -> None:
         for key, cls in REGISTRY.items():
@@ -148,18 +148,18 @@ class TestLoadPayload:
         assert isinstance(loaded, DataReport)
         assert loaded == rep
 
-    def test_loads_gitlab_target(self) -> None:
-        tgt = make_gitlab_target()
-        env = _make_envelope("GitLabTarget", tgt.model_dump(mode="json"))
+    def test_loads_repo_target(self) -> None:
+        tgt = make_repo_target()
+        env = _make_envelope("RepoTarget", tgt.model_dump(mode="json"))
         loaded = load_payload(env)
-        assert isinstance(loaded, GitLabTarget)
+        assert isinstance(loaded, RepoTarget)
         assert loaded == tgt
 
-    def test_loads_gitlab_project_result(self) -> None:
-        res = make_gitlab_project_result()
-        env = _make_envelope("GitLabProjectResult", res.model_dump(mode="json"))
+    def test_loads_repo_project_result(self) -> None:
+        res = make_repo_project_result()
+        env = _make_envelope("RepoProjectResult", res.model_dump(mode="json"))
         loaded = load_payload(env)
-        assert isinstance(loaded, GitLabProjectResult)
+        assert isinstance(loaded, RepoProjectResult)
         assert loaded == res
 
     def test_unknown_payload_type_raises(self) -> None:

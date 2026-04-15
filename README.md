@@ -46,7 +46,7 @@ Each agent internally uses LangGraph for state management while the top-level or
 
 ```
 src/model_project_constructor/          # main "orchestrator" package
-  schemas/v1/                           # IntakeReport, GitLab*, governance types
+  schemas/v1/                           # IntakeReport, RepoTarget / RepoProjectResult, governance types
   schemas/v1/data.py                    # re-exports data schemas from the standalone
   schemas/envelope.py                   # HandoffEnvelope
   schemas/registry.py                   # payload registry for versioned hand-offs
@@ -66,9 +66,9 @@ src/model_project_constructor/          # main "orchestrator" package
     agent.py                            # WebsiteAgent facade (run(intake, data, target))
     templates.py                        # pure-python base file content generators
     governance_templates.py             # 4B governance artifact generators (§8.2 tier fan-out)
-    fake_client.py                      # in-memory GitLab stand-in for tests + CLI
+    fake_client.py                      # in-memory repo-host stand-in for tests + CLI
     gitlab_adapter.py                   # 4B production adapter via python-gitlab
-    cli.py, __main__.py                 # typer CLI (--fake-gitlab or --private-token)
+    cli.py, __main__.py                 # typer CLI (--fake or --private-token)
 packages/data-agent/                    # standalone: model-project-constructor-data-agent
   pyproject.toml                        # independent distribution
   USAGE.md                              # CLI + Python API documentation
@@ -149,22 +149,22 @@ Then open `http://localhost:8000/`. The UI is a minimal HTMX frontend over the s
 To run the Website Agent against seeded intake + data reports:
 
 ```bash
-# Fake GitLab — no credentials required, writes nothing external.
+# Fake repo host — no credentials required, writes nothing external.
 uv run python -m model_project_constructor.agents.website \
     --intake tests/fixtures/subrogation_intake.json \
     --data tests/fixtures/sample_datareport.json \
-    --fake-gitlab
+    --fake
 
 # Real GitLab (Phase 4B) — creates an actual project.
 uv run python -m model_project_constructor.agents.website \
     --intake tests/fixtures/subrogation_intake.json \
     --data tests/fixtures/sample_datareport.json \
-    --gitlab-url https://gitlab.example.com \
-    --group-path data-science/model-drafts \
+    --host-url https://gitlab.example.com \
+    --namespace data-science/model-drafts \
     --private-token "$GITLAB_TOKEN"
 ```
 
-The `--fake-gitlab` mode prints the full file tree that would be committed and dumps a `GitLabProjectResult` JSON payload. Phase 4B scaffolds everything in §11 of `docs/planning/architecture-plan.md`, including governance artifacts proportional to `risk_tier` / `cycle_time` per §8.2. Try the tier-1 fixture (`tests/fixtures/tier1_intake.json`) to see the full fan-out including `governance/audit_log/`, `governance/eu_ai_act_compliance.md`, `governance/lcp_integration.md`, and the fairness-audit scaffolds.
+The `--fake` mode prints the full file tree that would be committed and dumps a `RepoProjectResult` JSON payload. (`--fake-gitlab`, `--gitlab-url`, and `--group-path` are kept as hidden deprecated aliases for one Phase window and will be removed in Phase D.) Phase 4B scaffolds everything in §11 of `docs/planning/architecture-plan.md`, including governance artifacts proportional to `risk_tier` / `cycle_time` per §8.2. Try the tier-1 fixture (`tests/fixtures/tier1_intake.json`) to see the full fan-out including `governance/audit_log/`, `governance/eu_ai_act_compliance.md`, `governance/lcp_integration.md`, and the fairness-audit scaffolds.
 
 ## Documents worth reading
 

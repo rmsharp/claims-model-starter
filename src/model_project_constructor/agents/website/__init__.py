@@ -3,10 +3,10 @@
 Phase 4A public surface:
 
 - :class:`WebsiteAgent` — high-level runner
-- :class:`GitLabClient` — Protocol for GitLab-backed implementations
-- :class:`FakeGitLabClient` — in-memory test double + CLI backend
+- :class:`RepoClient` — Protocol for repository-host-backed implementations
+- :class:`FakeRepoClient` — in-memory test double + CLI backend
 - :func:`build_website_graph` — low-level compiled LangGraph
-- :func:`initial_state`, :func:`build_gitlab_project_result` — state helpers
+- :func:`initial_state`, :func:`build_repo_project_result` — state helpers
 - Template helpers in :mod:`.templates` are exposed for tests
 """
 
@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from model_project_constructor.agents.website.agent import WebsiteAgent
 from model_project_constructor.agents.website.fake_client import (
-    FakeGitLabClient,
     FakeProject,
+    FakeRepoClient,
 )
 from model_project_constructor.agents.website.gitlab_adapter import PythonGitLabAdapter
 from model_project_constructor.agents.website.governance_templates import (
@@ -28,17 +28,17 @@ from model_project_constructor.agents.website.governance_templates import (
 )
 from model_project_constructor.agents.website.graph import build_website_graph
 from model_project_constructor.agents.website.nodes import (
-    build_gitlab_project_result,
+    build_repo_project_result,
     make_nodes,
     route_after_commit,
     route_after_create,
 )
 from model_project_constructor.agents.website.protocol import (
     CommitInfo,
-    GitLabClient,
-    GitLabClientError,
     ProjectInfo,
-    ProjectNameConflictError,
+    RepoClient,
+    RepoClientError,
+    RepoNameConflictError,
 )
 from model_project_constructor.agents.website.state import (
     MAX_COMMIT_ATTEMPTS,
@@ -55,16 +55,16 @@ from model_project_constructor.agents.website.templates import (
 
 __all__ = [
     "WebsiteAgent",
-    "GitLabClient",
-    "GitLabClientError",
-    "ProjectNameConflictError",
+    "RepoClient",
+    "RepoClientError",
+    "RepoNameConflictError",
     "ProjectInfo",
     "CommitInfo",
-    "FakeGitLabClient",
+    "FakeRepoClient",
     "FakeProject",
     "PythonGitLabAdapter",
     "build_website_graph",
-    "build_gitlab_project_result",
+    "build_repo_project_result",
     "build_governance_files",
     "build_analysis_files",
     "build_test_files",

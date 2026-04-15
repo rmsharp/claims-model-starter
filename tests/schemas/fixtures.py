@@ -15,14 +15,14 @@ from model_project_constructor.schemas.v1 import (
     DataRequest,
     Datasheet,
     EstimatedValue,
-    GitLabProjectResult,
-    GitLabTarget,
     GovernanceManifest,
     GovernanceMetadata,
     IntakeReport,
     ModelSolution,
     PrimaryQuery,
     QualityCheck,
+    RepoProjectResult,
+    RepoTarget,
 )
 
 FIXED_TS = datetime(2026, 4, 14, 12, 0, 0, tzinfo=timezone.utc)
@@ -153,14 +153,14 @@ def make_data_report(**overrides: Any) -> DataReport:
     return DataReport(**defaults)
 
 
-def make_gitlab_target(**overrides: Any) -> GitLabTarget:
+def make_repo_target(**overrides: Any) -> RepoTarget:
     defaults: dict[str, Any] = dict(
-        gitlab_url="https://gitlab.example.com",
-        group_path="data-science/model-drafts",
+        host_url="https://gitlab.example.com",
+        namespace="data-science/model-drafts",
         project_name_hint="subrogation-recovery",
     )
     defaults.update(overrides)
-    return GitLabTarget(**defaults)
+    return RepoTarget(**defaults)
 
 
 def make_governance_manifest(**overrides: Any) -> GovernanceManifest:
@@ -175,14 +175,14 @@ def make_governance_manifest(**overrides: Any) -> GovernanceManifest:
     return GovernanceManifest(**defaults)
 
 
-def make_gitlab_project_result(**overrides: Any) -> GitLabProjectResult:
+def make_repo_project_result(**overrides: Any) -> RepoProjectResult:
     defaults: dict[str, Any] = dict(
         status="COMPLETE",
         project_url="https://gitlab.example.com/data-science/model-drafts/subrogation-recovery",
-        project_id=12345,
+        project_id="12345",
         initial_commit_sha="a1b2c3d4e5",
         files_created=["README.md", "pyproject.toml"],
         governance_manifest=make_governance_manifest(),
     )
     defaults.update(overrides)
-    return GitLabProjectResult(**defaults)
+    return RepoProjectResult(**defaults)

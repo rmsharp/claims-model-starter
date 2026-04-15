@@ -27,8 +27,8 @@ REGISTRY: dict[SchemaKey, type[BaseModel]] = {
     ("IntakeReport", "1.0.0"): v1.IntakeReport,
     ("DataRequest", "1.0.0"): v1.DataRequest,
     ("DataReport", "1.0.0"): v1.DataReport,
-    ("GitLabTarget", "1.0.0"): v1.GitLabTarget,
-    ("GitLabProjectResult", "1.0.0"): v1.GitLabProjectResult,
+    ("RepoTarget", "1.0.0"): v1.RepoTarget,
+    ("RepoProjectResult", "1.0.0"): v1.RepoProjectResult,
 }
 
 
