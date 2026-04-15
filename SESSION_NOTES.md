@@ -6,7 +6,7 @@
 
 ## ACTIVE TASK
 **Task:** Session 13 is an **IMPLEMENTATION** session. Execute **Phase C** of `docs/planning/github-gitlab-abstraction-plan.md` — add a new `agents/website/github_adapter.py` defining `PyGithubAdapter` as a `RepoClient` Protocol-conforming concrete class that wraps `PyGithub`. Phase C is the last source-only phase before Phase D wires it into the CLI.
-**Status:** Phase B landed in Session 12 (commits `e91c9f2` coverage bump, `<TBD-phase-b>` Phase B). Master is clean after commits. Baseline for Session 13: **295 tests pass at 96.53% coverage, mypy strict clean on 12 files in `agents/website/`.** Coverage floor is now **93%** (raised from 90% per Session 11 directive). The `WebsiteAgent` now takes a `ci_platform: Literal["gitlab", "github"]` constructor kwarg (default `"gitlab"`) and emits either `.gitlab-ci.yml` or `.github/workflows/ci.yml`; both are classified as governance artifacts by `is_governance_artifact()`. All Phase B work shipped — Phase D (CLI `--host` flag + docs) follows in Session 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11.
+**Status:** Phase B landed in Session 12 (commits `e91c9f2` coverage bump, `9b2ab5e` Phase B). Master is clean after commits. Baseline for Session 13: **295 tests pass at 96.53% coverage, mypy strict clean on 12 files in `agents/website/`.** Coverage floor is now **93%** (raised from 90% per Session 11 directive). The `WebsiteAgent` now takes a `ci_platform: Literal["gitlab", "github"]` constructor kwarg (default `"gitlab"`) and emits either `.gitlab-ci.yml` or `.github/workflows/ci.yml`; both are classified as governance artifacts by `is_governance_artifact()`. All Phase B work shipped — Phase D (CLI `--host` flag + docs) follows in Session 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11.
 **Priority:** HIGH — Phase C unblocks Phase D which unblocks Phase 5.
 
 ### What Session 13 Must Do
@@ -68,7 +68,7 @@ Plan §8 estimates this as 1 session. Phase C adds one new ~150-LOC source file 
 **Deliverable:** Phase B of `docs/planning/github-gitlab-abstraction-plan.md` — `render_github_actions_ci()` sibling renderer + `ci_platform` plumbing through `WebsiteState`/`WebsiteAgent`/`build_governance_files`, `is_governance_artifact` extension for `.github/workflows/ci.yml`, parametrized governance + nodes tests with positive AND negative assertions per platform. Plus standalone coverage-floor bump 90 → 93. **COMPLETE.**
 **Started:** 2026-04-15
 **Completed:** 2026-04-15
-**Commits:** `e91c9f2` (chore: coverage floor 90 → 93 + Session 12 IN PROGRESS stub), `<TBD-phase-b>` (feat: Phase B — `render_github_actions_ci()` + `ci_platform` plumbing).
+**Commits:** `e91c9f2` (chore: coverage floor 90 → 93 + Session 12 IN PROGRESS stub), `9b2ab5e` (feat: Phase B — `render_github_actions_ci()` + `ci_platform` plumbing).
 
 **Pre-flight baseline (verified on disk):**
 - `uv run pytest -q` → **289 passed, 96.51% coverage**. Matches Session 11 exactly.
