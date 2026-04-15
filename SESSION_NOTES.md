@@ -6,7 +6,7 @@
 
 ## ACTIVE TASK
 **Task:** Session 12 is an **IMPLEMENTATION** session. Execute **Phase B** of `docs/planning/github-gitlab-abstraction-plan.md` — add `render_github_actions_ci()` as a sibling of `render_gitlab_ci()`, thread a `ci_platform: Literal["gitlab", "github"]` parameter through `build_governance_files` / `scaffold_governance` / `WebsiteAgent`, extend `is_governance_artifact` to recognize `.github/workflows/ci.yml`, and parametrize tier-gated governance tests to cover both platforms. **Start by raising the pytest coverage floor from 90% to 93% in `pyproject.toml`.**
-**Status:** Phase A landed in Session 11 (commit `<FILL AT COMMIT TIME>`). Master is clean after commit. Baseline for Session 12: **289 tests pass at 96.51% coverage, mypy strict clean on 12 files in `agents/website/`.** All `GitLab*` / `gitlab_target` / `gitlab_url` / `group_path` / `project_id: int` references have been eliminated from `src/` and `tests/`; the surviving GitLab surface is: `gitlab_adapter.py` (concrete), `test_gitlab_adapter.py` (its tests), `.gitlab-ci.yml` artifact emission, `DEFAULT_HOST_URL = "https://gitlab.example.com"` CLI default, and `python-gitlab` in `pyproject.toml`. Phase C (`PyGithubAdapter`) and Phase D (CLI `--host` flag + docs) follow in Sessions 13 and 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11.
+**Status:** Phase A landed in Session 11 (commit `8c00e1a`). Master is clean after commit. Baseline for Session 12: **289 tests pass at 96.51% coverage, mypy strict clean on 12 files in `agents/website/`.** All `GitLab*` / `gitlab_target` / `gitlab_url` / `group_path` / `project_id: int` references have been eliminated from `src/` and `tests/`; the surviving GitLab surface is: `gitlab_adapter.py` (concrete), `test_gitlab_adapter.py` (its tests), `.gitlab-ci.yml` artifact emission, `DEFAULT_HOST_URL = "https://gitlab.example.com"` CLI default, and `python-gitlab` in `pyproject.toml`. Phase C (`PyGithubAdapter`) and Phase D (CLI `--host` flag + docs) follow in Sessions 13 and 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11.
 **Priority:** HIGH — Phase B unblocks Phase C which unblocks Phase D which unblocks Phase 5.
 
 ### What Session 12 Must Do
@@ -68,7 +68,7 @@ Plan §7 estimates this as 1 session. Phase B adds ~40–60 LOC of Python plus ~
 **Deliverable:** Phase A of `docs/planning/github-gitlab-abstraction-plan.md` — neutral rename across 26 files (plan expected 22 + 4 drift/docs) + `project_id: int → str` widening (Trap 1 fix). **COMPLETE.**
 **Started:** 2026-04-15
 **Completed:** 2026-04-15
-**Commits:** `<FILL AT COMMIT TIME>` (single commit containing all Phase A code/test/doc edits + this handoff).
+**Commits:** `8c00e1a` (single commit containing all Phase A code/test/doc edits + this handoff).
 
 **Pre-flight baseline (verified on disk, not inherited from Session 10's handoff):**
 - `uv run pytest -q` → **289 passed, 96.51% coverage, 8.87s wall-clock**. Matches Session 10's claim exactly.
