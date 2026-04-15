@@ -1,6 +1,6 @@
 # Model Project Constructor
 
-Multi-agent pipeline that turns a business model idea into a governance-scaffolded GitLab project. Given a stakeholder interview, it produces (1) a structured intake report, (2) a data collection plan with validated SQL and a datasheet, and (3) a draft model-build repository with proportional governance artifacts for the claims domain of a property-and-casualty insurer.
+Multi-agent pipeline that turns a business model idea into a governance-scaffolded GitLab or GitHub project. Given a stakeholder interview, it produces (1) a structured intake report, (2) a data collection plan with validated SQL and a datasheet, and (3) a draft model-build repository with proportional governance artifacts for the claims domain of a property-and-casualty insurer.
 
 The repository is published as `claims-model-starter` on GitHub; the internal package name remains `model-project-constructor`.
 
@@ -37,7 +37,7 @@ Stakeholder ──▶ Intake Agent ──▶ IntakeReport ──▶ adapter ─�
                                                             Website Agent
                                                                    │
                                                                    ▼
-                                                       GitLab project (draft)
+                                                  GitLab/GitHub project (draft)
 ```
 
 Each agent internally uses LangGraph for state management while the top-level orchestrator is a sequential script. The Data Agent is structurally decoupled from `IntakeReport` (constraint C4) so it can be reused standalone by analysts for ad-hoc query generation; it is distributed as a separate installable package `model-project-constructor-data-agent` under `packages/data-agent/` with its own `pyproject.toml`, CLI (`model-data-agent run`), and `USAGE.md`. An AST-based test in `tests/test_data_agent_decoupling.py` enforces the decoupling at CI time.
