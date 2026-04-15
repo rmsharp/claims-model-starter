@@ -6,7 +6,7 @@
 
 ## ACTIVE TASK
 **Task:** Phase 4 of the architecture plan — Website Agent. Session 9 should execute **Sub-phase 4B** only: governance scaffolding (§8.2) + retry/backoff on GitLab errors + a real `python-gitlab` adapter behind the `GitLabClient` Protocol.
-**Status:** Phase 4A COMPLETE on `master`. The Website Agent core ships with a linear LangGraph (`CREATE_PROJECT → SCAFFOLD_BASE → INITIAL_COMMITS → END`), a `GitLabClient` Protocol, a `FakeGitLabClient` for tests/CLI, pure-Python templates for all 28 non-governance base files, and a typer CLI with `--fake-gitlab`. 260 tests pass at 96.88% coverage. mypy strict clean across the 10-file `agents/website/` package. First real-API smoke test of the Phase 3B intake agent ran successfully at the start of Session 8 (`claude-sonnet-4-6` verified) — the 3-session caveat is retired. Commits: `64b8a99` + `081cb20` (Phase 3A); `1c1141a` + `41449a8` (Phase 3B); `<SESSION_8_HASH>` (Phase 4A).
+**Status:** Phase 4A COMPLETE on `master`. The Website Agent core ships with a linear LangGraph (`CREATE_PROJECT → SCAFFOLD_BASE → INITIAL_COMMITS → END`), a `GitLabClient` Protocol, a `FakeGitLabClient` for tests/CLI, pure-Python templates for all 28 non-governance base files, and a typer CLI with `--fake-gitlab`. 260 tests pass at 96.88% coverage. mypy strict clean across the 10-file `agents/website/` package. First real-API smoke test of the Phase 3B intake agent ran successfully at the start of Session 8 (`claude-sonnet-4-6` verified) — the 3-session caveat is retired. Commits: `64b8a99` + `081cb20` (Phase 3A); `1c1141a` + `41449a8` (Phase 3B); `9887286` (Phase 4A).
 **Plan:** `docs/planning/architecture-plan.md` §4.3 (Website Agent responsibility + failure modes table), §5.4 (`GitLabProjectResult.governance_manifest` is the 4B output contract), §8 (full governance integration — **§8.2 is the 4B acceptance checklist**), §10 (the full 4A+4B LangGraph with `RETRY_BACKOFF`), §11 (every file listed under `governance/`, `data/datasheet_*.md`, `.gitlab-ci.yml`, `.pre-commit-config.yaml` is governance-bound), §14 Phase 4B (DONE criteria + verification commands).
 **Priority:** HIGH
 
@@ -164,7 +164,7 @@ Your (Session 9's) handoff will be scored on:
 **Deliverable:** Phase 4A of architecture plan — Website Agent core + LangGraph + GitLab scaffolding (non-governance) + `FakeGitLabClient` + typer CLI + 59 tests (COMPLETE)
 **Started:** 2026-04-14
 **Completed:** 2026-04-14
-**Commits:** `<SESSION_8_HASH>` (fill in on commit).
+**Commits:** `9887286` (fill in on commit).
 
 **What was done (chronological):**
 1. Phase 0 orientation — read SAFEGUARDS in full, ACTIVE TASK + Session 7 block from SESSION_NOTES, checked git (clean, 8 commits ahead of origin at session start), confirmed `methodology_dashboard.py` still absent and `gh issue list` still empty. Reported findings. Waited for the user to say "go".
