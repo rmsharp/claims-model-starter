@@ -5,59 +5,183 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 15 is an **IMPLEMENTATION** session. Execute **Phase 5** of `docs/planning/architecture-plan.md` §14 — build `src/model_project_constructor/orchestrator/` with `pipeline.py` (`run_pipeline(config)` from §12), `adapters.py` (`intake_report_to_data_request()` + inference helpers), and `checkpoints.py` (envelope persistence). Add an end-to-end test that drives the whole pipeline against `FakeRepoClient` for both `--host gitlab` and `--host github` paths. Verify halt behavior for each `FAILED_AT_*` path. **The GitHub/GitLab abstraction plan (Phases A–D) is fully landed** — Session 15 imports the post-rename types directly.
-**Status:** Phase D landed in Session 14 (commit hash to be filled in during Session 15's Phase 3A). Master is clean after commit. Baseline for Session 15: **323 tests pass at 96.77% coverage, mypy strict clean on 13 files in `agents/website/`.** Coverage floor is **93%**. The CLI exposes `--host {gitlab,github}` with lazy-imported adapters, `--ci-platform` override, and the Phase A deprecated aliases (`--fake-gitlab`, `--gitlab-url`, `--group-path`) are GONE. `WebsiteAgent(client, ci_platform=...)` is the canonical construction. `PyGithubAdapter` and `PythonGitLabAdapter` both expose the same `RepoClient` Protocol surface (`create_project(*, namespace, name, visibility) -> ProjectInfo`, `commit_files(*, project_id, branch, files, message) -> CommitInfo`).
-**Priority:** HIGH — Phase 5 was deferred behind the abstraction plan; with Phase D landed there is no longer a rename cost looming over the orchestrator code.
+**Task:** Session 16 is an **IMPLEMENTATION** session. Execute **Phase 6** of `docs/planning/architecture-plan.md` §14 — production hardening (structured logging with `run_id` / `correlation_id`, metrics for counts / status distribution / per-agent latency, all secrets via env or `.env`, full doc sweep for `README.md` / `OPERATIONS.md` / `TROUBLESHOOTING.md`, CI pipeline on this repo with lint + unit + decoupling + `mypy src/`). **Before any Phase 6 work, bump the pytest coverage floor 93 → 94** as a separate `chore:` commit (standalone commit, bundled with the Session 16 IN_PROGRESS stub). Coverage is currently ~96.97% ≫ 94% so the bump is no-cost.
+**Status:** Phase 5 landed in Session 15 (commit hash to be filled in during Session 16's Phase 3A). Master is clean after commit. Baseline for Session 16: **368 tests pass at 96.97% coverage, mypy strict clean on 17 files in `agents/website/` + `orchestrator/`.** Coverage floor is **93%** (to be bumped to 94% at the start of Session 16). `src/model_project_constructor/orchestrator/` is live: `pipeline.py` with `run_pipeline(config, *, intake_runner, data_runner, website_runner, store=None)`, `adapters.py` with `intake_report_to_data_request()` + `infer_target_granularity()`, `checkpoints.py` with `CheckpointStore` (envelope save/load + `save_result()` for terminal artifacts). The orchestrator uses **callable runners**, not concrete agent classes, so Phase 6 can wrap real agents in closures without the orchestrator importing heavy LLM/DB code.
+**Priority:** HIGH — Phase 6 is the final planned phase before pilot. Phase 5 delivered on schedule in 1 session per the plan estimate.
 
-### What Session 15 Must Do
+### What Session 16 Must Do
 
-**Phase 5 is one session per `architecture-plan.md` §14. Close out when DONE. Do NOT start Phase 6 (production hardening) in the same session.** Failure mode #18.
+**Phase 6 is one session per `architecture-plan.md` §14. Close out when DONE.** Failure mode #18. Phase 6 is the final planned phase before pilot.
 
 1. **Phase 0 — orient:**
    - `SAFEGUARDS.md` (full read).
-   - This ACTIVE TASK block + the "What Session 14 Did" handoff below (especially the gotchas + key files sections).
-   - `docs/planning/architecture-plan.md` **§14 Phase 5** (lines ~926-941, including the Session 14 amendment paragraph) and **§12** (`run_pipeline(config)` shape — orchestrator caller).
-   - Skim `agents/intake/agent.py`, `packages/data-agent/.../agent.py`, and `agents/website/agent.py` to confirm each agent's `run(...)` signature. Phase 5 wires them in sequence via the schema handoffs.
-   - `agents/website/cli.py` is the model for how to plumb `--host` selection through a wrapper — the orchestrator's CLI/config will follow the same lazy-import pattern.
+   - This ACTIVE TASK block + the "What Session 15 Did" handoff below (especially the gotchas + key files sections).
+   - `docs/planning/architecture-plan.md` **§14 Phase 6** (lines ~947-961) for the scope.
+   - Skim `src/model_project_constructor/orchestrator/pipeline.py` — it is the primary surface that Phase 6 instruments with logging + metrics. The callable-runner shape means Phase 6 can wrap runners in logging decorators without touching `run_pipeline` itself.
    - Run `git status`, `git log --oneline -5`. Confirm clean working tree on master.
-   - Run pre-flight: `uv run pytest -q` (expect **323 passed @ 96.77%**), `uv run mypy src/model_project_constructor/agents/website/` (expect **Success on 13 files**). If drifted, STOP and investigate.
+   - Run pre-flight: `uv run pytest -q` (expect **368 passed @ 96.97%**), `uv run mypy src/model_project_constructor/agents/website/ src/model_project_constructor/orchestrator/` (expect **Success on 17 files**). If drifted, STOP and investigate.
 
-2. **Phase 1B — write the Session 15 stub** to `SESSION_NOTES.md` BEFORE touching any code.
+2. **Step 1 — Coverage floor bump (separate `chore:` commit, first of the session):**
+   - `pyproject.toml:60` — `--cov-fail-under=93` → `--cov-fail-under=94`. Current coverage is ~96.97% so this is no-cost.
+   - Commit as `chore(coverage): raise pytest coverage floor 93% → 94%`, bundled with the Session 16 IN_PROGRESS stub (same pattern Session 12 used for the 90→93 bump per `e91c9f2`). This keeps the coverage bump out of the Phase 6 feat commit's audit trail.
 
-3. **Phase 5 execution** — follow `architecture-plan.md` §14 Phase 5 + §12:
-   - Create `src/model_project_constructor/orchestrator/{__init__.py,pipeline.py,adapters.py,checkpoints.py}`.
-   - `pipeline.py:run_pipeline(config)` orchestrates: Intake Agent → IntakeReport → adapter → DataRequest → Data Agent → DataReport → Website Agent → RepoProjectResult. Halts on each `FAILED_AT_*` per §12.
-   - `adapters.py:intake_report_to_data_request()` derives a `DataRequest` from an `IntakeReport`. Inference helpers go here too.
-   - `checkpoints.py` persists `HandoffEnvelope` instances between agents (use `schemas/envelope.py` + `schemas/registry.py`).
-   - Tests: `tests/orchestrator/test_pipeline.py` (end-to-end with seeded fixtures + `FakeRepoClient` for both `--host gitlab` and `--host github`), `tests/orchestrator/test_adapters.py` (intake→data inference), `tests/orchestrator/test_checkpoints.py` (envelope round-trip).
-   - **End-to-end test must cover both ci_platform values** — assert that the GitLab pipeline emits `.gitlab-ci.yml` and the GitHub pipeline emits `.github/workflows/ci.yml`, mirroring the CLI test pattern from `tests/agents/website/test_cli.py`.
+3. **Phase 1B — write the Session 16 stub** to `SESSION_NOTES.md` BEFORE touching any Phase 6 code (bundled with the `chore:` commit per step 2).
 
-4. **Phase 5 verification** — run plan §14's commands (`uv run pytest tests/orchestrator/ -v`). Additionally: full `uv run pytest -q` must show **≥323 passed @ ≥93% coverage**. mypy must extend cleanly to `src/model_project_constructor/orchestrator/`.
+4. **Phase 6 execution** — follow `architecture-plan.md` §14 Phase 6:
+   - **Observability:** structured logging (likely `structlog`) with `run_id` + `correlation_id` threaded through the orchestrator's agent calls. The cleanest integration point is wrapping the three runners passed to `run_pipeline` in logging adapters; `pipeline.py` itself shouldn't need to import `structlog`.
+   - **Metrics:** counts of runs, status distribution (COMPLETE / FAILED_AT_*), per-agent latency. A small `orchestrator/metrics.py` module with in-memory counters is sufficient for Phase 6 — a Prometheus exporter is a post-pilot concern.
+   - **Configuration:** env-var-driven config via `pydantic-settings` or equivalent; no hardcoded credentials; `.env.example` template; document every env var in `OPERATIONS.md`.
+   - **Documentation:** new `OPERATIONS.md` (runbook for production: env setup, common failures, resume procedure), new `TROUBLESHOOTING.md` (diagnostic walkthroughs for each `FAILED_AT_*` path — link to the checkpoint store files the operator should inspect).
+   - **CI pipeline:** `.github/workflows/ci.yml` for THIS repo (not the generated scaffold — the repo's own CI). Matrix: lint (ruff) + unit (`pytest -q`) + decoupling test + mypy (`uv run mypy src/`). Wire coverage reporting.
+   - Tests: `tests/orchestrator/test_metrics.py` for any new metrics module; observability can be covered via assertion that the logging decorators emit the expected fields without instantiating real log sinks.
 
-5. **Phase 3 close-out** — evaluate Session 14's handoff (§3A), self-assess, document learnings, write full Session 15 handoff (new ACTIVE TASK = Session 16 = Phase 6 production hardening), commit (expect **one feat commit** for Phase 5), report, STOP.
+5. **Phase 6 verification** — run plan §14's commands (`uv run pre-commit run --all-files`, `uv run mypy src/`). Additionally: full `uv run pytest -q` must show **≥368 passed @ ≥94% coverage**. CI workflow must be green on a probe PR (or at minimum lint + pytest locally).
 
-### Files Session 15 will touch (from `architecture-plan.md` §14 Phase 5)
+6. **Phase 3 close-out** — evaluate Session 15's handoff (§3A), **backfill the Session 15 Phase 5 commit hash** into the `What Session 15 Did` block below (`Commits: TBD` placeholder), self-assess, document learnings, write full Session 16 handoff (new ACTIVE TASK = Session 17 = pilot readiness review or first post-pilot feature), commit (expect **one chore commit for the coverage floor + one feat commit for Phase 6**), report, STOP.
 
-- **NEW Source (4):** `src/model_project_constructor/orchestrator/{__init__.py,pipeline.py,adapters.py,checkpoints.py}`.
-- **NEW Tests (3):** `tests/orchestrator/{test_pipeline.py,test_adapters.py,test_checkpoints.py}` (+ `__init__.py` if needed).
-- **Possibly modified (0–1):** `pyproject.toml` if a `model-project-constructor-orchestrator` console script is added (architecture-plan §14 Phase 5 doesn't require one — judge based on §12 contract).
-- **Docs (1–2):** README phase table row 5 → "Complete", optional README orchestrator usage section.
+### Files Session 16 will touch (from `architecture-plan.md` §14 Phase 6)
 
-### Hard rules for Phase 5
+- **NEW Source (2–3):** `src/model_project_constructor/orchestrator/{metrics.py,logging.py}` (or similar), possibly `orchestrator/config.py` for env-var-driven settings.
+- **NEW Tests (1–2):** `tests/orchestrator/test_metrics.py`, possibly `test_logging.py`.
+- **NEW Config (2):** `.github/workflows/ci.yml` (repo's own CI), `.env.example`.
+- **NEW Docs (2):** `OPERATIONS.md`, `TROUBLESHOOTING.md`.
+- **Modified (2–3):** `pyproject.toml` (+94% floor + any new deps like `structlog`, `pydantic-settings`), `README.md` (phase table row 6 → "Complete", getting-started env var section).
 
-- **No Phase 6 work.** No observability/metrics/config-hardening — Phase 6 is Session 16.
-- **Do NOT touch** `agents/intake/`, `agents/website/`, `packages/data-agent/` source. Phase 5 is purely at the orchestrator layer + handoff adapters.
-- **Use `RepoTarget` / `RepoProjectResult`, NOT `GitLabTarget` / `GitLabProjectResult`** — the abstraction is fully landed (Sessions 11–14). Importing the old names will fail.
-- **End-to-end tests must use `FakeRepoClient` by default**, not real adapters. Live-host tests are explicitly out of scope per `gitlab_adapter.py:14-18` docstring.
-- **Reuse the lazy-import pattern from `cli.py`** for any orchestrator code that needs to construct `PythonGitLabAdapter` or `PyGithubAdapter` — eager imports degrade `--help` performance.
+### Hard rules for Phase 6
+
+- **No Phase 7 / post-pilot work.** Phase 6 is observability + hardening only. Do NOT add new agents, new pipeline stages, or new schemas.
+- **Do NOT touch** the existing `orchestrator/{pipeline,adapters,checkpoints}.py` source except to add structured logging hooks at clearly-marked integration points. The Phase 5 contract is stable.
+- **Coverage floor bump is a separate commit**, bundled only with the Session 16 stub. Session 12 set the precedent (`e91c9f2`); replicate it exactly.
+- **No live-host CI tests.** The repo's own CI runs against the fake client only; live adapter testing stays a manual post-commit step per `gitlab_adapter.py` / `github_adapter.py` docstrings.
+- **Do not reinstate any `GitLabTarget` / `GitLabProjectResult` symbols.** The abstraction is done; Phase 6 uses the host-neutral names.
 
 ### Expected duration
 
-`architecture-plan.md` §14 estimates Phase 5 as 1 session. Adapter wiring is mostly mechanical given the existing schema contracts; the end-to-end test is the largest piece. Expect ~90–120 minutes including pre-flight, doc updates, and close-out.
+`architecture-plan.md` §14 estimates Phase 6 as 1 session. Observability wiring is the largest piece; the docs can lean heavily on the Phase 5 checkpoint structure. Expect ~90–120 minutes including pre-flight, doc writing, and close-out.
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
+
+### Session 14 Handoff Evaluation (by Session 15)
+**Score: 10/10.** Fourth consecutive 10. Phase 5 was a pure step-execution session because Session 14 left no ambiguity about the orchestrator's contract.
+
+- **What helped:** (a) The "`WebsiteAgent(client, ci_platform=...)` is the canonical construction" line in ACTIVE TASK told me the website runner closure could just be `agent.run` without any ceremony — I wrote `website_runner=agent.run` in every test on first attempt. (b) The Phase D amendment paragraph in `architecture-plan.md` §14 Phase 5 (added by Session 14) told me upfront that `RepoTarget` / `RepoProjectResult` were the correct imports — I never reached for `GitLabTarget`. (c) The gotchas section explicitly flagged that `WebsiteAgent.run(intake, data, repo_target)` returns a `RepoProjectResult` with `status ∈ {"COMPLETE","FAILED","PARTIAL"}` — I branched on this in `pipeline.py` without inspecting the agent source. (d) Gotcha #6 in Session 14's handoff ("`HandoffEnvelope` + `schemas/registry.py` are the persistence layer for inter-agent handoffs") told me to persist inter-agent handoffs as envelopes but didn't prescribe how to handle the terminal result, which let me notice the Phase 1 invariant on my own (target_agent excludes "orchestrator") before shipping a broken widening. (e) Pre-flight baseline numbers (323 @ 96.77%, mypy 13 files clean) matched exactly — zero drift detected in ~10 seconds.
+- **What was missing:** One genuine gap: Session 14's handoff anticipated that Phase 5's orchestrator would need `RepoTarget.host_url` populated and noted "the orchestrator config is the canonical place to resolve '--host github' + no --host-url → set RepoTarget.host_url='https://api.github.com'". However it did NOT flag the Phase 1 envelope invariant (`test_target_agent_cannot_be_orchestrator` in `tests/schemas/test_envelope_and_registry.py:63-66`) — I discovered this the hard way by widening `HandoffEnvelope.target_agent` to include "orchestrator" and watching the schema test fail. The right fix (introducing a sibling `save_result()` method on `CheckpointStore` that bypasses envelopes for terminal artifacts) was cleaner than my first instinct, so the gap cost me ~3 minutes but improved the design. **Not deducting — this is a Phase 1 invariant, not Session 14's responsibility to document.**
+- **What was wrong:** Nothing observable. Every gotcha held up on inspection. The "`PyGithubAdapter` + `PythonGitLabAdapter` both expose the same `RepoClient` Protocol surface" claim was load-bearing — I could write a single test for both hosts without branching.
+- **ROI:** Reading the handoff (~6 min) saved an estimated 40–50 min of Phase 5 discovery: the callable-runner shape (implied by the "three agents with incompatible `.run()` signatures" problem), the fixture-based end-to-end approach (implied by "end-to-end tests must use `FakeRepoClient` by default"), and the Phase 1 envelope invariant I had to discover on my own was the only friction. ~7× ROI, matching the Phase D session.
+
+**Commit hash backfill for Session 14 (per ACTIVE TASK's Phase 3A directive):**
+- `e9f0d10` feat(phase-d): website CLI `--host gitlab|github` + dual-adapter selection
+- `9f20e95` docs(readme): mention GitHub alongside GitLab in tagline + diagram
+
+Both hashes verified via `git log --oneline -10` at Phase 0 start. The Session 14 handoff's "Commits: TBD" placeholder is updated below.
+
+### What Session 15 Did
+**Deliverable:** Phase 5 of `docs/planning/architecture-plan.md` §14 — new `src/model_project_constructor/orchestrator/` package with `pipeline.py` (sequential `run_pipeline` driver per §12), `adapters.py` (the sole `IntakeReport`↔`DataRequest` bridge), and `checkpoints.py` (`CheckpointStore` with envelope save/load + `save_result` for terminal artifacts). 45 new tests across `tests/orchestrator/` covering: happy path for both `ci_platform="gitlab"` and `ci_platform="github"` with `.gitlab-ci.yml` / `.github/workflows/ci.yml` positive + negative assertions; halt behavior for each `FAILED_AT_*` path; downstream-agent-not-called guards on halt; adapter inference rules for all `model_type` variants; envelope round-trip with registry resolution; terminal-result filename-namespace isolation; run-directory isolation. README phase-table row 5 → "Complete", repo-layout block updated with `orchestrator/` + `tests/orchestrator/` entries, total test count bumped 323 → 368. **COMPLETE.**
+**Started:** 2026-04-15
+**Completed:** 2026-04-15
+**Commits:** TBD (one feat commit for Phase 5, hash to be filled in by Session 16's Phase 3A).
+
+**Pre-flight baseline (verified on disk):**
+- `uv run pytest -q` → **323 passed, 96.77% coverage**. Matches Session 14 exactly.
+- `uv run mypy src/model_project_constructor/agents/website/` → **Success: no issues found in 13 source files**. Matches.
+- `git status` → clean on `master`, 0 commits ahead of `origin/master`.
+
+**What was done (chronological):**
+
+1. **Phase 0 orientation** — read `SAFEGUARDS.md` in full, `SESSION_NOTES.md` lines 1-280 (ACTIVE TASK + Session 14 handoff + gotchas + Session 13 handoff for context), ran `git status` / `git log --oneline -5` / pre-flight pytest + mypy in parallel, confirmed `~/Development/dashboard.html` exists. Reported findings to user and waited for explicit "work on Phase 5" per failure mode #9 + Learning #10. **Did not skip the report-and-wait step even though ACTIVE TASK already described the deliverable.**
+
+2. **User said "work on Phase 5; do not forget Housekeeping note toward end of this session"** — wrote Session 15 IN_PROGRESS stub to `SESSION_NOTES.md` (Phase 1B ghost-session protection per failure mode #14). The housekeeping note refers to backfilling Session 14's `Commits: TBD` placeholder to `e9f0d10` + `9f20e95` during Phase 3A; I tracked this as close-out task #6 explicitly.
+
+3. **Phase 5 step 1 — §12 + §14 Phase 5 re-read + agent signature inventory:**
+   - Read `architecture-plan.md` §12 (`run_pipeline` pseudocode showing `_persist` hooks after each agent + `if status != "COMPLETE": return PipelineResult(status="FAILED_AT_*")` halt logic), §14 Phase 5 (including the Session 14 amendment paragraph widening "test GitLab instance" to "test host (GitLab or GitHub)"), §7 (decoupling invariant — the adapter is the ONLY allowed `IntakeReport ↔ DataRequest` site).
+   - Read `src/model_project_constructor/schemas/envelope.py` + `schemas/registry.py` — noted `HandoffEnvelope.target_agent` is `Literal["intake", "data", "website"]` (excludes "orchestrator"), `source_agent` includes "orchestrator". Noted registry has 5 entries: `IntakeReport`, `DataRequest`, `DataReport`, `RepoTarget`, `RepoProjectResult`.
+   - Read `schemas/v1/intake.py` + `schemas/v1/repo.py` + `packages/data-agent/.../schemas.py` for field-level contracts.
+   - Read `agents/intake/agent.py` (`IntakeAgent.run_with_fixture(path)` and `run_scripted(...)`), `packages/data-agent/.../agent.py` (`DataAgent.run(DataRequest)`), `agents/website/agent.py` (`WebsiteAgent.run(intake, data, repo_target)`). **Noted the three `.run()` signatures are incompatible** — this is what drove the decision to use callable runners instead of concrete agent classes in `run_pipeline`.
+   - Read `agents/website/cli.py` end-to-end (the lazy-import pattern, the `cast(Literal[...], ci_platform)` pattern for passing `str`-after-parsing into `WebsiteAgent`, the `resolved_host_url` per-host default).
+   - Read `agents/website/fake_client.py` (`FakeRepoClient` with `projects` dict + `get_files` test helper).
+   - Read the existing fixtures `tests/fixtures/subrogation_intake.json` + `tests/fixtures/sample_datareport.json` — these are the pre-baked `IntakeReport` + `DataReport` I'd use to stub intake/data runners in the end-to-end test.
+
+4. **Phase 5 step 2 — `orchestrator/` package (4 new source files):**
+   - `__init__.py` (48 LOC) — re-exports the public surface: `run_pipeline`, `PipelineConfig`, `PipelineResult`, `CheckpointStore`, `intake_report_to_data_request`, `infer_target_granularity`, and the three `IntakeRunner` / `DataRunner` / `WebsiteRunner` callable type aliases. Module docstring describes the sequential-script pattern + the §7 decoupling responsibility.
+   - `adapters.py` (82 LOC) — `infer_target_granularity(intake) -> DataGranularity` maps `model_solution.model_type` ("time_series" → monthly grain; everything else → event grain, unit="claim"). `intake_report_to_data_request(intake, run_id) -> DataRequest` copies `target_description` verbatim from `model_solution.target_definition`, copies `candidate_features` into `required_features`, synthesizes `population_filter` from the target definition, defaults `time_range` to `"last 5 calendar years of historical records"`, sets `database_hint=None`, `data_quality_concerns=[]`, `source="pipeline"`, `source_ref=run_id`. The adapter is deliberately conservative — downstream `DataAgent` diagnoses ambiguous requests via `status=INCOMPLETE_REQUEST` so the adapter doesn't try to be clever.
+   - `checkpoints.py` (104 LOC) — `CheckpointStore(base_dir)` with two artifact channels:
+     - **Envelope channel** (for inter-agent handoffs): `save(envelope)`, `load(run_id, payload_type)`, `load_payload(run_id, payload_type)` (resolves via `schemas/registry.py`), `has(run_id, payload_type)`, `list_payload_types(run_id)`. Files named `<payload_type>.json` under `<base_dir>/<run_id>/`.
+     - **Terminal result channel** (for the orchestrator's own outputs, most importantly `RepoProjectResult`): `save_result(run_id, name, model)`, `has_result(run_id, name)`, `list_result_names(run_id)`. Files named `<name>.result.json` so they never collide with envelope filenames even if a terminal name happens to match a registered payload type. The docstring explicitly references the Phase 1 invariant (`test_target_agent_cannot_be_orchestrator`) as the reason the terminal channel exists — envelopes are strictly for agent-to-agent transport.
+   - `pipeline.py` (205 LOC) — `PipelineConfig` dataclass (`run_id`, `repo_target`, `checkpoint_dir`, `correlation_id` defaulting to `run_id` via `__post_init__`), `PipelineResult` dataclass (`run_id`, `status`, and optional `intake_report` / `data_request` / `data_report` / `project_result` / `failure_reason`; a `project_url` property extracts from `project_result`), `PipelineStatus = Literal["COMPLETE","FAILED_AT_INTAKE","FAILED_AT_DATA","FAILED_AT_WEBSITE"]`. `run_pipeline(config, *, intake_runner, data_runner, website_runner, store=None)` is the single public entry point. Sequence: call `intake_runner()` → save `IntakeReport` envelope → halt if `status != "COMPLETE"` → call `intake_report_to_data_request` → save `DataRequest` envelope → call `data_runner(request)` → save `DataReport` envelope → halt if `status != "COMPLETE"` → save `RepoTarget` envelope → call `website_runner(intake, data, target)` → save terminal `RepoProjectResult` via `save_result` → halt if `status != "COMPLETE"` → return `PipelineResult(status="COMPLETE", ...)`. The halt-paths retain every report produced so far so the operator can inspect partial state. A private `_envelope(...)` helper builds `HandoffEnvelope` instances with `source_agent="orchestrator"` for the intake/data/website-target envelopes.
+
+5. **Phase 5 step 3 — mypy probe on the new package (before writing tests):**
+   - `uv run mypy src/model_project_constructor/orchestrator/` → **Success: no issues found in 4 source files**. Zero `# type: ignore` comments. The only narrowing issue was the `dict` → `dict[str, Any]` parameter on `_envelope` which I caught on first mypy run.
+
+6. **Phase 5 step 4 — Envelope widening attempt + rollback (design correction):**
+   - Initial draft of `pipeline.py` persisted the terminal `RepoProjectResult` as an envelope with `target_agent="orchestrator"` (since the website agent sends it back to the orchestrator). Widened `HandoffEnvelope.target_agent` to include `"orchestrator"`.
+   - Ran `uv run pytest tests/schemas/ -q` → **1 failed: `test_target_agent_cannot_be_orchestrator`**. The Phase 1 test explicitly codifies "the orchestrator never *receives* an envelope — it only sends them" as a design invariant.
+   - **Reverted the envelope widening** and added the `save_result` / `has_result` / `list_result_names` sibling API on `CheckpointStore`. The terminal `RepoProjectResult` is a plain JSON Pydantic dump, not an envelope — which matches the Phase 1 intent exactly. Ran schema tests again → **88 passed** (was 87 passing + 1 failing before my change; now 88/88). The terminal-result channel is cleaner than the envelope widening would have been and is documented in the `CheckpointStore` class docstring.
+
+7. **Phase 5 step 5 — `tests/orchestrator/` (4 new test files):**
+   - `__init__.py` — empty marker.
+   - `test_adapters.py` (163 LOC, 11 tests) — helper `_make_intake(...)` builds a minimal `IntakeReport` with override kwargs for `model_type` / `candidate_features` / `target_definition` / `status`. **`TestInferTargetGranularity`** (4 tests): `supervised_classification` / `supervised_regression` / `unsupervised_clustering` all map to event grain; `time_series` maps to monthly. **`TestIntakeReportToDataRequest`** (7 tests + 1 parametrized over status): features copied verbatim + defensive-copy regression (mutating `request.required_features` does NOT affect `intake.model_solution.candidate_features`); `target_description` + `population_filter` pull from `target_definition`; `source="pipeline"` + `source_ref=run_id`; `time_range` is non-empty and mentions "year"; `database_hint is None`; `data_quality_concerns == []`; round-trip (`model_dump` → `model_validate` → equality); `time_series` end-to-end; the parametrize covers `["COMPLETE", "DRAFT_INCOMPLETE"]` because §12 halts DRAFT_INCOMPLETE before the adapter runs, but the adapter must still produce a valid `DataRequest` for direct-use callers.
+   - `test_checkpoints.py` (220 LOC, 15 tests) — helper `_make_data_request_envelope(run_id)` + `_make_repo_project_result()`. **`TestEnvelopeRoundTrip`** (7 tests): save/load round-trip, run directory creation, `has` before/after save, `load_payload` resolves via registry and returns a `DataRequest` instance, `load` on missing file raises `FileNotFoundError`, overwrite-on-resave (re-saving with a different `correlation_id` overwrites rather than suffixes). **`TestListing`** (4 tests): `list_payload_types` returns `[]` for missing run, sorted after two saves, excludes terminal `.result.json` files, `list_result_names` also `[]` for missing run. **`TestTerminalResults`** (4 tests): `save_result` writes the `.result.json` suffix, creates the run directory, `has_result` reports existence, envelope + terminal result with the same logical name coexist in different files. **`TestRunIsolation`** (3 tests): two run IDs do not share files, `base_dir` accepts both `str` and `Path`, a `RepoTarget` envelope round-trips through `load_payload` and resolves to the correct Pydantic class.
+   - `test_pipeline.py` (352 LOC, 13 tests + 2 parametrized cases = 14 test functions, 15 actual runs counting parametrize) — helpers `_load_intake` / `_load_data` (from the existing fixtures), `_make_config`, `_failed_repo_project_result`, `_incomplete_data_report`, `_draft_incomplete_intake`. **`TestHappyPath`** (4 tests): `test_run_pipeline_happy_path_emits_correct_ci_file[gitlab|github]` (parametrized, positive + negative CI-file assertions matching Learning #5); `test_happy_path_persists_all_checkpoints` (asserts IntakeReport / DataRequest / DataReport / RepoTarget envelopes + terminal RepoProjectResult + `list_payload_types` sorted exactly); `test_happy_path_data_request_copies_candidate_features` (round-trips through `load_payload` to verify the DataRequest is both correct and Pydantic-valid after disk round-trip); `test_happy_path_terminal_result_file_is_valid_repo_project_result` (reads `RepoProjectResult.result.json` from disk, validates, asserts GitHub CI file is present). **`TestHaltPaths`** (5 tests): halt at intake on DRAFT_INCOMPLETE (asserts `data_request is None` + only IntakeReport envelope persisted); halt at data on EXECUTION_FAILED (asserts IntakeReport + DataRequest + DataReport persisted, no RepoTarget, no terminal result); halt at website on FAILED (asserts terminal result IS persisted even on failure — operator needs to inspect it); downstream-agent-not-called guard on intake halt (both data_runner and website_runner closure-count == 0); downstream-not-called guard on data halt (website_runner closure-count == 0). **`TestPipelineConfig`** (3 tests): correlation_id defaults to run_id; correlation_id override; `project_url` property returns None when no project_result.
+
+8. **Phase 5 verification — every verification command run:**
+   - `uv run pytest tests/orchestrator/ -v` → **45 passed** in 0.82s. Orchestrator package itself at **100% line + 100% branch coverage** (adapters 15/15, checkpoints 47/47, pipeline 59/59, __init__ 5/5).
+   - `uv run pytest -q` → **368 passed @ 96.97% coverage** (was 323 @ 96.77%; +45 tests, +0.20%). Zero skips, zero xfails, zero regressions.
+   - `uv run mypy src/model_project_constructor/orchestrator/ src/model_project_constructor/agents/website/` → **Success: no issues found in 17 source files** (was 13; +4 new orchestrator files). Zero `# type: ignore` comments added anywhere.
+
+9. **Phase 5 step 6 — Doc updates:**
+   - `README.md` phase-table row 5: "Not started" → "Complete".
+   - `README.md` repo-layout block: added `orchestrator/` sub-block with one-line annotations for `pipeline.py` (`run_pipeline(config, *, intake_runner, data_runner, website_runner)`), `adapters.py` (the §7 decoupling site), `checkpoints.py` (`CheckpointStore` + envelope / terminal channels).
+   - `README.md` test-tree: added `tests/orchestrator/` line ("45 orchestrator tests (pipeline halt paths, adapters, checkpoints)").
+   - `README.md` getting-started line: "All 323 tests should pass with coverage above 93% (currently ≈96.8%)" → "All 368 tests should pass with coverage above 93% (currently ≈97.0%)".
+   - `architecture-plan.md` unchanged — the §14 Phase 5 amendment paragraph Session 14 added was already accurate.
+
+### Key Files Shipped in Session 15
+
+**Schema tweak (temporarily + reverted):**
+- `src/model_project_constructor/schemas/envelope.py` — no net change. Widened `target_agent` Literal to include `"orchestrator"`, then reverted when the Phase 1 test flagged the invariant. The final `checkpoints.py` design uses a sibling `save_result` channel instead, which is strictly cleaner.
+
+**Source files (4 NEW):**
+- `src/model_project_constructor/orchestrator/__init__.py` (48 LOC) — public surface re-exports.
+- `src/model_project_constructor/orchestrator/adapters.py` (82 LOC) — `intake_report_to_data_request` + `infer_target_granularity`.
+- `src/model_project_constructor/orchestrator/checkpoints.py` (104 LOC) — `CheckpointStore` with dual envelope / terminal-result channels.
+- `src/model_project_constructor/orchestrator/pipeline.py` (205 LOC) — `run_pipeline` + `PipelineConfig` / `PipelineResult` / callable runner type aliases.
+
+**Test files (4 NEW):**
+- `tests/orchestrator/__init__.py` (empty marker).
+- `tests/orchestrator/test_adapters.py` (163 LOC, 11 tests).
+- `tests/orchestrator/test_checkpoints.py` (220 LOC, 15 tests).
+- `tests/orchestrator/test_pipeline.py` (352 LOC, 19 tests after parametrize expansion).
+
+**Docs (2):**
+- `README.md` — phase-table row 5 → "Complete", repo-layout `orchestrator/` sub-block, test-tree `tests/orchestrator/` line, total-test-count line.
+- `SESSION_NOTES.md` — this file (ACTIVE TASK rewritten for Session 16 + Session 15 handoff + Phase 3A evaluation of Session 14 + Session 14 `Commits: TBD` backfill).
+
+**Total: 11 files changed (10 new + 1 README) in one feat commit.**
+
+### Gotchas — Read These Before Starting Session 16 / Phase 6
+
+**Carryover from Sessions 11–14 that STILL applies to Phase 6:**
+
+- **`WebsiteAgent.__new__` hack in `test_retry.py:151-154` is still there** and manually sets `agent.ci_platform = "gitlab"`. Phase 6 does NOT need to touch it.
+- **`retry_backoff` uses `time.sleep()` in production.** Phase 6 observability wrappers should NOT log inside the retry loop on every attempt — log the final outcome via the `make_nodes(client, *, sleep=...)` injection seam or the `WebsiteAgent.run` return value, not inside the node itself.
+- **`RepoClient` Protocol is NOT `@runtime_checkable`.** Both production adapters inherit from it. Phase 6 observability decorators on the `RepoClient` surface must preserve the duck-typed Protocol conformance (no `isinstance(client, RepoClient)` checks).
+- **Both adapters are kwarg-only.** `PythonGitLabAdapter(*, host_url, private_token)` and `PyGithubAdapter(*, host_url="https://api.github.com", private_token)`. Phase 6's env-var config code must use kwargs when constructing them.
+- **PyGithub ships `py.typed`.** No `# type: ignore[import-untyped]` needed anywhere in the tree.
+- **`cli.py` is 100% line + branch covered.** Any Phase 6 changes to `agents/website/cli.py` (e.g. to wire env-var defaults) should maintain 100% coverage on that file.
+
+**New Phase 6 gotchas (from Phase 5 work):**
+
+- **`HandoffEnvelope.target_agent` is `Literal["intake", "data", "website"]` — it CANNOT be "orchestrator".** I tried this during Phase 5 and `tests/schemas/test_envelope_and_registry.py:63-66` flagged it immediately. This is a Phase 1 design invariant: the orchestrator sends envelopes between agents but never receives one. **If Phase 6 observability wants to log "the orchestrator received X", use the `CheckpointStore.save_result` path (which writes `<name>.result.json`), NOT a new envelope type.** The dual-channel design of `CheckpointStore` exists precisely to preserve this invariant.
+- **`run_pipeline` takes callable runners, not concrete agent instances.** The three runner type aliases are `IntakeRunner = Callable[[], IntakeReport]`, `DataRunner = Callable[[DataRequest], DataReport]`, `WebsiteRunner = Callable[[IntakeReport, DataReport, RepoTarget], RepoProjectResult]`. Phase 6's production wrapper should construct real `IntakeAgent` / `DataAgent` / `WebsiteAgent` instances in a factory, then pass bound methods or lambdas as the runners. This is the designated injection seam for logging decorators — wrap the runner, don't modify `pipeline.py`.
+- **The orchestrator already threads `correlation_id` through every envelope it saves.** `PipelineConfig.correlation_id` defaults to `run_id` but can be set independently. Phase 6 structured logging should use `correlation_id` (not `run_id`) as the trace-ID field so that a single operator-initiated job that fans out into multiple runs stays traceable.
+- **The terminal `RepoProjectResult` is persisted via `CheckpointStore.save_result("RepoProjectResult", result)`, NOT via `save(envelope)`.** The resulting file is `<base_dir>/<run_id>/RepoProjectResult.result.json`. Phase 6's OPERATIONS.md + TROUBLESHOOTING.md must document this location because "where do I find the project result after a crash?" is the #1 operator question.
+- **`run_pipeline` halts on website failure AFTER persisting the terminal result.** On `FAILED_AT_WEBSITE`, `store.has_result(run_id, "RepoProjectResult")` returns True — the operator can read the failed project result from disk. On `FAILED_AT_DATA` or `FAILED_AT_INTAKE`, the terminal result is NOT written (there's nothing to write). This asymmetry is tested in `test_pipeline.py` (`test_halt_at_data_when_execution_failed` asserts `not store.has_result(...)`). Phase 6 troubleshooting docs should note this.
+- **Adapter inference is conservative.** `intake_report_to_data_request` defaults `time_range` to `"last 5 calendar years of historical records"` and derives `population_filter` from `target_definition` — these are BEST-EFFORT defaults, not domain-intelligent extractions. Phase 6 should NOT add config knobs to override these in `PipelineConfig`; instead, a future iteration can have the intake agent capture `time_range` as a dedicated field and the adapter pull from there. For Phase 6, document the default in OPERATIONS.md as a known limitation.
+- **`CheckpointStore.list_payload_types` excludes `.result.json` files.** Phase 6's "list all checkpoints for a run" CLI (if it adds one) should call BOTH `list_payload_types` and `list_result_names` and merge. There's a `test_list_excludes_terminal_results` test pinning this.
+- **The four orchestrator source files are at 100% line + branch coverage.** Phase 6 changes to any of them must maintain this — if a new branch is added, add a test in the same PR. The coverage floor bump 93 → 94 (the Phase 0 chore commit) is not load-bearing against the orchestrator specifically, but it does mean a regression in `agents/intake/` or `ui/intake/` coverage could tip the suite below floor.
+- **No new `pyproject.toml` deps were added in Phase 5.** Phase 6 will likely add `structlog` (or `loguru`) + `pydantic-settings`. Both ship `py.typed`; expect zero mypy friction.
 
 ### Session 13 Handoff Evaluation (by Session 14)
 **Score: 10/10.** Third consecutive 10. Phase D was a pure step-execution session because Session 13 left no guesswork.
@@ -71,7 +195,7 @@
 **Deliverable:** Phase D of `docs/planning/github-gitlab-abstraction-plan.md` — `--host {gitlab,github}` typer flag in `agents/website/cli.py` with lazy-imported adapter selection, `--ci-platform` override flag, removal of Phase A deprecated aliases (`--fake-gitlab`, `--gitlab-url`, `--group-path`), parametrized CLI tests covering both fake paths, both monkeypatched real-adapter paths, the bogus-host case, and the removed-alias regression. Plus README getting-started rewrite (both GitLab and GitHub examples), README phase-table row 4B update, README repo-layout update, and a one-paragraph amendment to `architecture-plan.md` §14 Phase 5 noting the abstraction landed first. **COMPLETE.**
 **Started:** 2026-04-15
 **Completed:** 2026-04-15
-**Commits:** TBD (one feat commit for Phase D, hash to be filled in by Session 15's Phase 3A).
+**Commits:** `e9f0d10` (Phase D feat), `9f20e95` (README docs follow-on). Backfilled by Session 15's Phase 3A.
 
 **Pre-flight baseline (verified on disk):**
 - `uv run pytest -q` → **313 passed, 96.55% coverage**. Matches Session 13 exactly.
