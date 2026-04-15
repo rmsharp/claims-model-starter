@@ -5,56 +5,180 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 13 is an **IMPLEMENTATION** session. Execute **Phase C** of `docs/planning/github-gitlab-abstraction-plan.md` — add a new `agents/website/github_adapter.py` defining `PyGithubAdapter` as a `RepoClient` Protocol-conforming concrete class that wraps `PyGithub`. Phase C is the last source-only phase before Phase D wires it into the CLI.
-**Status:** Phase B landed in Session 12 (commits `e91c9f2` coverage bump, `9b2ab5e` Phase B). Master is clean after commits. Baseline for Session 13: **295 tests pass at 96.53% coverage, mypy strict clean on 12 files in `agents/website/`.** Coverage floor is now **93%** (raised from 90% per Session 11 directive). The `WebsiteAgent` now takes a `ci_platform: Literal["gitlab", "github"]` constructor kwarg (default `"gitlab"`) and emits either `.gitlab-ci.yml` or `.github/workflows/ci.yml`; both are classified as governance artifacts by `is_governance_artifact()`. All Phase B work shipped — Phase D (CLI `--host` flag + docs) follows in Session 14. **Phase 5 (orchestrator) is deferred until Phase D closes** — see plan §11.
-**Priority:** HIGH — Phase C unblocks Phase D which unblocks Phase 5.
+**Task:** Session 14 is an **IMPLEMENTATION** session. Execute **Phase D** of `docs/planning/github-gitlab-abstraction-plan.md` — add the `--host` CLI flag to `agents/website/cli.py`, wire it to `PyGithubAdapter` / `PythonGitLabAdapter` / `FakeRepoClient` adapter selection, thread `ci_platform` from `--host`, remove the Phase A deprecated aliases (`--fake-gitlab`, `--gitlab-url`, `--group-path`), grow parametrized CLI tests, and rewrite README + `architecture-plan.md` §14. Phase D unblocks Phase 5 (orchestrator).
+**Status:** Phase C landed in Session 13 (commit `<pending>` — fill in during Session 14's Phase 3A). Master is clean after commit. Baseline for Session 14: **313 tests pass at 96.55% coverage, mypy strict clean on 13 files in `agents/website/`.** Coverage floor is **93%**. `PyGithubAdapter` is now importable from `model_project_constructor.agents.website` alongside `PythonGitLabAdapter`. Both accept `host_url` + `private_token`; `PyGithubAdapter` defaults `host_url="https://api.github.com"`. Both return `ProjectInfo(id: str, url, default_branch)` and `CommitInfo(sha, files_committed)` and translate host-native errors into `RepoClientError` / `RepoNameConflictError`. **`CIPlatform` is still only defined inside `governance_templates.py`** — Phase D should promote it to `schemas/v1/common.py` iff Phase D needs to import it from CLI (the CLI can also spell the `Literal["gitlab","github"]` inline — judge based on diff size). Phase 5 (orchestrator) starts Session 15.
+**Priority:** HIGH — Phase D is the last phase of the abstraction plan and unblocks Phase 5.
 
-### What Session 13 Must Do
+### What Session 14 Must Do
 
-**Phase C is one session. Close out when DONE. Do NOT start Phase D in the same session.** Failure mode #18.
+**Phase D is one session. Close out when DONE. Do NOT start Phase 5 in the same session.** Failure mode #18.
 
 1. **Phase 0 — orient:**
    - `SAFEGUARDS.md` (full read).
-   - This ACTIVE TASK block + the "What Session 12 Did" handoff below.
-   - `docs/planning/github-gitlab-abstraction-plan.md` **§8 (Phase C spec)** + **§10 (do-not-change list)**. Plan is now 712 lines.
-   - Read `src/model_project_constructor/agents/website/gitlab_adapter.py` end-to-end — Phase C's `PyGithubAdapter` is a structural sibling, so understanding the GitLab adapter's exception-translation pattern (especially `_is_name_conflict` at line 158) is mandatory.
+   - This ACTIVE TASK block + the "What Session 13 Did" handoff below (especially the gotchas section).
+   - `docs/planning/github-gitlab-abstraction-plan.md` **§9 (Phase D spec)** + **§10 (do-not-change list)**. Plan is 712 lines.
+   - Read `src/model_project_constructor/agents/website/cli.py` end-to-end — Phase D lives almost entirely in this file. Identify the existing `--fake-gitlab` / `--gitlab-url` / `--group-path` flags and the current adapter-selection branch.
+   - Read `src/model_project_constructor/agents/website/github_adapter.py` for its exact constructor kwargs (`private_token=`, `host_url="https://api.github.com"`) — these are what the CLI must pass.
+   - Read `README.md`'s getting-started section (Phase B added a paragraph about platform-dependent CI).
+   - Read `docs/planning/architecture-plan.md` §14 Phase 5 block (around line 916) — Phase D's final doc update amends that §14 section to reflect that the abstraction plan landed before Phase 5.
    - Run `git status`, `git log --oneline -5`. Confirm clean working tree on master.
-   - Run pre-flight: `uv run pytest -q` (expect **295 passed @ 96.53%**), `uv run mypy src/model_project_constructor/agents/website/` (expect **Success on 12 files**). If numbers have drifted, STOP and investigate before touching code.
+   - Run pre-flight: `uv run pytest -q` (expect **313 passed @ 96.55%**), `uv run mypy src/model_project_constructor/agents/website/` (expect **Success on 13 files**). If drifted, STOP and investigate.
 
-2. **Phase 1B — write the Session 13 stub** to `SESSION_NOTES.md` BEFORE touching any code.
+2. **Phase 1B — write the Session 14 stub** to `SESSION_NOTES.md` BEFORE touching any code.
 
-3. **Phase C execution** — follow plan §8:
-   - **Add `PyGithub` to `pyproject.toml`** as a dep of the `agents` optional group, alongside `python-gitlab`. Phase C is the first time `github` appears in `src/`.
-   - **Run plan §8.2 PyGithub type-stub check first** — if PyGithub doesn't ship `py.typed`, Phase C must add a stub or `# type: ignore[import-untyped]` comments in the new module. Do this before writing the adapter so the mypy strategy is decided up front.
-   - **New file `src/model_project_constructor/agents/website/github_adapter.py`** — defines `class PyGithubAdapter:` with `create_project(*, name: str, namespace: str, visibility: str) -> ProjectInfo` and `commit_files(*, project_id: str, branch: str, message: str, files: dict[str, str]) -> str` (matches `RepoClient` Protocol). Internal exception translation: `github.GithubException` → `RepoClientError`, 422 "name already exists" → `RepoNameConflictError`. Mirror `_is_name_conflict` from `gitlab_adapter.py` for GitHub's 422 response shape.
-   - **`agents/website/__init__.py`** — re-export `PyGithubAdapter` alongside `PythonGitLabAdapter`. Update `__all__`.
-   - **New tests `tests/agents/website/test_github_adapter.py`** — mock `github.Github` and assert: (a) `create_project` returns a `ProjectInfo` with `id: str`; (b) name-conflict raises `RepoNameConflictError`; (c) generic GitHub error raises `RepoClientError`; (d) `commit_files` produces a single commit and returns the SHA. Filename mirrors `test_gitlab_adapter.py`.
+3. **Phase D execution** — follow plan §9.1 (the full list of what DONE looks like):
+   - Add `--host typer.Option("--host", ...)` to `cli.py` with default `"gitlab"`, choices `{"gitlab", "github"}`, exit code 2 on invalid.
+   - Adapter selection rewire: `fake → FakeRepoClient()`; `host=="gitlab" → PythonGitLabAdapter(host_url=..., private_token=...)`; `host=="github" → PyGithubAdapter(host_url=..., private_token=...)`. **Lazy-import both adapters** inside the selection branches so `python -m model_project_constructor.agents.website --help` does not eagerly import `gitlab` or `github`.
+   - `ci_platform` derived from `--host`: `gitlab → "gitlab"`, `github → "github"`, and a `--ci-platform` CLI flag to override on the fake path (per plan §9.1).
+   - **Remove** Phase A deprecated aliases `--fake-gitlab`, `--gitlab-url`, `--group-path`. The README deprecation note from Phase A should also be removed.
+   - `tests/agents/website/test_cli.py`: add parametrized cases for `--host gitlab --fake`, `--host github --fake`, `--host gitlab --private-token` (monkeypatched `PythonGitLabAdapter`), `--host github --private-token` (monkeypatched `PyGithubAdapter`), and `--host bogus` → exit 2.
+   - `README.md`: full rewrite of getting-started with both GitLab and GitHub examples side-by-side. Phase-table row 4B updated.
+   - `docs/planning/architecture-plan.md` §14 Phase 5 block: one-paragraph amendment noting the abstraction plan landed before Phase 5; orchestrator work now operates on `RepoTarget` / `RepoProjectResult`.
 
-4. **Phase C verification** — run every command in plan §8.4. Additionally: full `uv run pytest -q` must show **300+ passed @ ≥93% coverage**. mypy must remain Success.
+4. **Phase D verification** — run every command in plan §9.3. Additionally: full `uv run pytest -q` must show **≥313 passed @ ≥93% coverage**. mypy must remain Success on 13 files.
 
-5. **Phase 3 close-out** — evaluate Session 12's handoff (§3A), self-assess, document learnings, write full Session 13 handoff, commit (expect **one commit** for Phase C), report, STOP.
+5. **Phase 3 close-out** — evaluate Session 13's handoff (§3A), self-assess, document learnings, write full Session 14 handoff (new ACTIVE TASK = Session 15 = Phase 5 orchestrator), commit (expect **one commit** for Phase D), report, STOP.
 
-### Files Session 13 will touch (from plan §8.5)
+### Files Session 14 will touch (from plan §9)
 
-- **Config (1):** `pyproject.toml` — add `PyGithub` dep.
-- **Source (2):** new `agents/website/github_adapter.py`, edit `agents/website/__init__.py` re-exports.
-- **Tests (1):** new `tests/agents/website/test_github_adapter.py`.
+- **Source (1):** `agents/website/cli.py` — `--host` flag, adapter selection rewire, deprecated-alias removal.
+- **Tests (1):** `tests/agents/website/test_cli.py` — parametrized `--host` cases.
+- **Docs (2):** `README.md`, `docs/planning/architecture-plan.md` §14 Phase 5 amendment.
+- **Optional (1):** `schemas/v1/common.py` if Phase D decides to promote `CIPlatform` there (judge based on import-graph cleanliness — the CLI currently does not import from `governance_templates`).
 
-### Hard rules for Phase C
+### Hard rules for Phase D
 
-- **No Phase D work.** No new CLI flag, no `--host`, no `--ci-platform` on the CLI, no doc updates beyond the immediate `__init__` and adapter docstrings. Phase D is Session 14.
-- **Do NOT touch** `gitlab_adapter.py`, `protocol.py`, `state.py`, `nodes.py`, `agent.py`, `graph.py`, `cli.py`, or `governance_templates.py`. Phase C is purely additive at the adapter layer.
+- **No Phase 5 work.** No `orchestrator/` package, no `pipeline.py`, no end-to-end live tests. Phase 5 is Session 15.
+- **Do NOT touch** `gitlab_adapter.py`, `github_adapter.py`, `protocol.py`, `state.py`, `nodes.py`, `agent.py`, `graph.py`, or `governance_templates.py`. Phase D is purely at the CLI + docs layer.
 - **Do NOT change** the do-not-change list in plan §10.
-- **Mirror, don't merge.** `PyGithubAdapter` is a sibling of `PythonGitLabAdapter`, not a refactor of it. They share no helper code.
-- **PyGithub may need a stub.** Run plan §8.2 first.
+- **Lazy import both adapters in the CLI.** Eager imports would slow `--help` and pull `gitlab` / `github` into every `python -m ...` invocation. The Phase A work already lazy-imports `PythonGitLabAdapter`; the Phase D rewrite must preserve that and match it for `PyGithubAdapter`.
+- **The deprecated aliases are being REMOVED, not renamed.** `--fake-gitlab`, `--gitlab-url`, `--group-path` go away entirely. Any test or doc that references them must be updated.
 
 ### Expected duration
 
-Plan §8 estimates this as 1 session. Phase C adds one new ~150-LOC source file + one new test file. Expect ~60–90 minutes including pre-flight, mypy stub strategy, edits, verification, close-out.
+Plan §9 estimates this as 1 small session. Phase D is mostly in `cli.py` + tests + README. Expect ~60–90 minutes including pre-flight, the deprecation-removal audit, doc rewrites, verification, close-out.
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
+
+### Session 12 Handoff Evaluation (by Session 13)
+**Score: 10/10.** Second consecutive 10. Phase C was a pure step-execution session because Session 12 left no guesswork.
+
+- **What helped:** (a) The "Mirror, don't merge" framing + the explicit note that `_is_name_conflict` in `gitlab_adapter.py:158` loose-matches GitLab's response shape told me exactly what the GitHub equivalent's contract should be — loose match on "already exists" substring inside a 422 payload. I knew the helper shape before I typed a character of adapter code. (b) The "`PyGithub` historically has NOT shipped stubs — expect to need `# type: ignore[import-untyped]`" warning in Phase B's handoff set my expectation appropriately; when the probe returned clean, I had high confidence it wasn't a false negative because I was watching for it. (c) The pre-flight baseline numbers (295 @ 96.53%, mypy 12 files) let me detect drift in seconds — both matched exactly. (d) The "Coverage floor is 93%, not 90%" reminder + the prediction "adapter will likely be ~100% if tests are written carefully" framed the test-design target before I wrote a line of tests.
+- **What was missing:** One small gap: the Session 12 gotcha "`PyGithubAdapter` should NOT inherit from `RepoClient`; structural conformance is enough" contradicts the actual pattern in `gitlab_adapter.py:41` (`class PythonGitLabAdapter(RepoClient):` — it DOES inherit). I mirrored the gitlab adapter's inheritance pattern rather than the gotcha, because consistency with the existing module felt more defensible than following a note contradicted by code in the same package. Either reading is valid (Protocol subclassing is fine when not `@runtime_checkable`), but the gotcha should be updated or removed in future handoffs so the next session doesn't waste cycles resolving the contradiction. **Not deducting a point** — the gotcha warned me to think about it, which is half the value.
+- **What was wrong:** One minor correction: Phase B's handoff described `WebsiteAgent.ci_platform` as a "public attribute... because the `__new__` hack in `test_retry.py` sets it directly." Phase C never touched `WebsiteAgent` and never needed to read the attribute, so this turned out to be dead context for Phase C specifically. Not a protocol violation — just a note that didn't apply here. **No deduction.**
+- **ROI:** Reading the handoff (~6 min) saved an estimated 35–45 min of Phase C discovery: the `_is_name_conflict` loose-match strategy, the 422/"already exists" substring, the "mirror don't merge" framing, and the Phase B baseline numbers. Easily 6× ROI.
+
+### What Session 13 Did
+**Deliverable:** Phase C of `docs/planning/github-gitlab-abstraction-plan.md` — new `agents/website/github_adapter.py` with `PyGithubAdapter` (a `RepoClient`-subclassing concrete class wrapping `PyGithub`), `PyGithub>=2,<3` added to `pyproject.toml` `agents` extras, re-export from `agents/website/__init__.py`, new `tests/agents/website/test_github_adapter.py` with 18 tests covering the adapter surface. **COMPLETE.**
+**Started:** 2026-04-15
+**Completed:** 2026-04-15
+**Commits:** `<pending>` (Phase C). One commit as predicted by the plan §8.5 session boundary.
+
+**Pre-flight baseline (verified on disk):**
+- `uv run pytest -q` → **295 passed, 96.53% coverage**. Matches Session 12 exactly.
+- `uv run mypy src/model_project_constructor/agents/website/` → **Success: no issues found in 12 source files**. Matches.
+- `git status` → clean on `master`, 19 commits ahead of `origin/master`.
+
+**What was done (chronological):**
+
+1. **Phase 0 orientation** — read `SAFEGUARDS.md` in full, `SESSION_NOTES.md` lines 1-200 (ACTIVE TASK + Session 12 handoff + gotchas), ran `git status` / `git log --oneline -5` / pre-flight pytest + mypy in parallel, confirmed `~/Development/dashboard.html` exists. Reported findings to user and waited for explicit "pursue active task" per failure mode #9 + Learning #10. **Did not skip the report-and-wait step.**
+
+2. **User said "pursue active task"** — wrote Session 13 IN-PROGRESS stub to `SESSION_NOTES.md` (Phase 1B ghost-session protection per failure mode #14).
+
+3. **Phase C step 1 — plan re-read + GitLab adapter + protocol baseline:**
+   - Read plan §8 (Phase C spec) in full + §10 (do-not-change list). Confirmed the protocol signature is `(*, namespace, name, visibility)` (not `group_path` — plan §8.1 used the pre-Phase-A name in one bullet, but the actual `protocol.py:51` is `namespace`). Kept the plan's semantic intent, used the current protocol names.
+   - Read `gitlab_adapter.py` end-to-end. Noted: (a) `class PythonGitLabAdapter(RepoClient):` DOES inherit from the Protocol (see above — resolved the Session 12 gotcha contradiction in favor of consistency); (b) `_is_name_conflict` is a module-level helper called from `create_project`'s `except` block; (c) constructor is kwarg-only, wraps `gitlab.Gitlab(...)` eagerly; (d) `create_project` returns `ProjectInfo(id=str(...), url, default_branch)`, and the `id` stringification is what enables `project_id: str` on the protocol.
+   - Read `protocol.py` to re-verify `RepoClient` signatures and `RepoClientError` / `RepoNameConflictError` class shapes.
+   - Read `test_gitlab_adapter.py` for test-shape mirroring. Noted: (a) the `_build_adapter_with_fake_gl` helper pattern stubs `adapter._gl` directly; (b) `TestImport` uses `callable(getattr(...))` duck-typing (not `isinstance`) because the Protocol is not `@runtime_checkable`; (c) there's a dedicated `TestNameConflictSniffing` class for `_is_name_conflict` coverage.
+
+4. **Phase C step 2 — `pyproject.toml` dependency add:**
+   - Added `"PyGithub>=2,<3"` to `[project.optional-dependencies].agents`, immediately after `"python-gitlab>=4"`. Same ordering as the plan §8.1 spec.
+   - Ran `uv sync --extra agents --extra ui --extra dev` — resolved in 421ms, installed `pygithub==2.9.1` + 6 transitive deps (`cffi`, `cryptography`, `pycparser`, `pyjwt`, `pynacl`, `PyGithub`). All wheels; no source builds.
+
+5. **Phase C step 3 — PyGithub type-stub probe (plan §8.2):**
+   - Wrote a throw-away probe script exercising `github.Github`, `GithubException`, `UnknownObjectException`, and `InputGitTreeElement` under `uv run mypy --strict`. **Result: `Success: no issues found in 1 source file`.** PyGithub 2.9.1 ships `py.typed` — **no `# type: ignore[import-untyped]` needed**. (Contradicts Phase B's prediction but in a good way.)
+   - Probed the `Github` constructor signature via `inspect.signature`: v2.x uses `Github(auth=Auth.Token(token), base_url=...)` as the modern idiom; positional `login_or_token` still works but is deprecated. **Chose `Auth.Token`** for the new adapter because this is fresh code — no backwards-compatibility concern — and the Auth API is PyGithub's documented v2.x direction.
+   - Probed `GithubException` instantiation: `GithubException(status, data=..., headers={})`. Verified `.status` is int and `.data` exposes the parsed JSON body dict. This shape drives `_is_name_conflict`.
+
+6. **Phase C step 4 — `github_adapter.py` (the new 172-LOC module):**
+   - Header docstring mirrors `gitlab_adapter.py`'s (purpose, thinness, exception-translation contract, "not unit-tested against live GitHub", lazy-import note). Added a paragraph about nested namespaces being explicitly rejected — GitLab supports `"org/sub/sub"`, GitHub has a single owner level, so I fail loudly with `RepoClientError` rather than silently flattening.
+   - `class PyGithubAdapter(RepoClient):` — inherits from the Protocol to match `gitlab_adapter.py`'s pattern (see handoff evaluation above).
+   - `__init__(self, *, private_token: str, host_url: str = "https://api.github.com")` — kwarg-only. `host_url` defaults to public GitHub; GitHub Enterprise callers pass `"https://github.example.com/api/v3"`. Wraps `Github(auth=Auth.Token(private_token), base_url=host_url)`, stored as `self._gh: Any = ...` (the `Any` annotation matches `gitlab_adapter.py`'s `self._gl: Any` pattern so tests can monkeypatch freely).
+   - `create_project(*, namespace, name, visibility) -> ProjectInfo`:
+     - **Nested-namespace guard** (plan §8.1 Trap 3): if `"/" in namespace`, raise `RepoClientError` with a clear message.
+     - **Owner resolution**: try `self._gh.get_organization(namespace)` first. On `UnknownObjectException` (404), fall back to `self._gh.get_user(namespace)`. On any other `GithubException` from the org lookup, bubble up as `RepoClientError`. On any `GithubException` from the user fallback, also bubble up.
+     - `private = visibility != "public"` — GitHub has no "internal" visibility, so `"internal"` maps to private, matching plan §8.1.
+     - Call `owner.create_repo(name=name, private=private)`. On `GithubException`, check `_is_name_conflict`; if true, raise `RepoNameConflictError(name)`; otherwise raise `RepoClientError` with a descriptive message.
+     - Return `ProjectInfo(id=str(repo.full_name), url=str(repo.html_url), default_branch=str(getattr(repo, "default_branch", None) or "main"))`. The `full_name` is `"owner/name"` — this is the opaque token callers pass back to `commit_files`, which is consistent with the `ProjectInfo.id` docstring on `protocol.py:19-27`.
+   - `commit_files(*, project_id, branch, files, message) -> CommitInfo`:
+     - Separate try/except for `get_repo(project_id)` — a missing repo is its own error message ("project lookup failed").
+     - One big try/except around the 4-call git dance: `get_git_ref(f"heads/{branch}")` → `get_git_commit(ref.object.sha)` → list-comp of `create_git_blob(content, "utf-8")` calls (one per file, sorted by path) → `create_git_tree(tree_elements, base_tree=parent_commit.tree)` → `create_git_commit(message, tree, [parent_commit])` → `ref.edit(sha=commit.sha)`. Any `GithubException` inside this block raises `RepoClientError` with project_id + branch context.
+     - Tree elements are `InputGitTreeElement(path=path, mode="100644", type="blob", sha=blob.sha)`. **Sorted by path** to match `gitlab_adapter.py`'s sorted-actions behavior — this is what keeps the two adapters' commit bytes deterministic across hosts.
+     - Return `CommitInfo(sha=str(commit.sha), files_committed=[path for path, _ in sorted_items])`.
+   - `_is_name_conflict(exc: GithubException) -> bool`:
+     - Returns `False` if `exc.status != 422`.
+     - If `exc.data` is a dict, iterate `data.get("errors", []) or []`; for each dict entry, lowercase `err.get("message", "")` and check for `"already exists"` substring. Return `True` on first hit.
+     - Fallback: return `"already exists" in str(exc).lower()`. This catches wording drift where the error is somewhere else in the payload but the stringified exception still mentions "already exists".
+     - Mirrors `gitlab_adapter._is_name_conflict`'s loose-match philosophy: match the substring, not the exact wording, so a minor GitHub API message change doesn't break the adapter.
+   - `__all__ = ["PyGithubAdapter"]`.
+
+7. **Phase C step 5 — `__init__.py` re-export:**
+   - Added `from model_project_constructor.agents.website.github_adapter import PyGithubAdapter` immediately above the existing `gitlab_adapter` import (alphabetical: `github_adapter` < `gitlab_adapter`).
+   - Added `"PyGithubAdapter"` to `__all__` immediately above `"PythonGitLabAdapter"`, same alphabetical ordering.
+
+8. **Phase C step 6 — `test_github_adapter.py` (the new 306-LOC, 18-test module):**
+   - Header docstring enumerates what's tested: import smoke, protocol-method callability, constructor non-network, `_is_name_conflict` classification, nested-namespace guard, exception translation with org/user fallback, and the full `commit_files` git dance against mocks.
+   - Module-level helper `_make_github_exc(status, data) -> GithubException` for terse exception construction.
+   - **`TestImport`** (2 tests): adapter has `create_project` + `commit_files` as callables; constructor with bogus URL + token does not make a network call.
+   - **`TestNameConflictSniffing`** (4 tests): 422 with `errors[0].message == "name already exists..."` → True; 422 with `{"message": "Repository already exists"}` → True (fallback to stringified exception); 500 → False; 422 with unrelated message → False.
+   - **`TestExceptionTranslation`** (7 tests): nested namespace raises `RepoClientError`; name conflict raises `RepoNameConflictError` with `.name` set; generic 500 raises `RepoClientError`; org-missing falls back to user and succeeds with full `ProjectInfo` assertions (including the `create_repo` call args); user lookup 500 raises `RepoClientError`; non-404 org-lookup error (e.g. 500) raises `RepoClientError`; `visibility="internal"` passes `private=True`.
+   - **`TestCommitFiles`** (5 tests): helper `_wire_happy_path` stubs `get_repo`, `get_git_ref`, `get_git_commit`, `create_git_blob` (side_effect with per-content SHA), `create_git_tree`, `create_git_commit`. **Happy-path test** asserts: `get_repo("acme/foo")` called once; `get_git_ref("heads/main")` called once; `get_git_commit("parent-sha")` called once; `create_git_blob` called with sorted contents (`["x", "y"]` for files `{"b.txt": "y", "a.txt": "x"}`); `create_git_tree` called with 2 elements + `base_tree=parent_commit.tree`; `create_git_commit(message, tree, [parent_commit])`; `ref.edit(sha="commit-sha")`; returned `CommitInfo.sha == "commit-sha"` and `files_committed == ["a.txt", "b.txt"]` (sorted). **Four error-branch tests** verify each failure point in the git dance (repo lookup, blob, tree, ref.edit) raises `RepoClientError`.
+
+9. **Phase C verification (plan §8.4)** — all six commands run at close-out:
+    - **PyGithub version**: `uv run python -c "from github import Github; print(Github)"` → `<class 'github.MainClass.Github'>` (version probe via `inspect` confirmed 2.9.1).
+    - **Adapter import**: `uv run python -c "from model_project_constructor.agents.website import PyGithubAdapter, PythonGitLabAdapter"` → both classes printed. Both are importable from the package root.
+    - **New tests**: `uv run pytest tests/agents/website/test_github_adapter.py -v` → **18 passed** (predicted ~10; actual 18 because I split `TestExceptionTranslation` into 7 granular tests and `TestCommitFiles` into 5 instead of bundling).
+    - **Full suite**: `uv run pytest -q` → **313 passed @ 96.55% coverage** (was 295 @ 96.53%; +18 tests, +0.02% coverage). Zero skips, zero xfails.
+    - **mypy strict**: `uv run mypy src/model_project_constructor/agents/website/` → `Success: no issues found in 13 source files` (was 12; +1 new adapter).
+    - **Coverage floor**: 96.55% ≫ 93% floor. `github_adapter.py` itself is at **97% line coverage** — the uncovered branches are two fallthrough paths in `_is_name_conflict` (e.g. `data` not a dict) that aren't worth synthetic coverage.
+
+### Key Files Shipped in Session 13
+
+**Config (1):**
+- `pyproject.toml` — added `"PyGithub>=2,<3"` to `[project.optional-dependencies].agents`
+
+**Source files (2):**
+- **NEW** `src/model_project_constructor/agents/website/github_adapter.py` (172 LOC) — `PyGithubAdapter` + module-level `_is_name_conflict` helper
+- `src/model_project_constructor/agents/website/__init__.py` — added `PyGithubAdapter` import + `__all__` entry
+
+**Test files (1):**
+- **NEW** `tests/agents/website/test_github_adapter.py` (306 LOC) — 18 tests across `TestImport`, `TestNameConflictSniffing`, `TestExceptionTranslation`, `TestCommitFiles`
+
+**Docs (1):**
+- `SESSION_NOTES.md` — this file (ACTIVE TASK rewrite for Session 14 + Session 13 handoff + Phase 3A evaluation of Session 12)
+
+**Total: 5 files changed in one feat commit.**
+
+### Gotchas — Read These Before Starting Phase D
+
+**Carryover from Sessions 11/12 that STILL applies to Phase D:**
+
+- **`WebsiteAgent.__new__` hack in `test_retry.py:151-154` is still there**, and manually sets `agent.ci_platform = "gitlab"`. Phase D does NOT touch `WebsiteAgent`. If Phase D ever needs to also construct a `WebsiteAgent` via `__new__` (it shouldn't — tests should use the normal factory), remember to set `ci_platform` manually.
+- **`retry_backoff` uses `time.sleep()` in production.** Phase D tests for the CLI should continue to mock at the adapter level (or use `FakeRepoClient`), NOT go through the graph, so `time.sleep` is not an issue.
+- **`RepoClient` Protocol is NOT `@runtime_checkable`.** But the existing adapters (`PythonGitLabAdapter`, `PyGithubAdapter`) both explicitly inherit from it. That is fine for Protocols when not `@runtime_checkable` — Python allows it as a form of documentation, and mypy strict enforces the real contract. **Correction to Session 12's gotcha:** the note that said "`PyGithubAdapter` should NOT inherit from `RepoClient`" was contradicted by `gitlab_adapter.py:41`. Phase D should simply not worry about this — both patterns (inherit vs don't) work; the codebase has chosen "inherit" twice in a row.
+- **`_is_name_conflict` lives in each adapter module separately** (`gitlab_adapter.py:158` and `github_adapter.py:168`). They share no helper code. If Phase D is tempted to factor them into a common helper, **don't** — the two functions inspect platform-specific exception shapes (GitLab: `response_code` + `error_message` dict; GitHub: `.status` + `.data.errors[].message`), and merging would erase the per-platform loose-match logic.
+
+**New Phase D gotchas (from Phase C work):**
+
+- **PyGithub ships `py.typed`.** Phase B's handoff predicted we'd need `# type: ignore[import-untyped]` on the `import github`. **That turned out to be wrong — PyGithub 2.9.1 is fully typed and mypy strict clean.** Phase D should NOT re-add a type-ignore comment. If the CLI lazy-imports `PyGithubAdapter`, the import chain pulls in `github` transparently with no mypy friction.
+- **`PyGithubAdapter.__init__` is kwarg-only and defaults `host_url="https://api.github.com"`.** Phase D's CLI should pass `--host-url` (or whatever the flag is called) explicitly only when the user overrides it — otherwise rely on the default. **Contrast:** `PythonGitLabAdapter.__init__` requires `host_url` (no default) because there's no canonical public GitLab host in this codebase. Phase D's adapter-selection branch must account for this asymmetry.
+- **`ProjectInfo.id` for GitHub is `"owner/name"`**, for GitLab is `"<integer>"` (stringified). Both are opaque to callers per `protocol.py:19-27`. Phase D's CLI doesn't need to know the difference — it just passes whatever `create_project` returned back into `commit_files`.
+- **Nested namespaces are rejected by `PyGithubAdapter` but accepted by `PythonGitLabAdapter`.** If Phase D's CLI exposes a `--namespace` flag, the error messages from each adapter differ: GitLab will try to `groups.get("a/b")` (which might succeed for nested GitLab groups or fail with `GitlabGetError`); GitHub will fail loudly with `RepoClientError("nested namespace ...")`. This asymmetry is by design (plan §8.1 Trap 3). Phase D does NOT need to add a pre-flight check in the CLI — let each adapter decide.
+- **The adapter selection branch must lazy-import** both `PyGithubAdapter` and `PythonGitLabAdapter`. Neither `import github` nor `import gitlab` should happen at `cli.py` import time — both should be inside the branch that constructs the concrete adapter. The Phase A work already did this for `PythonGitLabAdapter`; Phase D just needs to match the pattern for `PyGithubAdapter`.
+- **`test_github_adapter.py` mocks `adapter._gh` directly** (same pattern as `test_gitlab_adapter.py` with `adapter._gl`). If Phase D's CLI tests need to exercise "`--host github --private-token ...` end-to-end without hitting the network," the cleanest path is to monkeypatch `PyGithubAdapter.__init__` to no-op and then monkeypatch `adapter._gh` — do NOT try to instantiate a real `Github` client with a fake token in a test (PyGithub defers network calls until first API hit, so it won't fail, but it's fragile).
+- **Three new dependencies landed transitively via `PyGithub`:** `cryptography`, `pyjwt`, `pynacl`. Phase D does not interact with these but `uv.lock` changed — if Phase D is reviewing its own diff, expect to see lockfile churn from Phase C even though Phase C's commit already includes it.
 
 ### Session 11 Handoff Evaluation (by Session 12)
 **Score: 10/10.** Best handoff in this workstream so far. Phase B was a pure step-execution session because Session 11 left literally nothing to discover.

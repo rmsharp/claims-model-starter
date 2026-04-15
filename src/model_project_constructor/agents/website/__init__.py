@@ -17,6 +17,7 @@ from model_project_constructor.agents.website.fake_client import (
     FakeProject,
     FakeRepoClient,
 )
+from model_project_constructor.agents.website.github_adapter import PyGithubAdapter
 from model_project_constructor.agents.website.gitlab_adapter import PythonGitLabAdapter
 from model_project_constructor.agents.website.governance_templates import (
     build_analysis_files,
@@ -62,6 +63,7 @@ __all__ = [
     "CommitInfo",
     "FakeRepoClient",
     "FakeProject",
+    "PyGithubAdapter",
     "PythonGitLabAdapter",
     "build_website_graph",
     "build_repo_project_result",
