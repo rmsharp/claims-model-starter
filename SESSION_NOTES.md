@@ -5,9 +5,9 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 19 — **User-directed.** The pipeline has a working end-to-end script + tutorial. CI green, 422 tests at 97.24% coverage.
+**Task:** Session 19 — **User-directed.** Tutorial is tested and published. Pipeline has working script + 6-step tutorial. CI green, 422 tests at 97.24% coverage.
 **Status:** Ready for direction.
-**Priority:** See "Up Next" in `BACKLOG.md` for candidates: first live end-to-end run (against a real host), automated resume-from-checkpoint.
+**Priority:** See "Up Next" in `BACKLOG.md` for candidates. Backlog has grown to 6 items from user feedback during tutorial testing.
 
 ### What Session 19 Must Do
 
@@ -16,24 +16,48 @@
 ### Key files for Session 19
 
 - `scripts/run_pipeline.py` — end-to-end pipeline runner (fake + live modes). Tested with both `--host gitlab` and `--host github`.
-- `docs/tutorial.md` — 5-step tutorial: dry run -> checkpoints -> live host -> standalone agents -> programmatic API.
+- `docs/tutorial.md` — 6-step tutorial: create intake fixture -> generate JSON -> run pipeline -> inspect checkpoints -> live host -> programmatic API. User-tested from a fresh clone.
+- `BACKLOG.md` — 6 open items including: data discovery (intake + data agents), statistical terminology glossary, render script, tutorial UX, SQLite warnings.
 - `OPERATIONS.md` — production runbook (complements the tutorial).
-- `TROUBLESHOOTING.md` — failure-mode diagnostics.
 - `.env.example` — env var template for live runs.
 
 ### Gotchas for Session 19
 
 1. **The script uses fixture data for intake/data stages**, even in `--live` mode. A true LLM-backed end-to-end run would need real `IntakeAgent` + `DataAgent` runners wired in — the script is structured to make this swap straightforward (replace the `lambda` runners in `main()`).
 2. **`--live` mode constructs `PythonGitLabAdapter` / `PyGithubAdapter` directly** — verify the constructor signatures haven't changed if adapters were modified since Session 14.
-3. **`.orchestrator/` is now gitignored** (added in this session). Checkpoint directories from script runs won't be committed.
+3. **`.orchestrator/`, `my_intake.yaml`, `my_intake_report.json` are gitignored** — tutorial-generated artifacts won't be committed.
 4. **CI is still green but only tested on master push**, not on a PR (same as Session 17's gotcha #1).
-5. **The tutorial's "generated project" file list** (38 files) comes from the real script output — it reflects the actual website agent scaffolding, not a mock.
+5. **Pandoc rendering needs `-V header-includes` CSS** to avoid hr/code-block overlap. The backlog item for `scripts/render_tutorial.sh` captures this.
+6. **~20 ResourceWarning from unclosed SQLite connections** in data agent tests (Python 3.13 strictness). Not a correctness issue. Backlog item exists.
+7. **User prefers "probability" not "likelihood"** when referring to P(event). All fixture occurrences fixed in this session. Backlog item for a statistical terminology glossary to enforce this in LLM-generated content.
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
 
 ### Session 17 Handoff Evaluation (by Session 18)
+**Score: 9/10.** (Unchanged from mid-session write — see below.)
+
+### What Session 18 Did
+**Deliverable:** End-to-end pipeline run script + tutorial, user-tested from a fresh clone with iterative fixes.
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Commits:** `4dc2f5d` script+tutorial, `883935a` fix missing --extra ui, `1613d60` tutorial restructure + likelihood→probability, `1f9c28a` backlog: data discovery items, `9f3399c` backlog: render script item.
+
+**What was done:**
+1. Created `scripts/run_pipeline.py` — 265-line script driving the full pipeline with fixture data + FakeRepoClient, with `--live` flag for real hosts. Tested both `--host gitlab` and `--host github`.
+2. Created `docs/tutorial.md` — 6-step tutorial restructured during user testing: (1) create intake YAML fixture (full content inline), (2) generate IntakeReport JSON via CLI, (3) run pipeline, (4) inspect checkpoints, (5) live host, (6) programmatic API.
+3. Fixed `--extra ui` missing from install command (caught by user testing from fresh clone).
+4. Fixed likelihood→probability in 5 files (fixtures, tests, initial_purpose.txt) per user's statistical terminology correction.
+5. Added `.orchestrator/`, `my_intake.yaml`, `my_intake_report.json` to `.gitignore`.
+6. Added 6 backlog items from user feedback: data discovery (intake + data agents), statistical terminology glossary, render script, tutorial UX, SQLite warnings.
+
+**Self-assessment:**
+- **What went well:** (a) User-tested the tutorial from a fresh clone and caught real issues (missing ui extra, unpushed commits, copy-paste UX). (b) The iterative fix cycle was fast — each issue was a 1-commit fix. (c) The tutorial restructuring (adding YAML fixture inline + JSON generation step) was a significant UX improvement driven by user feedback. (d) The likelihood→probability fix was thorough — grepped the entire repo, found all 5 occurrences.
+- **What could be better:** (a) Should have pushed commits immediately after the initial commit — the user's fresh clone didn't have the script. (b) Initial script had 2 wrong field names (`target_name`, `total_runs`) from relying on agent research instead of reading source. (c) The tutorial originally started at "load pre-built JSON" which skipped the most important user-facing step (creating the intake fixture).
+- **Corrections needed:** 4 from user testing (missing ui extra, unpushed commits, likelihood→probability, tutorial needs YAML generation step). All addressed.
+
+### Previous Session 17 Handoff Evaluation (by Session 18)
 **Score: 9/10.** Session 17's handoff was thorough and actionable — the ACTIVE TASK was clear about being user-directed, the gotchas were accurate, and the key files pointed to exactly what I needed.
 
 - **What helped:** (a) The key files list included `OPERATIONS.md` and `.env.example`, which were essential references when writing the script and tutorial. (b) Gotcha #4 (coverage at 97.24%) let me skip pre-flight coverage checks. (c) The "Up Next" candidates in the ACTIVE TASK gave clear context for what the user might ask for. (d) Session 17's self-assessment confirmed zero stakeholder corrections — set expectations that the codebase was stable.
