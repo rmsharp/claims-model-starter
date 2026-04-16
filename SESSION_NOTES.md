@@ -5,13 +5,69 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 19 — **User-directed.** Tutorial is tested and published. Pipeline has working script + 6-step tutorial. CI green, 422 tests at 97.24% coverage.
+**Task:** Session 20 — **User-directed.** Wiki documentation complete. Pipeline has working script + tutorial + comprehensive wiki. CI green, 422 tests at 97.24% coverage.
 **Status:** Ready for direction.
-**Priority:** See "Up Next" in `BACKLOG.md` for candidates. Backlog has grown to 6 items from user feedback during tutorial testing.
+**Priority:** See "Up Next" in `BACKLOG.md` for candidates. Content Recommendations page lists 10 prioritized wiki additions.
 
-### What Session 19 Must Do
+### What Session 20 Must Do
 
-**Orient first. Read this block, Session 18's handoff below, SAFEGUARDS.md. Wait for direction.**
+**Orient first. Read this block, Session 19's handoff below, SAFEGUARDS.md. Wait for direction.**
+
+### Key files for Session 20
+
+- `docs/wiki/claims-model-starter/` — 14 wiki pages (1,512 lines total). GitHub wiki-ready markdown.
+- `docs/wiki/claims-model-starter/Home.md` — Landing page with navigation to all pages.
+- `docs/wiki/claims-model-starter/Software-Bill-of-Materials.md` — SBOM covering both the constructor and generated projects, including 87 locked packages.
+- `docs/wiki/claims-model-starter/Content-Recommendations.md` — 10 prioritized additions for the wiki.
+- `docs/wiki/claims-model-starter/_Sidebar.md` — GitHub wiki sidebar navigation.
+- `BACKLOG.md` — Still has items from Session 18 user feedback.
+
+### Gotchas for Session 20
+
+1. **Wiki pages are not yet pushed to a GitHub wiki repo.** They are markdown files under `docs/wiki/claims-model-starter/` in the main repo. To publish, clone the wiki repo (`<repo>.wiki.git`) and copy these files in, or use `gh` CLI wiki commands if available.
+2. **SBOM locked versions are from `uv.lock` as of this session.** If dependencies are updated, the SBOM page needs updating. Consider the Content Recommendations suggestion to add SPDX/CycloneDX auto-generation.
+3. **BACKLOG.md still lists "Pilot readiness audit" and "Ruff cleanup sweep" as open** — both were completed in Session 17. Should be moved to Completed section.
+4. **The Content Recommendations page identifies "Worked examples" and "Intake interview design guide" as highest-priority additions.** The subrogation example from `initial_purpose.txt` is a natural first worked example.
+5. **No license column in the SBOM yet.** The Content Recommendations page notes that `PyGithub` uses LGPL-3.0, which has linking requirements (satisfied by Python's import mechanism). Adding license info is recommended for compliance review.
+
+---
+
+*Session history accumulates below this line. Newest session at the top.*
+
+### Session 18 Handoff Evaluation (by Session 19)
+**Score: 8/10.** Session 18's handoff was solid — the ACTIVE TASK described the state well, the key files list was useful, and the gotchas were accurate.
+
+- **What helped:** (a) The key files list pointed to `scripts/run_pipeline.py` and `docs/tutorial.md`, which I referenced to understand the user-facing flow when writing the Getting Started and Pipeline Overview wiki pages. (b) Gotcha #1 (fixture data for intake/data stages) was useful context when documenting the Data Agent's standalone capability. (c) The self-assessment's "corrections needed: 4" set my expectation that the codebase was stable but the documentation had been actively refined — good signal that documentation quality matters to this user. (d) The backlog items from user feedback (data discovery, glossary) directly informed the Glossary and Content Recommendations pages.
+- **What was missing:** (a) The handoff has two "What Session 18 Did" blocks (lines 38-54 and lines 64-73 in SESSION_NOTES.md) with slightly different content — the first is the polished version, the second appears to be the mid-session draft that wasn't cleaned up. Didn't cost time, but clutters the notes. (b) No mention of the governance template file (`governance_templates.py`) which I needed to read for accurate governance artifact documentation. Cost ~2 min of discovery.
+- **What was wrong:** Nothing factually wrong. All file paths and claims verified.
+- **ROI:** ~3x return. Reading the handoff (~5 min) saved ~15 min of orientation.
+
+### What Session 19 Did
+**Deliverable:** Wiki documentation for claims-model-starter — 14 markdown pages (1,512 lines) covering the full pipeline, generated project structure, governance framework, SBOM, architecture decisions, glossary, and content recommendations. **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+
+**What was done:**
+1. Created `docs/wiki/claims-model-starter/` with 14 wiki pages ready for GitHub wiki publication.
+2. **Home.md** — Landing page with pipeline summary and navigation links.
+3. **Getting-Started.md** — Install, first dry run, live run instructions.
+4. **Pipeline-Overview.md** — 3-agent architecture, handoff protocol, orchestrator, error handling.
+5. **Generated-Project-Structure.md** — Full directory layout with file counts by risk tier, component descriptions.
+6. **Governance-Framework.md** — Risk tiers, monitoring cadence, full artifact inventory by tier gate, regulatory framework mapping.
+7. **Development-Workflow.md** — How the data science team implements stubs, fills narratives, runs tests.
+8. **Data-Guide.md** — Queries, datasheets, data loading, Data Agent standalone usage.
+9. **Agent-Reference.md** — Detailed specs for all 3 agents: input/output schemas, behavior, interfaces, failure modes.
+10. **Monitoring-and-Operations.md** — Env vars, checkpoints, observability, CI, troubleshooting.
+11. **Software-Bill-of-Materials.md** — Two-part SBOM: constructor (15 direct + key transitive deps) and generated project (6 deps). Locked version snapshot of 87 packages.
+12. **Architecture-Decisions.md** — 10 architecture decisions with rationale (AD-1 through AD-10).
+13. **Glossary.md** — 40+ terms across domain (P&C claims), pipeline, governance, regulatory, statistical, and technology categories.
+14. **Content-Recommendations.md** — 10 prioritized additions grouped by high/medium/low priority, plus SBOM enhancement recommendations and wiki maintenance guidance.
+15. **_Sidebar.md** — GitHub wiki sidebar navigation structure.
+
+**Self-assessment:**
+- **What went well:** (a) Used 3 parallel research agents to simultaneously explore the generated project structure, all dependencies, and the architecture docs — this made orientation fast (~3 min for all 3 reports). (b) Every wiki page was verified against source code, not written from memory. Read `templates.py`, `governance_templates.py`, `pyproject.toml` (root + data-agent), `ci.yml`, `OPERATIONS.md`, `initial_purpose.txt`, and `tutorial.md` directly. (c) The SBOM is comprehensive — covers both the constructor's dependencies and the generated project's dependencies, with locked versions from `uv.lock`. (d) The Content Recommendations page provides actionable next steps with audience and rationale for each recommendation. (e) Zero stakeholder corrections needed.
+- **What could be better:** (a) Could have added license information to the SBOM — the Content Recommendations page identifies this as a gap, but I could have addressed it in this session. (b) The Glossary "statistical terms" section is short — the backlog item for a statistical terminology glossary could expand it significantly.
+- **Quality bar:** Good. The wiki covers the full system comprehensively. No corrections needed. The Content Recommendations page ensures the next session has clear priorities for expanding the wiki.
 
 ### Key files for Session 19
 
