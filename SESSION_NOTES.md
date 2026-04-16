@@ -5,15 +5,15 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 23 — open. Session 22 completed **Scope A** of BACKLOG #1 (live repo-creation smoke test against public GitLab; real project created at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot`). Five new findings filed into `BACKLOG.md`. Session 23 is **user's choice** among the expanded candidate list.
-**Status:** Session 22 complete (Scope A live run succeeded). Session 23 ready.
-**Priority:** Either close the remaining live-path gaps surfaced by Scope A, or advance to Scope B (real LLM-backed intake + data agents) which is the BACKLOG-#1 payoff.
+**Task:** Session 24 — open. Session 23 produced `docs/planning/scope-b-plan.md` (the planning artifact for BACKLOG #1 "First live end-to-end run — Scope B"). Session 24 is **user's choice** between executing the first phase of the new plan and picking up any of the 5 carryover findings from Session 22.
+**Status:** Session 23 complete (planning deliverable shipped). Session 24 ready.
+**Priority:** If Session 24 picks Scope B Phase B1, the user must first sign off on the open decisions in plan §8 (recommendations are all (a) — disconnected DB, sonnet-4-6, defer B3, adapter inline in script, no `intake`-only LLM mode).
 
-### What Session 23 should do
+### What Session 24 should do
 
 Six candidates, ranked by readiness and value:
 
-1. **First live end-to-end run (Scope B) — real LLM-backed intake + data agents.** Scope A proved the website stage works against live GitLab. Scope B requires plugging the actual `IntakeAgent.run()` and `DataAgent.run()` into `run_pipeline` as runners (currently stubbed with `lambda: intake` / `lambda _req: data` at `scripts/run_pipeline.py:201-206`). **This should be a planning session first** — evidence-based inventory of agent runner signatures vs. orchestrator's expected callable shape (`() -> IntakeReport`, `(DataRequest) -> DataReport`), then implementation in a separate session. Failure mode #18 (plan-to-impl bleed) applies.
+1. **Execute Phase B1 of `docs/planning/scope-b-plan.md`** — Real Anthropic data agent wired into `scripts/run_pipeline.py` via a new `--llm data` flag. Plan §7.1 specifies the file-by-file changes (~30 LOC in `scripts/run_pipeline.py`, +25 in OPERATIONS.md, +30 in docs/tutorial.md). Per-phase completion criteria in §7.1.3. The intake stays fixture-driven; only the data side flips to real LLM. **Hard stop:** do NOT bundle B2 in the same session — failure mode #18 risk. The plan's §15 makes the session boundary explicit.
 
 2. **Clearer `MPC_NAMESPACE` validation + docs** (Session 22 finding). Add a validator to `OrchestratorSettings.from_env()` that detects a leading `http://`/`https://` and raises `ConfigError("MPC_NAMESPACE must be a group path, not a URL; got '...'")`. Update `.env.example`, `OPERATIONS.md` §1, `docs/tutorial.md` §5a to state "path only." One session, ~5 small edits + one new test.
 
@@ -23,9 +23,140 @@ Six candidates, ranked by readiness and value:
 
 5. **Self-hosted GitHub URL override** (Session 22 finding, code-read only). `docs/tutorial.md` §5c claims `MPC_HOST_URL` works for GHE, but `scripts/run_pipeline.py:109-113` constructs `PyGithubAdapter(token=token)` with no URL argument. Fix parallels the Session 22 `host_url=` fix for GitLab. Untested live; small scope. One session.
 
-6. **Reconcile `OPERATIONS.md` §4.2/4.3 recipes with `scripts/run_pipeline.py --live`** (Session 22 finding). Two distinct live-run commands documented; `python -m model_project_constructor.agents.website ...` may or may not be a real entry point. Audit, reconcile, pick a canonical path. Small scope.
+6. **Reconcile `OPERATIONS.md` §4.2/4.3 recipes with `scripts/run_pipeline.py --live`** (Session 22 finding, **confirmed broken by Session 23**). The `python -m model_project_constructor.agents.website ...` invocation in OPERATIONS §4.2-4.3 references files that do NOT exist (`agents/website/__main__.py` and `cli.py` were both verified absent during Session 23's plan research; documented in `scope-b-plan.md` §3.9). Replace OPERATIONS §4.2/4.3 with the canonical `scripts/run_pipeline.py --live --host gitlab` recipe. One session.
 
-Any of #2 through #6 is a one-session deliverable. #1 (Scope B) should be plan-then-implement across two sessions. If the user has appetite for Scope B, recommend a planning session next.
+Any of #2 through #6 is a one-session deliverable. #1 (Phase B1) is the BACKLOG-#1 payoff and is one of three sessions the plan describes. **Recommend #1** unless the user wants to clear quick wins first.
+
+---
+
+## Session 22 Handoff Evaluation (by Session 23)
+**Score: 9/10.** Session 22's handoff was unusually well-suited to a planning session — the ACTIVE TASK named six pre-scoped candidates, ranked by readiness, and the candidate-#1 "key files for each candidate" block (`scripts/run_pipeline.py:201-206`, `intake/anthropic_client.py`, `data-agent/.../anthropic_client.py`, `pipeline.py`, `tests/orchestrator/test_pipeline.py`) was exactly the file set I needed for the plan's evidence-based inventory.
+
+- **What helped:** (a) The candidate-#1 block listed `scripts/run_pipeline.py:201-206` as the stubbed call site — I went straight to those 6 lines, confirmed the lambdas, and understood the wiring scope inside the first 5 minutes of Phase 0. (b) Gotcha #6 ("intake agent runs a LangGraph with human-in-the-loop review (max 10 questions, max 3 revisions) — it's not a single `() -> IntakeReport` call. Either wrap it in an adapter that executes the graph to termination and returns the final state's `IntakeReport`, or change `run_pipeline`'s intake contract") was the single most important note in the handoff. It directly drove plan §3.6 (the runner-shape gap) and §5 (the three implementation shapes). Without it I would have had to discover the gap experimentally. (c) Gotcha #1 (Session 22's live GitLab project still exists at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot`) is a Session 24+ concern but I verified the URL during plan §1 and used it as the predecessor reference. (d) The explicit recommendation that Scope B should be a planning session first (failure mode #18) anchored my opening framing to the user; saved a round-trip on "is this a plan or an impl session." (e) Gotcha #3 (`.env` populated with real credentials, gitignored) made it clear the next live run can re-use the same `.env` — incorporated into plan §3.8 and §13. (f) Learning #18 (CI gate scope can diverge from declared tool scope) is referenced in plan §3.9 to explain why OPERATIONS §4.2/4.3 has gone undetected. (g) The "five remaining candidates" framing meant I could preserve them as Session 24 carryovers without re-stating each one's value.
+- **What was missing:** (a) No file-level pointer to `IntakeAgent.run_with_fixture` / `run_scripted` — I had to grep for `class IntakeAgent` and read the facade myself. A line like "intake facade has `run_with_fixture` and `run_scripted` — neither matches `IntakeRunner`'s `() -> IntakeReport` shape" would have saved ~5 minutes. (b) No mention that `DataAgent.run` already matches `DataRunner` exactly — Session 22 might not have noticed, and finding this was the single most decision-shaping fact in the plan (it made B1 the obvious first phase). (c) No mention that the OPERATIONS §4.2/4.3 invocations are LITERALLY broken (no `__main__.py` exists). Session 22 deferred the audit to a Session 23 candidate (#6) but the plan needed to know this to avoid documenting the wrong canonical entry point.
+- **What was wrong:** Nothing factually wrong. Every cited file path, line range, and BACKLOG-item-number correspondence held up.
+- **ROI:** ~5× return. Reading the handoff (~3 min) saved ~15 min of orientation, scope-definition, and "is this plan or implementation?" round-trips with the user.
+
+### What Session 23 Did
+**Deliverable:** `docs/planning/scope-b-plan.md` — 822 lines, 18 sections — the planning artifact for BACKLOG #1 (Scope B real LLM-backed intake + data agents). **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Commits:** (pending this session's commit) — single `docs(session-23): scope-b plan` commit landing the new plan document + this SESSION_NOTES close-out.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` in full, `SESSION_NOTES.md` ACTIVE TASK + Session 22 handoff in full, ran `git status`/`git log -10`/`git diff --stat`, ran `python methodology_dashboard.py` (project at 91/100, medium risk, active). No ghost sessions. Reported state to user.
+
+2. **Phase 1B stub** — Wrote the IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection). Stated commitment back to user: "deliverable is a plan, not implementation."
+
+3. **Evidence-based research** — Parallel reads of the 8 load-bearing files: `scripts/run_pipeline.py` (the lone production call site), `orchestrator/pipeline.py` (runner-contract source of truth), `agents/intake/anthropic_client.py`, `packages/data-agent/.../anthropic_client.py`, `agents/intake/agent.py` (the facade with `run_scripted` / `run_with_fixture`), `packages/data-agent/.../agent.py` (the facade where `.run` already matches `DataRunner`), `agents/intake/graph.py` + `state.py` (the LangGraph + caps), `packages/data-agent/.../llm.py` + `db.py` (the LLMClient protocol + optional DB).
+
+4. **Ran 5 grep inventories** for §17 of the plan: `IntakeRunner|DataRunner|WebsiteRunner` (16 in `.py`, ~5 more in docs), `run_pipeline\(` (13 in `.py`), `IntakeAgent\(` (4), `DataAgent\(` (9), `AnthropicLLMClient` (39 across packages, tests, docs, UI). Confirmed `agents/website/__main__.py` and `cli.py` do NOT exist — verifies that OPERATIONS §4.2/4.3 references a phantom entry point.
+
+5. **Read related infra**: `IntakeSessionStore` (Web UI runner), `OrchestratorSettings.from_env()`, `CheckpointStore`, `intake/fixture.py` (YAML fixture format + `answers_from_fixture` + `review_sequence_from_fixture` helpers), `OPERATIONS.md` (full read), `docs/tutorial.md` §5/6, `tests/orchestrator/test_pipeline.py` (the test pattern using `lambda: intake`/`lambda _req: data`).
+
+6. **Wrote `docs/planning/scope-b-plan.md`** with 18 sections covering: context, glossary, evidence inventory, current-vs-target state, three implementation shapes (I-1 fixture, I-2 scripted-answers, I-3 Web UI bridge), recommended sequence (B1 → B2 → optionally B3), per-phase implementation plans with LOC estimates and verification commands, 5 user-decisions to resolve before B1, failure-mode handling matrix, checkpoint/resume strategy, test strategy, consolidated verification commands per phase, risk register (7 items), anti-scope (7 do-NOTs), per-phase session boundaries, file reference map, full grep inventory for executor verification, and a sign-off checklist.
+
+7. **Verified plan claims** — re-ran the grep counts after writing; one count (runner contract) was off (claimed 11 in §17, actual 16 in `.py`). Corrected via Edit.
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Did all 8 file reads + all 5 grep inventories + the OPERATIONS/tutorial doc surface BEFORE drafting the plan. The plan's §3 (evidence inventory) cites file:line for every claim and was assembled from the read pass, not from memory.
+- **Implementations read, not just descriptions:** Yes. Read `IntakeAgent.run_scripted` body in full to find the `RuntimeError` raise sites at lines 100-104 and 117-120 — these became the load-bearing safety gap in plan §3.6 and §7.2.2 (the adapter the executor must add). Read `DataAgent.run` body in full to confirm the try/except at lines 50-53 — became the basis for "data side is mechanical." Did NOT just read class names and trust signatures.
+- **Stakeholder corrections needed:** 0. User said "go" → orientation report given, "work on item 1" → restated the planning-vs-impl distinction and got implicit confirmation by proceeding. No round-trips on scope or workstream.
+- **What I got right:** (a) Phase 1B stub written before any technical work — failure mode #14 protection held. (b) Stated commitment back to user explicitly: "deliverable is a plan, not implementation. I'll close out when the plan is committed." This makes the contract observable. (c) Plan §14 (anti-scope) explicitly forbids the four scope-creep patterns the executor will be tempted by (new CLI, modifying graphs, bundling resume, fixing carryover findings). (d) Plan §15 specifies the per-phase session boundary so Session 24 cannot accidentally bundle B1+B2. (e) Three implementation shapes (§5) presented with comparison table and per-shape pros/cons rather than picking one and forcing the user's hand. (f) Five user-decisions section (§8) makes the decisions explicit and recommends defaults so the user can sign off in one pass. (g) Per-phase verification commands (§7.x.3) are copy-pastable, with expected outputs. (h) §17 grep inventory ends with `ls -la` checks for the phantom website entry points so the executor can verify the plan's §3.9 claim independently. (i) Verified the §17 numbers myself after writing — caught the 11→16 mistake and fixed it.
+- **What I got wrong:** (a) The duplicated "What Session 23 should do" block in SESSION_NOTES.md after my Phase 1B edit — I inserted the new ACTIVE TASK above the old one without removing the old one, then noticed during close-out and had to consolidate in this big edit. -0.5 point; pure operator error. (b) Plan §17's first grep estimate was wrong (11 vs 16) — caught and fixed, but it shouldn't have been wrong on the first pass. The numbers section should always be filled in AFTER running the greps, not from memory of my earlier pass. -0.5 point. (c) Did not read `tests/orchestrator/test_metrics.py:246` (the second `run_pipeline(` test call site) — it's listed in the grep but I assumed it was a metrics test wrapping the same pattern. Probably true, but uninvestigated. Low risk; the executor will see it if it matters.
+- **Quality bar vs previous sessions:** Meets Session 22's bar. Planning-session deliverable rather than implementation, but the discipline (grep-based inventory, per-phase completion criteria, explicit anti-scope, explicit user-decisions block, file-reference map) is at least as rigorous as Session 22's audit + bug fix.
+
+### Phase 3C: Learnings
+
+Adding to the `Learnings` table in SESSION_RUNNER.md as #19:
+
+| # | Learning | Source | When to Apply |
+|---|----------|--------|---------------|
+| 19 | When writing a planning document with a grep-based inventory, **fill in the expected counts AFTER running the greps**, not from memory of an earlier pass. Memory of "I saw 11 matches" is unreliable; the actual count was 16 (5 doc references I had glossed over). Rule: write the section with `XX` placeholders, run the greps, paste the numbers in. The executor's first verification step should be re-running the greps and confirming the plan's numbers — if the plan's numbers are wrong by a non-trivial amount, the executor's first action is to question the plan's accuracy. Don't waste that trust on an avoidable mistake. | Session 23 (plan §17 first draft said "11" for runner contract; actual 16) | Any planning session that writes a grep inventory or evidence count. |
+
+### Phase 3D: Handoff to Session 24
+
+Full "What Session 24 should do" content is in the **ACTIVE TASK** block at the top of this file. Six candidates — #1 is Phase B1 of `scope-b-plan.md` (one session); #2–#6 are Session 22's carryover findings.
+
+**Key files for each candidate:**
+
+For #1 (Phase B1 — real data agent wiring):
+- `docs/planning/scope-b-plan.md` — **read in full first**. §1–§4 establish context; §6–§7.1 specify Phase B1; §8 lists the 5 user-decisions; §15 has the session-boundary contract.
+- `scripts/run_pipeline.py:201-206` — the stubbed lambdas to replace
+- `scripts/run_pipeline.py:92-122` — `build_website_runner` is the structural template for `build_data_runner`
+- `packages/data-agent/src/model_project_constructor_data_agent/cli.py:99-119` — production-tested `DataAgent + AnthropicLLMClient + ReadOnlyDB` wiring; mirror this
+- `packages/data-agent/src/model_project_constructor_data_agent/agent.py:32-61` — `DataAgent.run` already matches `DataRunner` exactly — no adapter needed
+- `OPERATIONS.md` §4 — extend with a new §4.4 per plan §7.1.1
+- `docs/tutorial.md` §5 — extend with a new §6 per plan §7.1.1
+- `.env` — already populated with `ANTHROPIC_API_KEY`, `GITLAB_TOKEN`, `MPC_HOST=gitlab`, `MPC_HOST_URL=https://gitlab.com`, `MPC_NAMESPACE=rmsharp-modelpilot` (Session 22). Re-use via `set -a; source .env; set +a` before any live invocation.
+
+For #2 (`MPC_NAMESPACE` validator + docs):
+- `src/model_project_constructor/orchestrator/config.py:98,111` — env-var validators live here
+- `.env.example:47` — MPC_NAMESPACE template line
+- `OPERATIONS.md` §1 env-var table
+- `docs/tutorial.md` §5c MPC_NAMESPACE section
+- `src/model_project_constructor/agents/website/gitlab_adapter.py:79` — where the generic 404 error originates (improve the message?)
+
+For #3 (CI lint extension to `scripts/`):
+- `.github/workflows/ci.yml:19` — `uv run ruff check src/ tests/ packages/`
+- `scripts/run_pipeline.py:34-54` — `sys.path.insert` + imports that trigger E402
+- Choice: per-line `# noqa: E402` vs drop the sys.path hack (relies on `uv run` resolving the editable install)
+
+For #4 (CI typecheck extension to `packages/`):
+- `.github/workflows/ci.yml:28` — `uv run mypy src/`
+- `pyproject.toml` `[tool.mypy]` — already declares both packages
+- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:218` — `TextBlock` type-guard cluster
+- `packages/data-agent/src/model_project_constructor_data_agent/nodes.py:142` — `execution_status` literal narrowing
+- `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py:26` — untyped `get_type` call
+
+For #5 (self-hosted GitHub URL override):
+- `scripts/run_pipeline.py:109-113` — the broken branch (`PyGithubAdapter(token=token)` no URL)
+- `docs/tutorial.md` §5c — the false documentation
+- `src/model_project_constructor/agents/website/github_adapter.py` — verify `base_url` constructor kwarg exists
+- Untested live; code-read only.
+
+For #6 (reconcile OPERATIONS §4.2/4.3):
+- `OPERATIONS.md:174-208` — the broken §4.2/4.3 (Session 23 confirmed the entry points don't exist)
+- `docs/tutorial.md` §5 — the canonical recipe to mirror in OPERATIONS
+- Plan §3.9 of `scope-b-plan.md` documents the verification commands (`ls -la src/model_project_constructor/agents/website/__main__.py` etc.) so a re-verification is one command
+
+### Gotchas for Session 24
+
+1. **The plan IS the contract.** If the user picks #1, do not deviate from `scope-b-plan.md` §7.1 without a re-planning round-trip. Failure mode #11 (gaps from memory) and #19 (plan-mode bypass) both apply: Session 24 should re-read the plan in Phase 0, not assume it knows the plan from this handoff.
+
+2. **Plan §8 has 5 open decisions.** All five recommendations are option (a). Confirm with the user before B1 starts. The most consequential is §8.4 (where the `RuntimeError → DRAFT_INCOMPLETE` adapter lives — recommendation: in `scripts/run_pipeline.py`, NOT `agents/intake/agent.py`). For Phase B1 only §8.1, §8.2, §8.5 are immediately relevant; §8.3 and §8.4 surface in B2.
+
+3. **Session 23 did NOT execute any code.** Pre-flight (ruff/mypy/pytest) was NOT re-run this session — last green confirmed by Session 22 (commit `bb52915`). Session 24 should run it in Phase 0 before touching `scripts/run_pipeline.py`.
+
+4. **The live GitLab project from Session 22 is still live** at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot`. Phase B1 will create a new one (auto-suffixed if `project_name_hint="subrogation_pilot"` is unchanged); plan §15 names the run IDs `run_b1_live` etc. so checkpoints stay disambiguated.
+
+5. **`OPERATIONS.md` §4.2/4.3 are confirmed broken** (Session 23 verified `__main__.py` and `cli.py` for `agents/website/` do not exist). The plan deliberately routes through `scripts/run_pipeline.py` to avoid extending broken docs. Carryover #6 is the cleanup. Do NOT try to make §4.2/4.3 work in B1.
+
+6. **Plan §13 and §16 cite line ranges** based on the codebase as of commit `bb52915` (Session 22). If Session 24 runs after a different session lands first, re-verify with the §17 grep inventory.
+
+7. **`probability` vs `likelihood`** — durable user correction, still applies. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+8. **Re-read `SAFEGUARDS.md` and `SESSION_RUNNER.md`** at Session 24 start. Failure modes #14 (ghost session), #18 (plan-to-impl bleed — high risk for B1→B2 bundling), and #19 (plan-mode bypass — Session 24's job IS to follow the plan, but the plan is a draft until verified) all apply.
+
+9. **Plan §17's grep inventory is the executor's single best Phase-0 verification.** Re-run those 5 commands. If counts have drifted by more than a small margin, do not start implementation — the plan's claims may be stale.
+
+10. **`docs/planning/scope-b-plan.md` is not yet linked from anywhere** (no entry in BACKLOG.md "Up Next" preamble pointing to it; no entry in CHANGELOG.md). Session 24 should add a one-line BACKLOG note pointing item #1 at the plan, and a CHANGELOG `[Unreleased]` entry per plan §7.1.1. This is small but easy to forget.
+
+### Session 23 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Evidence-based research: 8 file reads + 5 grep inventories + verification of phantom entry points
+- [x] Plan written to `docs/planning/scope-b-plan.md` (822 lines, 18 sections)
+- [x] Plan §17 numbers verified post-draft; one count corrected (11 → 16)
+- [x] Phase 3A: Session 22 handoff evaluated and scored above
+- [x] Phase 3B: Self-assessment scored and written above
+- [x] Phase 3C: Learning #19 queued for SESSION_RUNNER.md
+- [x] Phase 3D: Handoff to Session 24 above (ACTIVE TASK + 6 candidates + key files + 10 gotchas)
+- [ ] Phase 3E: Commit main-repo changes (`docs/planning/scope-b-plan.md` + `SESSION_NOTES.md`) — pending
+- [ ] Phase 3F: Verbal report to user — pending
 
 ---
 
