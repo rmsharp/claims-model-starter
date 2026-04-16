@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Standalone Data Agent: generate SQL, run quality checks, produce DataReport. Usable as CLI, Python API, or pipeline component."
 readme = "USAGE.md"
 requires-python = ">=3.11"
-license = { text = "Proprietary" }
+license = { text = "MIT" }
 authors = [
     { name = "R. Mark Sharp" },
 ]

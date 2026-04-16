@@ -9,7 +9,7 @@ This SBOM covers both the **Model Project Constructor** (the tool) and the **gen
 | Python | >= 3.11 |
 | Package manager | [uv](https://docs.astral.sh/uv/) (workspace-based) |
 | Build backend | hatchling |
-| License | Proprietary |
+| License | MIT |
 
 ---
 
