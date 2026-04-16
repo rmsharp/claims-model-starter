@@ -5,21 +5,161 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 22 — open. Gotcha cleanup from Session 20B's handoff is now complete (Session 21). Next deliverable is **user's choice**. See "What Session 22 should do" below for three recommended candidates — unchanged from Session 21's options since none were picked up by 21.
-**Status:** Session 21 complete (gotcha cleanup). Session 22 ready.
-**Priority:** Pilot-ready codebase with authoritative CHANGELOG.md, clean BACKLOG.md "Up Next", and collapsed SESSION_NOTES.md duplicates.
+**Task:** Session 23 — open. Session 22 completed **Scope A** of BACKLOG #1 (live repo-creation smoke test against public GitLab; real project created at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot`). Five new findings filed into `BACKLOG.md`. Session 23 is **user's choice** among the expanded candidate list.
+**Status:** Session 22 complete (Scope A live run succeeded). Session 23 ready.
+**Priority:** Either close the remaining live-path gaps surfaced by Scope A, or advance to Scope B (real LLM-backed intake + data agents) which is the BACKLOG-#1 payoff.
 
-### What Session 22 should do
+### What Session 23 should do
 
-Three candidates ranked by readiness and value (identical to the list Session 21 inherited and did not consume):
+Six candidates, ranked by readiness and value:
 
-1. **First live end-to-end pipeline run** (BACKLOG §"Up Next" item 1, "First live end-to-end run"). The pilot readiness is at 97.18% coverage + clean CI + MIT license + live wiki. A real LLM-backed run against a live GitLab or GitHub repo closes the loop between "tests pass" and "it works with real tokens." Requires `ANTHROPIC_API_KEY` + either `GITLAB_PRIVATE_TOKEN` or `GITHUB_PRIVATE_TOKEN`. Session deliverable: one live run, captured output, write up what broke and what worked.
+1. **First live end-to-end run (Scope B) — real LLM-backed intake + data agents.** Scope A proved the website stage works against live GitLab. Scope B requires plugging the actual `IntakeAgent.run()` and `DataAgent.run()` into `run_pipeline` as runners (currently stubbed with `lambda: intake` / `lambda _req: data` at `scripts/run_pipeline.py:201-206`). **This should be a planning session first** — evidence-based inventory of agent runner signatures vs. orchestrator's expected callable shape (`() -> IntakeReport`, `(DataRequest) -> DataReport`), then implementation in a separate session. Failure mode #18 (plan-to-impl bleed) applies.
 
-2. **Automated resume-from-checkpoint** (BACKLOG §"Up Next" item 2). Phase 5 already persists per-stage checkpoints. Building the operator-facing `--resume <run_id>` CLI that picks up from the last successful stage is a natural extension, touches only `orchestrator/pipeline.py` + `scripts/run_pipeline.py`, and is directly useful after a failed live run.
+2. **Clearer `MPC_NAMESPACE` validation + docs** (Session 22 finding). Add a validator to `OrchestratorSettings.from_env()` that detects a leading `http://`/`https://` and raises `ConfigError("MPC_NAMESPACE must be a group path, not a URL; got '...'")`. Update `.env.example`, `OPERATIONS.md` §1, `docs/tutorial.md` §5a to state "path only." One session, ~5 small edits + one new test.
 
-3. **Statistical terminology glossary injection** (BACKLOG §"Up Next" item 7, "Statistical terminology glossary"). Create `docs/style/statistical_terms.md` and inject it into the intake-agent and data-agent system prompts. Enforces "probability" vs "likelihood" (and other common conflations) in LLM-generated content without a full re-evaluation pass on every call.
+3. **CI lint coverage extension to `scripts/`** (Session 22 finding). Add `scripts/` to the ruff CI command in `.github/workflows/ci.yml`. Fix the resulting 10 `E402` errors in `scripts/run_pipeline.py` — simplest fix is `# noqa: E402` per import, cleaner fix is to drop `sys.path.insert` and rely on `uv run` resolving the editable install. One session.
 
-Any of these is a one-session deliverable. Let the user pick.
+4. **CI typecheck coverage extension to `packages/`** (Session 22 finding). `pyproject.toml` declares both packages under `[tool.mypy]` but CI runs `mypy src/` only. Extend CI to `mypy src/ packages/data-agent/src/` (or `mypy --package ...`). Fix the ~13 resulting errors — the largest cluster is `packages/data-agent/.../anthropic_client.py:218` where the Anthropic SDK's content-block union has grown ~8 variants since Phase 2; need a `TextBlock` type-guard. One session, real bit-rot fix.
+
+5. **Self-hosted GitHub URL override** (Session 22 finding, code-read only). `docs/tutorial.md` §5c claims `MPC_HOST_URL` works for GHE, but `scripts/run_pipeline.py:109-113` constructs `PyGithubAdapter(token=token)` with no URL argument. Fix parallels the Session 22 `host_url=` fix for GitLab. Untested live; small scope. One session.
+
+6. **Reconcile `OPERATIONS.md` §4.2/4.3 recipes with `scripts/run_pipeline.py --live`** (Session 22 finding). Two distinct live-run commands documented; `python -m model_project_constructor.agents.website ...` may or may not be a real entry point. Audit, reconcile, pick a canonical path. Small scope.
+
+Any of #2 through #6 is a one-session deliverable. #1 (Scope B) should be plan-then-implement across two sessions. If the user has appetite for Scope B, recommend a planning session next.
+
+---
+
+## Session 21 Handoff Evaluation (by Session 22)
+**Score: 9/10.** Session 21's handoff was exceptional — the ACTIVE TASK block named three pre-scoped candidates with a clear "user picks" framing, key-files lists for each, and 9 gotchas that anticipated the exact friction I'd hit.
+
+- **What helped:** (a) Gotcha #2 established `CHANGELOG.md` as authoritative and the wiki Changelog as audience-facing + possibly drift-prone — so when I recorded Session 22's findings I landed them in CHANGELOG first without re-scoping that question. Zero round-trip with the user on "where does this go." (b) Candidate #1's key-files list (`scripts/run_pipeline.py`, `OPERATIONS.md`, `.env.example`, `config.py`, `docs/tutorial.md`) was literally the list I needed — I read all five during Phase 0 and every one was load-bearing. (c) Gotcha #8 (`probability` vs `likelihood` preference) isn't a Session 22 concern but was correctly preserved as a durable correction. (d) Learning #17's "read `docs/methodology/README.md` first before proposing options on shared files" saved me an identical round-trip when deciding whether to update CHANGELOG from Session 22's findings or wait — I read the methodology and knew to update CHANGELOG directly. (e) The explicit note that `scripts/run_pipeline.py` uses `scripts/run_pipeline.py:201-206` stubbed intake/data runners was exactly the fact I needed to split Scope A vs Scope B cleanly; without it I would have assumed `--live` was a true end-to-end run and my initial Phase-0 tutorial audit would have been scoped wrong.
+- **What was missing:** (a) Session 21 could not have known the `url=` → `host_url=` bug in `scripts/run_pipeline.py:119` was latent. But a note like "live path is untested end-to-end since Phase 5" would have set expectations. Gotcha #5 *did* say "live GitLab path hasn't been exercised since Phase 5" but mentioned `python-gitlab version-resolution pain` rather than kwarg-mismatch — close, but the specific failure mode was different. (b) No explicit callout that `MPC_NAMESPACE` takes a path, not a URL — but that's a repo-wide doc gap, not a 21-specific omission.
+- **What was wrong:** Nothing factually wrong. Every file path, line reference, and BACKLOG-item-number correspondence held up.
+- **ROI:** ~6× return. Reading the handoff (~4 min) saved ~25 min of orientation, scope-definition, and docs-precedence questioning. The candidate list directly shaped the session's opening assessment ("Are the tutorial instructions appropriate for…").
+
+### What Session 22 Did
+**Deliverable:** Scope A of BACKLOG #1 — live repo-creation smoke test via `scripts/run_pipeline.py --live --host gitlab` against public GitLab, with captured findings. **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Commits:** (pending this session's commit) — single `feat(session-22): fix live GitLab path + Scope A smoke test findings` commit landing the `scripts/run_pipeline.py` fix + CHANGELOG + BACKLOG + this SESSION_NOTES close-out.
+
+**Live artifact produced:** `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot` (project ID `81385820`, initial commit `3dec5424d561df7f78d5d44807a39ed4b6ad7bf3`). Still live — kept as evidence for Scope B planning. Not deleted by Session 22.
+
+**What was done:**
+
+1. **Audited `docs/tutorial.md` §5 against the actual live code path** during Phase 0. Identified two gaps before any live call: (a) self-hosted GitHub URL override not wired through `scripts/run_pipeline.py:109-113`; (b) drift between tutorial §5 and `OPERATIONS.md` §4.2/4.3 on the canonical live-run command. Also framed Scope A vs Scope B distinction — tutorial §5 documents Scope A (live website stage with fixture intake/data), not the BACKLOG-#1 "real LLM-backed" phrasing.
+
+2. **Found and fixed a blocking bug in `scripts/run_pipeline.py:119`.** Call site passed `url=host_url` but `PythonGitLabAdapter.__init__` (`gitlab_adapter.py:58-64`) is keyword-only and accepts `host_url=`. `--live --host gitlab` would have raised `TypeError: __init__() got an unexpected keyword argument 'url'` on the first real invocation. Two-character fix. This is the most important artifact of Session 22 — tutorial §5 had never successfully run.
+
+3. **Ran CI-matching pre-flight.** `uv run ruff check src/ tests/ packages/` → clean; `uv run mypy src/` → clean; `uv run pytest -q` → 422/422, 97.24% coverage. Running ruff over `scripts/` OR mypy over `packages/` surfaces pre-existing issues that CI doesn't gate (filed as findings).
+
+4. **Ran fake-mode baseline** with `--run-id run_preflight_fake`. Result `COMPLETE`, 38 files, ~4ms website stage. Confirmed the script's output envelope for comparison against the live run.
+
+5. **Ran first live attempt** (`run_live_001`). **Failed** at website stage with `repo_error: group lookup failed for 'https://gitlab.com/rmsharp-modelpilot': 404`. Root cause: user set `MPC_NAMESPACE` to the full URL rather than the group path — but the failure mode surfaced a real documentation gap (none of `.env.example`, `OPERATIONS.md` §1, `docs/tutorial.md` §5 state that `MPC_NAMESPACE` is a path).
+
+6. **Ran second live attempt** (`run_live_002`) after user set `MPC_NAMESPACE=rmsharp-modelpilot`. **Result `COMPLETE`.** Project created, 38 files committed, initial commit SHA `3dec542`, website stage latency 3,501ms (vs ~4ms in fake mode — ~875× expected network overhead). All 5 checkpoint files persisted: `IntakeReport.json`, `DataRequest.json`, `DataReport.json`, `RepoTarget.json`, `RepoProjectResult.result.json`.
+
+7. **Verified live project via GitLab REST API** (`/projects/.../repository/tree?recursive=true`). Tree contains the expected directories (`analysis/`, `data/`, `governance/`, `queries/primary/`, `queries/quality/subrogation_training_set/`, `reports/`, `src/subrogation_pilot/`, `tests/`) and 11+ blobs at root incl. `.gitlab-ci.yml`, `.pre-commit-config.yaml`, `pyproject.toml`, `README.md`. Governance manifest in `RepoProjectResult.result.json` shows all 10 tier-3-moderate artifacts and correct regulatory mapping (`SR_11_7` → 4 files, `NAIC_AIS` → 2 files).
+
+8. **Recorded findings in `CHANGELOG.md` [Unreleased]** and added 6 new "Up Next" items to `BACKLOG.md` (Scope B + 5 findings).
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Phase 0 audit of tutorial §5 against code caught Gap 1 (GHE URL override) and Gap 2 (OPERATIONS drift) before touching the live path. Reading `scripts/run_pipeline.py` + `gitlab_adapter.py` side-by-side before the first run caught the `url=` vs `host_url=` mismatch — prevented the TypeError from surfacing in the live run output, which would have forced a failure-diagnose-retry cycle.
+- **Implementations read, not just descriptions:** Yes. Read `scripts/run_pipeline.py` in full, `gitlab_adapter.py` in full, `config.py` grep for env-var names, `ci.yml` to understand CI gate scope, `.env.example` + `OPERATIONS.md` + `docs/tutorial.md` for the doc surface. Verified live project via direct GitLab API call (not just the returned `project_url`).
+- **Stakeholder corrections needed:** 2 small — (a) user corrected me that `.env` would hold credentials (I had offered `!`-prefixed shell option but they chose `.env`); (b) the first live run's `MPC_NAMESPACE=<URL>` mistake required one round-trip (though that surfaced finding #2, so net positive).
+- **What I got right:** (a) Recognized Scope A vs Scope B distinction in the BACKLOG item BEFORE claiming the session — avoided falsely promising LLM-backed end-to-end when the script doesn't do that. (b) Phase 1B stub written before any technical work (failure mode #14 protection held). (c) CI-matching pre-flight discipline — ran the exact command matrix CI runs, not a broader local-only version; when I initially ran broader and saw failures I correctly identified them as CI-gap findings, not regressions. (d) Two `run_id`s for two attempts — keeps the failure and the success both inspectable in `.orchestrator/checkpoints/`. (e) Never committed the token; verified `.env` gitignored before running. (f) Verified live project independently via GitLab REST API rather than trusting the returned URL alone — caught that the tree is real, not just that a URL was returned. (g) Filed all 5 findings in CHANGELOG + BACKLOG with specific file:line pointers so Session 23 can pick any up as a one-session deliverable.
+- **What I got wrong:** (a) Initial proposal to the user for credential handling offered `!`-prefixed shell input as Option 3 — but the user's `.env` approach was simpler and equally safe since `.env` is gitignored. Not wrong, just not the first suggestion. (b) Did not check whether `python -m model_project_constructor.agents.website` (the OPERATIONS §4.2 invocation) is actually a registered entry point; filed as finding rather than investigating. Defensible scope decision but leaves a small unknown. (c) Could have tried `--host github` too as a second data point, but that would have doubled the session scope. Scope A with one host (GitLab, as chosen by user) is legitimate completion.
+- **Quality bar vs previous sessions:** Meets Session 21. Small-scope execution with rigorous pre-flight, two real runs (one intentional failure-surface), live API verification, and 5 findings filed with executor-ready specifics.
+
+### Phase 3C: Learnings
+
+Adding to the `Learnings` table in SESSION_RUNNER.md as #18:
+
+| # | Learning | Source | When to Apply |
+|---|----------|--------|---------------|
+| 18 | **CI gate scope can diverge from declared tool scope.** `pyproject.toml` may declare `[tool.mypy] packages = [A, B]` but CI only runs `mypy A`. Similarly `ruff` CI command may pass `src/ tests/ packages/` while excluding `scripts/`. Local "green pre-flight" using the tool's natural scope will surface failures that CI isn't gating — these are CI-gap findings, not regressions. Before declaring pre-flight failed: re-run with the EXACT command the CI workflow executes, compare. If CI-matching is green but broader-scope fails, file the CI gap + the underlying errors as findings, don't treat as a blocker. | Session 22 (ruff on `scripts/` + mypy on `packages/` surfaced pre-existing errors CI doesn't gate) | Any session where local pre-flight diverges from CI green-status. |
+
+### Phase 3D: Handoff to Session 23
+
+Full "What Session 23 should do" content is in the **ACTIVE TASK** block at the top of this file. Six candidates — #1 is Scope B (needs planning session first); #2–#6 are findings from Session 22 each sized as one session.
+
+**Key files for each candidate:**
+
+For #1 (Scope B — real LLM-backed intake + data agents):
+- `scripts/run_pipeline.py:201-206` — current stubbed intake/data runners that need replacement
+- `src/model_project_constructor/agents/intake/anthropic_client.py` — real intake runner signature
+- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` — real data runner signature
+- `src/model_project_constructor/orchestrator/pipeline.py` — `run_pipeline` callable contract (intake: `() -> IntakeReport`, data: `(DataRequest) -> DataReport`)
+- `tests/orchestrator/test_pipeline.py` — test pattern for pipeline wiring
+- Plan must address: (a) do we run intake in one-question-at-a-time mode against an interactive user, or batch-from-fixture? (b) does the data agent need a live DB or can it run against fixtures? (c) checkpoint strategy for partial-LLM failures (Anthropic rate limit, token exhaustion).
+
+For #2 (`MPC_NAMESPACE` validation + docs):
+- `src/model_project_constructor/orchestrator/config.py:98,111` — where env-var validators live
+- `.env.example:47` — MPC_NAMESPACE template line
+- `OPERATIONS.md` §1 env-var table
+- `docs/tutorial.md` §5c `MPC_NAMESPACE` section
+- `src/model_project_constructor/agents/website/gitlab_adapter.py:79` — where the generic 404 error is raised
+
+For #3 (CI lint extension to `scripts/`):
+- `.github/workflows/ci.yml:19` — `uv run ruff check src/ tests/ packages/`
+- `scripts/run_pipeline.py:34-54` — `sys.path.insert` + imports that trigger E402
+- Choice: per-line `# noqa: E402` vs drop the sys.path hack entirely
+
+For #4 (CI typecheck extension to `packages/`):
+- `.github/workflows/ci.yml:28` — `uv run mypy src/`
+- `pyproject.toml` `[tool.mypy]` — already declares both packages
+- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:218` — the bit-rot cluster; `TextBlock` type-guard needed
+- `packages/data-agent/src/model_project_constructor_data_agent/nodes.py:142` — `execution_status` literal narrowing
+- `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py:26` — untyped `get_type` call
+
+For #5 (self-hosted GitHub URL override):
+- `scripts/run_pipeline.py:109-113` — the broken branch (`PyGithubAdapter(token=token)` no URL)
+- `docs/tutorial.md` §5c — the false documentation
+- `src/model_project_constructor/agents/website/github_adapter.py` — verify `base_url` constructor kwarg exists
+- Session 22 did NOT live-test this; code-read only.
+
+For #6 (reconcile OPERATIONS §4.2/4.3 with script):
+- `OPERATIONS.md` §4.2/4.3 — the two-command-alternative
+- Grep for `__main__.py` or `[project.scripts]` in `src/model_project_constructor/agents/website/` — is `python -m model_project_constructor.agents.website` actually wired?
+- `docs/tutorial.md` §5 — the canonical live-run recipe if we pick that one
+
+### Gotchas for Session 23
+
+1. **Session 22's live GitLab project is still live** at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot` (project ID `81385820`). If Session 23 does another live run with the same `project_name_hint="subrogation_pilot"` and same namespace, the adapter will auto-suffix (e.g., `subrogation-pilot-2`). Alternatively: delete the existing project via the GitLab UI or API before retrying. For Scope B planning this doesn't matter; for a second live run it does.
+
+2. **Checkpoint directory contains `run_live_001` (failed) and `run_live_002` (succeeded).** `.orchestrator/` is gitignored so these won't commit, but they're useful reference state while Session 23 runs. Both have the same `IntakeReport.json` / `DataRequest.json` / `DataReport.json` envelopes; only `RepoProjectResult.result.json` differs (505 bytes for failed vs 3,146 bytes for succeeded).
+
+3. **`.env` is populated with real credentials** (`ANTHROPIC_API_KEY`, `GITLAB_TOKEN`, `MPC_HOST=gitlab`, `MPC_HOST_URL=https://gitlab.com`, `MPC_NAMESPACE=rmsharp-modelpilot`). Gitignored. Session 23 can re-use by `set -a; source .env; set +a` before any live invocation. **Do not cat or echo these values** — if debugging is needed, print only the key names.
+
+4. **The `url=` → `host_url=` fix in `scripts/run_pipeline.py:119` is the first change to the script since Session 18 shipped it.** Don't expect a test for this — the live path is not covered by any pytest test. The verification is the successful `run_live_002` recorded here and in `CHANGELOG.md`.
+
+5. **CI-gap findings (3 and 4) are NOT blockers for any other work.** CI is green on the current master tree (confirmed via `gh run list`). Extending CI scope will reveal the underlying bit-rot but won't break the current green state until the new ruff/mypy commands are merged.
+
+6. **For Scope B planning:** the real intake agent runs a LangGraph with human-in-the-loop review (max 10 questions, max 3 revisions) — it's not a single `() -> IntakeReport` call. Either wrap it in an adapter that executes the graph to termination and returns the final state's `IntakeReport`, or change `run_pipeline`'s intake contract. The data agent is closer to a single call but still needs a LangGraph runner and potentially a DB connection. Plan the wiring on paper first.
+
+7. **`probability` vs `likelihood`** — durable user correction, still applies. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+8. **Re-read `SAFEGUARDS.md` and `SESSION_RUNNER.md`** at Session 23 start. Failure modes #14 (ghost session), #18 (plan-to-impl bleed — relevant for Scope B), and #19 (plan-mode bypass) remain high-risk.
+
+### Session 22 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Tutorial §5 audited; 2 pre-existing gaps surfaced
+- [x] Blocking bug in `scripts/run_pipeline.py:119` found and fixed (`url=` → `host_url=`)
+- [x] CI-matching pre-flight run (ruff src/tests/packages/ + mypy src/ + pytest) — clean
+- [x] Fake-mode baseline run captured as `run_preflight_fake`
+- [x] First live run attempted (`run_live_001`) — failed with 404 group-lookup; finding recorded
+- [x] Second live run (`run_live_002`) after user fixed `MPC_NAMESPACE` — `COMPLETE`
+- [x] Live project verified via GitLab REST API
+- [x] 5 findings recorded in CHANGELOG.md [Unreleased] + added to BACKLOG.md "Up Next"
+- [x] Phase 3A: Session 21 handoff evaluated and scored above
+- [x] Phase 3B: Self-assessment scored and written above
+- [x] Phase 3C: Learning #18 queued for SESSION_RUNNER.md
+- [x] Phase 3D: Handoff to Session 23 above (ACTIVE TASK + 6 candidates + key files + gotchas)
+- [ ] Phase 3E: Commit main-repo changes (scripts/run_pipeline.py + CHANGELOG.md + BACKLOG.md + SESSION_NOTES.md) — pending
+- [ ] Phase 3F: Verbal report to user — pending
 
 ---
 

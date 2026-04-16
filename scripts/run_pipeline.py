@@ -116,7 +116,7 @@ def build_website_runner(*, host: str, live: bool):
             PythonGitLabAdapter,
         )
         host_url = os.environ.get("MPC_HOST_URL", "https://gitlab.com")
-        client = PythonGitLabAdapter(url=host_url, private_token=token)
+        client = PythonGitLabAdapter(host_url=host_url, private_token=token)
 
     agent = WebsiteAgent(client, ci_platform=ci_platform)
     return agent.run, None  # no fake client to inspect

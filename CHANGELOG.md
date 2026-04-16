@@ -13,6 +13,17 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-16 — First live end-to-end smoke test (Session 22, Scope A)
+
+- **Fixed:** `scripts/run_pipeline.py:119` passed `url=` to `PythonGitLabAdapter(...)` but the constructor's keyword-only parameter is `host_url=`. `--live --host gitlab` had never successfully run — it would have raised `TypeError: __init__() got an unexpected keyword argument 'url'` on the first keystroke. Phase 4B/5 tests only exercise the adapter's import + protocol conformance, not the script's wiring. Two-character fix: `url=host_url` → `host_url=host_url`.
+- **Verified:** after the fix, `uv run python scripts/run_pipeline.py --live --host gitlab --run-id run_live_002` created a real project at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot` (project ID 81385820, initial commit `3dec542`). Website stage latency: 3,501 ms live vs ~4 ms fake-mode (~875× expected network overhead). All 38 files present, all 10 tier-3-moderate governance artifacts created, regulatory mapping correct (SR_11_7 + NAIC_AIS).
+- **Findings (filed in `BACKLOG.md`, unfixed in this session):**
+  - `MPC_NAMESPACE` takes a group *path* (`rmsharp-modelpilot`), not a URL (`https://gitlab.com/rmsharp-modelpilot`). `.env.example`, `OPERATIONS.md` §1, and `docs/tutorial.md` §5 all omit this constraint. The GitLab adapter returns a generic `"group lookup failed: 404"` instead of a clearer `"MPC_NAMESPACE must be a group path, not a URL"`.
+  - `scripts/` is not ruff-checked in CI (`.github/workflows/ci.yml` lint job scans `src/ tests/ packages/` only). Running ruff locally surfaces 10 `E402` errors in `scripts/run_pipeline.py` — the `sys.path.insert` pattern needs `# noqa: E402` or a refactor.
+  - `packages/` is not mypy-checked in CI (typecheck job runs `mypy src/` only) even though `[tool.mypy] packages = [...]` in `pyproject.toml` declares both `model_project_constructor` and `model_project_constructor_data_agent`. Running mypy with the declared packages surfaces 13 errors, mostly in `packages/data-agent/.../anthropic_client.py:218` — Anthropic SDK's content-block union has grown ~8 variants since the code was written, and `block.text` no longer narrows without a type guard. Latent bit-rot.
+  - `docs/tutorial.md` §5c says `MPC_HOST_URL="https://github.mycompany.com/api/v3"` works for GitHub Enterprise, but `scripts/run_pipeline.py:109-113` constructs `PyGithubAdapter(token=token)` with no URL argument — GHE users silently hit public `api.github.com`. (Not live-tested in Session 22; confirmed by code reading.)
+  - `docs/tutorial.md` §5 and `OPERATIONS.md` §4.2/4.3 document two different live-run commands. The OPERATIONS recipe uses `python -m model_project_constructor.agents.website --intake ... --host ... --private-token ...` — this flow should be reconciled with the script path or marked deprecated.
+
 ### 2026-04-16 — Gotcha cleanup (Session 21)
 
 - **Changed:** `CHANGELOG.md` refreshed from Session-0-only stub to full authoritative history covering Phases 1–6, Phases A–D, pilot readiness, tutorial, wiki expansion, and license change.
