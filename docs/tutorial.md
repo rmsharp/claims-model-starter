@@ -25,10 +25,10 @@ The orchestrator (`run_pipeline`) drives the three agents in sequence, persistin
 ```bash
 git clone <repo-url> model_project_constructor
 cd model_project_constructor
-uv sync --extra agents --extra dev
+uv sync --extra agents --extra ui --extra dev
 ```
 
-The `agents` extra installs LangGraph, Anthropic SDK, GitLab/GitHub client libraries, and Typer (CLI). The `dev` extra adds pytest, mypy, and ruff.
+The `agents` extra installs LangGraph, Anthropic SDK, GitLab/GitHub client libraries, and Typer (CLI). The `ui` extra installs FastAPI and related dependencies for the intake web UI. The `dev` extra adds pytest, mypy, and ruff.
 
 ### Verify the install
 
