@@ -63,6 +63,11 @@
 
 *Session history accumulates below this line. Newest session at the top.*
 
+### What Session 16 Did
+**Deliverable:** Phase 6 of `docs/planning/architecture-plan.md` §14 — production hardening (structured logging, metrics, env-var config, OPERATIONS.md + TROUBLESHOOTING.md, repo CI workflow) (IN PROGRESS)
+**Started:** 2026-04-15
+**Status:** Session claimed. Pre-flight verified (368 passed @ 96.97%, mypy 17 files clean). Coverage floor bumped 93 → 94 as standalone chore commit per ACTIVE TASK. Phase 6 work beginning.
+
 ### Session 14 Handoff Evaluation (by Session 15)
 **Score: 10/10.** Fourth consecutive 10. Phase 5 was a pure step-execution session because Session 14 left no ambiguity about the orchestrator's contract.
 
