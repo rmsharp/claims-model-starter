@@ -8,7 +8,7 @@ silently reshape the DataRequest.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -64,7 +64,7 @@ def _make_intake(
         ),
         stakeholder_id="stake_001",
         session_id="session_001",
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         questions_asked=7,
         revision_cycles=0,
     )

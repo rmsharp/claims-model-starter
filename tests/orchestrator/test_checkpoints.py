@@ -12,7 +12,7 @@ second channel for terminal (non-envelope) results. These tests pin:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -44,7 +44,7 @@ def _make_data_request_envelope(run_id: str = "run_001") -> HandoffEnvelope:
         payload_type="DataRequest",
         payload_schema_version="1.0.0",
         payload=request.model_dump(mode="json"),
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         correlation_id=run_id,
     )
 
@@ -213,7 +213,7 @@ class TestRunIsolation:
             payload_type="RepoTarget",
             payload_schema_version="1.0.0",
             payload=target.model_dump(mode="json"),
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             correlation_id="run_001",
         )
         store.save(env)

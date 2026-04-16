@@ -20,7 +20,7 @@ These tests pin:
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
@@ -102,7 +102,7 @@ def _incomplete_data_report(request: DataRequest) -> DataReport:
         confirmed_expectations=[],
         unconfirmed_expectations=[],
         data_quality_concerns=["stub_failure"],
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
 

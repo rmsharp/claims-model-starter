@@ -18,7 +18,7 @@ Early implementation. Phases and session boundaries are tracked in `SESSION_NOTE
 | 4A | Website Agent core + GitLab scaffolding (non-governance) | Complete |
 | 4B | Website Agent governance scaffolding + retry-backoff + repo-host adapter (GitHub/GitLab abstraction) | Complete |
 | 5 | Orchestrator + adapters + end-to-end | Complete |
-| 6 | Production hardening | Not started |
+| 6 | Production hardening (structured logging, metrics, env-var config, CI, runbooks) | Complete |
 
 ## Architecture in one screen
 
@@ -70,10 +70,13 @@ src/model_project_constructor/          # main "orchestrator" package
     gitlab_adapter.py                   # production adapter via python-gitlab
     github_adapter.py                   # production adapter via PyGithub
     cli.py, __main__.py                 # typer CLI (--host gitlab|github, --fake or --private-token)
-  orchestrator/                         # Phase 5: sequential pipeline driver (Intake → Data → Website)
+  orchestrator/                         # Phase 5/6: sequential pipeline driver (Intake → Data → Website) + observability
     pipeline.py                         # run_pipeline(config, *, intake_runner, data_runner, website_runner)
     adapters.py                         # intake_report_to_data_request() — the only IntakeReport↔DataRequest site
     checkpoints.py                      # CheckpointStore: envelopes + terminal RepoProjectResult on disk
+    config.py                           # OrchestratorSettings.from_env() — env-var driven config, no hardcoded secrets
+    logging.py                          # make_logged_runner() — structured start/end/error events with run_id/correlation_id
+    metrics.py                          # MetricsRegistry + make_measured_runner() — in-memory counts + per-agent latency
 packages/data-agent/                    # standalone: model-project-constructor-data-agent
   pyproject.toml                        # independent distribution
   USAGE.md                              # CLI + Python API documentation
@@ -88,7 +91,7 @@ tests/
   agents/data/                          # 12 end-to-end Data Agent tests
   agents/intake/                        # 56 intake tests (graph, nodes, CLI, Anthropic)
   agents/website/                       # 122 website agent tests (templates, fake client, nodes, agent, CLI, governance, retry, gitlab + github adapters)
-  orchestrator/                         # 45 orchestrator tests (pipeline halt paths, adapters, checkpoints)
+  orchestrator/                         # 99 orchestrator tests (pipeline halt paths, adapters, checkpoints, config, logging, metrics)
   ui/intake/                            # 22 web UI tests (FastAPI, runner, SQLite resume, SSE)
   data_agent_package/                   # 21 CLI + AnthropicLLMClient tests
   fixtures/sample_request.json          # canonical DataRequest fixture
@@ -117,7 +120,9 @@ uv sync --extra agents --extra dev
 uv run pytest
 ```
 
-All 368 tests should pass with coverage above 93% (currently ≈97.0%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 422 tests should pass with coverage above 94% (currently ≈97.2%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+
+Production deployments read every secret and every deployment-variable parameter from the environment (or from a `.env` file loaded by the caller). See `.env.example` for the full matrix and `OPERATIONS.md` for the runbook. Common failure modes and resume recipes live in `TROUBLESHOOTING.md`.
 
 To run the web UI tests as well, add the `ui` extra:
 
@@ -195,6 +200,8 @@ The `--fake` mode prints the full file tree that would be committed and dumps a 
 
 - `docs/planning/architecture-plan.md` — the authoritative design document. Sections §4 (agent boundaries), §7 (Data Agent decoupling), §10 (per-agent LangGraph flows), and §14 (implementation phases) are load-bearing.
 - `docs/planning/architecture-approaches.md` — alternatives considered for each architectural decision, with pros/cons.
+- `OPERATIONS.md` — the production runbook: env-var matrix, checkpoint layout, resume procedure, observability integration points.
+- `TROUBLESHOOTING.md` — diagnostic walkthroughs for each `FAILED_AT_*` halt path, keyed to the checkpoint files an operator should inspect.
 - `SESSION_RUNNER.md` — the session protocol. Read before starting any session.
 - `SAFEGUARDS.md` — commit discipline and the two-mode engineer/architect rules.
 

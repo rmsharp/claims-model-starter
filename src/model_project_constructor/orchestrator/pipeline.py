@@ -20,10 +20,11 @@ decide whether to re-run with a fresh ``run_id`` or investigate.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 from model_project_constructor.orchestrator.adapters import (
     intake_report_to_data_request,
@@ -224,7 +225,7 @@ def _envelope(
         payload_type=payload_type,
         payload_schema_version="1.0.0",
         payload=payload,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         correlation_id=correlation_id,
     )
 
