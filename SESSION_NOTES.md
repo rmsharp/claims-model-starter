@@ -81,21 +81,25 @@
 14. **Content-Recommendations.md** — 10 prioritized additions grouped by high/medium/low priority, plus SBOM enhancement recommendations and wiki maintenance guidance.
 15. **_Sidebar.md** — GitHub wiki sidebar navigation structure.
 
-**Self-assessment:**
-- **What went well:** (a) Used 3 parallel research agents to simultaneously explore the generated project structure, all dependencies, and the architecture docs — this made orientation fast (~3 min for all 3 reports). (b) Every wiki page was verified against source code, not written from memory. Read `templates.py`, `governance_templates.py`, `pyproject.toml` (root + data-agent), `ci.yml`, `OPERATIONS.md`, `initial_purpose.txt`, and `tutorial.md` directly. (c) The SBOM is comprehensive — covers both the constructor's dependencies and the generated project's dependencies, with locked versions from `uv.lock`. (d) The Content Recommendations page provides actionable next steps with audience and rationale for each recommendation. (e) Zero stakeholder corrections needed.
-- **What could be better:** (a) Could have added license information to the SBOM — the Content Recommendations page identifies this as a gap, but I could have addressed it in this session. (b) The Glossary "statistical terms" section is short — the backlog item for a statistical terminology glossary could expand it significantly.
-- **Quality bar:** Good. 14 pages verified against source code, zero corrections needed.
+**Commits:**
+- `0acdd37` — 14 wiki pages + session notes + learning #14
+- `f2f2a70` — License change: Proprietary -> MIT (`LICENSE` file, both `pyproject.toml`, SBOM page)
+- `06ef12f` — Close-out with 20A/20B handoff plan
 
-**Additional work (same session, after initial close-out):**
-16. Changed license from Proprietary to MIT: `LICENSE` file, both `pyproject.toml` files, SBOM wiki page. Commit `f2f2a70`.
+**Additional work (same session, after initial wiki creation):**
+16. Changed license from Proprietary to MIT per user direction. `LICENSE` file at project root, both `pyproject.toml` files, SBOM wiki page.
 17. Published all 14 wiki pages to GitHub wiki repo at `/Users/rmsharp/Development/claims-model-starter.wiki/`. Wiki is live at `https://github.com/rmsharp/claims-model-starter/wiki`.
 18. Planned 7 additional wiki pages across 2 follow-up sessions (20A and 20B), approved by user. User is separately producing pages #6 (FAQ), #7 (Comparison), #10 (Deployment guide).
-- **Quality bar:** Good. The wiki covers the full system comprehensively. No corrections needed. The Content Recommendations page ensures the next session has clear priorities for expanding the wiki.
 
-### Key files for Session 19
+**Self-assessment score: 8/10**
 
-- `scripts/run_pipeline.py` — end-to-end pipeline runner (fake + live modes). Tested with both `--host gitlab` and `--host github`.
-- `docs/tutorial.md` — 6-step tutorial: create intake fixture -> generate JSON -> run pipeline -> inspect checkpoints -> live host -> programmatic API. User-tested from a fresh clone.
+Compared to the standard set by previous sessions:
+- **Research before creative work:** Yes. Launched 3 parallel research agents before writing any wiki page. Read `templates.py:148-178`, `governance_templates.py:1-80`, both `pyproject.toml` files, `ci.yml`, `OPERATIONS.md`, `initial_purpose.txt`, `tutorial.md:1-50` directly. No page was written from memory of agent summaries alone.
+- **Implementations read, not just descriptions:** Yes. Verified generated project structure against the actual f-string templates in `templates.py` and `governance_templates.py`, not against the architecture plan's descriptions.
+- **Stakeholder corrections needed:** 1 — user corrected my close-out procedure (insufficient Phase 3 compliance). No corrections to the wiki content itself.
+- **What I got right:** (a) Comprehensive coverage — 14 pages spanning all audiences (stakeholders, data science teams, developers, operators, security, compliance). (b) SBOM is two-part (constructor + generated project) with locked versions. (c) Content Recommendations gives the next session a clear priority queue. (d) Parallel research agents made orientation fast.
+- **What I got wrong:** (a) First close-out attempt was not a formal Phase 3 — missing self-assessment score, structured comparison, and proper 3F verbal report. User had to correct me. This is failure mode #6 (skip close-out) and #17 (protocol erosion). (b) Could have included license info in the SBOM during the initial write — instead left it as a recommendation, then the user asked for the license change anyway. (c) Initially asked the user to confirm push when they had already said yes.
+- **Quality bar vs previous sessions:** Meets the bar for documentation deliverables. The 14-page wiki is the largest documentation deliverable in the project's history. Below the bar on close-out discipline — Session 18 and Session 17 both closed out correctly on first attempt.
 - `BACKLOG.md` — 6 open items including: data discovery (intake + data agents), statistical terminology glossary, render script, tutorial UX, SQLite warnings.
 - `OPERATIONS.md` — production runbook (complements the tutorial).
 - `.env.example` — env var template for live runs.
