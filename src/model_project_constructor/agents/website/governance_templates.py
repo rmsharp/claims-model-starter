@@ -855,9 +855,7 @@ def is_governance_artifact(path: str) -> bool:
         return True
     if "/fairness/" in path:
         return True
-    if path == "tests/test_fairness.py":
-        return True
-    return False
+    return path == "tests/test_fairness.py"
 
 
 __all__ = [

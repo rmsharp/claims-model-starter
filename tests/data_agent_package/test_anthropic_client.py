@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
-
 from model_project_constructor_data_agent.anthropic_client import (
     AnthropicLLMClient,
     LLMParseError,
@@ -116,7 +115,10 @@ def test_generate_primary_queries_strips_code_fence(
 def test_generate_primary_queries_with_retry_hint(
     request_obj: DataRequest,
 ) -> None:
-    canned = """[{"name": "q", "sql": "SELECT 1", "purpose": "x", "expected_row_count_order": "tens"}]"""
+    canned = (
+        '[{"name": "q", "sql": "SELECT 1",'
+        ' "purpose": "x", "expected_row_count_order": "tens"}]'
+    )
     fake, msgs = _fake_client([canned])
     client = AnthropicLLMClient(client=fake, model="fake-model")
 

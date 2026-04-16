@@ -22,9 +22,9 @@ from model_project_constructor.agents.intake.nodes import build_intake_report
 from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
     GovernanceClassification,
-    InterviewContext,
     IntakeLLMClient,
     IntakeLLMError,
+    InterviewContext,
     NextQuestionResult,
 )
 from model_project_constructor.agents.intake.state import (

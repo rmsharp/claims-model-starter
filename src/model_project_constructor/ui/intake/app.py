@@ -25,7 +25,7 @@ from __future__ import annotations
 import json
 import os
 import uuid
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -37,8 +37,8 @@ from sse_starlette.sse import EventSourceResponse
 from model_project_constructor.agents.intake.protocol import IntakeLLMClient
 from model_project_constructor.ui.intake import templates
 from model_project_constructor.ui.intake.runner import (
-    InvalidPhaseError,
     IntakeSessionStore,
+    InvalidPhaseError,
     LLMFactory,
     SessionSnapshot,
 )

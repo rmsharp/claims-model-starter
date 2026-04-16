@@ -20,8 +20,8 @@ from model_project_constructor.agents.intake.anthropic_client import (
 )
 from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
-    InterviewContext,
     IntakeLLMError,
+    InterviewContext,
 )
 
 

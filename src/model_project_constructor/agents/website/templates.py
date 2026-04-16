@@ -524,7 +524,8 @@ def render_reports_intake_md(*, intake: dict[str, Any]) -> str:
         "## Governance\n\n"
         f"- Cycle time: `{gov.get('cycle_time', 'unknown')}`\n"
         f"- Risk tier: `{gov.get('risk_tier', 'unknown')}`\n"
-        f"- Regulatory frameworks: {', '.join(gov.get('regulatory_frameworks') or []) or '(none)'}\n"
+        "- Regulatory frameworks: "
+        f"{', '.join(gov.get('regulatory_frameworks') or []) or '(none)'}\n"
     )
 
 

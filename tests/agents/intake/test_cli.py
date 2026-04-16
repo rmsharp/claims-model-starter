@@ -11,7 +11,6 @@ from typer.testing import CliRunner
 
 from model_project_constructor.agents.intake.cli import app
 
-
 runner = CliRunner()
 
 

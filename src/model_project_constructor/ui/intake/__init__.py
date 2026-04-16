@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from model_project_constructor.ui.intake.app import app, create_app
 from model_project_constructor.ui.intake.runner import (
-    InvalidPhaseError,
     IntakeSessionStore,
+    InvalidPhaseError,
     SessionSnapshot,
 )
 

@@ -14,9 +14,21 @@ from model_project_constructor.agents.intake.fixture import (
     review_sequence_from_fixture,
 )
 from model_project_constructor.agents.intake.protocol import (
-    InterviewContext,
     IntakeLLMError,
-    NextQuestionResult,
+    InterviewContext,
+)
+
+# Reusable YAML fragments for inline fixture construction (avoids E501).
+# Double braces escape f-string interpolation → single braces in output.
+_MODEL_SOL = (
+    "{target_variable: t, target_definition: td, "
+    "candidate_features: [], model_type: other, "
+    "evaluation_metrics: [], is_supervised: false}"
+)
+_EST_VAL = (
+    "{narrative: n, annual_impact_usd_low: null, "
+    "annual_impact_usd_high: null, confidence: low, "
+    "assumptions: []}"
 )
 
 
@@ -35,7 +47,10 @@ def test_load_fixture_missing_file(tmp_path: Path) -> None:
 
 def test_load_fixture_wrong_schema(tmp_path: Path) -> None:
     p = tmp_path / "bad.yaml"
-    p.write_text("schema: other/v1\nstakeholder_id: x\nsession_id: y\nqa_pairs: []\ndraft: {}\ngovernance: {}\n")
+    p.write_text(
+        "schema: other/v1\nstakeholder_id: x\nsession_id: y\n"
+        "qa_pairs: []\ndraft: {}\ngovernance: {}\n"
+    )
     with pytest.raises(IntakeLLMError, match="schema="):
         load_fixture(p)
 
@@ -138,13 +153,13 @@ qa_pairs: [{{question: q, answer: a}}]
 draft:
   business_problem: before
   proposed_solution: s
-  model_solution: {{target_variable: t, target_definition: td, candidate_features: [], model_type: other, evaluation_metrics: [], is_supervised: false}}
-  estimated_value: {{narrative: n, annual_impact_usd_low: null, annual_impact_usd_high: null, confidence: low, assumptions: []}}
+  model_solution: {_MODEL_SOL}
+  estimated_value: {_EST_VAL}
 revised_draft:
   business_problem: AFTER
   proposed_solution: s2
-  model_solution: {{target_variable: t, target_definition: td, candidate_features: [], model_type: other, evaluation_metrics: [], is_supervised: false}}
-  estimated_value: {{narrative: n, annual_impact_usd_low: null, annual_impact_usd_high: null, confidence: low, assumptions: []}}
+  model_solution: {_MODEL_SOL}
+  estimated_value: {_EST_VAL}
 governance:
   cycle_time: tactical
   cycle_time_rationale: r
@@ -194,8 +209,8 @@ session_id: y
 qa_pairs: [{{question: q, answer: a}}]
 draft:
   business_problem: bp
-  model_solution: {{target_variable: t, target_definition: td, candidate_features: [], model_type: other, evaluation_metrics: [], is_supervised: false}}
-  estimated_value: {{narrative: n, annual_impact_usd_low: null, annual_impact_usd_high: null, confidence: low, assumptions: []}}
+  model_solution: {_MODEL_SOL}
+  estimated_value: {_EST_VAL}
 governance:
   cycle_time: tactical
   cycle_time_rationale: r
@@ -226,8 +241,8 @@ qa_pairs: [{{question: q, answer: a}}]
 draft:
   business_problem: bp
   proposed_solution: s
-  model_solution: {{target_variable: t, target_definition: td, candidate_features: [], model_type: other, evaluation_metrics: [], is_supervised: false}}
-  estimated_value: {{narrative: n, annual_impact_usd_low: null, annual_impact_usd_high: null, confidence: low, assumptions: []}}
+  model_solution: {_MODEL_SOL}
+  estimated_value: {_EST_VAL}
 governance:
   cycle_time: tactical
   risk_tier: tier_4_low

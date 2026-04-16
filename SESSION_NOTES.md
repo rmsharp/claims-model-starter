@@ -5,9 +5,9 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 17 — **pilot readiness review or first post-pilot feature.** All 6 planned phases of `docs/planning/architecture-plan.md` §14 are complete. The pipeline is production-hardened: structured logging, metrics, env-var config, CI, runbooks. The next step is either (a) a pilot readiness audit reviewing every Phase 1–6 deliverable against the original requirements in `initial_purpose.txt` and `architecture-plan.md`, or (b) the first post-pilot feature (e.g. a real LLM-backed end-to-end run against a live host, or automated resume-from-checkpoint logic).
-**Status:** Phase 6 landed in Session 16 (commit hash to be filled in during Session 17's Phase 3A). Master is clean. Baseline for Session 17: **422 tests pass at 97.18% coverage, mypy strict clean on 48 files in `src/`, ruff clean on all orchestrator + test files.** Coverage floor is **94%**.
-**Priority:** The 6-phase plan is complete. Priority is now determined by what is needed for pilot: most likely a readiness review + any gaps identified in that review.
+**Task:** Session 17 — **Pilot readiness audit**: review every Phase 1–6 deliverable against acceptance criteria in `architecture-plan.md` §14 and original requirements in `initial_purpose.txt`.
+**Status:** IN PROGRESS. Phase 6 landed in Session 16 (commit `2060d4a`). Master is clean + pushed to origin.
+**Priority:** Audit is the deliverable. Produce a comprehensive pass/fail report with evidence.
 
 ### What Session 17 Must Do
 

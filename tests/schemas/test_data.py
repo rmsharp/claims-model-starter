@@ -9,7 +9,6 @@ from model_project_constructor.schemas.v1 import (
     DataGranularity,
     DataReport,
     DataRequest,
-    QualityCheck,
 )
 from tests.schemas.fixtures import (
     make_data_report,

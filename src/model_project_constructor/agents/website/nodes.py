@@ -23,7 +23,8 @@ retry path).
 from __future__ import annotations
 
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from model_project_constructor.agents.website.governance_templates import (
     build_analysis_files,
@@ -53,7 +54,6 @@ from model_project_constructor.schemas.v1.repo import (
     GovernanceManifest,
     RepoProjectResult,
 )
-
 
 SleepFunc = Callable[[float], None]
 

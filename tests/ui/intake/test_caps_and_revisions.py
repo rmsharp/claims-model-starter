@@ -55,7 +55,7 @@ def test_revision_cap_triggers_draft_incomplete(
     reviews = review_sequence_from_fixture(revision_cap_fixture)
     for i, review_text in enumerate(reviews):
         resp = client.post(
-            f"/sessions/r-cap/review",
+            "/sessions/r-cap/review",
             data={"review": review_text},
         )
         assert resp.status_code == 200, resp.text

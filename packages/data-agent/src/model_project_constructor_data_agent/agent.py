@@ -10,7 +10,7 @@ those are caught at the outer boundary and surfaced as
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from model_project_constructor_data_agent.db import ReadOnlyDB
@@ -93,7 +93,7 @@ def _incomplete_report(request: DataRequest, missing: list[str]) -> DataReport:
         confirmed_expectations=[],
         unconfirmed_expectations=[],
         data_quality_concerns=[f"missing_field:{m}" for m in missing],
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
 
@@ -106,7 +106,7 @@ def _execution_failed_report(request: DataRequest, reason: str) -> DataReport:
         confirmed_expectations=[],
         unconfirmed_expectations=[],
         data_quality_concerns=[reason],
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
 
@@ -147,5 +147,5 @@ def _assemble_complete_report(
         confirmed_expectations=list(summary.confirmed_expectations),
         unconfirmed_expectations=list(summary.unconfirmed_expectations),
         data_quality_concerns=data_quality_concerns,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )

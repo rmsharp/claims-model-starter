@@ -21,9 +21,9 @@ from typing import Any
 from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
     GovernanceClassification,
-    InterviewContext,
     IntakeLLMClient,
     IntakeLLMError,
+    InterviewContext,
     NextQuestionResult,
 )
 

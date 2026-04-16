@@ -12,10 +12,9 @@ import json
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
-
 from model_project_constructor_data_agent.cli import app
 from model_project_constructor_data_agent.schemas import DataReport
+from typer.testing import CliRunner
 
 FIXTURE_REQUEST = (
     Path(__file__).resolve().parents[1] / "fixtures" / "sample_request.json"

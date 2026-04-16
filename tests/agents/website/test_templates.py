@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from model_project_constructor.agents.website.templates import (
     build_base_files,
     derive_project_name,
@@ -20,8 +18,8 @@ from model_project_constructor.agents.website.templates import (
     render_qmd_implementation_plan,
     render_qmd_initial_models,
     render_readme,
-    render_reports_intake_md,
     render_reports_data_md,
+    render_reports_intake_md,
 )
 from model_project_constructor.schemas.v1.data import DataReport
 from model_project_constructor.schemas.v1.intake import IntakeReport

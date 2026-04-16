@@ -16,8 +16,8 @@ from model_project_constructor.agents.intake.fixture import (
 )
 from model_project_constructor.ui.intake.runner import (
     CAPS,
-    InvalidPhaseError,
     IntakeSessionStore,
+    InvalidPhaseError,
     SessionSnapshot,
 )
 

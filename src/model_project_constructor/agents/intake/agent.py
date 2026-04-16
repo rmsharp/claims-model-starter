@@ -79,7 +79,7 @@ class IntakeAgent:
         answer_iter = iter(interview_answers)
         review_iter = iter(review_responses)
 
-        result = self.graph.invoke(state, config=config)
+        self.graph.invoke(state, config=config)
 
         for _ in range(max_turns):
             snapshot = self.graph.get_state(config)
@@ -112,7 +112,7 @@ class IntakeAgent:
             else:
                 raise RuntimeError(f"Unknown interrupt kind: {kind!r}")
 
-            result = self.graph.invoke(Command(resume=reply), config=config)
+            self.graph.invoke(Command(resume=reply), config=config)
         else:
             raise RuntimeError(
                 f"Intake graph exceeded max turns ({max_turns}). "

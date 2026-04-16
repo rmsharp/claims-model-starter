@@ -6,10 +6,10 @@ the key ``(class_name, "1.0.0")``.
 """
 
 from model_project_constructor.schemas.v1.common import (
+    SCHEMA_VERSION,
     CycleTime,
     ModelType,
     RiskTier,
-    SCHEMA_VERSION,
 )
 from model_project_constructor.schemas.v1.data import (
     DataGranularity,
@@ -19,16 +19,16 @@ from model_project_constructor.schemas.v1.data import (
     PrimaryQuery,
     QualityCheck,
 )
-from model_project_constructor.schemas.v1.repo import (
-    GovernanceManifest,
-    RepoProjectResult,
-    RepoTarget,
-)
 from model_project_constructor.schemas.v1.intake import (
     EstimatedValue,
     GovernanceMetadata,
     IntakeReport,
     ModelSolution,
+)
+from model_project_constructor.schemas.v1.repo import (
+    GovernanceManifest,
+    RepoProjectResult,
+    RepoTarget,
 )
 
 __all__ = [

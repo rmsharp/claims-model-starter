@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
@@ -30,7 +30,7 @@ app = typer.Typer(add_completion=False, help="Intake Agent CLI (Phase 3A)")
 @app.command()
 def run(
     fixture: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--fixture",
             help="Path to an intake_fixture/v1 YAML file.",
@@ -40,7 +40,7 @@ def run(
         ),
     ] = None,
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--output",
             "-o",

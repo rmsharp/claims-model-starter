@@ -46,8 +46,8 @@ class TestImport:
         adapter = PyGithubAdapter(
             host_url="https://api.github.com", private_token="dummy"
         )
-        assert callable(getattr(adapter, "create_project"))
-        assert callable(getattr(adapter, "commit_files"))
+        assert callable(adapter.create_project)
+        assert callable(adapter.commit_files)
 
     def test_constructor_does_not_make_network_call(self) -> None:
         """Creating an adapter with a dummy token must not reach the network.

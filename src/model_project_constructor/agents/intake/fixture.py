@@ -54,8 +54,8 @@ import yaml  # type: ignore[import-untyped]
 from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
     GovernanceClassification,
-    InterviewContext,
     IntakeLLMError,
+    InterviewContext,
     NextQuestionResult,
 )
 

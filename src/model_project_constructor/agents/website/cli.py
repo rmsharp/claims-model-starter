@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Annotated, Literal, Optional, cast
+from typing import Annotated, Literal, cast
 
 import typer
 
@@ -80,7 +80,7 @@ def run(
         ),
     ] = False,
     private_token: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--private-token",
             help="Host personal access token (required without --fake).",
@@ -94,7 +94,7 @@ def run(
         ),
     ] = DEFAULT_NAMESPACE,
     host_url: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--host-url",
             help=(
@@ -105,7 +105,7 @@ def run(
         ),
     ] = None,
     ci_platform: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--ci-platform",
             help=(
@@ -115,7 +115,7 @@ def run(
         ),
     ] = None,
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--output",
             "-o",

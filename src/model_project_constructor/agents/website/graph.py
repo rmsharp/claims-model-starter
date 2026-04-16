@@ -17,7 +17,8 @@ the graph topology trusts the node's routing decision.
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
@@ -49,10 +50,7 @@ def build_website_graph(
     default so transient errors yield real 1s/2s/4s delays.
     """
 
-    if sleep is None:
-        nodes = make_nodes(client)
-    else:
-        nodes = make_nodes(client, sleep=sleep)
+    nodes = make_nodes(client) if sleep is None else make_nodes(client, sleep=sleep)
 
     g = StateGraph(WebsiteState)
     g.add_node("create_project", nodes["create_project"])

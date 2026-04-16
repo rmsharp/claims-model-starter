@@ -6,7 +6,7 @@ Keep the happy-path constructors here so individual tests can build on them
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from model_project_constructor.schemas.v1 import (
@@ -25,7 +25,7 @@ from model_project_constructor.schemas.v1 import (
     RepoTarget,
 )
 
-FIXED_TS = datetime(2026, 4, 14, 12, 0, 0, tzinfo=timezone.utc)
+FIXED_TS = datetime(2026, 4, 14, 12, 0, 0, tzinfo=UTC)
 
 
 def make_model_solution(**overrides: Any) -> ModelSolution:

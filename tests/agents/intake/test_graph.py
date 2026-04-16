@@ -12,10 +12,10 @@ from pathlib import Path
 import pytest
 
 from model_project_constructor.agents.intake import (
-    FixtureLLMClient,
-    IntakeAgent,
     MAX_QUESTIONS,
     MAX_REVISIONS,
+    FixtureLLMClient,
+    IntakeAgent,
 )
 from model_project_constructor.agents.intake.fixture import load_fixture
 

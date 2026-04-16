@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -28,7 +28,6 @@ from tests.schemas.fixtures import (
     make_repo_target,
 )
 
-
 # -------------------- HandoffEnvelope --------------------
 
 class TestHandoffEnvelope:
@@ -40,7 +39,7 @@ class TestHandoffEnvelope:
             payload_type="IntakeReport",
             payload_schema_version="1.0.0",
             payload={"stub": True},
-            created_at=datetime(2026, 4, 14, tzinfo=timezone.utc),
+            created_at=datetime(2026, 4, 14, tzinfo=UTC),
             correlation_id="corr_001",
         )
         defaults.update(overrides)
@@ -121,7 +120,7 @@ def _make_envelope(payload_type: str, payload: dict[str, object]) -> HandoffEnve
         payload_type=payload_type,
         payload_schema_version="1.0.0",
         payload=payload,
-        created_at=datetime(2026, 4, 14, tzinfo=timezone.utc),
+        created_at=datetime(2026, 4, 14, tzinfo=UTC),
         correlation_id="corr_001",
     )
 
@@ -176,7 +175,7 @@ class TestLoadPayload:
             payload_type="IntakeReport",
             payload_schema_version="9.9.9",
             payload={},
-            created_at=datetime(2026, 4, 14, tzinfo=timezone.utc),
+            created_at=datetime(2026, 4, 14, tzinfo=UTC),
             correlation_id="c",
         )
         with pytest.raises(UnknownPayloadError) as exc_info:

@@ -8,7 +8,7 @@ twice. We split plan-a-question (LLM, one-shot) from ask-user (interrupt only).
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from langgraph.types import interrupt
@@ -16,9 +16,9 @@ from langgraph.types import interrupt
 from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
     GovernanceClassification,
-    InterviewContext,
     IntakeLLMClient,
     IntakeLLMError,
+    InterviewContext,
 )
 from model_project_constructor.agents.intake.state import (
     MAX_QUESTIONS,
@@ -124,15 +124,20 @@ def make_nodes(llm: IntakeLLMClient) -> dict[str, Any]:
         revisions = state.get("revision_cycles", 0)
 
         draft_fields = state.get("draft_fields") or {}
-        governance_fields = state.get("governance_fields") or {}
 
         missing: list[str] = list(draft_fields.get("missing_fields") or [])
-        if asked >= MAX_QUESTIONS and not state.get("believe_enough_info", False):
-            if "questions_cap_reached" not in missing:
-                missing.append("questions_cap_reached")
-        if not accepted and revisions >= MAX_REVISIONS:
-            if "revision_cap_reached" not in missing:
-                missing.append("revision_cap_reached")
+        if (
+            asked >= MAX_QUESTIONS
+            and not state.get("believe_enough_info", False)
+            and "questions_cap_reached" not in missing
+        ):
+            missing.append("questions_cap_reached")
+        if (
+            not accepted
+            and revisions >= MAX_REVISIONS
+            and "revision_cap_reached" not in missing
+        ):
+            missing.append("revision_cap_reached")
 
         status = "COMPLETE" if accepted and not missing else "DRAFT_INCOMPLETE"
 
@@ -233,7 +238,7 @@ def build_intake_report(
             governance=governance,
             stakeholder_id=state["stakeholder_id"],
             session_id=state["session_id"],
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
             questions_asked=state.get("questions_asked", 0),
             revision_cycles=state.get("revision_cycles", 0),
         )
