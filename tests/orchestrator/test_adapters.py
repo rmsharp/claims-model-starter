@@ -36,7 +36,7 @@ def _make_intake(
         status=status,  # type: ignore[arg-type]
         missing_fields=[],
         business_problem="Subrogation recovery rates dropped post-migration.",
-        proposed_solution="Score each claim for recovery likelihood.",
+        proposed_solution="Score each claim for recovery probability.",
         model_solution=ModelSolution(
             target_variable="successful_subrogation",
             target_definition=target_definition,

@@ -46,3 +46,6 @@
 - [ ] **First live end-to-end run** — Real LLM-backed pipeline run against a live GitLab/GitHub host.
 - [ ] **Automated resume-from-checkpoint** — CLI or orchestrator logic to resume a failed pipeline run from the last successful checkpoint.
 - [ ] **Ruff cleanup sweep** — Fix 62 pre-existing ruff errors in `ui/intake/` and other non-orchestrator files (43 auto-fixable).
+- [ ] **Tutorial UX: split code blocks** — Split multi-command code blocks in `docs/tutorial.md` into individual blocks so each command is independently copyable. Pandoc/GitHub rendering doesn't provide per-block copy buttons, so also consider rendering to a format that does (e.g. MkDocs, Docusaurus).
+- [ ] **Statistical terminology glossary** — Create `docs/style/statistical_terms.md` defining terms like probability vs likelihood, and inject it into agent system prompts so LLM-generated content uses correct statistical terminology instead of reproducing common conflations from training data.
+- [ ] **Fix unclosed SQLite connection warnings** — ~20 `ResourceWarning: unclosed database` warnings from `tests/agents/data/test_data_agent.py` and one from `tests/agents/intake/test_anthropic_client.py`. Source is `ReadOnlyDB` / LangGraph checkpoint SQLite not closing connections. Surfaced by Python 3.13's stricter GC. Not a correctness issue but noisy.

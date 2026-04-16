@@ -11,7 +11,7 @@ qa_pairs:
   - question: "What's the core business problem?"
     answer: >-
       We are losing profitable customers at renewal because our pricing
-      doesn't reflect their likelihood to shop.
+      doesn't reflect their probability of shopping.
   - question: "What decision will the model drive?"
     answer: >-
       It feeds the renewal rating engine — the output directly changes

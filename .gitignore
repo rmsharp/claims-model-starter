@@ -16,3 +16,5 @@ intake_sessions.db
 intake_sessions.db-shm
 intake_sessions.db-wal
 .orchestrator/
+my_intake.yaml
+my_intake_report.json

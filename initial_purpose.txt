@@ -59,7 +59,7 @@ Implement a system of prompts and/or external systems that guide adjusters throu
 
 This project will employ a supervised machine learning approach, focusing on predicting the probability of successful subrogation based on various claim attributes.
 	•	Target Variable: Successful Subrogation (Binary: 0 = Unsuccessful, 1 = Successful)
-	•	Concept to be Modeled: We will model the likelihood of successful subrogation based on features like:
+	•	Concept to be Modeled: We will model the probability of successful subrogation based on features like:
 	•	Completeness of collected information (e.g., presence/absence of police report, other party’s insurance information). This will be quantified through a custom scoring system.
 	•	Adjuster experience and training level (categorical).
 	•	Claim type (categorical).

@@ -55,7 +55,7 @@ draft:
   proposed_solution: >-
     Embed structured prompts in the claims workflow so adjusters capture the
     required evidence during intake, and surface a per-claim subrogation
-    likelihood score so claims likely to recover are prioritized. Success is
+    probability score so claims likely to recover are prioritized. Success is
     measured on subrogation recovery rate over a 12-month rolling window.
   model_solution:
     target_variable: successful_subrogation

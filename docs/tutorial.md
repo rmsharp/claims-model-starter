@@ -1,6 +1,8 @@
 # Tutorial: Running the Model Project Constructor Pipeline
 
-This tutorial walks you through your first end-to-end pipeline run, from a zero-credential dry run to a live GitLab or GitHub deployment.
+This tutorial walks you through your first end-to-end pipeline run, from generating an intake report to inspecting the scaffolded project. No API keys or credentials are needed -- everything runs locally with fixture data and an in-memory fake repository.
+
+A second tutorial (forthcoming) covers live LLM-backed interviews and real GitLab/GitHub deployments.
 
 ---
 
@@ -40,11 +42,152 @@ You should see 422+ tests pass with 97%+ coverage.
 
 ---
 
-## Step 1: Dry run with fixture data (no credentials needed)
+## Step 1: Create the intake fixture
 
-The fastest way to see the full pipeline in action is to run it with pre-built fixture data and a fake repository client. No API keys, no tokens, no network access required.
+The intake agent's input is a YAML file containing a scripted interview -- questions and answers that describe the business problem a model should solve. In production, these answers come from a live conversation with a business stakeholder (via the web UI or CLI). For this tutorial, we provide them as a fixture.
 
-### Run the script
+Create a file called `my_intake.yaml` in the project root with the following content:
+
+```yaml
+schema: intake_fixture/v1
+stakeholder_id: stakeholder_claims_001
+session_id: intake_subrogation_001
+domain: pc_claims
+initial_problem: >-
+  Subrogation recovery rates have dropped since rolling out a new claims system;
+  we want a model that helps adjusters flag recoverable claims and prompts them
+  to capture required evidence during intake.
+
+qa_pairs:
+  - question: "Can you describe the business problem in your own words?"
+    answer: >-
+      Since we deployed the new claims system ~14 months ago our subrogation
+      recovery rate dropped roughly 20%. That's millions of dollars a year
+      we're not recovering from at-fault parties.
+  - question: "What do you believe is causing the drop in recovery?"
+    answer: >-
+      Adjusters aren't capturing the information we need to pursue subrogation:
+      police reports, the other party's insurer, clear fault evidence. The new
+      UI makes those fields easy to skip and there's no KPI tying adjuster
+      performance to subrogation outcomes.
+  - question: "What solution have you been considering?"
+    answer: >-
+      A prompt-based system embedded in the claims workflow that reminds
+      adjusters to collect the required evidence, and a scoring model that
+      flags claims likely to succeed in subrogation so we can prioritize them.
+  - question: "If a model were to help, what would it predict and on what features?"
+    answer: >-
+      A binary classification: 1 = subrogation succeeded, 0 = did not. Features
+      would include completeness of captured info, adjuster experience, claim
+      type, time from incident to filing, damage amount, and evidence of fault.
+  - question: "What data do we have available for training?"
+    answer: >-
+      Our claims datawarehouse has records back to 2020 including outcomes.
+      We also have adjuster metadata and the structured intake fields from the
+      old and new systems.
+  - question: "How would you estimate the annual value of success?"
+    answer: >-
+      Subrogation recovery is roughly $30M/yr. A 10% lift is ~$3M annually
+      and I'd guess we could get somewhere between $2M and $4M.
+  - question: "Do any adjuster or claimant attributes we'd use count as protected?"
+    answer: >-
+      No — we deliberately exclude protected attributes. The model uses claim
+      features and adjuster tenure only.
+
+draft_after: 7
+
+draft:
+  business_problem: >-
+    Subrogation recovery dropped ~20% since deployment of a new claims
+    system, primarily because adjusters no longer capture evidence required
+    to pursue recovery (police reports, third-party insurer, fault evidence).
+    There is no adjuster KPI tying performance to subrogation outcomes and
+    the new UI deprioritizes the relevant intake fields.
+  proposed_solution: >-
+    Embed structured prompts in the claims workflow so adjusters capture the
+    required evidence during intake, and surface a per-claim subrogation
+    probability score so claims likely to recover are prioritized. Success is
+    measured on subrogation recovery rate over a 12-month rolling window.
+  model_solution:
+    target_variable: successful_subrogation
+    target_definition: >-
+      Binary outcome: 1 if a claim resulted in a non-zero subrogation recovery
+      within 18 months of first notice of loss, 0 otherwise.
+    candidate_features:
+      - information_completeness_score
+      - adjuster_tenure_years
+      - claim_type
+      - time_from_incident_to_filing_days
+      - damage_amount_usd
+      - fault_evidence_level
+    model_type: supervised_classification
+    evaluation_metrics:
+      - AUC
+      - precision_at_top_decile
+      - recall
+    is_supervised: true
+  estimated_value:
+    narrative: >-
+      A 10% lift on the current ~$30M/year subrogation recovery yields
+      approximately $3M annually. The range below brackets conservative and
+      optimistic scenarios.
+    annual_impact_usd_low: 2000000
+    annual_impact_usd_high: 4000000
+    confidence: medium
+    assumptions:
+      - "Current annual subrogation recovery is approximately $30M."
+      - "10% recovery lift is conservative given the proposed levers."
+      - "Adjuster compliance with prompts reaches 60%+ within 6 months."
+
+governance:
+  cycle_time: tactical
+  cycle_time_rationale: >-
+    Scores are consumed during claim intake (minutes-to-hours) and adjuster
+    workflows change on weekly cadence. Operational would imply streaming
+    auto-decisioning, which this system is not.
+  risk_tier: tier_3_moderate
+  risk_tier_rationale: >-
+    Advisory recommendation system only; humans make the subrogation
+    decision. No direct consumer-facing impact. Moderate financial exposure.
+  regulatory_frameworks:
+    - SR_11_7
+    - NAIC_AIS
+  affects_consumers: true
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT
+```
+
+The fixture has three sections:
+
+- **`qa_pairs`** -- The interview itself: seven question-answer pairs capturing the business problem, proposed solution, available data, estimated value, and governance considerations. This is what a business stakeholder provides.
+- **`draft`** -- The structured report the intake agent assembles from the answers. In a live run the LLM writes this; in a fixture run it is provided directly.
+- **`governance`** and **`review_sequence`** -- Risk classification and whether the stakeholder accepts the draft on first review.
+
+---
+
+## Step 2: Generate the IntakeReport JSON
+
+Run the intake agent against the fixture to produce the structured JSON report:
+
+```bash
+uv run model-intake-agent --fixture my_intake.yaml --output my_intake_report.json
+```
+
+This drives the intake agent through the scripted interview and writes the `IntakeReport` to `my_intake_report.json`. You can inspect it:
+
+```bash
+cat my_intake_report.json | python -m json.tool | head -20
+```
+
+You should see a JSON object with `"status": "COMPLETE"` and structured fields for the business problem, model solution, estimated value, and governance metadata.
+
+---
+
+## Step 3: Run the pipeline
+
+Now run the full pipeline using the intake report you just generated. The script uses a pre-built `DataReport` fixture (since the data agent needs a database connection for a real run) and an in-memory fake repository client.
 
 ```bash
 uv run python scripts/run_pipeline.py
@@ -52,7 +195,7 @@ uv run python scripts/run_pipeline.py
 
 This will:
 
-1. Load a pre-built `IntakeReport` (subrogation recovery model for a P&C claims organization) from `tests/fixtures/subrogation_intake.json`
+1. Load the pre-built `IntakeReport` from `tests/fixtures/subrogation_intake.json` (matching what you generated in Step 2)
 2. Load a pre-built `DataReport` (1.28M-row training set with quality checks) from `tests/fixtures/sample_datareport.json`
 3. Wire up a `WebsiteAgent` backed by an in-memory `FakeRepoClient`
 4. Run the full Intake -> Data -> Website pipeline through the orchestrator
@@ -116,7 +259,7 @@ This will:
 | `--run-id ID` | Auto-generated | Unique identifier for this run |
 | `--host gitlab\|github` | `gitlab` | Target host platform |
 | `--checkpoint-dir PATH` | `.orchestrator/checkpoints` | Where checkpoint envelopes are written |
-| `--live` | off | Use a real repo host (see Step 3) |
+| `--live` | off | Use a real repo host (see Step 5) |
 
 ### Try GitHub CI output
 
@@ -128,7 +271,7 @@ The generated project will contain `.github/workflows/ci.yml` instead of `.gitla
 
 ---
 
-## Step 2: Inspect the checkpoints
+## Step 4: Inspect the checkpoints
 
 Every inter-agent handoff is persisted as a JSON envelope in the checkpoint directory. After a run, you can inspect what each agent produced:
 
@@ -136,13 +279,15 @@ Every inter-agent handoff is persisted as a JSON envelope in the checkpoint dire
 ls .orchestrator/checkpoints/run_*/
 ```
 
-Each file is a `HandoffEnvelope` (or a `.result.json` for the terminal artifact):
+View the intake report that was passed to the data stage:
 
 ```bash
-# View the intake report that was passed to the data stage
 cat .orchestrator/checkpoints/run_*/IntakeReport.json | python -m json.tool | head -30
+```
 
-# View the final project result
+View the final project result:
+
+```bash
 cat .orchestrator/checkpoints/run_*/RepoProjectResult.result.json | python -m json.tool
 ```
 
@@ -156,11 +301,11 @@ The checkpoint layout tells you exactly how far a run got:
 
 ---
 
-## Step 3: Live run against a real repo host
+## Step 5: Live run against a real repo host
 
 When you are ready to create an actual repository project, set up credentials and use the `--live` flag.
 
-### 3a: Set up environment variables
+### 5a: Set up environment variables
 
 Copy the template and fill in your credentials:
 
@@ -196,7 +341,7 @@ export $(grep -v '^#' .env | xargs)
 source <(grep -v '^#' .env | sed 's/^/export /')
 ```
 
-### 3b: Run with --live
+### 5b: Run with --live
 
 ```bash
 uv run python scripts/run_pipeline.py --live --host gitlab
@@ -210,7 +355,7 @@ For GitHub:
 uv run python scripts/run_pipeline.py --live --host github
 ```
 
-### 3c: Customize the target
+### 5c: Customize the target
 
 Set the `MPC_NAMESPACE` environment variable to control where the project is created:
 
@@ -232,63 +377,7 @@ export MPC_HOST_URL="https://github.mycompany.com/api/v3"
 
 ---
 
-## Step 4: Run individual agents
-
-Each agent can also be run standalone. This is useful for testing or when you want to produce intake/data reports with a real LLM before feeding them into the pipeline.
-
-### Intake Agent (with fixture)
-
-```bash
-uv run model-intake-agent --fixture tests/fixtures/subrogation.yaml \
-    --output my_intake_report.json
-```
-
-This drives the intake interview with scripted answers from the fixture file and writes the `IntakeReport` to `my_intake_report.json`.
-
-### Intake Agent (web UI)
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-uv run uvicorn model_project_constructor.ui.intake.app:app --port 8000
-```
-
-Then open `http://localhost:8000` to conduct a live interview via the web UI.
-
-### Data Agent
-
-```bash
-uv run python -m model_project_constructor_data_agent run \
-    --request my_data_request.json \
-    --output my_data_report.json \
-    --fake-llm
-```
-
-Use `--fake-llm` for a dry run without Anthropic credentials, or omit it for real LLM-generated queries.
-
-### Website Agent
-
-```bash
-uv run python -m model_project_constructor.agents.website \
-    --intake my_intake_report.json \
-    --data my_data_report.json \
-    --fake
-```
-
-Use `--fake` for an in-memory dry run. For a live host:
-
-```bash
-uv run python -m model_project_constructor.agents.website \
-    --intake my_intake_report.json \
-    --data my_data_report.json \
-    --host gitlab \
-    --host-url https://gitlab.com \
-    --namespace data-science/model-drafts \
-    --private-token "$GITLAB_TOKEN"
-```
-
----
-
-## Step 5: Using the orchestrator programmatically
+## Step 6: Using the orchestrator programmatically
 
 For integration into larger systems, use the `run_pipeline` function directly:
 
@@ -373,10 +462,12 @@ A successful run creates a repository project with:
 |------|---------|
 | `README.md` | Project overview with business context |
 | `.gitlab-ci.yml` or `.github/workflows/ci.yml` | CI pipeline for the model project |
-| `docs/business_understanding.md` | Business problem and proposed solution |
-| `docs/implementation_plan.md` | Implementation and measurement plan |
-| `data/README.md` | Data documentation (queries, validation, EDA) |
-| `src/` | Initial model build scaffolding |
-| `governance/` | Governance artifacts (proportional to risk tier) |
+| `analysis/` | Quarto notebooks: business understanding, data, EDA, feature engineering, initial models, implementation plan, extensions |
+| `data/` | Data documentation and datasheets |
+| `queries/` | SQL queries (primary + quality checks) |
+| `reports/` | Intake and data reports in JSON and Markdown |
+| `src/` | Initial model build scaffolding (data loading, features, models, evaluation) |
+| `tests/` | Test stubs for each source module |
+| `governance/` | Governance artifacts (proportional to risk tier): model card, deployment gates, monitoring plan, regulatory compliance |
 
 The project is a **draft scaffold** for a data science team to refine -- it contains reasonable defaults and marks areas that need human judgment.

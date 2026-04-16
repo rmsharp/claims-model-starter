@@ -3,7 +3,7 @@
   "status": "COMPLETE",
   "missing_fields": [],
   "business_problem": "Subrogation recovery dropped ~20% since deployment of a new claims system, primarily because adjusters no longer capture evidence required to pursue recovery (police reports, third-party insurer, fault evidence). There is no adjuster KPI tying performance to subrogation outcomes and the new UI deprioritizes the relevant intake fields.",
-  "proposed_solution": "Embed structured prompts in the claims workflow so adjusters capture the required evidence during intake, and surface a per-claim subrogation likelihood score so claims likely to recover are prioritized. Success is measured on subrogation recovery rate over a 12-month rolling window.",
+  "proposed_solution": "Embed structured prompts in the claims workflow so adjusters capture the required evidence during intake, and surface a per-claim subrogation probability score so claims likely to recover are prioritized. Success is measured on subrogation recovery rate over a 12-month rolling window.",
   "model_solution": {
     "target_variable": "successful_subrogation",
     "target_definition": "Binary outcome: 1 if a claim resulted in a non-zero subrogation recovery within 18 months of first notice of loss, 0 otherwise.",
