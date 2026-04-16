@@ -5,30 +5,47 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 20 — **User-directed.** Wiki documentation complete. Pipeline has working script + tutorial + comprehensive wiki. CI green, 422 tests at 97.24% coverage.
-**Status:** Ready for direction.
-**Priority:** See "Up Next" in `BACKLOG.md` for candidates. Content Recommendations page lists 10 prioritized wiki additions.
+**Task:** Session 20 — Wiki expansion: 7 additional wiki pages across 2 sessions (A and B).
+**Status:** Ready to start Session 20A.
+**Priority:** User-approved plan. User is separately working on pages #6 (FAQ), #7 (Comparison), #10 (Deployment guide).
 
-### What Session 20 Must Do
+### What Session 20A Must Do
 
-**Orient first. Read this block, Session 19's handoff below, SAFEGUARDS.md. Wait for direction.**
+**Deliverable:** 3 wiki pages that share the agent-internals codebase surface:
+1. **#2 Intake interview design guide** — Read the intake agent's system prompt, LangGraph graph structure, question-selection logic, governance metadata assessment. Explain the interview strategy for stakeholders and operators.
+2. **#4 Schema reference** — Read all Pydantic models in `src/model_project_constructor/schemas/v1/`, `schemas/envelope.py`, `schemas/registry.py`, and agent-specific schemas. Document every field, type, constraint, and validator.
+3. **#5 Security considerations** — Analyze credential handling (env vars), network boundaries (which agents call which external services), data sensitivity (what the LLM sees), read-only DB constraint.
 
-### Key files for Session 20
+**After writing:** Copy new pages to the wiki repo at `/Users/rmsharp/Development/claims-model-starter.wiki/`, commit, and push. Update `Home.md`, `_Sidebar.md`, and `Content-Recommendations.md` in both repos.
 
-- `docs/wiki/claims-model-starter/` — 14 wiki pages (1,512 lines total). GitHub wiki-ready markdown.
-- `docs/wiki/claims-model-starter/Home.md` — Landing page with navigation to all pages.
-- `docs/wiki/claims-model-starter/Software-Bill-of-Materials.md` — SBOM covering both the constructor and generated projects, including 87 locked packages.
-- `docs/wiki/claims-model-starter/Content-Recommendations.md` — 10 prioritized additions for the wiki.
-- `docs/wiki/claims-model-starter/_Sidebar.md` — GitHub wiki sidebar navigation.
-- `BACKLOG.md` — Still has items from Session 18 user feedback.
+**Then close out and leave Session 20B handoff.**
 
-### Gotchas for Session 20
+### What Session 20B Must Do (after 20A)
 
-1. **Wiki pages are not yet pushed to a GitHub wiki repo.** They are markdown files under `docs/wiki/claims-model-starter/` in the main repo. To publish, clone the wiki repo (`<repo>.wiki.git`) and copy these files in, or use `gh` CLI wiki commands if available.
-2. **SBOM locked versions are from `uv.lock` as of this session.** If dependencies are updated, the SBOM page needs updating. Consider the Content Recommendations suggestion to add SPDX/CycloneDX auto-generation.
-3. **BACKLOG.md still lists "Pilot readiness audit" and "Ruff cleanup sweep" as open** — both were completed in Session 17. Should be moved to Completed section.
-4. **The Content Recommendations page identifies "Worked examples" and "Intake interview design guide" as highest-priority additions.** The subrogation example from `initial_purpose.txt` is a natural first worked example.
-5. **No license column in the SBOM yet.** The Content Recommendations page notes that `PyGithub` uses LGPL-3.0, which has linking requirements (satisfied by Python's import mechanism). Adding license info is recommended for compliance review.
+**Deliverable:** 4 wiki pages:
+1. **#1 Worked examples** — Trace the subrogation scenario from `initial_purpose.txt` through fixture -> IntakeReport -> DataReport -> generated project. Show the full file listing.
+2. **#3 Extending the pipeline** — Document extension points: new agents (HandoffEnvelope + schema registry), new host adapters (RepoClient protocol), new governance artifacts (tier gates in `governance_templates.py`), new regulatory frameworks.
+3. **#8 Changelog** — Generate from `git log` history. Group by milestone/phase.
+4. **#9 Contributing guide** — Derive from existing config: ruff rules, mypy strict, 94% coverage, commit message format, CI pipeline.
+
+### Key files for Session 20A
+
+- `src/model_project_constructor/agents/intake/` — System prompt, graph, interview logic
+- `src/model_project_constructor/schemas/v1/` — All Pydantic models (IntakeReport, DataReport, etc.)
+- `src/model_project_constructor/schemas/envelope.py` — HandoffEnvelope
+- `src/model_project_constructor/schemas/registry.py` — Schema registry
+- `src/model_project_constructor/orchestrator/config.py` — OrchestratorSettings (credential handling)
+- `src/model_project_constructor/agents/website/graph.py` — Website agent network calls
+- `docs/wiki/claims-model-starter/` — Existing 14 wiki pages (update Home, Sidebar, Content Recommendations)
+- `/Users/rmsharp/Development/claims-model-starter.wiki/` — Cloned wiki repo (push new pages here)
+
+### Gotchas for Session 20A
+
+1. **Wiki repo is already cloned** at `/Users/rmsharp/Development/claims-model-starter.wiki/`. Pull before copying to avoid conflicts (user may have pushed pages #6, #7, #10).
+2. **License is now MIT** (changed this session, commit `f2f2a70`). Both `pyproject.toml` files updated. `LICENSE` file exists at project root.
+3. **BACKLOG.md still has stale items** ("Pilot readiness audit", "Ruff cleanup sweep") listed as open — completed in Session 17. Low priority to fix but don't be confused by them.
+4. **The duplicate "What Session 18 Did" block** in SESSION_NOTES.md (lines ~38-54 and ~64-73) is a known clutter issue from Session 18. Ignore it.
+5. **Update both repos** when adding wiki pages: `docs/wiki/claims-model-starter/` in the main repo AND `/Users/rmsharp/Development/claims-model-starter.wiki/` for the live wiki.
 
 ---
 
@@ -67,6 +84,12 @@
 **Self-assessment:**
 - **What went well:** (a) Used 3 parallel research agents to simultaneously explore the generated project structure, all dependencies, and the architecture docs — this made orientation fast (~3 min for all 3 reports). (b) Every wiki page was verified against source code, not written from memory. Read `templates.py`, `governance_templates.py`, `pyproject.toml` (root + data-agent), `ci.yml`, `OPERATIONS.md`, `initial_purpose.txt`, and `tutorial.md` directly. (c) The SBOM is comprehensive — covers both the constructor's dependencies and the generated project's dependencies, with locked versions from `uv.lock`. (d) The Content Recommendations page provides actionable next steps with audience and rationale for each recommendation. (e) Zero stakeholder corrections needed.
 - **What could be better:** (a) Could have added license information to the SBOM — the Content Recommendations page identifies this as a gap, but I could have addressed it in this session. (b) The Glossary "statistical terms" section is short — the backlog item for a statistical terminology glossary could expand it significantly.
+- **Quality bar:** Good. 14 pages verified against source code, zero corrections needed.
+
+**Additional work (same session, after initial close-out):**
+16. Changed license from Proprietary to MIT: `LICENSE` file, both `pyproject.toml` files, SBOM wiki page. Commit `f2f2a70`.
+17. Published all 14 wiki pages to GitHub wiki repo at `/Users/rmsharp/Development/claims-model-starter.wiki/`. Wiki is live at `https://github.com/rmsharp/claims-model-starter/wiki`.
+18. Planned 7 additional wiki pages across 2 follow-up sessions (20A and 20B), approved by user. User is separately producing pages #6 (FAQ), #7 (Comparison), #10 (Deployment guide).
 - **Quality bar:** Good. The wiki covers the full system comprehensively. No corrections needed. The Content Recommendations page ensures the next session has clear priorities for expanding the wiki.
 
 ### Key files for Session 19
