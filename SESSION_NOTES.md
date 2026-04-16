@@ -5,21 +5,120 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 21 — open. All 7 Claude-owned wiki pages from the Session 19 plan are shipped. Next deliverable is **user's choice**. See "What Session 21 should do" below for three recommended candidates.
-**Status:** Session 20B complete. Session 21 ready.
-**Priority:** User-approved plan from Session 19's handoff is now fully delivered. User's parallel track for pages #6 (FAQ), #7 (Comparison), #10 (Deployment guide) remains outside Claude scope.
+**Task:** Session 22 — open. Gotcha cleanup from Session 20B's handoff is now complete (Session 21). Next deliverable is **user's choice**. See "What Session 22 should do" below for three recommended candidates — unchanged from Session 21's options since none were picked up by 21.
+**Status:** Session 21 complete (gotcha cleanup). Session 22 ready.
+**Priority:** Pilot-ready codebase with authoritative CHANGELOG.md, clean BACKLOG.md "Up Next", and collapsed SESSION_NOTES.md duplicates.
 
-### What Session 21 should do
+### What Session 22 should do
 
-Three candidates ranked by readiness and value:
+Three candidates ranked by readiness and value (identical to the list Session 21 inherited and did not consume):
 
-1. **First live end-to-end pipeline run** (BACKLOG §"Up Next" item 2). The pilot readiness is at 97.18% coverage + clean CI + MIT license + live wiki. A real LLM-backed run against a live GitLab or GitHub repo closes the loop between "tests pass" and "it works with real tokens." Requires `ANTHROPIC_API_KEY` + either `GITLAB_PRIVATE_TOKEN` or `GITHUB_PRIVATE_TOKEN`. Session deliverable: one live run, captured output, write up what broke and what worked.
+1. **First live end-to-end pipeline run** (BACKLOG §"Up Next" item 1, "First live end-to-end run"). The pilot readiness is at 97.18% coverage + clean CI + MIT license + live wiki. A real LLM-backed run against a live GitLab or GitHub repo closes the loop between "tests pass" and "it works with real tokens." Requires `ANTHROPIC_API_KEY` + either `GITLAB_PRIVATE_TOKEN` or `GITHUB_PRIVATE_TOKEN`. Session deliverable: one live run, captured output, write up what broke and what worked.
 
-2. **Automated resume-from-checkpoint** (BACKLOG §"Up Next" item 3). Phase 5 already persists per-stage checkpoints. Building the operator-facing `--resume <run_id>` CLI that picks up from the last successful stage is a natural extension, touches only `orchestrator/pipeline.py` + `scripts/run_pipeline.py`, and is directly useful after a failed live run.
+2. **Automated resume-from-checkpoint** (BACKLOG §"Up Next" item 2). Phase 5 already persists per-stage checkpoints. Building the operator-facing `--resume <run_id>` CLI that picks up from the last successful stage is a natural extension, touches only `orchestrator/pipeline.py` + `scripts/run_pipeline.py`, and is directly useful after a failed live run.
 
-3. **Statistical terminology glossary injection** (BACKLOG §"Up Next" item 9). Create `docs/style/statistical_terms.md` and inject it into the intake-agent and data-agent system prompts. Enforces "probability" vs "likelihood" (and other common conflations) in LLM-generated content without a full re-evaluation pass on every call.
+3. **Statistical terminology glossary injection** (BACKLOG §"Up Next" item 7, "Statistical terminology glossary"). Create `docs/style/statistical_terms.md` and inject it into the intake-agent and data-agent system prompts. Enforces "probability" vs "likelihood" (and other common conflations) in LLM-generated content without a full re-evaluation pass on every call.
 
 Any of these is a one-session deliverable. Let the user pick.
+
+---
+
+## Session 20B Handoff Evaluation (by Session 21)
+**Score: 9/10.** Session 20B's handoff was highly actionable — the ACTIVE TASK block gave me three pre-scoped candidates with file pointers, and the Gotchas list at lines 107-115 named the exact three cleanup items that became this session's deliverable when the user redirected with "clean up gotchas."
+
+- **What helped:** (a) Gotcha #2 (stale `CHANGELOG.md`) not only flagged the problem but enumerated three resolution options (refresh / delete / leave-and-mark) — this shortened the scoping conversation with the user to one question. (b) Gotcha #3 (BACKLOG items #1 and #4 complete per Session 17) named the exact items and pointed to the authoritative source (Session 17's close-out at line 305), so I verified in one grep rather than re-auditing. (c) Gotcha #4 (duplicate "What Session 18 Did" blocks) gave the approximate line and attributed the origin ("carried from Session 18"), pointing me at Session 19's handoff evaluation at line 199 which confirmed which block was draft and which was polished. (d) The "Key files for any of the three candidates" section, even though I didn't pursue any candidate, established that the handoff author had anticipated the alternate paths. (e) Learning #15 and Learning #16 (added by 20A and 20B respectively) gave me a disciplined bias toward `Grep` + `Read` over speculative agent launches for a small cleanup task.
+- **What was missing:** (a) No explicit note that the methodology mandates CHANGELOG.md as authoritative — the user had to redirect me when I proposed "refresh / delete / mark stale" as open options. Reading `docs/methodology/README.md:99` and `:215` (which I did after the redirect) would have preempted the question. This is on me more than on 20B, since the methodology guidance is in `docs/methodology/README.md`, not in the gotchas — but a single line in the gotcha pointing there would have saved a round-trip. (b) Gotcha #2's "option (c)" suggested "leave it as a developer-only commit log and mark it as such in its header" — this option **contradicts methodology** (CHANGELOG is authoritative, not a subordinate to the wiki). A handoff should not propose options that violate project conventions.
+- **What was wrong:** Nothing factually wrong. The duplicate Session 18 blocks were at approximately the line numbers 20B described; BACKLOG items #1 and #4 were indeed complete per Session 17; `CHANGELOG.md` was indeed stale.
+- **ROI:** ~4× return. Reading the handoff (~4 min) saved ~15 min of discovery on what needed cleanup and where.
+
+### What Session 21 Did
+**Deliverable:** Gotcha cleanup — refreshed `CHANGELOG.md` to authoritative/complete per methodology, migrated two completed BACKLOG items to CHANGELOG, and collapsed duplicate Session 18 blocks in this file. **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Commits:** (pending this session's doc commit) — single `docs(session-21): clean up gotchas` commit landing CHANGELOG refresh + BACKLOG trim + SESSION_NOTES dedupe + this close-out.
+
+**What was done:**
+
+1. **Refreshed `CHANGELOG.md`** from the Session 0 stub (19 lines) to a full authoritative record (155 lines of net additions). Structure follows Keep a Changelog with `[Unreleased]`, `[0.1.0 — Pilot Ready]`, `[0.0.1 — Project bootstrap]` sections. Covers every phase (1, 2A, 2B, 3A, 3B, 4A, 4B, A, B, C, D, 5, 6), every post-phase session (17 audit + CI fix, 18 tutorial, 19/20A/20B wiki), coverage-floor progressions (80→90→93→94), and the license change. Every entry cites commit hashes from `git log --reverse`. Added a leading paragraph establishing CHANGELOG.md as authoritative and the wiki Changelog as audience-facing and subject to drift (per user's direction that the "wiki page characteristics may change over time and level of detail").
+
+2. **Removed BACKLOG "Up Next" items** "Pilot readiness audit" and "Ruff cleanup sweep" — both completed in Session 17 (`17f661d` resolved all 62 ruff errors; `b9c87c7` published the audit and declared PILOT-READY). Added a note in the "Up Next" preamble pointing readers to CHANGELOG.md for that history. `BACKLOG.md` now lists 8 open items (down from 10).
+
+3. **Collapsed duplicate Session 18 blocks in SESSION_NOTES.md.** Replaced the Session 17 Handoff Evaluation stub ("Score: 9/10. (Unchanged from mid-session write — see below.)") with the full evaluation content from the "Previous Session 17 Handoff Evaluation" block below. Then deleted the entire "Previous ..." block and the draft "What Session 18 Did" block (Commits: TBD, brief self-assessment). The polished "What Session 18 Did" block at line 258 is preserved as the single source of truth.
+
+**Verification:**
+
+- `grep -c "Pilot readiness audit\|Ruff cleanup sweep" BACKLOG.md` → `0` (confirmed removed).
+- `grep "What Session 18 Did" SESSION_NOTES.md` → three matches, but only **one** is an active block header (line 270). The other two are historical references inside 20B's gotcha #4 (line 117, a now-resolved TODO) and Session 19's handoff-eval text (line 199, an historical observation). No duplicate blocks remain.
+- `git diff --stat` → `BACKLOG.md | 4 +-`, `CHANGELOG.md | 155 +++++++++++++++++++++++++++++++++++++++++++++++++++----`, `SESSION_NOTES.md | 33 +++++-------` (net +3 insertions, excluding this close-out write-up).
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Re-read `SAFEGUARDS.md` in full, read methodology guidance for CHANGELOG (`docs/methodology/README.md:99,215,225`, `SESSION_RUNNER.md:15`, `SAFEGUARDS.md:77`), verified Session 17's close-out claims before migrating items, read both duplicate blocks before choosing which to delete, read the wiki Changelog to avoid duplicating audience-facing tone.
+- **Implementations read, not just descriptions:** Yes. Ran `git log --reverse --pretty=format:'%ad %h %s'` to enumerate every commit; cross-referenced commit hashes against Session 17's self-assessment (which says "Fixed all ruff errors (56 auto + 6 manual)" and lists `66b44c8 17f661d d62efc2 b8d8d7e`) before migrating items.
+- **Stakeholder corrections needed:** 1. User had to redirect my initial scoping question ("which of three options for CHANGELOG?") by pointing me at the methodology. Resolved in one round-trip.
+- **What I got right:** (a) Wrote Phase 1B stub **before** technical work (failure mode #14 protection held). (b) Single `docs(session-21)` commit planned — avoids failure mode #18 (planning-to-implementation bleed). (c) CHANGELOG refresh includes a leading paragraph making the authority relationship explicit so future sessions don't repeat my initial scoping confusion. (d) BACKLOG removal preserves a preamble pointer to CHANGELOG so readers who remember the old items can find them. (e) SESSION_NOTES dedupe preserved the polished block and eliminated the draft — the opposite would have been a silent regression. (f) Verified via grep counts, not memory. (g) Scoped tightly — did NOT refactor unrelated BACKLOG items, did NOT update ROADMAP.md (even though it has a related "Task tracking (BACKLOG, CHANGELOG, ROADMAP)" reference), did NOT touch the wiki Changelog (user's parallel track / audience-facing layer). One deliverable, close out.
+- **What I got wrong:** (a) Initially offered the user three open options (refresh / delete / mark-stale) on CHANGELOG before reading the methodology. Should have read `docs/methodology/README.md` first and arrived at the correct scoping directly. -1 point. (b) BACKLOG renumbering cascades: removing items #1 and #4 shifts items #2, #3, #9 (the three candidates referenced in the prior ACTIVE TASK) to #1, #2, #7. I updated the ACTIVE TASK references but cannot retroactively update historical handoffs that cite the old numbers. I mitigated by using the candidate **names** in the updated ACTIVE TASK text, not just numbers. (c) The `CHANGELOG.md` Phase 2A entry attributes the AST-walk decoupling test to Session 4 based on the commit message — verified the file exists (`tests/agents/data/test_data_agent_decoupling.py` per earlier grep output) but did not read the actual test to confirm the AST-walk description holds. Low risk because the commit message is definitive on what was added.
+- **Quality bar vs previous sessions:** Meets 20A/20B. Small-scope cleanup delivered in a single session with rigorous verification. The CHANGELOG is now the canonical record; the wiki is free to drift without losing authority.
+
+### Phase 3C: Learnings
+
+Adding to the `Learnings` table in SESSION_RUNNER.md as #17:
+
+| # | Learning | Source | When to Apply |
+|---|----------|--------|---------------|
+| 17 | Methodology guidance for shared files (CHANGELOG, BACKLOG, ROADMAP, docs/methodology/*) lives primarily in `docs/methodology/README.md` and secondarily in `SESSION_RUNNER.md`/`SAFEGUARDS.md` inline notes. Before proposing options on how a shared file should be maintained, **read `docs/methodology/README.md` first** — specifically its "templates" section (`:99,:215`). A handoff that offers options including one that contradicts methodology (e.g., "mark CHANGELOG as subordinate to wiki") is a protocol violation; methodology outranks handoff suggestions. | Session 21 (CHANGELOG scoping round-trip) | Any session that is about to modify CHANGELOG.md, BACKLOG.md, ROADMAP.md, SESSION_NOTES.md, SAFEGUARDS.md, SESSION_RUNNER.md, or the methodology docs themselves. |
+
+### Phase 3D: Handoff to Session 22
+
+Full "What Session 22 should do" content is in the **ACTIVE TASK** block at the top of this file. Three candidates, ranked by readiness and value — identical to the list Session 21 inherited.
+
+**Key files for each candidate** (unchanged from 20B's handoff, re-listed for convenience):
+
+For candidate #1 (live run):
+- `scripts/run_pipeline.py` — has `--live` flag; needs `ANTHROPIC_API_KEY` + `GITLAB_PRIVATE_TOKEN` or `GITHUB_PRIVATE_TOKEN`
+- `OPERATIONS.md` — operator runbook
+- `src/model_project_constructor/config.py` — `OrchestratorSettings.from_env()` and `require_*` guards
+- `.env.example` — required env-var template
+- `docs/tutorial.md` §5 "Live host"
+
+For candidate #2 (resume-from-checkpoint):
+- `src/model_project_constructor/orchestrator/pipeline.py` — current `run_pipeline` and `CheckpointStore`
+- `src/model_project_constructor/orchestrator/checkpoints.py` — checkpoint layout
+- `scripts/run_pipeline.py` — CLI entry point to extend with `--resume`
+- `PipelineStatus` literal — `FAILED_AT_*` values are the resume points
+- Tests: `tests/orchestrator/test_pipeline.py` — pattern for pipeline tests
+
+For candidate #3 (statistical terminology glossary):
+- `src/model_project_constructor/agents/intake/anthropic_client.py:33-50` — system prompt
+- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` — data-agent system prompt
+- `initial_purpose.txt` — has prior "likelihood → probability" edits (Session 18)
+- `tests/fixtures/subrogation.yaml` — has prior edits; a regression test would check the glossary terms don't appear misused in fixtures
+
+### Gotchas for Session 22
+
+1. **Wiki is live and fully up to date** as of 20B's commit `2fa274a` on `master` of `claims-model-starter.wiki`. If doing more wiki work, pull first — user is producing #6/#7/#10 in parallel.
+2. **`CHANGELOG.md` is now authoritative and complete** as of Session 21 (commit pending). Treat it as the source of truth. Wiki Changelog at `docs/wiki/claims-model-starter/Changelog.md` is the audience-facing mirror and may drift; do not use it as a canonical reference. When completing work, add an entry here **first**, then consider updating the wiki mirror if the audience-facing summary would benefit.
+3. **`BACKLOG.md` "Up Next" items renumbered** after Session 21's cleanup. If any historical handoff or wiki page cites old BACKLOG item numbers (e.g., 20B handoff's "item 2", "item 3", "item 9"), the current numbers are 1, 2, 7 respectively. The ACTIVE TASK block above uses the **current** numbers and the candidate **names** to be robust.
+4. **If doing live run (candidate #1):** the fake-adapter path is solid but the live GitLab path hasn't been exercised since Phase 5. Expect some `python-gitlab` version-resolution pain; check `OPERATIONS.md` §"Credentials" first.
+5. **If doing resume (candidate #2):** the existing `CheckpointStore` writes per-stage; verify it also writes pre-stage markers (so you can tell "`FAILED_AT_DATA` with DataRequest persisted" apart from "`FAILED_AT_DATA` before DataRequest was computed"). The resume strategy depends on this distinction.
+6. **If doing glossary (candidate #3):** Session 18 already did a "likelihood → probability" sweep across fixtures. New glossary terms can land as system-prompt extensions without touching fixtures — but add a regression test that runs the data-agent prompt against a known-safe input and asserts the output uses "probability" not "likelihood".
+7. **Re-read `SAFEGUARDS.md` and `SESSION_RUNNER.md`** at the start of Session 22. Failure modes #14 (ghost sessions) and #18 (planning-to-implementation bleed) remain the highest-risk patterns for this project.
+8. **The user's preference for "probability" over "likelihood"** (when referring to `P(event)`) is a durable correction — see `Session 18` handoff. Honor it in all new LLM-adjacent prose.
+9. **Methodology guidance for shared files lives in `docs/methodology/README.md`** — read it before proposing options on CHANGELOG, BACKLOG, ROADMAP, or any methodology doc. See Learning #17.
+
+### Session 21 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] CHANGELOG.md refreshed with commit-level authoritative history
+- [x] BACKLOG.md "Up Next" pruned of completed items (#1 and #4)
+- [x] SESSION_NOTES.md duplicate Session 18 blocks collapsed
+- [x] Phase 3A: Session 20B handoff evaluated, scored, written above
+- [x] Phase 3B: Self-assessment scored and written above
+- [x] Phase 3C: Learning #17 queued for SESSION_RUNNER.md
+- [x] Phase 3D: Handoff to Session 22 above (ACTIVE TASK + candidates + key files + gotchas)
+- [ ] Phase 3E: Commit main-repo changes (CHANGELOG.md + BACKLOG.md + SESSION_NOTES.md) — pending
+- [ ] Phase 3F: Verbal report to user — pending
 
 ---
 
@@ -253,7 +352,12 @@ Compared to the standard set by previous sessions:
 *Session history accumulates below this line. Newest session at the top.*
 
 ### Session 17 Handoff Evaluation (by Session 18)
-**Score: 9/10.** (Unchanged from mid-session write — see below.)
+**Score: 9/10.** Session 17's handoff was thorough and actionable — the ACTIVE TASK was clear about being user-directed, the gotchas were accurate, and the key files pointed to exactly what I needed.
+
+- **What helped:** (a) The key files list included `OPERATIONS.md` and `.env.example`, which were essential references when writing the script and tutorial. (b) Gotcha #4 (coverage at 97.24%) let me skip pre-flight coverage checks. (c) The "Up Next" candidates in the ACTIVE TASK gave clear context for what the user might ask for. (d) Session 17's self-assessment confirmed zero stakeholder corrections — set expectations that the codebase was stable.
+- **What was missing:** No mention of the `MetricsSnapshot` field names (`run_count` / `agent_latency`, not `total_runs` / `agent_latencies`). Cost ~2 min of debugging. Minor since I should have read the source directly rather than guessing field names.
+- **What was wrong:** Nothing factually wrong. Every file path and claim held up.
+- **ROI:** ~4x return. Reading the handoff (~4 min) saved ~15 min of orientation and discovery.
 
 ### What Session 18 Did
 **Deliverable:** End-to-end pipeline run script + tutorial, user-tested from a fresh clone with iterative fixes.
@@ -273,25 +377,6 @@ Compared to the standard set by previous sessions:
 - **What went well:** (a) User-tested the tutorial from a fresh clone and caught real issues (missing ui extra, unpushed commits, copy-paste UX). (b) The iterative fix cycle was fast — each issue was a 1-commit fix. (c) The tutorial restructuring (adding YAML fixture inline + JSON generation step) was a significant UX improvement driven by user feedback. (d) The likelihood→probability fix was thorough — grepped the entire repo, found all 5 occurrences.
 - **What could be better:** (a) Should have pushed commits immediately after the initial commit — the user's fresh clone didn't have the script. (b) Initial script had 2 wrong field names (`target_name`, `total_runs`) from relying on agent research instead of reading source. (c) The tutorial originally started at "load pre-built JSON" which skipped the most important user-facing step (creating the intake fixture).
 - **Corrections needed:** 4 from user testing (missing ui extra, unpushed commits, likelihood→probability, tutorial needs YAML generation step). All addressed.
-
-### Previous Session 17 Handoff Evaluation (by Session 18)
-**Score: 9/10.** Session 17's handoff was thorough and actionable — the ACTIVE TASK was clear about being user-directed, the gotchas were accurate, and the key files pointed to exactly what I needed.
-
-- **What helped:** (a) The key files list included `OPERATIONS.md` and `.env.example`, which were essential references when writing the script and tutorial. (b) Gotcha #4 (coverage at 97.24%) let me skip pre-flight coverage checks. (c) The "Up Next" candidates in the ACTIVE TASK gave clear context for what the user might ask for. (d) Session 17's self-assessment confirmed zero stakeholder corrections — set expectations that the codebase was stable.
-- **What was missing:** No mention of the `MetricsSnapshot` field names (`run_count` / `agent_latency`, not `total_runs` / `agent_latencies`). Cost ~2 min of debugging. Minor since I should have read the source directly rather than guessing field names.
-- **What was wrong:** Nothing factually wrong. Every file path and claim held up.
-- **ROI:** ~4x return. Reading the handoff (~4 min) saved ~15 min of orientation and discovery.
-
-### What Session 18 Did
-**Deliverable:** End-to-end pipeline run script + tutorial. Created `scripts/run_pipeline.py` (a 268-line script that drives the full Intake -> Data -> Website pipeline with fixture data and FakeRepoClient, with a `--live` flag for real hosts) and `docs/tutorial.md` (a 5-step tutorial covering dry runs, checkpoint inspection, live hosts, standalone agents, and programmatic API usage). Also added `.orchestrator/` to `.gitignore`. **COMPLETE.**
-**Started:** 2026-04-16
-**Completed:** 2026-04-16
-**Commits:** TBD (to be filled after commit).
-
-**Self-assessment:**
-- **What went well:** (a) Script worked on first run after fixing two field-name mismatches (`target_name` -> `target_variable`, `total_runs` -> `run_count`). Both issues caught by running the script, not by tests — validates the "test the golden path" discipline. (b) Tutorial covers the full user journey from zero-credential dry run through live deployment. (c) Both `--host gitlab` and `--host github` produce correct output (`.gitlab-ci.yml` vs `.github/workflows/ci.yml`). (d) Script generates 38 project files in ~4ms, matching the test suite's expectations.
-- **What could be better:** (a) The initial script had two incorrect field names (`target_name`, `total_runs`) because I relied on agent research rather than reading the schema/metrics source directly. Should have verified field names against the actual Pydantic models and dataclasses before writing the script. (b) `json` and `CheckpointStore` were imported but unused — caught on re-read.
-- **Quality bar:** Good. The script is practical and the tutorial covers all usage modes. No stakeholder corrections needed.
 
 ### Session 16 Handoff Evaluation (by Session 17)
 **Score: 9/10.** Session 16's handoff was thorough and actionable — the ACTIVE TASK block described the state precisely, the gotchas were accurate, and the key files list was complete.

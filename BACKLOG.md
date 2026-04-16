@@ -40,12 +40,10 @@
 
 ## Up Next
 
-*All 6 planned phases of `docs/planning/architecture-plan.md` §14 are complete. Potential next steps:*
+*All 6 planned phases of `docs/planning/architecture-plan.md` §14 are complete. The pilot readiness audit (Session 17) and ruff cleanup sweep (Session 17) previously listed here are done — see `CHANGELOG.md` for details. Potential next steps:*
 
-- [ ] **Pilot readiness audit** — Review all Phase 1–6 deliverables against acceptance criteria in §14 and original requirements in `initial_purpose.txt`.
 - [ ] **First live end-to-end run** — Real LLM-backed pipeline run against a live GitLab/GitHub host.
 - [ ] **Automated resume-from-checkpoint** — CLI or orchestrator logic to resume a failed pipeline run from the last successful checkpoint.
-- [ ] **Ruff cleanup sweep** — Fix 62 pre-existing ruff errors in `ui/intake/` and other non-orchestrator files (43 auto-fixable).
 - [ ] **Add `scripts/render_tutorial.sh`** — Wrap the pandoc invocation with inline CSS (body width, hr margins, table borders) so rendering the tutorial to HTML is a one-liner.
 - [ ] **Tutorial UX: split code blocks** — Split multi-command code blocks in `docs/tutorial.md` into individual blocks so each command is independently copyable. Pandoc/GitHub rendering doesn't provide per-block copy buttons, so also consider rendering to a format that does (e.g. MkDocs, Docusaurus).
 - [ ] **Intake agent: data source discovery prompts** — Enhance the intake agent's system prompt to ask whether the stakeholder wants help identifying data sources, and if so, probe about existing systems (data warehouses, claims systems, policy admin). Currently the agent accepts whatever the stakeholder says about available data at face value.
