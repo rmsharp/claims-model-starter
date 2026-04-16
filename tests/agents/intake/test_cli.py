@@ -7,17 +7,18 @@ import subprocess
 import sys
 from pathlib import Path
 
+import click
 from typer.testing import CliRunner
 
 from model_project_constructor.agents.intake.cli import app
 
-runner = CliRunner(env={"NO_COLOR": "1"})
+runner = CliRunner()
 
 
 def test_cli_help_shows_fixture_flag() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "--fixture" in result.stdout
+    assert "--fixture" in click.unstyle(result.stdout)
 
 
 def test_cli_happy_path_stdout(subrogation_fixture_path: Path) -> None:
