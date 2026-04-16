@@ -5,40 +5,53 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 17 — **Pilot readiness audit**: review every Phase 1–6 deliverable against acceptance criteria in `architecture-plan.md` §14 and original requirements in `initial_purpose.txt`.
-**Status:** IN PROGRESS. Phase 6 landed in Session 16 (commit `2060d4a`). Master is clean + pushed to origin.
-**Priority:** Audit is the deliverable. Produce a comprehensive pass/fail report with evidence.
+**Task:** Session 18 — **First post-pilot feature or user-directed work.** The pipeline is pilot-ready: all 46 acceptance criteria met, CI green, 422 tests at 97.24% coverage.
+**Status:** Pilot readiness declared in Session 17. Master is clean + pushed to origin. CI passes all 4 jobs.
+**Priority:** User-directed. See "Up Next" in `BACKLOG.md` for candidates.
 
-### What Session 17 Must Do
+### What Session 18 Must Do
 
-**Orient first. Read this block, Session 16's handoff below, SAFEGUARDS.md. Wait for direction.**
+**Orient first. Read this block, Session 17's handoff below, SAFEGUARDS.md. Wait for direction.**
 
-The user will decide whether Session 17 is:
-- A **pilot readiness audit** — walk through every Phase 1–6 deliverable against the plan's acceptance criteria.
-- A **post-pilot feature** — the first thing the user wants beyond the 6-phase plan.
-- Something else entirely.
+### Key files for Session 18
 
-### Key files for Session 17
+- `docs/planning/pilot-readiness-audit.md` — comprehensive Phase 1–6 audit with per-criterion evidence.
+- `BACKLOG.md` — updated with completed milestones + potential next steps.
+- `docs/planning/architecture-plan.md` — §14 acceptance criteria (all met).
+- `.github/workflows/ci.yml` — CI workflow (verified green on run 24492607663).
+- `OPERATIONS.md` — production runbook.
+- `TROUBLESHOOTING.md` — diagnostic walkthroughs.
 
-- `docs/planning/architecture-plan.md` — the plan. §14 has per-phase criteria; §17 has the verification plan.
-- `OPERATIONS.md` — production runbook (new in Phase 6).
-- `TROUBLESHOOTING.md` — diagnostic walkthroughs (new in Phase 6).
-- `.github/workflows/ci.yml` — repo CI (new in Phase 6).
-- `.env.example` — env-var template (new in Phase 6).
-- `src/model_project_constructor/orchestrator/` — 7 modules: `__init__`, `pipeline`, `adapters`, `checkpoints`, `config`, `logging`, `metrics`.
-- `tests/orchestrator/` — 99 tests across 5 test files.
+### Gotchas for Session 18
 
-### Gotchas for Session 17
-
-1. **ruff has 62 pre-existing errors** in `ui/intake/` and other non-orchestrator files. Phase 6 did NOT fix these because they're outside scope. If Session 17 does a cleanup sweep, run `uv run ruff check --fix src/ tests/ packages/` first — 43 are auto-fixable.
-2. **The CI workflow has not been tested on a real push** to GitHub. Session 16 verified lint + pytest + mypy locally. The first push to `origin/master` will be the live CI test. If it fails, likely culprit: `uv` not being available (check `astral-sh/setup-uv@v4`), or the `ui` extra not being installed in the `test` job (it IS installed — but verify).
-3. **pipeline.py had minor ruff fixes (auto-applied by Session 16)**: `Callable` import moved from `typing` to `collections.abc`, `timezone.utc` → `datetime.UTC`. These are style-only changes with zero behavioral impact, but they'll show up in the Phase 6 feat commit diff alongside the new files. The Phase 5 contract is unchanged.
-4. **`OrchestratorSettings.from_env()` defaults to `os.environ`**, but accepts an explicit `env: Mapping[str, str]` for testing. All 25 config tests use the explicit mapping, zero monkeypatching needed. If someone needs to test with real env vars, there's one monkeypatch test (`test_defaults_to_os_environ`) as the model.
-5. **Observability is opt-in.** `pipeline.py` has zero imports from `logging.py` or `metrics.py`. The caller wraps runners before passing them. The integration test `test_instrumented_happy_path` in `test_metrics.py` demonstrates the composition pattern.
+1. **CI is green but only tested on master push**, not on a PR. The CI workflow triggers on both `push` and `pull_request` to master, but only push has been exercised. First PR will be the live test of the PR trigger.
+2. **`tests/e2e/` directory doesn't exist** — §14 Phase 5 specified it, but end-to-end tests live in `tests/orchestrator/test_pipeline.py`. Documented deviation, not a gap.
+3. **`BACKLOG.md` was stale until Session 17** — now reflects all completed phases. "Up Next" candidates: pilot readiness audit (done), first live end-to-end run, automated resume-from-checkpoint, ruff cleanup (done).
+4. **Coverage is 97.24%** (floor: 94%). The `__main__.py` files and a few error paths are the main uncovered lines. No risk.
+5. **Python version difference**: CI runs Python 3.12.3 (ubuntu-latest), local dev is Python 3.13.5. No issues observed, but watch for 3.12/3.13 differences if adding new code.
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
+
+### Session 16 Handoff Evaluation (by Session 17)
+**Score: 9/10.** Session 16's handoff was thorough and actionable — the ACTIVE TASK block described the state precisely, the gotchas were accurate, and the key files list was complete.
+
+- **What helped:** (a) Gotcha #1 accurately predicted the ruff error scope (62 errors, 43 auto-fixable) and gave the exact fix command. Saved ~5 min of discovery. (b) Gotcha #2 correctly predicted CI would fail on first push and identified the likely culprit (`uv` availability). The actual failures were different (missing `--extra ui` in typecheck, coverage floor on decoupling, ANSI codes in CLI test) but the warning to expect CI failure on first push was valuable. (c) The baseline numbers (422 tests, 97.18% coverage, mypy 48 files) matched exactly on first run. (d) The "observability is opt-in" note (gotcha #5) was directly useful during audit — I verified `pipeline.py` has zero imports from `logging.py` or `metrics.py` without needing to investigate.
+- **What was missing:** The gotchas didn't predict the mypy typecheck CI failure (missing `--extra ui` in the typecheck job's `uv sync`). The handoff said "verify" the `ui` extra in the test job, but the typecheck job was the one that needed it. Also didn't predict the ANSI code issue with `CliRunner` on Linux. These are edge cases the handoff couldn't reasonably predict. -1 for minor imprecision in gotcha #2.
+- **What was wrong:** Nothing factually wrong. Every file path, line number, and baseline claim held up.
+- **ROI:** ~5× return. Reading the handoff (~5 min) saved ~25 min of audit setup and ruff discovery.
+
+### What Session 17 Did
+**Deliverable:** Pilot readiness audit + CI fix. Reviewed all 46 acceptance criteria from `architecture-plan.md` §14 against the actual codebase. Found 2 issues: 62 ruff lint errors blocking CI, and `tests/e2e/` path deviation. Fixed all ruff errors (56 auto + 6 manual), fixed 3 CI workflow issues (mypy deps, decoupling coverage, CLI ANSI codes), pushed, confirmed CI green. Updated `BACKLOG.md` to reflect all completed phases. Wrote comprehensive audit report to `docs/planning/pilot-readiness-audit.md`. **PILOT-READY declared.**
+**Started:** 2026-04-15
+**Completed:** 2026-04-15
+**Commits:** `66b44c8` docs(backlog): mark all 6 phases complete. `17f661d` fix(lint): resolve all 62 ruff errors. `d62efc2` fix(ci): mypy deps, decoupling coverage, CLI color. `b8d8d7e` fix(ci): click.unstyle for ANSI codes.
+
+**Self-assessment:**
+- **What went well:** (a) Thorough audit — verified every §14 criterion with actual commands, file reads, and test runs, not from memory. Used 5 parallel sub-agents for deep file-level inspection per phase. (b) Fixed all CI issues in 2 iterations (ruff + 3 CI bugs). (c) Clean separation of audit report (read-only findings) from fixes (commits). (d) Zero stakeholder corrections needed.
+- **What could be better:** (a) The first CI fix attempt (`NO_COLOR` env var for CliRunner) didn't work because click's `CliRunner(env=...)` replaces the full environment. Required a second push with `click.unstyle()`. Should have tested more carefully before pushing. (b) The initial ruff auto-fix replaced `{{` f-string escapes with `{_MODEL_SOL}` variables but forgot to adjust the brace escaping in the constants — caused 3 test failures that required a second edit. More careful about f-string mechanics next time.
+- **Quality bar:** Matches previous sessions. The audit is the most comprehensive single-session deliverable to date — 46 criteria verified with evidence.
 
 ### Session 15 Handoff Evaluation (by Session 16)
 **Score: 9/10.** Session 15's handoff was extremely thorough — the ACTIVE TASK block was a near-complete Phase 6 spec with file-by-file instructions, hard rules, and expected duration. This is the fifth consecutive high-quality handoff.
