@@ -30,7 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      - run: uv sync --extra agents --extra dev
+      - run: uv sync --extra agents --extra ui --extra dev
       - run: uv run mypy src/
 
   test:
@@ -60,4 +60,4 @@ jobs:
         with:
           version: "latest"
       - run: uv sync --extra agents --extra dev
-      - run: uv run pytest tests/test_data_agent_decoupling.py -v
+      - run: uv run pytest tests/test_data_agent_decoupling.py -v --no-cov

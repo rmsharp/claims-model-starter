@@ -11,7 +11,7 @@ from typer.testing import CliRunner
 
 from model_project_constructor.agents.intake.cli import app
 
-runner = CliRunner()
+runner = CliRunner(env={"NO_COLOR": "1"})
 
 
 def test_cli_help_shows_fixture_flag() -> None:
