@@ -5,47 +5,113 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 20 — Wiki expansion: 7 additional wiki pages across 2 sessions (A and B).
-**Status:** Ready to start Session 20A.
-**Priority:** User-approved plan. User is separately working on pages #6 (FAQ), #7 (Comparison), #10 (Deployment guide).
+**Task:** Session 20B — 4 wiki pages (worked examples, extending the pipeline, changelog, contributing guide). **READY TO START.**
+**Status:** Session 20A complete. Session 20B ready.
+**Priority:** User-approved plan from Session 19's handoff. User is separately working on pages #6 (FAQ), #7 (Comparison), #10 (Deployment guide).
 
-### What Session 20A Must Do
-
-**Deliverable:** 3 wiki pages that share the agent-internals codebase surface:
-1. **#2 Intake interview design guide** — Read the intake agent's system prompt, LangGraph graph structure, question-selection logic, governance metadata assessment. Explain the interview strategy for stakeholders and operators.
-2. **#4 Schema reference** — Read all Pydantic models in `src/model_project_constructor/schemas/v1/`, `schemas/envelope.py`, `schemas/registry.py`, and agent-specific schemas. Document every field, type, constraint, and validator.
-3. **#5 Security considerations** — Analyze credential handling (env vars), network boundaries (which agents call which external services), data sensitivity (what the LLM sees), read-only DB constraint.
-
-**After writing:** Copy new pages to the wiki repo at `/Users/rmsharp/Development/claims-model-starter.wiki/`, commit, and push. Update `Home.md`, `_Sidebar.md`, and `Content-Recommendations.md` in both repos.
-
-**Then close out and leave Session 20B handoff.**
-
-### What Session 20B Must Do (after 20A)
+### What Session 20B Must Do
 
 **Deliverable:** 4 wiki pages:
-1. **#1 Worked examples** — Trace the subrogation scenario from `initial_purpose.txt` through fixture -> IntakeReport -> DataReport -> generated project. Show the full file listing.
-2. **#3 Extending the pipeline** — Document extension points: new agents (HandoffEnvelope + schema registry), new host adapters (RepoClient protocol), new governance artifacts (tier gates in `governance_templates.py`), new regulatory frameworks.
-3. **#8 Changelog** — Generate from `git log` history. Group by milestone/phase.
-4. **#9 Contributing guide** — Derive from existing config: ruff rules, mypy strict, 94% coverage, commit message format, CI pipeline.
+1. **#1 Worked-Examples.md** — Trace the subrogation scenario from `initial_purpose.txt` through `tests/fixtures/subrogation.yaml` → `IntakeReport` → `DataRequest` → `DataReport` → generated project. Show the full generated file listing. Consider adding a second example (fraud_triage or pricing_optimization fixtures).
+2. **#3 Extending-the-Pipeline.md** — Document extension points: new agents (via `HandoffEnvelope` + `schemas/registry.py`), new host adapters (`RepoClient` protocol in `agents/website/protocol.py`), new governance artifacts (tier gates in `governance_templates.py`), new regulatory frameworks.
+3. **#8 Changelog.md** — Generate from `git log` history. Group by milestone/phase. Cover all Phase 1–6 commits plus the wiki work in Sessions 19/20.
+4. **#9 Contributing.md** — Derive from existing config: `pyproject.toml` (ruff rules: E, F, I, UP, B, SIM; mypy strict; pytest 94% coverage floor), `.github/workflows/ci.yml` (4 jobs), commit message convention from `git log`, session/handoff discipline from `SESSION_RUNNER.md`.
 
-### Key files for Session 20A
+### Key files for Session 20B
 
-- `src/model_project_constructor/agents/intake/` — System prompt, graph, interview logic
-- `src/model_project_constructor/schemas/v1/` — All Pydantic models (IntakeReport, DataReport, etc.)
-- `src/model_project_constructor/schemas/envelope.py` — HandoffEnvelope
-- `src/model_project_constructor/schemas/registry.py` — Schema registry
-- `src/model_project_constructor/orchestrator/config.py` — OrchestratorSettings (credential handling)
-- `src/model_project_constructor/agents/website/graph.py` — Website agent network calls
-- `docs/wiki/claims-model-starter/` — Existing 14 wiki pages (update Home, Sidebar, Content Recommendations)
-- `/Users/rmsharp/Development/claims-model-starter.wiki/` — Cloned wiki repo (push new pages here)
+**For Worked-Examples:**
+- `initial_purpose.txt` — original subrogation scenario
+- `tests/fixtures/subrogation.yaml` — intake fixture
+- `tests/fixtures/subrogation_intake.json` — intake output
+- `tests/fixtures/sample_request.json` — data request
+- `tests/fixtures/sample_datareport.json` — data report output
+- `src/model_project_constructor/agents/website/templates.py` + `governance_templates.py` — for file listing
+- `docs/tutorial.md` — existing worked flow
+- Consider running `scripts/run_pipeline.py --fake` to capture a fresh listing
 
-### Gotchas for Session 20A
+**For Extending-the-Pipeline:**
+- `src/model_project_constructor/schemas/envelope.py` — envelope contract
+- `src/model_project_constructor/schemas/registry.py` — adding payload types
+- `src/model_project_constructor/agents/website/protocol.py` — `RepoClient` protocol, `RepoClientError` / `RepoNameConflictError`
+- `src/model_project_constructor/agents/website/gitlab_adapter.py` + `github_adapter.py` — adapter template
+- `src/model_project_constructor/agents/website/governance_templates.py` — tier-gated artifact emission
+- `tests/test_data_agent_decoupling.py` — decoupling contract
 
-1. **Wiki repo is already cloned** at `/Users/rmsharp/Development/claims-model-starter.wiki/`. Pull before copying to avoid conflicts (user may have pushed pages #6, #7, #10).
-2. **License is now MIT** (changed this session, commit `f2f2a70`). Both `pyproject.toml` files updated. `LICENSE` file exists at project root.
-3. **BACKLOG.md still has stale items** ("Pilot readiness audit", "Ruff cleanup sweep") listed as open — completed in Session 17. Low priority to fix but don't be confused by them.
-4. **The duplicate "What Session 18 Did" block** in SESSION_NOTES.md (lines ~38-54 and ~64-73) is a known clutter issue from Session 18. Ignore it.
-5. **Update both repos** when adding wiki pages: `docs/wiki/claims-model-starter/` in the main repo AND `/Users/rmsharp/Development/claims-model-starter.wiki/` for the live wiki.
+**For Changelog:**
+- `git log --oneline --reverse master` — full history
+- `SESSION_NOTES.md` — semantic grouping by milestone
+- `docs/planning/architecture-plan.md` §14 — phase structure for grouping
+
+**For Contributing:**
+- `pyproject.toml` lines 79-94 (ruff + mypy + coverage)
+- `.github/workflows/ci.yml` — 4 CI jobs (lint, typecheck, test, decoupling)
+- `CLAUDE.md` + `SESSION_RUNNER.md` — session discipline
+- `SAFEGUARDS.md` — commit discipline
+
+### Gotchas for Session 20B
+
+1. **Wiki repo is at `/Users/rmsharp/Development/claims-model-starter.wiki/`**. Pull before copying. User may have pushed pages #6/#7/#10 in the meantime.
+2. **Session 20A pushed 6 files** (3 new + 3 nav updates): commit `8a41789` in wiki repo. Do not duplicate.
+3. **3 page slots remain open** in the Content Recommendations shipped list: #1 (worked examples), #3 (extending), #8 (changelog), #9 (contributing). Mark them shipped when done.
+4. **`.orchestrator/`, `my_intake.yaml`, `my_intake_report.json`, `.env`, `intake_sessions.db*` are gitignored** — a fresh worked example generated by running the pipeline won't accidentally commit artifacts.
+5. **License is MIT** (Session 19) — reflect in Contributing if discussing license/CLA.
+6. **`tests/fixtures/subrogation_intake.json` has `annual_impact_usd_low=2000000`, `_high=4000000`**. Quote exact numbers.
+7. **For Changelog: the repo has 20+ sessions but may not have all in git history** — session commits are dense, so group by phase/milestone rather than by commit SHA.
+8. **BACKLOG.md still lists "Pilot readiness audit" and "Ruff cleanup sweep"** as open — completed in Session 17. Low priority to fix.
+9. **Duplicate "What Session 18 Did" blocks** in this file near the top (ignore — known clutter from Session 18 close-out).
+
+---
+
+## Session 19 Handoff Evaluation (by Session 20A)
+**Score: 8/10.** Session 19's handoff was thorough — the ACTIVE TASK block split Session 20 into clear 20A / 20B deliverables with 1–2 line scope definitions per page, a complete key-files list, and actionable gotchas.
+
+- **What helped:** (a) The page-split (20A gets agent-internals, 20B gets cross-cutting) meant I didn't have to think about scope — the deliverable was three specific pages with three specific codebase surfaces. (b) Gotcha #1 (pull wiki first to avoid conflicts) saved real time; the wiki was already clean but the habit mattered. (c) Gotcha #5 (update both repos) kept me from a common failure mode. (d) Learning #14 (parallel research agents) directly informed my approach — I launched 3 agents for intake/schema/security in parallel. (e) The key-files list under "Key files for Session 20A" pointed to the exact right places (`schemas/v1/`, `envelope.py`, `registry.py`, `config.py`, adapters). Every file I needed was in the list.
+- **What was missing:** (a) No warning that the security research was the broadest scope and most likely to time out in an agent — mine did ("API Error: Stream idle timeout"). Cost ~2–3 min of redirecting to direct reads. (b) No rough page-length target; the three pages I wrote are ~225/370/230 lines vs Session 19's 100–150 average. Not wrong, but a "target ~200 lines each" note would have anchored the scope earlier.
+- **What was wrong:** Nothing factually wrong. Every file path held up.
+- **ROI:** ~5× return. Reading the handoff (~4 min) saved ~20 min of orientation.
+
+### What Session 20A Did
+**Deliverable:** 3 wiki pages + 3 updated nav files + live wiki publish. **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Commits:**
+- Main repo: (pending this session's doc commit) — SESSION_NOTES update only. The 3 new wiki pages and 3 updated nav files are still staged when this is written; the feat commit will land `docs(session-20a)`.
+- Wiki repo: `8a41789` — `docs(session-20a): add intake design, schema reference, security pages`. **Pushed to `origin/master`.**
+
+**What was done:**
+
+1. **Intake-Interview-Design.md** (~225 lines) — 11 sections covering: the two system prompts verbatim (interviewer + governance), the eight-node LangGraph graph with diagram, the two budgets (`MAX_QUESTIONS=10` / `MAX_REVISIONS=3` in `state.py:57-58`), `plan_next_question` and `evaluate_interview` logic, the four `IntakeReport` sections and their schemas, governance classification with re-derivation on every revision, the review loop with six accept tokens (`nodes.py:35`), terminal status truth table, stakeholder tips (before/during/review), operator modes (fixture/web/programmatic), extension points, key files table.
+
+2. **Schema-Reference.md** (~370 lines) — 13 sections covering: layout table (5 payload schemas + envelope), `StrictBase` contract (`extra="forbid"`, `protected_namespaces=()`), shared Literal types (`CycleTime` / `RiskTier` / `ModelType`), `IntakeReport` with all nested types (`ModelSolution`, `EstimatedValue`, `GovernanceMetadata`), Data Agent schemas (`DataRequest`, `DataReport`, `DataGranularity`, `PrimaryQuery`, `QualityCheck`, `Datasheet`), repo schemas (`RepoTarget`, `GovernanceManifest`, `RepoProjectResult`), `HandoffEnvelope` with the invariant-test explanation, `schemas/registry.py` + `load_payload`, checkpoint storage layout, versioning strategy, hand-construction checklist, round-trip guarantees, key files.
+
+3. **Security-Considerations.md** (~230 lines) — 12 sections covering: `OrchestratorSettings.from_env()` + `require_*` guards, the complete env-var matrix with required/default/purpose, outbound network boundaries (Anthropic, GitLab, GitHub, optional DB), what the LLM sees (stakeholder answers verbatim for intake; no query result rows for data), DB read-only contract enforced at credential-layer not in-process, SQL parse-level validation caveat, checkpoint sensitivity (interview prose + SQL yes; tokens no), logging (no credential exposure, context dict bound to `run_id`/`correlation_id`), CI (no secrets in workflow), generated-project secrets (templates emit `.env.example` with placeholders), dependency trust surface, 8 known-gaps items, 9-item review checklist, key files.
+
+4. **Home.md** — added three new links (Intake Interview Design, Schema Reference, Security Considerations) to Wiki contents.
+
+5. **_Sidebar.md** — added Intake Interview Design under "Using the Tool"; Security Considerations under "Operations"; Schema Reference under "Reference".
+
+6. **Content-Recommendations.md** — added three new rows to the current-wiki table; marked recommendations #2, #4, #5 as ✅ shipped with summaries of what the pages cover.
+
+7. **Published to live wiki** at `/Users/rmsharp/Development/claims-model-starter.wiki/`. Pulled first (clean). Copied 6 files. Committed as `8a41789`. Pushed to `origin/master`. Live at `https://github.com/rmsharp/claims-model-starter/wiki`.
+
+**Workflow note:** Launched 3 parallel research agents (intake internals, schema surfaces, security surfaces). Agents #1 and #2 completed with thorough reports; agent #3 (security) timed out with `Stream idle timeout - partial response received`. I pivoted to direct reads via `Glob` + `Read` + `Grep` for the security research — `config.py`, `.env.example`, `OPERATIONS.md`, `logging.py`, `metrics.py`, both adapters, `db.py`, `sql_validation.py`, `anthropic_client.py` (both), `cli.py` (data), `ui/intake/app.py` (startup), `ci.yml`, `.gitignore`, `pyproject.toml`. Also spot-checked agent claims post-write (nodes.py:35 for accept tokens, envelope.py for the Literal unions) per Learning #11.
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. 3 parallel agents + direct reads for the timed-out agent. Verified verbatim-quoted prompts against `anthropic_client.py:33-50`.
+- **Implementations read, not just descriptions:** Yes for every load-bearing claim. After writing, spot-checked `nodes.py:35` (accept tokens) and `envelope.py` (Literal values) directly — both held up. Cited file:line for every factual claim.
+- **Stakeholder corrections needed:** 0.
+- **What I got right:** (a) Three pages are self-contained, cross-reference each other and existing pages. (b) Every claim has a file:line citation. (c) Handled the agent timeout gracefully — didn't re-launch, didn't guess; did direct reads with the remaining time budget. (d) Pulled wiki before copy, avoiding the conflict gotcha. (e) Updated both repos as instructed. (f) Phase 3 compliance: self-scored, evaluated predecessor, wrote stub before work (Phase 1B), now writing full handoff.
+- **What I got wrong:** (a) Relied on agent report for a few citations (nodes.py:78-82 for `evaluate_interview`, nodes.py:94-106 for `await_review`) without direct re-reads before final write — partial Learning #11 regression. Spot-checked the two most load-bearing claims post-write, but not all. (b) Page lengths are larger than Session 19's average; could have trimmed Schema-Reference by consolidating the Literal-enum summary table. Not a correctness issue but a terseness gap. (c) One task-tool reminder showed my tasks were drifting stale mid-session — I updated status but only when pushed. Should mark tasks completed immediately after each finish.
+- **Quality bar vs previous sessions:** Meets or slightly exceeds Session 19. Three dense pages, rigorous citations, live wiki published on first attempt, Phase 3 close-out formal.
+
+### Phase 3C: Learnings
+
+Adding to the `Learnings` table in SESSION_RUNNER.md as #15:
+
+| # | Learning | Source | When to Apply |
+|---|----------|--------|---------------|
+| 15 | When a parallel research agent times out, do NOT re-launch — the failure mode is usually scope breadth (too many angles per agent) and a re-launch burns the same budget. Instead, pivot to direct reads with targeted `Grep` + `Read` for just the citations you need, then write. A timed-out agent costs ~3 min; a re-launched timed-out agent costs ~6 min. This is a special case of the "trust but verify" principle — the first agent already did enough research for you to know what to read. | Session 20A (security research agent timed out) | Any session using parallel research agents when one times out. |
 
 ---
 

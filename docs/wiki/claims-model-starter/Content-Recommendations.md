@@ -9,12 +9,15 @@ This page documents what this wiki contains, what additional content would add v
 | [Home](Home) | All | Landing page and navigation |
 | [Getting Started](Getting-Started) | New users | Install, first run, verify |
 | [Pipeline Overview](Pipeline-Overview) | All | How the three agents work together |
+| [Intake Interview Design](Intake-Interview-Design) | Stakeholders, operators | Interview strategy, caps, governance pass, tips |
 | [Generated Project Structure](Generated-Project-Structure) | Data science teams | What the output repository contains |
 | [Governance Framework](Governance-Framework) | Governance/compliance, data science teams | Risk tiers, regulatory mapping, artifact inventory |
 | [Development Workflow](Development-Workflow) | Data science teams | How to implement stubs and iterate |
 | [Data Guide](Data-Guide) | Data science teams, analysts | Queries, datasheets, data loading |
 | [Agent Reference](Agent-Reference) | Developers, operators | Detailed agent specs and schemas |
+| [Schema Reference](Schema-Reference) | Developers, integrators | Every Pydantic schema — field by field |
 | [Monitoring and Operations](Monitoring-and-Operations) | Operators | Deployment, checkpoints, troubleshooting |
+| [Security Considerations](Security-Considerations) | Security reviewers, compliance | Credentials, network boundaries, LLM data exposure, read-only DB |
 | [Software Bill of Materials](Software-Bill-of-Materials) | Security, compliance, operators | All dependencies and versions |
 | [Architecture Decisions](Architecture-Decisions) | Developers, architects | Key design choices and rationale |
 | [Glossary](Glossary) | All | Domain, pipeline, governance, and technical terms |
@@ -33,11 +36,9 @@ These would fill gaps that real users will hit:
 
 **Audience:** New users, business stakeholders evaluating the tool.
 
-#### 2. Intake interview design guide
+#### 2. Intake interview design guide ✅ *shipped in Session 20A*
 
-**What:** A page explaining the intake agent's interview strategy: how it decides which questions to ask, how it converges toward the four required sections, how governance metadata is assessed, and tips for stakeholders on preparing for the interview.
-
-**Why:** The intake interview is the stakeholder's primary touchpoint. Understanding the agent's approach helps stakeholders prepare better answers and set expectations about the interview length and depth.
+See [Intake Interview Design](Intake-Interview-Design) — the page now covers the interviewer and governance system prompts, the two-phase LangGraph state machine with its 10-question and 3-revision caps, how the agent decides what to ask next, how governance classification is derived (and recomputed on every revision), and tips for both stakeholders preparing for the interview and operators running or extending the agent.
 
 **Audience:** Business stakeholders, intake agent operators.
 
@@ -53,19 +54,17 @@ These would fill gaps that real users will hit:
 
 These would improve completeness and usability:
 
-#### 4. Schema reference (auto-generated)
+#### 4. Schema reference ✅ *shipped in Session 20A*
 
-**What:** Auto-generated documentation of all Pydantic schemas: IntakeReport, DataReport, RepoProjectResult, HandoffEnvelope, GovernanceMetadata, ModelSolution, etc. Include field types, constraints, and examples.
+See [Schema Reference](Schema-Reference) — the page covers all 5 registered payload schemas + `HandoffEnvelope` field-by-field with types, defaults, Literal enums, file:line citations, the `StrictBase` contract (`extra="forbid"`), the registry and `load_payload`, checkpoint layout, and versioning strategy.
 
-**Why:** The Agent Reference page summarizes schemas in pseudocode. A full reference with every field, validator, and default value would be authoritative. Pydantic v2 can export JSON Schema; a build step could render these to wiki pages.
+A future auto-generated pass (Pydantic v2 JSON Schema → markdown) is still worth considering — it would keep the page in lockstep with the code without manual editing. For now the page is hand-written against v1.0.0.
 
 **Audience:** Developers, integrators.
 
-#### 5. Security considerations
+#### 5. Security considerations ✅ *shipped in Session 20A*
 
-**What:** A page documenting: credential handling (env vars, no hardcoded secrets), network boundaries (which agents make external calls and to where), data sensitivity (LLM sees interview content and schema details), and the read-only database constraint for the Data Agent.
-
-**Why:** Enterprise adoption requires security review. A dedicated page accelerates that process.
+See [Security Considerations](Security-Considerations) — the page documents credential handling (every secret via `OrchestratorSettings.from_env()`, no hardcoded values), network boundaries (Anthropic, GitLab, GitHub, optional read-only DB), what the LLM sees (stakeholder answers verbatim; no query result rows ever sent to Claude), the database contract (SELECT-only role is an operator responsibility, not in-process filtering), checkpoint/log sensitivity, CI pipeline (no secrets), and a 9-item review checklist.
 
 **Audience:** Security reviewers, compliance.
 

@@ -5,6 +5,7 @@
 **Using the Tool**
 - [Getting Started](Getting-Started)
 - [Pipeline Overview](Pipeline-Overview)
+- [Intake Interview Design](Intake-Interview-Design)
 - [Agent Reference](Agent-Reference)
 
 **Generated Output**
@@ -15,8 +16,10 @@
 
 **Operations**
 - [Monitoring & Operations](Monitoring-and-Operations)
+- [Security Considerations](Security-Considerations)
 
 **Reference**
+- [Schema Reference](Schema-Reference)
 - [Software Bill of Materials](Software-Bill-of-Materials)
 - [Architecture Decisions](Architecture-Decisions)
 - [Glossary](Glossary)

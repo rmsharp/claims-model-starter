@@ -24,12 +24,15 @@ This tool serves a **claims organization within a property & casualty insurance 
 
 - [Getting Started](Getting-Started) -- Install, first run, verify
 - [Pipeline Overview](Pipeline-Overview) -- How the agents work together
+- [Intake Interview Design](Intake-Interview-Design) -- Interview strategy, caps, tips for stakeholders
 - [Generated Project Structure](Generated-Project-Structure) -- What the output repository contains
 - [Governance Framework](Governance-Framework) -- Risk tiers, regulatory mapping, artifact inventory
 - [Development Workflow](Development-Workflow) -- How the data science team uses the generated project
 - [Data Guide](Data-Guide) -- Queries, datasheets, data loading
 - [Agent Reference](Agent-Reference) -- Details on each agent's inputs, outputs, and behavior
+- [Schema Reference](Schema-Reference) -- Every Pydantic schema, field by field
 - [Monitoring and Operations](Monitoring-and-Operations) -- Deployment, checkpoints, operations
+- [Security Considerations](Security-Considerations) -- Credentials, network boundaries, what the LLM sees
 - [Software Bill of Materials](Software-Bill-of-Materials) -- All dependencies, versions, and licenses
 - [Architecture Decisions](Architecture-Decisions) -- Key design choices and rationale
 - [Glossary](Glossary) -- Domain and technical terminology
