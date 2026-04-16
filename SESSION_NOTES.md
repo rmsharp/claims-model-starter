@@ -5,34 +5,52 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 18 — **First post-pilot feature or user-directed work.** The pipeline is pilot-ready: all 46 acceptance criteria met, CI green, 422 tests at 97.24% coverage.
-**Status:** Pilot readiness declared in Session 17. Master is clean + pushed to origin. CI passes all 4 jobs.
-**Priority:** User-directed. See "Up Next" in `BACKLOG.md` for candidates.
+**Task:** Session 19 — **User-directed.** The pipeline has a working end-to-end script + tutorial. CI green, 422 tests at 97.24% coverage.
+**Status:** Ready for direction.
+**Priority:** See "Up Next" in `BACKLOG.md` for candidates: first live end-to-end run (against a real host), automated resume-from-checkpoint.
 
-### What Session 18 Must Do
+### What Session 19 Must Do
 
-**Orient first. Read this block, Session 17's handoff below, SAFEGUARDS.md. Wait for direction.**
+**Orient first. Read this block, Session 18's handoff below, SAFEGUARDS.md. Wait for direction.**
 
-### Key files for Session 18
+### Key files for Session 19
 
-- `docs/planning/pilot-readiness-audit.md` — comprehensive Phase 1–6 audit with per-criterion evidence.
-- `BACKLOG.md` — updated with completed milestones + potential next steps.
-- `docs/planning/architecture-plan.md` — §14 acceptance criteria (all met).
-- `.github/workflows/ci.yml` — CI workflow (verified green on run 24492607663).
-- `OPERATIONS.md` — production runbook.
-- `TROUBLESHOOTING.md` — diagnostic walkthroughs.
+- `scripts/run_pipeline.py` — end-to-end pipeline runner (fake + live modes). Tested with both `--host gitlab` and `--host github`.
+- `docs/tutorial.md` — 5-step tutorial: dry run -> checkpoints -> live host -> standalone agents -> programmatic API.
+- `OPERATIONS.md` — production runbook (complements the tutorial).
+- `TROUBLESHOOTING.md` — failure-mode diagnostics.
+- `.env.example` — env var template for live runs.
 
-### Gotchas for Session 18
+### Gotchas for Session 19
 
-1. **CI is green but only tested on master push**, not on a PR. The CI workflow triggers on both `push` and `pull_request` to master, but only push has been exercised. First PR will be the live test of the PR trigger.
-2. **`tests/e2e/` directory doesn't exist** — §14 Phase 5 specified it, but end-to-end tests live in `tests/orchestrator/test_pipeline.py`. Documented deviation, not a gap.
-3. **`BACKLOG.md` was stale until Session 17** — now reflects all completed phases. "Up Next" candidates: pilot readiness audit (done), first live end-to-end run, automated resume-from-checkpoint, ruff cleanup (done).
-4. **Coverage is 97.24%** (floor: 94%). The `__main__.py` files and a few error paths are the main uncovered lines. No risk.
-5. **Python version difference**: CI runs Python 3.12.3 (ubuntu-latest), local dev is Python 3.13.5. No issues observed, but watch for 3.12/3.13 differences if adding new code.
+1. **The script uses fixture data for intake/data stages**, even in `--live` mode. A true LLM-backed end-to-end run would need real `IntakeAgent` + `DataAgent` runners wired in — the script is structured to make this swap straightforward (replace the `lambda` runners in `main()`).
+2. **`--live` mode constructs `PythonGitLabAdapter` / `PyGithubAdapter` directly** — verify the constructor signatures haven't changed if adapters were modified since Session 14.
+3. **`.orchestrator/` is now gitignored** (added in this session). Checkpoint directories from script runs won't be committed.
+4. **CI is still green but only tested on master push**, not on a PR (same as Session 17's gotcha #1).
+5. **The tutorial's "generated project" file list** (38 files) comes from the real script output — it reflects the actual website agent scaffolding, not a mock.
 
 ---
 
 *Session history accumulates below this line. Newest session at the top.*
+
+### Session 17 Handoff Evaluation (by Session 18)
+**Score: 9/10.** Session 17's handoff was thorough and actionable — the ACTIVE TASK was clear about being user-directed, the gotchas were accurate, and the key files pointed to exactly what I needed.
+
+- **What helped:** (a) The key files list included `OPERATIONS.md` and `.env.example`, which were essential references when writing the script and tutorial. (b) Gotcha #4 (coverage at 97.24%) let me skip pre-flight coverage checks. (c) The "Up Next" candidates in the ACTIVE TASK gave clear context for what the user might ask for. (d) Session 17's self-assessment confirmed zero stakeholder corrections — set expectations that the codebase was stable.
+- **What was missing:** No mention of the `MetricsSnapshot` field names (`run_count` / `agent_latency`, not `total_runs` / `agent_latencies`). Cost ~2 min of debugging. Minor since I should have read the source directly rather than guessing field names.
+- **What was wrong:** Nothing factually wrong. Every file path and claim held up.
+- **ROI:** ~4x return. Reading the handoff (~4 min) saved ~15 min of orientation and discovery.
+
+### What Session 18 Did
+**Deliverable:** End-to-end pipeline run script + tutorial. Created `scripts/run_pipeline.py` (a 268-line script that drives the full Intake -> Data -> Website pipeline with fixture data and FakeRepoClient, with a `--live` flag for real hosts) and `docs/tutorial.md` (a 5-step tutorial covering dry runs, checkpoint inspection, live hosts, standalone agents, and programmatic API usage). Also added `.orchestrator/` to `.gitignore`. **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Commits:** TBD (to be filled after commit).
+
+**Self-assessment:**
+- **What went well:** (a) Script worked on first run after fixing two field-name mismatches (`target_name` -> `target_variable`, `total_runs` -> `run_count`). Both issues caught by running the script, not by tests — validates the "test the golden path" discipline. (b) Tutorial covers the full user journey from zero-credential dry run through live deployment. (c) Both `--host gitlab` and `--host github` produce correct output (`.gitlab-ci.yml` vs `.github/workflows/ci.yml`). (d) Script generates 38 project files in ~4ms, matching the test suite's expectations.
+- **What could be better:** (a) The initial script had two incorrect field names (`target_name`, `total_runs`) because I relied on agent research rather than reading the schema/metrics source directly. Should have verified field names against the actual Pydantic models and dataclasses before writing the script. (b) `json` and `CheckpointStore` were imported but unused — caught on re-read.
+- **Quality bar:** Good. The script is practical and the tutorial covers all usage modes. No stakeholder corrections needed.
 
 ### Session 16 Handoff Evaluation (by Session 17)
 **Score: 9/10.** Session 16's handoff was thorough and actionable — the ACTIVE TASK block described the state precisely, the gotchas were accurate, and the key files list was complete.
