@@ -31,9 +31,13 @@ This tool serves a **claims organization within a property & casualty insurance 
 - [Data Guide](Data-Guide) -- Queries, datasheets, data loading
 - [Agent Reference](Agent-Reference) -- Details on each agent's inputs, outputs, and behavior
 - [Schema Reference](Schema-Reference) -- Every Pydantic schema, field by field
+- [Worked Examples](Worked-Examples) -- End-to-end traces: subrogation (tier-3) and renewal profitability (tier-1)
+- [Extending the Pipeline](Extending-the-Pipeline) -- Adding agents, adapters, governance artifacts, regulatory frameworks
 - [Monitoring and Operations](Monitoring-and-Operations) -- Deployment, checkpoints, operations
 - [Security Considerations](Security-Considerations) -- Credentials, network boundaries, what the LLM sees
 - [Software Bill of Materials](Software-Bill-of-Materials) -- All dependencies, versions, and licenses
 - [Architecture Decisions](Architecture-Decisions) -- Key design choices and rationale
+- [Changelog](Changelog) -- Phase-by-phase history of notable changes
+- [Contributing](Contributing) -- Dev setup, code-quality gates, commit convention, PR workflow
 - [Glossary](Glossary) -- Domain and technical terminology
 - [Content Recommendations](Content-Recommendations) -- Suggested additions and priorities for this wiki

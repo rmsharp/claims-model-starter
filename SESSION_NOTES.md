@@ -5,60 +5,128 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 20B — 4 wiki pages (worked examples, extending the pipeline, changelog, contributing guide). **READY TO START.**
-**Status:** Session 20A complete. Session 20B ready.
-**Priority:** User-approved plan from Session 19's handoff. User is separately working on pages #6 (FAQ), #7 (Comparison), #10 (Deployment guide).
+**Task:** Session 21 — open. All 7 Claude-owned wiki pages from the Session 19 plan are shipped. Next deliverable is **user's choice**. See "What Session 21 should do" below for three recommended candidates.
+**Status:** Session 20B complete. Session 21 ready.
+**Priority:** User-approved plan from Session 19's handoff is now fully delivered. User's parallel track for pages #6 (FAQ), #7 (Comparison), #10 (Deployment guide) remains outside Claude scope.
 
-### What Session 20B Must Do
+### What Session 21 should do
 
-**Deliverable:** 4 wiki pages:
-1. **#1 Worked-Examples.md** — Trace the subrogation scenario from `initial_purpose.txt` through `tests/fixtures/subrogation.yaml` → `IntakeReport` → `DataRequest` → `DataReport` → generated project. Show the full generated file listing. Consider adding a second example (fraud_triage or pricing_optimization fixtures).
-2. **#3 Extending-the-Pipeline.md** — Document extension points: new agents (via `HandoffEnvelope` + `schemas/registry.py`), new host adapters (`RepoClient` protocol in `agents/website/protocol.py`), new governance artifacts (tier gates in `governance_templates.py`), new regulatory frameworks.
-3. **#8 Changelog.md** — Generate from `git log` history. Group by milestone/phase. Cover all Phase 1–6 commits plus the wiki work in Sessions 19/20.
-4. **#9 Contributing.md** — Derive from existing config: `pyproject.toml` (ruff rules: E, F, I, UP, B, SIM; mypy strict; pytest 94% coverage floor), `.github/workflows/ci.yml` (4 jobs), commit message convention from `git log`, session/handoff discipline from `SESSION_RUNNER.md`.
+Three candidates ranked by readiness and value:
 
-### Key files for Session 20B
+1. **First live end-to-end pipeline run** (BACKLOG §"Up Next" item 2). The pilot readiness is at 97.18% coverage + clean CI + MIT license + live wiki. A real LLM-backed run against a live GitLab or GitHub repo closes the loop between "tests pass" and "it works with real tokens." Requires `ANTHROPIC_API_KEY` + either `GITLAB_PRIVATE_TOKEN` or `GITHUB_PRIVATE_TOKEN`. Session deliverable: one live run, captured output, write up what broke and what worked.
 
-**For Worked-Examples:**
-- `initial_purpose.txt` — original subrogation scenario
-- `tests/fixtures/subrogation.yaml` — intake fixture
-- `tests/fixtures/subrogation_intake.json` — intake output
-- `tests/fixtures/sample_request.json` — data request
-- `tests/fixtures/sample_datareport.json` — data report output
-- `src/model_project_constructor/agents/website/templates.py` + `governance_templates.py` — for file listing
-- `docs/tutorial.md` — existing worked flow
-- Consider running `scripts/run_pipeline.py --fake` to capture a fresh listing
+2. **Automated resume-from-checkpoint** (BACKLOG §"Up Next" item 3). Phase 5 already persists per-stage checkpoints. Building the operator-facing `--resume <run_id>` CLI that picks up from the last successful stage is a natural extension, touches only `orchestrator/pipeline.py` + `scripts/run_pipeline.py`, and is directly useful after a failed live run.
 
-**For Extending-the-Pipeline:**
-- `src/model_project_constructor/schemas/envelope.py` — envelope contract
-- `src/model_project_constructor/schemas/registry.py` — adding payload types
-- `src/model_project_constructor/agents/website/protocol.py` — `RepoClient` protocol, `RepoClientError` / `RepoNameConflictError`
-- `src/model_project_constructor/agents/website/gitlab_adapter.py` + `github_adapter.py` — adapter template
-- `src/model_project_constructor/agents/website/governance_templates.py` — tier-gated artifact emission
-- `tests/test_data_agent_decoupling.py` — decoupling contract
+3. **Statistical terminology glossary injection** (BACKLOG §"Up Next" item 9). Create `docs/style/statistical_terms.md` and inject it into the intake-agent and data-agent system prompts. Enforces "probability" vs "likelihood" (and other common conflations) in LLM-generated content without a full re-evaluation pass on every call.
 
-**For Changelog:**
-- `git log --oneline --reverse master` — full history
-- `SESSION_NOTES.md` — semantic grouping by milestone
-- `docs/planning/architecture-plan.md` §14 — phase structure for grouping
+Any of these is a one-session deliverable. Let the user pick.
 
-**For Contributing:**
-- `pyproject.toml` lines 79-94 (ruff + mypy + coverage)
-- `.github/workflows/ci.yml` — 4 CI jobs (lint, typecheck, test, decoupling)
-- `CLAUDE.md` + `SESSION_RUNNER.md` — session discipline
-- `SAFEGUARDS.md` — commit discipline
+---
 
-### Gotchas for Session 20B
+## Session 20A Handoff Evaluation (by Session 20B)
+**Score: 9/10.** Session 20A's handoff was excellent — the ACTIVE TASK at the top of this file gave me per-page scope definitions (1–2 lines each), a complete per-page key-files list, and 9 actionable gotchas. I spent ~4 minutes reading it and was in the research phase within 5 minutes of "go."
 
-1. **Wiki repo is at `/Users/rmsharp/Development/claims-model-starter.wiki/`**. Pull before copying. User may have pushed pages #6/#7/#10 in the meantime.
-2. **Session 20A pushed 6 files** (3 new + 3 nav updates): commit `8a41789` in wiki repo. Do not duplicate.
-3. **3 page slots remain open** in the Content Recommendations shipped list: #1 (worked examples), #3 (extending), #8 (changelog), #9 (contributing). Mark them shipped when done.
-4. **`.orchestrator/`, `my_intake.yaml`, `my_intake_report.json`, `.env`, `intake_sessions.db*` are gitignored** — a fresh worked example generated by running the pipeline won't accidentally commit artifacts.
-5. **License is MIT** (Session 19) — reflect in Contributing if discussing license/CLA.
-6. **`tests/fixtures/subrogation_intake.json` has `annual_impact_usd_low=2000000`, `_high=4000000`**. Quote exact numbers.
-7. **For Changelog: the repo has 20+ sessions but may not have all in git history** — session commits are dense, so group by phase/milestone rather than by commit SHA.
-8. **BACKLOG.md still lists "Pilot readiness audit" and "Ruff cleanup sweep"** as open — completed in Session 17. Low priority to fix.
-9. **Duplicate "What Session 18 Did" blocks** in this file near the top (ignore — known clutter from Session 18 close-out).
+- **What helped:** (a) Per-page key-files lists meant each of my 3 parallel research agents got a pre-scoped target set — no agent needed to figure out "which files" for its page. (b) Gotcha #6 (exact annual-impact numbers `$2M/$4M`) I quoted verbatim in Worked-Examples without re-reading. (c) Gotcha #2 (Session 20A's commit hash `8a41789`) let me verify no duplication. (d) Gotcha #5 (MIT license) landed directly in Contributing's §8. (e) The scope split ("20B gets cross-cutting pages") matched what I actually needed — the four pages really are cross-cutting (examples/extension/history/contribution) and not overlapping with 20A's agent-internals pages. (f) Learning #14 (parallel research agents) held up: all 3 agents completed this time, no timeouts — a ~5× research speedup over sequential reads.
+- **What was missing:** (a) No page-length target (same gap 20A flagged for Session 19). I ended up at 172/222/205/200 lines for the four pages — defensible but not anchored by a spec. (b) Gotcha #3 said "3 page slots remain" then listed four (#1/#3/#8/#9) — off-by-one. Easy to ignore, but if I'd been on autopilot it could have caused me to miss one. (c) No mention of `tests/agents/website/test_templates.py:176-205` as the canonical generated-file listing. I found it myself via grep but naming it in the key-files list would have saved ~3 minutes.
+- **What was wrong:** Nothing factually wrong. Every file path in the key-files list held up; every gotcha was accurate.
+- **ROI:** ~6× return. Reading the handoff (~4 min) saved ~25 min of orientation and scope-definition.
+
+### What Session 20B Did
+**Deliverable:** 4 wiki pages + 3 updated nav files + live wiki publish. **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Commits:**
+- Main repo: (pending this session's doc commit) — the 4 new pages, 3 nav updates, and SESSION_NOTES close-out will land together as `docs(session-20b)`.
+- Wiki repo: `2fa274a` — `docs(session-20b): add worked examples, extending, changelog, contributing`. **Pushed to `origin/master`.** Live at `https://github.com/rmsharp/claims-model-starter/wiki`.
+
+**What was done:**
+
+1. **Worked-Examples.md** (~205 lines) — traces two end-to-end scenarios: **subrogation recovery** (tier-3 moderate, advisory) and **renewal profitability** (tier-1 critical, fairness-constrained). Sources: `initial_purpose.txt`, `tests/fixtures/subrogation.yaml`, `tests/fixtures/subrogation_intake.json`, `tests/fixtures/sample_request.json`, `tests/fixtures/sample_datareport.json`, `tests/fixtures/tier1_intake.json`. Generated-project file listing derived from `tests/agents/website/test_templates.py:176-205` (canonical assertion) + `governance_templates.py:708-785` (tier-gate branches). Includes table of all 7 shipped intake fixtures + the 2 cap-test fixtures. Reproducibility instructions via `scripts/run_pipeline.py`.
+
+2. **Extending-the-Pipeline.md** (~222 lines) — four extension surfaces: **new agent** (envelope.py:27-28 literals + registry.py:26-32 entry + pipeline.py:41-43 runner + orchestrator wiring), **new RepoClient adapter** (protocol.py:42-78 contract + gitlab_adapter.py / github_adapter.py template + CI template sibling), **new governance artifact** (governance_templates.py:708-785 tier gates + is_governance_artifact classifier at :837-858 + positive-and-negative test per Learning #5), **new regulatory framework** (`_FRAMEWORK_ARTIFACTS` at :77-103 + `build_regulatory_mapping` at :106-121). Closes with an "Invariants enforced by tests" table citing the decoupling test, registry round-trip, artifact classifier, and tier-positive/negative tests.
+
+3. **Changelog.md** (~172 lines) — phase-by-phase history from `git log --reverse`. Covers Phases 1–6 (schemas/envelope, data-agent core/polish, intake core/UI, website core/governance, orchestrator, production hardening), Phases A–D (GitHub/GitLab abstraction), pilot-readiness fixes (Session 17), tutorial + script (Session 18), wiki expansion (Sessions 19/20A/20B), license change. Also documents the coverage-floor progression (80% → 90% → 93% → 94%) and the schema versioning policy. Structured under `[Unreleased]` and `[0.1.0 — Pilot Ready]`.
+
+4. **Contributing.md** (~200 lines) — 9 sections: dev env (uv workspace + extras matrix), four CI gates (ruff E/F/I/UP/B/SIM + cli.py B008 exception, mypy strict over both packages, pytest 94% floor, data-agent decoupling AST-walk), no pre-commit hooks (enforcement is CI), commit convention (conventional commits with `(phase-N)` / `(session-N)` scopes), test-writing conventions (structural guards, positive-and-negative tier fan-out, MagicMock boundary), session discipline pointers to `SESSION_RUNNER.md` / `SAFEGUARDS.md`, PR workflow, licenses (MIT project + LGPL-3.0 PyGithub compliance note), and issue-reporting pointer to pre-UAT `BACKLOG.md`.
+
+5. **Home.md** — added links to the 4 new pages, inserted in topical order.
+
+6. **_Sidebar.md** — added Worked Examples under "Using the Tool", Extending/Contributing/Changelog under a new "Development" section.
+
+7. **Content-Recommendations.md** — added 4 new rows to the current-wiki table, marked recommendations #1, #3, #8, #9 as ✅ shipped with summaries of what each page covers.
+
+8. **Published to live wiki** at `/Users/rmsharp/Development/claims-model-starter.wiki/`. Pulled first (clean, up-to-date with 20A's `8a41789`). Copied 7 files (4 new + 3 nav). Committed as `2fa274a`. Pushed to `origin/master`.
+
+**Workflow note:** Launched 3 parallel research agents (worked-example trace, extension-points, contributing-config). All 3 completed without timeout — a direct validation of Learning #14 when scopes are kept narrow (Learning #15). Wrote the Changelog directly from `git log --reverse` without an agent. Before writing each page, spot-verified the load-bearing claims: `envelope.py` (verified Literal unions), `registry.py` (verified dict entries), `protocol.py` (verified RepoClient methods), `governance_templates.py:710-785` + `:837-858` (verified tier blocks + classifier), `subrogation_intake.json` (verified numbers), `sample_datareport.json` (verified structure), `test_templates.py:176-205` (verified generated file listing), `ci.yml` (verified 4 jobs), `pyproject.toml:58-94` (verified ruff/mypy/pytest config), `tier1_intake.json` (verified tier-1 example).
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. 3 parallel agents + 8 direct Read calls to verify load-bearing claims. All 3 agents completed successfully; all verifiable claims in the research briefs held up.
+- **Implementations read, not just descriptions:** Yes. Every file:line citation in the four pages was either produced by my direct reads or spot-verified after the agent briefs. One minor trust gap: the Extending page cites `governance_templates.py:733-736` for the CI-platform dispatch from the agent's research; I verified the surrounding function (`build_governance_files` at 708-785) directly but not those specific four lines.
+- **Stakeholder corrections needed:** 0.
+- **What I got right:** (a) Four pages that cross-reference each other and the existing 14 pages — no dead ends in the navigation. (b) Every load-bearing claim has a file:line citation. (c) The Worked-Examples tier-3 vs. tier-1 contrast *shows* the risk-proportional governance rather than describing it in the abstract. (d) The Extending page's "Invariants enforced by tests" table names exactly the guards a contributor needs to not break. (e) The Changelog groups by phase, not by session, matching how a user would actually want to reason about upgrades. (f) The Contributing page derives everything from current config (no invented rules). (g) Published to live wiki on first attempt, clean pull before copy. (h) Marked exactly 4 content recommendations as shipped with concrete page summaries. (i) Phase 3 compliance: Phase 1B stub written before research, evaluated predecessor, self-scored, now writing full handoff.
+- **What I got wrong:** (a) Did not run `scripts/run_pipeline.py --fake` to capture a live file listing — I used the test-assertion listing at `test_templates.py:176-205` instead. The test IS the spec so this is defensible, but a fresh run would have shown the user exactly what their pipeline would produce in their environment today. (b) Page lengths (205/222/172/200) are all longer than Session 19's 100-150 average — consistent with 20A's 225/370/230 range but not a terseness win. Contributing could have been ~170 lines by consolidating §§7 and 9. (c) Did not proactively check if the existing `CHANGELOG.md` at repo root should be updated to reflect Sessions 18/19/20; the wiki Changelog is audience-facing but the in-repo one hasn't been touched since Session 0. Flagged it for Session 21 consideration but didn't act. (d) Task-tool reminder fired twice mid-session despite diligently marking tasks completed — possibly because I batched 2-3 file writes between task updates. Minor.
+- **Quality bar vs previous sessions:** Meets Session 20A. Four dense pages with rigorous citations, live wiki pushed on first attempt, Phase 3 close-out formal on first attempt.
+
+### Phase 3C: Learnings
+
+Adding to the `Learnings` table in SESSION_RUNNER.md as #16:
+
+| # | Learning | Source | When to Apply |
+|---|----------|--------|---------------|
+| 16 | When the canonical "what gets generated" spec is a test assertion (e.g., `tests/agents/website/test_templates.py:176-205`), prefer reading the test over running the pipeline to capture the file listing. The test IS the spec — any divergence would fail CI before the listing could drift. Running the pipeline with fake adapters just re-derives the same set of filenames at the cost of setup + environment risk. Cite the test file:line in the doc so future readers can verify independently. | Session 20B (Worked-Examples generated-file listing) | Any documentation that needs to enumerate outputs of a generator function — prefer the test over the run. |
+
+### Phase 3D: Handoff to Session 21
+
+Full "What Session 21 should do" content is in the **ACTIVE TASK** block at the top of this file. Three candidates listed, ranked by readiness and value. Any is one session.
+
+**Key files for any of the three candidates:**
+
+For #1 (live run):
+- `scripts/run_pipeline.py` — has `--live` flag; needs `ANTHROPIC_API_KEY` + `GITLAB_PRIVATE_TOKEN` or `GITHUB_PRIVATE_TOKEN`
+- `OPERATIONS.md` — operator runbook
+- `src/model_project_constructor/config.py` — `OrchestratorSettings.from_env()` and `require_*` guards
+- `.env.example` — required env-var template
+- `docs/tutorial.md` §5 "Live host"
+
+For #2 (resume-from-checkpoint):
+- `src/model_project_constructor/orchestrator/pipeline.py` — current `run_pipeline` and `CheckpointStore`
+- `src/model_project_constructor/orchestrator/checkpoints.py` — checkpoint layout
+- `scripts/run_pipeline.py` — CLI entry point to extend with `--resume`
+- `PipelineStatus` literal at `pipeline.py:45-50` — `FAILED_AT_*` values are the resume points
+- Tests: `tests/orchestrator/test_pipeline.py` — pattern for pipeline tests
+
+For #3 (statistical terminology glossary):
+- `src/model_project_constructor/agents/intake/anthropic_client.py:33-50` — system prompt
+- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` — data-agent system prompt
+- `initial_purpose.txt` — has prior "likelihood → probability" edits (Session 18)
+- `tests/fixtures/subrogation.yaml` — has prior edits; a regression test would check the glossary terms don't appear misused in fixtures
+
+### Gotchas for Session 21
+
+1. **Wiki is live and fully up to date as of this handoff.** Wiki repo at `/Users/rmsharp/Development/claims-model-starter.wiki/`, last commit `2fa274a` (20B), pushed. If doing more wiki work, pull first — user is producing #6/#7/#10 in parallel.
+2. **`CHANGELOG.md` at repo root is stale.** It was last touched 2026-04-10 in Session 0 and doesn't reflect any of Phases 1–6 or the wiki work. The new wiki Changelog page covers the same ground but with a different audience. Session 21 may want to either (a) refresh `CHANGELOG.md` from the wiki Changelog, (b) delete it in favor of the wiki, or (c) leave it as a "developer-only commit log" and mark it as such in its header. Not blocking — just stale.
+3. **BACKLOG.md "Up Next" items #1 ("Pilot readiness audit") and #4 ("Ruff cleanup sweep") are actually complete** per Session 17's close-out. Low-priority cleanup.
+4. **Duplicate "What Session 18 Did" blocks** in this file below line ~120 (carried from Session 18). Known clutter.
+5. **If doing live run (candidate #1):** the fake-adapter path is solid but the live GitLab path hasn't been exercised since Phase 5. Expect some `python-gitlab` version-resolution pain; check `OPERATIONS.md` §"Credentials" first.
+6. **If doing resume (candidate #2):** the existing `CheckpointStore` writes per-stage; verify it also writes pre-stage markers (so you can tell "`FAILED_AT_DATA` with DataRequest persisted" apart from "`FAILED_AT_DATA` before DataRequest was computed"). The resume strategy depends on this distinction.
+7. **If doing glossary (candidate #3):** Session 18 already did a "likelihood → probability" sweep across fixtures. New glossary terms can land as system-prompt extensions without touching fixtures — but add a regression test that runs the data-agent prompt against a known-safe input and asserts the output uses "probability" not "likelihood".
+8. **Fresh session 21 should re-read `SAFEGUARDS.md` and `SESSION_RUNNER.md`.** They are 183 + 306 lines; the countermeasure patterns (especially failure modes #14 ghost sessions and #18 planning-to-implementation bleed) are load-bearing.
+9. **The user's preference for "probability" over "likelihood"** (when referring to `P(event)`) is a durable correction — see `Session 18` handoff. Honor it in all new LLM-adjacent prose.
+
+### Session 20B close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] All 4 wiki pages written with file:line citations verified against source
+- [x] Content-Recommendations, Home, _Sidebar updated
+- [x] Live wiki pulled, copied, committed (`2fa274a`), pushed
+- [x] Phase 3A: Session 20A handoff evaluated, scored, written above
+- [x] Phase 3B: Self-assessment scored and written above
+- [x] Phase 3C: Learning #16 queued for SESSION_RUNNER.md
+- [x] Phase 3D: Handoff to Session 21 above (ACTIVE TASK + candidates + key files + gotchas)
+- [ ] Phase 3E: Commit main-repo changes (this SESSION_NOTES update + the 4 new wiki pages + 3 nav updates) — pending
+- [ ] Phase 3F: Verbal report to user — pending
 
 ---
 

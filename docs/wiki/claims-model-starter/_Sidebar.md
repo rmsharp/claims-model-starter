@@ -7,6 +7,7 @@
 - [Pipeline Overview](Pipeline-Overview)
 - [Intake Interview Design](Intake-Interview-Design)
 - [Agent Reference](Agent-Reference)
+- [Worked Examples](Worked-Examples)
 
 **Generated Output**
 - [Project Structure](Generated-Project-Structure)
@@ -17,6 +18,11 @@
 **Operations**
 - [Monitoring & Operations](Monitoring-and-Operations)
 - [Security Considerations](Security-Considerations)
+
+**Development**
+- [Extending the Pipeline](Extending-the-Pipeline)
+- [Contributing](Contributing)
+- [Changelog](Changelog)
 
 **Reference**
 - [Schema Reference](Schema-Reference)

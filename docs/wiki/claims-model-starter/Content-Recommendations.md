@@ -16,10 +16,14 @@ This page documents what this wiki contains, what additional content would add v
 | [Data Guide](Data-Guide) | Data science teams, analysts | Queries, datasheets, data loading |
 | [Agent Reference](Agent-Reference) | Developers, operators | Detailed agent specs and schemas |
 | [Schema Reference](Schema-Reference) | Developers, integrators | Every Pydantic schema — field by field |
+| [Worked Examples](Worked-Examples) | New users, stakeholders | End-to-end traces of the subrogation and renewal-profitability scenarios |
+| [Extending the Pipeline](Extending-the-Pipeline) | Developers | Four extension surfaces: new agents, adapters, governance artifacts, regulatory frameworks |
 | [Monitoring and Operations](Monitoring-and-Operations) | Operators | Deployment, checkpoints, troubleshooting |
 | [Security Considerations](Security-Considerations) | Security reviewers, compliance | Credentials, network boundaries, LLM data exposure, read-only DB |
 | [Software Bill of Materials](Software-Bill-of-Materials) | Security, compliance, operators | All dependencies and versions |
 | [Architecture Decisions](Architecture-Decisions) | Developers, architects | Key design choices and rationale |
+| [Changelog](Changelog) | Operators, developers | Phase-by-phase history of notable changes |
+| [Contributing](Contributing) | Developers | Dev env, code-quality gates, tests, commit convention, session discipline |
 | [Glossary](Glossary) | All | Domain, pipeline, governance, and technical terms |
 
 ## Recommended additions (prioritized)
@@ -28,11 +32,11 @@ This page documents what this wiki contains, what additional content would add v
 
 These would fill gaps that real users will hit:
 
-#### 1. Worked examples page
+#### 1. Worked examples page ✅ *shipped in Session 20B*
 
-**What:** Two or three complete worked examples showing the pipeline end-to-end for different model types (classification, regression, unsupervised). Include the intake YAML fixture, the generated IntakeReport, the DataReport, and a screenshot or listing of the generated repository.
+See [Worked Examples](Worked-Examples) — the page traces two end-to-end scenarios: **subrogation recovery** (tier-3 moderate, advisory, from `initial_purpose.txt` and `tests/fixtures/subrogation*.*`) and **renewal profitability** (tier-1 critical, fairness-constrained, from `tests/fixtures/tier1_intake.json`). For each it shows the intake fixture, the `IntakeReport`, the `DataRequest`, the `DataReport`, and the full generated-project file listing including the tier-gated governance artifacts. Both examples are reproducible from `scripts/run_pipeline.py`.
 
-**Why:** The current documentation describes what happens; worked examples show it. Users learn faster from concrete examples than abstract descriptions. The `initial_purpose.txt` already contains a subrogation example that could be the first worked example.
+A third example covering a regression or unsupervised scenario is still worth adding once a corresponding fixture lands.
 
 **Audience:** New users, business stakeholders evaluating the tool.
 
@@ -42,11 +46,9 @@ See [Intake Interview Design](Intake-Interview-Design) — the page now covers t
 
 **Audience:** Business stakeholders, intake agent operators.
 
-#### 3. Extending the pipeline
+#### 3. Extending the pipeline ✅ *shipped in Session 20B*
 
-**What:** A developer guide for adding new agents to the pipeline, creating new governance artifacts, adding new host adapters, or modifying the generated project structure.
-
-**Why:** As the tool matures, teams will want to customize it. Currently, extension requires reading the source code. A guide covering the extension points (HandoffEnvelope, RepoClient protocol, governance tier gates) would lower the barrier.
+See [Extending the Pipeline](Extending-the-Pipeline) — the page documents the four designed extension surfaces: **new agents** (envelope literals + registry entry + runner signature + orchestrator wiring), **new `RepoClient` adapters** (protocol at `protocol.py:42-66`, adapter template, CI template sibling), **new governance artifacts** (tier-gate branches in `build_governance_files`, classifier update in `is_governance_artifact`, positive-and-negative test), and **new regulatory frameworks** (entry in `_FRAMEWORK_ARTIFACTS`). Each surface is documented with the files to change, the contract to preserve, and the invariant tests that enforce it at CI.
 
 **Audience:** Developers.
 
@@ -88,19 +90,17 @@ See [Security Considerations](Security-Considerations) — the page documents cr
 
 These are valuable but less urgent:
 
-#### 8. Changelog
+#### 8. Changelog ✅ *shipped in Session 20B*
 
-**What:** A page tracking significant changes to the tool: new agents, schema changes, new governance artifacts, dependency updates. Can be auto-generated from git tags or maintained manually.
+See [Changelog](Changelog) — the page covers phases 1 through 6 plus the pilot-readiness fixes, the GitHub/GitLab abstraction (phases A–D), the end-to-end tutorial work (Session 18), the wiki expansion (Sessions 19, 20A, 20B), the license change (Proprietary → MIT), and the coverage-floor history (80% → 90% → 93% → 94%). It also documents the project's versioning policy (minor vs. major schema bumps, envelope-independent versioning).
 
-**Why:** Users upgrading need to know what changed and whether it affects their generated projects.
+A future release-tag-driven refresh (`git tag` + a script that emits a new section per tag) is worth considering once the first tagged release cuts.
 
 **Audience:** Operators, developers.
 
-#### 9. Contributing guide
+#### 9. Contributing guide ✅ *shipped in Session 20B*
 
-**What:** How to contribute to the Model Project Constructor: development setup, testing conventions, commit message format, PR process, code quality standards (ruff rules, mypy strict, 94% coverage floor).
-
-**Why:** Standard for any project that may accept external contributions.
+See [Contributing](Contributing) — the page documents the `uv`-based dev environment, the four CI gates (ruff rules `E/F/I/UP/B/SIM`, mypy `strict=true` over both packages, pytest with a 94% coverage floor, the data-agent decoupling AST-walk), the commit-message convention (`feat`/`fix`/`docs`/`chore`/`refactor` with `(phase-N)` or `(session-N)` scopes), test-writing conventions (structural guards, positive-and-negative tier fan-out), the session-discipline expectations from `SESSION_RUNNER.md` / `SAFEGUARDS.md`, and the PR workflow.
 
 **Audience:** Developers.
 
