@@ -13,6 +13,12 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-16 — CI ruff coverage extended to `scripts/` (Session 25)
+
+- **Changed:** `.github/workflows/ci.yml` lint job now runs `uv run ruff check src/ tests/ packages/ scripts/` (previously `src/ tests/ packages/`). Closes a CI gap documented in Session 22: `scripts/` was outside CI's ruff scope, so 10 pre-existing errors (6 × `E402`, 4 × `F541`) never blocked merges.
+- **Fixed:** `scripts/run_pipeline.py` — 6 × `E402` ("module level import not at top of file") resolved with per-line `# noqa: E402` on the imports that follow `sys.path.insert`. Kept the `sys.path` preamble intact so the module docstring's claim that the script runs "whether invoked via `uv run python scripts/run_pipeline.py` or directly" stays true. 4 × `F541` ("f-string without any placeholders") auto-fixed by `ruff check --fix`; the affected `print(f"...")` calls had no placeholders and are now plain `print("...")`.
+- **Verified:** `uv run ruff check src/ tests/ packages/ scripts/` clean; `uv run python scripts/run_pipeline.py --help` renders; full fake-mode pipeline run (`--run-id run_s25_scripts_ruff`) completes with status `COMPLETE`; pytest 422/422 green.
+
 ### 2026-04-16 — Scope B-1: real Anthropic data agent wired into `run_pipeline` (Session 24)
 
 - **Added:** `scripts/run_pipeline.py` now accepts `--llm {none,data}` (default `none`), `--model ID` (default `claude-opus-4-7`), and `--db-url URL` (default `None`). A new `build_data_runner` helper returns either a fixture-serving closure (`--llm none`, unchanged Scope A behavior) or `DataAgent(AnthropicLLMClient(model=...), db=...).run` (`--llm data`). The intake stage stays fixture-driven at this phase — Scope B-2 wires the real intake path.

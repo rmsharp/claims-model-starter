@@ -50,9 +50,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 sys.path.insert(0, str(PROJECT_ROOT / "packages" / "data-agent" / "src"))
 
-from model_project_constructor.agents.website.agent import WebsiteAgent
-from model_project_constructor.agents.website.fake_client import FakeRepoClient
-from model_project_constructor.orchestrator import (
+from model_project_constructor.agents.website.agent import WebsiteAgent  # noqa: E402
+from model_project_constructor.agents.website.fake_client import FakeRepoClient  # noqa: E402
+from model_project_constructor.orchestrator import (  # noqa: E402
     MetricsRegistry,
     OrchestratorSettings,
     PipelineConfig,
@@ -60,9 +60,9 @@ from model_project_constructor.orchestrator import (
     make_measured_runner,
     run_pipeline,
 )
-from model_project_constructor.schemas.v1.data import DataReport
-from model_project_constructor.schemas.v1.intake import IntakeReport
-from model_project_constructor.schemas.v1.repo import RepoTarget
+from model_project_constructor.schemas.v1.data import DataReport  # noqa: E402
+from model_project_constructor.schemas.v1.intake import IntakeReport  # noqa: E402
+from model_project_constructor.schemas.v1.repo import RepoTarget  # noqa: E402
 
 FIXTURE_DIR = PROJECT_ROOT / "tests" / "fixtures"
 
@@ -228,7 +228,7 @@ def main() -> None:
     mode = "LIVE" if args.live else "FAKE (dry run)"
     llm_label = "fixture" if args.llm == "none" else f"data={args.model}"
     print(f"\n{'=' * 60}")
-    print(f"  Model Project Constructor — End-to-End Pipeline Run")
+    print("  Model Project Constructor — End-to-End Pipeline Run")
     print(f"  Mode: {mode}  |  Host: {args.host}  |  LLM: {llm_label}")
     print(f"  Run ID: {args.run_id}")
     print(f"{'=' * 60}\n")
@@ -291,9 +291,9 @@ def main() -> None:
     metrics.record_run(result.status)
 
     # --- Report ---
-    print(f"\n[5/5] Pipeline complete.")
+    print("\n[5/5] Pipeline complete.")
     print(f"\n{'=' * 60}")
-    print(f"  RESULT")
+    print("  RESULT")
     print(f"{'=' * 60}")
     print(f"  Status:  {result.status}")
     if result.project_url:
@@ -303,7 +303,7 @@ def main() -> None:
 
     # Show metrics
     snap = metrics.snapshot()
-    print(f"\n  Metrics:")
+    print("\n  Metrics:")
     print(f"    Total runs:  {snap.run_count}")
     print(f"    Status dist: {snap.status_counts}")
     for agent_name, latency in snap.agent_latency.items():

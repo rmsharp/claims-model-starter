@@ -5,9 +5,176 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 25 — open. Session 24 shipped Scope B-1 (real Anthropic data agent wired into `scripts/run_pipeline.py --llm data`). Session 25 is user's choice between continuing Scope B (Phase B2 — scripted-answers intake) and picking any of the carryover findings.
-**Status:** Session 24 complete. Session 25 ready.
-**Priority:** If Session 25 picks B2, user should re-confirm plan §8.3 (B3 in scope?) and §8.4 (adapter location). For B1 we used opus-4-7; B2 should pick a model for the intake side.
+**Task:** Session 26 — open. Session 25 closed the `scripts/` ruff CI gap (candidate #3). Session 26 is user's choice between continuing Scope B (Phase B2 — scripted-answers intake), extending CI mypy to `packages/` (candidate #4, the structural twin of what Session 25 just did for ruff), or any of the remaining carryover findings.
+**Status:** Session 25 complete. Session 26 ready.
+**Priority:** Candidate #1 (Phase B2) is the natural Scope-B sequel. Candidate #3 (mypy to `packages/`) is a one-session low-risk win with ~13 errors to fix — same shape as Session 25's work but higher payoff (surfaces latent Anthropic SDK drift).
+
+### What Session 26 should do
+
+Six candidates remaining (original candidate #3 done in Session 25; renumbering to keep the list contiguous):
+
+1. **Execute Phase B2 of `docs/planning/scope-b-plan.md`** — Scripted-answers intake with real Anthropic, activated by `--llm both --intake-fixture path/to/sub.yaml`. Plan §7.2 specifies ~+35 LOC in `scripts/run_pipeline.py` + ~+25 LOC for the `RuntimeError → DRAFT_INCOMPLETE` adapter (inline per plan §8.4 (a)). The adapter is the load-bearing piece — §7.2.2 has the reference implementation; the data agent's `agent.py:50-53` try/except is the template. **Hard stop:** do NOT bundle B3 in the same session — failure mode #18 risk.
+
+2. **Clearer `MPC_NAMESPACE` validation + docs** (Session 22 finding). Add a validator to `OrchestratorSettings.from_env()` that detects a leading `http://`/`https://` and raises `ConfigError("MPC_NAMESPACE must be a group path, not a URL; got '...'")`. Update `.env.example`, `OPERATIONS.md` §1, `docs/tutorial.md` §5a. ~5 small edits + one new test. One session.
+
+3. **CI typecheck coverage extension to `packages/`** (Session 22 finding). `pyproject.toml` declares both packages under `[tool.mypy]` but CI runs `mypy src/` only. Extend CI to `mypy src/ packages/data-agent/src/`. Fix ~13 errors — largest cluster is `packages/data-agent/.../anthropic_client.py:218` (Anthropic SDK content-block union; needs `TextBlock` type-guard). One session. **Structurally similar to Session 25's ruff extension** — use it as the template.
+
+4. **Self-hosted GitHub URL override** (Session 22 finding, code-read only). `docs/tutorial.md` §5c claims `MPC_HOST_URL` works for GHE, but `scripts/run_pipeline.py` at the `PyGithubAdapter(token=token)` branch passes no URL. Fix parallels Session 22's `host_url=` fix for GitLab. Untested live; small scope. One session.
+
+5. **Re-audit `OPERATIONS.md` §4.2/4.3 recipes** (Session 22 finding; Session 23's claim was WRONG, confirmed by Session 24). `src/model_project_constructor/agents/website/__main__.py` and `cli.py` BOTH exist (commit `e9f0d10`, Phase D / Session 17). The OPERATIONS recipes may actually work. Session 26 should try each invocation, document what works vs. what's stale, and reconcile with `scripts/run_pipeline.py --live` as the canonical entry point. One session.
+
+6. **Wiki freshness sweep** (Session 24 finding). Update `docs/wiki/claims-model-starter/` pages so each reads as a description of the current tool rather than a record of its evolution. Delete "Recommended additions" that are already implemented; rewrite partially-implemented ones to describe the remaining gap only. Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. One session.
+
+**Recommend #1** for Session 26 to complete Scope B. If the user wants a quick symmetric win, #3 is Session 25's twin — same shape, broader blast radius, ~45 minutes.
+
+---
+
+## Session 24 Handoff Evaluation (by Session 25)
+**Score: 9/10.** A tightly scoped carryover item with near-perfect prep — the handoff all but pre-wrote the implementation.
+
+- **What helped:** (a) The "For #3 (CI lint extension to `scripts/`)" block in Session 24's handoff named the exact errors by rule ID, count, and line number (6 × E402 at lines 53-55, 63-65; 4 × F541 at lines 231, 294, 296, 306). My `ruff check scripts/` produced identical output — zero drift from the handoff. (b) The two-option framing ("Simplest: `# noqa: E402` on 6 imports + `ruff check scripts/ --fix` on the F541s" vs "Cleaner: drop the `sys.path.insert` hack") with implicit decision hints let me pick the min-risk path without a round-trip. (c) Gotcha #8 ("Session 24's pre-commit state is green") let me run pre-flight as a one-shot confirmation rather than an investigation. (d) Gotcha #9 ("ruff errors in `scripts/run_pipeline.py` (6 E402, 4 F541) are NOT a regression") pre-empted any "did I break something?" second-guessing when ruff first fired.
+- **What was missing:** (a) No note that the docstring lines 45-47 explicitly promise "whether invoked via `uv run python scripts/run_pipeline.py` or directly" — this is the load-bearing user-facing contract that forced the noqa path over the "cleaner" hack-removal. A one-liner flag in the handoff would have shaved ~1 min from my analysis. (b) Line-length check wasn't mentioned: adding `  # noqa: E402` to line 54 produces a ~95-char line (under the 100-char limit, but tight). Easy to anticipate; I got lucky. (c) No note on whether `uv run` (via workspace-editable install) is actually sufficient for the CI runner — I verified from `pyproject.toml` but a one-line confirmation would've been useful.
+- **What was wrong:** Nothing. Every cited line number, error rule, and count matched exactly.
+- **ROI:** ~5× return. Reading items #3 + #4's key-files blocks + gotchas #8-9 (~3 min) saved ~10+ min of grep/error-discovery + decision round-trips. The handoff was so detailed the session spent more time on verification than discovery — ideal ratio for a surgical CI fix.
+
+### What Session 25 Did
+**Deliverable:** Candidate #3 from Session 24's handoff — extend CI ruff coverage to `scripts/` and fix the 10 pre-existing errors. **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Commits:** (pending this session's commit) — single `fix(session-25): extend CI ruff to scripts/` commit.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full, `SESSION_NOTES.md` ACTIVE TASK + Session 24 handoff + gotchas in full, ran `git status`/`git log -10`/`git diff --stat`, ran `python methodology_dashboard.py` (project at 91/100, medium risk, active). No ghost sessions. Reported state to user. Waited for direction.
+
+2. **Phase 1B stub** — Wrote the IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection). Stated back to user: "deliverable is a ruff-scope extension; closing out when CI is green."
+
+3. **Pre-flight** — `uv run ruff check src/ tests/ packages/` → clean; `uv run mypy src/` → clean; `uv run pytest -q` → 422 passed, 97.24% coverage. Verified green baseline at commit `2e79632`.
+
+4. **Error confirmation** — `uv run ruff check scripts/` returned exactly the 10 errors Session 24's handoff predicted: 6 × `E402` at lines 53, 54, 55, 63, 64, 65 (the two module-level imports + the multi-line `from model_project_constructor.orchestrator import (...)` + three schema imports, all preceded by `sys.path.insert` at lines 50-51); 4 × `F541` at lines 231, 294, 296, 306 (`print(f"...")` with no placeholders in the banner + the `RESULT` section + `Metrics:` header).
+
+5. **Decision: noqa over hack-removal.** The docstring at lines 45-47 explicitly promises the script runs "whether invoked via `uv run python scripts/run_pipeline.py` or directly" — dropping the `sys.path.insert` hack would break the latter invocation mode in any venv that hasn't editably installed both workspace packages. That's a behavior change, not a style fix. `# noqa: E402` preserves the contract exactly.
+
+6. **Implemented the fix:**
+   - `scripts/run_pipeline.py` lines 53-65: appended `  # noqa: E402` to the 6 import statements (lines 53, 54, 55, 63, 64, 65). Multi-line `from ... import (...)` on line 55 only needs noqa on the opening line; ruff reports the error there.
+   - `uv run ruff check scripts/ --fix` auto-fixed the 4 F541s by removing the `f` prefix from `print(f"...")` calls with no placeholders. Zero behavior change — these strings never had interpolated values.
+   - `.github/workflows/ci.yml:23`: `uv run ruff check src/ tests/ packages/` → `uv run ruff check src/ tests/ packages/ scripts/`.
+
+7. **Verified:**
+   - `uv run ruff check scripts/` → All checks passed
+   - `uv run ruff check src/ tests/ packages/ scripts/` (the new CI command) → All checks passed
+   - `uv run python scripts/run_pipeline.py --help` renders correctly
+   - `uv run python scripts/run_pipeline.py --run-id run_s25_scripts_ruff` → `Status: COMPLETE` against the `FakeRepoClient`; banner + metrics render (confirms the F541 strip didn't introduce bad print output)
+   - `uv run pytest -q` → 422 passed, 97.24% coverage — no regression
+
+8. **Documentation updates:**
+   - `CHANGELOG.md` [Unreleased]: added Session 25 entry above the Session 24 entry, describing the CI extension + both fixes + rationale for preserving the `sys.path` hack.
+   - `BACKLOG.md`: removed the "CI lint coverage extension to `scripts/`" item from "Up Next" (per CHANGELOG.md's own guidance: "When completing work, remove the item from BACKLOG.md and add an entry here").
+   - `SESSION_NOTES.md`: ACTIVE TASK updated for Session 26 (this block) + Session 24 handoff evaluation + close-out below.
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Read `pyproject.toml` (workspace declaration), the full `scripts/run_pipeline.py`, the docstring's invocation contract, and the existing `.github/workflows/ci.yml` BEFORE touching any code. Decision path was documented before implementation.
+- **Implementations read, not just descriptions:** Yes. Read the actual error output (rule IDs + line numbers + hint from ruff), not just the handoff's summary. Confirmed the 4 F541 fixes were safe by looking at each target `print(f"...")` line for interpolation (none).
+- **Stakeholder corrections needed:** 0. User said "work on item 3" → restated deliverable + workstream + close-out commitment; user implicitly confirmed by not redirecting.
+- **What I got right:** (a) Phase 1B stub written before any technical work. (b) Preserved the docstring's invocation contract by choosing noqa over hack-removal — a subtle user-facing contract that the handoff didn't flag explicitly. (c) Ran SAFEGUARDS' runtime-verification gate: `--help` + a real fake-mode end-to-end run, not just "pytest passes." Caught nothing, but the gate is there for regressions like "my F541 fix accidentally stripped the leading `f` from a string that DID have a placeholder later on the same line" — the run would surface a syntax error or raw `{var}` in stdout. (d) CHANGELOG entry is a short "what + why + verification" block in Session 24's style, not a checkbox list. (e) Did NOT bundle candidate #4 (mypy to `packages/`) into this session despite it being the structural twin — flagged it as Session 26's #3 with a "structurally similar to Session 25" pointer. Failure mode #18 held. (f) Did NOT modify the docstring comment at lines 45-47 even though the sys.path hack could arguably be simplified — staying on the approved scope.
+- **What I got wrong:** (a) Did not offer the user both options (noqa vs drop-hack) before starting. The handoff named both; I decided unilaterally that the docstring contract won. Arguably correct given "work on item 3" implies the default path, but a one-line "I'm picking noqa because of the docstring" in the opening response would have been more transparent. -0.5. (b) Did not line-length-check my noqa edits before applying — line 54 post-edit is 95 chars (under 100, but a near-miss). -0.3. (c) Did not verify the docstring's "or directly" invocation actually works today. If it's already broken, my "preserve the contract" argument is moot. -0.2.
+- **Quality bar vs previous sessions:** Matches Session 22's surgical-fix discipline (small change, runtime-verified, carryover-flagged for next session). Smaller scope than Session 24's B1 wire-up; appropriate for a CI-gap cleanup.
+
+### Phase 3C: Learnings
+
+No novel pattern discovered this session. The work applied learning #18 (CI gate scope divergence) — the motivation for the fix — without generating a new pattern. Adding a reinforcement note would just duplicate #18.
+
+### Phase 3D: Handoff to Session 26
+
+Full "What Session 26 should do" content is in the **ACTIVE TASK** block above. Six candidates (renumbered after candidate #3 closed this session).
+
+**Key files for each candidate:**
+
+For #1 (Phase B2 — scripted-answers intake):
+- `docs/planning/scope-b-plan.md` §7.2 — **read in full first**. §7.2.1 lists files to change; §7.2.2 has the adapter reference implementation; §7.2.3 has the per-phase completion criteria.
+- `scripts/run_pipeline.py:103-123` — `build_data_runner` (Session 24) is the structural template for `build_intake_runner`. Mirror the same shape.
+- `scripts/run_pipeline.py:194-207` — CLI flag block; add `--intake-fixture path/to/sub.yaml` and extend `--llm choices` from `{none,data}` to `{none,data,both}`.
+- `src/model_project_constructor/agents/intake/agent.py:48-125` — `IntakeAgent.run_scripted(...)`. The `RuntimeError` raise sites at lines 100-104 and 117-120 are the failure surface the adapter must catch.
+- `src/model_project_constructor/agents/intake/fixture.py:9-75` — `load_fixture`, `answers_from_fixture`, `review_sequence_from_fixture` helpers. Use directly.
+- `src/model_project_constructor/agents/intake/anthropic_client.py:53-170` — `AnthropicLLMClient` constructor (reads `ANTHROPIC_API_KEY` from env).
+- `tests/fixtures/subrogation.yaml` — the canonical fixture for the happy-path live run.
+- For the failure-injection test (plan §7.2.3 criterion #3): create `tests/fixtures/_b2_failmode.yaml` with only 1 `qa_pairs` entry but `draft_after: 99` — this exhausts the answer script before the graph can converge, triggering the `RuntimeError`.
+
+For #2 (`MPC_NAMESPACE` validator + docs):
+- `src/model_project_constructor/orchestrator/config.py:98,111` — env-var validators live here
+- `.env.example:47` — `MPC_NAMESPACE` template line
+- `OPERATIONS.md` §1 env-var table
+- `docs/tutorial.md` §5c — `MPC_NAMESPACE` section
+- `src/model_project_constructor/agents/website/gitlab_adapter.py:79` — where the generic 404 error originates
+
+For #3 (CI typecheck extension to `packages/`):
+- `.github/workflows/ci.yml:34` — current `uv run mypy src/`. Change to `uv run mypy src/ packages/data-agent/src/` (or rely on `pyproject.toml`'s `[tool.mypy] packages = [...]` declaration and run `uv run mypy` without args).
+- `pyproject.toml` `[tool.mypy]` — already declares both packages (lines 90-94); `mypy_path = ["src", "packages/data-agent/src"]`.
+- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:218` — `TextBlock` type-guard cluster (largest error cluster per Session 22)
+- `packages/data-agent/src/model_project_constructor_data_agent/nodes.py:142` — `execution_status` literal narrowing
+- `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py:26` — untyped `get_type` call
+- **Session 25 is the structural template** — same pattern: extend CI scope, fix pre-existing errors that the broader scope surfaces, verify green, CHANGELOG + BACKLOG update.
+
+For #4 (self-hosted GitHub URL override):
+- `scripts/run_pipeline.py:143-147` (post-Session-25 lines; grep for `PyGithubAdapter(` to confirm) — the branch that passes `token=token` with no URL argument
+- `docs/tutorial.md` §5c — the misleading documentation
+- `src/model_project_constructor/agents/website/github_adapter.py` — verify `base_url` constructor kwarg exists (PyGithub's `Github(base_url=...)` pattern)
+- Untested live; code-read only.
+
+For #5 (re-audit OPERATIONS §4.2/4.3):
+- `OPERATIONS.md:174-208` — the recipes to re-verify (Session 24 confirmed the entry points DO exist despite Session 23's claim)
+- `src/model_project_constructor/agents/website/__main__.py` (exists) — entry point
+- `src/model_project_constructor/agents/website/cli.py` (exists, 7225 bytes) — Typer CLI
+- `docs/tutorial.md` §5 — the `scripts/run_pipeline.py --live` canonical recipe to reconcile with
+
+For #6 (wiki freshness sweep):
+- `docs/wiki/claims-model-starter/Content-Recommendations.md` — likely has "Recommended additions" that have shipped
+- `docs/wiki/claims-model-starter/Home.md` — front-page, drift-prone
+- `docs/wiki/claims-model-starter/Pipeline-Overview.md` — may still describe B-1 as future
+- `docs/wiki/claims-model-starter/Getting-Started.md` — may reference old CLI patterns
+- `docs/wiki/claims-model-starter/Agent-Reference.md` — Session 23 handoff noted this has wrong API docs (`IntakeAgent().run(config)` and `DataAgent().run(...)` — both wrong since agents require `llm=`)
+
+### Gotchas for Session 26
+
+1. **The docstring in `scripts/run_pipeline.py:45-47` is a load-bearing contract.** Any future "refactor the sys.path hack" work must either (a) preserve the "direct invocation" path by some other mechanism or (b) update the docstring to remove the promise. Session 25 chose noqa specifically to avoid this tradeoff. Do not silently drop the hack.
+
+2. **`# noqa: E402` is now on 6 imports in `scripts/run_pipeline.py:53-65`.** If Session 26 adds new imports after `sys.path.insert`, they need the same `# noqa: E402` suffix or ruff will fire in CI. A file-level `# ruff: noqa: E402` would remove this footgun but was NOT chosen to keep the suppression surgical — per-line documents intent.
+
+3. **CI ruff scope is now `src/ tests/ packages/ scripts/`.** Any new top-level directory with Python code must be added explicitly. `.github/workflows/ci.yml:23`.
+
+4. **For candidate #3 (mypy to `packages/`), remember Session 22's count.** `pyproject.toml` declares both packages but `uv run mypy src/ packages/data-agent/src/` will surface ~13 errors — largest cluster is `anthropic_client.py:218` (content-block union type guard). Budget time for those fixes, not just the CI command change.
+
+5. **`.env` is already populated** (`ANTHROPIC_API_KEY`, `GITLAB_TOKEN`, `MPC_HOST=gitlab`, `MPC_HOST_URL=https://gitlab.com`, `MPC_NAMESPACE=rmsharp-modelpilot`) from Session 22. Re-use via `set -a; source .env; set +a`.
+
+6. **Live B1 project** at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot-v2` is still live (Session 24). Candidate #1 (B2) will auto-suffix past it to `-v3`.
+
+7. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+8. **Re-read `SAFEGUARDS.md` and `SESSION_RUNNER.md`** at Session 26 start. Failure modes #14 (ghost session), #17 (protocol erosion), and #18 (plan-to-impl bleed — high risk if picking candidate #1 = B2) all apply.
+
+9. **Session 24's ACTIVE TASK listed 7 candidates; Session 25 closed candidate #3 and renumbered the remaining 6.** If you see an older reference to "candidate #3 = mypy," that was Session 24's numbering; post-Session-25 "candidate #3" means "CI typecheck to `packages/`" (which was Session 24's #4).
+
+10. **Session 25's pre-commit state is green** (pytest 422/422, ruff on extended CI scope clean, mypy clean, `scripts/run_pipeline.py --help` + fake end-to-end verified). Session 26 should re-run pre-flight in Phase 0 to confirm no drift.
+
+### Session 25 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Pre-flight green (ruff/mypy/pytest) BEFORE code changes
+- [x] Fix implemented: 6 × `# noqa: E402` + 4 × F541 auto-fix + CI command extended
+- [x] Runtime verification: `--help` + fake end-to-end run (SAFEGUARDS §Verification Checklist)
+- [x] Post-fix green: ruff clean on `src/ tests/ packages/ scripts/`, pytest 422/422
+- [x] CHANGELOG.md [Unreleased] entry added
+- [x] BACKLOG.md item removed (per CHANGELOG convention)
+- [x] Phase 3A: Session 24 handoff evaluated and scored above
+- [x] Phase 3B: Self-assessment scored and written above
+- [x] Phase 3C: No novel learning; applied #18
+- [x] Phase 3D: Handoff to Session 26 above (ACTIVE TASK + 6 candidates + key files + 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
 
 ### What Session 25 should do
 

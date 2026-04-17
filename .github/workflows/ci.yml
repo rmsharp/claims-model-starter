@@ -20,7 +20,7 @@ jobs:
         with:
           version: "latest"
       - run: uv sync --extra dev
-      - run: uv run ruff check src/ tests/ packages/
+      - run: uv run ruff check src/ tests/ packages/ scripts/
 
   typecheck:
     name: Type check (mypy)
