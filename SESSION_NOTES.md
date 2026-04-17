@@ -5,8 +5,146 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 32 — pick from candidates in "What Session 32 should do" below. Recommend **#1 (cli.py GitLab default URL fix)** — small surgical code + test change, closes Session 31's F5 finding before drift gets worse.
-**Status:** Session 31 complete. `OPERATIONS.md` §4.2/§4.3 re-audited and reconciled (F1-F4 fixed via doc-only commit). F5 (cli.py:39 GitLab default URL inconsistency) and F6 (`--ci-platform` undocumented in OPERATIONS §4.x) deferred to BACKLOG as new items. Pytest 444/444 @ 97.26%, ruff clean on CI scope, mypy clean on 60 files.
+**Task:** Session 33 — pick from candidates in "What Session 33 should do" below. Recommend **#1 (F6: document `--ci-platform` in OPERATIONS §4.x)** — tiny surgical doc edit, closes the last Session-31 finding. Alt: #2 wiki freshness sweep (doc-sweep-shaped, larger), #3 B-3 Web UI bridge (deferred unless production-shape demo wanted).
+**Status:** Session 32 complete. F5 closed: `cli.py:39` `GITLAB_DEFAULT_HOST_URL` bumped `"https://gitlab.example.com"` → `"https://gitlab.com"`. Test suite 444 → 445 (restructured default-path test + added explicit-override test). Pytest 445/445 @ 97.26%, ruff clean on CI scope, mypy clean on 60 files.
+
+### What Session 33 should do
+
+Three candidates after Session 32's F5 close:
+
+1. **F6: document `--ci-platform` in OPERATIONS §4.x** (Session 31 finding, low-impact) — `cli.py:107-116` + `README.md:197` describe the flag; `OPERATIONS.md` §4.1/§4.2/§4.3 don't mention it. One-line note at end of §4.1 or a new §4.5. Micro-session; could ride along with any future OPERATIONS edit but cheapest to close standalone.
+
+2. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. Walk "Recommended additions" / "Future enhancements" / "Planned" lists and (a) delete already-implemented items, (b) rewrite partials to describe the remaining gap. Doc-sweep-shaped; full session.
+
+3. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+
+**Recommend #1** — micro-scope that cleanly closes the last Session-31 finding before drift. F6 + F5 are the pair; closing F6 leaves the `OPERATIONS.md` §4.x surface fully synchronized with code.
+
+---
+
+## Session 31 Handoff Evaluation (by Session 32)
+**Score: 10/10.** Exceptional handoff. Session 31's ACTIVE TASK block + "What Session 32 should do" block pre-specified the F5 scope with every key file (cli.py:39 + the 4 canonical default-surface references), every test constraint (test_cli.py:233-264 asserts the user's passed URL not the default), the verification path (bump constant → restructure test to mirror GitHub sibling → pytest + ruff + mypy), AND the gotchas that would have burned time without them (README.md:182 is a self-hosted example NOT a default, fake mode doesn't exercise host_url so unit-test coverage is the pin). I executed the session in ~10 minutes of wall time, with zero discovery loops and zero stakeholder round-trips.
+
+- **What helped:** (a) **Gotcha #3** ("F5 fix contract: `test_cli.py:233-264` explicitly passes `--host-url` and asserts the same value at :262. The assertion tests the value **the user passed**, not the default") — this is the crucial framing. Without it I might have thought the existing test needed its assertion changed (it didn't — it's actually a valid explicit-override test). With it, I knew immediately: restructure the existing test to mirror the GitHub sibling's default-path shape + add a NEW explicit-override test. Saved a mode-switch to figure out the right test-restructuring shape. (b) **Key-files block at SESSION_NOTES.md:100-106** — every surface I needed was named with line numbers, including the ones I shouldn't change (README.md:182, .env.example:21, scripts/run_pipeline.py:105,283). The "don't change" list is as valuable as the "change this" list — it prevented a grep-sweep-and-fix rabbit hole. (c) **Gotcha #4** ("`cli.py`'s default URL is only exercised in live mode. `--fake` bypasses the adapter, so `FakeRepoClient` ignores `host_url`") explained *why* unit tests are the pin rather than a fake-mode smoke. Saved the "but my smoke test didn't show the URL change" confusion. (d) **Gotcha #5** ("OPERATIONS.md §4.2 uses `https://gitlab.example.com` in the recipe (line 184) — this is intentional as a self-hosted example URL, NOT a default") — pre-empted the most likely follow-on "fix" that would have been wrong. (e) **Post-Session-31 pre-commit state in Gotcha #1** matched exactly (pytest 444/444 @ 97.26%, ruff clean on CI scope, mypy clean on 60 files). Pre-flight was a one-command confirmation.
+- **What was missing:** Nothing material. I would have liked an explicit "after the F5 bump, the grep for `gitlab.example.com` will still return 14 hits — here's which are intentional placeholders vs. stale references" but the "don't change" key-files list already answered that question for every hit that mattered. -0.
+- **What was wrong:** Nothing. Every forecast matched observed behavior.
+- **ROI:** ~10× return. Reading Session 31's handoff (~2 min) saved ~20 min of discovery (verification approach, which tests to restructure vs. add, which references are intentional, pre-flight baseline, failure-mode guardrails). Matches the top of the handoff-quality band (Session 28→29 was ~8×, Session 29→30 was ~5× with gaps, Session 30→31 was ~6×). Session 31 set a new high bar.
+
+### What Session 32 Did
+**Deliverable:** F5 (Session 31 finding) — bump `cli.py:39` `GITLAB_DEFAULT_HOST_URL` from `"https://gitlab.example.com"` to `"https://gitlab.com"` + restructure tests to pin the default path and preserve explicit-override coverage. **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this turn) — single `fix(session-32): bump cli.py GitLab default URL to public gitlab.com — closes F5` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` ACTIVE TASK + Session 31 handoff + 10 gotchas in full; ran `git status` / `git log -5` / `git diff --stat` (clean tree, 1 commit ahead of origin/master per Session 31 gotcha #2); ran `methodology_dashboard.py` (91/100, medium risk, active, healthiest of 4). No ghost sessions (Session 31 matches `fa169fc`). Reported state to user. Waited for direction.
+
+2. **Push first.** User confirmed push on the "want me to push before starting?" question. Pushed `62aa46b..fa169fc` to origin/master (Session 31's doc-only commit). Working tree clean + up-to-date.
+
+3. **User confirmed: work on Active task #1 (F5).** No decision round-trips.
+
+4. **Phase 1B stub** — Wrote IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection).
+
+5. **Blast-radius grep** — Grep for `gitlab\.example\.com` across the repo returned 22 hits. Classified each against the Session 31 handoff's "don't change" list: 1 bug-site (`cli.py:39`), 4 intentional self-hosted-example placeholders (`README.md:182`, `OPERATIONS.md:184`, `.env.example:21`, `gitlab_adapter.py:50` docstring), 10 test inputs (test_config.py, schemas/fixtures.py, test_cli.py:256 explicit-override, test_gitlab_adapter.py, conftest.py, test_governance.py — all correctly exercise the URL as a valid input value, not as a default), 4 doc surfaces (planning docs + wiki schema-reference — stale but out of scope for an F5 commit), 3 bookkeeping self-references (SESSION_NOTES.md, CHANGELOG.md, BACKLOG.md). Only cli.py:39 is a bug. Read `.env.example` in full to confirm line 21 is a self-hosted example (it is — prose at line 18-20 says "If unset, defaults to the public host for the selected platform").
+
+6. **Fix — `cli.py:39`** — 1-line constant bump: `GITLAB_DEFAULT_HOST_URL = "https://gitlab.example.com"` → `"https://gitlab.com"`. The docstring at lines 100-104 references the variable by name (not value) so it's self-updating. `resolved_host_url` resolution at :153-155 is unchanged.
+
+7. **Test restructure — `tests/agents/website/test_cli.py`** — two changes in one Edit call:
+   - **Restructured `test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter`** (lines 233-264): removed the `--host-url "https://gitlab.example.com"` argument from the invocation, asserted `host_url: "https://gitlab.com"` on the default path. Now mirrors the GitHub sibling's shape at `test_cli_host_github_with_token_invokes_pygithub_adapter` (:267-302). Added inline comment: `# --host-url omitted → CLI uses the GitLab default (public gitlab.com).` (matches the GitHub sibling's comment style at :293).
+   - **Added `test_cli_host_gitlab_explicit_host_url_override`** — new 36-line test that passes `--host-url https://gitlab.example.com` explicitly and asserts the adapter received that exact URL. Preserves the explicit-override coverage the restructuring removed. Docstring: "Explicit ``--host-url`` (self-hosted GitLab) flows through to the adapter kwargs, overriding the public ``gitlab.com`` default." Uses the same `_StandinGitLabAdapter` class + monkeypatch pattern as the sibling.
+   - Net: +1 test (444 → 445); 0 deletions; GitLab branch is now symmetric with GitHub (default-path test for both; explicit-override test for GitLab — GitHub doesn't have one, but that's a separate gap the handoff didn't flag).
+
+8. **Verification:**
+   - `uv run pytest -q` — **445/445** passing (+1 from Session 31's 444), coverage **97.26%** (unchanged; new test adds +1 to both num/denom equally).
+   - `uv run ruff check src/ tests/ packages/ scripts/` — clean.
+   - `uv run mypy` — clean on all 60 source files.
+   - `uv run python -m model_project_constructor.agents.website --intake tests/fixtures/subrogation_intake.json --data tests/fixtures/sample_datareport.json --host gitlab --fake` — `Status: COMPLETE`, project URL `https://fake.host.test/data-science/model-drafts/intake-subrogation-001` (FakeRepoClient hardcodes `fake.host.test` so the default URL doesn't appear in this output — the unit test at `test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter` is the load-bearing pin).
+
+9. **Bookkeeping:**
+   - `CHANGELOG.md` [Unreleased] — new 2026-04-17 Session 32 entry at the top. Names the exact fix, the restructuring + addition, the "unchanged (intentionally)" list of self-hosted-example placeholders to prevent future re-fix attempts, pre-flight numbers.
+   - `BACKLOG.md` — Session 31 F5 item (line 54) flipped `[ ]` → `[x]` with closure notes. F6 item (line 55) left unchanged for Session 33.
+   - `SESSION_NOTES.md` — this block + handoff to Session 33.
+
+**Self-assessment score: 9.5/10**
+
+- **Research before creative work:** Yes. Read all 3 key files (cli.py, config.py, test_cli.py) + grep for the placeholder domain + read .env.example + read the 2 README/OPERATIONS context windows before editing a single character. Pre-scoped the change with Session 31's "don't change" list to avoid the grep-sweep-and-fix anti-pattern.
+- **Implementations read, not just descriptions:** Yes — read `cli.py` end-to-end (not just line 39) to confirm the constant is used at :102, :154 (docstring reference + fallback value); confirmed docstring doesn't need a value update (it references `GITLAB_DEFAULT_HOST_URL!r` so it auto-formats). Read `OrchestratorSettings.from_env` at :91-120 to confirm config.py's URL default is load-bearing (yes — `host_url = source.get("MPC_HOST_URL", default_url)`). Read the GitHub sibling test at :267-302 to mirror its shape faithfully.
+- **Stakeholder corrections needed:** 0. User's "work on Active task #1" + "git push when you can" were unambiguous. No redirects.
+- **What I got right:** (a) **Didn't mass-update the 4 intentional-placeholder surfaces.** The Session 31 "don't change" list was explicit and I honored it — `README.md`, `OPERATIONS.md`, `.env.example`, `gitlab_adapter.py` docstring all still say `gitlab.example.com` because they're illustrating self-hosted URLs, not claiming a default. (b) **Restructured the existing test rather than adding a wholly-new test.** The existing test's name (`test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter`) is the canonical test for the default-path — the GitHub sibling has the same name shape and tests the default path. Making them symmetric is more correct than keeping the GitLab test testing an override while the GitHub test tests the default. (c) **Added the explicit-override test before committing.** Without it, the restructuring would have removed coverage of the explicit-override path (which tests that `--host-url` actually overrides the default) — a test-coverage regression. Having both tests is strictly better than either alone. (d) **CHANGELOG entry includes the "unchanged (intentionally)" paragraph** documenting which surfaces still use `gitlab.example.com` and *why*, so Session 33+ won't "fix" them in a follow-up sweep. (e) **Pushed before starting work** per the user's request + Session 31 gotcha #2's push-at-Phase-0 convention. Working tree now 1 commit ahead (this session's) — Session 33 should push at Phase 0.
+- **What I got wrong:** (a) **Did not add a GitHub explicit-override test for symmetry.** The GitLab branch now has both default-path and explicit-override tests; the GitHub branch only has the default-path test. Test-coverage asymmetry. Out of scope for F5 (which was GitLab-specific) but could have been bundled. Small miss. -0.25. (b) **Did not grep for `gitlab.example.com` in `docs/wiki/` specifically** — found one wiki hit (`Schema-Reference.md:302`) but deferred updating it because wiki maintenance is a separate session's scope (#2 in the Session 33 candidate list). The wiki reference is technically stale (it's a docstring example, not a "self-hosted example" — it's just using the old placeholder value) but correcting it touches the wiki freshness sweep scope. -0.25. Total: -0.5 = 9.5/10.
+- **Quality bar vs. previous sessions:** Matches Session 30's surgical-fix discipline but tighter blast radius (1 production-code line + 1 test restructure + 1 new test vs. Session 30's 3 new tests + 3-line fix). Total diff: 5 files, 48 insertions, 4 deletions. Session 27's `MAX_QUESTIONS` bump was the closest structural parallel — both are 1-line production constants bumped to fix a documented inconsistency — and both followed the same "bump + restructure test + add explicit coverage for the overridden behavior" pattern.
+
+### Phase 3C: Learnings
+
+Adding a cross-cutting learning to the Learnings table in SESSION_RUNNER.md:
+
+> **When a default-value bump requires a test restructure, mirror the sibling platform's test shape rather than inventing a new one.** Session 32's F5 fix changed the GitLab default URL in `cli.py:39`. The existing GitLab test (`test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter`) explicitly passed `--host-url` and asserted the user-supplied value — so it didn't actually pin the default. The GitHub sibling test (`test_cli_host_github_with_token_invokes_pygithub_adapter`) omitted `--host-url` and asserted the GitHub default. The natural fix for the GitLab test was not "change the value in the assertion" but "make it symmetric with the GitHub sibling" — same invocation shape, same assertion shape, just with the GitLab default value. Adding a separate `test_cli_host_gitlab_explicit_host_url_override` (36 lines) preserved the explicit-override coverage that the symmetry restructure removed. Pattern: when the test file has two platform-symmetric tests and one asserts defaults while the other asserts overrides, the asymmetry is usually a bug in test design — restructure to default-path on both and add override-path tests separately.
+> Source: Session 32 (F5 fix).
+> When to apply: any session that bumps a default value in a constant + needs to restructure a test that currently overrides that default. Look for a sibling platform test; mirror its shape.
+
+### Phase 3D: Handoff to Session 33
+
+Full "What Session 33 should do" content is in the **ACTIVE TASK** block above. Three candidates: #1 F6 (`--ci-platform` in OPERATIONS §4.x) — recommended, #2 wiki freshness sweep, #3 B-3 Web UI bridge (deferred).
+
+**Key files for each candidate:**
+
+For #1 (F6: document `--ci-platform`) — **the recommended path:**
+- `OPERATIONS.md:173` is where §4.1 ends; §4.2 starts at :174, §4.3 at :193, §4.4 at :211. Natural place for a note: end of §4.1 or a new one-paragraph §4.5 covering "CI manifest platform override." Given the flag is generic across §4.2 + §4.3, end-of-§4.1 is probably cleaner (one place to find it, not tied to a specific recipe).
+- `src/model_project_constructor/agents/website/cli.py:107-116` — `--ci-platform` flag definition. Help text: `"Override the emitted CI manifest platform ('gitlab' or 'github'). Defaults to --host."` Validation at :135-143.
+- `README.md:197` — the existing one-sentence treatment to mirror: `"Pass --ci-platform {gitlab,github} to override the CI manifest independently of the repo host (useful for fake-path testing)."`
+- `docs/tutorial.md` — doesn't mention the flag; could be added as a one-line note in §5 if bundled, or deferred.
+- **Verification path:** (a) add the note to OPERATIONS.md (~2-4 lines of prose); (b) `uv run pytest -q` — no test impact expected (doc-only); (c) eyeball-check the rendered OPERATIONS.md section for readability; (d) commit.
+
+For #2 (wiki freshness sweep) — Session 24 finding:
+- Drift hotspots: `docs/wiki/claims-model-starter/Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`.
+- Reconciliation principle: walk every "Recommended additions" / "Future enhancements" / "Planned" list; delete items already implemented (B-1 shipped in Session 24, B-2 in Session 26, B-2 follow-up in Session 27, MPC_NAMESPACE validator in Session 28, CI mypy extension in Session 29, GHE URL override in Session 30, OPERATIONS §4.2/§4.3 reconciliation in Session 31, cli.py GitLab default URL fix in Session 32); rewrite partials to describe remaining gap only.
+- One new surface to check: `docs/wiki/claims-model-starter/Schema-Reference.md:302` — uses `gitlab.example.com` as a docstring example for `host_url`. Could be updated to `gitlab.com` for consistency with the new default, though it's technically valid either way (it's illustrating the *shape*, not claiming a default).
+
+For #3 (B-3 Web UI bridge) — plan §7.3. Deferred unless user asks for production-shape demo.
+
+### Gotchas for Session 33
+
+1. **Post-Session-32 pre-commit state:** pytest **445/445** (97.26% coverage), ruff clean on CI scope (`src/ tests/ packages/ scripts/`), mypy clean on **60 files** (bare `uv run mypy`). Re-run in Phase 0 to confirm no drift.
+
+2. **Commits ahead of origin:** after Session 32's commit, working tree will be **1 commit ahead** of `origin/master`. Session 32 pushed Session 31's commit at Phase 0 (Sessions 29 + 30 + 31 now all on remote). Session 33 should push at Phase 0 unless told otherwise (matches Sessions 28/31/32 pattern).
+
+3. **F6 scope is smaller than F5's was.** F5 needed: 1 code line + 1 test restructure + 1 new test + 3 doc/bookkeeping files. F6 needs: ~2-4 lines of prose in OPERATIONS.md + CHANGELOG/BACKLOG updates. No code, no tests. Full close-out still applies (Phase 0 orient → stub → edit → verify → bookkeeping → commit → handoff).
+
+4. **F6 prose placement decision:** end-of-§4.1 is probably right, but check the flow. §4.1 is the `--fake` intro; §4.2 is live GitLab; §4.3 is live GitHub. `--ci-platform` is relevant to all three (it overrides the CI manifest platform regardless of repo host). A single end-of-§4.1 note reaches everyone who reads top-to-bottom; a new §4.5 is more discoverable via TOC. Author's call.
+
+5. **`--ci-platform` already has integration test coverage.** `tests/agents/website/test_cli.py:134-161` (test_cli_ci_platform_overrides_host) and :183-200 (test_cli_ci_platform_bogus_exits_2) pin the flag behavior. Don't need to add tests for F6; it's pure doc work.
+
+6. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+7. **Failure modes #14 (ghost session), #17 (protocol erosion), #18 (plan-to-impl bleed)** all apply. Session 32 did NOT bundle F6 fix with F5 despite the obvious proximity; #8 (mode switch) + #18 held. If Session 33 does F6, it's a standalone session — don't also start the wiki sweep.
+
+8. **Audit-pair pattern (F5 + F6):** Session 31's audit produced two deferred findings; Session 32 closed F5; Session 33 can close F6. After F6 lands, all six of Session 31's audit findings (F1-F6) are closed. Cross-session audit-close discipline is a pattern worth naming — see Learnings #24 (the "forecast finding shape" discipline) plus this session's pair-close execution. Session 34 could then tackle the wiki sweep with all Session-31 findings fully landed.
+
+9. **Session 32's CHANGELOG entry includes an "Unchanged (intentionally)" paragraph** documenting the 4 self-hosted-example placeholders that still say `gitlab.example.com` (README.md, OPERATIONS.md, .env.example, gitlab_adapter.py docstring). This is defensive documentation — it prevents a future session from "fixing" them as a follow-up sweep. Session 33 should NOT touch those surfaces.
+
+10. **One test-coverage asymmetry noted (not in scope):** after Session 32, the GitLab branch has both default-path and explicit-override tests; the GitHub branch only has the default-path test. Adding a symmetric `test_cli_host_github_explicit_host_url_override` would restore full symmetry. Low-priority follow-up for any future session touching `test_cli.py`.
+
+### Session 32 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Pushed unpushed commits at Phase 0 per user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Blast-radius grep + classification of 22 `gitlab.example.com` hits
+- [x] Read key files (cli.py, config.py, test_cli.py, README.md, .env.example) before editing
+- [x] Fix: `cli.py:39` constant bump (1 line)
+- [x] Test: `test_cli.py` restructure (existing test made symmetric with GitHub sibling) + added `test_cli_host_gitlab_explicit_host_url_override` (+1 test; 444 → 445)
+- [x] Verification: pytest 445/445 @ 97.26%, ruff clean on CI scope, mypy clean on 60 files; fake-mode smoke still `Status: COMPLETE`
+- [x] CHANGELOG.md [Unreleased] Session 32 entry added (above Session 31's)
+- [x] BACKLOG.md — Session 31 F5 item flipped `[ ]` → `[x]`
+- [x] Phase 3A: Session 31 handoff evaluated and scored above (10/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.5/10)
+- [x] Phase 3C: Session-specific learning documented (default-value bumps + sibling-platform test symmetry)
+- [x] Phase 3D: Handoff to Session 33 above (ACTIVE TASK + 3 candidates + key files + 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
 
 ### What Session 32 should do
 

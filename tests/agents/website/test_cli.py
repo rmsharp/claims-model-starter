@@ -252,6 +252,42 @@ def test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter(
             "gitlab",
             "--private-token",
             "fake-gitlab-token",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert "Status:  COMPLETE" in result.stdout
+    # --host-url omitted → CLI uses the GitLab default (public gitlab.com).
+    assert _StandinGitLabAdapter.last_init_kwargs == {
+        "host_url": "https://gitlab.com",
+        "private_token": "fake-gitlab-token",
+    }
+
+
+def test_cli_host_gitlab_explicit_host_url_override(
+    intake_report_path: Path,
+    data_report_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Explicit ``--host-url`` (self-hosted GitLab) flows through to the
+    adapter kwargs, overriding the public ``gitlab.com`` default."""
+
+    _StandinGitLabAdapter.last_init_kwargs = {}
+    monkeypatch.setattr(
+        "model_project_constructor.agents.website.gitlab_adapter.PythonGitLabAdapter",
+        _StandinGitLabAdapter,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--intake",
+            str(intake_report_path),
+            "--data",
+            str(data_report_path),
+            "--host",
+            "gitlab",
+            "--private-token",
+            "fake-gitlab-token",
             "--host-url",
             "https://gitlab.example.com",
         ],

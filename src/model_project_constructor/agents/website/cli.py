@@ -36,7 +36,7 @@ from model_project_constructor.schemas.v1.repo import RepoTarget
 app = typer.Typer(add_completion=False, help="Website Agent CLI")
 
 DEFAULT_NAMESPACE = "data-science/model-drafts"
-GITLAB_DEFAULT_HOST_URL = "https://gitlab.example.com"
+GITLAB_DEFAULT_HOST_URL = "https://gitlab.com"
 GITHUB_DEFAULT_HOST_URL = "https://api.github.com"
 
 VALID_HOSTS: frozenset[str] = frozenset({"gitlab", "github"})
