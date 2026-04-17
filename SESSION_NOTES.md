@@ -5,24 +5,165 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 33 — pick from candidates in "What Session 33 should do" below. Recommend **#1 (F6: document `--ci-platform` in OPERATIONS §4.x)** — tiny surgical doc edit, closes the last Session-31 finding. Alt: #2 wiki freshness sweep (doc-sweep-shaped, larger), #3 B-3 Web UI bridge (deferred unless production-shape demo wanted).
-**Status:** Session 32 complete. F5 closed: `cli.py:39` `GITLAB_DEFAULT_HOST_URL` bumped `"https://gitlab.example.com"` → `"https://gitlab.com"`. Test suite 444 → 445 (restructured default-path test + added explicit-override test). Pytest 445/445 @ 97.26%, ruff clean on CI scope, mypy clean on 60 files.
+**Task:** Session 34 — F6: document `--ci-platform` flag in `OPERATIONS.md` §4.x (resumed from Session 33). **Recommended:** paste the drafted prose from the "F6 prose ready-to-paste" section below into OPERATIONS.md, verify with pytest, add CHANGELOG/BACKLOG updates, close out.
+**Status:** Session 33 complete. **BACKLOG.md / ROADMAP.md protocol-erosion sweep landed.** F6 was attempted + reverted mid-session after user caught that I was flipping `[ ]` → `[x]` in BACKLOG rather than removing the item (the pattern Sessions 24-32 had each followed, an 8-session FM #17 drift). Session shifted scope: closed the hygiene fix, deferred F6 to Session 34.
 
-### What Session 33 should do
+Post-Session-33 pre-commit state: pytest **445/445** @ 97.26%, ruff clean on CI scope, mypy clean on 60 files. No code or test changes in this session.
 
-Three candidates after Session 32's F5 close:
+### What Session 34 should do
 
-1. **F6: document `--ci-platform` in OPERATIONS §4.x** (Session 31 finding, low-impact) — `cli.py:107-116` + `README.md:197` describe the flag; `OPERATIONS.md` §4.1/§4.2/§4.3 don't mention it. One-line note at end of §4.1 or a new §4.5. Micro-session; could ride along with any future OPERATIONS edit but cheapest to close standalone.
+**Recommended: F6 (`--ci-platform` doc in OPERATIONS §4.1)** — the exact prose drafted + verified during Session 33 is captured below, ready to paste. Session 34's job is a 1-paragraph insert + CHANGELOG/BACKLOG update + commit.
 
-2. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. Walk "Recommended additions" / "Future enhancements" / "Planned" lists and (a) delete already-implemented items, (b) rewrite partials to describe the remaining gap. Doc-sweep-shaped; full session.
+#### F6 prose ready-to-paste
 
-3. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+Insert at `OPERATIONS.md` end of §4.1, after the paragraph ending `"...run by CI on every commit."` (line 173) and before the blank line separating §4.2 (line 174). Verified accurate by Session 33 — read `cli.py:107-143` (flag definition + validation + resolution), `scripts/run_pipeline.py:262` (confirms hardcoded `ci_platform = host`, no flag override).
 
-**Recommend #1** — micro-scope that cleanly closes the last Session-31 finding before drift. F6 + F5 are the pair; closing F6 leaves the `OPERATIONS.md` §4.x surface fully synchronized with code.
+```
+The emitted CI manifest follows `--host` by default (`--host gitlab`
+emits `.gitlab-ci.yml`; `--host github` emits
+`.github/workflows/ci.yml`). Pass `--ci-platform {gitlab,github}` to
+override the CI manifest independently of the repo host — useful for
+fake-path testing when you want to validate the opposite platform's
+manifest shape without a live run. Applies to every recipe in §4.1 /
+§4.2 / §4.3; ignored by `scripts/run_pipeline.py` (§4.4), which always
+emits the manifest for its `--host`.
+```
+
+Rationale for end-of-§4.1 placement (Session 33's decision, explicitly endorsed by Session 32's handoff gotcha #4 as one of two defensible options): the flag applies to all three recipes (§4.1/§4.2/§4.3); end-of-§4.1 puts it at peak relevance for readers of fake mode (where README:197 explicitly names the use case — "useful for fake-path testing") and ahead of §4.2/§4.3 for linear readers. A new §4.5 would be more discoverable via TOC but awkwardly placed after §4.4 (scripts/run_pipeline.py) when the flag doesn't apply there.
+
+Verification path (unchanged from Session 33): (a) paste prose; (b) `uv run pytest -q` (expect 445/445 @ 97.26% — pure doc, no test impact); (c) `uv run python -m model_project_constructor.agents.website --help` to confirm `--ci-platform` still documented unchanged; (d) CHANGELOG Session 34 entry; (e) BACKLOG.md: **remove** the `- [ ] Document `--ci-platform` flag ...` line (do **not** flip to `[x]`); (f) commit + close out.
+
+#### Alternate candidates (if F6 already done or user wants something else)
+
+- **`docs/tutorial.md §5` `--ci-platform` mention** — pairs with F6; tutorial is the remaining doc surface that doesn't mention the flag. Could bundle with F6 (both doc-only, both `--ci-platform` related) if the user wants one-session closure of the flag-documentation sweep.
+- **GitHub explicit-override test symmetry** — Session 32 gotcha #10. Add `test_cli_host_github_explicit_host_url_override` mirroring Session 32's GitLab addition. Micro-session; +1 test (445 → 446).
+- **Wiki freshness sweep** — Session 24 finding, still open. Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`, `Schema-Reference.md` (latter still references `gitlab.example.com`). Doc-sweep-shaped; full session.
+- **B-3 Web UI bridge** — plan §7.3, deferred unless user wants production-shape demo.
 
 ---
 
-## Session 31 Handoff Evaluation (by Session 32)
+## Session 32 Handoff Evaluation (by Session 33)
+**Score: 9/10.** Strong, precise handoff. All key-files line references matched observed state; gotchas forecast the right constraints (F6 scope, test coverage already in place at `test_cli.py:134-161` / `:183-200`, prose-placement decision explicitly left to author with rationale for both options, pre-flight baseline matched exactly). What it did **not** forecast: the mid-session protocol-erosion discovery. That said, Session 32 was not the session that introduced the `[x]` drift — it inherited the pattern and continued it, just as Sessions 24-31 did. The handoff accurately described what Session 32 did; the drift it silently continued wasn't flagged because each session taking the file's state as-given is exactly how FM #17 (protocol erosion) compounds. I don't dock points for that — it would be ahistorical.
+
+- **What helped:** (a) **Gotcha #4** ("F6 prose placement decision: end-of-§4.1 is probably right, but check the flow... single end-of-§4.1 note reaches everyone who reads top-to-bottom; a new §4.5 is more discoverable via TOC. Author's call.") — this was exactly the structural decision to make, with both options laid out and the tradeoffs named. Session 33 chose end-of-§4.1 and explicitly cited this framing in the commit message. Zero mode-switching needed to figure out the right shape. (b) **Gotcha #5** ("`--ci-platform` already has integration test coverage at `test_cli.py:134-161` + `:183-200`. Don't need to add tests for F6; it's pure doc work.") — set the expectation that pytest would stay 445/445. Correct forecast. Pre-empted the "should I add a regression test?" question. (c) **Gotcha #3** ("F6 scope is smaller than F5's was... ~2-4 lines of prose in OPERATIONS.md + CHANGELOG/BACKLOG updates. No code, no tests.") — the forecast was slightly undershot (my prose ran 7 lines) but the shape was correct. (d) Pre-flight state in Gotcha #1 matched exactly (pytest 445/445 @ 97.26%, ruff clean, mypy clean on 60 files). (e) **Key-files block at SESSION_NOTES.md:90-97** named `OPERATIONS.md:173` (end of §4.1), `cli.py:107-116` (flag definition), `README.md:197` (canonical wording to mirror) — all three were exactly the files I read first, with correct line numbers.
+- **What was missing:** (a) No explicit mention that `scripts/run_pipeline.py` doesn't accept `--ci-platform` (it hardcodes `ci_platform = host` at `:262`). This was load-bearing for my prose's "§4.4 ignores it" clause. I verified it via a 15-second grep before writing the claim, which is the right workflow — but a handoff-level note would have saved even that step. -0.5. (b) Commit-ahead forecast in Gotcha #2 said "working tree will be 1 commit ahead of origin/master" but `git status` at Phase 0 showed in-sync with origin. Either Session 32 pushed at close-out after writing the handoff, or the forecast was just imprecise. Harmless but a small drift in the "push at Phase 0 unless told otherwise" convention. -0.25. (c) Most importantly: no warning about the `[x]` drift pattern (because Session 32 hadn't noticed it either — this is the FM #17 erosion signature).
+- **What was wrong:** Nothing factually wrong.
+- **ROI:** ~5× on the F6 work itself (handoff read ~2 min; discovery saved ~10 min). The session's actual deliverable ended up being B3a (user-caught hygiene fix), which the handoff could not have forecast — that shifts the assessment from "handoff quality" to "session execution quality" mid-way.
+
+### What Session 33 Did
+**Intended deliverable:** F6 (`--ci-platform` in OPERATIONS §4.1). **Actual deliverable:** BACKLOG.md / ROADMAP.md protocol-erosion sweep (B3a). **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this turn) — single `fix(session-33): sweep accumulated [x] items from BACKLOG.md + resync stale ROADMAP.md` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` ACTIVE TASK + Session 32 handoff + 10 gotchas in full; ran `git status` (clean, in-sync with origin — Session 32's commit already pushed) + `git log -10` + `git diff --stat`; ran `methodology_dashboard.py` (91/100, medium, active, healthiest of 4). No ghost sessions. Reported state. Waited for direction.
+
+2. **User directed: Active task #1 (F6).** Wrote Phase 1B IN-PROGRESS stub.
+
+3. **F6 implementation** (later reverted). Read `cli.py:95-175` + `OPERATIONS.md §4.1-§4.4` + `README.md:155-214` before editing. Grep-verified `scripts/run_pipeline.py:262` hardcodes `ci_platform = host` (no flag override) before writing the "§4.4 ignores it" prose clause. Inserted 7-line paragraph at end of OPERATIONS.md §4.1. Verified `--help` still documents the flag + pytest stayed 445/445 @ 97.26%. Added CHANGELOG Session 33 entry. Added BACKLOG `[x]` flip on the F6 item.
+
+4. **User challenge: "why are completed items being recorded in the backlog when that is what the changelog is for?"** Triage:
+   - Checked `docs/methodology/README.md` (line 99: "CHANGELOG.md keeps BACKLOG.md lean"; line 215: v2.1 introduced the three-file split with "BACKLOG.md (open work only)").
+   - Checked `CHANGELOG.md:6` ("remove the item from `BACKLOG.md` and add an entry here").
+   - Verified finding: BACKLOG.md had accumulated **8 inline `[x]` items** in `## Up Next` (Sessions 24, 26, 27, 28, 29, 30, 31, 32) plus F6's flip I'd just added, AND **23 legacy `[x]` items** in a pre-three-file-split `## Completed` section at lines 5-39.
+   - Surfaced the shape: FM #17 protocol erosion across 8 sessions.
+
+5. **Scoped the fix with user over 3 rounds** (B1 vs B2 vs B3 vs B3a):
+   - B1 (tight): drop only 8 inline `[x]` items. User wanted more.
+   - B2 (full sweep): also delete `## Completed`. User wanted to verify ROADMAP coverage first.
+   - B3 (full sweep with ROADMAP verification): verified — ROADMAP.md itself was severely stale ("Current Milestone: M1" when all 5 milestones done; "Completed Milestones: None yet — project is in initial setup"). Info loss would have been real if just deleted.
+   - **B3a (chosen):** full sweep + ROADMAP.md rewrite to accurately capture M1-M5 milestone summary. User approved.
+
+6. **User redirect mid-close-out:** "Can we close this session after you finish the B3a cleanup and resume the F6 deliverable in the next session?" Split the deliverable:
+   - Reverted OPERATIONS.md F6 edit (back to pre-session state).
+   - Rewrote CHANGELOG Session 33 entry to B3a-only scope; added `**Deferred:** F6 ... Session 33's drafted prose captured in SESSION_NOTES.md to preserve work-continuity`.
+   - This preserves the "1 and done" discipline (SESSION_RUNNER Phase 2 rule 3) and respects SAFEGUARDS.md failure modes #8 + #18 (no mode-switching across deliverables in one commit).
+
+7. **BACKLOG.md rewrite:**
+   - **Deleted:** entire `## Completed` section (23 items, lines 5-39), all 8 inline `[x]` items in `## Up Next`.
+   - **Added:** file-top note ("**Open work only.** Completed items move to `CHANGELOG.md`... **Do not leave checked-off `[x]` items here** — remove the line on completion...") to prevent recurrence.
+   - **Restored:** F6 as a `[ ]` open item with explicit Session 34 pointer + "drafted prose captured in SESSION_NOTES.md" note.
+   - **Added (new items, previously implicit in handoff prose):** `docs/tutorial.md §5` `--ci-platform` mention, GitHub explicit-override test symmetry.
+
+8. **ROADMAP.md rewrite:**
+   - Fixed "Current Milestone" → "Current State" describing all 5 build milestones complete + Scope A/B-1/B-2 shipped + remaining work.
+   - Replaced "## Planned" (all 5 phases listed as future work — wrong) with accurate current state.
+   - Populated "## Completed Milestones" (previously "None yet — project is in initial setup") with M1-M5 phase summaries inherited from BACKLOG's deleted `## Completed` section. This is now the **only** place the milestone-grouped view is recorded (CHANGELOG is chronological per session).
+   - Expanded "Related Documents" block pointing at BACKLOG.md (open), CHANGELOG.md (chronological), architecture-plan.md, scope-b-plan.md, github-gitlab-abstraction-plan.md, SESSION_RUNNER, SAFEGUARDS.
+
+9. **CHANGELOG.md Session 33 entry** — rewrote to B3a-only. Structured as 5 bullets: BACKLOG fix (with root-cause FM #17 classification + explicit listing of the 8-session drift chain), ROADMAP fix (with explicit "before → after" contrasts), promoted BACKLOG items, deferred F6 pointer, verification (pytest 445/445 unchanged — pure task-tracking hygiene).
+
+10. **Verification:** `uv run pytest -q` still 445/445 @ 97.26% (confirmed no regression; B3a is pure doc). No other pre-flight needed since no code touched.
+
+### Phase 3B: Self-assess — 8/10
+
+- **Research before creative work:** Yes. Before editing OPERATIONS.md for F6, read cli.py end-to-end + scripts/run_pipeline.py:255-287 + README.md:155-214 + OPERATIONS.md §4.1-§4.4. Grep-verified `scripts/run_pipeline.py:262` hardcodes `ci_platform = host` before writing the "§4.4 ignores it" prose clause (the one load-bearing cross-subsystem claim). Before the BACKLOG sweep, read `docs/methodology/README.md` lines 66-230 to verify the convention.
+- **Implementations read, not just descriptions:** Yes — read cli.py:107-143 (flag definition + validation), cli.py:185-195 (WebsiteAgent construction), scripts/run_pipeline.py:255-287 (build_website_runner), README.md:160-197 (canonical recipe style), OPERATIONS.md §1-§4.4 (env-var table + all 4 CLI recipes). For B3a: read docs/methodology/README.md explicitly to confirm the "open work only" convention before claiming the BACKLOG pattern was a violation.
+- **Stakeholder corrections needed:** 2.
+  - **#1** (protocol-erosion catch). Root cause: I was continuing the 8-session drift pattern without questioning it. A truly alert Phase 0 would have compared BACKLOG's `[x]` accumulation against `docs/methodology/README.md`'s stated convention and flagged the drift proactively. I did not. User caught it at the BACKLOG edit step.
+  - **#2** (close-this-session-after-B3a). Not really a correction — a scope refinement. The user preferred cleanly separating F6 from the hygiene fix rather than bundling both. I had been leaning toward bundling. Defensible either way; user's call respected.
+- **What I got right:** (a) **Verified cross-subsystem claim before writing prose.** `scripts/run_pipeline.py:262` hardcodes `ci_platform = host` — I grepped + read it before writing "§4.4 ignores it" into the prose. If I had trusted the handoff's implicit forecast, the prose would have been fine but unverified. (b) **Accepted the scope-A-vs-B-vs-C framing transparently** when the user challenged the `[x]` pattern. Did not defend the drift; named it correctly (FM #17); offered three bounded options; waited for user direction. (c) **Verified ROADMAP.md before proposing its deletion** (B3 step). The verification showed ROADMAP was itself stale — which converted the task from "sweep BACKLOG" to "sweep BACKLOG + fix stale ROADMAP" and prevented info loss. (d) **Reverted the F6 edit cleanly when user redirected.** Did not leave partial state across the two deliverables. (e) **Preserved F6 work-continuity** by capturing the verified prose in SESSION_NOTES.md handoff, so Session 34 can paste + verify rather than re-draft.
+- **What I got wrong:** (a) **Did not notice the `[x]` drift during Phase 0.** I read BACKLOG.md at orientation time; I saw the `[x]` items; I did not question the pattern. That's exactly the FM #17 signature — "each session shaves off 'just one' protocol step... individually minor." A better Phase 0 would have compared the file shape against `docs/methodology/README.md:99` and flagged it before any editing. -1. (b) **Shipped a commit that would have bundled F6 + B3a.** If the user had not redirected, my plan was one combined commit. That would have violated SAFEGUARDS.md's "never switch modes without a commit boundary" — F6 is a code-adjacent doc fix; B3a is a methodology hygiene fix. They're causally linked (B3a surfaced during F6's bookkeeping) but they're different mode categories. User's correction was structurally right. -1. Total 8/10.
+- **Quality bar vs. previous sessions:** Below Session 32's 9.5/10 and Session 31's 9.5/10, on par with Session 29's ~8/10 (which also had a scope correction mid-session). The session's output is genuinely valuable (B3a is a cross-session protocol fix that compounds forward) but the path to it required two user corrections, which is higher than the 0-correction bar of Sessions 30/31/32.
+
+### Phase 3C: Learnings
+
+Adding one cross-cutting learning to SESSION_RUNNER.md's Learnings table (Learning #26):
+
+> **During Phase 0, actively compare BACKLOG.md / CHANGELOG.md / ROADMAP.md against `docs/methodology/README.md`'s stated conventions.** The three-file split (v2.1) mandates: BACKLOG.md = open work only, CHANGELOG.md = completed work history, ROADMAP.md = feature inventory + milestone summary. Silently accepting the file as-given is exactly the pattern that lets FM #17 (protocol erosion) compound across sessions. Session 33's Phase 0 missed 8 sessions' worth of `[x]` accumulation because the file "looked normal" — each individual `[x]` was small, but the aggregate was a convention violation. The fix: during Phase 0, spend 30 seconds asking "does BACKLOG.md contain only open items? does ROADMAP.md describe current state accurately? does CHANGELOG.md have an entry for each recent session?" — if any answer is no, flag it in the orientation report before starting the session's actual deliverable.
+> Source: Session 33 (user caught accumulated `[x]` in BACKLOG during close-out; surfaced as FM #17 8-session drift).
+> When to apply: every session, as part of Phase 0 orientation.
+
+### Phase 3D: Handoff to Session 34
+
+Full "What Session 34 should do" content is in the **ACTIVE TASK** block above, including the drafted F6 prose ready-to-paste. Session 34's F6 task is a paste-and-verify: the prose is verified accurate (Session 33 grep-confirmed `scripts/run_pipeline.py:262` + read `cli.py:107-143` end-to-end), the placement is decided (end-of-§4.1 with Session 32 gotcha #4's explicit endorsement), the verification path is unchanged from Session 33's attempt.
+
+### Gotchas for Session 34
+
+1. **Post-Session-33 pre-commit state:** pytest **445/445** (97.26% coverage), ruff clean on CI scope (`src/ tests/ packages/ scripts/`), mypy clean on **60 files**. Re-run in Phase 0 to confirm no drift.
+
+2. **Commits ahead of origin:** after Session 33's commit, working tree will be **1 commit ahead** of `origin/master`. Session 33 did not push (single-commit session; push at Phase 0 of Session 34 or not, per user's preference).
+
+3. **F6 completion instruction is crisp, not creative.** The prose is in this SESSION_NOTES.md file's ACTIVE TASK block. Paste it at end of §4.1 (after line 173 "...run by CI on every commit."); do NOT redraft. If Session 34 feels an urge to improve the wording, resist — the prose was verified against `cli.py:107-143` + `scripts/run_pipeline.py:262` in Session 33. Redrafting recreates verification work.
+
+4. **BACKLOG.md convention now explicit:** removing (not flipping) is the post-Session-33 standard. File-top note: "**Open work only.** ... **Do not leave checked-off `[x]` items here** — remove the line on completion and record the work in `CHANGELOG.md`." When F6 is closed in Session 34, **delete** the `- [ ] Document --ci-platform flag ...` line from BACKLOG.md; do not flip it to `[x]`.
+
+5. **ROADMAP.md is now authoritative for milestone-grouped view.** CHANGELOG is chronological per session; only ROADMAP.md's `## Completed Milestones` section preserves the M1-M5 phase grouping that used to live in BACKLOG's deleted `## Completed` section. When future milestones complete, update ROADMAP.md accordingly.
+
+6. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+7. **FM #17 (protocol erosion) is now a documented Phase 0 check** (Learning #26). Session 34's Phase 0 should include a 30-second "does BACKLOG.md contain only open items?" check. As of this close-out the answer is **yes** — file contains 12 `[ ]` open items + 1 file-top note + 1 header, no `[x]` items, no `## Completed` section. If Session 34 sees a `[x]` item when reading BACKLOG.md, the `[x]` drift has re-started.
+
+8. **F6 + `docs/tutorial.md §5` bundling is an option.** Both are doc-only, both reference `--ci-platform`, both micro-scope. Session 34 could legitimately close both in one session if the user agrees — they're SAFEGUARDS-compatible (no mode-switching across them). Alternatively keep separate for tighter "1 and done" discipline. Author's call.
+
+9. **Two commits-ahead tracking:** Session 32's commit (`b81b3e6`) was pushed at Session 33's Phase 0 per Session 32 handoff convention — *actually*, checking at Session 33 start showed already in-sync with origin (Session 32 pushed at its own close-out, not waiting for Session 33). Session 33's commit will be the next ahead-of-origin.
+
+10. **Session 33's self-assessment was 8/10 (below recent 9.5 band).** Root cause: missed the `[x]` drift at Phase 0. Session 34's Phase 0 check (gotcha #7 above) is the structural fix — if executed, it raises the baseline back toward 9.5+.
+
+### Session 33 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] F6 attempt: read key files, edited OPERATIONS.md, verified pytest + help — then reverted after user redirect
+- [x] B3a sweep: deleted `## Completed` section (23 items) + 8 inline `[x]` items from BACKLOG.md
+- [x] B3a: BACKLOG file-top note added ("open work only — do not leave `[x]` items")
+- [x] B3a: F6 restored as `[ ]` open item with explicit Session 34 pointer + prose-captured-elsewhere note
+- [x] B3a: ROADMAP.md rewritten — M1-M5 milestone summary populated in `## Completed Milestones`, stale headers fixed, `## Planned` replaced with accurate current state, Related Documents block added
+- [x] B3a: Two previously-implicit items promoted to BACKLOG `[ ]` entries (tutorial.md `--ci-platform`, GitHub test symmetry)
+- [x] Verification: pytest 445/445 @ 97.26% (unchanged; pure task-tracking hygiene)
+- [x] CHANGELOG.md Session 33 entry — B3a-only, with F6 deferral pointer
+- [x] Phase 3A: Session 32 handoff evaluated and scored above (9/10)
+- [x] Phase 3B: Self-assessment scored and written above (8/10)
+- [x] Phase 3C: Learning #26 added (Phase 0 methodology-file convention check)
+- [x] Phase 3D: Handoff to Session 34 above (ACTIVE TASK + F6 prose ready-to-paste + alternates + 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
+
+
 **Score: 10/10.** Exceptional handoff. Session 31's ACTIVE TASK block + "What Session 32 should do" block pre-specified the F5 scope with every key file (cli.py:39 + the 4 canonical default-surface references), every test constraint (test_cli.py:233-264 asserts the user's passed URL not the default), the verification path (bump constant → restructure test to mirror GitHub sibling → pytest + ruff + mypy), AND the gotchas that would have burned time without them (README.md:182 is a self-hosted example NOT a default, fake mode doesn't exercise host_url so unit-test coverage is the pin). I executed the session in ~10 minutes of wall time, with zero discovery loops and zero stakeholder round-trips.
 
 - **What helped:** (a) **Gotcha #3** ("F5 fix contract: `test_cli.py:233-264` explicitly passes `--host-url` and asserts the same value at :262. The assertion tests the value **the user passed**, not the default") — this is the crucial framing. Without it I might have thought the existing test needed its assertion changed (it didn't — it's actually a valid explicit-override test). With it, I knew immediately: restructure the existing test to mirror the GitHub sibling's default-path shape + add a NEW explicit-override test. Saved a mode-switch to figure out the right test-restructuring shape. (b) **Key-files block at SESSION_NOTES.md:100-106** — every surface I needed was named with line numbers, including the ones I shouldn't change (README.md:182, .env.example:21, scripts/run_pipeline.py:105,283). The "don't change" list is as valuable as the "change this" list — it prevented a grep-sweep-and-fix rabbit hole. (c) **Gotcha #4** ("`cli.py`'s default URL is only exercised in live mode. `--fake` bypasses the adapter, so `FakeRepoClient` ignores `host_url`") explained *why* unit tests are the pin rather than a fake-mode smoke. Saved the "but my smoke test didn't show the URL change" confusion. (d) **Gotcha #5** ("OPERATIONS.md §4.2 uses `https://gitlab.example.com` in the recipe (line 184) — this is intentional as a self-hosted example URL, NOT a default") — pre-empted the most likely follow-on "fix" that would have been wrong. (e) **Post-Session-31 pre-commit state in Gotcha #1** matched exactly (pytest 444/444 @ 97.26%, ruff clean on CI scope, mypy clean on 60 files). Pre-flight was a one-command confirmation.
