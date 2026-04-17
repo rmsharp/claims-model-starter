@@ -172,6 +172,15 @@ This validates the scaffolding end-to-end without touching any live
 host. It is the recommended smoke test before a live run and is run
 by CI on every commit.
 
+The emitted CI manifest follows `--host` by default (`--host gitlab`
+emits `.gitlab-ci.yml`; `--host github` emits
+`.github/workflows/ci.yml`). Pass `--ci-platform {gitlab,github}` to
+override the CI manifest independently of the repo host — useful for
+fake-path testing when you want to validate the opposite platform's
+manifest shape without a live run. Applies to every recipe in §4.1 /
+§4.2 / §4.3; ignored by `scripts/run_pipeline.py` (§4.4), which always
+emits the manifest for its `--host`.
+
 ### 4.2 Against a live GitLab instance
 
 Prerequisite: `GITLAB_TOKEN` set in the environment (see §1).

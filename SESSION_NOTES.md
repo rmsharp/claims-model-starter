@@ -5,8 +5,116 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 34 — F6: document `--ci-platform` flag in `OPERATIONS.md` §4.x (resumed from Session 33). **Recommended:** paste the drafted prose from the "F6 prose ready-to-paste" section below into OPERATIONS.md, verify with pytest, add CHANGELOG/BACKLOG updates, close out.
-**Status:** Session 33 complete. **BACKLOG.md / ROADMAP.md protocol-erosion sweep landed.** F6 was attempted + reverted mid-session after user caught that I was flipping `[ ]` → `[x]` in BACKLOG rather than removing the item (the pattern Sessions 24-32 had each followed, an 8-session FM #17 drift). Session shifted scope: closed the hygiene fix, deferred F6 to Session 34.
+**Task:** Session 35 — operator's discretion. Session 34 closed F6 cleanly. Three adjacent items are ready to pull off BACKLOG: `docs/tutorial.md §5` `--ci-platform` mention (completes the flag-documentation sweep; micro-scope), GitHub explicit-override test symmetry (+1 test, 445 → 446, micro-scope), wiki freshness sweep (full session, doc-shaped). Operator also may prefer to fix the 26 `ResourceWarning: unclosed database` noise items (existing BACKLOG entry; ~moderate effort) which Session 34 characterized in close-out.
+
+**Status:** Session 34 complete. F6 shipped. No open in-progress state.
+
+### Post-Session-34 pre-commit state
+- `uv run pytest -q` → **445/445 passing**, coverage **97.26%** (unchanged — F6 was doc-only)
+- `uv run pytest -W default` → still 26 `ResourceWarning: unclosed database` on sqlite3 connections (100% of warnings; all covered by the existing BACKLOG item — see Session 34 warning characterization below)
+- No ruff / mypy re-run needed (no code touched); last known state from Session 33: ruff clean on CI scope, mypy clean on 60 files
+
+### Warning characterization (Session 34 background task)
+
+User asked for this during F6 execution. Ran `uv run pytest -W default` (substituting the background agent when it hit a permission wall).
+
+| Category | Count | Observed source frames (after GC, not the leaker) | Root cause | Effort |
+|----------|-------|----------------------------------------------------|------------|--------|
+| `ResourceWarning: unclosed database` (sqlite3) | 26 / 26 | `threading.py:281/303`, `langgraph/pregel/loop.py:290`, `ast.py:279`, `inspect.py:1814`, `anyio/_backends/_asyncio.py:342`, `rich/protocol.py`, `yaml/reader.py`, `sqlalchemy/pool/events.py:64`, `<frozen os>:717` | `ReadOnlyDB` / LangGraph `SqliteSaver` / `AsyncSqliteSaver` checkpoint stores not closing the underlying `sqlite3.Connection`. Python 3.13's stricter GC surfaces the leak at arbitrary frames when the finalizer runs — the frames in the warning are NOT the allocation sites; enabling `tracemalloc` would surface the actual open sites. The BACKLOG item (line 17) is still correct in spirit but understated count (said "~20 + 1 intake" = 21; actual is 26). | Moderate — requires threading a `close()` / `__exit__` discipline through `ReadOnlyDB`, the intake `AsyncSqliteSaver` usage in `agents/intake/graph.py`, and any `MemorySaver`/`SqliteSaver` fixtures in `tests/agents/data/conftest.py`. Not a one-liner; but also not invasive. |
+
+Recommendation: defer to a dedicated session. The existing BACKLOG item (line 17) is the right home; bump the count from "~20 + 1" to "26" if a future session picks this up. No fix needed for the F6 deliverable.
+
+---
+
+### Session 33 Handoff Evaluation (by Session 34)
+
+**Score: 10/10.** Best handoff in the current streak. Session 33's ACTIVE TASK block contained the complete ready-to-paste F6 prose (verified against source), the chosen placement (end of §4.1, after line 173, before §4.2 blank line at 174), the placement rationale (both options weighed; end-of-§4.1 chosen with Session 32 gotcha #4 endorsement), the full verification path (pytest + `--help` + CHANGELOG + BACKLOG delete), and 10 gotchas, five of which were directly load-bearing (pre-flight baseline, "remove don't flip" for BACKLOG, FM #17 Phase 0 check, `probability vs likelihood`, and — especially — the "do not redraft, the prose is verified" instruction that pre-empted a classic agent failure mode). I executed F6 in ~5 minutes of wall time, zero discovery, zero stakeholder round-trips, zero re-verification of the cross-subsystem claim (Session 33 had already grepped `scripts/run_pipeline.py:262` for the `ci_platform = host` hardcoding; I didn't need to re-verify).
+
+- **What helped:** (a) **The ready-to-paste prose block itself.** Session 33 explicitly framed the work as "paste-and-verify, not redraft" and captured the verified prose verbatim with provenance (file:line where each claim was verified). This is a new pattern: handing off *work product* not just *instructions*. Zero value lost across the session boundary. (b) **Gotcha #3** ("F6 completion instruction is crisp, not creative. The prose is in this SESSION_NOTES.md file's ACTIVE TASK block. Paste it at end of §4.1 (after line 173 '...run by CI on every commit.'); do NOT redraft. If Session 34 feels an urge to improve the wording, resist — the prose was verified against `cli.py:107-143` + `scripts/run_pipeline.py:262` in Session 33. Redrafting recreates verification work.") — this is the strongest guardrail I've seen in any handoff. It explicitly names the failure mode ("urge to improve") and blocks it. I felt exactly that urge when reading the prose ("could be tighter..."), then re-read the gotcha and paste-only'd. Saved 10-15 min of unnecessary rework. (c) **Gotcha #4** ("BACKLOG.md convention now explicit: removing (not flipping) is the post-Session-33 standard... When F6 is closed in Session 34, delete the `- [ ] Document --ci-platform flag ...` line; do not flip it to `[x]`.") — this is the fix for the FM #17 erosion Session 33 surfaced. Acting on it correctly in the same session the convention was established closes the feedback loop. (d) **Gotcha #7** (FM #17 Phase 0 check now documented in Learning #26) — I executed this during Phase 0 and confirmed BACKLOG was clean before starting F6. Took ~30 seconds; confirmed no drift had re-started in the 0-session gap between 33 and 34. (e) **Pre-flight baseline in Gotcha #1** matched exactly (pytest 445/445 @ 97.26%). Re-run was a one-command confirmation.
+- **What was missing:** Truly nothing. Every claim held. Every forecast matched observed behavior.
+- **What was wrong:** Nothing.
+- **ROI:** ~15× on F6 (handoff-read ~3 min; saved ~45 min of redrafting, re-verifying cross-subsystem claims, weighing placement tradeoffs, and scoping). Highest ROI in the recent handoff streak — surpasses Session 31's 10× and Session 32's 10×.
+
+### What Session 34 Did
+**Deliverable:** F6 — `--ci-platform` flag documented in `OPERATIONS.md` §4.1. **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this turn) — single `fix(session-34): document --ci-platform flag in OPERATIONS §4.1 — closes F6` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` ACTIVE TASK + Session 33 handoff + 10 gotchas; ran `git status` (clean, 1 commit ahead of origin/master per Session 33 gotcha #2 — Session 33's `b74d3ff` commit not yet pushed) + `git log -5` + `git diff --stat`; ran `methodology_dashboard.py` (91/100, medium risk, active, healthiest of 4). **Executed FM #17 Phase 0 check (Learning #26):** BACKLOG.md has 12 `[ ]` items, zero `[x]`, no `## Completed` section — protocol discipline intact post-Session-33. No ghost sessions (Session 33 matches `b74d3ff`). Reported state to user. Waited for direction.
+
+2. **User directed: F6.** Wrote Phase 1B IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK (FM #14 ghost-session protection) before technical work.
+
+3. **User asked (during F6 execution): "characterize the warnings thrown by the unit tests in the background."** Launched background research agent; agent hit a permission wall on `Bash(pytest ...)` and could not run the suite. Ran `uv run pytest -W default` myself in foreground while continuing F6. Results captured in "Warning characterization" section above. 100% of the 26 warnings are `ResourceWarning: unclosed database` on sqlite3 connections — fully covered by the existing BACKLOG item at line 17, which tracked "~20 + 1 intake" and should be bumped to 26 if a future session picks it up.
+
+4. **F6 implementation** (single Edit to `OPERATIONS.md`). Re-read `OPERATIONS.md:155-205` to confirm §4.1's end-of-section boundary matched Session 33's handoff (line 173 "...run by CI on every commit." — exact match, no drift since Session 33's read). Pasted the verified 7-line paragraph via Edit, replacing the `...on every commit.\n\n### 4.2 Against a live GitLab instance` boundary with the paragraph inserted before the blank line. Zero wording change from Session 33's drafted prose — "paste, not redraft" discipline held.
+
+5. **Verification** — `uv run pytest -q` → **445/445 passing**, coverage **97.26%** (unchanged as forecast; F6 is doc-only). `uv run python -m model_project_constructor.agents.website --help` → `--ci-platform` flag still listed at `cli.py:107-116` unchanged. `uv run pytest -W default` → 26 ResourceWarning (unchanged from pre-F6 baseline, not a regression; used to characterize the warnings per the user's background request).
+
+6. **CHANGELOG.md Session 34 entry** — new `2026-04-17 — F6: --ci-platform flag documented in OPERATIONS §4.1 (Session 34)` block at top of `## [Unreleased]`, structured as Added / Verified / Unchanged (intentionally). Explicit pointer to Session 33's B3a entry for the "attempted + reverted" context.
+
+7. **BACKLOG.md** — **removed** (not flipped) the F6 line entirely, per the post-Session-33 convention Session 33 established. Also updated the "`docs/tutorial.md §5`" entry's cross-reference: "Pairs with F6" → "Tutorial §5 describes the website CLI but doesn't mention `--ci-platform`. One-line addition would synchronize the fourth doc surface (after README:197 + OPERATIONS §4.1 which Session 34 filled in)." This restores precise state: tutorial.md is now the only remaining undocumented operator-facing surface; the wiki `Schema-Reference.md` is the fifth.
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Before editing, re-read `OPERATIONS.md:155-205` to confirm the §4.1 boundary hadn't drifted since Session 33. (It hadn't — exact match.) Did NOT re-verify Session 33's cross-subsystem claim about `scripts/run_pipeline.py:262` because Session 33's handoff had already pinned it with explicit provenance and the prose matched the verified source. Trust-but-verify applied at the level of "has the file changed since the handoff was written?" not at the level of "re-derive every claim from scratch."
+- **Implementations read, not just descriptions:** Yes — re-read cli.py's `--ci-platform` flag block indirectly via `--help` output as a verification step, confirmed wording matched what the prose claimed. Did not re-read scripts/run_pipeline.py because I trusted Session 33's read + no signal the file had changed.
+- **Stakeholder corrections needed:** 0. The only interaction during execution was the background-warnings request, which was an additive scope expansion, not a correction.
+- **What I got right:** (a) **"Paste, not redraft" discipline held.** Felt the urge to tighten the prose ("...useful for fake-path testing..." → "...primarily for fake-path testing..."); re-read Session 33's gotcha #3; paste-only'd. Saved the rework cycle the handoff explicitly warned against. (b) **Removed, did not flip.** Post-Session-33 convention correctly applied — F6 line deleted from BACKLOG, cross-reference in the sibling "tutorial.md §5" entry updated to reflect the new state. (c) **Phase 0 FM #17 check executed and reported.** 30 seconds of effort; confirmed BACKLOG discipline held. (d) **Handled the mid-session warning-characterization request without scope-creeping F6.** Launched a background agent for the warnings; when the agent hit a permission wall, captured the data myself in foreground alongside F6 verification (both needed pytest output anyway, so one command served both); kept F6 as the commit's deliverable, characterized warnings in SESSION_NOTES.md for the handoff — did not bundle a "warnings fix" into this session. (e) **Single-file single-concern edits.** One Edit to OPERATIONS.md, one to CHANGELOG.md, one to BACKLOG.md, one to SESSION_NOTES.md. Each edit's scope is independently committable (though they'll ship as one coherent commit per F6's scope).
+- **What I got wrong:** (a) **Background agent selection was suboptimal for a task that requires running a privileged command.** Should have anticipated that `Bash(uv run pytest ...)` requires an approval the subagent can't request; should have just captured the warnings myself from the start. Cost: ~10 seconds of agent latency + a permission-failure notification in the transcript. Low impact but avoidable. -0.5.
+- **Quality bar vs. previous sessions:** Above Session 33's 8/10 (which had two stakeholder corrections mid-session). On par with Session 32's 9.5/10 and Session 31's 9.5/10. The handoff quality Session 33 produced is the direct cause of this session's efficiency — this is the compounding mechanism working as designed.
+
+### Phase 3C: Learnings
+
+Adding one learning to SESSION_RUNNER.md's table (Learning #27):
+
+> **When a handoff contains a ready-to-paste work product (verified prose, drafted code, etc.), treat it as output from the predecessor session, not input to be re-derived.** Session 33's F6 handoff was structured as "paste + verify + commit, not redraft + verify + commit" — the prose was captured in SESSION_NOTES.md with explicit provenance (file:line verified). When the inheriting session feels the urge to "improve" the prose, that urge is the FM #2 "keep going" signal (the agent wants to do more work than the task requires) applied to the *quality* dimension rather than the *scope* dimension. Resist it. Paste the work product verbatim. Re-verify only that (a) the file/section boundary hasn't moved since the handoff was written, and (b) the final state matches the prose's claims (e.g. `--help` output, pytest green). This pattern maximizes the ROI of the predecessor's work and minimizes the "hand-it-off-twice" failure mode. **Anti-pattern:** redrafting a handoff-provided work product, re-running all the verifications the predecessor ran, and claiming credit for "improvements" that drift the output from the agreed-upon intent. **When to apply:** any session whose handoff contains a drafted text/code block the predecessor flagged as ready-to-paste.
+> Source: Session 34 (F6 paste-and-verify executed in ~5 min wall time vs. the ~15-20 min a fresh drafting session would have taken).
+> When to apply: any session inheriting a handoff with a verified work product.
+
+### Phase 3D: Handoff to Session 35
+
+The "ACTIVE TASK" block at top of this file lays out three discretionary candidates (tutorial.md §5, GitHub test symmetry, wiki freshness sweep) plus the warnings noise. Session 35's operator can pick any.
+
+### Gotchas for Session 35
+
+1. **Post-Session-34 pre-commit state:** pytest **445/445** (97.26% coverage), 26 `ResourceWarning: unclosed database` (pre-existing, not a regression). ruff + mypy not re-run this session (no code touched); last known state: ruff clean on CI scope, mypy clean on 60 files. Re-run in Phase 0 if touching code.
+
+2. **Commits ahead of origin: now 2.** Session 33's `b74d3ff` was not pushed at its close-out; Session 34's commit will be the second ahead. Session 35's Phase 0 may want to push both before starting (or not — operator's call).
+
+3. **`docs/tutorial.md §5 --ci-platform` is the natural F6 follow-on.** Would close the third operator-facing doc surface (after README:197 + OPERATIONS §4.1). Tutorial §5 currently covers the website CLI at a beginner level; a one-line "you can also pass `--ci-platform {gitlab,github}` to override the CI manifest independently of `--host` — primarily useful for fake-mode cross-platform testing" would suffice. Wiki `Schema-Reference.md` is a fourth surface but the BACKLOG wiki-freshness sweep handles it.
+
+4. **Warning noise is the only other "quick win" available.** BACKLOG line 17. 26 warnings, all `ResourceWarning: unclosed database` on sqlite3 from LangGraph checkpoint / `ReadOnlyDB`. Enabling `tracemalloc` (via `pytest -W default --tb=short -p no:cacheprovider`... or a `PYTHONTRACEMALLOC=5` env var) would surface the actual allocation sites. Fix shape: thread `close()` / `__exit__` through `ReadOnlyDB` + the intake `AsyncSqliteSaver` usage in `agents/intake/graph.py` + `tests/agents/data/conftest.py` fixtures. Not a one-liner; probably 1 session's worth of work.
+
+5. **BACKLOG convention post-Session-33 is "remove, don't flip."** Session 34 executed this correctly on F6. Session 35 should do the same on whatever item it closes. The file-top note at `BACKLOG.md:3` documents this explicitly; FM #17 Phase 0 check (Learning #26) is the structural guard.
+
+6. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+7. **"Paste, not redraft" is now a documented Phase 2 discipline** (Learning #27). If the handoff contains a verified work product, do not redraft.
+
+8. **Session 34's self-assessment was 9.5/10.** Root cause of the half-point deduction: suboptimal subagent selection for a privileged command. Preventable by pre-checking whether the subagent has the permissions the task requires before delegating.
+
+### Session 34 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] F6 prose pasted at OPERATIONS.md §4.1 end-of-section (after line 173)
+- [x] Verification: pytest 445/445 @ 97.26% (unchanged), `--help` still advertises `--ci-platform`
+- [x] CHANGELOG.md Session 34 entry (Added / Verified / Unchanged intentionally)
+- [x] BACKLOG.md: F6 line **removed** (not flipped); sibling "tutorial.md §5" entry cross-reference updated
+- [x] Warning characterization captured in SESSION_NOTES.md (background task from mid-session user request)
+- [x] Phase 3A: Session 33 handoff evaluated and scored above (10/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.5/10)
+- [x] Phase 3C: Learning #27 added (paste-not-redraft discipline for work-product handoffs)
+- [x] Phase 3D: Handoff to Session 35 above (ACTIVE TASK candidates + 8 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
+
+## Session 32 Handoff Evaluation (by Session 33)
 
 Post-Session-33 pre-commit state: pytest **445/445** @ 97.26%, ruff clean on CI scope, mypy clean on 60 files. No code or test changes in this session.
 

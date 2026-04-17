@@ -13,6 +13,14 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-17 — F6: `--ci-platform` flag documented in OPERATIONS §4.1 (Session 34)
+
+Closes F6, the smaller half of Session 31's audit findings (F5 shipped in Session 32; F6 was attempted + reverted in Session 33 when a cross-session protocol drift was surfaced instead — see that session's entry). Session 33 captured the verified prose in `SESSION_NOTES.md`; Session 34's work was paste + verify + commit, no redrafting.
+
+- **Added:** 7-line paragraph at end of `OPERATIONS.md` §4.1 (after "...run by CI on every commit." at line 173) documenting `--ci-platform {gitlab,github}`. Covers: (a) default behavior (`--host` selects both the repo host and the CI manifest — `.gitlab-ci.yml` for GitLab, `.github/workflows/ci.yml` for GitHub), (b) override purpose (decouple CI manifest from repo host, primarily for fake-path cross-platform testing), (c) scope (applies to §4.1 / §4.2 / §4.3; `scripts/run_pipeline.py` in §4.4 hardcodes `ci_platform = host` at `:262` and ignores the flag). The end-of-§4.1 placement was chosen in Session 33 over a new §4.5 because the flag applies to all three top-level recipes, not just one; putting it at peak fake-mode relevance (where the use case is primary) and ahead of §4.2/§4.3 for linear readers trades off TOC discoverability for in-flow visibility.
+- **Verified:** `uv run pytest -q` 445/445 passing, coverage 97.26% (unchanged — doc-only). `uv run python -m model_project_constructor.agents.website --help` still advertises `--ci-platform` at `cli.py:107-116` unchanged.
+- **Unchanged (intentionally):** `docs/tutorial.md §5` still does not mention `--ci-platform` — that remains a separate BACKLOG item (Session 33 promoted it to an explicit `[ ]` entry). Keeping the two doc edits separate respects "1 and done" (one deliverable per session) even though both are micro-scope.
+
 ### 2026-04-17 — BACKLOG.md / ROADMAP.md protocol-erosion sweep (Session 33)
 
 Session 33 started F6 (document `--ci-platform` in OPERATIONS §4.x) but surfaced a cross-session protocol drift during close-out bookkeeping. User redirected: ship the hygiene fix alone in this session; resume F6 in Session 34. The F6 OPERATIONS.md edit was reverted mid-session; no other F6 artifact shipped.
