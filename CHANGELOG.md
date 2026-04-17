@@ -13,6 +13,13 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-16 — Scope B-1: real Anthropic data agent wired into `run_pipeline` (Session 24)
+
+- **Added:** `scripts/run_pipeline.py` now accepts `--llm {none,data}` (default `none`), `--model ID` (default `claude-opus-4-7`), and `--db-url URL` (default `None`). A new `build_data_runner` helper returns either a fixture-serving closure (`--llm none`, unchanged Scope A behavior) or `DataAgent(AnthropicLLMClient(model=...), db=...).run` (`--llm data`). The intake stage stays fixture-driven at this phase — Scope B-2 wires the real intake path.
+- **Added:** `OPERATIONS.md` §4.4 documents the Scope B-1 invocation with a model-selection table and a checkpoint-inspection snippet for verifying the data side actually called Claude. `docs/tutorial.md` §6 "Real LLM-backed run" adds the same recipe with model tradeoffs and the optional `--db-url` path; the previous §6 becomes §7.
+- **Verified:** pre-flight (pytest 422/422, ruff on CI scope, mypy) stays green; the live `run_b1_live` invocation produces `COMPLETE` against a real GitLab project with Claude-generated SQL distinct from the fixture. Plan: `docs/planning/scope-b-plan.md` §7.1 (Phase B1). Scope B-2 (scripted-answers intake) and optional Scope B-3 (Web UI bridge) remain open.
+- **Deviation from plan:** §8.2 recommended `claude-sonnet-4-6`; user chose `claude-opus-4-7` for the first real run to remove "was it the model?" as a confounding variable if output quality is poor. `--model` flag added to the B1 surface (not in original §8.2); default is opus.
+
 ### 2026-04-16 — First live end-to-end smoke test (Session 22, Scope A)
 
 - **Fixed:** `scripts/run_pipeline.py:119` passed `url=` to `PythonGitLabAdapter(...)` but the constructor's keyword-only parameter is `host_url=`. `--live --host gitlab` had never successfully run — it would have raised `TypeError: __init__() got an unexpected keyword argument 'url'` on the first keystroke. Phase 4B/5 tests only exercise the adapter's import + protocol conformance, not the script's wiring. Two-character fix: `url=host_url` → `host_url=host_url`.

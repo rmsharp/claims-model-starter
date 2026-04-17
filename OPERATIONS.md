@@ -207,6 +207,71 @@ uv run python -m model_project_constructor.agents.website \
 GitHub does not support nested namespaces; pass a single owner / org
 as `--namespace`.
 
+### 4.4 Scope B-1: real LLM-backed data agent via `scripts/run_pipeline.py`
+
+`scripts/run_pipeline.py` is the canonical end-to-end driver. It is
+what CI exercises (with fakes) and what operator runs for smoke testing
+and pilot runs. As of Scope B Phase B1, it accepts a `--llm` flag that
+selects which stages use the real Anthropic API:
+
+| `--llm` | Intake | Data | Cost per run | Determinism |
+|---|---|---|---|---|
+| `none` (default) | fixture | fixture | free | fully deterministic |
+| `data` | fixture | real Anthropic | ~$0.10–$0.50 (model-dependent) | non-deterministic data stage |
+
+`--llm both` (real intake + real data, scripted answers) is Scope B
+Phase B2 and is not yet wired.
+
+Typical live B1 invocation against public GitLab:
+
+```bash
+export ANTHROPIC_API_KEY=...
+export GITLAB_TOKEN=...
+export MPC_HOST=gitlab
+export MPC_HOST_URL=https://gitlab.com
+export MPC_NAMESPACE=your-group/subgroup          # path only, NOT a URL
+
+uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm data \
+    --model claude-opus-4-7 \
+    --run-id run_b1_$(date +%Y%m%d_%H%M%S)
+```
+
+Flags:
+
+- `--llm {none,data}` selects fixture-vs-real for the data agent.
+  Intake stays on the fixture in both modes (Phase B1 constraint).
+- `--model ID` overrides the Anthropic model for the data agent.
+  Default is `claude-opus-4-7`. Other options include
+  `claude-sonnet-4-6` (~5× cheaper) and `claude-haiku-4-5-20251001`
+  (fastest, lowest quality).
+- `--db-url URL` (optional) passes a SQLAlchemy URL so quality checks
+  execute against a real read-only store. Omit for pilot runs — the
+  data agent generates queries without executing them.
+- `--run-id ID` — embed a timestamp suffix when invoking repeatedly
+  so checkpoint envelopes stay disambiguated across runs.
+
+Verify the data side actually ran against the live API:
+
+```bash
+python -c "
+from pathlib import Path
+import json
+env = json.loads(
+    Path('.orchestrator/checkpoints/<run_id>/DataReport.json').read_text()
+)
+report = env['payload']
+print('status:', report['status'])
+print('queries:', len(report['primary_queries']))
+print('sql_preview:', report['primary_queries'][0]['sql'][:120])
+"
+```
+
+If `sql_preview` differs from `tests/fixtures/sample_datareport.json`,
+the real LLM ran (the fixture's first query opens with
+`SELECT claim_id, ...`; live runs produce model-generated SQL that
+varies by prompt and model).
+
 ---
 
 ## 5. Resume after a partial run

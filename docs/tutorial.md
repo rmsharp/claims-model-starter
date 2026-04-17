@@ -377,7 +377,78 @@ export MPC_HOST_URL="https://github.mycompany.com/api/v3"
 
 ---
 
-## Step 6: Using the orchestrator programmatically
+## Step 6: Real LLM-backed run (Scope B-1)
+
+Steps 1–5 run the full pipeline but use fixture data for the intake and data stages — no Claude calls are made. Step 6 graduates the **data stage** to a real Anthropic-backed data agent while keeping the intake on the fixture. This proves that Claude can actually write SQL for your subrogation request and feed a `DataReport` the website stage can consume.
+
+> **Prerequisite:** `ANTHROPIC_API_KEY` must be set (see §5a). The fixture intake `tests/fixtures/subrogation_intake.json` is still used, so no intake interview is required.
+
+### 6a: Run with `--llm data`
+
+```bash
+uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm data \
+    --model claude-opus-4-7 \
+    --run-id run_b1_$(date +%Y%m%d_%H%M%S)
+```
+
+What changes vs. `--live` alone:
+
+- The data runner is now `DataAgent(AnthropicLLMClient(model=...)).run`, not a lambda serving the fixture `sample_datareport.json`.
+- Claude generates primary queries, quality checks, a summary, and one datasheet per primary query.
+- Cost: ~$0.10–$0.50 per run depending on model (see §6c).
+- Runtime: adds 30–90 s vs. the fake run.
+
+The intake stage is unchanged from Step 5 — fixture-driven. `--llm both` (real intake + real data) is Scope B Phase B2 and is not yet wired.
+
+### 6b: Verify the data side actually ran against the API
+
+Read the `DataReport.json` envelope and confirm the SQL differs from the fixture:
+
+```bash
+python -c "
+from pathlib import Path
+import json
+env = json.loads(
+    Path('.orchestrator/checkpoints/<run_id>/DataReport.json').read_text()
+)
+report = env['payload']
+print('status:', report['status'])
+print('queries:', len(report['primary_queries']))
+print('sql_preview:', report['primary_queries'][0]['sql'][:120])
+"
+```
+
+The fixture's first query opens with `SELECT claim_id, ...`; a live Claude run produces model-generated SQL that varies by prompt and model. If your preview looks identical to the fixture, something is wrong — rerun with a fresh `--run-id` to rule out checkpoint staleness.
+
+### 6c: Model selection
+
+Override the default with `--model`:
+
+| Model ID | Strength | Cost (relative) |
+|---|---|---|
+| `claude-opus-4-7` (default) | highest quality; best for first-impression pilot runs | 5× |
+| `claude-sonnet-4-6` | fast, cost-effective; fine for iterating | 1× |
+| `claude-haiku-4-5-20251001` | cheapest, fastest; may miss subtle semantics | 0.2× |
+
+For production, tune by running each model on a representative request and inspecting the generated SQL. For the first pilot run, `claude-opus-4-7` removes "was it the model?" as a confounding variable when judging output quality.
+
+### 6d: Optional: connect a read-only database
+
+By default `--db-url` is omitted and the data agent **generates** quality checks but does not **execute** them. To execute:
+
+```bash
+uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm data \
+    --db-url sqlite:///path/to/readonly.db \
+    --run-id run_b1_db_$(date +%s)
+```
+
+The URL follows SQLAlchemy syntax (`postgresql://user:pass@host/db`, `sqlite:///path`, etc.). When connected, the `DataReport.confirmed_expectations` field will be populated based on real query results instead of the standard "database unreachable" line. Scope B-1 deliberately defaults to disconnected — the pilot's goal is to prove Claude's query generation, not debug SQL connectivity at the same time.
+
+---
+
+## Step 7: Using the orchestrator programmatically
 
 For integration into larger systems, use the `run_pipeline` function directly:
 

@@ -5,29 +5,39 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 24 — open. Session 23 produced `docs/planning/scope-b-plan.md` (the planning artifact for BACKLOG #1 "First live end-to-end run — Scope B"). Session 24 is **user's choice** between executing the first phase of the new plan and picking up any of the 5 carryover findings from Session 22.
-**Status:** Session 23 complete (planning deliverable shipped). Session 24 ready.
-**Priority:** If Session 24 picks Scope B Phase B1, the user must first sign off on the open decisions in plan §8 (recommendations are all (a) — disconnected DB, sonnet-4-6, defer B3, adapter inline in script, no `intake`-only LLM mode).
+**Task:** Session 25 — open. Session 24 shipped Scope B-1 (real Anthropic data agent wired into `scripts/run_pipeline.py --llm data`). Session 25 is user's choice between continuing Scope B (Phase B2 — scripted-answers intake) and picking any of the carryover findings.
+**Status:** Session 24 complete. Session 25 ready.
+**Priority:** If Session 25 picks B2, user should re-confirm plan §8.3 (B3 in scope?) and §8.4 (adapter location). For B1 we used opus-4-7; B2 should pick a model for the intake side.
 
-### What Session 24 should do
+### What Session 25 should do
 
-Six candidates, ranked by readiness and value:
+Seven candidates, ranked by readiness and value:
 
-1. **Execute Phase B1 of `docs/planning/scope-b-plan.md`** — Real Anthropic data agent wired into `scripts/run_pipeline.py` via a new `--llm data` flag. Plan §7.1 specifies the file-by-file changes (~30 LOC in `scripts/run_pipeline.py`, +25 in OPERATIONS.md, +30 in docs/tutorial.md). Per-phase completion criteria in §7.1.3. The intake stays fixture-driven; only the data side flips to real LLM. **Hard stop:** do NOT bundle B2 in the same session — failure mode #18 risk. The plan's §15 makes the session boundary explicit.
+1. **Execute Phase B2 of `docs/planning/scope-b-plan.md`** — Scripted-answers intake with real Anthropic, activated by `--llm both --intake-fixture path/to/sub.yaml`. Plan §7.2 specifies ~+35 LOC in `scripts/run_pipeline.py` + ~+25 LOC for the `RuntimeError → DRAFT_INCOMPLETE` adapter (inline per plan §8.4 (a)). The adapter is the load-bearing piece — §7.2.2 has the reference implementation; the data agent's `agent.py:50-53` try/except is the template. **Hard stop:** do NOT bundle B3 in the same session — failure mode #18 risk.
 
-2. **Clearer `MPC_NAMESPACE` validation + docs** (Session 22 finding). Add a validator to `OrchestratorSettings.from_env()` that detects a leading `http://`/`https://` and raises `ConfigError("MPC_NAMESPACE must be a group path, not a URL; got '...'")`. Update `.env.example`, `OPERATIONS.md` §1, `docs/tutorial.md` §5a to state "path only." One session, ~5 small edits + one new test.
+2. **Clearer `MPC_NAMESPACE` validation + docs** (Session 22 finding). Add a validator to `OrchestratorSettings.from_env()` that detects a leading `http://`/`https://` and raises `ConfigError("MPC_NAMESPACE must be a group path, not a URL; got '...'")`. Update `.env.example`, `OPERATIONS.md` §1, `docs/tutorial.md` §5a. ~5 small edits + one new test. One session.
 
-3. **CI lint coverage extension to `scripts/`** (Session 22 finding). Add `scripts/` to the ruff CI command in `.github/workflows/ci.yml`. Fix the resulting 10 `E402` errors in `scripts/run_pipeline.py` — simplest fix is `# noqa: E402` per import, cleaner fix is to drop `sys.path.insert` and rely on `uv run` resolving the editable install. One session.
+3. **CI lint coverage extension to `scripts/`** (Session 22 finding, **re-surfaced in Session 24**). Add `scripts/` to the ruff CI command in `.github/workflows/ci.yml`. Fix 10 pre-existing errors (6 × E402, 4 × F541 — Session 24 confirmed the count). Simplest: `# noqa: E402` on 6 imports + `ruff check scripts/ --fix` on the F541s. Cleaner: drop `sys.path.insert` hack (lines 38-40) and rely on `uv run` resolving the editable install. One session.
 
-4. **CI typecheck coverage extension to `packages/`** (Session 22 finding). `pyproject.toml` declares both packages under `[tool.mypy]` but CI runs `mypy src/` only. Extend CI to `mypy src/ packages/data-agent/src/` (or `mypy --package ...`). Fix the ~13 resulting errors — the largest cluster is `packages/data-agent/.../anthropic_client.py:218` where the Anthropic SDK's content-block union has grown ~8 variants since Phase 2; need a `TextBlock` type-guard. One session, real bit-rot fix.
+4. **CI typecheck coverage extension to `packages/`** (Session 22 finding). `pyproject.toml` declares both packages under `[tool.mypy]` but CI runs `mypy src/` only. Extend CI to `mypy src/ packages/data-agent/src/`. Fix ~13 errors — largest cluster is `packages/data-agent/.../anthropic_client.py:218` (Anthropic SDK content-block union; needs `TextBlock` type-guard). One session.
 
-5. **Self-hosted GitHub URL override** (Session 22 finding, code-read only). `docs/tutorial.md` §5c claims `MPC_HOST_URL` works for GHE, but `scripts/run_pipeline.py:109-113` constructs `PyGithubAdapter(token=token)` with no URL argument. Fix parallels the Session 22 `host_url=` fix for GitLab. Untested live; small scope. One session.
+5. **Self-hosted GitHub URL override** (Session 22 finding, code-read only). `docs/tutorial.md` §5c claims `MPC_HOST_URL` works for GHE, but `scripts/run_pipeline.py:109-113` constructs `PyGithubAdapter(token=token)` with no URL argument. Fix parallels Session 22's `host_url=` fix for GitLab. Untested live; small scope. One session.
 
-6. **Reconcile `OPERATIONS.md` §4.2/4.3 recipes with `scripts/run_pipeline.py --live`** (Session 22 finding, **confirmed broken by Session 23**). The `python -m model_project_constructor.agents.website ...` invocation in OPERATIONS §4.2-4.3 references files that do NOT exist (`agents/website/__main__.py` and `cli.py` were both verified absent during Session 23's plan research; documented in `scope-b-plan.md` §3.9). Replace OPERATIONS §4.2/4.3 with the canonical `scripts/run_pipeline.py --live --host gitlab` recipe. One session.
+6. **Re-audit `OPERATIONS.md` §4.2/4.3 recipes** (Session 22 finding; Session 23's claim was WRONG — see gotcha #2 below). Session 24 discovered that `src/model_project_constructor/agents/website/__main__.py` and `cli.py` BOTH exist (added in commit `e9f0d10` during Phase D / Session 17). The OPERATIONS recipes may actually work. Session 25 should try each invocation, document what works vs. what's stale, and reconcile with `scripts/run_pipeline.py --live` as the canonical entry point. One session.
 
-Any of #2 through #6 is a one-session deliverable. #1 (Phase B1) is the BACKLOG-#1 payoff and is one of three sessions the plan describes. **Recommend #1** unless the user wants to clear quick wins first.
+7. **Wiki freshness sweep** (Session 24 finding). Update `docs/wiki/claims-model-starter/` pages so each reads as a description of the current tool rather than a record of its evolution. Delete "Recommended additions" that are already implemented; rewrite partially-implemented ones to describe the remaining gap only. Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. One session.
+
+**Recommend #1** for Session 25 to complete Scope B. If the user wants quick wins first, #3 is the lowest-risk (~20 min + commit boundary).
 
 ---
+
+## Session 23 Handoff Evaluation (by Session 24)
+**Score: 8/10.** Strong planning handoff, but two notable claims turned out to be wrong — one was load-bearing enough to cost time in verification.
+
+- **What helped:** (a) Key-files block for candidate #1 listed `scripts/run_pipeline.py:201-206` (stubbed lambdas), `packages/data-agent/.../cli.py:99-119` (the mirror pattern), and `packages/data-agent/.../agent.py:32-61` (shows `DataAgent.run` already matches `DataRunner`). I went straight to those files; the B1 wiring was ~15 minutes of typing once I confirmed the plan's signatures. (b) Gotcha #2 ("plan §8 has 5 open decisions, all (a)") correctly put user sign-off before the stub write — prevented a costly mid-session pivot. (c) Gotcha #5 about the live GitLab project from Session 22 still existing explained why B1's run produced `subrogation-pilot-v2` (auto-suffix). (d) Note that `.env` is already populated (gotcha at bottom of #1 block) saved ~5 minutes of first-live-run setup. (e) Plan §7.1.3 verification commands were copy-pastable and produced the expected output; the `DataReport.json` inspection snippet caught that live SQL differs from fixture on the first try.
+- **What was missing:** (a) No mention that pre-flight was last-green at Session 22's commit `bb52915` — I did re-run it, but a note "Session 23 did NOT run pre-flight" (which IS there, as gotcha #3) would be more prominent if it were a first-class checklist line rather than a gotcha. Small issue — the gotchas section was read. (b) No note that the live run takes ~5 minutes because the data agent makes ~4-8 sequential Anthropic calls per primary query. My first reaction was "is it hung?" around 4 minutes in. One-line note would save that. (c) The plan's cost estimate in §7.1.4 (~$0.05–0.10/run at sonnet rates) didn't get translated into "multiply by ~5 for opus" when the user picked opus — trivial but would have been useful context for the first invoice.
+- **What was wrong:** (a) **Gotcha #5 and plan §3.9 both claim `agents/website/__main__.py` and `cli.py` do not exist.** Both DO exist (`git log` shows `e9f0d10 feat(phase-d): website CLI`). Session 23 either mis-greped or the `ls -la` check returned negative on a working-dir state I can't reproduce. Cost me ~3 minutes of "wait, which is true?" before checking `git log`. This makes candidate #6 (reconcile OPERATIONS §4.2/4.3) an audit task, not a rewrite task — but Session 23's handoff directed Session 25 to "replace §4.2/4.3 with scripts/ recipe." That direction is based on a false premise. (b) Plan §17 grep expectations: "runner contract: 16" matches; "run_pipeline(: 13" matches; "IntakeAgent(: 4" matches; "DataAgent(: 9" matches. "AnthropicLLMClient( production: 2" — my naive re-run returned 4, but those extras are a class definition and a docstring mention. The plan's "2 instantiations" was correct; the executor (me) had to distinguish instantiations from symbol occurrences. Minor — cost ~30 seconds.
+- **ROI:** ~3× return. Reading the plan + handoff (~10 min total) saved ~30 min of implementation discovery. The two wrong claims cost ~3 min combined — not enough to tank the score, but enough to drop from 9 to 8.
 
 ## Session 22 Handoff Evaluation (by Session 23)
 **Score: 9/10.** Session 22's handoff was unusually well-suited to a planning session — the ACTIVE TASK named six pre-scoped candidates, ranked by readiness, and the candidate-#1 "key files for each candidate" block (`scripts/run_pipeline.py:201-206`, `intake/anthropic_client.py`, `data-agent/.../anthropic_client.py`, `pipeline.py`, `tests/orchestrator/test_pipeline.py`) was exactly the file set I needed for the plan's evidence-based inventory.
@@ -36,6 +46,58 @@ Any of #2 through #6 is a one-session deliverable. #1 (Phase B1) is the BACKLOG-
 - **What was missing:** (a) No file-level pointer to `IntakeAgent.run_with_fixture` / `run_scripted` — I had to grep for `class IntakeAgent` and read the facade myself. A line like "intake facade has `run_with_fixture` and `run_scripted` — neither matches `IntakeRunner`'s `() -> IntakeReport` shape" would have saved ~5 minutes. (b) No mention that `DataAgent.run` already matches `DataRunner` exactly — Session 22 might not have noticed, and finding this was the single most decision-shaping fact in the plan (it made B1 the obvious first phase). (c) No mention that the OPERATIONS §4.2/4.3 invocations are LITERALLY broken (no `__main__.py` exists). Session 22 deferred the audit to a Session 23 candidate (#6) but the plan needed to know this to avoid documenting the wrong canonical entry point.
 - **What was wrong:** Nothing factually wrong. Every cited file path, line range, and BACKLOG-item-number correspondence held up.
 - **ROI:** ~5× return. Reading the handoff (~3 min) saved ~15 min of orientation, scope-definition, and "is this plan or implementation?" round-trips with the user.
+
+### What Session 24 Did
+**Deliverable:** Scope B Phase B1 — real Anthropic data agent wired into `scripts/run_pipeline.py` via `--llm data`. Per plan `docs/planning/scope-b-plan.md` §7.1. **COMPLETE.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Live run ID:** `run_b1_live` → project `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot-v2` (auto-suffixed past Session 22's v1).
+**Commits:** (pending this session's commit) — single `feat(session-24): scope-b1 real data agent` commit.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full, `SESSION_NOTES.md` ACTIVE TASK + Session 23 handoff in full, ran `git status`/`git log -6`/`git diff --stat`, ran `python methodology_dashboard.py` (project at 91/100, medium risk, active). No ghost sessions. Reported state to user.
+
+2. **Phase 1B stub** — Wrote the IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection). Stated commitment back to user: "deliverable is Phase B1 only; no B2 bundling."
+
+3. **User-decision round-trip** — Presented plan §8's 5 open decisions with recommendations; user confirmed all (a) except §8.2 → **opus-4-7** instead of sonnet-4-6 (to remove "was it the model?" as a confounding variable on the first pilot run). Added `--model` to the B1 surface (not in original plan §8.2 recommendation; documented as an approved deviation).
+
+4. **Plan re-read + grep re-verification** — Re-read `docs/planning/scope-b-plan.md` §1–§8 in full; re-ran §17's 5 grep inventories. Runner-contract/run_pipeline/IntakeAgent/DataAgent counts matched; `AnthropicLLMClient(` returned 4 (not plan's 2) but the extras were a class def + a docstring, not instantiations. Discovered **website `__main__.py` and `cli.py` DO exist** (plan §3.9 and Session 23 gotcha #5 both wrong) — flagged in handoff, NOT acted on (not blocking for B1, belongs in candidate #6 re-audit).
+
+5. **Pre-flight before code changes** — `uv run pytest -q` → 422 passed, 97.24% coverage. `uv run ruff check src/ tests/ packages/` → clean. `uv run mypy src/` → clean. `.env` verified to have `ANTHROPIC_API_KEY`, `GITLAB_TOKEN`, `MPC_HOST`, `MPC_HOST_URL`, `MPC_NAMESPACE`.
+
+6. **Implemented §7.1 changes:**
+   - `scripts/run_pipeline.py`: added `--llm {none,data}` (default `none`), `--model` (default `claude-opus-4-7`), `--db-url` (default `None`). New helper `build_data_runner(*, llm_mode, db_url, model)` mirrors `build_website_runner`'s shape; returns fixture closure on `none` or `DataAgent(AnthropicLLMClient(model=...), db=...).run` on `data`. Replaced the `lambda _req: data` call at line 205-206 with the helper's return. Updated banner + `[1/5]` section to announce LLM mode. ~+40 / -5 LOC.
+   - `--llm both` deliberately NOT added; Session 25's B2 work will extend `choices=["none","data"]` to `choices=["none","data","both"]`. Keeping the CLI schema truthful to implemented behavior.
+   - `OPERATIONS.md` §4.4 added with the B1 recipe, model-selection table, disconnected-DB default explanation, and a copy-pasteable checkpoint-inspection snippet for confirming real Claude output. ~+75 lines.
+   - `docs/tutorial.md` §6 "Real LLM-backed run" added with §6a (run command), §6b (verification snippet), §6c (model table + rationale for opus as pilot default), §6d (optional DB connection). The previous §6 "Using the orchestrator programmatically" renumbered to §7. ~+65 lines.
+   - `CHANGELOG.md` [Unreleased] entry at top with explicit "Deviation from plan: §8.2 opus instead of sonnet" callout.
+   - `BACKLOG.md` "Up Next" item #1 rewritten as a 3-sub-bullet hierarchy (B-1 ✓, B-2 open, B-3 optional) with plan section pointers.
+
+7. **Scope A regression verified** — Ran `--llm none --run-id run_b1_fake_llm` against fresh baseline `run_b1_fake_baseline` (no flags). Checkpoint envelope payloads are byte-identical; only envelope metadata (run_id, timestamps) differs. Scope A behavior confirmed unchanged.
+
+8. **Live B1 run verified** — `set -a; source .env; set +a; uv run python scripts/run_pipeline.py --live --host gitlab --llm data --model claude-opus-4-7 --run-id run_b1_live`. Result: `COMPLETE` in 5m22s. Data stage latency 317,738 ms (real Claude — 4+ sequential API calls); website stage 4,371 ms (matches Session 22's baseline). Project created at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot-v2` (auto-suffixed). `DataReport.json`: 19,745 bytes, status `COMPLETE`, 1 primary query with 11 quality checks + full 7-section datasheet, 12 unconfirmed expectations (db=None), 5 data quality concerns, summary mentions `run_b1_live` by name (proves Claude actually ran). Primary query SQL is structurally different from the fixture — Claude added `policy_id`, `fnol_date`, `fault_evidence_level`, `information_completeness_score` columns and used SQL Server `DATEDIFF(DAY, ...)` syntax vs the fixture's BigQuery `DATEDIFF('day', ...)`.
+
+9. **Wiki freshness BACKLOG item added** — Per user mid-session request, added candidate #7 covering wiki drift (Content-Recommendations, Home, Pipeline-Overview, Getting-Started, Agent-Reference). Rule: remove completed "Recommended additions"; rewrite partial ones to describe the remaining gap only.
+
+10. **Final pre-commit green check** — `pytest -q` → 422 passed. `ruff check` on CI scope → clean. `mypy src/` → clean.
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Re-read the entire plan + Session 23 handoff + grep-inventory verification BEFORE writing the Phase 1B stub. Did NOT start typing code until the user signed off on §8 decisions and the pre-flight was green.
+- **Implementations read, not just descriptions:** Yes. Read `DataAgent.__init__` + `DataAgent.run` bodies, `AnthropicLLMClient.__init__` body, and the data agent CLI's `_build_llm` + `ReadOnlyDB` construction to confirm the plan's "mirror the CLI" direction was accurate. Did NOT trust "the shape matches" without checking.
+- **Stakeholder corrections needed:** 1 (the model question — user challenged sonnet-4-6 vs opus-4-7, I presented tradeoffs, user chose opus). This is a GOOD correction — it's the kind a plan should surface by default; Session 23's plan framed §8.2 as "recommend (a), defer quality conversation" which skirted the actual cost/benefit. Not a process failure. Zero corrections on scope, workstream, or implementation approach.
+- **What I got right:** (a) Phase 1B stub written before any technical work. (b) User-decision round-trip happened BEFORE pre-flight → before code edits; commit boundary preserved. (c) Did NOT bundle candidate #3 (the ruff errors I noticed mid-session) into the B1 commit, per SAFEGUARDS + failure mode #18 — explicitly told the user why and got confirmation. (d) Caught Session 23's gotcha #5 being wrong during grep re-verification, flagged it, did NOT act on it (carryover #6's territory). (e) Caught the `AnthropicLLMClient(` count discrepancy, traced it to "instantiations vs symbol occurrences," did NOT waste time on further investigation. (f) Kept the `--llm` choices to `{none,data}` (truthful surface) instead of accepting `both` and erroring — simpler schema for B2 to extend. (g) Reused Session 22's `subrogation-pilot` project name via auto-suffix rather than polluting the namespace with a new name. (h) Tutorial §6 + OPERATIONS §4.4 both explain WHY opus is the default (confounding-variable argument) — pilot readers need the reasoning, not just the command.
+- **What I got wrong:** (a) Initial `scripts/run_pipeline.py --help` scan missed that my banner `print(f"...{args.run_id}")` would become F541 if I'd written it without the placeholder; I got lucky it actually uses a placeholder. No actual error, but I didn't proactively lint my new `print(f"...")` lines to confirm. -0.3. (b) Did not parameterize the tutorial §6c model table with actual cost-per-run numbers for opus — I stated "5×" as a ratio, not `~$0.25–$0.50 at opus`. Plan §7.1.4 had the sonnet estimate (~$0.05–$0.10); scaling to opus is arithmetic but would have been more useful. -0.3. (c) Did not test `--llm data --live --host github` — only verified GitLab. Risk is low (the data side is host-independent), but it's an untested path. -0.4.
+- **Quality bar vs previous sessions:** Matches Session 22 (executed a live-host run + carryover findings) and improves on Session 23 (caught and corrected a load-bearing claim in the predecessor plan). The B1 deliverable is smaller than Session 22's fix + audit package but equally well-verified.
+
+### Phase 3C: Learnings
+
+Adding to the `Learnings` table in SESSION_RUNNER.md as #20:
+
+| # | Learning | Source | When to Apply |
+|---|----------|--------|---------------|
+| 20 | When a plan asks "which model?" in an open-decisions section, **do NOT default to the cheapest option for a pilot's first real run**. The plan's rationale — "defer the quality conversation to after the first real run produces output we can judge" — is weak when output quality is literally what the pilot is evaluating. If the model turns out to be limiting, the first-run impression is contaminated and "was it the model?" becomes a confounding variable forever after. Recommend the highest-quality option for the *first* run; fall back to cheaper models for iteration once output shape is validated. For a ~$0.50 vs ~$0.10 tradeoff on a pilot, the marginal cost is trivial compared to the cost of a muddled conclusion. | Session 24 (user challenged plan §8.2's sonnet-4-6 → switched to opus-4-7) | Any session where a plan recommends a cheaper/faster model for a first-impression pilot run. |
 
 ### What Session 23 Did
 **Deliverable:** `docs/planning/scope-b-plan.md` — 822 lines, 18 sections — the planning artifact for BACKLOG #1 (Scope B real LLM-backed intake + data agents). **COMPLETE.**
@@ -155,7 +217,112 @@ For #6 (reconcile OPERATIONS §4.2/4.3):
 - [x] Phase 3B: Self-assessment scored and written above
 - [x] Phase 3C: Learning #19 queued for SESSION_RUNNER.md
 - [x] Phase 3D: Handoff to Session 24 above (ACTIVE TASK + 6 candidates + key files + 10 gotchas)
-- [ ] Phase 3E: Commit main-repo changes (`docs/planning/scope-b-plan.md` + `SESSION_NOTES.md`) — pending
+- [x] Phase 3E: Commit main-repo changes (`docs/planning/scope-b-plan.md` + `SESSION_NOTES.md`) — commit `14dc53f`
+- [x] Phase 3F: Verbal report to user
+
+---
+
+### Phase 3D: Handoff to Session 25 (continued)
+
+Full "What Session 25 should do" content is in the **ACTIVE TASK** block at the top of this file. Seven candidates — #1 is Phase B2 (the natural sequel); #2–#6 are carryover findings from Sessions 22 & 24; #7 is the new wiki-freshness item.
+
+**Key files for each candidate:**
+
+For #1 (Phase B2 — scripted-answers intake):
+- `docs/planning/scope-b-plan.md` §7.2 — **read in full first**. §7.2.1 lists files to change; §7.2.2 has the adapter reference implementation; §7.2.3 has the per-phase completion criteria (happy path + failure-injection test).
+- `scripts/run_pipeline.py:92-128` — `build_data_runner` (Session 24) is the structural template for `build_intake_runner`. Mirror the same shape.
+- `scripts/run_pipeline.py:170-200` (approximately — re-check post-Session-24 line numbers) — CLI flag block; add `--intake-fixture path/to/sub.yaml`.
+- `src/model_project_constructor/agents/intake/agent.py:48-125` — `IntakeAgent.run_scripted(...)`. The `RuntimeError` raise sites at lines 100-104 and 117-120 are the failure surface the adapter must catch.
+- `src/model_project_constructor/agents/intake/fixture.py:9-75` — `load_fixture`, `answers_from_fixture`, `review_sequence_from_fixture` helpers. Use directly.
+- `src/model_project_constructor/agents/intake/anthropic_client.py:53-170` — `AnthropicLLMClient` constructor (reads `ANTHROPIC_API_KEY` from env).
+- `tests/fixtures/subrogation.yaml` — the canonical fixture for the happy-path live run.
+- For the failure-injection test (plan §7.2.3 criterion #3): create a small fixture `tests/fixtures/_b2_failmode.yaml` with only 1 `qa_pairs` entry but `draft_after: 99` — this exhausts the answer script before the graph can converge, triggering the `RuntimeError`.
+
+For #2 (`MPC_NAMESPACE` validator + docs):
+- `src/model_project_constructor/orchestrator/config.py:98,111` — env-var validators live here
+- `.env.example:47` — `MPC_NAMESPACE` template line
+- `OPERATIONS.md` §1 env-var table
+- `docs/tutorial.md` §5c — `MPC_NAMESPACE` section
+- `src/model_project_constructor/agents/website/gitlab_adapter.py:79` — where the generic 404 error originates
+
+For #3 (CI lint extension to `scripts/`):
+- `.github/workflows/ci.yml:19` — current `uv run ruff check src/ tests/ packages/`
+- `scripts/run_pipeline.py:38-40` — the `sys.path.insert(...)` hack that causes E402s
+- Exact pre-existing errors (confirmed by Session 24): **6 × E402** at lines 53-55, 63-65; **4 × F541** at lines 231, 294, 296, 306. F541s are auto-fixable via `uv run ruff check scripts/ --fix`. E402s need either `# noqa: E402` per-line or dropping the `sys.path.insert` (relies on `uv run` resolving the editable install — verify bare `python scripts/run_pipeline.py` is OK to drop).
+
+For #4 (CI typecheck extension to `packages/`):
+- `.github/workflows/ci.yml:28` — current `uv run mypy src/`
+- `pyproject.toml` `[tool.mypy]` — already declares both packages
+- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:218` — `TextBlock` type-guard cluster (largest error cluster)
+- `packages/data-agent/src/model_project_constructor_data_agent/nodes.py:142` — `execution_status` literal narrowing
+- `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py:26` — untyped `get_type` call
+
+For #5 (self-hosted GitHub URL override):
+- `scripts/run_pipeline.py:109-113` — the broken branch (`PyGithubAdapter(token=token)` no URL). Note: post-Session-24 these lines may have shifted; grep for `PyGithubAdapter(`.
+- `docs/tutorial.md` §5c — the misleading documentation
+- `src/model_project_constructor/agents/website/github_adapter.py` — verify `base_url` constructor kwarg exists (PyGithub's `Github(base_url=...)` pattern)
+
+For #6 (re-audit OPERATIONS §4.2/4.3):
+- `OPERATIONS.md:174-208` — the recipes to re-verify (Session 24 confirmed the entry points DO exist despite Session 23's claim)
+- `src/model_project_constructor/agents/website/__main__.py` (exists) — entry point
+- `src/model_project_constructor/agents/website/cli.py` (exists, 7225 bytes) — Typer CLI
+- `docs/tutorial.md` §5 — the `scripts/run_pipeline.py --live` canonical recipe to reconcile with
+- Git history: `git log --oneline -- src/model_project_constructor/agents/website/cli.py` shows `e9f0d10 feat(phase-d): website CLI`; Phase-D was Session 17.
+
+For #7 (wiki freshness sweep):
+- `docs/wiki/claims-model-starter/Content-Recommendations.md` — likely has "Recommended additions" that have shipped
+- `docs/wiki/claims-model-starter/Home.md` — front-page, drift-prone
+- `docs/wiki/claims-model-starter/Pipeline-Overview.md` — may still describe B-1 as future
+- `docs/wiki/claims-model-starter/Getting-Started.md` — may reference old CLI patterns
+- `docs/wiki/claims-model-starter/Agent-Reference.md` — Session 23 handoff noted this has wrong API docs (`IntakeAgent().run(config)` and `DataAgent().run(...)` — both wrong since agents require `llm=`)
+
+### Gotchas for Session 25
+
+1. **The plan IS the contract for B2.** Re-read `docs/planning/scope-b-plan.md` §7.2 and §8.4 in Phase 0. Failure modes #11 and #19 apply. B2's load-bearing novelty is the `RuntimeError → DRAFT_INCOMPLETE` adapter — plan §7.2.2 has the reference implementation; do NOT reinvent it.
+
+2. **Session 23's claim that `agents/website/__main__.py` and `cli.py` do not exist is WRONG.** Both files exist (added in commit `e9f0d10` during Phase D / Session 17). OPERATIONS.md §4.2/4.3 may actually work. This affects candidate #6 (was "rewrite §4.2/4.3", now "audit and document which invocations actually work"). Do NOT delete §4.2/4.3 without first running each invocation.
+
+3. **Session 24 deviated from plan §8.2** — used `claude-opus-4-7` for B1 instead of the plan's recommended `claude-sonnet-4-6`. Session 25 should decide which model to use for the intake side in B2. Arguments: (a) opus if you want to hold quality constant vs. B1; (b) sonnet if you want to see whether the intake workflow is sonnet-robust. Pilot cost is not the constraint; "what do we learn from this run?" is.
+
+4. **Session 24 added `--model` to the B1 surface** (not in original plan §8.2). B2 should either (a) reuse `--model` for both intake and data sides (single-model run), or (b) add `--intake-model` and `--data-model` (asymmetric). Recommend (a) for simplicity; revisit if asymmetric testing becomes interesting.
+
+5. **The `--llm` choices set is currently `{none, data}`** in `scripts/run_pipeline.py`. B2 must extend this to `{none, data, both}`. The argparse `choices=` is the single place to change.
+
+6. **Live B1 produced `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot-v2`** — auto-suffixed past Session 22's `subrogation-pilot`. B2's live run will produce `subrogation-pilot-v3` (or higher) by the same mechanism. Acceptable.
+
+7. **`.env` is already populated** (`ANTHROPIC_API_KEY`, `GITLAB_TOKEN`, `MPC_HOST=gitlab`, `MPC_HOST_URL=https://gitlab.com`, `MPC_NAMESPACE=rmsharp-modelpilot`). Re-use via `set -a; source .env; set +a`.
+
+8. **Session 24's pre-commit state is green** (pytest 422/422, ruff on CI scope clean, mypy clean). Session 25 should re-run pre-flight in Phase 0 to confirm no drift.
+
+9. **The 10 pre-existing ruff errors in `scripts/run_pipeline.py`** (6 E402, 4 F541) are NOT a regression — they're Session 22 finding #3 and were already present when Session 24 started. CI scope (`src/ tests/ packages/`) does not include `scripts/`, so they do not block CI. See candidate #3.
+
+10. **Live data-agent run takes ~5 minutes per primary query** (B1 was 5m17s for 1 primary query). B2 will add intake time on top — plan §7.2.4 estimates ~$0.10–$0.20 per B2 run at sonnet rates; at opus add ~5× markup. Sessions 25+ should budget wall time accordingly — the "is it hung?" moment is ~3–4 minutes in.
+
+11. **`probability` vs `likelihood`** — durable user correction, still applies. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+12. **Re-read `SAFEGUARDS.md` and `SESSION_RUNNER.md`** at Session 25 start. Failure modes #14 (ghost session), #18 (plan-to-impl bleed — high risk for B2→B3 bundling), and #19 (plan-mode bypass — follow the plan, but verify each claim against current code) all apply.
+
+### Session 24 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] User-decision round-trip on plan §8 completed (opus-4-7 deviation approved)
+- [x] Grep inventory re-verified per plan §17 (counts match modulo instantiation-vs-symbol interpretation; website entry points DO exist contrary to plan §3.9)
+- [x] Pre-flight green before code changes (pytest 422/422, ruff on CI scope, mypy)
+- [x] `build_data_runner` + CLI flags implemented in `scripts/run_pipeline.py`
+- [x] `OPERATIONS.md` §4.4 added
+- [x] `docs/tutorial.md` §6 added, old §6 renumbered to §7
+- [x] `CHANGELOG.md` `[Unreleased]` entry added
+- [x] `BACKLOG.md` "Up Next" item #1 rewritten as 3-sub-bullet hierarchy
+- [x] Scope A regression verified (`--llm none` byte-identical to no-flag baseline on payload)
+- [x] Live B1 run → `COMPLETE` at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot-v2`
+- [x] Live DataReport verified: real Claude SQL ≠ fixture, 11 quality checks + full datasheet, 12 unconfirmed expectations, summary mentions `run_b1_live`
+- [x] BACKLOG item for wiki freshness added (candidate #7)
+- [x] Phase 3A: Session 23 handoff evaluated (8/10 with 2 wrong claims flagged)
+- [x] Phase 3B: Self-assessment written (9/10)
+- [x] Phase 3C: Learning #20 queued for SESSION_RUNNER.md
+- [x] Phase 3D: Handoff to Session 25 above (ACTIVE TASK + 7 candidates + key files + 12 gotchas)
+- [ ] Phase 3E: Commit main-repo changes — pending
 - [ ] Phase 3F: Verbal report to user — pending
 
 ---

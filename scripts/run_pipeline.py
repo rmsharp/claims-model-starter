@@ -21,6 +21,17 @@ Options:
     --live             Use a real repo host instead of FakeRepoClient.
                        Requires GITLAB_TOKEN or GITHUB_TOKEN in the
                        environment (see .env.example).
+    --llm {none,data}  Which stages use real Anthropic LLM calls.
+                       "none" (default): fixture data for intake AND data
+                                         (fastest, no API cost).
+                       "data": intake fixture + real Anthropic data agent
+                               (requires ANTHROPIC_API_KEY; ~$0.10-0.50/run
+                               depending on --model).
+    --model ID         Claude model for the real data agent (default:
+                       claude-opus-4-7). Ignored when --llm=none.
+    --db-url URL       SQLAlchemy URL for the data agent's read-only DB.
+                       When omitted, data quality checks are generated but
+                       not executed. Ignored when --llm=none.
 """
 
 from __future__ import annotations
@@ -87,6 +98,29 @@ def build_repo_target(host: str) -> RepoTarget:
         project_name_hint="subrogation_pilot",
         visibility="private",
     )
+
+
+def build_data_runner(*, llm_mode: str, db_url: str | None, model: str):
+    """Return a DataRunner callable.
+
+    In "none" mode, returns a closure that serves the fixture DataReport
+    regardless of the request — preserves Scope A behavior.
+    In "data" mode, binds a real ``DataAgent(AnthropicLLMClient(...), db)``
+    to its ``.run`` method, which already matches the ``DataRunner`` shape.
+    """
+    if llm_mode == "none":
+        data = load_data_fixture()
+        return lambda _req: data
+
+    from model_project_constructor_data_agent.agent import DataAgent
+    from model_project_constructor_data_agent.anthropic_client import (
+        AnthropicLLMClient,
+    )
+    from model_project_constructor_data_agent.db import ReadOnlyDB
+
+    llm = AnthropicLLMClient(model=model)
+    db = ReadOnlyDB(db_url) if db_url else None
+    return DataAgent(llm=llm, db=db).run
 
 
 def build_website_runner(*, host: str, live: bool):
@@ -162,23 +196,57 @@ def main() -> None:
         action="store_true",
         help="Use a real repo host (requires host token in env)",
     )
+    parser.add_argument(
+        "--llm",
+        choices=["none", "data"],
+        default="none",
+        help=(
+            "Which stages use real Anthropic LLM calls "
+            "(default: none = fixture data)"
+        ),
+    )
+    parser.add_argument(
+        "--model",
+        default="claude-opus-4-7",
+        help=(
+            "Claude model for the real data agent "
+            "(default: claude-opus-4-7; ignored when --llm=none)"
+        ),
+    )
+    parser.add_argument(
+        "--db-url",
+        default=None,
+        help=(
+            "SQLAlchemy URL for the data agent's read-only DB "
+            "(default: None = quality checks generated but not executed; "
+            "ignored when --llm=none)"
+        ),
+    )
     args = parser.parse_args()
 
     # --- Banner ---
     mode = "LIVE" if args.live else "FAKE (dry run)"
+    llm_label = "fixture" if args.llm == "none" else f"data={args.model}"
     print(f"\n{'=' * 60}")
     print(f"  Model Project Constructor — End-to-End Pipeline Run")
-    print(f"  Mode: {mode}  |  Host: {args.host}  |  Run ID: {args.run_id}")
+    print(f"  Mode: {mode}  |  Host: {args.host}  |  LLM: {llm_label}")
+    print(f"  Run ID: {args.run_id}")
     print(f"{'=' * 60}\n")
 
     # --- Load fixture data ---
     print("[1/5] Loading fixture data...")
     intake = load_intake_fixture()
-    data = load_data_fixture()
     print(f"      Intake: {intake.model_solution.target_variable} "
           f"({intake.model_solution.model_type})")
-    print(f"      Data:   {len(data.primary_queries)} queries, "
-          f"{len(data.confirmed_expectations)} confirmed expectations")
+    if args.llm == "none":
+        data_preview = load_data_fixture()
+        print(f"      Data:   {len(data_preview.primary_queries)} queries "
+              f"(fixture), "
+              f"{len(data_preview.confirmed_expectations)} confirmed expectations")
+    else:
+        print(f"      Data:   real Anthropic "
+              f"(model={args.model}, "
+              f"db={'connected' if args.db_url else 'disconnected'})")
 
     # --- Build config ---
     print("[2/5] Building pipeline config...")
@@ -202,7 +270,10 @@ def main() -> None:
         lambda: intake, name="intake", config=config, metrics=metrics,
     )
     data_runner = instrument(
-        lambda _req: data, name="data", config=config, metrics=metrics,
+        build_data_runner(
+            llm_mode=args.llm, db_url=args.db_url, model=args.model,
+        ),
+        name="data", config=config, metrics=metrics,
     )
     website_runner_instrumented = instrument(
         website_runner, name="website", config=config, metrics=metrics,
