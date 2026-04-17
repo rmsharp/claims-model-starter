@@ -174,39 +174,44 @@ by CI on every commit.
 
 ### 4.2 Against a live GitLab instance
 
-```bash
-export MPC_HOST=gitlab
-export MPC_HOST_URL=https://gitlab.example.com
-export GITLAB_TOKEN=...
-export ANTHROPIC_API_KEY=...
+Prerequisite: `GITLAB_TOKEN` set in the environment (see §1).
 
+```bash
 uv run python -m model_project_constructor.agents.website \
-    --intake intake.json \
-    --data data.json \
+    --intake tests/fixtures/subrogation_intake.json \
+    --data tests/fixtures/sample_datareport.json \
     --host gitlab \
-    --host-url "$MPC_HOST_URL" \
+    --host-url https://gitlab.example.com \
     --namespace data-science/model-drafts \
     --private-token "$GITLAB_TOKEN"
 ```
 
+Substitute your instance URL for `https://gitlab.example.com` and your
+own pre-built `IntakeReport` / `DataReport` JSON (matching
+`schemas.v1.intake` / `schemas.v1.data`) for non-fixture runs. This CLI
+is flag-driven — the `MPC_*` env vars in §1 are read by
+`scripts/run_pipeline.py` (§4.4), not by this entry point. The Website
+Agent itself makes no Claude calls, so `ANTHROPIC_API_KEY` is not
+required here.
+
 ### 4.3 Against a live GitHub / GitHub Enterprise
 
-```bash
-export MPC_HOST=github
-export MPC_HOST_URL=https://api.github.com      # or your GHE API URL
-export GITHUB_TOKEN=...
-export ANTHROPIC_API_KEY=...
+Prerequisite: `GITHUB_TOKEN` set in the environment (see §1).
 
+```bash
 uv run python -m model_project_constructor.agents.website \
-    --intake intake.json \
-    --data data.json \
+    --intake tests/fixtures/subrogation_intake.json \
+    --data tests/fixtures/sample_datareport.json \
     --host github \
     --namespace acme \
     --private-token "$GITHUB_TOKEN"
 ```
 
-GitHub does not support nested namespaces; pass a single owner / org
-as `--namespace`.
+For GitHub Enterprise, add
+`--host-url https://github.mycompany.com/api/v3` (or your Enterprise
+instance's API URL). GitHub does not support nested namespaces; pass a
+single owner / org as `--namespace`. Substitute your own pre-built
+`IntakeReport` / `DataReport` JSON for non-fixture runs.
 
 ### 4.4 Scope B: real LLM-backed pipeline via `scripts/run_pipeline.py`
 

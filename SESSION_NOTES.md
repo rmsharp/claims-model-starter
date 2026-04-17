@@ -5,20 +5,159 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 31 — pick from the 3 remaining candidates in "What Session 31 should do" below. Recommend #2 (re-audit `OPERATIONS.md` §4.2/4.3 recipes) or #3 (wiki freshness sweep). Candidate #1 (self-hosted GitHub URL override) is **done** — closes the last of Session 22's three code-gap findings (validator + ruff-scope + mypy-scope + GHE URL override all now landed).
-**Status:** Session 30 complete. `scripts/run_pipeline.py` GitHub branch now passes both `private_token=` (bug fix, parallels Session 22's GitLab `url=` → `host_url=` correction) and `host_url=` (closes the URL-override finding). 3 new tests added (441 → 444). Pytest / ruff / mypy all green.
+**Task:** Session 32 — pick from candidates in "What Session 32 should do" below. Recommend **#1 (cli.py GitLab default URL fix)** — small surgical code + test change, closes Session 31's F5 finding before drift gets worse.
+**Status:** Session 31 complete. `OPERATIONS.md` §4.2/§4.3 re-audited and reconciled (F1-F4 fixed via doc-only commit). F5 (cli.py:39 GitLab default URL inconsistency) and F6 (`--ci-platform` undocumented in OPERATIONS §4.x) deferred to BACKLOG as new items. Pytest 444/444 @ 97.26%, ruff clean on CI scope, mypy clean on 60 files.
 
-### What Session 31 should do
+### What Session 32 should do
 
-Three candidates (renumbered after Session 30 closed the GHE URL override):
+Three candidates after Session 31's scope-A close:
 
-1. **Re-audit `OPERATIONS.md` §4.2/4.3 recipes** (Session 22 finding; Session 23's claim was WRONG per Session 24). `__main__.py` + `cli.py` both exist. Try each invocation; document what works vs. stale. One session.
+1. **F5: cli.py GitLab default URL inconsistency** (Session 31 finding) — `src/model_project_constructor/agents/website/cli.py:39` defaults to `https://gitlab.example.com` (RFC-2606 placeholder). Inconsistent with 4 other surfaces (`orchestrator/config.py:33`, `scripts/run_pipeline.py:105,283`, `.env.example:18-19`, `OPERATIONS.md:24`) which all declare the default as `https://gitlab.com`. Small scope: bump the constant, add a regression test pinning the default for the `--host gitlab` path (currently `test_cli.py:233-264` explicitly passes `--host-url` so the default is untested), verify downstream test assertions still hold. One session.
 
-2. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. Walk "Recommended additions" / "Future enhancements" / "Planned" lists and (a) delete already-implemented items, (b) rewrite partials to describe the remaining gap. One session.
+2. **F6: document `--ci-platform` in OPERATIONS §4.x** (Session 31 finding, low-impact) — cli.py:107-116 + README.md:197 describe the flag. OPERATIONS.md §4.1/§4.2/§4.3 don't mention it. One-line note at end of §4.1 or a new §4.5. Could be bundled with any future OPERATIONS edit.
 
-3. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+3. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. Walk "Recommended additions" / "Future enhancements" / "Planned" lists and (a) delete already-implemented items, (b) rewrite partials to describe the remaining gap. Doc-sweep-shaped; larger than #1.
 
-**Recommend #1** for Session 31 — smallest code-shaped scope (try each recipe, compare against `docs/tutorial.md §5`, update whichever side is stale). Candidate #2 is doc-sweep-shaped and larger.
+4. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+
+**Recommend #1** — smallest code-shaped scope, cleanly separable (one constant + one test), naturally closes Session 31's deferred finding before it ages. F6 is a 1-line doc edit that could ride along if the user asks for it.
+
+---
+
+## Session 30 Handoff Evaluation (by Session 31)
+**Score: 9/10.** Strong handoff. The Session 30 handoff explicitly scoped Session 31's task ("re-audit OPERATIONS.md §4.2/4.3"), gave a clear verification path ("(a) try each `--help`; (b) fake-mode run; (c) if both work, pin both with a smoke test; if only one works, update OPERATIONS"), and its gotchas-list captured the right preconditions (pre-commit state, commit-ahead count, Session 22 finding closure). Lost 1 point on the "verification path" framing being slightly under-scoped — see below.
+
+- **What helped:** (a) **Gotcha #1** ("Post-Session-30 pre-commit state: pytest 444/444, 97.26%, ruff clean on CI scope, mypy clean on 60 files") made my Phase 0 pre-flight a one-command confirmation. Matched exactly. (b) **Candidate #1 key-files block at SESSION_NOTES.md:101-108** named `__main__.py`, `cli.py`, tutorial §5, and `scripts/run_pipeline.py` with a ready-to-execute verification recipe. I didn't have to design the investigation plan from scratch. (c) **Gotcha #4** ("Session 22's three code-gap findings are now FULLY CLOSED") accurately framed this task as a **doc-level** reconciliation, not a code-gap closure. Kept me out of the "maybe I should also fix the adapter" rabbit hole. (d) **Gotcha #10** ("Live GitHub path has never actually been live-tested" — even after Session 30's fix) set the expectation that live runs are generally not part of verification for this class of task. I didn't attempt a live GitLab run, which would have been a scope expansion. (e) **Gotcha #9** (two-bug pattern) was relevant cross-session context — I kept an eye out for "where else could the same shape of bug hide?" while reading cli.py, and surfaced F5 (the cli.py:39 placeholder) which is the same class of bug (inconsistency between a subsystem and its declared default). Would not have caught it as quickly without that frame.
+- **What was missing:** (a) **The verification path in the handoff was shaped for "confirm both recipes work" but not for the broader re-audit scope I ended up producing.** Step (c) said "if both work, pin both with a smoke test; if only one works, update OPERATIONS." This implicitly predicted a binary outcome. The actual audit surfaced 6 findings (F1-F6) of varying severity and location — a finer-grained result than the handoff's verification path accommodated. Not wrong, just under-scoped. A one-line note like "if both work AND are pinned by tests already, consider whether §4.2/§4.3 prose has drifted from README.md — R is the canonical reference" would have front-loaded the re-audit framing. -1. (b) The handoff did not flag `CHANGELOG.md:82`'s pre-existing entry on this exact issue ("this flow should be reconciled with the script path or marked deprecated"). Would have helped me frame the decision (keep vs. deprecate) faster. Minor; I found it via grep in ~30 seconds. -0 (fine to grep for it).
+- **What was wrong:** Nothing factually wrong. Every forecast matched observed behavior.
+- **ROI:** ~6× return. Reading Session 30's handoff (~2 min) saved ~12 min of discovery (verification approach, pre-flight baseline, gotchas). Slightly below Session 30's own Session-29 handoff-read ROI (~5×) and Session 29's Session-28 read (~8×), but still solid.
+
+### What Session 31 Did
+**Deliverable:** Re-audit OPERATIONS.md §4.2/§4.3 recipes and reconcile with canonical README pattern. **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this turn) — single `docs(session-31): reconcile OPERATIONS.md §4.2/§4.3 with README website-CLI recipes` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` ACTIVE TASK + Session 30 handoff + 10 gotchas in full; ran `git status` / `git log -5` / `git diff --stat` (clean working tree, 2 commits ahead of origin/master per Session 30 gotcha #2); ran `methodology_dashboard.py` (91/100, medium risk, active, healthiest of 4). No ghost sessions (Session 30 matches `62aa46b`, Session 29 matches `a9e2f3f`). Reported state to user. Waited for direction.
+
+2. **Push first, then work.** User confirmed push-first. Pushed `26023c8..62aa46b` to origin/master (Sessions 29 + 30). Working tree back to clean + up-to-date.
+
+3. **User confirmed: candidate #1 (OPERATIONS §4.2/§4.3 re-audit).** No decision round-trips after confirming scope.
+
+4. **Phase 1B stub** — Wrote IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection).
+
+5. **User request mid-flight: "perform a thorough audit, be careful, /effort=max"** — Raised investigation rigor: re-read code surfaces with new eyes (cli.py end-to-end, agent.py, fake_client.py, __main__.py, .env.example, orchestrator/config.py), re-read OPERATIONS.md §1-§6 + tutorial.md §5 + TROUBLESHOOTING.md + README.md + relevant wiki pages, built a flag/env-var inventory, executed both recipes + edge cases, cross-grepped the codebase for every doc surface referencing the website CLI.
+
+6. **7-dimension audit per AUDIT_WORKSTREAM framework.** Six findings surfaced, 3 positive findings, 2 PASS dimensions, 3 FAIL dimensions, 2 MINOR dimensions. Full audit report presented in the conversation (findings F1-F6, items audited table, structural observations, prior-audit comparison).
+
+7. **Key finding: README.md is the canonical reference; OPERATIONS.md §4.2/§4.3 had drifted from it.** README.md:160-197 has 4 well-formed invocations with no drift — no spurious env exports, real fixture paths, explicit GHE caveat. OPERATIONS.md §4.2/§4.3 had drifted on 4 dimensions (F1-F4). Reconciliation target was obvious.
+
+8. **User chose scope (A): fix F1-F4 inline; defer F5 + F6 to follow-up.** Matches SAFEGUARDS.md's "don't switch modes without a commit boundary" (F5 is code + test; F1-F4 are doc-only).
+
+9. **Doc fix (single `Edit` call):** Rewrote OPERATIONS.md §4.2 and §4.3 to mirror README style:
+   - **F1:** Removed `export ANTHROPIC_API_KEY=...` from both §4.2 and §4.3. (Grep-confirmed website package has zero Anthropic references.)
+   - **F2:** Replaced abstract `intake.json`/`data.json` with `tests/fixtures/subrogation_intake.json` + `tests/fixtures/sample_datareport.json`. Added substitution note + schema-version pointers.
+   - **F3:** Dropped `export MPC_HOST=...` and `export MPC_HOST_URL=...` preambles. Added explicit prose: "This CLI is flag-driven — the `MPC_*` env vars in §1 are read by `scripts/run_pipeline.py` (§4.4), not by this entry point."
+   - **F4:** §4.3 now omits `--host-url` (uses cli.py's `https://api.github.com` default for public GitHub); added GHE sentence: "For GitHub Enterprise, add `--host-url https://github.mycompany.com/api/v3`."
+
+10. **Post-edit verification:**
+    - §4.2 new shape (`--fake` substituted for `--private-token`): `Status: COMPLETE`, project URL `https://fake.host.test/data-science/model-drafts/intake-subrogation-001`
+    - §4.3 new shape: `Status: COMPLETE`, URL `https://fake.host.test/acme/intake-subrogation-001`
+    - §4.3 GHE variant (+ `--host-url https://github.mycompany.com/api/v3`): `Status: COMPLETE`
+    - Full pre-flight: `uv run pytest -q` → 444/444 passing, 97.26% coverage; `uv run ruff check src/ tests/ packages/ scripts/` clean; `uv run mypy` clean on 60 files. No code changes, so coverage is identical to Session 30 close.
+
+11. **Bookkeeping:**
+    - `CHANGELOG.md` [Unreleased] — new 2026-04-17 Session 31 entry above Session 30's. Explains the audit findings (F1-F6), names the resolution for F1-F4, and documents the deferred F5/F6 with full context so Session 32 can pick them up without re-running the audit.
+    - `BACKLOG.md` — Session 22 finding at line 53 (`Reconcile OPERATIONS.md §4.2/4.3 ...`) flipped `[ ]` → `[x]` with the closure rationale ("keep, don't deprecate — 14 tests pin the CLI"). Added two new `[ ]` items: "cli.py GitLab default URL inconsistency" and "Document `--ci-platform` flag in OPERATIONS §4.x."
+    - `SESSION_NOTES.md` — this block + handoff to Session 32 (candidates + recommendation + key files + gotchas).
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. After the user requested `/effort=max` mid-flight, I re-read **everything** — agent.py, fake_client.py, .env.example, orchestrator/config.py — to verify my earlier quick-pass findings (F1-F4) against the actual source. The grep for `anthropic` in the website package (returns 0 hits) is the load-bearing evidence for F1. Discovered F5 (cli.py:39 placeholder) and F6 (`--ci-platform` doc gap) ONLY because of the deeper pass.
+- **Implementations read, not just descriptions:** Yes — read cli.py end-to-end (not just the flag names), read agent.py's precondition-check logic, read fake_client.py's URL-construction (FakeRepoClient's `https://fake.host.test` is hardcoded, so fake-mode URLs don't reveal live-mode host-URL asymmetries), read config.py's `DEFAULT_GITLAB_URL = "https://gitlab.com"` (the surface that cli.py:39 disagrees with), and read test_cli.py's 337 lines in full to confirm what's currently pinned (and what's NOT — e.g. the GitLab `--host-url` default path is currently untested).
+- **Stakeholder corrections needed:** 0. User's "use (A)" was unambiguous after I presented the scope choice. No redirects.
+- **What I got right:** (a) **Resisted scope creep.** User's `/effort=max` could have been read as "also fix F5 inline" but I held to the audit-session discipline (report findings, let user scope the fixes, don't mix code + doc in one commit). Failure mode #8 (mode switching) held. (b) **Identified the README as the canonical reference FIRST**, which gave me a clean mental model for the drift diagnosis: OPERATIONS.md is the outlier, not README. Makes the fix obvious. (c) **Grep-confirmed F1 before committing to it** (grep for "anthropic" in website package → 0 hits). Evidence > inference. (d) **Documented F5 + F6 with enough detail in BACKLOG + CHANGELOG that Session 32 doesn't need to re-audit** — the follow-up work is fully pre-specified (F5: bump one constant + add a regression test; F6: one-line note). (e) **Kept the commit boundary tight** — F5 and F6 deferred specifically to preserve doc-only blast radius. Session 22-era "reconcile or deprecate" decision explicitly answered as "keep" with evidence (README + cli.py docstring + 14 tests + abstraction plan's 6 references). (f) **Tested recipes end-to-end, not just syntactically** — verified §4.3 with `--host-url https://github.mycompany.com/api/v3` actually runs through to COMPLETE; this is the recipe I added to the doc, so I ran it to confirm.
+- **What I got wrong:** (a) **Did not write a standalone audit report file to `docs/`**. AUDIT_WORKSTREAM's report template is well-defined; I presented the full report in the conversation and preserved it in this handoff block, but a separately-committable `docs/audit/session-31-operations-recipes.md` would have made the finding set more discoverable (and would satisfy Phase 3D's "write to files FIRST" principle more cleanly). The CHANGELOG + BACKLOG entries carry the essential findings, so this is a minor "polish" miss rather than a correctness issue. -0.5. (b) **Initially proposed a 4-finding audit in my first quick pass (pre-`/effort=max`)**, missing F5 and F6. A more careful first pass (reading cli.py's constants, comparing against config.py's constants) would have caught F5 in the first round. After the user asked for thoroughness I did find both, so the process self-corrected — but a "read each constant file end-to-end before drafting findings" rule would have caught them first-pass. -0.25. (c) **Did not attempt a live GitLab or GitHub run** of the new §4.2/§4.3 recipes to confirm they work with real credentials. `--fake`-mode verification is what tests pin (so this is fine for correctness) but a live run would have made the doc changes fully verified. Scope decision: live runs were explicitly out of scope per handoff gotcha #10 + user confirmation of scope (A). -0.25. Total: -1.0 = 9/10.
+- **Quality bar vs. previous sessions:** Matches Session 30's surgical-fix discipline (one coherent commit, doc + changelog + backlog all aligned). Smaller code blast radius than Session 30 (0 production files vs. 1) but larger doc blast radius (OPERATIONS.md §4.2 + §4.3 both rewritten vs. Session 30's single `run_pipeline.py` edit). Finding count (6) is higher than Session 30's (2 — the `token=` bug + the missing `host_url=`), reflecting the audit scope rather than issue density.
+
+### Phase 3C: Learnings
+
+Adding a cross-cutting learning to the Learnings table in SESSION_RUNNER.md:
+
+> **When a handoff's "verification path" implies a binary outcome but the task is framed as "re-audit," expect multi-dimensional findings and reserve time to structure them.** Session 30's handoff verification path for candidate #1 was: "(a) try each --help; (b) fake-mode run; (c) if both work, pin both with a smoke test; if only one works, update OPERATIONS." This implicitly predicted a binary outcome (both work OR only one works). The actual re-audit (under `/effort=max`) surfaced 6 findings of varying severity (F1-F6) — ANTHROPIC_API_KEY over-listed, fixture-path provenance gap, cosmetic env exports, GHE host-url asymmetry, cli.py default URL inconsistency, undocumented flag. A re-audit task generates a finding set, not a pass/fail verdict. When you read a handoff that frames the deliverable as "re-audit X," forecast the finding shape before starting — ask: "what 7 dimensions would I evaluate? what prior findings exist in BACKLOG/CHANGELOG that I should reconcile?" This prevents the "quick pass" anti-pattern where the first 3 findings get shipped and the subtler 3 (F5 + F6 in this session) get missed or require a second pass.
+> Source: Session 31 (first quick pass found F1-F4; `/effort=max` second pass found F5 + F6).
+> When to apply: any session whose deliverable is an audit of a documented artifact (recipe, plan, config, schema). Forecast the finding shape with the 7-dimension framework before drafting the report.
+
+### Phase 3D: Handoff to Session 32
+
+Full "What Session 32 should do" content is in the **ACTIVE TASK** block above. Four candidates: #1 F5 (cli.py GitLab default URL) — recommended, #2 F6 (`--ci-platform` doc), #3 wiki freshness sweep, #4 B-3 Web UI bridge (deferred).
+
+**Key files for each candidate:**
+
+For #1 (F5: cli.py GitLab default URL) — **the recommended path:**
+- `src/model_project_constructor/agents/website/cli.py:39` — the constant to bump: `GITLAB_DEFAULT_HOST_URL = "https://gitlab.example.com"` → `"https://gitlab.com"`. Uses at lines 102, 154.
+- `src/model_project_constructor/orchestrator/config.py:33` — the canonical source of truth: `DEFAULT_GITLAB_URL = "https://gitlab.com"`. cli.py should match.
+- `tests/agents/website/test_cli.py:233-264` — `test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter` explicitly passes `--host-url "https://gitlab.example.com"` (line 256) and asserts it at line 262. **This assertion will need to change** once the default changes (or, better: the test's explicit --host-url removal + add a new test pinning the default-path). Symmetric test for GitHub at :267-302 omits `--host-url` and asserts the default — this is the shape to mirror for the GitLab path.
+- `.env.example:21` — commented-out example shows `#MPC_HOST_URL=https://gitlab.example.com`. Check whether this is a self-hosted example (fine to keep) or a wrong default (needs update). I believe it's a self-hosted example.
+- `scripts/run_pipeline.py:105, 283` — uses `"https://gitlab.com"` as its default; consistent with config.py. No change needed.
+- `README.md:182` — has `--host-url https://gitlab.example.com` as a literal in the example. This is fine (shows a self-hosted URL); don't change.
+- **Verification path:** (a) bump the constant at cli.py:39; (b) update the test at test_cli.py:262 (either change the assertion or restructure: add `test_cli_host_gitlab_default_host_url_is_public_gitlab` that omits `--host-url` and asserts `https://gitlab.com`, and keep the existing test as the "explicit override" case); (c) `uv run pytest -q` + ruff + mypy all green; (d) manual fake-mode run: `uv run python -m model_project_constructor.agents.website --intake tests/fixtures/subrogation_intake.json --data tests/fixtures/sample_datareport.json --host gitlab --fake` — with `--fake`, the FakeRepoClient doesn't use host_url so the behavior is unchanged externally, but verify the JSON output still lists the new default in the `RepoTarget`.
+
+For #2 (F6: document `--ci-platform`):
+- `OPERATIONS.md:211` is where §4.4 starts; §4.1 ends at line 173. Natural place for a note: end of §4.1 or a new one-paragraph §4.5.
+- `src/model_project_constructor/agents/website/cli.py:107-116, 135` — flag definition + validation. Default is `host`.
+- `README.md:197` has a one-sentence summary — mirror that tone.
+
+For #3 (wiki freshness sweep) — Session 24 finding:
+- Drift hotspots: `docs/wiki/claims-model-starter/Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`.
+- Reconciliation principle: walk every "Recommended additions" / "Future enhancements" / "Planned" list; delete items already implemented (B-1 shipped in Session 24, B-2 in Session 26, B-2 follow-up in Session 27, MPC_NAMESPACE validator in Session 28, CI mypy extension in Session 29, GHE URL override in Session 30, OPERATIONS §4.2/§4.3 reconciliation in Session 31); rewrite partials to describe remaining gap only.
+
+For #4 (B-3 Web UI bridge) — plan §7.3. Deferred unless user asks for production-shape demo.
+
+### Gotchas for Session 32
+
+1. **Post-Session-31 pre-commit state:** pytest **444/444** (97.26% coverage), ruff clean on CI scope (`src/ tests/ packages/ scripts/`), mypy clean on **60 files** (bare `uv run mypy`). Re-run in Phase 0 to confirm no drift. Unchanged from Session 30's close since this was a doc-only commit.
+
+2. **Commits ahead of origin:** after Session 31's commit, working tree will be **1 commit ahead** of `origin/master`. Session 30 pushed at Session 31's Phase 0 (Sessions 29 + 30 are now on remote). Session 32 should push at Phase 0 unless told otherwise (matches Session 28's and Session 31's behavior).
+
+3. **F5 fix contract:** `cli.py:39` constant change is simple; the test impact is the gotcha. `test_cli.py:233-264` explicitly passes `--host-url "https://gitlab.example.com"` and asserts the same value at :262. The assertion tests the value **the user passed**, not the default. When you change the default, that specific test still passes (the user still explicitly passes `gitlab.example.com`). You'll WANT a NEW test that omits `--host-url` and asserts `https://gitlab.com` on the default path — shape is at `test_cli_host_github_with_token_invokes_pygithub_adapter` (:267-302) which already does this for GitHub.
+
+4. **`cli.py`'s default URL is only exercised in live mode.** `--fake` bypasses the adapter, so `FakeRepoClient` ignores `host_url` (fake_client.py hardcodes `https://fake.host.test` as its base_url). F5's symptom (DNS error on `gitlab.example.com`) only manifests with `--private-token` + real network. If Session 32 wants live verification of the fix, that's a live GitLab run — out of scope unless explicitly requested. Unit test + code-read is sufficient per prior sessions' patterns (Session 22, Session 30 both shipped without live runs of the specific codepath they fixed).
+
+5. **OPERATIONS.md §4.2 uses `https://gitlab.example.com` in the recipe (line 184) — this is intentional as a self-hosted example URL, NOT a default.** Don't confuse this with the cli.py:39 placeholder default (which IS a bug). After F5 lands, OPERATIONS.md §4.2 can keep the `https://gitlab.example.com` literal as a self-hosted example; the surrounding prose already says "Substitute your instance URL for `https://gitlab.example.com`."
+
+6. **README.md is the canonical reference for `python -m ...website` invocations.** README.md:160-197 has 4 well-shaped examples. Any future OPERATIONS.md §4.x edits should mirror README style (no preamble exports, real fixture paths, explicit GHE caveat). CHANGELOG.md:82 historical reference ("reconcile or deprecate") is now closed by Session 31.
+
+7. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+8. **Failure modes #14 (ghost session), #17 (protocol erosion), #18 (plan-to-impl bleed)** all apply. Session 31 did NOT bundle F5 fix with §4.2/§4.3 doc edits despite the same file-tree proximity; failure mode #8 (mode switch) + #18 (plan-to-impl bleed) both held. If Session 32 does F5, it's a standalone session.
+
+9. **Two unused tools:** Session 31 loaded `TaskCreate` + `TaskUpdate` + `TaskList` via ToolSearch for the audit's task tracking. Session 32 doesn't need them unless its scope merits ≥3 tracked tasks — don't reload unnecessarily.
+
+10. **Audit ROI pattern (Session 31 learning):** when a handoff's verification path implies a binary outcome but the task is framed as "re-audit," expect multi-dimensional findings. First-pass quick audit found F1-F4; `/effort=max` second pass found F5 + F6. Forecast the finding shape with the 7-dimension framework BEFORE drafting the report, not after. This matches how a code audit catches systemic issues vs. listing individual instances.
+
+### Session 31 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Pushed unpushed commits at Phase 0 per user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Re-read code surfaces with new eyes under `/effort=max` (cli.py, agent.py, fake_client.py, __main__.py, .env.example, orchestrator/config.py)
+- [x] Re-read docs with new eyes (OPERATIONS.md §1-§6, tutorial.md §5-§6, TROUBLESHOOTING.md, README.md, relevant wiki pages)
+- [x] 7-dimension audit per AUDIT_WORKSTREAM framework; 6 findings (F1-F6) + 3 positive findings
+- [x] Verification: both recipes + edge cases (invalid --host, nonexistent intake) + GHE variant — all work as audited
+- [x] User scoped to (A): F1-F4 inline, F5 + F6 deferred
+- [x] OPERATIONS.md §4.2 + §4.3 rewritten to mirror README style (single Edit call)
+- [x] Post-edit verification: new recipes still run clean in fake mode; pytest 444/444, ruff, mypy all green
+- [x] CHANGELOG.md [Unreleased] Session 31 entry added (above Session 30's)
+- [x] BACKLOG.md — Session 22 reconciliation item flipped `[ ]` → `[x]`; new F5 + F6 items added
+- [x] Phase 3A: Session 30 handoff evaluated and scored above (9/10)
+- [x] Phase 3B: Self-assessment scored and written above (9/10)
+- [x] Phase 3C: Session-specific learning documented (multi-dimensional audit findings vs. binary-outcome verification paths)
+- [x] Phase 3D: Handoff to Session 32 above (ACTIVE TASK + 4 candidates + key files + 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
 
 ---
 
