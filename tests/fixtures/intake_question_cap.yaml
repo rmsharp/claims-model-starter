@@ -3,9 +3,11 @@ stakeholder_id: stakeholder_test_cap
 session_id: intake_test_cap_001
 domain: pc_claims
 
-# 11 QA pairs, but draft_after is set higher than MAX_QUESTIONS (10),
-# so believe_enough_info never flips true and the hard 10-question cap
-# from the agent is the thing that stops the interview.
+# MAX_QUESTIONS+1 QA pairs, with draft_after set higher than MAX_QUESTIONS
+# so believe_enough_info never flips true and the hard question-cap from the
+# agent is the thing that stops the interview. Kept at MAX_QUESTIONS+1 so
+# the last entry is never reached — it documents that the cap fires before
+# the fixture runs out of answers.
 qa_pairs:
   - question: "Q1"
     answer: "A1"
@@ -27,8 +29,28 @@ qa_pairs:
     answer: "A9"
   - question: "Q10"
     answer: "A10"
-  - question: "Q11 (should never be asked)"
+  - question: "Q11"
     answer: "A11"
+  - question: "Q12"
+    answer: "A12"
+  - question: "Q13"
+    answer: "A13"
+  - question: "Q14"
+    answer: "A14"
+  - question: "Q15"
+    answer: "A15"
+  - question: "Q16"
+    answer: "A16"
+  - question: "Q17"
+    answer: "A17"
+  - question: "Q18"
+    answer: "A18"
+  - question: "Q19"
+    answer: "A19"
+  - question: "Q20"
+    answer: "A20"
+  - question: "Q21 (should never be asked)"
+    answer: "A21"
 
 draft_after: 99
 

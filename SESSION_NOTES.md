@@ -5,8 +5,189 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 27 — **B-2 follow-up: raise `MAX_QUESTIONS` to 20 + re-verify `--llm both` happy path reaches `COMPLETE`.** (Or: pick from other candidates below.)
-**Status:** Session 26 complete (B2 wiring + adapter + 5 new unit tests). Session 27 ready.
+**Task:** Session 28 — **pick from candidates below.** Recommend #2 (MPC_NAMESPACE validator + docs, small structural win) or #3 (CI mypy extension to `packages/`, Session 25's structural twin).
+**Status:** Session 27 complete. Plan §7.2.3 criterion #1 met. Scope B end-to-end fully verified live.
+
+### What Session 28 should do
+
+Six candidates (renumbered after Session 27 closed B-2 follow-up):
+
+1. **Clearer `MPC_NAMESPACE` validation + docs** (Session 22 finding). Add validator to `OrchestratorSettings.from_env()` detecting leading `http://` / `https://`. Update `.env.example`, `OPERATIONS.md` §1, `docs/tutorial.md` §5a. One session.
+
+2. **CI typecheck coverage extension to `packages/`** (Session 22 finding). Structural twin of Session 25's ruff extension. `pyproject.toml` declares both packages under `[tool.mypy]` but CI runs `mypy src/` only. Extend CI; fix ~13 errors — largest cluster at `packages/data-agent/.../anthropic_client.py:218` (content-block union, needs `TextBlock` type-guard). One session.
+
+3. **Self-hosted GitHub URL override** (Session 22 finding). Fix parallels Session 22's `host_url=` fix for GitLab. `scripts/run_pipeline.py` `PyGithubAdapter(token=token)` branch — no URL arg passed. Untested live; small scope. One session.
+
+4. **Re-audit `OPERATIONS.md` §4.2/4.3 recipes** (Session 22 finding; Session 23's claim was WRONG per Session 24). `__main__.py` + `cli.py` both exist. Try each invocation; document what works vs. stale. One session.
+
+5. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. One session.
+
+6. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+
+**Recommend #1** for Session 28 — smallest scope, closes a Session 22 finding with a crisp validator + 3 doc edits. Candidate #2 is the next-easiest structural win (~45 min, same shape as Session 25).
+
+---
+
+## Session 26 Handoff Evaluation (by Session 27)
+**Score: 10/10.** A textbook handoff — the best I've seen in this project's notes. I followed the recipe almost verbatim, with only one micro-deviation where I discovered a second fixture (`intake_question_cap.yaml`) that needed a parallel expansion.
+
+- **What helped:** (a) **Gotcha #2 ("MAX_QUESTIONS is used in FOUR places")** listed every consumer by line number — I confirmed in one grep that no test hardcodes `10` as a literal, saving ~5 minutes of grep-and-audit. (b) **Gotcha #4 ("Session 26's `run_b2_live` intake envelope at `.orchestrator/checkpoints/run_b2_live/IntakeReport.json` is a GOLD MINE")** pointed me at the exact bytes I needed; I opened the envelope, copy-pasted the 3 `missing_fields` strings as the fixture-expansion spec, and avoided re-deriving them. (c) **Key-files block for candidate #1** spelled out the re-run command and the verification snippet (python 3-liner to inspect status + questions_asked + missing_fields). Zero round-trips. (d) **Gotcha #3 ("nodes.py:129-134 will fire `questions_cap_reached` EVEN AT MAX_QUESTIONS=20 if Claude doesn't flip `believe_enough_info`")** correctly forecast the only real risk and told me exactly how to mitigate: pre-answer the gaps in the fixture, don't just raise the cap. (e) **Gotcha #8 ("`MAX_QUESTIONS=20` also changes `agent.py:78`'s `max_turns` budget from 18 to 28")** preempted a foot-gun I would have hit if I'd tested with a fixture that needed more than 28 total turns (interview + review cycles). Turned out not to matter for this scenario (Claude accepted at turn 10), but good to know. (f) **Suggested pre-answer verbatim strings** for the 3 Claude-flagged gaps — I used them nearly word-for-word in the fixture; they're accurate to the domain and sound like a real stakeholder.
+- **What was missing:** (a) **No mention that `intake_question_cap.yaml` has only 11 qa_pairs and depends on `MAX_QUESTIONS=10`.** This is an indirect dependency — the cap-test fixture needs `qa_pairs >= MAX_QUESTIONS + 1` to demonstrate the cap firing (otherwise `FixtureLLMClient` runs out of answers first and raises `RuntimeError`). Session 26 couldn't have predicted this because they didn't run the tests with MAX_QUESTIONS=20 — but a one-line "cap test fixtures will need expansion if you change the cap" note in gotcha #2 would have been a 9/10 insurance policy. Cost me ~3 minutes to discover + fix. (b) **Test `test_caps_constants_exposed` had a literal `10`** — same issue, surfaced by pytest. The handoff's "grep for tests pinning the old value" hint caught the fixture-path tests but not the `runner.py:CAPS = {...}` exposure. Adjacent enough that a more thorough grep would have caught it; for gotcha #2 to be 10/10 it would have listed `src/model_project_constructor/ui/intake/runner.py:240` as a fourth consumer (the CAPS dict, not the raw MAX_QUESTIONS import). Cost ~1 minute. (c) **No note that Session 26 already used up `subrogation-pilot-v3`** in one of its runs. I checked gotcha #7 but `-v3` wasn't actually claimed by Session 26's runs (those didn't reach the website stage — intake FAILED_AT_INTAKE in both live runs). My `run_b2_complete` got `-v3` as expected. Fine, but a "Session 26's live runs halted at intake, so no new pilot-v* project was created" clarification would have made the project-count prediction more precise.
+- **What was wrong:** Nothing factually wrong about anything Session 26 claimed. Every line number, file path, and recipe matched exactly.
+- **ROI:** ~7× return. Reading the handoff + gotchas (~4 min) saved ~28 min of discovery across grep/audit/fixture-design/verification-command lookup. This is the highest-ROI handoff I've received as a session. Session 26 did the second-order work — reading `run_b2_live`'s envelope, extracting the gaps, and pre-writing the fixture-expansion strings.
+
+### What Session 27 Did
+**Deliverable:** B-2 follow-up — raise `MAX_QUESTIONS` from 10 to 20, expand `subrogation_b2.yaml` from 10 to 15 qa_pairs with pre-answers for the three gaps Claude flagged in Session 26, expand `intake_question_cap.yaml` from 11 to 21 qa_pairs to keep the cap-test fixture valid, and verify live `--llm both` reaches `COMPLETE`. **COMPLETE. Plan §7.2.3 criterion #1 met.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Live run ID:** `run_b2_complete` — 765s end-to-end (63s intake / 696s data / 5s website) against `claude-opus-4-7`, produced `subrogation-pilot-v3` at `https://gitlab.com/rmsharp-modelpilot/`. `status=COMPLETE`, `questions_asked=10`, `missing_fields=[]`, `tier_3_moderate` governance. Claude flipped `believe_enough_info=true` exactly at turn 10 — the pre-answers were sufficient, the cap headroom was not needed for this scenario.
+**Commits:** (pending this session's commit) — single `feat(session-27): bump MAX_QUESTIONS to 20 + fixture expansion` commit.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full, `SESSION_NOTES.md` ACTIVE TASK + Session 26 handoff + 11 gotchas in full, ran `git status` / `git log -5` / `git diff --stat` (clean working tree, 4 commits ahead of origin), ran `methodology_dashboard.py` (project at 91/100, medium risk, active, healthiest of 5). No ghost sessions. Reported state to user. Waited for direction.
+
+2. **User confirmed candidate #1 (B-2 follow-up).** No decision round-trips needed — plan of action was already laid out in Session 26's handoff.
+
+3. **Phase 1B stub** — Wrote IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection).
+
+4. **Pre-flight** — `pytest -q` → 427/427, 97.24% coverage; `ruff check src/ tests/ packages/ scripts/` clean; `mypy src/` clean. Confirmed green baseline at commit `2f6aaad`.
+
+5. **Grep audit for `MAX_QUESTIONS`** — identified: (a) all test files import the constant symbolically (good; auto-adapts), (b) `tests/fixtures/intake_question_cap.yaml` has 11 qa_pairs — **indirectly coupled** to MAX_QUESTIONS, will under-supply after the bump (caught pre-change), (c) 5 doc references with literal "10" (README, OPERATIONS §4.4.2, 2 wiki pages), (d) one test `test_caps_constants_exposed` with literal `{"max_questions": 10, ...}` — missed in initial grep, caught later by pytest. Added two new task items (9 and 10) for the fixture + doc work.
+
+6. **Production change (1 line):** `src/model_project_constructor/agents/intake/state.py:57` — `MAX_QUESTIONS = 10` → `MAX_QUESTIONS = 20`.
+
+7. **Fixture expansions:**
+   - `tests/fixtures/subrogation_b2.yaml` — 10 → 15 qa_pairs. Added: Q6 answer extended with per-claim recovery $ ($7,500 mean / $4,200 median / ~4,000 recoveries/yr); Q11 (new) latency SLA (250 ms p95 at intake completion; not FNOL); Q12 (new) fairness/bias plan (pre-launch disparate-impact audit + quarterly SR 11-7 + tenure feature, not demographic); Q13 (new) retraining cadence (quarterly + PSI/AUC triggers); Q14 (new) incident response (feature-flag fallback + model-incident review); Q15 (new) "anything else?" closer. `draft_after` bumped 10 → 15 for documentation consistency (no-op in `--llm both`). Comment updated to describe the 3 pre-answered gaps and the Session 27 provenance.
+   - `tests/fixtures/intake_question_cap.yaml` — 11 → 21 qa_pairs. Added Q12-Q21. Q21 labeled "should never be asked" to document the `qa_pairs >= MAX_QUESTIONS + 1` invariant. Top-comment rewritten to explain the link ("MAX_QUESTIONS+1 QA pairs, with draft_after > MAX_QUESTIONS").
+
+8. **Test fix:** `tests/ui/intake/test_runner.py:test_caps_constants_exposed` — changed literal `{"max_questions": 10, "max_revisions": 3}` to `{"max_questions": MAX_QUESTIONS, "max_revisions": MAX_REVISIONS}` via in-test import. Future cap changes won't need a test edit.
+
+9. **Doc updates:**
+   - `README.md:101` — "10-question cap" → "MAX_QUESTIONS cap" (constant-reference form to avoid future drift).
+   - `OPERATIONS.md` §4.4.2 — updated the "Use a fixture with 10 qa_pairs (matching MAX_QUESTIONS=10 at state.py:57)" paragraph to "at least MAX_QUESTIONS qa_pairs (currently MAX_QUESTIONS=20 at state.py:57)" + added callout about `DRAFT_INCOMPLETE` + `questions_cap_reached` behavior + reference to `subrogation_b2.yaml`'s 15 qa_pairs.
+   - `docs/wiki/claims-model-starter/Intake-Interview-Design.md:63` — table row "10 questions" and "MAX_QUESTIONS = 10" → "20 questions" and "MAX_QUESTIONS = 20".
+   - `docs/wiki/claims-model-starter/Intake-Interview-Design.md:220` — "Forces the 10-question cap" → "Forces the `MAX_QUESTIONS` cap" (constant-reference).
+   - `docs/wiki/claims-model-starter/Worked-Examples.md:215` — "Test fixture for the 10-question cap" → "Test fixture for the `MAX_QUESTIONS` cap".
+   - Historical entries (CHANGELOG §0.1.0, wiki Changelog.md, planning docs, old SESSION_NOTES blocks) preserved — they describe state at time of change. No edits there.
+
+10. **Verification:**
+    - Mid-change pytest after fixture + state.py edit: 426/427 passed, 1 failed (`test_caps_constants_exposed`). Root-caused to the literal `10` in test_runner.py. Fixed. Re-ran: 427/427 green.
+    - Post-change pre-flight: pytest 427/427, 97.24% coverage; ruff clean on `src/ tests/ packages/ scripts/`; mypy clean on `src/`.
+    - Live `run_b2_complete`: `--live --host gitlab --llm both --model claude-opus-4-7 --intake-fixture tests/fixtures/subrogation_b2.yaml`. Result: `Status: COMPLETE` at `https://gitlab.com/rmsharp-modelpilot/subrogation-pilot-v3`. Intake 63.3s, data 696.5s, website 5.5s, total 765s. Checkpoints: IntakeReport 7,024B / DataRequest 2,107B / DataReport 23,887B / RepoProjectResult 4,402B / RepoTarget 484B. `questions_asked=10`, `missing_fields=[]`, `tier_3_moderate`, `target_variable=subrogation_recovery_success`.
+    - Post-live pre-flight: pytest 427/427, ruff clean, mypy clean.
+
+11. **Documentation updates:**
+    - `CHANGELOG.md` [Unreleased] — new 2026-04-17 Session 27 entry at the top, above Session 26's, with 6 change bullets + verification bullet naming the live project URL.
+    - `BACKLOG.md` "Up Next" — B-2 follow-up sub-bullet flipped from `[ ]` to `[x]` with Session 27 summary.
+    - `SESSION_NOTES.md` — Session 27 block + 6-candidate handoff for Session 28 (this block).
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Re-read the Session 26 handoff in full before touching code. Read `run_b2_live`'s IntakeReport envelope to extract the exact `missing_fields` strings before writing the fixture pre-answers (didn't just paraphrase from memory of the handoff). Read `test_graph.py:61-66` and `test_caps_and_revisions.py:27-41` to confirm the cap-test semantics before deciding how to expand `intake_question_cap.yaml`.
+- **Implementations read, not just descriptions:** Yes — read the actual `state.py:57`, `nodes.py:129-142`, `agent.py:78`, and `CAPS` dict at `runner.py:240` before making changes. Verified all cap consumers import the constant.
+- **Stakeholder corrections needed:** 0. User said "work on Active task 1" → restated deliverable + workstream + close-out commitment; no redirects.
+- **What I got right:** (a) Phase 1B stub before any technical work. (b) Flagged the `intake_question_cap.yaml` expansion need proactively via grep audit, BEFORE pytest would have exposed it — caught an indirect dependency Session 26 couldn't have foreseen. (c) Constant-referenced the doc updates (e.g. "MAX_QUESTIONS cap") instead of hardcoding "20" — future cap changes don't need wiki edits. (d) Fixed `test_caps_constants_exposed` to reference the constant rather than changing the literal from 10 to 20 — same discipline as (c). (e) Used the pre-answer strings from the handoff verbatim, respecting Session 26's second-order work. (f) Single in-flight live run instead of multiple retries — verified once, didn't burn $0.30 on a second "just to be sure" run. (g) Did NOT modify the intake interviewer prompt at `anthropic_client.py:37-42`, respecting plan §14 anti-scope #2. (h) Updated BACKLOG and CHANGELOG + restructured ACTIVE TASK from 7 candidates to 6 in one pass.
+- **What I got wrong:** (a) **Did not catch `test_caps_constants_exposed` in the pre-change grep.** My initial grep pattern `= 10\b|== 10\b|questions_asked.*10|10\s*(?:#.*questions|# max)` missed the dict-literal form `"max_questions": 10`. If I had grepped `MAX_QUESTIONS\|max_questions` case-insensitively across both `src/` and `tests/`, I would have caught `runner.py:CAPS` → `test_runner.py` chain. Cost: 1 min to fix + 1 re-run of pytest. A better grep would have saved both. -0.5. (b) **Did not sleep-poll the live run gracefully.** I started the live run in foreground but it ran to background (>2min timeout threshold). Burned one Monitor arming (300s) while the run continued. Next time: use `run_in_background: true` from the start and check checkpoint files opportunistically. -0.3. (c) **OPERATIONS.md §4.4.2 and wiki page both still have MAX_QUESTIONS baked in as prose.** Reviewed in the final read-through — they're accurate as of the commit, but a future bump to 30 would need the same edits all over again. Could have refactored to "see `state.py:57` for current value" everywhere. Decided against because the constant-reference form in the tables is already close enough. -0.2.
+- **Quality bar vs. previous sessions:** Matches Session 25's surgical-fix discipline (small production change + doc sweep + no scope creep + live verification). Slightly larger blast radius than Session 25 (2 fixtures + 1 test fix in addition to the 1-line production change) but each change is traceable to a single root cause (the cap bump). Smaller implementation scope than Session 26's feature add but a cleaner "deliverable = one concrete observable outcome" framing.
+
+### Phase 3C: Learnings
+
+Adding Learning #22 to the learnings table below:
+
+> **When a production constant (like `MAX_QUESTIONS`) is indirectly coupled to a test fixture's content (like `intake_question_cap.yaml` needing >= constant+1 qa_pairs), the dependency is invisible to normal grep.** Session 26's handoff listed the 4 direct consumers (`state.py`, `agent.py`, `nodes.py`, test imports) but NOT the cap-test fixture, which couples to the constant only through the arithmetic `cap_triggers_when qa_pairs >= MAX_QUESTIONS + 1`. Session 27's grep caught it because I read the fixture file's top-comment, not just grepped for the constant name. **When auditing a constant for downstream effects, read the fixture files that reference it (by purpose, not by name) — their structure is load-bearing.** Same lesson applies to dict-form tests like `runner.py:CAPS = {"max_questions": MAX_QUESTIONS}` + `test_runner.py:assert CAPS == {"max_questions": 10}`: the chain goes through a rename (CAPS dict) where the grep for the original constant name misses the literal on the other side. A grep for `max_questions` (case-insensitive, broader than `MAX_QUESTIONS`) catches both ends of the chain.
+> Source: Session 27 (MAX_QUESTIONS bump caught `intake_question_cap.yaml` pre-change, missed `test_caps_constants_exposed` pre-change — pytest surfaced it).
+> When to apply: any session bumping a production constant that's referenced in test fixtures or cross-file dict exports.
+
+### Phase 3D: Handoff to Session 28
+
+Full "What Session 28 should do" content is in the **ACTIVE TASK** block above. Six candidates (renumbered after Session 27 closed B-2 follow-up).
+
+**Key files for each candidate:**
+
+For #1 (`MPC_NAMESPACE` validator + docs) — the recommended path:
+- `src/model_project_constructor/orchestrator/config.py:98,111` — env-var validators live here. Look at the pattern of existing validators (probably `_validate_*` methods on `OrchestratorSettings`); add a new one that detects `http://` / `https://` prefix and raises `ConfigError("MPC_NAMESPACE must be a group path, not a URL; got '...'")`.
+- `.env.example:47` — `MPC_NAMESPACE` template line. Add an inline comment: `# Group path, not a URL. E.g. 'rmsharp-modelpilot', not 'https://gitlab.com/rmsharp-modelpilot'.`.
+- `OPERATIONS.md` §1 — env-var table. Add a note in the MPC_NAMESPACE row.
+- `docs/tutorial.md` §5a — MPC_NAMESPACE section. Add a one-liner + an example of the error the new validator raises.
+- `src/model_project_constructor/agents/website/gitlab_adapter.py:79` — where the generic 404 originates (for context only; the new validator should catch this before the adapter even tries).
+- Add one unit test to `tests/orchestrator/test_config.py` (or whatever the current test file is) asserting `ConfigError` when `MPC_NAMESPACE` starts with `http://` or `https://`.
+- Pre-flight + post-flight green. CHANGELOG entry. BACKLOG update.
+
+For #2 (CI mypy extension to `packages/`) — Session 25's structural twin:
+- `.github/workflows/ci.yml:34` — current `uv run mypy src/`. Change to `uv run mypy src/ packages/data-agent/src/` (or rely on `pyproject.toml`'s `[tool.mypy] packages = [...]` declaration and run `uv run mypy` without args, same as Session 25 did for ruff scope).
+- `pyproject.toml [tool.mypy]` (~lines 90-94) — already declares both packages; `mypy_path = ["src", "packages/data-agent/src"]`.
+- Error clusters to budget (per Session 22's count, ~13 errors):
+  - `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:218` — largest cluster; `TextBlock` type-guard for content-block union.
+  - `packages/data-agent/src/model_project_constructor_data_agent/nodes.py:142` — `execution_status` literal narrowing.
+  - `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py:26` — untyped `get_type` call.
+- Session 25 is the structural template: extend scope, fix pre-existing errors, verify green, CHANGELOG + BACKLOG update.
+
+For #3 (self-hosted GitHub URL override):
+- `scripts/run_pipeline.py` — grep for `PyGithubAdapter(` to confirm the post-Session-26 line number; the branch passes `token=token` with no URL argument.
+- `docs/tutorial.md` §5c — the misleading documentation.
+- `src/model_project_constructor/agents/website/github_adapter.py` — verify `base_url` constructor kwarg exists (PyGithub's `Github(base_url=...)` pattern).
+- Untested live; code-read only.
+
+For #4 (re-audit OPERATIONS §4.2/4.3):
+- `OPERATIONS.md:174-208` — the recipes to re-verify.
+- `src/model_project_constructor/agents/website/__main__.py` + `cli.py` — entry points (exist; Session 24 confirmed).
+- `docs/tutorial.md` §5 — canonical recipe to reconcile with.
+
+For #5 (wiki freshness sweep):
+- `docs/wiki/claims-model-starter/Content-Recommendations.md` — "Recommended additions" that have shipped.
+- `docs/wiki/claims-model-starter/Home.md` — front-page drift.
+- `docs/wiki/claims-model-starter/Pipeline-Overview.md` — may still describe B-1 as future.
+- `docs/wiki/claims-model-starter/Getting-Started.md` — CLI patterns.
+- `docs/wiki/claims-model-starter/Agent-Reference.md` — Session 23 noted wrong API docs for `IntakeAgent()` / `DataAgent()` constructors.
+
+For #6 (B-3 Web UI bridge) — plan §7.3. Deferred unless user asks.
+
+### Gotchas for Session 28
+
+1. **Post-Session-27 pre-commit state:** pytest 427/427 (97.24% coverage), ruff clean on CI scope, mypy clean on `src/`. Re-run pre-flight in Phase 0 to confirm no drift.
+
+2. **`MAX_QUESTIONS=20` is now live.** All doc references updated in Session 27 (README, OPERATIONS, Intake-Interview-Design.md, Worked-Examples.md). Historical CHANGELOG / wiki Changelog entries kept as-is. If Session 28 edits agent behavior that depends on the cap, remember the cap is 20 (not 10).
+
+3. **`tests/fixtures/intake_question_cap.yaml` now has 21 qa_pairs.** Entry #21 is labeled "should never be asked" — it's the documented invariant that the cap stops the interview before the fixture runs out. Don't "clean up" entry 21 as dead data.
+
+4. **`tests/fixtures/subrogation_b2.yaml` now has 15 qa_pairs** with pre-answered latency SLA / recovery$ / fairness / retraining / incident-response gaps. Claude Opus 4.7 accepts at turn 10 with these answers. If the interviewer prompt is ever refined (future out-of-scope Session-29+), Claude may flip `believe_enough_info` earlier or later; that would be a DRAFT_INCOMPLETE signal, not a fixture bug.
+
+5. **Live GitLab projects under `https://gitlab.com/rmsharp-modelpilot/`** now at 4: `subrogation-pilot` (S22), `-v2` (S24 B1), `-v3` (S27 B2 complete). Session 28 live runs will auto-suffix to `-v4`. Session 26's `run_b2_live` and `run_b2_fail` halted at intake — no new pilot project was created (confirmed via the S26 handoff).
+
+6. **Cost budget for Session 27 live run:** `run_b2_complete` burned ~$0.50-$1.00 (estimate based on 7,024B intake + 23,887B data envelopes at Opus pricing). The full pipeline now includes real data agent + real intake agent; expect similar if Session 28 runs `--llm both` again.
+
+7. **`# noqa: E402` (from S25) + Session 26's inline `_draft_incomplete_from_exception`** are the two live deviations from "vanilla Python" in `scripts/run_pipeline.py`. Session 28 should not refactor these without approval.
+
+8. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+9. **Failure modes #14 (ghost session), #17 (protocol erosion), #18 (plan-to-impl bleed)** all apply. Session 27 did NOT bundle candidate #2 despite it being a symmetric ~45-min win to Session 25; failure mode #18 held.
+
+10. **Session 27's learning #22 is the compounding lesson:** when auditing a production constant's blast radius, read the fixture files' purposes and the dict-literal forms of tests — grep for the constant name alone misses indirect/arithmetic couplings. A second grep pass with the lower-case field name (e.g. `max_questions`) catches dict-form exports on the far side of renames.
+
+### Session 27 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Pre-flight green (pytest/ruff/mypy) BEFORE code changes
+- [x] Grep audit for MAX_QUESTIONS surface pre-change (caught `intake_question_cap.yaml` coupling; missed `test_caps_constants_exposed` which pytest caught)
+- [x] Production change: `state.py:57` 10→20 (1 line)
+- [x] Fixture expansions: `subrogation_b2.yaml` 10→15, `intake_question_cap.yaml` 11→21
+- [x] Test fix: `test_caps_constants_exposed` references `MAX_QUESTIONS` symbolically
+- [x] Doc updates: README, OPERATIONS §4.4.2, wiki Intake-Interview-Design + Worked-Examples
+- [x] Live run verified: `run_b2_complete` → `Status: COMPLETE`, `questions_asked=10`, `missing_fields=[]`, project at `subrogation-pilot-v3`
+- [x] Post-change pre-flight: pytest 427/427, ruff + mypy clean
+- [x] Plan §7.2.3 criterion #1 MET
+- [x] CHANGELOG.md [Unreleased] entry added (above Session 26's)
+- [x] BACKLOG.md "Up Next" updated — B-2 follow-up marked done
+- [x] Phase 3A: Session 26 handoff evaluated and scored above (10/10)
+- [x] Phase 3B: Self-assessment scored and written above (9/10)
+- [x] Phase 3C: Learning #22 documented (constant-blast-radius audit gap)
+- [x] Phase 3D: Handoff to Session 28 above (ACTIVE TASK + 6 candidates + key files + 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
 **Priority:** Candidate #1 (the B-2 follow-up) closes plan §7.2.3 criterion #1, which Session 26 could not meet without modifying agent code (plan §14 anti-scope #2). Surgical: 3-line change in `state.py` + fixture expansion + one live run. Estimated 30 minutes.
 
 ### What Session 27 should do

@@ -7,14 +7,15 @@ initial_problem: >-
   we want a model that helps adjusters flag recoverable claims and prompts them
   to capture required evidence during intake.
 
-# B2-specific richer fixture: 10 qa_pairs (hits MAX_QUESTIONS=10 if the real
-# LLM hasn't flipped believe_enough_info by then). The original
-# subrogation.yaml has 7 qa_pairs + draft_after=7 which works for the
-# FixtureLLMClient but not for real Anthropic (the LLM picks its own
-# questions and its own believe_enough_info trigger, so draft_after is
-# a no-op). Pads to 10 with generic "fill-in" answers that cover the
-# kinds of follow-ups the interviewer prompt tends to ask (data scale,
-# labels, governance).
+# B2-specific richer fixture: 15 qa_pairs. Extended in Session 27 beyond the
+# initial 10 to pre-answer the three gaps Claude Opus 4.7 flagged in Session 26's
+# `run_b2_live`: latency SLA, per-successful-claim recovery $, and fairness/bias
+# plan. Two additional padding entries cover retraining cadence and incident
+# response — topics the interviewer prompt tends to probe late in the
+# conversation. The original subrogation.yaml has 7 qa_pairs + draft_after=7
+# which works for the FixtureLLMClient but not for real Anthropic (the LLM
+# picks its own questions and its own believe_enough_info trigger, so
+# draft_after is a no-op in --llm both mode).
 qa_pairs:
   - question: "Can you describe the business problem in your own words?"
     answer: >-
@@ -45,7 +46,9 @@ qa_pairs:
   - question: "How would you estimate the annual value of success?"
     answer: >-
       Subrogation recovery is roughly $30M/yr. A 10% lift is ~$3M annually
-      and I'd guess we could get somewhere between $2M and $4M.
+      and I'd guess we could get somewhere between $2M and $4M. Average
+      recovery per successful subrogation is ~$7,500 (median ~$4,200); the
+      $30M/yr figure comes from roughly 4,000 successful recoveries annually.
   - question: "Do any adjuster or claimant attributes we'd use count as protected?"
     answer: >-
       No — we deliberately exclude protected attributes. The model uses claim
@@ -66,8 +69,40 @@ qa_pairs:
       tier-3 moderate given advisory-only use and no protected attributes.
       Adjuster workflow changes roll out on weekly cadence, so we target
       tactical cycle time rather than operational.
+  - question: "What latency SLA does the scoring need to meet in the adjuster UI?"
+    answer: >-
+      Scores must render in the adjuster UI within 250 ms p95 at claim intake
+      completion — not real-time at FNOL and not on every keystroke. The model
+      re-scores on each claim update (typically a few times over the life of
+      a claim), not continuously. Batch scoring nightly is acceptable as a
+      fallback if the real-time path degrades.
+  - question: "What's your plan for fairness and bias testing beyond excluding protected attributes?"
+    answer: >-
+      Pre-launch disparate-impact audit across adjuster tenure bands and claim
+      geography, plus a quarterly fairness review using our existing SR 11-7
+      framework. We don't use protected attributes, but we monitor outcome
+      disparities by geography and claim type as proxy-bias checks. Adjuster
+      demographic data is excluded; only tenure is included as a feature.
+  - question: "What's the retraining cadence and what triggers a refresh?"
+    answer: >-
+      Quarterly retraining on a rolling 24-month window, plus triggered
+      retraining if population stability index (PSI) on key features crosses
+      0.25 or if AUC on the last 30-day holdout drops more than 3 points
+      below the training benchmark. Model registry + champion/challenger
+      handoff is handled by our existing MLOps platform.
+  - question: "What does incident response look like if the model misbehaves in production?"
+    answer: >-
+      We have an on-call MLOps rotation; a single feature-flag toggle disables
+      the prompt and the score panel and falls back to the legacy intake
+      checklist. Any incident goes through our standard model-incident review
+      (tier 2/3 model-risk committee) and a written post-mortem is required
+      before re-enabling.
+  - question: "Any other context we should capture before I draft?"
+    answer: >-
+      Nothing else comes to mind — the above should be enough for a first
+      scoping document. Ready to see the draft.
 
-draft_after: 10
+draft_after: 15
 
 # The draft/governance blocks below are required by the fixture schema
 # validator but NOT consumed in --llm both mode — the real Anthropic client

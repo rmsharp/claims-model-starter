@@ -243,11 +243,13 @@ B2 drives `IntakeAgent.run_scripted` with real Anthropic-generated
 questions and fixture-supplied answers. The fixture's `draft_after`
 field is a no-op in this mode — only the real LLM decides when it has
 enough information — so the fixture needs enough `qa_pairs` to cover the
-LLM's questions. Use a fixture with **10 qa_pairs** (matching
-`MAX_QUESTIONS=10` at `intake/state.py:57`) to guarantee the graph
-terminates: if the LLM hasn't flipped `believe_enough_info` by turn 10,
-the graph drafts anyway. See `tests/fixtures/subrogation_b2.yaml` for a
-working example.
+LLM's questions. Use a fixture with **at least `MAX_QUESTIONS` qa_pairs**
+(currently `MAX_QUESTIONS=20` at `intake/state.py:57`) to guarantee the
+graph terminates: if the LLM hasn't flipped `believe_enough_info` by
+turn `MAX_QUESTIONS`, the graph drafts anyway with
+`missing_fields=["questions_cap_reached"]` → `DRAFT_INCOMPLETE`. See
+`tests/fixtures/subrogation_b2.yaml` for a working example (15 qa_pairs,
+pre-answering latency SLA / recovery-per-claim / fairness-plan).
 
 ```bash
 set -a; source .env; set +a

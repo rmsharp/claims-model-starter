@@ -212,7 +212,7 @@ Fairness scaffolds (`governance_templates.py:788-829`, triggered by `uses_protec
 | `tests/fixtures/tier2_intake.json` | Commercial property loss reserving | Tier-2 high, regression |
 | `tests/fixtures/pricing_optimization.yaml` | Premium elasticity | Drives the rating engine directly |
 | `tests/fixtures/fraud_triage.yaml` | Real-time FNOL fraud routing | Continuous cycle time |
-| `tests/fixtures/intake_question_cap.yaml` | Test fixture for the 10-question cap | Not a domain scenario |
+| `tests/fixtures/intake_question_cap.yaml` | Test fixture for the `MAX_QUESTIONS` cap | Not a domain scenario |
 | `tests/fixtures/intake_revision_cap.yaml` | Test fixture for the 3-revision cap | Not a domain scenario |
 
 ---

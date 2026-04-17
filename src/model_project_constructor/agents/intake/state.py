@@ -54,7 +54,7 @@ class IntakeState(TypedDict, total=False):
     missing_fields: list[str]
 
 
-MAX_QUESTIONS = 10
+MAX_QUESTIONS = 20
 MAX_REVISIONS = 3
 
 

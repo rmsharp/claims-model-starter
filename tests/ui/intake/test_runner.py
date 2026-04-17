@@ -31,7 +31,12 @@ def _store(tmp_path: Path, fixture_path: str) -> IntakeSessionStore:
 
 
 def test_caps_constants_exposed() -> None:
-    assert CAPS == {"max_questions": 10, "max_revisions": 3}
+    from model_project_constructor.agents.intake import MAX_QUESTIONS, MAX_REVISIONS
+
+    assert CAPS == {
+        "max_questions": MAX_QUESTIONS,
+        "max_revisions": MAX_REVISIONS,
+    }
 
 
 def test_snapshot_for_missing_session(tmp_path: Path) -> None:

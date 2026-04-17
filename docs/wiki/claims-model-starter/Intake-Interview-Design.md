@@ -60,7 +60,7 @@ Two phases, two budgets:
 
 | Phase | Loop | Cap | Constant |
 |---|---|---|---|
-| **Interview** | `plan_next_question → ask_user → evaluate_interview` | 10 questions | `MAX_QUESTIONS = 10` in `state.py:57` |
+| **Interview** | `plan_next_question → ask_user → evaluate_interview` | 20 questions | `MAX_QUESTIONS = 20` in `state.py:57` |
 | **Review** | `await_review → revise → await_review` | 3 revisions | `MAX_REVISIONS = 3` in `state.py:58` |
 
 Caps are hard — the agent will always stop at them, whether or not the stakeholder is satisfied. When a cap is hit without a clean finish, the report is emitted with `status="DRAFT_INCOMPLETE"` and a `missing_fields` entry documenting which cap tripped (`questions_cap_reached` or `revision_cap_reached`).
@@ -217,7 +217,7 @@ Useful fixtures ship in `tests/fixtures/`:
 | `subrogation.yaml` | Happy path: 7 questions, immediate accept, `tactical` / `tier_3_moderate` |
 | `fraud_triage.yaml` | High-governance: `continuous` / `tier_1_critical`, `EU_AI_ACT_ART_9` |
 | `pricing_optimization.yaml` | `strategic` / `tier_2_high` |
-| `intake_question_cap.yaml` | Forces the 10-question cap (→ `DRAFT_INCOMPLETE`) |
+| `intake_question_cap.yaml` | Forces the `MAX_QUESTIONS` cap (→ `DRAFT_INCOMPLETE`) |
 | `intake_revision_cap.yaml` | Forces the 3-revision cap (→ `DRAFT_INCOMPLETE`) |
 
 ### Web UI mode (Phase 3B, FastAPI)

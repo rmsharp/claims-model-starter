@@ -98,7 +98,7 @@ tests/
   fixtures/subrogation.yaml             # canonical intake fixture (§4.1 worked example)
   fixtures/pricing_optimization.yaml    # strategic/tier-2 governance scenario
   fixtures/fraud_triage.yaml            # continuous/tier-1 governance scenario
-  fixtures/intake_question_cap.yaml     # 10-question cap exhaustion scenario
+  fixtures/intake_question_cap.yaml     # MAX_QUESTIONS cap exhaustion scenario
   fixtures/intake_revision_cap.yaml     # 3-revision cap exhaustion scenario
   fixtures/subrogation_intake.json      # serialized IntakeReport (tier 3 moderate, affects_consumers)
   fixtures/tier1_intake.json            # tier 1 critical + protected attrs + EU AI Act (Phase 4B)
