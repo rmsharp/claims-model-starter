@@ -5,8 +5,156 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 29 — **pick from candidates below.** Recommend #1 (CI mypy extension to `packages/`, Session 25's structural twin) or #2 (self-hosted GitHub URL override, small scope).
-**Status:** Session 28 complete. `MPC_NAMESPACE` URL-prefix validator landed; Session 22's operator-experience finding closed.
+**Task:** Session 30 — **pick from candidates below.** Recommend #1 (self-hosted GitHub URL override, small scope, closes remaining Session 22 code-gap finding) or #2 (re-audit `OPERATIONS.md` §4.2/4.3 recipes).
+**Status:** Session 29 complete. CI mypy coverage now includes `packages/`; all 13 pre-existing errors fixed.
+
+### What Session 30 should do
+
+Four candidates (renumbered after Session 29 closed the CI-mypy-extension item):
+
+1. **Self-hosted GitHub URL override** (Session 22 finding). `scripts/run_pipeline.py` `PyGithubAdapter(token=token)` — no URL arg passed. `docs/tutorial.md` §5c claims `MPC_HOST_URL` works for GHE. Verify `PyGithubAdapter` accepts `base_url=` (PyGithub's `Github(base_url=...)` pattern); add arg; reconcile docs. Untested live; small scope. One session.
+
+2. **Re-audit `OPERATIONS.md` §4.2/4.3 recipes** (Session 22 finding; Session 23's claim was WRONG per Session 24). `__main__.py` + `cli.py` both exist. Try each invocation; document what works vs. stale. One session.
+
+3. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. Walk "Recommended additions" / "Future enhancements" / "Planned" lists and (a) delete already-implemented items, (b) rewrite partials to describe the remaining gap. One session.
+
+4. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+
+**Recommend #1** for Session 30 — smallest scope, closes the last of Session 22's three code-gap findings (validator + ruff-scope + mypy-scope already landed in Sessions 28/25/29; only the GHE URL override remains). Candidate #2 is the next-smallest but is doc-sweep-shaped rather than code-shaped.
+
+---
+
+## Session 28 Handoff Evaluation (by Session 29)
+**Score: 10/10.** Another textbook handoff. Session 28's recommendation ordering was cost-accurate (mypy-extension as the structural twin), the error-cluster forecast (13 errors, largest at `anthropic_client.py:218`) matched exactly, and gotcha #5 explicitly flagged candidate #1 as Session 25's structural twin with pointer to commit `96a7710`.
+
+- **What helped:** (a) **Gotcha #5 ("Candidate #1 is Session 25's structural twin")** preempted any "how should I approach this?" deliberation. The recipe was: extend CI scope, fix pre-existing errors, verify green, CHANGELOG + BACKLOG. Zero process overhead. (b) **Candidate #1 key-files block named every error cluster** (`anthropic_client.py:218` → `isinstance(block, TextBlock)`, `nodes.py:142` → `execution_status` literal, `sql_validation.py:26` → `get_type`). The fix strategy for the largest cluster was pre-specified. (c) **"Error clusters per Session 22's count (~13 errors)"** matched the actual bare-mypy output exactly — 13 errors in 3 files. (d) **`pyproject.toml [tool.mypy]` already declares `packages = [...]`** — the handoff's hint ("switch to bare `uv run mypy` which picks up the `[tool.mypy] packages = [...]` declaration") made the CI change a one-character diff (`mypy src/` → `mypy`). (e) **Recommended path was #1, not #2** — the justification ("structural twin of Session 25") was more convincing than the raw size-ordering alone. (f) **Gotcha #1 ("pre-commit state: pytest 440/440, ruff clean, mypy clean on src/")** made pre-flight confirmation, not investigation.
+- **What was missing:** (a) **No mention that the isinstance guard would break `tests/data_agent_package/test_anthropic_client.py`.** The existing tests use a `_FakeResponse` dataclass with a `.text` attribute — duck-typed to the old `response.content[0].text` read. After adding `isinstance(block, TextBlock)`, 10 tests fail. Caught by the post-change pytest run and fixed in ~2 minutes by swapping `_FakeResponse(text=payload)` → `TextBlock(text=payload, type="text")` — but a one-liner "the isinstance guard will require tests that fake Anthropic responses to use real `TextBlock` instances, not duck-typed fakes" gotcha would have saved the discovery round-trip. Minor. (b) **Coverage drop from the new defensive branch not predicted.** Adding an `isinstance` + `raise` adds 2 lines to `_call_claude` whose raise path isn't exercised by existing tests. Session 29 added `test_call_claude_rejects_non_text_block` to round it out (441 total, 97.26%) but a "add a defensive-branch test to keep coverage" reminder in the handoff would have rolled this in without a second thought. Minor.
+- **What was wrong:** Nothing factually wrong. Every forecast matched observed behavior.
+- **ROI:** ~8× return. Reading Session 28's handoff (~2 min) saved ~16 min of discovery (fix strategy per file, CI-scope approach, CHANGELOG shape). Highest ROI handoff I've received, matching Session 26→27's benchmark.
+
+### What Session 29 Did
+**Deliverable:** Session 22 finding #2 — extend CI mypy coverage to `packages/` and fix all pre-existing errors surfaced by the broader scope. **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this session's commit) — single `fix(session-29): extend CI mypy to packages/ + fix 13 pre-existing errors` commit.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full, `SESSION_NOTES.md` ACTIVE TASK + Session 28 handoff + 10 gotchas in full, ran `git status` / `git log -5` / `git diff --stat` (clean working tree, up to date with origin/master), ran `methodology_dashboard.py` (project at 91/100, medium risk, active, healthiest of 5). No ghost sessions (Session 28 matches `26023c8`). Reported state to user. Waited for direction.
+
+2. **User confirmed: work on active task 1** (CI mypy extension). No decision round-trips needed — Session 28's handoff pre-specified the recipe.
+
+3. **Phase 1B stub** — Wrote IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection).
+
+4. **Pre-flight baseline** — `uv run pytest -q` → 440/440, 97.25% coverage; `uv run ruff check src/ tests/ packages/ scripts/` clean; `uv run mypy src/` clean. Confirmed green at commit `26023c8`.
+
+5. **Inventory via bare mypy** — `uv run mypy` (picks up `[tool.mypy] packages = [...]` from pyproject.toml) → **13 errors in 3 files**, exactly as forecasted:
+   - `anthropic_client.py:218` — 11 × `union-attr`. All from one line: `response.content[0].text`. The Anthropic SDK's content-block union has 13 variants; only `TextBlock` has `.text`.
+   - `nodes.py:142` — 1 × `arg-type`. `status = "PASSED" if rows else "FAILED"` inferred as `str`, passed to `execution_status: Literal["PASSED", "FAILED", "ERROR", "NOT_EXECUTED"]`.
+   - `sql_validation.py:26` — 1 × `no-untyped-call`. `parsed[0].get_type()` from sqlparse (untyped 3rd-party).
+
+6. **Fixes (surgical, 3 files):**
+   - `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py`: added `from anthropic.types import TextBlock` import; replaced `return str(response.content[0].text)` with `block = response.content[0]; if not isinstance(block, TextBlock): raise LLMParseError(f"expected TextBlock from Claude, got {type(block).__name__}"); return block.text`. Production behavior unchanged on happy path (Claude always returns `TextBlock` for our payload); the guard replaces an implicit `AttributeError` on the non-text case with a typed `LLMParseError` that the Data Agent's outer try/except already handles.
+   - `packages/data-agent/src/model_project_constructor_data_agent/nodes.py`: added `Literal` to the `typing` import; changed `status = "PASSED" if rows else "FAILED"` to `status: Literal["PASSED", "FAILED"] = "PASSED" if rows else "FAILED"`.
+   - `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py`: added `# type: ignore[no-untyped-call]` inline on `parsed[0].get_type()`. Minimal and localized — sqlparse is a known-untyped 3rd-party dependency and a `follow_imports = skip` / `[[tool.mypy.overrides]]` block would be overly broad.
+
+7. **CI change (1 character):** `.github/workflows/ci.yml` line 34 — `uv run mypy src/` → `uv run mypy`. Bare `mypy` invokes the packages declared in `pyproject.toml [tool.mypy]`, so both `src/model_project_constructor` and `packages/data-agent/src/model_project_constructor_data_agent` are checked.
+
+8. **Test updates:**
+   - **Discovered regression:** post-change pytest revealed 10 failures in `tests/data_agent_package/test_anthropic_client.py` — the existing `_FakeResponse` dataclass duck-typed `.text` and now fails the `isinstance(block, TextBlock)` check.
+   - **Fix:** removed the `_FakeResponse` dataclass; replaced `[_FakeResponse(text=payload)]` with `[TextBlock(text=payload, type="text")]` in `_FakeMessages.create`. Added `from anthropic.types import TextBlock` import. Tests now exercise the production guard faithfully.
+   - **Added defensive-branch test:** `test_call_claude_rejects_non_text_block` (441 total). Uses a plain `_NotATextBlock` class as the first `content[0]` entry and asserts `LLMParseError` with `"expected TextBlock"` in the message. Rounds out coverage for the new raise path.
+
+9. **Verification:**
+   - Post-change pre-flight: `uv run pytest -q` → 441/441, coverage 97.26% (up from 97.25 thanks to the new defensive-branch test); `uv run ruff check src/ tests/ packages/ scripts/` clean; `uv run mypy` clean on all 60 source files (`src/` + `packages/data-agent/src/`).
+   - No live run needed — deliverable is CI-scope + type safety, testable in fake mode + unit tests.
+
+10. **Documentation updates:**
+    - `CHANGELOG.md` [Unreleased] — new 2026-04-17 Session 29 entry at the top with 5 change bullets + verification bullet naming each error + the test shift.
+    - `BACKLOG.md` "Up Next" — "CI typecheck coverage extension to `packages/`" flipped from `[ ]` to `[x]` with Session 29 summary + CHANGELOG pointer.
+    - `SESSION_NOTES.md` — this block + rotated candidate list for Session 30 (4 candidates, #1 now GHE URL override).
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Read `pyproject.toml` [tool.mypy] declaration BEFORE touching CI to understand that bare `mypy` is the one-char fix. Read all 3 error sites + the test-fake pattern BEFORE editing (caught `_FakeResponse` as the likely test-side impact before running post-change pytest).
+- **Implementations read, not just descriptions:** Yes — read `schemas.py:66` to confirm `execution_status: Literal[...]` matches the annotation choice; read `anthropic.types.TextBlock` shape at runtime (`text` + `type='text'` + optional `citations`) to construct faithful test fakes.
+- **Stakeholder corrections needed:** 0. User's "work on active task 1" was unambiguous; no redirects or re-work.
+- **What I got right:** (a) Phase 1B stub before any technical work (failure mode #14 protection). (b) Chose the structural fix (`isinstance(block, TextBlock)` guard with `LLMParseError` fallback) over the quick hack (`# type: ignore[union-attr]`). The guard is defensive AND type-safe AND integrates with existing error handling. (c) Updated the test fakes to use real `TextBlock` instances instead of keeping the duck-typed fakes + adding `cast()` or `type: ignore`. Tests now exercise the production guard faithfully. (d) Added `test_call_claude_rejects_non_text_block` to keep coverage ≥ baseline. Didn't ship a regression. (e) One-character CI fix leveraging the pre-existing pyproject declaration, matching Session 25's philosophy: the declaration stays authoritative; CI catches up. (f) Stayed in scope — didn't "fix" the `from __future__ import annotations` pattern, didn't refactor `_call_claude`, didn't touch the `schemas.py` Literal. Failure mode #8 (redesign during implementation) held.
+- **What I got wrong:** (a) **Didn't predict the test-fake impact before writing the isinstance guard.** Session 28's handoff didn't flag it, but a pre-change grep for `_FakeResponse|\.content\[` in tests would have surfaced the issue in ~10 seconds — instead I discovered it via the post-change pytest run (~30 seconds of log-reading + ~2 min of fix). Net: -0.4. Marginal; the fix was mechanical. A "grep tests before breaking internal protocols" habit would have caught it upfront. (b) **Chose inline `# type: ignore[no-untyped-call]` for sqlparse over a [[tool.mypy.overrides]] block.** The inline form is more localized, but if sqlparse usage grows, an override would scale better. For one call site it's fine; noting as a future consideration. Minor. (c) **Coverage tick-down not predicted before test addition.** When writing the isinstance guard I should have noted "new branch → coverage drop → add defensive test in the same pass." Instead I wrote the guard, ran pytest, saw 10 failures, fixed those, re-ran, noted the 0.07% drop, THEN added the defensive test. One unnecessary pytest cycle. -0.2.
+- **Quality bar vs. previous sessions:** Matches Session 25's and Session 28's surgical-fix discipline (small production change + test adjustments + doc sweep + no scope creep). Slightly broader blast radius than Session 28 (3 production files + 1 test file vs. Session 28's 2 + 1) but same single-unit-of-work shape.
+
+### Phase 3C: Learnings
+
+No general-table learning added — the "isinstance guard breaks duck-typed test fakes" observation is a one-off Python-typing pattern, not a cross-cutting rule. One session-specific pattern worth naming:
+
+> **When adding a runtime type-narrowing guard (`isinstance`) to fix a mypy union-attr error, grep the test suite for duck-typed fakes BEFORE running pytest.** Production code that reads `.attr` via duck typing often has test fakes that satisfy only the duck typing, not the narrowed type. Adding the guard breaks those tests — mechanically, but noisily. Pre-change grep for the attribute access pattern (e.g. `_FakeResponse|\.content\[` in this session) catches the affected fakes in seconds and lets the guard + test-fake update land in one edit cycle, not two. Applicable whenever adding `isinstance`, `assert isinstance`, or `cast` to tighten a type on an attribute that's read in multiple places.
+> Source: Session 29 (`anthropic_client.py:218` `TextBlock` guard → 10 `_FakeResponse`-based tests failed).
+> When to apply: any isinstance/cast addition that narrows a 3rd-party SDK's union type where tests fake the SDK's response.
+
+### Phase 3D: Handoff to Session 30
+
+Full "What Session 30 should do" content is in the **ACTIVE TASK** block above. Four candidates remaining — Session 22's last code-gap finding (#1) + three longer-horizon items (#2-#4).
+
+**Key files for each candidate:**
+
+For #1 (self-hosted GitHub URL override) — **the recommended path, closes the last Session 22 code-gap finding:**
+- `scripts/run_pipeline.py` — grep for `PyGithubAdapter(` to find the branch. Post-Session-28 approximate: line 96-110 in `build_repo_target`. Currently passes only `token=token`; `MPC_HOST_URL` is read for GitLab but not threaded through to GitHub.
+- `src/model_project_constructor/agents/website/github_adapter.py` — verify `PyGithubAdapter.__init__` accepts `base_url=` (PyGithub's upstream `Github(base_url=...)` pattern). If not, add it as a keyword-only parameter mirroring `PythonGitLabAdapter.host_url=`.
+- `docs/tutorial.md` §5c — the documentation that claims `MPC_HOST_URL="https://github.mycompany.com/api/v3"` works for GHE. Reconcile: either the code catches up (preferred) or the doc gets a "not yet supported" note.
+- **Untested live** — no GHE instance available. Code-read + unit test coverage only. Parallels Session 22's `host_url=` fix for GitLab that was merged without a live GHE run.
+- **Pre-flight state:** pytest 441/441 (97.26%), ruff clean on `src/ tests/ packages/ scripts/`, mypy clean on 60 files (both src/ and packages/). Re-run in Session 30 Phase 0 to confirm no drift.
+
+For #2 (re-audit OPERATIONS §4.2/4.3):
+- `OPERATIONS.md` §4.2 / §4.3 — the two recipes to re-verify. Session 23's claim that `__main__.py` didn't exist was WRONG per Session 24; both `__main__.py` and `cli.py` exist. Try each invocation.
+- `src/model_project_constructor/agents/website/__main__.py` + `cli.py` — verify both paths.
+- `docs/tutorial.md` §5 — canonical recipe to reconcile with.
+
+For #3 (wiki freshness sweep):
+- Drift hotspots per Session 24: `docs/wiki/claims-model-starter/Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`.
+- Reconciliation principle: walk every "Recommended additions" / "Future enhancements" / "Planned" list; delete items already implemented; rewrite partials to describe remaining gap only.
+
+For #4 (B-3 Web UI bridge) — plan §7.3. Deferred unless user asks for production-shape demo.
+
+### Gotchas for Session 30
+
+1. **Post-Session-29 pre-commit state:** pytest 441/441 (97.26% coverage), ruff clean on CI scope, mypy clean on **60 files** (not just `src/`'s 48 — `packages/data-agent/` is now in CI scope). Re-run `uv run mypy` (bare, not `mypy src/`) to match CI.
+
+2. **CI now runs bare `uv run mypy`.** If Session 30 adds a new package under `packages/`, it must be declared in `pyproject.toml [tool.mypy] packages = [...]` for CI to pick it up. Mirror the existing declaration: `packages = ["model_project_constructor", "model_project_constructor_data_agent"]`.
+
+3. **Commits ahead of origin:** after Session 29's commit, working tree will be 1 commit ahead of `origin/master`. Session 30 can decide whether to push as part of close-out.
+
+4. **`AnthropicLLMClient._call_claude` now raises `LLMParseError` on non-TextBlock content.** If Session 30 touches this method or its callers, preserve the guard — it's defense-in-depth, not type-system appeasement. The existing Data Agent outer try/except converts `LLMParseError` → `status="EXECUTION_FAILED"` cleanly.
+
+5. **Test fakes for `AnthropicLLMClient` now use real `TextBlock` instances.** If Session 30 adds tests that fake Anthropic responses, follow the pattern: `from anthropic.types import TextBlock; ...; TextBlock(text=payload, type="text")`. Don't reintroduce duck-typed `.text`-only fakes — the isinstance guard will reject them.
+
+6. **Session 29's session-specific learning:** when adding an `isinstance` guard to satisfy mypy's `union-attr`, grep tests for duck-typed fakes BEFORE running post-change pytest. Saves the ~2 min discovery round-trip.
+
+7. **Candidate #1 (GHE URL override) is untestable live** (no GHE instance). Unit-test coverage + code-read is the verification path. Parallels Session 22's GitLab `host_url=` fix which was merged the same way.
+
+8. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+9. **Failure modes #14 (ghost session), #17 (protocol erosion), #18 (plan-to-impl bleed)** all apply. Session 29 did NOT bundle candidate #2 despite the mypy-extension being close in shape to a doc sweep; failure mode #18 held.
+
+10. **Session 22's three code-gap findings are almost fully closed:** validator (Session 28), ruff-scope extension (Session 25), mypy-scope extension (Session 29 — this one). **Only GHE URL override remains** from that batch. Session 30 #1 closes the group.
+
+### Session 29 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Pre-flight green (pytest 440/440, ruff, mypy on src/) BEFORE code changes
+- [x] Inventory: 13 mypy errors in 3 files, matching Session 22's / Session 28's forecast
+- [x] Production changes: `anthropic_client.py` (+TextBlock import + isinstance guard + LLMParseError fallback), `nodes.py` (+Literal import + type annotation), `sql_validation.py` (+type: ignore)
+- [x] Test updates: `test_anthropic_client.py` (swap `_FakeResponse` → `TextBlock`; +1 defensive-branch test)
+- [x] CI change: `mypy src/` → `mypy` in `.github/workflows/ci.yml`
+- [x] Post-change pre-flight: pytest 441/441 (97.26%), ruff clean, mypy clean on 60 files
+- [x] CHANGELOG.md [Unreleased] entry added (above Session 28's)
+- [x] BACKLOG.md "Up Next" updated — CI mypy extension item flipped `[ ]` → `[x]` with Session 29 summary
+- [x] Phase 3A: Session 28 handoff evaluated and scored above (10/10)
+- [x] Phase 3B: Self-assessment scored and written above (9/10)
+- [x] Phase 3C: Session-specific learning documented (grep tests for duck-typed fakes before isinstance guards)
+- [x] Phase 3D: Handoff to Session 30 above (ACTIVE TASK + 4 candidates + key files + 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
 
 ### What Session 29 should do
 

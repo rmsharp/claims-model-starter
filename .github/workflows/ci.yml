@@ -31,7 +31,7 @@ jobs:
         with:
           version: "latest"
       - run: uv sync --extra agents --extra ui --extra dev
-      - run: uv run mypy src/
+      - run: uv run mypy
 
   test:
     name: Tests (pytest)

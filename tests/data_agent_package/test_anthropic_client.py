@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
+from anthropic.types import TextBlock
 from model_project_constructor_data_agent.anthropic_client import (
     AnthropicLLMClient,
     LLMParseError,
@@ -29,15 +30,6 @@ from model_project_constructor_data_agent.schemas import (
 
 
 @dataclass
-class _FakeResponse:
-    text: str
-
-    @property
-    def content(self) -> list[Any]:
-        return [self]
-
-
-@dataclass
 class _FakeMessages:
     canned: list[str]
     calls: list[dict[str, Any]]
@@ -45,7 +37,7 @@ class _FakeMessages:
     def create(self, **kwargs: Any) -> Any:
         self.calls.append(kwargs)
         payload = self.canned.pop(0)
-        return type("R", (), {"content": [_FakeResponse(text=payload)]})()
+        return type("R", (), {"content": [TextBlock(text=payload, type="text")]})()
 
 
 @dataclass
@@ -75,6 +67,24 @@ def test_protocol_conformance() -> None:
     fake, _ = _fake_client([])
     client = AnthropicLLMClient(client=fake, model="fake-model")
     assert isinstance(client, LLMClient)
+
+
+def test_call_claude_rejects_non_text_block(request_obj: DataRequest) -> None:
+    class _NotATextBlock:
+        pass
+
+    fake_msgs = _FakeMessages(canned=[], calls=[])
+
+    def create(**kwargs: Any) -> Any:
+        fake_msgs.calls.append(kwargs)
+        return type("R", (), {"content": [_NotATextBlock()]})()
+
+    fake_msgs.create = create  # type: ignore[method-assign]
+    fake = _FakeAnthropic(messages=fake_msgs)
+    client = AnthropicLLMClient(client=fake, model="fake-model")
+
+    with pytest.raises(LLMParseError, match="expected TextBlock"):
+        client.generate_primary_queries(request_obj)
 
 
 def test_generate_primary_queries_parses_json_array(

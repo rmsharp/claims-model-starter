@@ -13,6 +13,17 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-17 — CI mypy coverage extended to `packages/` (Session 29)
+
+- **Changed:** `.github/workflows/ci.yml` typecheck job now runs `uv run mypy` (no explicit path), which picks up the `[tool.mypy] packages = ["model_project_constructor", "model_project_constructor_data_agent"]` declaration in `pyproject.toml`. Previously CI ran `mypy src/` only, so pre-existing errors in `packages/data-agent/` never blocked merges. Structural twin of Session 25's ruff-scope extension: `pyproject.toml` already declared the intent; CI was running a narrower subset.
+- **Fixed:** 13 pre-existing mypy errors in `packages/data-agent/src/model_project_constructor_data_agent/` surfaced by the broader scope.
+  - `anthropic_client.py:218` — 11 × `union-attr` on `response.content[0].text`. The Anthropic SDK's `ContentBlock` is a 13-variant union; only `TextBlock` has `.text`. Fix: added `from anthropic.types import TextBlock` + `isinstance(block, TextBlock)` guard that raises `LLMParseError` with the actual class name if the first block is not a `TextBlock`. Production behavior is unchanged on the happy path (Claude always returns `TextBlock` for our `messages=[{"role": "user", ...}]` payload); the guard replaces an implicit `AttributeError` with a typed error that the Data Agent's outer try/except already handles.
+  - `nodes.py:142` — `arg-type` on `execution_status=status` because `status = "PASSED" if rows else "FAILED"` inferred as `str` not `Literal["PASSED", "FAILED"]`. Fix: explicit `status: Literal["PASSED", "FAILED"] = ...` annotation + `Literal` import.
+  - `sql_validation.py:26` — `no-untyped-call` on `parsed[0].get_type()` (sqlparse is untyped in mypy's strict mode). Fix: inline `# type: ignore[no-untyped-call]` — minimal, localized, accurate (3rd-party untyped API).
+- **Changed:** `tests/data_agent_package/test_anthropic_client.py` — replaced the `_FakeResponse` dataclass (duck-typed `.text` attr) with real `anthropic.types.TextBlock(text=..., type="text")` instances in `_FakeMessages.create`. Tests now exercise the production `isinstance(block, TextBlock)` guard faithfully.
+- **Added:** `test_call_claude_rejects_non_text_block` in `tests/data_agent_package/test_anthropic_client.py` — covers the new defensive branch that raises `LLMParseError("expected TextBlock...")` when the first content block is not a `TextBlock`. 440 → 441 tests.
+- **Verified:** `uv run pytest -q` 441/441 passing, coverage 97.26%; `uv run ruff check src/ tests/ packages/ scripts/` clean; `uv run mypy` clean on all 60 source files (`src/` + `packages/data-agent/src/`).
+
 ### 2026-04-17 — `MPC_NAMESPACE` URL-prefix validator + docs (Session 28)
 
 - **Added:** `validate_namespace(raw: str) -> str` module-level helper in `src/model_project_constructor/orchestrator/config.py`. Raises `ConfigError` when `MPC_NAMESPACE` starts with `http://` or `https://` (case-insensitive, whitespace-trimmed) with a message that names the received value and the expected path form. Closes a Session 22 operator-experience finding: before this, a URL-form namespace surfaced as a generic `group lookup failed: 404` from the GitLab adapter; now it fails at `[2/5] Building pipeline config...` in `scripts/run_pipeline.py` before any agent runs.

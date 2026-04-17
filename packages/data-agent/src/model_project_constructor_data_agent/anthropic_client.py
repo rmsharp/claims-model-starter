@@ -29,6 +29,8 @@ import json
 import re
 from typing import Any
 
+from anthropic.types import TextBlock
+
 from model_project_constructor_data_agent.llm import (
     PrimaryQuerySpec,
     QualityCheckSpec,
@@ -215,7 +217,12 @@ class AnthropicLLMClient:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
-        return str(response.content[0].text)
+        block = response.content[0]
+        if not isinstance(block, TextBlock):
+            raise LLMParseError(
+                f"expected TextBlock from Claude, got {type(block).__name__}"
+            )
+        return block.text
 
 
 def _dump_request(request: DataRequest) -> str:

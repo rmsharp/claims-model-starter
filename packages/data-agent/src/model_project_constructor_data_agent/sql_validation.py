@@ -23,7 +23,7 @@ def validate_sql(sql: str) -> tuple[bool, str]:
         return False, f"sqlparse raised: {e}"
     if not parsed:
         return False, "sqlparse returned no statements"
-    stmt_type = parsed[0].get_type()
+    stmt_type = parsed[0].get_type()  # type: ignore[no-untyped-call]
     if stmt_type == "UNKNOWN":
         return False, f"unknown SQL statement type for input: {sql[:80]!r}"
     return True, ""

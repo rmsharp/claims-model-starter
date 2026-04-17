@@ -22,7 +22,7 @@ returns ``db_executed=False`` and leaves every ``QualityCheck`` at
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from model_project_constructor_data_agent.db import DBConnectionError, ReadOnlyDB
 from model_project_constructor_data_agent.llm import LLMClient
@@ -133,7 +133,7 @@ def make_execute_qc(
                         )
                     )
                     continue
-                status = "PASSED" if rows else "FAILED"
+                status: Literal["PASSED", "FAILED"] = "PASSED" if rows else "FAILED"
                 new_group.append(
                     QualityCheck(
                         check_name=qc.check_name,
