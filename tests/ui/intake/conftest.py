@@ -44,21 +44,31 @@ def _fixture_factory(
 
 
 @pytest.fixture
-def make_app(tmp_path: Path) -> Callable[[dict], FastAPI]:
+def make_app(tmp_path: Path) -> Iterator[Callable[[dict], FastAPI]]:
     """Return a factory that builds an isolated app for a given fixture.
 
     Each call gets its own SQLite file under the test's ``tmp_path`` so
-    test isolation is guaranteed.
+    test isolation is guaranteed. Every app's ``IntakeSessionStore`` is
+    tracked here and closed on teardown: ``TestClient`` doesn't fire
+    FastAPI's ``lifespan`` unless it's used as a context manager, so the
+    store's SQLite connection would otherwise leak.
     """
 
     counter = {"n": 0}
+    apps: list[FastAPI] = []
 
     def factory(fixture: dict) -> FastAPI:
         counter["n"] += 1
         db = tmp_path / f"intake_{counter['n']}.db"
-        return create_app(llm_factory=_fixture_factory(fixture), db_path=db)
+        app = create_app(llm_factory=_fixture_factory(fixture), db_path=db)
+        apps.append(app)
+        return app
 
-    return factory
+    try:
+        yield factory
+    finally:
+        for app in apps:
+            app.state.store.close()
 
 
 @pytest.fixture

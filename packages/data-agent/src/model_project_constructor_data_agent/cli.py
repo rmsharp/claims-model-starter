@@ -101,8 +101,12 @@ def run(
     llm = _build_llm(fake_llm=fake_llm, model=model)
     db = ReadOnlyDB(db_url) if db_url else None
 
-    agent = DataAgent(llm=llm, db=db)
-    report = agent.run(request_obj)
+    try:
+        agent = DataAgent(llm=llm, db=db)
+        report = agent.run(request_obj)
+    finally:
+        if db is not None:
+            db.close()
 
     output.write_text(json.dumps(report.model_dump(mode="json"), indent=2))
     typer.echo(f"wrote {output} ({report.status})")

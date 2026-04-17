@@ -43,3 +43,12 @@ class ReadOnlyDB:
         with self._engine.connect() as conn:
             result = conn.execute(sa.text(sql))
             return [dict(row) for row in result.mappings().all()]
+
+    def close(self) -> None:
+        """Dispose the SQLAlchemy engine, releasing pooled connections.
+
+        Safe to call without a prior ``connect()`` and safe to call twice.
+        """
+        if self._engine is not None:
+            self._engine.dispose()
+            self._engine = None

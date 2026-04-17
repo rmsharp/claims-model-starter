@@ -5,9 +5,16 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 35 — operator's discretion. Session 34 closed F6 cleanly. Three adjacent items are ready to pull off BACKLOG: `docs/tutorial.md §5` `--ci-platform` mention (completes the flag-documentation sweep; micro-scope), GitHub explicit-override test symmetry (+1 test, 445 → 446, micro-scope), wiki freshness sweep (full session, doc-shaped). Operator also may prefer to fix the 26 `ResourceWarning: unclosed database` noise items (existing BACKLOG entry; ~moderate effort) which Session 34 characterized in close-out.
+**Task:** Session 36 — operator's discretion. Session 35 closed the unclosed-SQLite warnings cleanly. Three items remain from Session 34's handoff menu: `docs/tutorial.md §5` `--ci-platform` mention (micro, 1 line), GitHub explicit-override test symmetry (micro, +1 test), wiki freshness sweep (full session, doc-shaped). Pilot-shaped work (B-3 Web UI bridge, automated resume-from-checkpoint) also on the BACKLOG if the user wants a production-shape demo instead of hygiene.
 
-**Status:** Session 34 complete. F6 shipped. No open in-progress state.
+**Status:** Session 35 complete. 28 → 0 `ResourceWarning: unclosed database`. No open in-progress state.
+
+### Post-Session-35 pre-commit state
+- `uv run pytest -W default --tb=no -q` → **445/445 passing**, **0 warnings** (was 25-28 `ResourceWarning: unclosed database`)
+- `uv run pytest -q` → 445/445 passing, coverage **97.27%** (was 97.26% — up 0.01pp)
+- `uv run ruff check src/ tests/ packages/` → clean
+- `uv run mypy src/ packages/` → clean on 60 source files
+- `PYTHONTRACEMALLOC=25 uv run pytest -W default --tb=no -q` post-fix → 0 `unclosed database` hits (re-verified)
 
 ### Post-Session-34 pre-commit state
 - `uv run pytest -q` → **445/445 passing**, coverage **97.26%** (unchanged — F6 was doc-only)
@@ -23,6 +30,113 @@ User asked for this during F6 execution. Ran `uv run pytest -W default` (substit
 | `ResourceWarning: unclosed database` (sqlite3) | 26 / 26 | `threading.py:281/303`, `langgraph/pregel/loop.py:290`, `ast.py:279`, `inspect.py:1814`, `anyio/_backends/_asyncio.py:342`, `rich/protocol.py`, `yaml/reader.py`, `sqlalchemy/pool/events.py:64`, `<frozen os>:717` | `ReadOnlyDB` / LangGraph `SqliteSaver` / `AsyncSqliteSaver` checkpoint stores not closing the underlying `sqlite3.Connection`. Python 3.13's stricter GC surfaces the leak at arbitrary frames when the finalizer runs — the frames in the warning are NOT the allocation sites; enabling `tracemalloc` would surface the actual open sites. The BACKLOG item (line 17) is still correct in spirit but understated count (said "~20 + 1 intake" = 21; actual is 26). | Moderate — requires threading a `close()` / `__exit__` discipline through `ReadOnlyDB`, the intake `AsyncSqliteSaver` usage in `agents/intake/graph.py`, and any `MemorySaver`/`SqliteSaver` fixtures in `tests/agents/data/conftest.py`. Not a one-liner; but also not invasive. |
 
 Recommendation: defer to a dedicated session. The existing BACKLOG item (line 17) is the right home; bump the count from "~20 + 1" to "26" if a future session picks this up. No fix needed for the F6 deliverable.
+
+---
+
+### Session 34 Handoff Evaluation (by Session 35)
+
+**Score: 10/10.** Best handoff in the streak — sustains Session 33's 10/10 set-up and Session 32's 9.5/10. The ACTIVE TASK block laid out four discretionary candidates with correct effort estimates ("micro" / "full session" / "moderate"), accurate blast-radius forecasts (doc-only vs. +1 test vs. moderate code edit), and a fully-characterized warning table (categories, counts, source frames, root cause, effort) for candidate #4 — the one I ended up picking. The characterization table had one small inaccuracy (said 26 warnings; tracemalloc showed 28 on my run; scheduling noise between runs since the same classes dominate — harmless drift, not a correctness gap in the handoff). Zero stakeholder corrections during execution. Zero re-derivation needed.
+
+- **What helped:** (a) **The warning-characterization table itself.** Session 34 ran the background task that surfaced the 26 warnings + wrote "root cause: `ReadOnlyDB` / LangGraph `SqliteSaver` / `AsyncSqliteSaver` checkpoint stores not closing the underlying `sqlite3.Connection`." When I opened `PYTHONTRACEMALLOC=25 uv run pytest -W default`, I already knew what pattern to look for — I confirmed it in one pass (15 warnings from `IntakeSessionStore`, 13 from `ReadOnlyDB`'s SQLAlchemy engine) instead of spending 10 min triangulating. Saved ~15 min. (b) **Gotcha #4** ("enabling `tracemalloc` would surface the actual open sites. The BACKLOG item (line 17) is still correct in spirit but understated count") — directly prescribed the diagnostic command I needed and set the expectation that the BACKLOG's "~20 + 1" count was a lower bound. Saved 2-3 min of "should I trust the count?" deliberation. (c) **Gotcha #4 (fix shape)** — ("Moderate — requires threading a `close()` / `__exit__` discipline through `ReadOnlyDB`, the intake `AsyncSqliteSaver` usage in `agents/intake/graph.py`, and any `MemorySaver`/`SqliteSaver` fixtures in `tests/agents/data/conftest.py`.") — close to right on ReadOnlyDB + conftest. Partial miss on the intake side: the intake `graph.py` uses `MemorySaver` (no sqlite), not `AsyncSqliteSaver`; the sqlite saver lives in `ui/intake/runner.py` + its test fixtures. Not a criticism — "the intake AsyncSqliteSaver" is a reasonable guess without running tracemalloc. (d) **Gotcha #1 pre-flight baseline matched exactly** (pytest 445/445 @ 97.26%). Zero discovery to confirm the starting state. (e) **Gotcha #5** ("BACKLOG convention post-Session-33 is 'remove, don't flip.'") — applied cleanly on close-out. The compounding mechanism holds: Session 33 introduced the convention, Session 34 reinforced it, Session 35 executes it without deliberation.
+- **What was missing:** (a) The mid-handoff forecast of "intake `AsyncSqliteSaver` in `agents/intake/graph.py`" was slightly off-target — the real sqlite saver is `SqliteSaver` in `ui/intake/runner.py`. A 30-second grep during close-out would have pinned this, but it was background-task scope. -0 (not a deduction; handoff did not claim certainty). (b) Warning count drift (26 → 28) — scheduling noise; no deduction.
+- **What was wrong:** Nothing factually wrong. The intake-saver location forecast was imprecise but within the class of correct answers.
+- **ROI:** ~10× on the total session work (handoff-read ~5 min; saved ~50 min of discovery — the tracemalloc command + the root-cause direction alone saved enough time that I could afford to make the fix granular rather than bulk).
+
+### What Session 35 Did
+**Deliverable:** Fix all 28 `ResourceWarning: unclosed database` warnings. **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this turn) — single `fix(session-35): close sqlite connections in ReadOnlyDB + intake test fixtures` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` ACTIVE TASK + Session 34 handoff + warning characterization + 8 gotchas; ran `git status` (clean, 2 commits ahead of origin/master per Session 34 gotcha #2) + `git log -5` + `git diff --stat`; ran `methodology_dashboard.py` (91/100, medium, active). **Executed FM #17 Phase 0 check (Learning #26):** `BACKLOG.md` had 11 `[ ]` items, zero `[x]`, no `## Completed` section — discipline intact. No ghost sessions. Reported state to user, waited for direction.
+
+2. **User directed: item 4 (warnings fix).** Wrote Phase 1B IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work. Created 6-task list to track inventory → design → implement → verify → close-out.
+
+3. **Inventory pass.** Ran `PYTHONTRACEMALLOC=25 uv run pytest -W default --tb=no -q` to get actual allocation frames. Aggregated project-file hits:
+   - **15 warnings** with allocation `src/model_project_constructor/ui/intake/runner.py:84` (`sqlite3.connect(db_path, check_same_thread=False)` inside `IntakeSessionStore.__init__`). All traced through `tests/ui/intake/conftest.py` (`make_app` / `make_client` / `subrogation_client` fixtures) + `test_caps_and_revisions.py:31,:48` direct usages.
+   - **13 warnings** with allocation deep in `sqlalchemy/pool/...` — root cause is `ReadOnlyDB._engine` never disposed. Traced via `tests/agents/data/conftest.py:32` (seed engine) + `conftest.py:65-66` (seeded_db fixture engine) + `tests/data_agent_package/test_cli.py:60` (inline engine).
+   - Confirmed `agents/intake/graph.py` + `agents/website/graph.py` use `MemorySaver` (in-memory, no sqlite). Session 34's "intake `AsyncSqliteSaver`" guess was close but the actual `SqliteSaver` usage is in `ui/intake/runner.py` — the web-UI server layer, not the agent graph.
+
+4. **Design pass.** Root cause A is test-side lifecycle (`IntakeSessionStore.close()` already exists and is wired into FastAPI `lifespan`, but `TestClient` doesn't fire lifespan unless used as a context manager). Root cause B is a missing `close()` on `ReadOnlyDB` + fixture teardown gap. Design:
+   - `ReadOnlyDB.close()` method (idempotent, `engine.dispose()` + `_engine = None`).
+   - CLI owner (`packages/data-agent/.../cli.py:102`) wraps `agent.run()` in try/finally to close the db.
+   - `seeded_sqlite_url` + `seeded_db` fixtures → yielding form with `dispose()` / `close()` in `finally`.
+   - `test_cli.py:60` inline engine → same try/finally dispose pattern.
+   - `make_app` fixture → track every app's `state.store` and close on teardown (covers 15 of the 28 warnings in one change).
+   - **Deliberately rejected:** `__enter__/__exit__` on `ReadOnlyDB`. Would have added 2 uncovered lines (no caller uses `with` form). YAGNI.
+
+5. **Implementation.** 5 files edited:
+   - `packages/data-agent/src/model_project_constructor_data_agent/db.py` — added `close()` at lines 47-54.
+   - `packages/data-agent/src/model_project_constructor_data_agent/cli.py` — wrapped `agent.run()` in try/finally at lines 102-108.
+   - `tests/agents/data/conftest.py` — added `Iterator` import, converted `seeded_sqlite_url` to yielding form with `engine.dispose()` in `finally`, converted `seeded_db` to yielding form with `db.close()` in `finally`.
+   - `tests/data_agent_package/test_cli.py` — wrapped inline `engine.begin()` block in try/finally with `engine.dispose()` at lines 58-64.
+   - `tests/ui/intake/conftest.py` — converted `make_app` to yielding fixture; tracks apps in a list; closes each `app.state.store` on teardown.
+
+6. **Verification.** `uv run pytest -W default --tb=no -q` → **445/445 passing, 0 warnings** (down from 25-28). `uv run pytest -q` → 445/445, coverage **97.27%** (up 0.01pp from 97.26% — the new `close()` statements are covered by both fixture teardown and the CLI try/finally). `uv run ruff check src/ tests/ packages/` clean. `uv run mypy src/ packages/` clean on 60 files. Re-ran `PYTHONTRACEMALLOC=25 uv run pytest -W default` post-fix: 0 `unclosed database` hits (independently confirmed the grep was the warning's only surface).
+
+7. **CHANGELOG Session 35 entry** added at top of `## [Unreleased]`, structured as Fixed (two root causes)/Added (close method)/Changed (CLI + 3 test files)/Verified/Unchanged. Explicit note that no `__enter__/__exit__` were added (YAGNI) and that `agents/intake/graph.py` + `agents/website/graph.py` `MemorySaver` was **not** a warning source despite Session 34's guess pointing there.
+
+8. **BACKLOG.md** — **removed** (not flipped) the "Fix unclosed SQLite connection warnings" line, per post-Session-33 convention. No sibling cross-references needed updating.
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Spent the first ~15 min of session time running tracemalloc + reading the actual allocation sites (`IntakeSessionStore.__init__`, `ReadOnlyDB.connect`, the fixture shapes) before drafting any fix. Explicitly confirmed that `agents/intake/graph.py` + `agents/website/graph.py` use `MemorySaver` by reading the source (not just grepping names) — this overturned Session 34's handoff guess that intake had an `AsyncSqliteSaver` leak and saved me from making an unnecessary edit in `agents/intake/`.
+- **Implementations read, not just descriptions:** Yes. Read the full `ReadOnlyDB` source, `IntakeSessionStore` source, `app.py:create_app` + its `lifespan` wiring (so I knew why `TestClient`-without-context-manager was leaking), every fixture in both conftests, and every direct instantiation call site. The diagnosis of "TestClient doesn't fire lifespan unless used as a context manager" came from reading the code — it's not documented in the handoff.
+- **Stakeholder corrections needed:** 0. The only user message during execution was "continue" after I ran inventory queries; no course corrections.
+- **What I got right:** (a) **Granular fix over bulk refactor.** Session 34's handoff characterization suggested "threading a close() / __exit__ discipline" across multiple subsystems. I considered that — and rejected __enter__/__exit__ as out-of-scope because no caller uses context-manager form. Kept `close()` only. The 0.01pp coverage bump confirms the YAGNI call was correct: both the CLI and every test fixture exercise `close()` directly. (b) **Correct teardown ordering.** `seeded_db` depends on `seeded_sqlite_url`, so pytest tears down `seeded_db` first (`ReadOnlyDB.close()` → `_engine.dispose()`), then `seeded_sqlite_url` (seed engine's `dispose()`). Two engines per test, independent pools; both get disposed. Confirmed by reading pytest docs before writing the fixtures; didn't guess. (c) **Traced the real allocation sites.** `PYTHONTRACEMALLOC=25` with the allocation frames filtered to project files gave me 15 + 13 = 28 warnings with clear root causes. Without this, I would have had to guess which of `ReadOnlyDB`, `AsyncSqliteSaver`, `MemorySaver`, or `SqliteSaver` was actually leaking — Session 34 named three of those; only two actually leak and neither is in `agents/intake/graph.py`. (d) **Found the `TestClient` context-manager gap.** Session 34's handoff said the fix lived in `tests/agents/data/conftest.py` — correct for root cause B. But for root cause A (15 of 28 warnings), the fix lives in `tests/ui/intake/conftest.py`, and the real issue is that `IntakeSessionStore.close()` exists but is never invoked because `TestClient` isn't a context manager. Session 34's handoff didn't name this; I derived it from reading `app.py:create_app` + the starlette `TestClient` behavior. (e) **Post-Session-33 convention correctly applied** — removed, not flipped.
+- **What I got wrong:** (a) **Initial scope-creep impulse:** I added `__enter__/__exit__` methods to `ReadOnlyDB` in the first draft (coverage dropped from 97.26% → 97.20%). Caught it when checking coverage; removed the methods; coverage bounced back to 97.27%. Cost: ~2 min of churn. Root cause: the handoff text mentioned "__exit__" as part of the fix shape, so I followed the prescription rather than judging whether a context manager was actually load-bearing. Learning: handoff prescriptions are hints, not contracts — read the prescription, then judge against the actual call sites. -0.5.
+- **Quality bar vs. previous sessions:** On par with Session 33's 10/10 and Session 34's 9.5/10. The one `__enter__/__exit__` churn event drops this below Session 33's perfect score; the subsequent YAGNI correction is itself a strong signal (engineers who never overshoot also tend to never course-correct). Above Session 32's 9.5/10 in terms of research-before-implementation discipline.
+
+### Phase 3C: Learnings
+
+Adding one learning to SESSION_RUNNER.md's table (Learning #28):
+
+> **When a handoff names the fix shape prescriptively (e.g. "threading a `close()` / `__exit__` discipline"), treat the verbs as hints rather than contracts.** Session 34's characterization of the warnings-fix named three specific patterns: `close()`, `__exit__`, and "discipline through `ReadOnlyDB` + `agents/intake/graph.py` + `tests/agents/data/conftest.py` fixtures." Two of those three were correct in direction (add `close()`, touch conftest) but only ~40% precise: (a) `__exit__` / context manager was not needed — no caller uses `with ReadOnlyDB(...)` and adding the methods drops coverage without a corresponding user; (b) `agents/intake/graph.py` uses `MemorySaver` (in-memory, no sqlite) — the real sqlite saver is `SqliteSaver` in `ui/intake/runner.py`; (c) a separate leak class lives in `tests/ui/intake/conftest.py` (the `TestClient`/`lifespan` gap) which the handoff did not name. If I had followed the handoff prescription literally I would have edited the wrong files AND added unused surface. The correct workflow is: read the handoff, confirm the root cause independently (tracemalloc for this kind of bug), then design the minimal fix against *that* root cause. Respect handoff *intent* (fix the warnings), audit handoff *specifics* (where the leaks live, what API they need). **When to apply:** any implementation session whose handoff includes a prescriptive fix shape (method names, file paths, specific patterns). Verify the specifics against the actual code before editing.
+> Source: Session 35 (warnings fix; handoff said `__exit__` + `agents/intake/graph.py` + `conftest.py` — actual fix landed in `close()` only + `ui/intake/runner.py` + two conftests + cli.py + a third test).
+> When to apply: any implementation session inheriting a handoff that prescribes method names, APIs, or specific edit locations.
+
+### Phase 3D: Handoff to Session 36
+
+The "ACTIVE TASK" block at top of this file lists four candidates from Session 34's menu (tutorial.md §5, GitHub test symmetry, wiki freshness sweep) — now minus the warnings item Session 35 just closed. Session 36's operator can pick any.
+
+### Gotchas for Session 36
+
+1. **Post-Session-35 pre-commit state:** pytest **445/445** at **97.27% coverage, 0 warnings** (finally). ruff clean, mypy clean on 60 files. If Session 36 touches code, re-run all four.
+
+2. **Commits ahead of origin: now 3.** Sessions 33 (`b74d3ff`) + 34 (`86f8a64`) + 35 (pending) unpushed. Session 36's Phase 0 may want to push all three before starting (or not — operator's call).
+
+3. **`ReadOnlyDB.close()` is now the public API for engine disposal.** Any new caller that owns a `ReadOnlyDB` instance must call `.close()` (or wrap in try/finally). The CLI shows the canonical pattern at `packages/data-agent/src/model_project_constructor_data_agent/cli.py:102-108`. No `__enter__/__exit__` — if a future caller wants `with ReadOnlyDB(url) as db:`, add those methods and a test together; don't add unused surface.
+
+4. **`tests/ui/intake/conftest.py`'s `make_app` is now a yielding fixture.** It tracks every app's `state.store` and closes them on teardown. Any new intake-UI test that creates its own `FastAPI` app without going through `make_app` will re-leak the store — if needed, the new test should either (a) use `make_app`, or (b) wrap in try/finally + explicit `app.state.store.close()`, or (c) use `TestClient(app)` as a context manager.
+
+5. **Learning #28 added to SESSION_RUNNER.md** — handoff prescriptions as hints, not contracts. Apply it to Session 35's own handoff to Session 36: "tutorial.md §5 `--ci-platform`" is a safe micro, but verify the exact line in `docs/tutorial.md` before writing the prose; "wiki freshness sweep" has several suggested files — skip any that have already been updated by intervening sessions.
+
+6. **BACKLOG convention "remove, don't flip" is now at Session #3 of application.** Session 33 established it; Sessions 34 and 35 executed it. Session 36 should continue. FM #17 Phase 0 check (Learning #26) takes ~30 seconds and has caught zero drifts in the last two sessions — keep it; zero cost to maintain, infinite cost to lose.
+
+7. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+8. **"Paste, not redraft"** (Learning #27) — Session 34 executed this on Session 33's F6 prose. Session 35 did not have paste-ready work product to inherit. If Session 36's handoff from Session 35 has inherited work product (it doesn't — the candidates are pointers to BACKLOG items, not drafts), follow the paste-not-redraft discipline.
+
+9. **Session 35's self-assessment was 9.5/10.** Root cause of the half-point deduction: initial scope-creep when I added `__enter__/__exit__` methods to `ReadOnlyDB` before verifying any caller needed them; caught by coverage drop; removed. Learning #28 is the structural fix: audit handoff specifics before implementing.
+
+### Session 35 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Inventory pass with PYTHONTRACEMALLOC=25 to pin real allocation sites
+- [x] Design pass; rejected `__enter__/__exit__` (YAGNI)
+- [x] Implementation: 5 files edited (`db.py`, `cli.py`, 2 conftests, 1 test)
+- [x] Verification: pytest 445/445 @ 97.27% (up 0.01pp), 0 warnings, ruff clean, mypy clean on 60 files
+- [x] CHANGELOG.md Session 35 entry (Fixed / Added / Changed / Verified / Unchanged)
+- [x] BACKLOG.md: "Fix unclosed SQLite connection warnings" line **removed** (not flipped)
+- [x] Phase 3A: Session 34 handoff evaluated and scored above (10/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.5/10)
+- [x] Phase 3C: Learning #28 added (handoff prescriptions as hints, not contracts)
+- [x] Phase 3D: Handoff to Session 36 above (ACTIVE TASK candidates + 9 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
 
 ---
 

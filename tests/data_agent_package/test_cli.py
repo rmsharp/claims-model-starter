@@ -58,9 +58,12 @@ def test_cli_smoke_fake_llm_with_sqlite(runner: CliRunner, tmp_path: Path) -> No
 
     db_path = tmp_path / "smoke.db"
     engine = sa.create_engine(f"sqlite:///{db_path}")
-    with engine.begin() as conn:
-        conn.execute(sa.text("CREATE TABLE claims (id INTEGER PRIMARY KEY)"))
-        conn.execute(sa.text("INSERT INTO claims (id) VALUES (1), (2), (3)"))
+    try:
+        with engine.begin() as conn:
+            conn.execute(sa.text("CREATE TABLE claims (id INTEGER PRIMARY KEY)"))
+            conn.execute(sa.text("INSERT INTO claims (id) VALUES (1), (2), (3)"))
+    finally:
+        engine.dispose()
 
     out = tmp_path / "report.json"
     result = runner.invoke(

@@ -7,6 +7,7 @@ a network or requiring credentials.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -26,44 +27,51 @@ from model_project_constructor.schemas.v1.data import (
 
 
 @pytest.fixture
-def seeded_sqlite_url(tmp_path: Path) -> str:
+def seeded_sqlite_url(tmp_path: Path) -> Iterator[str]:
     db_path = tmp_path / "claims.db"
     engine = sa.create_engine(f"sqlite:///{db_path}")
-    with engine.begin() as conn:
-        conn.execute(
-            sa.text(
-                """
-                CREATE TABLE claims (
-                    claim_id INTEGER PRIMARY KEY,
-                    policy_id INTEGER NOT NULL,
-                    loss_date TEXT NOT NULL,
-                    paid_amount REAL NOT NULL,
-                    subro_recovered REAL DEFAULT 0,
-                    state TEXT NOT NULL
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                sa.text(
+                    """
+                    CREATE TABLE claims (
+                        claim_id INTEGER PRIMARY KEY,
+                        policy_id INTEGER NOT NULL,
+                        loss_date TEXT NOT NULL,
+                        paid_amount REAL NOT NULL,
+                        subro_recovered REAL DEFAULT 0,
+                        state TEXT NOT NULL
+                    )
+                    """
                 )
-                """
             )
-        )
-        conn.execute(
-            sa.text(
-                """
-                INSERT INTO claims
-                    (claim_id, policy_id, loss_date, paid_amount, subro_recovered, state)
-                VALUES
-                    (1, 100, '2024-01-15',  5000.0, 1200.0, 'TX'),
-                    (2, 101, '2024-02-20',  8000.0,    0.0, 'TX'),
-                    (3, 102, '2024-03-05',  2500.0,  500.0, 'NY'),
-                    (4, 103, '2024-04-11', 15000.0,    0.0, 'CA'),
-                    (5, 104, '2024-05-22',  6200.0, 3100.0, 'TX')
-                """
+            conn.execute(
+                sa.text(
+                    """
+                    INSERT INTO claims
+                        (claim_id, policy_id, loss_date, paid_amount, subro_recovered, state)
+                    VALUES
+                        (1, 100, '2024-01-15',  5000.0, 1200.0, 'TX'),
+                        (2, 101, '2024-02-20',  8000.0,    0.0, 'TX'),
+                        (3, 102, '2024-03-05',  2500.0,  500.0, 'NY'),
+                        (4, 103, '2024-04-11', 15000.0,    0.0, 'CA'),
+                        (5, 104, '2024-05-22',  6200.0, 3100.0, 'TX')
+                    """
+                )
             )
-        )
-    return f"sqlite:///{db_path}"
+        yield f"sqlite:///{db_path}"
+    finally:
+        engine.dispose()
 
 
 @pytest.fixture
-def seeded_db(seeded_sqlite_url: str) -> ReadOnlyDB:
-    return ReadOnlyDB(seeded_sqlite_url)
+def seeded_db(seeded_sqlite_url: str) -> Iterator[ReadOnlyDB]:
+    db = ReadOnlyDB(seeded_sqlite_url)
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @pytest.fixture
