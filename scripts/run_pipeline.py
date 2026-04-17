@@ -274,7 +274,8 @@ def build_website_runner(*, host: str, live: bool):
         from model_project_constructor.agents.website.github_adapter import (
             PyGithubAdapter,
         )
-        client = PyGithubAdapter(token=token)
+        host_url = os.environ.get("MPC_HOST_URL", "https://api.github.com")
+        client = PyGithubAdapter(private_token=token, host_url=host_url)
     else:
         from model_project_constructor.agents.website.gitlab_adapter import (
             PythonGitLabAdapter,

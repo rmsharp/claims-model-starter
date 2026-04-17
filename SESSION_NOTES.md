@@ -5,10 +5,156 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 30 — **pick from candidates below.** Recommend #1 (self-hosted GitHub URL override, small scope, closes remaining Session 22 code-gap finding) or #2 (re-audit `OPERATIONS.md` §4.2/4.3 recipes).
-**Status:** Session 29 complete. CI mypy coverage now includes `packages/`; all 13 pre-existing errors fixed.
+**Task:** Session 31 — pick from the 3 remaining candidates in "What Session 31 should do" below. Recommend #2 (re-audit `OPERATIONS.md` §4.2/4.3 recipes) or #3 (wiki freshness sweep). Candidate #1 (self-hosted GitHub URL override) is **done** — closes the last of Session 22's three code-gap findings (validator + ruff-scope + mypy-scope + GHE URL override all now landed).
+**Status:** Session 30 complete. `scripts/run_pipeline.py` GitHub branch now passes both `private_token=` (bug fix, parallels Session 22's GitLab `url=` → `host_url=` correction) and `host_url=` (closes the URL-override finding). 3 new tests added (441 → 444). Pytest / ruff / mypy all green.
 
-### What Session 30 should do
+### What Session 31 should do
+
+Three candidates (renumbered after Session 30 closed the GHE URL override):
+
+1. **Re-audit `OPERATIONS.md` §4.2/4.3 recipes** (Session 22 finding; Session 23's claim was WRONG per Session 24). `__main__.py` + `cli.py` both exist. Try each invocation; document what works vs. stale. One session.
+
+2. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. Walk "Recommended additions" / "Future enhancements" / "Planned" lists and (a) delete already-implemented items, (b) rewrite partials to describe the remaining gap. One session.
+
+3. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+
+**Recommend #1** for Session 31 — smallest code-shaped scope (try each recipe, compare against `docs/tutorial.md §5`, update whichever side is stale). Candidate #2 is doc-sweep-shaped and larger.
+
+---
+
+## Session 29 Handoff Evaluation (by Session 30)
+**Score: 8/10.** Good handoff. The pre-flight baseline matched exactly (pytest 441/441, 97.26%; ruff clean; mypy clean on 60 files), candidate #1's key-files block pointed at the right three surfaces (`scripts/run_pipeline.py`, `github_adapter.py`, `docs/tutorial.md §5c`), and the "untestable live — no GHE instance" gotcha set the verification expectation correctly. Lost 2 points on two related oversights.
+
+- **What helped:** (a) **Gotcha #1** ("pre-commit state: pytest 441/441, 97.26%, ruff clean, mypy clean on 60 files") made pre-flight a confirmation, not an investigation. Matched exactly. (b) **Candidate #1 key-files block at SESSION_NOTES.md:101-105** named the doc surface (`docs/tutorial.md §5c`) and pointed the verification path at a code-read + unit test coverage pattern, which matched Session 22's GitLab `host_url=` fix shape. (c) **Gotcha #7** ("Candidate #1 is untestable live — no GHE instance; unit-test coverage + code-read is the verification path") made it obvious not to set up a mock GHE instance or to look for a live-run recipe. Saved me from deliberating about verification approach. (d) **Gotcha #10** ("Session 22's three code-gap findings almost fully closed; only GHE URL override remains") framed the task as a bookkeeping close rather than a hard debugging exercise — I came in expecting a small fix and was not surprised when that's what it was. (e) The pre-flight / CI / mypy state carried cleanly — no drift between Session 29 close and Session 30 start.
+- **What was missing:** (a) **Did NOT flag the `token=` vs `private_token=` kwarg mismatch.** The handoff's description of the bug was "passes no URL argument" (inherited from Session 22's framing), which is true but incomplete — `PyGithubAdapter(token=token)` at `scripts/run_pipeline.py:277` has TWO bugs: wrong kwarg name (`token=` vs the adapter's `private_token=`) AND no `host_url=`. Before my fix, `--live --host github` would have raised `TypeError: __init__() got an unexpected keyword argument 'token'` on the first keystroke — exactly parallel to the Session 22 GitLab `url=` → `host_url=` bug that the handoff cites as a structural parallel but doesn't link to this case. Had the handoff included "suspect a `private_token=` mismatch as well — Session 22's symmetry extends to kwargs, not just URLs" as a gotcha, I would have framed the commit as a single two-bug fix from the start. Cost: one 30-second grep + one "two bugs" decision point. -1. (b) **"Line 96-110 in `build_repo_target`" pointer was off by ~170 lines.** `build_repo_target` at `scripts/run_pipeline.py:99-115` builds a `RepoTarget` schema object (stores `host_url` in the `RepoTarget`); it's NOT where `PyGithubAdapter` is constructed. The adapter construction is in `build_website_runner` at lines 256-287. The handoff conflated two similarly-named helper functions. Cost: one grep for `PyGithubAdapter(` (~10 seconds) to find the actual site. -0.5. (c) **Didn't note that `PyGithubAdapter` already accepts `host_url=`.** The handoff said "verify `PyGithubAdapter` accepts `base_url=`" — which is PyGithub upstream's kwarg name. `PyGithubAdapter.__init__` at `github_adapter.py:70` already exposes the upstream `base_url=` as `host_url=` (and wires it to `Github(..., base_url=host_url)` at line 72). A "the adapter is complete — gap is purely in the pipeline script" upfront would have saved the read. Minor (30s read). -0.25. Total: -1.75 rounded to 8.
+- **What was wrong:** Nothing factually wrong — just incomplete on the `private_token` kwarg and off-by-~170 on the line number.
+- **ROI:** ~5× return. Reading Session 29's handoff (~2 min) saved ~10 min of discovery, even accounting for the three oversights. Matches the mid-80s ROI band from Session 28's and Session 29's handoffs; below the Session 28→29 peak (~8×, 10/10).
+
+### What Session 30 Did
+**Deliverable:** Session 22 finding #3 (last remaining code-gap) — close the GHE URL override gap in `scripts/run_pipeline.py` by threading `MPC_HOST_URL` through to `PyGithubAdapter`. Discovered and also fixed a parallel kwarg-name bug (`token=` → `private_token=`) that meant `--live --host github` had never worked. **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this session's commit) — single `fix(session-30): thread MPC_HOST_URL through PyGithubAdapter + fix private_token kwarg` commit.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full, `SESSION_NOTES.md` ACTIVE TASK + Session 29 handoff + 10 gotchas in full, ran `git status` / `git log -5` / `git diff --stat` (clean working tree, 1 commit ahead of origin/master from Session 29), ran `methodology_dashboard.py` (project at 91/100, medium risk, active, healthiest of 5). No ghost sessions (Session 29 matches `a9e2f3f`). Reported state to user. Waited for direction.
+
+2. **User confirmed: work on candidate #1 (GHE URL override).** No decision round-trips.
+
+3. **Phase 1B stub** — Wrote IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection).
+
+4. **Pre-flight baseline** — `uv run pytest -q` → 441/441, 97.26% coverage; `uv run ruff check src/ tests/ packages/ scripts/` clean; `uv run mypy` (bare, picks up `[tool.mypy] packages = [...]`) clean on 60 source files. Confirmed Session 29's closing state.
+
+5. **Inventory — key finding:** read `src/model_project_constructor/agents/website/github_adapter.py` top-to-bottom. **`PyGithubAdapter.__init__` at line 66-72 ALREADY accepts `host_url: str = "https://api.github.com"` (kwarg-only) and wires it to `Github(auth=..., base_url=host_url)` at line 72.** No adapter change was needed. The gap was purely in `scripts/run_pipeline.py`. Secondary finding: the call site had TWO bugs, not one:
+   - **Bug 1 (`token=` kwarg):** `scripts/run_pipeline.py:277` passed `PyGithubAdapter(token=token)`, but the adapter's keyword-only parameter is `private_token=` (matches `PythonGitLabAdapter`'s signature). First invocation would have raised `TypeError: __init__() got an unexpected keyword argument 'token'`. This is **the exact same shape** as Session 22's `url=` → `host_url=` GitLab fix — the GitHub branch has had the same kind of bug since Phase C (Session 13) shipped the adapter.
+   - **Bug 2 (`host_url=` absent):** The intended Session 30 bug — the call site never read `MPC_HOST_URL`, so GHE users would have silently hit public `api.github.com` even with the env var set.
+
+6. **Fix (scripts/run_pipeline.py:273-278)** — 3-line edit mirroring the GitLab branch directly below:
+   ```python
+   host_url = os.environ.get("MPC_HOST_URL", "https://api.github.com")
+   client = PyGithubAdapter(private_token=token, host_url=host_url)
+   ```
+   Parallel to `PythonGitLabAdapter(host_url=host_url, private_token=token)` at line 283-284. No changes to adapter, schemas, config, or CI.
+
+7. **Tests (+3, 441 → 444):** added to `tests/scripts/test_run_pipeline_adapter.py`:
+   - `test_build_website_runner_github_live_threads_host_url` — monkeypatches `PyGithubAdapter` + `PythonGitLabAdapter` + `WebsiteAgent` to capturing stubs; sets `MPC_HOST_URL=https://github.mycompany.com/api/v3`; asserts the GitHub adapter receives `private_token=<GITHUB_TOKEN>` + that exact `host_url`.
+   - `test_build_website_runner_github_live_defaults_host_url` — unsets `MPC_HOST_URL`; asserts `host_url` falls back to `https://api.github.com`.
+   - `test_build_website_runner_gitlab_live_threads_host_url` — symmetric regression guard for the GitLab branch, so any future edit to the live-adapter block surfaces as a contract change on both paths.
+   - Added a shared `_install_fake_adapters_and_agent` helper so the three tests don't duplicate setup.
+   - Pattern follows the existing `importlib.util` module-loading approach (scripts/ isn't a package); monkeypatches the module-level attributes `gh_mod.PyGithubAdapter`, `gl_mod.PythonGitLabAdapter`, `run_pipeline_module.WebsiteAgent` — no real HTTP made.
+
+8. **Docs reconciliation:** grep for `MPC_HOST_URL.*gitlab|gitlab.*MPC_HOST_URL` confirmed all doc surfaces already describe the env var as host-agnostic (`OPERATIONS.md:24` says "`https://gitlab.com` or `https://api.github.com`. Override for self-hosted / enterprise instances"; `docs/tutorial.md:381-387` shows both examples; `docs/wiki/claims-model-starter/Security-Considerations.md:111` describes GHE via `MPC_HOST_URL`). **No prose edits needed** — the docs were always correct; the code is now catching up.
+
+9. **Verification:**
+   - Post-change pre-flight: `uv run pytest -q` → 444/444 passing, coverage 97.26% (`scripts/` not in `--cov`, so coverage is unchanged); `uv run ruff check src/ tests/ packages/ scripts/` clean; `uv run mypy` clean on all 60 source files.
+   - No live run — no GHE instance available. Parallels Session 22's `host_url=` fix for GitLab which was merged without a live GHE run.
+
+10. **Documentation updates:**
+    - `CHANGELOG.md` [Unreleased] — new 2026-04-17 Session 30 entry at the top. Names both bugs, the 3-line fix, the test additions, and the "closes last of Session 22's three code-gap findings" bookkeeping note.
+    - `BACKLOG.md` "Up Next" — "Self-hosted GitHub URL override" flipped from `[ ]` to `[x]` with Session 30 summary, CHANGELOG pointer, and "closes the last of Session 22's three code-gap findings" close-out.
+    - `SESSION_NOTES.md` — this block + rotated candidate list for Session 31 (3 candidates, #1 is now the OPERATIONS re-audit).
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Read `github_adapter.py` end-to-end **before** editing `scripts/run_pipeline.py` — caught that the adapter already had the kwarg and the fix was purely a call-site correction (not an adapter extension). Read `build_website_runner` end-to-end before editing — caught the `token=` vs `private_token=` mismatch in the same pass. No back-and-forth.
+- **Implementations read, not just descriptions:** Yes — read the adapter constructor at `github_adapter.py:66-72`, read the full `build_website_runner` body at `run_pipeline.py:256-287` to understand the fake-mode / live-mode split + monkeypatch surface, read `test_run_pipeline_adapter.py` in full to match the `importlib.util` + `monkeypatch.setattr(module, ...)` pattern the file already established.
+- **Stakeholder corrections needed:** 0. User's "work on Self-hosted GitHub URL override" was unambiguous; no redirects, no clarifying questions needed beyond the "should I push Session 29's commit first?" confirmation (which I asked upfront).
+- **What I got right:** (a) **Phase 1B stub before any technical work** (failure mode #14 protection). (b) **Caught Bug 1 (`token=` → `private_token=`) by reading the call site before editing.** If I'd just added `host_url=` without reading, I would have produced a call with 3 kwargs including the still-wrong `token=`, and post-change pytest via monkeypatched adapter would have passed (the stub accepts any kwargs), but a real live run would have raised `TypeError`. Caught it in the read, fixed both in one pass. Mirrors Session 22's philosophy: read the adapter signature, make the call match. (c) **Didn't extend the adapter.** The Session 29 handoff framed the task as "verify `PyGithubAdapter` accepts `base_url=`" and said "if not, add it as a keyword-only parameter." I read the adapter first, saw the kwarg was already there (named `host_url` to match `PythonGitLabAdapter`), and kept the scope narrow to the call-site fix. A less careful read would have added a redundant `base_url=` alias. Failure mode #8 (redesign during implementation) held. (d) **Added the symmetric GitLab regression test.** Only the GitHub branch was changing, but I wrote a parallel GitLab test that captures the current contract — any future edit to the live-adapter block now surfaces as a contract change on both paths. Low cost (15 lines, reused helper) + high value (catches regressions from "just refactor the if/else"). (e) **Stayed in scope.** Didn't refactor `OrchestratorSettings.from_env`'s `MPC_HOST_URL` read vs. `run_pipeline.py`'s inline `os.environ.get(...)` — they duplicate the default, which is a minor redundancy, but that's a "while I'm at it" cleanup that belongs in a different session. Failure mode #17 (protocol erosion) held. (f) **Confirmed the docs were already correct before touching them.** Grep for `MPC_HOST_URL.*gitlab` pattern confirmed `OPERATIONS.md` and `docs/tutorial.md` already described the env var as host-agnostic; no prose change needed. Resisted the urge to "clean up" the inline `.env.example` example, which also would have been out of scope.
+- **What I got wrong:** (a) **Initially bundled both bug fixes into the Session 30 commit without naming Bug 1 separately in the CHANGELOG.** The CHANGELOG entry does now name both (private_token AND host_url), but I briefly considered treating Bug 1 as a silent follow-on rather than a headline. Called it out. Net: no user-visible issue, but the reflection is that a prior Session 22 would have named the analogous bug as the primary fix, not the secondary one. -0.5. (b) **Didn't search for other occurrences of `PyGithubAdapter(` before assuming the only call site was in `run_pipeline.py`.** Did eventually check (grep returned only `scripts/run_pipeline.py:277` as a constructor call, plus `github_adapter.py` definition + `test_github_adapter.py` unit tests which use the correct `private_token=` kwarg already). So no other call sites needed fixing. But I did the grep after the edit, not before. Would have been ~5 seconds to do it upfront. -0.25. (c) **Didn't add a test that the `validate_namespace` + `MPC_HOST_URL` + `PyGithubAdapter` chain all work together in live mode (i.e. an integration-ish test of `build_website_runner` + `build_repo_target`).** The three monkeypatch tests cover the adapter construction in isolation; an integration test might have caught a future change that, say, moved the `MPC_HOST_URL` read into `OrchestratorSettings` but forgot to wire it into `build_website_runner`. Judgment call — adding it would have expanded scope. Noting as a potential follow-up. Minor. -0.25. Total: -1.0 = 9/10.
+- **Quality bar vs. previous sessions:** Matches Session 29's and Session 28's surgical-fix discipline (3-line production change + 3 tests + doc bookkeeping). Smaller blast radius than Session 29 (1 production file + 1 test file vs. Session 29's 3 production + 1 test). Parallel structure to Session 22's `url=` → `host_url=` GitLab fix is noteworthy — both sessions closed "never-worked" `--live` bugs on opposite host branches, both shipped without a live run, both added regression tests on a monkeypatch pattern.
+
+### Phase 3C: Learnings
+
+Adding a cross-cutting learning to the Learnings table in SESSION_RUNNER.md:
+
+> **When handoffs describe a "fix parallels Session X" scenario, read the sibling implementation end-to-end before assuming the two call sites match only on the named symbol.** Session 29's handoff framed the GHE URL override as parallel to Session 22's GitLab `url=` → `host_url=` fix, which was correct — but the parallel ran deeper than "add a URL kwarg": the GitHub branch also had a `token=` vs `private_token=` mismatch (same shape as the Session 22 GitLab `url=` vs `host_url=` mismatch). Reading `github_adapter.py:66-72` + `scripts/run_pipeline.py:273-278` together (not one at a time) before editing caught both bugs in a single pass; reading the call site alone would have produced a half-fix that still raised `TypeError` on the first real invocation. When sibling code has had "the same class of bug" twice in production, expect the second instance to be deeper than the first.
+> Source: Session 30 (`PyGithubAdapter(token=token)` at `run_pipeline.py:277` had TWO bugs: wrong kwarg name AND missing `host_url=`; Session 29's handoff named only the second).
+> When to apply: any implementation session where the handoff frames the task as "parallel to Session X" — read both sibling call sites side-by-side before editing either.
+
+### Phase 3D: Handoff to Session 31
+
+Full "What Session 31 should do" content is in the **ACTIVE TASK** block above. Three candidates remaining: #1 OPERATIONS §4.2/4.3 re-audit (recommended — smallest code-shaped scope), #2 wiki freshness sweep, #3 B-3 Web UI bridge (deferred).
+
+**Key files for each candidate:**
+
+For #1 (OPERATIONS §4.2/4.3 re-audit) — **the recommended path:**
+- `OPERATIONS.md` §4.2 + §4.3 — the two recipes to re-verify. Session 23's claim that `__main__.py` didn't exist was WRONG per Session 24; both `src/model_project_constructor/agents/website/__main__.py` and `src/model_project_constructor/agents/website/cli.py` exist.
+- `src/model_project_constructor/agents/website/__main__.py` — verify `python -m model_project_constructor.agents.website ...` still works.
+- `src/model_project_constructor/agents/website/cli.py` — the Typer CLI the `__main__` entry shells to. Lines 96-189 hold the `host_url` resolution + adapter construction.
+- `docs/tutorial.md` §5 — canonical recipe to reconcile OPERATIONS against. The tutorial uses `scripts/run_pipeline.py --live --host <host>`; OPERATIONS documents the `python -m` invocation as a separate path. If both are intended, each needs a test; if only one is intended, the other should be removed from OPERATIONS.
+- `scripts/run_pipeline.py` — the recipe's other user-facing entry point. This is what Sessions 22/24/26/27/30 have verified. `__main__.py` / `cli.py` has NOT been live-tested in any post-Phase-D session.
+- **Verification path:** (a) try `python -m model_project_constructor.agents.website --help` and `scripts/run_pipeline.py --help`; (b) try a fake-mode run on each; (c) if both work, pin both with a smoke test in `tests/`; if only one works, update OPERATIONS to match.
+
+For #2 (wiki freshness sweep):
+- Drift hotspots per Session 24: `docs/wiki/claims-model-starter/Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`.
+- Reconciliation principle: walk every "Recommended additions" / "Future enhancements" / "Planned" list; delete items already implemented (B-1 shipped in Session 24, B-2 in Session 26, B-2 follow-up in Session 27, MPC_NAMESPACE validator in Session 28, CI mypy extension in Session 29, GHE URL override in Session 30); rewrite partials to describe remaining gap only.
+
+For #3 (B-3 Web UI bridge) — plan §7.3. Deferred unless user asks for production-shape demo.
+
+### Gotchas for Session 31
+
+1. **Post-Session-30 pre-commit state:** pytest **444/444** (97.26% coverage), ruff clean on CI scope (`src/ tests/ packages/ scripts/`), mypy clean on **60 files** (bare `uv run mypy` — not `mypy src/`, per Session 29). Re-run in Phase 0 to confirm no drift.
+
+2. **Commits ahead of origin:** after Session 30's commit, working tree will be **2 commits ahead** of `origin/master` (Session 29's `a9e2f3f` was not pushed during Session 29 close; Session 30 will add one more). User confirmed in Session 30 Phase 1 that push-first was fine — but Session 30 did NOT actually push before starting; both commits are still local at close-out. Session 31 should push at Phase 0 unless told otherwise (matches Session 28's behavior).
+
+3. **`scripts/run_pipeline.py:273-278` live GitHub path now works.** The two-bug fix (private_token + host_url) pins the call site's contract. Tests at `tests/scripts/test_run_pipeline_adapter.py:127-224` lock the kwargs. If Session 31 touches `build_website_runner`, preserve `private_token=token, host_url=host_url` on the GitHub side.
+
+4. **Session 22's three code-gap findings are now FULLY CLOSED:** validator (Session 28), ruff-scope extension (Session 25), mypy-scope extension (Session 29), **GHE URL override (Session 30 — this one)**. The backlog entry at `BACKLOG.md:52` is now `[x]` with the close-out summary.
+
+5. **`PyGithubAdapter` constructor already accepts `host_url=`** and has since Phase C (Session 13). If Session 31 wants to touch the adapter, don't re-add an alias — the kwarg name matches `PythonGitLabAdapter` intentionally (neutral across hosts).
+
+6. **Test pattern for script helpers:** `tests/scripts/test_run_pipeline_adapter.py` uses `importlib.util.spec_from_file_location` + `module_from_spec` + `spec.loader.exec_module` because `scripts/` is not a package. Session 30 added a `_install_fake_adapters_and_agent` helper that monkeypatches `PyGithubAdapter`, `PythonGitLabAdapter`, and `WebsiteAgent`. New tests in that file should reuse the helper rather than duplicate the setup.
+
+7. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+8. **Failure modes #14 (ghost session), #17 (protocol erosion), #18 (plan-to-impl bleed)** all apply. Session 30 did NOT bundle candidate #2 despite the OPERATIONS re-audit being close in shape to a doc sweep; failure mode #18 held.
+
+9. **Two-bug pattern (Session 30 learning):** when a handoff describes a fix as "parallel to Session X's fix," read both sibling call sites side-by-side before editing. Session 22 fixed `url=` → `host_url=` in the GitLab branch; Session 30 had to fix `token=` → `private_token=` AND add `host_url=` in the GitHub branch. Not just one kwarg change — the full parallel. Would have been caught upfront by a 10-second grep of both adapters' constructor signatures.
+
+10. **Live GitHub path has never actually been live-tested** (even after Session 30's fix). Session 22 only ran `--live --host gitlab`. Session 30 added unit tests with capturing stubs but didn't stand up a test GitHub account. If Session 31 or later wants true end-to-end validation, a test GitHub account is still needed.
+
+### Session 30 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Pre-flight green (pytest 441/441, ruff, mypy on 60 files) BEFORE code changes
+- [x] Inventory: read `github_adapter.py` end-to-end (adapter already accepts `host_url=`); read `run_pipeline.py:256-287` (caught the `token=` kwarg bug as the second of two)
+- [x] Production change: `scripts/run_pipeline.py:273-278` — 3-line edit, mirrors GitLab branch below
+- [x] Tests: 3 new in `tests/scripts/test_run_pipeline_adapter.py` (GitHub with MPC_HOST_URL, GitHub default, GitLab regression guard) + `_install_fake_adapters_and_agent` helper
+- [x] Post-change pre-flight: pytest 444/444 (97.26%), ruff clean, mypy clean on 60 files
+- [x] CHANGELOG.md [Unreleased] entry added (above Session 29's)
+- [x] BACKLOG.md "Up Next" updated — GHE URL override item flipped `[ ]` → `[x]` with Session 30 summary
+- [x] Phase 3A: Session 29 handoff evaluated and scored above (8/10)
+- [x] Phase 3B: Self-assessment scored and written above (9/10)
+- [x] Phase 3C: Session-specific learning documented (two-bug pattern in sibling call sites; "parallel to Session X" handoffs run deeper than named)
+- [x] Phase 3D: Handoff to Session 31 above (ACTIVE TASK + 3 candidates + key files + 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
+
+## Prior Session 30 candidate list (pre-start, preserved for reference)
 
 Four candidates (renumbered after Session 29 closed the CI-mypy-extension item):
 
