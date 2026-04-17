@@ -1,0 +1,52 @@
+schema: intake_fixture/v1
+stakeholder_id: b2_failmode_sh
+session_id: b2_failmode_session
+domain: pc_claims
+initial_problem: >-
+  Intentionally under-specified fixture for the B2 failure-injection run:
+  only 1 scripted answer with draft_after=99, so the script exhausts
+  before the agent flips believe_enough_info. Exercises the
+  _draft_incomplete_from_exception adapter in scripts/run_pipeline.py.
+
+qa_pairs:
+  - question: "Can you describe the business problem?"
+    answer: >-
+      We are intentionally providing only one answer so the scripted
+      interview aborts on the second question. This triggers the
+      RuntimeError("Fixture ran out of interview answers ...") that the
+      adapter converts to a DRAFT_INCOMPLETE IntakeReport.
+
+draft_after: 99
+
+# The draft/governance blocks below are required by the fixture schema
+# validator but are NOT consumed in --llm both mode — the real Anthropic
+# client generates its own draft + governance. Only qa_pairs[*].answer
+# matters for scripted-answers intake.
+draft:
+  business_problem: "(unused in --llm both)"
+  proposed_solution: "(unused in --llm both)"
+  model_solution:
+    target_variable: null
+    target_definition: "(unused)"
+    candidate_features: []
+    model_type: other
+    evaluation_metrics: []
+    is_supervised: false
+  estimated_value:
+    narrative: "(unused)"
+    annual_impact_usd_low: null
+    annual_impact_usd_high: null
+    confidence: low
+    assumptions: []
+
+governance:
+  cycle_time: tactical
+  cycle_time_rationale: "(unused)"
+  risk_tier: tier_3_moderate
+  risk_tier_rationale: "(unused)"
+  regulatory_frameworks: []
+  affects_consumers: false
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT

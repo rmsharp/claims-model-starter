@@ -13,6 +13,15 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-16 — Scope B-2: scripted-answers intake with real Anthropic (Session 26)
+
+- **Added:** `scripts/run_pipeline.py` `--llm` flag gains a third value `both`, which drives `IntakeAgent.run_scripted(...)` with real Anthropic-generated questions + fixture-supplied answers + a real Anthropic data agent. New `--intake-fixture PATH` flag (required when `--llm=both`, ignored otherwise). `--model` now applies to BOTH intake and data agents (single flag, shared value across stages). New `build_intake_runner` helper mirrors `build_data_runner`'s shape.
+- **Added:** Inline `_draft_incomplete_from_exception` adapter in `scripts/run_pipeline.py` (per scope-b-plan §8.4 (a)). Converts exhausted-script `RuntimeError`, rate-limit / parse errors, and pydantic validation failures into a typed `IntakeReport(status="DRAFT_INCOMPLETE")` so the orchestrator halts with `FAILED_AT_INTAKE` instead of crashing. Reason code is `exception_class_name`; full message goes into `missing_fields[0]`.
+- **Added:** `tests/scripts/test_run_pipeline_adapter.py` (5 tests; +5 total). Covers the adapter's happy path (`RuntimeError` → `DRAFT_INCOMPLETE`), arbitrary-exception path (simulated rate-limit), the closure's `run_scripted` error path via monkeypatched `IntakeAgent`, `--llm none` fixture fallback, and the fail-fast `SystemExit` when `--llm both` is passed without `--intake-fixture`. Adapter is loaded via `importlib.util` since `scripts/` is not a package.
+- **Added:** `tests/fixtures/_b2_failmode.yaml` — a deliberately under-specified fixture (1 `qa_pairs` entry + `draft_after: 99`) that forces `IntakeAgent.run_scripted` to raise the exhausted-answers `RuntimeError`. Consumed by the B2 failure-injection live run.
+- **Added:** `OPERATIONS.md` §4.4 extended with the `--llm both` recipe (happy path + failure-injection). `docs/tutorial.md` §6 extended with a `--llm both --intake-fixture` subsection, cost delta vs B1 (~$0.15-0.75/run), and the `FAILED_AT_INTAKE` behavior contract.
+- **Verified:** pre-flight (pytest 427/427 with +5 adapter tests, ruff on CI scope, mypy) stays green; the `--llm none` (Scope A) and `--llm data` (Scope B-1) invocations continue to produce their Scope-A / Scope-B-1 checkpoint envelopes (regression check). Plan: `docs/planning/scope-b-plan.md` §7.2 (Phase B2). Scope B-3 (Web UI bridge) remains optional and deferred.
+
 ### 2026-04-16 — CI ruff coverage extended to `scripts/` (Session 25)
 
 - **Changed:** `.github/workflows/ci.yml` lint job now runs `uv run ruff check src/ tests/ packages/ scripts/` (previously `src/ tests/ packages/`). Closes a CI gap documented in Session 22: `scripts/` was outside CI's ruff scope, so 10 pre-existing errors (6 × `E402`, 4 × `F541`) never blocked merges.

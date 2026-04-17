@@ -5,9 +5,35 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 26 — open. Session 25 closed the `scripts/` ruff CI gap (candidate #3). Session 26 is user's choice between continuing Scope B (Phase B2 — scripted-answers intake), extending CI mypy to `packages/` (candidate #4, the structural twin of what Session 25 just did for ruff), or any of the remaining carryover findings.
-**Status:** Session 25 complete. Session 26 ready.
-**Priority:** Candidate #1 (Phase B2) is the natural Scope-B sequel. Candidate #3 (mypy to `packages/`) is a one-session low-risk win with ~13 errors to fix — same shape as Session 25's work but higher payoff (surfaces latent Anthropic SDK drift).
+**Task:** Session 27 — **B-2 follow-up: raise `MAX_QUESTIONS` to 20 + re-verify `--llm both` happy path reaches `COMPLETE`.** (Or: pick from other candidates below.)
+**Status:** Session 26 complete (B2 wiring + adapter + 5 new unit tests). Session 27 ready.
+**Priority:** Candidate #1 (the B-2 follow-up) closes plan §7.2.3 criterion #1, which Session 26 could not meet without modifying agent code (plan §14 anti-scope #2). Surgical: 3-line change in `state.py` + fixture expansion + one live run. Estimated 30 minutes.
+
+### What Session 27 should do
+
+Seven candidates (renumbered after Session 26 closed the B2-wiring candidate #1 and added a B2 follow-up):
+
+1. **B-2 follow-up: raise `MAX_QUESTIONS` to 20 + verify `--llm both` `COMPLETE`** — Session 26's live happy-path run (`run_b2_live` against `tests/fixtures/subrogation_b2.yaml`, 10 qa_pairs, claude-opus-4-7) hit `MAX_QUESTIONS=10` before Claude flipped `believe_enough_info=true`, and `src/model_project_constructor/agents/intake/nodes.py:129-134` auto-appends `questions_cap_reached` to `missing_fields`, forcing `status = DRAFT_INCOMPLETE` at `nodes.py:142`. Concrete steps:
+   - `src/model_project_constructor/agents/intake/state.py:57`: `MAX_QUESTIONS = 10` → `MAX_QUESTIONS = 20`.
+   - Grep for tests pinning the old value: `grep -rn "MAX_QUESTIONS" tests/` and `grep -rn "\\b10\\b" tests/agents/intake/` (Session 26 did not exhaustively audit this). Update any assertions that hardcode `10`.
+   - Extend `tests/fixtures/subrogation_b2.yaml` to ~15 qa_pairs. Pre-answer the 3 specific gaps Claude flagged in `run_b2_live`: (a) **latency SLA** — e.g., "Scores must render in the adjuster UI within 250 ms p95 at claim intake completion (not real-time at FNOL)"; (b) **average per-claim recovery $** — e.g., "Roughly $7,500 average recovery per successful subrogation; median $4,200"; (c) **fairness/bias testing plan** — e.g., "Pre-launch disparate impact audit across adjuster tenure bands and claim geography; quarterly fairness review using our existing SR-11-7 framework". Add 2 more generic padding entries for any other follow-ups Claude might ask (e.g., deployment cadence, retraining triggers, incident response).
+   - Re-run: `set -a; source .env; set +a; uv run python scripts/run_pipeline.py --live --host gitlab --llm both --model claude-opus-4-7 --intake-fixture tests/fixtures/subrogation_b2.yaml --run-id run_b2_complete`. Verify `Status: COMPLETE` in the banner AND verify `questions_asked` is between 10 and 19 (if it hits 20, `questions_cap_reached` fires again).
+   - If Claude still wants to ask question #21+: either (a) add more targeted pre-answers to the fixture, or (b) file a Session-28 candidate to refine the interviewer prompt at `intake/anthropic_client.py`. Do NOT touch prompts in Session 27 (plan §14 anti-scope).
+   - Pre-flight + post-flight green (pytest / ruff / mypy). CHANGELOG entry noting "B-2 follow-up: `MAX_QUESTIONS` bumped to 20; happy path reaches COMPLETE." BACKLOG update.
+
+2. **Clearer `MPC_NAMESPACE` validation + docs** (Session 22 finding). Add validator to `OrchestratorSettings.from_env()` detecting leading `http://`/`https://`. Update `.env.example`, `OPERATIONS.md` §1, `docs/tutorial.md` §5a. One session.
+
+3. **CI typecheck coverage extension to `packages/`** (Session 22 finding, structural twin of Session 25's ruff extension). Extend CI mypy scope; fix ~13 errors — largest cluster is `anthropic_client.py:218` (content-block union). One session.
+
+4. **Self-hosted GitHub URL override** (Session 22 finding). Fix parallels Session 22's `host_url=` fix for GitLab. Untested live; small scope. One session.
+
+5. **Re-audit `OPERATIONS.md` §4.2/4.3 recipes** (Session 22 finding; Session 23's claim was WRONG per Session 24). `__main__.py` + `cli.py` both exist. Try each invocation; document what works vs. stale. One session.
+
+6. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. One session.
+
+7. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+
+**Recommend #1** for Session 27. It closes the loop on Scope B and unblocks "plan §7.2.3 fully met." Candidate #3 is the next-easiest structural win.
 
 ### What Session 26 should do
 
@@ -26,6 +52,176 @@ Six candidates remaining (original candidate #3 done in Session 25; renumbering 
 6. **Wiki freshness sweep** (Session 24 finding). Update `docs/wiki/claims-model-starter/` pages so each reads as a description of the current tool rather than a record of its evolution. Delete "Recommended additions" that are already implemented; rewrite partially-implemented ones to describe the remaining gap only. Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. One session.
 
 **Recommend #1** for Session 26 to complete Scope B. If the user wants a quick symmetric win, #3 is Session 25's twin — same shape, broader blast radius, ~45 minutes.
+
+---
+
+## Session 25 Handoff Evaluation (by Session 26)
+**Score: 9/10.** A clean, well-scoped handoff — the candidate list was ranked, each item had a "key files" block, and the gotchas pre-empted the main foot-guns. Most notable: gotcha #1 (the `run_pipeline.py:45-47` docstring contract is load-bearing) and gotcha #4 (Session 22's count of ~13 mypy errors, to budget for if #3 picked) removed the need for me to re-derive anything Session 25 had already paid for.
+
+- **What helped:** (a) Candidate #1 (Phase B2) had a **complete key-files block** — plan §7.2 pointer, `build_data_runner` as structural template (`scripts/run_pipeline.py:103-123`), exact line ranges for `IntakeAgent.run_scripted` (`agent.py:48-125`), `answers_from_fixture` + `review_sequence_from_fixture` helpers (`fixture.py:9-75`), and the specific RuntimeError raise sites (`agent.py:100-104, 117-120`). I went straight to those files and had the adapter shape in ~5 minutes. (b) The "create `tests/fixtures/_b2_failmode.yaml` with only 1 `qa_pairs` entry but `draft_after: 99`" instruction was a drop-in recipe — no ambiguity. (c) Gotcha #5 (`.env` already populated with `ANTHROPIC_API_KEY`, `GITLAB_TOKEN`, etc.) saved the "do I need to set up credentials?" round-trip. (d) Gotcha #6 (live B1 project at `subrogation-pilot-v2`, next B2 run auto-suffixes) correctly predicted `subrogation-pilot-v3` behavior. (e) Gotcha #10 (Session 25 pre-commit state is green) let me run pre-flight as a confirmation, not an investigation.
+- **What was missing:** (a) **No note that `draft_after` is a no-op in scripted-answers mode.** The plan and handoff both reference `draft_after` as if it gates the FixtureLLMClient AND the real LLM, but `draft_after` is only consumed by `FixtureLLMClient.next_question` (`fixture.py:114`). In `--llm both` with a real `AnthropicLLMClient`, the LLM decides `believe_enough_info` on its own; `draft_after` does nothing. Cost me ~5 minutes re-reading fixture.py to confirm. Would have been ~30s if flagged. (b) **No warning that `MAX_QUESTIONS=10` + real LLM creates a structural bias toward DRAFT_INCOMPLETE.** The plan's §7.2.3 happy-path criterion expected `COMPLETE`, but `nodes.py:129-134` auto-appends `questions_cap_reached` when the cap is hit, AND `nodes.py:142` requires `not missing` for COMPLETE. A real LLM against a 10-answer fixture is a dice roll. This is a plan-written-before-anyone-ran-Claude gap, not Session 25's; but Session 25 could have forecast it by reading `nodes.py`. (c) **Test-path for the inline `_draft_incomplete_from_exception` adapter** wasn't specified. Plan §11.1 says "orchestrator-level test" but the adapter lives in `scripts/` which isn't a package. I settled on `importlib.util.spec_from_file_location(...)` in `tests/scripts/test_run_pipeline_adapter.py`; a one-line "scripts/ is not a package — use importlib" note would have shaved 2 minutes.
+- **What was wrong:** Nothing factually wrong about Session 25's own work. The plan §7.2.3 criterion #1 assumption (real LLM + 10 qa_pairs → COMPLETE) turned out optimistic, but that's a plan-level issue Session 26 inherited, not something Session 25 introduced.
+- **ROI:** ~4× return. Reading the handoff (~3 min) saved ~12 min of discovery. Handoff quality is the reason this session's adapter work was on-plan; the DRAFT_INCOMPLETE outcome is downstream of an agent-config gap the plan didn't foresee.
+
+### What Session 26 Did
+**Deliverable:** Scope B Phase B2 wiring — scripted-answers intake with real Anthropic via `--llm both --intake-fixture PATH`, plus the inline `_draft_incomplete_from_exception` adapter (plan §8.4 (a)). **COMPLETE for the wiring + adapter scope; plan §7.2.3 criterion #1 (happy-path COMPLETE) DEFERRED to Session 27 per user direction.**
+**Started:** 2026-04-16
+**Completed:** 2026-04-16
+**Live run IDs:** `run_b2_live` (happy path with `subrogation_b2.yaml`, 10 qa_pairs, 65s intake latency, status DRAFT_INCOMPLETE — Claude hit MAX_QUESTIONS=10 and drafted a rich report with 3 genuine open questions); `run_b2_fail` (failure injection with `_b2_failmode.yaml`, 1 qa_pair + draft_after=99, 5.4s intake latency, status FAILED_AT_INTAKE — adapter converted exhausted-answers RuntimeError to DRAFT_INCOMPLETE cleanly).
+**Commits:** (pending this session's commit) — single `feat(session-26): scope B-2 scripted-answers intake` commit.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full, `SESSION_NOTES.md` ACTIVE TASK + Session 25 handoff + 10 gotchas in full, ran git state commands, ran `methodology_dashboard.py` (project at 91/100, medium risk, active, 2nd-healthiest of 5 projects). No ghost sessions. Reported state to user. Waited for direction.
+
+2. **User confirmed candidate #1 (Phase B2).** Presented the shared-flag question (reuse existing `--model` for both stages vs. split into `--intake-model` + `--data-model`). User chose shared flag — one flag, both clients.
+
+3. **Phase 1B stub** — Wrote the IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection).
+
+4. **Pre-flight + §17 grep re-verification** — `pytest -q` → 422/422, 97.24% coverage. `ruff check src/ tests/ packages/ scripts/` + `mypy src/` clean. §17 greps: runner-contract 18 matches (plan said 16; +2 from Session 24's `build_data_runner` docstrings, understood); `run_pipeline(` 13 matches plan; `IntakeAgent(` 4 matches plan; `DataAgent(` 11 (plan said 9; +2 from Session 24's B1 wiring, understood). All deltas explained.
+
+5. **Schema + fixture helper exploration** — Read `IntakeReport` Pydantic schema (`schemas/v1/intake.py`), `IntakeAgent.run_scripted` signature (`agent.py:48-125`), `answers_from_fixture` / `review_sequence_from_fixture` / `load_fixture` helpers (`fixture.py:9-141`), `build_intake_report` (`nodes.py:212-248`), and the orchestrator's `FAILED_AT_INTAKE` halt path (`pipeline.py:127-136`). Confirmed that a DRAFT_INCOMPLETE `IntakeReport` needs ModelSolution + EstimatedValue + GovernanceMetadata filled with sentinels.
+
+6. **Implemented §7.2 changes:**
+   - `scripts/run_pipeline.py`:
+     - `--llm` choices extended from `{none,data}` to `{none,data,both}`.
+     - `--intake-fixture PATH` added (required when `--llm=both`, with `parser.error()` fail-fast).
+     - `--model` help text updated to apply to BOTH intake and data stages (shared flag per user decision).
+     - `build_data_runner` docstring updated for `both` mode.
+     - New `_draft_incomplete_from_exception(*, exc, stakeholder_id, session_id) -> IntakeReport` module-level helper (lazy-imports `ModelSolution` / `EstimatedValue` / `GovernanceMetadata` and `datetime.UTC` inside the function to keep the top-level import block small).
+     - New `build_intake_runner(*, llm_mode, fixture_path, model)` helper — returns `lambda: intake` for `none`/`data`, or a closure driving `IntakeAgent.run_scripted(...)` wrapped in a catch-all `try/except` for `both`. All exceptions (RuntimeError, `anthropic.*`, pydantic validation, etc.) route through the adapter.
+     - Banner + `[1/5]` section extended to announce `intake+data=MODEL` in `both` mode.
+     - Intake runner wiring switched from `lambda: intake` to `build_intake_runner(...)`.
+     - ~+120 / -12 LOC (plan estimate was +35 / +25 = +60; the adapter is the overhang, and the banner/header updates added ~20 more).
+   - `tests/fixtures/_b2_failmode.yaml` created — 1 qa_pair + `draft_after: 99`, dummy draft/governance blocks for schema-validator compliance, explanatory comment.
+   - `tests/fixtures/subrogation_b2.yaml` created — 10 qa_pairs expansion of `subrogation.yaml` (the original pins at 7 per `tests/agents/intake/test_fixture.py:39`, so couldn't modify in-place). Three extra answers cover claim volume, advisory-vs-auto deployment, and governance deployment cadence. Explicit comment that `draft_after` is a no-op in `--llm both` mode.
+   - `tests/scripts/__init__.py` + `tests/scripts/test_run_pipeline_adapter.py` — 5 unit tests loading the script via `importlib.util.spec_from_file_location` (since `scripts/` is not a package). Tests cover: (a) RuntimeError → DRAFT_INCOMPLETE happy path for the adapter, (b) arbitrary exception → DRAFT_INCOMPLETE (simulated rate-limit class), (c) `build_intake_runner` closure catches `run_scripted` errors via monkeypatched `IntakeAgent`, (d) `--llm none` fixture fallback still returns COMPLETE, (e) `--llm both` without `--intake-fixture` raises `SystemExit`. Total: 427 passed (was 422, +5).
+   - `CHANGELOG.md` [Unreleased] entry at top with explicit callout that the LLM drafted rich content but `MAX_QUESTIONS=10` caused DRAFT_INCOMPLETE; deferred to Session 27.
+   - `OPERATIONS.md` §4.4 restructured into §4.4.1 (B1), §4.4.2 (B2), §4.4.3 (verification). The B2 subsection names the `draft_after` no-op gotcha and points at `subrogation_b2.yaml`.
+   - `docs/tutorial.md` §6e added with the `--llm both` recipe, failure-behavior contract, and verification snippet. The previous "Scope B Phase B2 is not yet wired" note in §6a replaced with a forward reference to §6e.
+   - `BACKLOG.md` "Up Next" B-2 sub-bullet marked complete; new "B-2 follow-up" sub-bullet added for the MAX_QUESTIONS=20 work Session 27 will pick up.
+
+7. **Verification:**
+   - Scope A regression: `uv run python scripts/run_pipeline.py --run-id run_b2_scopea_check` → `Status: COMPLETE`, LLM label "fixture". Unchanged.
+   - (Scope B-1 regression was NOT re-run live — the B-1 pathway is untouched by this session's changes. `build_data_runner`'s signature and body are identical.)
+   - B2 happy-path live run: `--live --host gitlab --llm both --model claude-opus-4-7 --intake-fixture tests/fixtures/subrogation_b2.yaml --run-id run_b2_live`. Result: `FAILED_AT_INTAKE` (not `COMPLETE` as plan §7.2.3 criterion #1 required). Intake envelope is 7,168 bytes with `questions_asked: 10`, rich Claude-drafted prose, governance escalated to `tier_2_high` (vs. fixture's `tier_3_moderate` — independent LLM judgement), 4 `missing_fields`: 3 genuine LLM-flagged gaps (latency SLA, per-claim recovery $, fairness/bias plan) + `questions_cap_reached` auto-appended by `nodes.py:131`. Cause: `nodes.py:142` requires `not missing` for COMPLETE; any `missing_fields` entry → DRAFT_INCOMPLETE. Session 27 will raise `MAX_QUESTIONS` and pre-answer the 3 gaps.
+   - B2 failure-injection live run: `--intake-fixture tests/fixtures/_b2_failmode.yaml --run-id run_b2_fail`. Result: `FAILED_AT_INTAKE` as expected. Intake envelope shows adapter's DRAFT_INCOMPLETE stub with `missing_fields[0] = "interview_aborted: RuntimeError: Fixture ran out of interview answers..."`. 5.4s latency, Claude asked 1 question before fixture exhausted. Adapter contract verified.
+   - Final pre-commit: pytest 427/427 (was 422 + 5 adapter tests), 97.24% coverage; ruff clean on `src/ tests/ packages/ scripts/`; mypy clean on `src/`.
+
+8. **User-decision round-trip.** When happy-path produced DRAFT_INCOMPLETE, paused and presented 3 paths (accept / retry-fixture / declare-partial). User chose to raise `MAX_QUESTIONS=20`. Presented 3 sub-options (commit B2 now + next session for CAP=20 | bundle | partial). User chose Option C: commit B2 now, Session 27 handles CAP=20. Direction honored.
+
+**Self-assessment score: 8/10**
+
+- **Research before creative work:** Yes. Read every cited file before touching code. `nodes.py:129-142` read AFTER the happy-path DRAFT_INCOMPLETE outcome, which is late — had I read it upfront, I would have warned the user at plan-review time that `questions_cap_reached` auto-append creates structural DRAFT_INCOMPLETE bias. Lost ~1 point here.
+- **Implementations read, not just descriptions:** Yes, including re-reading fixture.py to confirm `draft_after` is a no-op in scripted-answers mode (should have been in Session 25's handoff but wasn't; caught on my own).
+- **Stakeholder corrections needed:** 1 minor (shared vs. split `--model` flag — user chose shared; I presented both options, no rework). 1 major (DRAFT_INCOMPLETE outcome — user chose MAX_QUESTIONS=20 path, presented 3 options, no rework, just handoff).
+- **What I got right:** (a) Phase 1B stub before any technical work. (b) §17 grep inventory re-run and delta-explained before implementation. (c) Shared-flag question surfaced to user early — avoided a late refactor. (d) Adapter is genuinely minimal (a single module-level function + a try/except closure) per plan §8.4 (a); no premature abstraction. (e) Failure-injection was kicked off in PARALLEL with the happy-path run — both completed in wall-time of the longer one (~65s). (f) Caught the fixture-cap issue (original `subrogation.yaml` has 7 qa_pairs; Claude wanted ≥8) WITHOUT running a second live round — inferred from latency (27.7s for 7 real calls) and the missing_fields content. Created `subrogation_b2.yaml` with 10 qa_pairs on the first retry. (g) Did NOT modify agent code to chase COMPLETE — respected plan §14 anti-scope #2 even though CAP=20 was a trivial 3-character change. Failure mode #18 held. (h) Recommended Option C (commit B2 now, CAP=20 next session) with explicit rationale; user agreed.
+- **What I got wrong:** (a) Did not read `nodes.py:129-142` during initial exploration (Phase 2 task #3). Reading only `agent.py` + `fixture.py` + `schemas/v1/intake.py` missed the `status = COMPLETE if accepted and not missing` invariant. If I had seen this line BEFORE running live, I would have warned the user that plan §7.2.3 criterion #1 was architecturally unlikely. -1 point. (b) Did not consider splitting happy-path into two runs — one with `subrogation.yaml` (to reproduce Session 23's original plan assumption) and one with `subrogation_b2.yaml` (richer). The first would have cost 27s + $0.05 and proven the exact bug. Instead I retried with `subrogation_b2.yaml` after inferring — faster but less rigorous. (c) `_draft_incomplete_from_exception` takes `stakeholder_id` and `session_id` as kwargs, so the failure-path report carries the fixture's actual IDs. That's correct. BUT `questions_asked=0` in the stub is technically incorrect — a real interview may have completed questions before exception. Left as 0 for simplicity; next session could thread this through if it matters. Minor. (d) Did not attempt to enrich `subrogation_b2.yaml` from 10 to ~15 qa_pairs pre-answering the 3 flagged gaps as a last-ditch try before sync-ing with user. Would have been a 2-minute edit + 65s retry + ~$0.20 to confirm the cap is really structural, not fixable by better answers. Decided the user-sync was cleaner; acceptable but less thorough.
+- **Quality bar vs. previous sessions:** Matches Session 24's Scope-B implementation discipline (pre-flight + plan re-read + user-decision round-trip + live verification). Smaller live-verification scope than Session 24 (one happy-path + one failure-injection vs Session 24's single-path with scope-A regression); appropriate for Session 26's narrower scope.
+
+### Phase 3C: Learnings
+
+Adding Learning #21 to the learnings table below:
+
+> **Before writing a plan criterion like "live LLM + fixture → COMPLETE status", read the status-decision code.** In the intake agent, `nodes.py:142` says `status = "COMPLETE" if accepted and not missing else "DRAFT_INCOMPLETE"`, AND `nodes.py:129-134` auto-appends `questions_cap_reached` to `missing` whenever `questions_asked >= MAX_QUESTIONS and not believe_enough_info`. So "happy path = COMPLETE" against a real LLM requires the LLM to flip `believe_enough_info=true` BEFORE hitting `MAX_QUESTIONS`. Plan §7.2.3 criterion #1 assumed this would just happen; in practice, a real LLM (Claude Opus 4.7) against a 10-qa-pair fixture asks 10 substantive questions then still wants more. When writing a plan that depends on agent-level terminal state, read the terminal-state function first, then write the criterion. The plan-reviewing executor will either forecast the gap or run into it live; pay for the read once during planning, not during execution.
+> Source: Session 26 (B2 happy path run `run_b2_live` → DRAFT_INCOMPLETE despite rich Claude draft).
+> When to apply: any planning session whose success criteria depend on an agent's terminal state.
+
+### Phase 3D: Handoff to Session 27
+
+Full "What Session 27 should do" content is in the **ACTIVE TASK** block above. Seven candidates (renumbered after Session 26 closed candidate #1).
+
+**Key files for each candidate:**
+
+For #1 (**B-2 follow-up: MAX_QUESTIONS=20 + happy-path COMPLETE**) — the recommended path:
+- `src/model_project_constructor/agents/intake/state.py:57` — the ONLY production-code change: `MAX_QUESTIONS = 10` → `MAX_QUESTIONS = 20`.
+- `src/model_project_constructor/agents/intake/nodes.py:129-134` — the auto-append logic. After CAP=20, if Claude STILL doesn't flip `believe_enough_info`, `questions_cap_reached` still fires and `status=DRAFT_INCOMPLETE` still holds. Verify via `.orchestrator/checkpoints/run_b2_complete/IntakeReport.json` that `questions_asked` is between 10 and 19 post-fix.
+- `src/model_project_constructor/agents/intake/nodes.py:142` — the status-decision line. `status = "COMPLETE" if accepted and not missing else "DRAFT_INCOMPLETE"`. No change; just understand it.
+- `src/model_project_constructor/agents/intake/agent.py:78` — `max_turns = MAX_QUESTIONS + MAX_REVISIONS + 5` in `run_scripted`. MAX_QUESTIONS=20 pushes this to 28. The safety-margin budget needs to stay >= the sum of both caps + review interrupts.
+- `tests/fixtures/subrogation_b2.yaml` — extend from 10 to ~15 qa_pairs. Pre-answer the 3 gaps Claude flagged in `run_b2_live`:
+  - **Latency SLA**: "Scores must render in the adjuster UI within 250 ms p95 at claim intake completion (not real-time at FNOL). Scores are re-computed on claim update, not on every keystroke."
+  - **Average per-claim recovery**: "Average per-successful-subrogation recovery is ~$7,500 (median $4,200). The $30M/yr figure comes from ~4,000 successful recoveries."
+  - **Fairness/bias plan**: "Pre-launch disparate impact audit across adjuster tenure bands and claim geography; quarterly fairness review via the existing SR-11-7 framework. No use of protected attributes; adjuster tenure is included but not adjuster demographic data."
+- Grep pre-check for tests pinning `MAX_QUESTIONS == 10`:
+  ```bash
+  grep -rn "MAX_QUESTIONS" tests/ src/
+  ```
+  Session 25 did NOT audit this. Session 26 did NOT audit it either (out of scope). Expect ≤3 test hits; `tests/agents/intake/test_graph.py`, `tests/ui/intake/*.py` are the likeliest sites.
+- Also grep for any hardcoded `10` near intake state: `grep -rn "= 10" tests/agents/intake/` — a bit noisy but catches `questions_asked == 10` style assertions.
+- Re-run command:
+  ```bash
+  set -a; source .env; set +a
+  uv run python scripts/run_pipeline.py --live --host gitlab --llm both \
+      --model claude-opus-4-7 \
+      --intake-fixture tests/fixtures/subrogation_b2.yaml \
+      --run-id run_b2_complete
+  ```
+- Verification (Session 26's actual run showed these fields are the ones to check):
+  ```bash
+  python -c "
+  import json
+  from pathlib import Path
+  r = json.loads(Path('.orchestrator/checkpoints/run_b2_complete/IntakeReport.json').read_text())['payload']
+  print('status:', r['status'])
+  print('questions_asked:', r['questions_asked'])
+  print('missing_fields:', r['missing_fields'])
+  "
+  ```
+  Pass criteria: `status == 'COMPLETE'` AND `questions_asked` in `[10, 19]` AND `missing_fields == []`.
+- If Claude still wants question #21+: file a new Session-28 candidate to refine the intake interviewer prompt (`src/model_project_constructor/agents/intake/anthropic_client.py:37-42`). Do NOT touch prompts in Session 27 (plan §14 anti-scope).
+
+For #2 (`MPC_NAMESPACE` validator + docs): same key files as Session 26's ACTIVE TASK listed them — `config.py:98,111`, `.env.example:47`, `OPERATIONS.md` §1, `docs/tutorial.md` §5c, `gitlab_adapter.py:79`.
+
+For #3 (CI mypy extension to `packages/`): Session 25 is the structural template. `ci.yml:34`, `pyproject.toml [tool.mypy]`, and the error clusters at `packages/data-agent/.../anthropic_client.py:218` + `nodes.py:142` + `sql_validation.py:26`.
+
+For #4-7: see prior sessions' handoffs — nothing changed for those candidates in Session 26.
+
+### Gotchas for Session 27
+
+1. **`draft_after` is a no-op in `--llm both` mode.** Only `FixtureLLMClient.next_question` (`fixture.py:114`) consumes it. In scripted-answers mode the real `AnthropicLLMClient` decides `believe_enough_info` on its own. The fixture comment in `subrogation_b2.yaml` says this; don't be confused if a future run uses a fixture with `draft_after: 5` but Claude asks 10 questions anyway.
+
+2. **MAX_QUESTIONS is used in FOUR places.** `state.py:57` (the constant), `agent.py:29, 78` (imported + used in `max_turns = MAX_QUESTIONS + MAX_REVISIONS + 5` in `run_scripted`), `nodes.py:24, 81, 130` (imported + used in the cap logic AND the auto-append). Bumping the constant is sufficient — all consumers import it. But verify with grep that no test HARDCODES `10` as a magic number.
+
+3. **`nodes.py:129-134` will fire `questions_cap_reached` EVEN AT MAX_QUESTIONS=20** if Claude doesn't flip `believe_enough_info` by turn 20. The fix in Session 27 is NOT just raising the cap — it's **raising the cap AND pre-answering enough in the fixture that Claude is satisfied before the cap**. Read `nodes.py:129-134` carefully before declaring done.
+
+4. **Session 26's `run_b2_live` intake envelope at `.orchestrator/checkpoints/run_b2_live/IntakeReport.json` is a GOLD MINE.** 7,168 bytes of rich Claude-drafted content showing exactly what questions it asked (in the prose) and what gaps it wants filled (in `missing_fields`). Inspect it BEFORE expanding the fixture — each `missing_fields` entry is a specific answer to pre-pack.
+
+5. **Cost budget:** Session 26 spent ~$0.30 on live runs (two happy-path attempts + one failure-injection). Session 27's one retry at MAX_QUESTIONS=20 should be ~$0.20-$0.35. If you do 2-3 iterations, budget ~$1.
+
+6. **The inline adapter in `scripts/run_pipeline.py` (`_draft_incomplete_from_exception`) has 5 passing tests** in `tests/scripts/test_run_pipeline_adapter.py` loaded via `importlib.util.spec_from_file_location`. If Session 27 adds more behavior to the adapter (e.g. thread `questions_asked` from the graph state through the except-closure), add a new test to that file using the same importlib pattern.
+
+7. **Live GitLab project count now at 4 siblings** under `https://gitlab.com/rmsharp-modelpilot/` — `subrogation-pilot` (Session 22), `subrogation-pilot-v2` (Session 24 B1), `subrogation-pilot-v3` (Session 26 `run_b2_scopea_check` with fake client didn't create), `subrogation-pilot-v3`/`v4`/`v5` if Session 26's live runs auto-suffixed. Worth checking `gh api` or the GitLab UI before Session 27 runs to avoid surprise. Session 27's `run_b2_complete` will auto-suffix to the next free slot.
+
+8. **`MAX_QUESTIONS=20` also changes `agent.py:78`'s `max_turns = MAX_QUESTIONS + MAX_REVISIONS + 5` budget** from 18 to 28. The `run_scripted` loop WILL handle 28 turns if needed; the budget only affects the safety margin, not the cap.
+
+9. **Do NOT modify the interviewer system prompt in Session 27.** `src/model_project_constructor/agents/intake/anthropic_client.py:37-42` (`SYSTEM_INTERVIEWER`) is tempting territory if Claude keeps asking too many questions, but plan §14 anti-scope #2 covers prompts. If the CAP=20 + fixture expansion doesn't yield COMPLETE, file a Session-28 candidate for prompt refinement as a separate planning session — do NOT iterate prompts inside Session 27.
+
+10. **Pre-commit state: green.** pytest 427/427, ruff `src/ tests/ packages/ scripts/` clean, mypy `src/` clean. Session 27 should re-run pre-flight in Phase 0 to confirm no drift.
+
+11. **Session 26's learning #21 is the compounding lesson.** Before writing a future plan criterion that depends on agent terminal state, read the status-decision function. This session's DRAFT_INCOMPLETE outcome was forecastable by reading `nodes.py:142` before the live run.
+
+### Session 26 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Pre-flight green (pytest/ruff/mypy) BEFORE code changes
+- [x] §17 grep inventory re-run + deltas explained
+- [x] User-decision round-trip on shared vs. split `--model` flag
+- [x] Implementation: `--llm both` + `--intake-fixture` + `build_intake_runner` + inline `_draft_incomplete_from_exception` adapter
+- [x] New tests: `tests/scripts/test_run_pipeline_adapter.py` (5 tests); `tests/fixtures/_b2_failmode.yaml`; `tests/fixtures/subrogation_b2.yaml`
+- [x] Runtime verification: Scope A regression (fake) + B2 happy-path live (`run_b2_live`) + B2 failure-injection live (`run_b2_fail`)
+- [x] Plan §7.2.3 criterion #1 (COMPLETE) NOT MET — user decision to defer to Session 27 via MAX_QUESTIONS=20
+- [x] Post-fix green: pytest 427/427, ruff clean, mypy clean
+- [x] CHANGELOG.md [Unreleased] entry added (above Session 25's)
+- [x] BACKLOG.md "Up Next" updated — B-2 wiring marked done; B-2 follow-up for CAP=20 added
+- [x] OPERATIONS.md §4.4 restructured into 4.4.1/4.4.2/4.4.3
+- [x] docs/tutorial.md §6e added; §6a forward-ref updated
+- [x] Phase 3A: Session 25 handoff evaluated and scored above
+- [x] Phase 3B: Self-assessment scored and written above
+- [x] Phase 3C: Learning #21 documented (status-decision code read-before-plan)
+- [x] Phase 3D: Handoff to Session 27 above (ACTIVE TASK + 7 candidates + key files + 11 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
 
 ---
 

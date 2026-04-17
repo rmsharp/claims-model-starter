@@ -399,7 +399,7 @@ What changes vs. `--live` alone:
 - Cost: ~$0.10–$0.50 per run depending on model (see §6c).
 - Runtime: adds 30–90 s vs. the fake run.
 
-The intake stage is unchanged from Step 5 — fixture-driven. `--llm both` (real intake + real data) is Scope B Phase B2 and is not yet wired.
+The intake stage is unchanged from Step 5 — fixture-driven. To graduate the intake to a real LLM as well, see §6e (`--llm both`).
 
 ### 6b: Verify the data side actually ran against the API
 
@@ -445,6 +445,30 @@ uv run python scripts/run_pipeline.py \
 ```
 
 The URL follows SQLAlchemy syntax (`postgresql://user:pass@host/db`, `sqlite:///path`, etc.). When connected, the `DataReport.confirmed_expectations` field will be populated based on real query results instead of the standard "database unreachable" line. Scope B-1 deliberately defaults to disconnected — the pilot's goal is to prove Claude's query generation, not debug SQL connectivity at the same time.
+
+### 6e: Scripted-answers intake (`--llm both`, Scope B-2)
+
+`--llm both` drives a real Claude-backed intake interview with answers pulled from a YAML fixture. Claude generates the questions and decides when it has enough information to draft; the fixture supplies the stakeholder's answers verbatim.
+
+```bash
+uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm both \
+    --model claude-opus-4-7 \
+    --intake-fixture tests/fixtures/subrogation_b2.yaml \
+    --run-id run_b2_$(date +%Y%m%d_%H%M%S)
+```
+
+How it differs from `--llm data`:
+
+- The intake runner is `IntakeAgent(AnthropicLLMClient(model=...)).run_scripted(...)`. Claude asks its own questions, decides when to flip `believe_enough_info`, drafts the four required sections, and classifies governance.
+- The fixture's `draft_after` field is a **no-op** in this mode — only the LLM decides when to stop interviewing. The fixture just supplies answers. Provide at least as many `qa_pairs` as `MAX_QUESTIONS` (see `src/model_project_constructor/agents/intake/state.py:57`) to guarantee the graph terminates.
+- `--model` applies to **both** stages. Mixed-model runs (e.g. haiku for intake, opus for data) are not supported.
+- Cost: ~$0.15–$0.75 per run (intake ~5–12 Claude calls + data as before).
+- Runtime: 60–90 s for intake + 2–5 min for data.
+
+**Failure behavior.** If the fixture runs out of answers before Claude is satisfied, or if Claude raises (rate limit, bad JSON, network), the inline `_draft_incomplete_from_exception` adapter converts the error into a `DRAFT_INCOMPLETE` `IntakeReport` so the pipeline halts with `PipelineResult.status == "FAILED_AT_INTAKE"` rather than crashing. Inspect `.orchestrator/checkpoints/<run_id>/IntakeReport.json` to see the error code in `missing_fields[0]`.
+
+**Verify the intake side ran.** The intake envelope's `business_problem` + `proposed_solution` prose will differ from `tests/fixtures/subrogation_intake.json`, and `questions_asked` will be between 1 and `MAX_QUESTIONS` for a real interview (the DRAFT_INCOMPLETE stub emitted by the adapter reports `questions_asked: 0`).
 
 ---
 

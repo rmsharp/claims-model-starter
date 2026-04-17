@@ -207,20 +207,20 @@ uv run python -m model_project_constructor.agents.website \
 GitHub does not support nested namespaces; pass a single owner / org
 as `--namespace`.
 
-### 4.4 Scope B-1: real LLM-backed data agent via `scripts/run_pipeline.py`
+### 4.4 Scope B: real LLM-backed pipeline via `scripts/run_pipeline.py`
 
 `scripts/run_pipeline.py` is the canonical end-to-end driver. It is
 what CI exercises (with fakes) and what operator runs for smoke testing
-and pilot runs. As of Scope B Phase B1, it accepts a `--llm` flag that
-selects which stages use the real Anthropic API:
+and pilot runs. It accepts a `--llm` flag that selects which stages use
+the real Anthropic API:
 
 | `--llm` | Intake | Data | Cost per run | Determinism |
 |---|---|---|---|---|
 | `none` (default) | fixture | fixture | free | fully deterministic |
-| `data` | fixture | real Anthropic | ~$0.10–$0.50 (model-dependent) | non-deterministic data stage |
+| `data` (B1) | fixture | real Anthropic | ~$0.10–$0.50 (model-dependent) | non-deterministic data stage |
+| `both` (B2) | real Anthropic (scripted answers) | real Anthropic | ~$0.15–$0.75 | non-deterministic intake + data |
 
-`--llm both` (real intake + real data, scripted answers) is Scope B
-Phase B2 and is not yet wired.
+#### 4.4.1 B1 — real data agent (intake stays fixture)
 
 Typical live B1 invocation against public GitLab:
 
@@ -237,21 +237,54 @@ uv run python scripts/run_pipeline.py \
     --run-id run_b1_$(date +%Y%m%d_%H%M%S)
 ```
 
+#### 4.4.2 B2 — real intake (scripted answers) + real data
+
+B2 drives `IntakeAgent.run_scripted` with real Anthropic-generated
+questions and fixture-supplied answers. The fixture's `draft_after`
+field is a no-op in this mode — only the real LLM decides when it has
+enough information — so the fixture needs enough `qa_pairs` to cover the
+LLM's questions. Use a fixture with **10 qa_pairs** (matching
+`MAX_QUESTIONS=10` at `intake/state.py:57`) to guarantee the graph
+terminates: if the LLM hasn't flipped `believe_enough_info` by turn 10,
+the graph drafts anyway. See `tests/fixtures/subrogation_b2.yaml` for a
+working example.
+
+```bash
+set -a; source .env; set +a
+
+uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm both \
+    --model claude-opus-4-7 \
+    --intake-fixture tests/fixtures/subrogation_b2.yaml \
+    --run-id run_b2_$(date +%Y%m%d_%H%M%S)
+```
+
+If the fixture runs out of answers before the LLM is satisfied (and
+before turn 10), or if Anthropic raises (rate limit, bad JSON), the
+inline `_draft_incomplete_from_exception` adapter converts the error
+into a `DRAFT_INCOMPLETE` `IntakeReport` and the orchestrator halts
+cleanly with `FAILED_AT_INTAKE`. The run exits non-zero but leaves a
+checkpoint envelope documenting the failure.
+
 Flags:
 
-- `--llm {none,data}` selects fixture-vs-real for the data agent.
-  Intake stays on the fixture in both modes (Phase B1 constraint).
-- `--model ID` overrides the Anthropic model for the data agent.
-  Default is `claude-opus-4-7`. Other options include
+- `--llm {none,data,both}` — `none` runs the fixture pipeline, `data`
+  runs B1 (real data only), `both` runs B2 (real intake + real data).
+- `--intake-fixture PATH` — required when `--llm=both`. YAML fixture
+  supplying scripted answers and stakeholder/session identity. Ignored
+  otherwise.
+- `--model ID` — overrides the Anthropic model for BOTH the intake
+  and data agents. Default is `claude-opus-4-7`. Other options include
   `claude-sonnet-4-6` (~5× cheaper) and `claude-haiku-4-5-20251001`
   (fastest, lowest quality).
-- `--db-url URL` (optional) passes a SQLAlchemy URL so quality checks
-  execute against a real read-only store. Omit for pilot runs — the
-  data agent generates queries without executing them.
+- `--db-url URL` — optional; passes a SQLAlchemy URL so quality checks
+  execute against a real read-only store. Omit for pilot runs.
 - `--run-id ID` — embed a timestamp suffix when invoking repeatedly
   so checkpoint envelopes stay disambiguated across runs.
 
-Verify the data side actually ran against the live API:
+#### 4.4.3 Verify the LLM actually ran
+
+Inspect the data envelope (B1 or B2):
 
 ```bash
 python -c "
@@ -268,9 +301,11 @@ print('sql_preview:', report['primary_queries'][0]['sql'][:120])
 ```
 
 If `sql_preview` differs from `tests/fixtures/sample_datareport.json`,
-the real LLM ran (the fixture's first query opens with
-`SELECT claim_id, ...`; live runs produce model-generated SQL that
-varies by prompt and model).
+the real LLM ran. For B2, also inspect the intake envelope: the
+`business_problem` + `proposed_solution` prose will differ from
+`tests/fixtures/subrogation_intake.json` when Claude drafted, and
+`questions_asked` will be between 1 and 10 for a real interview
+(a DRAFT_INCOMPLETE stub reports `questions_asked: 0`).
 
 ---
 

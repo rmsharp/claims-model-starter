@@ -1,0 +1,103 @@
+schema: intake_fixture/v1
+stakeholder_id: stakeholder_claims_b2
+session_id: intake_subrogation_b2
+domain: pc_claims
+initial_problem: >-
+  Subrogation recovery rates have dropped since rolling out a new claims system;
+  we want a model that helps adjusters flag recoverable claims and prompts them
+  to capture required evidence during intake.
+
+# B2-specific richer fixture: 10 qa_pairs (hits MAX_QUESTIONS=10 if the real
+# LLM hasn't flipped believe_enough_info by then). The original
+# subrogation.yaml has 7 qa_pairs + draft_after=7 which works for the
+# FixtureLLMClient but not for real Anthropic (the LLM picks its own
+# questions and its own believe_enough_info trigger, so draft_after is
+# a no-op). Pads to 10 with generic "fill-in" answers that cover the
+# kinds of follow-ups the interviewer prompt tends to ask (data scale,
+# labels, governance).
+qa_pairs:
+  - question: "Can you describe the business problem in your own words?"
+    answer: >-
+      Since we deployed the new claims system ~14 months ago our subrogation
+      recovery rate dropped roughly 20%. That's millions of dollars a year
+      we're not recovering from at-fault parties.
+  - question: "What do you believe is causing the drop in recovery?"
+    answer: >-
+      Adjusters aren't capturing the information we need to pursue subrogation:
+      police reports, the other party's insurer, clear fault evidence. The new
+      UI makes those fields easy to skip and there's no KPI tying adjuster
+      performance to subrogation outcomes.
+  - question: "What solution have you been considering?"
+    answer: >-
+      A prompt-based system embedded in the claims workflow that reminds
+      adjusters to collect the required evidence, and a scoring model that
+      flags claims likely to succeed in subrogation so we can prioritize them.
+  - question: "If a model were to help, what would it predict and on what features?"
+    answer: >-
+      A binary classification: 1 = subrogation succeeded, 0 = did not. Features
+      would include completeness of captured info, adjuster experience, claim
+      type, time from incident to filing, damage amount, and evidence of fault.
+  - question: "What data do we have available for training?"
+    answer: >-
+      Our claims datawarehouse has records back to 2020 including outcomes.
+      We also have adjuster metadata and the structured intake fields from the
+      old and new systems.
+  - question: "How would you estimate the annual value of success?"
+    answer: >-
+      Subrogation recovery is roughly $30M/yr. A 10% lift is ~$3M annually
+      and I'd guess we could get somewhere between $2M and $4M.
+  - question: "Do any adjuster or claimant attributes we'd use count as protected?"
+    answer: >-
+      No — we deliberately exclude protected attributes. The model uses claim
+      features and adjuster tenure only.
+  - question: "How many claims per year are we talking about, and what fraction have subrogation potential?"
+    answer: >-
+      Roughly 400,000 auto + property claims per year. Based on historical
+      outcomes, about 8% end up in subrogation today; we think that could
+      plausibly reach 10-12% with better evidence capture.
+  - question: "How will the scored output be consumed — is this advisory or auto-decisioning?"
+    answer: >-
+      Advisory. Adjusters see a per-claim probability + a list of missing
+      evidence items; they decide whether to pursue. No auto-decisioning;
+      humans remain in the loop for every subrogation referral.
+  - question: "Any other context on governance or deployment constraints we should know?"
+    answer: >-
+      It has to fit our existing SR 11-7 model review process. We expect
+      tier-3 moderate given advisory-only use and no protected attributes.
+      Adjuster workflow changes roll out on weekly cadence, so we target
+      tactical cycle time rather than operational.
+
+draft_after: 10
+
+# The draft/governance blocks below are required by the fixture schema
+# validator but NOT consumed in --llm both mode — the real Anthropic client
+# generates its own draft + governance from the live conversation. Only
+# qa_pairs[*].answer matters for scripted-answers intake.
+draft:
+  business_problem: "(unused in --llm both)"
+  proposed_solution: "(unused in --llm both)"
+  model_solution:
+    target_variable: null
+    target_definition: "(unused)"
+    candidate_features: []
+    model_type: other
+    evaluation_metrics: []
+    is_supervised: false
+  estimated_value:
+    narrative: "(unused)"
+    annual_impact_usd_low: null
+    annual_impact_usd_high: null
+    confidence: low
+    assumptions: []
+
+governance:
+  cycle_time: tactical
+  cycle_time_rationale: "(unused)"
+  risk_tier: tier_3_moderate
+  risk_tier_rationale: "(unused)"
+  regulatory_frameworks: []
+  affects_consumers: false
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT
