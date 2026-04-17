@@ -60,6 +60,10 @@ class OrchestratorSettings:
     - ``anthropic_api_key`` — credential for the Anthropic LLM gateway.
       Optional because the orchestrator is LLM-agnostic; only required
       by agent runners that actually call Anthropic.
+    - ``namespace`` — target group/org path for the Website Agent (read
+      from ``MPC_NAMESPACE``). Must be a path like ``rmsharp-modelpilot``
+      or ``data-science/model-drafts`` — never a URL. ``None`` when
+      unset; the pipeline script applies host-specific defaults.
     """
 
     host: HostLiteral
@@ -68,6 +72,7 @@ class OrchestratorSettings:
     checkpoint_dir: Path
     log_level: str
     anthropic_api_key: str | None
+    namespace: str | None
 
     @classmethod
     def from_env(
@@ -110,6 +115,9 @@ class OrchestratorSettings:
 
         anthropic_api_key = source.get("ANTHROPIC_API_KEY") or None
 
+        namespace_raw = source.get("MPC_NAMESPACE", "").strip()
+        namespace = validate_namespace(namespace_raw) if namespace_raw else None
+
         return cls(
             host=host,
             host_url=host_url,
@@ -117,6 +125,7 @@ class OrchestratorSettings:
             checkpoint_dir=checkpoint_dir,
             log_level=log_level,
             anthropic_api_key=anthropic_api_key,
+            namespace=namespace,
         )
 
     def require_host_token(self) -> str:
@@ -151,6 +160,27 @@ def parse_bool(raw: str) -> bool:
     raise ConfigError(f"cannot parse {raw!r} as bool")
 
 
+def validate_namespace(raw: str) -> str:
+    """Validate ``MPC_NAMESPACE`` is a group/org path, not a URL.
+
+    The GitLab and GitHub adapters look up a group/org by path
+    (``namespace.get("rmsharp-modelpilot")``), not by URL. Pasting the
+    full GitLab group URL (``https://gitlab.com/rmsharp-modelpilot``)
+    surfaces as a generic ``404`` from the adapter, which is a poor
+    error for an operator to debug. Fail fast here with a clearer
+    message.
+    """
+
+    lowered = raw.strip().lower()
+    if lowered.startswith(("http://", "https://")):
+        raise ConfigError(
+            f"MPC_NAMESPACE must be a group path, not a URL; got {raw!r}. "
+            f"Use the path only, e.g. 'rmsharp-modelpilot' "
+            f"instead of 'https://gitlab.com/rmsharp-modelpilot'."
+        )
+    return raw
+
+
 __all__ = [
     "DEFAULT_CHECKPOINT_DIR",
     "DEFAULT_GITHUB_URL",
@@ -161,4 +191,5 @@ __all__ = [
     "HostLiteral",
     "OrchestratorSettings",
     "parse_bool",
+    "validate_namespace",
 ]

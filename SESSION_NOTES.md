@@ -5,8 +5,179 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 28 — **pick from candidates below.** Recommend #2 (MPC_NAMESPACE validator + docs, small structural win) or #3 (CI mypy extension to `packages/`, Session 25's structural twin).
-**Status:** Session 27 complete. Plan §7.2.3 criterion #1 met. Scope B end-to-end fully verified live.
+**Task:** Session 29 — **pick from candidates below.** Recommend #1 (CI mypy extension to `packages/`, Session 25's structural twin) or #2 (self-hosted GitHub URL override, small scope).
+**Status:** Session 28 complete. `MPC_NAMESPACE` URL-prefix validator landed; Session 22's operator-experience finding closed.
+
+### What Session 29 should do
+
+Five candidates (renumbered after Session 28 closed `MPC_NAMESPACE` validator):
+
+1. **CI typecheck coverage extension to `packages/`** (Session 22 finding). Structural twin of Session 25's ruff extension. `pyproject.toml` declares both packages under `[tool.mypy]` but CI runs `mypy src/` only. Extend CI; fix ~13 errors — largest cluster at `packages/data-agent/.../anthropic_client.py:218` (content-block union, needs `TextBlock` type-guard). One session.
+
+2. **Self-hosted GitHub URL override** (Session 22 finding). Fix parallels Session 22's `host_url=` fix for GitLab. `scripts/run_pipeline.py` `PyGithubAdapter(token=token)` branch — no URL arg passed. Untested live; small scope. One session.
+
+3. **Re-audit `OPERATIONS.md` §4.2/4.3 recipes** (Session 22 finding; Session 23's claim was WRONG per Session 24). `__main__.py` + `cli.py` both exist. Try each invocation; document what works vs. stale. One session.
+
+4. **Wiki freshness sweep** (Session 24 finding). Drift hotspots: `Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`. One session.
+
+5. **B-3 (optional): Web UI bridge** (plan §7.3). `--resume-intake <session_id>`. Skip unless user wants a production-shape demo.
+
+**Recommend #1** for Session 29 — structural twin of Session 25's ruff extension, ~45 min, closes a CI-scope gap. Candidate #2 is the next-smallest (~20-LOC fix + one live smoke test).
+
+---
+
+## Session 27 Handoff Evaluation (by Session 28)
+**Score: 10/10.** Best handoff I've received. The candidate list was ordered by cost, each entry had a key-files block with line numbers, the recommended path (#1) had a complete implementation-shaped recipe, and the 10 gotchas named every foot-gun ahead of time. I executed the whole task without a single discovery round-trip.
+
+- **What helped:** (a) **Candidate #1 key-files block at SESSION_NOTES.md:109-115** told me exactly where the validator goes (`config.py:98,111`), named the four doc surfaces, and pre-wrote the test expectation. I went straight to `config.py`, skimmed `from_env()`, and started writing. (b) **Gotcha #1 ("pre-commit state: pytest 427/427, ruff clean, mypy clean")** made pre-flight a confirmation, not an investigation — one command to confirm no drift, zero round-trips. (c) **Gotcha #2 ("MAX_QUESTIONS=20 is now live")** was not directly relevant but reminded me to treat the cap as a stable published constant if my validator needed to reference it (it didn't). (d) The recommended `ConfigError("MPC_NAMESPACE must be a group path, not a URL; got '...'")` message in the candidate description was adopted almost verbatim. (e) The handoff correctly named `docs/tutorial.md` §5a as the relevant section — with the caveat that the NAMESPACE explainer is actually in §5c. Off by one letter; easy to recover from by grepping. (f) The "5 small edits + one new test" scope estimate from Session 26's version of this candidate was accurate — final diff: 6 files touched, 13 new tests, one unit-of-work commit.
+- **What was missing:** (a) **No explicit note that `MPC_NAMESPACE` is NOT currently a field on `OrchestratorSettings`** — the handoff's "validators live at `config.py:98,111`" implied the field already existed. It doesn't — the script reads `os.environ.get("MPC_NAMESPACE", ...)` directly in `build_repo_target`. That meant I had a design choice to make (add the field vs. use a module-level helper). Chose both (add `namespace: str | None` + export `validate_namespace()`), but a one-liner "NAMESPACE isn't plumbed through settings yet — either add the field or make the validator module-level" would have saved ~2 minutes of deliberation. (b) **No tip that the error should fire in fake mode too.** I initially wrote validation only in `from_env()`, then realized `build_repo_target` reads env directly and is called in fake mode too — so fake runs would skip validation. Adding `validate_namespace()` at the env-read sites covers that. A one-liner "validation should fire before `[2/5]` in both fake and live modes" would have made this a one-pass decision. (c) The handoff's `docs/tutorial.md §5a` citation is slightly off — §5a covers env-var loading, §5c covers `MPC_NAMESPACE` customization. Not Session 27's fault; the section numbers shifted at some point and neither Session 26 nor 27 updated the cite.
+- **What was wrong:** Nothing factually wrong. The §5a vs §5c typo is minor and resolved in 30s by grepping.
+- **ROI:** ~6× return. Reading Session 27's handoff (~2 min) saved ~12 min of discovery, grep audits, and design deliberation. Session 27 did the second-order work — ordering candidates by cost, specifying the error message, pre-identifying the doc surfaces.
+
+### What Session 28 Did
+**Deliverable:** Session 22 finding #2 — clearer `MPC_NAMESPACE` validation that fails fast with a descriptive `ConfigError` when the user supplies a URL instead of a group path, plus doc updates to all three surfaces that document this env var. **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this session's commit) — single `feat(session-28): MPC_NAMESPACE URL-prefix validator + docs` commit.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full, `SESSION_NOTES.md` ACTIVE TASK + Session 27 handoff + 10 gotchas in full, ran `git status` / `git log -5` / `git diff --stat` (clean working tree, 5 commits ahead of origin/master), ran `methodology_dashboard.py` (project at 91/100, medium risk, active, healthiest of 5). No ghost sessions (Session 27 matches `f263aa1`). Reported state to user. Waited for direction.
+
+2. **User confirmed: push commits then proceed with ACTIVE TASK candidate #1.** Pushed `bb52915..f263aa1` to `origin/master` (Session 27's 5 commits were unpublished since Session 27 didn't push). Then pivoted to Session 28's deliverable.
+
+3. **Phase 1B stub** — Wrote IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any technical work (failure mode #14 protection).
+
+4. **Pre-flight** — `uv run pytest -q` → 427/427, 97.24% coverage. `uv run ruff check src/ tests/ packages/ scripts/` clean. `uv run mypy src/` clean. Confirmed green baseline at commit `f263aa1`.
+
+5. **Design deliberation** (~3 min). Options considered:
+   - **(A)** Add `validate_namespace()` module-level helper only; call from `build_repo_target`. Smallest blast radius.
+   - **(B)** Add `namespace: str | None` to `OrchestratorSettings`; validate in `from_env()`. Matches handoff language ("Add validator to `OrchestratorSettings.from_env()`").
+   - **(C)** Both. Module-level helper for the script's direct-env-read path + settings-object plumbing for future refactors.
+   - **Chose (C).** Rationale: the script currently reads `os.environ.get("MPC_NAMESPACE", ...)` directly (no settings plumbing), so (B) alone wouldn't catch fake-mode runs. (A) alone works but doesn't prepare the ground for eventually threading settings through — a future session removing the `os.environ.get()` calls will want `settings.namespace` available. (C) is ~4 extra lines and gives both paths.
+
+6. **Implementation:**
+   - `src/model_project_constructor/orchestrator/config.py`:
+     - Added `namespace: str | None` field to `OrchestratorSettings` with docstring entry.
+     - Added `MPC_NAMESPACE` read + `validate_namespace()` call in `from_env()` (empty/whitespace → `None`; non-empty → validated pass-through).
+     - Added module-level `validate_namespace(raw: str) -> str` function between `parse_bool` and `__all__`. Raises `ConfigError` with a 2-sentence message naming the received value + the correct path form, on lowercase-prefix match against `("http://", "https://")`. Returns the raw string unchanged otherwise (caller handles `None`/empty at the `from_env()` level).
+     - Added `"validate_namespace"` to `__all__`.
+   - `scripts/run_pipeline.py`:
+     - Added `from model_project_constructor.orchestrator.config import validate_namespace  # noqa: E402`.
+     - Wrapped both `os.environ.get("MPC_NAMESPACE", ...)` calls in `build_repo_target` with `validate_namespace(...)`. Errors now surface at `[2/5] Building pipeline config...` before any runner is wired.
+   - `tests/orchestrator/test_config.py` (+13 tests, 427 → 440):
+     - `TestFromEnvDefaults`: `test_empty_env_uses_gitlab_defaults` extended with `assert s.namespace is None`. New `test_namespace_group_path`, `test_namespace_nested_group_path`, `test_namespace_empty_string_treated_as_unset`.
+     - `TestFromEnvValidation`: new `test_rejects_namespace_with_https_prefix` (with URL `https://gitlab.com/rmsharp-modelpilot`) and `test_rejects_namespace_with_http_prefix`.
+     - New `TestValidateNamespace` class: `test_accepts_group_paths` parametrized over 4 valid forms (top-level group, nested group, triple-nested, personal org) + `test_rejects_url_prefixes` parametrized over 4 URL forms (https, http, `HTTPS://` mixed-case, leading/trailing whitespace).
+   - `.env.example`: new `#MPC_NAMESPACE=rmsharp-modelpilot` template line placed between `MPC_HOST_URL` and credentials, with 7-line inline comment explaining the path-not-URL invariant + the worked URL-vs-path example.
+   - `OPERATIONS.md` §1: new `MPC_NAMESPACE` row in the env-var table between `MPC_HOST_URL` and `GITLAB_TOKEN`. Notes include the ConfigError behavior.
+   - `docs/tutorial.md` §5c: expanded the `MPC_NAMESPACE` section with (a) a sentence stating the path-not-URL invariant, (b) a shell example showing the actual `ConfigError` message an operator would see. Kept the existing GitLab-nested / GitHub-org examples; added a top-level GitLab-group example matching the production `rmsharp-modelpilot` setup.
+
+7. **Verification:**
+   - Post-change pre-flight: pytest 440/440 (97.25% coverage; was 427/427 at 97.24%); ruff clean on `src/ tests/ packages/ scripts/`; mypy clean on `src/`.
+   - Sanity smoke test 1: `MPC_NAMESPACE=https://gitlab.com/rmsharp-modelpilot uv run python scripts/run_pipeline.py --run-id _ns_reject_check` → script fails at `[2/5] Building pipeline config...` with `ConfigError: MPC_NAMESPACE must be a group path, not a URL; got 'https://gitlab.com/rmsharp-modelpilot'. Use the path only, e.g. 'rmsharp-modelpilot' instead of 'https://gitlab.com/rmsharp-modelpilot'.` Error fires before any runner is instantiated. ✓
+   - Sanity smoke test 2: `MPC_NAMESPACE=rmsharp-modelpilot uv run python scripts/run_pipeline.py --run-id _ns_ok_check` → `Status: COMPLETE`, `Target: rmsharp-modelpilot on https://gitlab.com`. ✓
+   - No live run (candidate #1 didn't require one — all behavior testable in fake mode + unit tests).
+
+8. **Documentation updates:**
+   - `CHANGELOG.md` [Unreleased] — new 2026-04-17 Session 28 entry at the top, above Session 27's, with 6 change bullets + verification bullet.
+   - `BACKLOG.md` "Up Next" — "Clearer `MPC_NAMESPACE` validation and docs" flipped from `[ ]` to `[x]` with Session 28 summary + CHANGELOG pointer.
+   - `SESSION_NOTES.md` — this block + rotated candidate list for Session 29 (5 candidates, #1 now "CI mypy extension").
+
+**Self-assessment score: 9/10**
+
+- **Research before creative work:** Yes. Re-read Session 27's handoff in full, then read `config.py` + `run_pipeline.py:96-110` + `test_config.py` + the three doc surfaces BEFORE any edit. Saw upfront that `MPC_NAMESPACE` wasn't plumbed through settings, which informed the (A)/(B)/(C) design choice.
+- **Implementations read, not just descriptions:** Yes — read `OrchestratorSettings` field list, `from_env()` shape, `build_repo_target` body, existing `TestFromEnvValidation` patterns. Mirrored the existing validator style (lowercase-strip + prefix check; matches `MPC_HOST` / `MPC_HOST_URL` / `MPC_LOG_LEVEL` validator ergonomics).
+- **Stakeholder corrections needed:** 0. User's direction ("push commits then proceed with active task 1") was unambiguous; no redirects or re-work.
+- **What I got right:** (a) Phase 1B stub before any technical work. (b) Caught the fake-mode vs live-mode validation gap during design — adding `validate_namespace()` at the env-read sites in `build_repo_target` covers both. (c) Parametrized the test matrix for `validate_namespace()` — 4 accept cases, 4 reject cases (including mixed-case `HTTPS://` and whitespace padding), catches case-insensitivity and strip behavior in one test. (d) Sanity-tested both the reject path AND the accept path after all changes, not just one. Confirmed error fires at `[2/5]` (not `[3/5]` or later) — fail-fast goal met. (e) Chose the "both" approach — module-level helper + settings field — instead of picking one. Small overhead (~4 lines), big future-proofing: next session threading settings through `build_repo_target` has the field waiting. (f) Did NOT refactor `build_repo_target` to take a `settings` param — kept scope tight. Failure mode #8 (redesign during implementation) held.
+- **What I got wrong:** (a) **Initial design deliberation cost ~3 minutes.** Session 27's handoff said "validators live at `config.py:98,111`" implying the field already existed. It didn't. I had to read `config.py` in full to confirm, then weigh (A) vs. (B) vs. (C). A one-line note in Session 27's handoff ("NAMESPACE isn't a settings field yet — add it, or keep the validator standalone") would have made this a 30-second decision. -0.3. (b) **Did not add a `TestFromEnvReadsOsEnviron` case for `MPC_NAMESPACE`.** The existing `test_defaults_to_os_environ` at line 123-131 only exercises `MPC_HOST` + `GITHUB_TOKEN`. Adding a monkeypatched-env case for `MPC_NAMESPACE` would have rounded out the test matrix. Not strictly needed — the `from_env({"MPC_NAMESPACE": ...})` tests cover the logic — but completeness-wise slightly off. -0.2. (c) **`validate_namespace` accepts and returns `str`, not `str | None`.** Could have made the function `(raw: str | None) -> str | None` and let it pass `None` through, simplifying the `from_env()` call site. Chose the tighter signature because `None` handling belongs at the call site (where the empty-string vs. None distinction matters) — but a maintainer might expect the null-tolerant form. Minor API-shape decision. -0.1. (d) **Did not run a live smoke test.** The deliverable is "fail fast at config-load time" — testable in fake mode + unit tests, no live host needed. Confirmed with user (implicitly, via "proceed with active task 1"); no live run required. No point deduction — just flagging.
+- **Quality bar vs. previous sessions:** Matches Session 27's surgical-fix discipline (small production change + fixture/test adjustments + doc sweep + no scope creep). Smaller blast radius than Session 27 (no live run, no fixture expansion); same discipline: single unit of work, one commit, close a BACKLOG item cleanly.
+
+### Phase 3C: Learnings
+
+No new general learning added to the table — the existing Learning #8 (grep-based inventory: types, fields, state keys, docstrings are four different greps) already covers the "NAMESPACE isn't a settings field" surprise. One session-specific pattern worth naming:
+
+> **When a handoff says "add validator to X" but X isn't the right surface, favor the dual-path fix.** Session 27's handoff said "Add validator to `OrchestratorSettings.from_env()`" — but the script bypasses `from_env()` and reads `os.environ.get("MPC_NAMESPACE", ...)` directly. Pure-`from_env()` validation would have missed fake-mode runs. The pragmatic fix: add the validator to BOTH the settings path AND the env-read sites. Small overhead, catches both paths, prepares the ground for a future refactor that removes the direct env reads. **Rule: when a validator's goal is "fail fast in ALL user-facing paths," validate at every user-facing read site, not just the canonical one.** Applicable whenever a handoff assumes centralized config but the codebase has drift toward direct env reads.
+> Source: Session 28 (`MPC_NAMESPACE` validator; `build_repo_target` bypasses `OrchestratorSettings`).
+> When to apply: any env-var validator where multiple call sites read the env directly.
+
+### Phase 3D: Handoff to Session 29
+
+Full "What Session 29 should do" content is in the **ACTIVE TASK** block above. Five candidates remaining.
+
+**Key files for each candidate:**
+
+For #1 (CI mypy extension to `packages/`) — **the recommended path, Session 25's structural twin:**
+- `.github/workflows/ci.yml` — the CI job that currently runs `uv run mypy src/`. Extend to `uv run mypy src/ packages/data-agent/src/` OR switch to bare `uv run mypy` which picks up the `[tool.mypy] packages = [...]` declaration in `pyproject.toml` (structurally matches Session 25's ruff fix which relied on `pyproject.toml` scope).
+- `pyproject.toml [tool.mypy]` — already declares both packages; verify `mypy_path` includes `packages/data-agent/src`.
+- Error clusters per Session 22's count (~13 errors):
+  - `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:218` — **largest cluster.** Content-block union (`block.text` on ~8-variant union). Fix: `if isinstance(block, TextBlock): ...` type-guard. Import `TextBlock` from `anthropic.types`.
+  - `packages/data-agent/src/model_project_constructor_data_agent/nodes.py:142` (approximate) — `execution_status` literal narrowing.
+  - `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py:26` (approximate) — untyped `get_type` call.
+- Session 25's commit `96a7710` is the structural template: extend CI scope, fix pre-existing errors surfaced by the broader scope, verify green, CHANGELOG + BACKLOG update. No live run needed.
+
+For #2 (self-hosted GitHub URL override):
+- `scripts/run_pipeline.py` — grep for `PyGithubAdapter(` to confirm post-Session-28 line number; the branch currently passes `token=token` with no URL argument. The `build_website_runner` call flow is at roughly line 268-280.
+- `docs/tutorial.md` §5c — the documentation that claims `MPC_HOST_URL` works for GHE. Reconcile.
+- `src/model_project_constructor/agents/website/github_adapter.py` — verify `PyGithubAdapter` accepts a `base_url=` constructor kwarg (PyGithub's `Github(base_url=...)` pattern). If not, add it.
+- **Untested live** (no GHE instance); code-read + unit test coverage only. Parallels Session 22's `host_url=` fix for GitLab.
+
+For #3 (re-audit OPERATIONS §4.2/4.3):
+- `OPERATIONS.md` §4.2 / §4.3 — the two recipes to re-verify.
+- `src/model_project_constructor/agents/website/__main__.py` + `cli.py` — both exist (Session 24 confirmed).
+- `docs/tutorial.md` §5 — canonical recipe to reconcile with.
+- Try each OPERATIONS-documented invocation; document what works vs. stale.
+
+For #4 (wiki freshness sweep):
+- Drift hotspots per Session 24: `docs/wiki/claims-model-starter/Content-Recommendations.md`, `Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Agent-Reference.md`.
+- Reconciliation principle: every "Recommended additions" / "Future enhancements" / "Planned" list walked; items already-implemented deleted; partially-implemented rewritten to describe remaining gap only.
+
+For #5 (B-3 Web UI bridge) — plan §7.3. Deferred unless user asks for production-shape demo.
+
+### Gotchas for Session 29
+
+1. **Post-Session-28 pre-commit state:** pytest 440/440 (97.25% coverage), ruff clean on CI scope (`src/ tests/ packages/ scripts/`), mypy clean on `src/`. Re-run pre-flight in Phase 0 to confirm no drift.
+
+2. **Commits ahead of origin:** Session 28 pushed Session 27's 5 commits at the start of this session. After Session 28's own commit, working tree will be 1 commit ahead. Session 29 can decide whether to push as part of close-out.
+
+3. **`MPC_NAMESPACE` is now a validated `OrchestratorSettings` field.** `settings.namespace` is `str | None` (None when unset or whitespace-only). If Session 29 touches `build_repo_target` or any caller of `OrchestratorSettings.from_env()`, remember the validation fires on ANY URL-prefixed value at config-load time — don't pass URLs in test fixtures.
+
+4. **`validate_namespace(raw: str) -> str`** is exported from `orchestrator.config`. Takes a raw string (not `None`-tolerant); returns the string unchanged if valid. Empty-string handling is at call sites (both `from_env()` and `build_repo_target`).
+
+5. **Candidate #1 (CI mypy) is Session 25's structural twin.** Same shape, broader blast radius (packages/ has ~13 pre-existing errors vs. scripts/ having had 10). Read Session 25's handoff block in SESSION_NOTES.md for the exact recipe. Commit `96a7710` is the reference.
+
+6. **`.env.example` grew 7 lines** (new `MPC_NAMESPACE` block). If a future session extends `.env.example` with more variables, keep the "path, not URL" comment block — it's the operator-facing documentation for the `ConfigError` the validator raises.
+
+7. **`docs/tutorial.md` §5c now includes a `ConfigError` traceback example.** If Session 29 touches the error message in `validate_namespace()`, update the tutorial example to match (it's a copy-paste of the actual output from the sanity smoke test).
+
+8. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+9. **Failure modes #14 (ghost session), #17 (protocol erosion), #18 (plan-to-impl bleed)** all apply. Session 28 did NOT bundle candidate #2 despite it being a ~20-LOC adjacent fix; failure mode #18 held.
+
+10. **Session 28's session-specific learning:** when a handoff says "add validator to X" but X isn't the right surface, favor the dual-path fix (validate at every user-facing read site, not just the canonical one). Applicable to any future validator work where centralized config has drifted toward direct env reads.
+
+### Session 28 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Pushed Session 27's 5 commits (`bb52915..f263aa1`) per user direction
+- [x] Pre-flight green (pytest 427/427, ruff, mypy) BEFORE code changes
+- [x] Production change: `config.py` (+field + helper + validation call), `run_pipeline.py` (+import + 2 validator wraps)
+- [x] Tests: 13 new in `test_config.py` (4 `TestValidateNamespace` accept + 4 reject + 2 `TestFromEnvValidation` + 3 `TestFromEnvDefaults` + 1 default-case assertion)
+- [x] Doc updates: `.env.example` (+7 lines), `OPERATIONS.md` §1 (+1 row), `docs/tutorial.md` §5c (+worked error example)
+- [x] Post-change pre-flight: pytest 440/440 (97.25%), ruff clean, mypy clean on `src/`
+- [x] Sanity smoke tests: URL-form `MPC_NAMESPACE` → `ConfigError` at `[2/5]`; group-path `MPC_NAMESPACE` → `Status: COMPLETE`
+- [x] CHANGELOG.md [Unreleased] entry added (above Session 27's)
+- [x] BACKLOG.md "Up Next" updated — `MPC_NAMESPACE` validation item flipped `[ ]` → `[x]` with Session 28 summary
+- [x] Phase 3A: Session 27 handoff evaluated and scored above (10/10)
+- [x] Phase 3B: Self-assessment scored and written above (9/10)
+- [x] Phase 3C: Session-specific learning documented (dual-path validator rule)
+- [x] Phase 3D: Handoff to Session 29 above (ACTIVE TASK + 5 candidates + key files + 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
+**Priority for Session 29:** Candidate #1 (CI mypy extension) closes another Session 22 CI-gap finding and is Session 25's structural twin; ~45 minutes, ~13 errors to fix, no live run. Candidate #2 (GHE URL override) is the second-easiest — ~20-LOC fix but untested live.
 
 ### What Session 28 should do
 

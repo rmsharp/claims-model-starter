@@ -17,6 +17,7 @@ from model_project_constructor.orchestrator.config import (
     ConfigError,
     OrchestratorSettings,
     parse_bool,
+    validate_namespace,
 )
 
 
@@ -29,6 +30,21 @@ class TestFromEnvDefaults:
         assert s.checkpoint_dir == DEFAULT_CHECKPOINT_DIR
         assert s.log_level == "INFO"
         assert s.anthropic_api_key is None
+        assert s.namespace is None
+
+    def test_namespace_group_path(self) -> None:
+        s = OrchestratorSettings.from_env({"MPC_NAMESPACE": "rmsharp-modelpilot"})
+        assert s.namespace == "rmsharp-modelpilot"
+
+    def test_namespace_nested_group_path(self) -> None:
+        s = OrchestratorSettings.from_env(
+            {"MPC_NAMESPACE": "data-science/model-drafts"}
+        )
+        assert s.namespace == "data-science/model-drafts"
+
+    def test_namespace_empty_string_treated_as_unset(self) -> None:
+        s = OrchestratorSettings.from_env({"MPC_NAMESPACE": "   "})
+        assert s.namespace is None
 
     def test_github_default_host_url(self) -> None:
         s = OrchestratorSettings.from_env({"MPC_HOST": "github"})
@@ -97,6 +113,18 @@ class TestFromEnvValidation:
         with pytest.raises(ConfigError, match="MPC_LOG_LEVEL"):
             OrchestratorSettings.from_env({"MPC_LOG_LEVEL": "LOUD"})
 
+    def test_rejects_namespace_with_https_prefix(self) -> None:
+        with pytest.raises(ConfigError, match="MPC_NAMESPACE"):
+            OrchestratorSettings.from_env(
+                {"MPC_NAMESPACE": "https://gitlab.com/rmsharp-modelpilot"}
+            )
+
+    def test_rejects_namespace_with_http_prefix(self) -> None:
+        with pytest.raises(ConfigError, match="MPC_NAMESPACE"):
+            OrchestratorSettings.from_env(
+                {"MPC_NAMESPACE": "http://gitlab.example.com/team"}
+            )
+
 
 class TestRequireHelpers:
     def test_require_host_token_success(self) -> None:
@@ -129,6 +157,33 @@ class TestFromEnvReadsOsEnviron:
         s = OrchestratorSettings.from_env()
         assert s.host == "github"
         assert s.host_token == "ghp_from_env"
+
+
+class TestValidateNamespace:
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            "rmsharp-modelpilot",
+            "data-science/model-drafts",
+            "my-org/team/subteam",
+            "my-github-org",
+        ],
+    )
+    def test_accepts_group_paths(self, raw: str) -> None:
+        assert validate_namespace(raw) == raw
+
+    @pytest.mark.parametrize(
+        "raw",
+        [
+            "https://gitlab.com/rmsharp-modelpilot",
+            "http://gitlab.example.com/team",
+            "HTTPS://gitlab.com/team",
+            "  https://gitlab.com/team  ",
+        ],
+    )
+    def test_rejects_url_prefixes(self, raw: str) -> None:
+        with pytest.raises(ConfigError, match="group path, not a URL"):
+            validate_namespace(raw)
 
 
 class TestParseBool:

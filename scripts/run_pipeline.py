@@ -70,6 +70,9 @@ from model_project_constructor.orchestrator import (  # noqa: E402
     make_measured_runner,
     run_pipeline,
 )
+from model_project_constructor.orchestrator.config import (  # noqa: E402
+    validate_namespace,
+)
 from model_project_constructor.schemas.v1.data import DataReport  # noqa: E402
 from model_project_constructor.schemas.v1.intake import IntakeReport  # noqa: E402
 from model_project_constructor.schemas.v1.repo import RepoTarget  # noqa: E402
@@ -97,10 +100,12 @@ def build_repo_target(host: str) -> RepoTarget:
     """Build a RepoTarget appropriate for the selected host."""
     if host == "github":
         host_url = os.environ.get("MPC_HOST_URL", "https://api.github.com")
-        namespace = os.environ.get("MPC_NAMESPACE", "my-org")
+        namespace = validate_namespace(os.environ.get("MPC_NAMESPACE", "my-org"))
     else:
         host_url = os.environ.get("MPC_HOST_URL", "https://gitlab.com")
-        namespace = os.environ.get("MPC_NAMESPACE", "data-science/model-drafts")
+        namespace = validate_namespace(
+            os.environ.get("MPC_NAMESPACE", "data-science/model-drafts")
+        )
 
     return RepoTarget(
         host_url=host_url,

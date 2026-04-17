@@ -357,14 +357,25 @@ uv run python scripts/run_pipeline.py --live --host github
 
 ### 5c: Customize the target
 
-Set the `MPC_NAMESPACE` environment variable to control where the project is created:
+Set the `MPC_NAMESPACE` environment variable to control where the project is created. **`MPC_NAMESPACE` must be a path, not a URL** — the GitLab and GitHub adapters look up the group/org by path, so pasting the full URL surfaces as an unhelpful `404`. The orchestrator rejects URL-prefixed values at config-load time:
 
 ```bash
+# GitLab: top-level group path
+export MPC_NAMESPACE="rmsharp-modelpilot"
+
 # GitLab: nested group path
 export MPC_NAMESPACE="data-science/model-drafts"
 
 # GitHub: org or personal account
 export MPC_NAMESPACE="my-github-org"
+```
+
+If you accidentally paste the URL form, the script fails fast before any agent runs:
+
+```
+$ MPC_NAMESPACE=https://gitlab.com/rmsharp-modelpilot uv run python scripts/run_pipeline.py --live --host gitlab
+ConfigError: MPC_NAMESPACE must be a group path, not a URL; got 'https://gitlab.com/rmsharp-modelpilot'.
+Use the path only, e.g. 'rmsharp-modelpilot' instead of 'https://gitlab.com/rmsharp-modelpilot'.
 ```
 
 For self-hosted GitLab or GitHub Enterprise, set the host URL:

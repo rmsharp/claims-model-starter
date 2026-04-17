@@ -22,6 +22,7 @@ orchestration layer's secret injection) before running the pipeline.
 |---|---|---|---|
 | `MPC_HOST` | no | `gitlab` | `gitlab` or `github`. |
 | `MPC_HOST_URL` | no | host-specific | `https://gitlab.com` or `https://api.github.com`. Override for self-hosted / enterprise instances. |
+| `MPC_NAMESPACE` | no | host-specific (script-level) | Target group/org path where the Website Agent creates the project. **Must be a path, never a URL** — e.g. `rmsharp-modelpilot` or `data-science/model-drafts`, not `https://gitlab.com/rmsharp-modelpilot`. Rejected at config-load time (`ConfigError`) if it starts with `http://` or `https://`. |
 | `GITLAB_TOKEN` | yes (if `MPC_HOST=gitlab` and live) | — | Personal access token with `api` scope and create-project permission on the target namespace. |
 | `GITHUB_TOKEN` | yes (if `MPC_HOST=github` and live) | — | PAT with `repo` scope on the target owner/org. |
 | `ANTHROPIC_API_KEY` | yes (for any runner that calls Claude) | — | Required by the Intake Agent web UI, any live interview, and the Data Agent's QC generation. |
