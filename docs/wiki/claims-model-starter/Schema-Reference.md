@@ -299,7 +299,7 @@ class DataReport(StrictBase):
 ```python
 class RepoTarget(StrictBase):
     schema_version: Literal["1.0.0"] = "1.0.0"
-    host_url: str                                       # "https://gitlab.example.com"
+    host_url: str                                       # "https://gitlab.com" or self-hosted like "https://gitlab.yourcompany.com"
     namespace: str                                      # "data-science/model-drafts" or "my-org"
     project_name_hint: str
     visibility: Literal["private", "internal", "public"] = "private"

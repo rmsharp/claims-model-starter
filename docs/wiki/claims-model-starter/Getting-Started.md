@@ -31,7 +31,7 @@ uv sync --extra agents --extra ui --extra dev
 uv run pytest -q
 ```
 
-You should see 422+ tests pass with 97%+ coverage.
+You should see 440+ tests pass with ~97% coverage.
 
 ## First dry run (no API keys needed)
 

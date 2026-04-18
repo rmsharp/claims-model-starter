@@ -5,9 +5,127 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 38 — operator's discretion. Remaining candidates from Session 37's handoff menu: wiki freshness sweep (full session, doc-shaped), tutorial-UX code-block splits (small), `scripts/render_tutorial.sh` wrapper (micro), statistical terminology glossary, intake/data agent enhancements. Pilot-shaped: B-3 Web UI bridge, automated resume-from-checkpoint. BACKLOG has 8 `[ ]` items, zero `[x]`.
+**Task:** Session 39 — operator's discretion. Remaining candidates: Monitoring-and-Operations.md staleness sweep (new from Session 38 — micro for the `:91` single-line fix; full session if operator wants the broader 14-page scan), tutorial-UX code-block splits (small), `scripts/render_tutorial.sh` wrapper (micro), statistical terminology glossary, intake/data agent enhancements. Pilot-shaped: B-3 Web UI bridge, automated resume-from-checkpoint. BACKLOG has 8 `[ ]` items, zero `[x]`.
 
-**Status:** Session 37 complete. `test_cli_host_github_explicit_host_url_override` added; 446/446 @ 97.27%.
+**Status:** Session 38 complete. Wiki freshness sweep delivered across 6 named pages (`Content-Recommendations.md` major restructure 139 → 93 lines; `Schema-Reference.md:302` stale example fixed; `Getting-Started.md:34` stale test count bumped). 446/446 @ 97.27%.
+
+### Post-Session-38 pre-commit state
+- `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — doc-only)
+- No ruff / mypy re-run (no code touched); carrying forward Session 37's clean baseline
+- `-W default` not re-run (no sqlite-adjacent code touched); Session 35's 0-warnings baseline stands
+
+---
+
+### Session 37 Handoff Evaluation (by Session 38)
+
+**Score: 9.5/10.** Clean handoff that paid off on multiple dimensions. The pre-commit-state block matched exactly (pytest 446/446 @ 97.27%, 0 warnings, ruff/mypy clean — zero discovery on baseline). Gotcha #8's mechanical prescription ("if your stub edit to SESSION_NOTES.md involves inserting a new heading, `Grep` first") was the load-bearing inheritance — it fired exactly when needed and produced the first session in three (36, 37, 38) without a stub fumble. Gotcha #4 named Session 38 as the "first test of whether Learning #29 works" — it did work, zero duplicated headings on the Phase 1B stub insert.
+
+- **What helped:** (a) **Learning #29 structural validation.** Grep'd for `Session 38`, `### Session 38 Did`, `### Session 37 Handoff Evaluation`, `Session 39` before any SESSION_NOTES insert. All returned "No matches found" → safe to insert. First Phase 1B edit was clean. This is the pattern Session 37 coined Learning #29 specifically to enable. (b) **Gotcha #1 (pre-flight baseline) exact match.** pytest 446/446 @ 97.27%, 0 warnings, ruff/mypy clean. Zero discovery cost. (c) **Gotcha #5 ("remove, don't flip" at Session #5)** — applied cleanly; Session 38 is now Session #6 of application. (d) **Gotcha #9 (canonical GHE URL shape)** — not directly load-bearing for the wiki sweep, but reduced cognitive load when I encountered `Security-Considerations.md:111`'s `github.example.com/api/v3` reference during the stale-ref grep: knew immediately it was canonical, not a drift candidate.
+- **What was missing:** (a) **No forecast of the wiki sweep's finding shape.** Session 37's handoff mentioned "wiki freshness sweep (full session, doc-shaped)" but didn't name the likely findings (number, distribution across pages). A better forecast would have flagged the `Monitoring-and-Operations.md:91` staleness as probable — it's the exact class of drift the sweep targets, discoverable by a 5-second grep during handoff-write. Not a criticism of scope (Session 37's task was micro-test, not sweep prep); -0.5 because Learning #24's predecessor-forecast guidance would have applied. (b) No mention of `Software-Bill-of-Materials.md` as a surface to check against "SBOM recommendations" subsections of `Content-Recommendations.md`. Would have saved ~2 min of verification-reading. -0.0 (not Session 37's deliverable).
+- **What was wrong:** Nothing factually wrong.
+- **ROI:** ~7× on this session (handoff-read ~3 min; saved ~20 min on Learning #29 mechanical application + baseline verification + convention discipline).
+
+### What Session 38 Did
+**Deliverable:** Wiki freshness sweep of `docs/wiki/claims-model-starter/` (6 named pages). **COMPLETE.**
+**Started:** 2026-04-18
+**Completed:** 2026-04-18
+**Commits:** (pending this turn) — single `docs(session-38): wiki freshness sweep — Content-Recommendations restructure + 2 minor fixes` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` first 300 lines (ACTIVE TASK + Session 37 handoff + 9 gotchas); ran `git status` (clean, 1 commit ahead of origin) + `git log -10` + `git diff --stat`; ran `methodology_dashboard.py` (91/100, medium, active). **FM #17 Phase 0 check (Learning #26):** BACKLOG.md had 8 `[ ]` items, zero `[x]`, no `## Completed` section — discipline intact at Session #6 of application. No ghost sessions. Reported findings; waited for user direction.
+
+2. **User directed: push 9697689, work on item 1 (wiki freshness sweep).** Pushed `1fb6338..9697689 master -> master`. Stated understanding ("wiki freshness sweep of the 6 named pages following AUDIT_WORKSTREAM; close out when done"). Wrote Phase 1B IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK. **Learning #29 applied mechanically:** grep'd for `Session 38` before first Phase 1B stub edit — no existing headings → safe to insert → zero stub fumble (contrast: Sessions 36 and 37 both duplicated headings on first stub edit despite gotchas naming the pattern).
+
+3. **Inventory pass.** Grep'd for drift-marker patterns (`Recommended [Aa]dditions|Future [Ee]nhancements|Future [Ww]ork|Planned|Coming [Ss]oon|TODO|Not yet|Future:|To be added|To be implemented`) across all 21 wiki pages → **only 1 match**: `Content-Recommendations.md:29`. Grep'd for stale host references (`gitlab.example.com|github.example.com`) → `Schema-Reference.md:302` (stale — Session 32 bumped `cli.py:39` default from `gitlab.example.com` to `gitlab.com`) + `Security-Considerations.md:111` (legitimate GHE `api/v3` example, not drift). Grep'd for stale test counts (`4[0-9][0-9]\+? tests`) → `Getting-Started.md:34` (in scope) + `Monitoring-and-Operations.md:91` (out of scope) + `Changelog.md:31` (appropriate historical content).
+
+4. **Per-page audit.** Read all 6 target pages end-to-end (Home 44 lines, Pipeline-Overview 88, Getting-Started 79, Content-Recommendations 139, Agent-Reference 192, Schema-Reference 511). Plus `Software-Bill-of-Materials.md` (202 lines) to verify the "Recommendations for the SBOM page" subsection of Content-Recommendations remained genuinely pending (it did — license info, SPDX/CycloneDX, vuln-scanning, update-policy all still missing from SBOM.md). Plus `Monitoring-and-Operations.md` (118 lines) to confirm the Deployment-guide gap was still genuine (it was — M&O covers env vars + checkpoints + observability + CI, not containerization/TLS/auth).
+
+5. **Findings produced.** 1 major (F1 Content-Recommendations.md restructure) + 2 minor (F2 Schema-Reference.md:302 stale example + F3 Getting-Started.md:34 stale test count). Other 4 in-scope pages passed. The BACKLOG's prioritization of Content-Recommendations.md as the primary drift hotspot was accurate.
+
+6. **Edits applied** (3 parallel Edits, one Edit split into two for F1):
+   - `Content-Recommendations.md`: opener tightened (1-line change) + lines 29-113 replaced with 6-entry "Known gaps" section (93 total lines, down from 139). `Current wiki pages` table (lines 7-27), `Recommendations for the SBOM page` (verified still-pending), and `Wiki maintenance` preserved verbatim.
+   - `Schema-Reference.md:302`: `# "https://gitlab.example.com"` → `# "https://gitlab.com" or self-hosted like "https://gitlab.yourcompany.com"`
+   - `Getting-Started.md:34`: `422+ tests ... 97%+ coverage` → `440+ tests ... ~97% coverage`
+
+7. **Cross-ref verification.** Grep'd for every possible inbound anchor-style link that the restructure might have broken (`#worked-examples-page`, `#intake-interview-design-guide`, `#extending-the-pipeline`, `#schema-reference`, `#security-considerations`, `#faq`, `#comparison-with-alternatives`, `#changelog`, `#contributing-guide`, `#deployment-guide`, `#recommended-additions`) — **no matches found** anywhere in the wiki. The old page had no inbound anchor links; the restructure breaks nothing.
+
+8. **Verification.** `uv run pytest -q` → **446/446 passing, coverage 97.27%** (unchanged — doc-only). No ruff/mypy re-run (no code touched); Session 37's clean baseline stands. No `-W default` re-run (no sqlite-adjacent code touched).
+
+9. **CHANGELOG Session 38 entry** added at top of `## [Unreleased]`. Structure: Context / Changed F1 major / Changed F2 minor / Changed F3 minor / Verified / Unchanged intentionally / Out-of-scope drift noted for Session 39.
+
+10. **BACKLOG.md** — **removed** (not flipped) the "Wiki freshness sweep" line per post-Session-33 convention. Added a narrower follow-up item: "Monitoring-and-Operations.md staleness sweep" covering the `:91` single-line fix plus optional broader 14-page scan. BACKLOG count unchanged at 8 `[ ]` items (one removed, one added).
+
+11. **Learning #30 added to SESSION_RUNNER.md** — declarative vs. volitional status updates during research phases.
+
+### Phase 3B: Self-assess — 9.0/10
+
+- **Research before creative work:** Yes. Inventoried all 21 wiki pages via targeted greps before reading any page in full. Read 8 pages total (6 target + 2 cross-reference) before drafting any edit. The SBOM.md cross-verification was decisive — it's what let me keep the "Recommendations for the SBOM page" subsection intact without guessing.
+- **Implementations read, not just descriptions:** Yes. Read `cli.py:39-40` to verify the F2 default-URL bump was accurate. Ran `uv run pytest --collect-only` to get the authoritative 446 count for F3. Did not rely on handoff memory for either number.
+- **Stakeholder corrections needed:** 1. User flagged that my "Let me verify one more potential drift..." phrasing was ambiguous — read as a question when it was meant as a status update. Addressed in-line; coined Learning #30 as the structural countermeasure. -0.5.
+- **What I got right:** (a) **Learning #29 validated on first application.** Grep-before-insert prevented the stub fumble Sessions 36 and 37 both hit. The structural mitigation works. (b) **Systematic grep sweep caught F3 + Monitoring drift.** Wasn't in the BACKLOG's explicit mention, only `Schema-Reference.md:302` was. Extra findings from cheap pattern-match greps. (c) **Cross-ref verification.** Checked for inbound anchor links to the old Content-Recommendations headings before committing — no broken links. (d) **Stayed in scope.** Found M&O.md:91 drift but didn't fix in-session; documented as follow-up BACKLOG item. FM #2 ("keep going") resisted. (e) **SBOM sub-recommendations verified before preserving.** Read SBOM.md end-to-end to confirm items #1-4 are still genuinely pending; kept the section verbatim. Contrast with lazy alternative of deleting the whole subsection without verification. (f) **1 and done.** Delivered the BACKLOG item, closed out. No scope creep into the 14 out-of-scope wiki pages. (g) **BACKLOG discipline at Session #6 of application.** Removed the completed line, added the follow-up, 8 items unchanged.
+- **What I got wrong:** (a) **Ambiguous status-update phrasing.** "Let me verify..." read as a question, forced the user to ask "Is there supposed to be a question for me in that?" Declarative framing ("Running one more verification...") would have avoided the round-trip. -0.5. Coined Learning #30. (b) **`/effort max` mid-task handling.** When the `/effort max` command arrived mid-inventory-pass, my next turn produced a detailed audit report looking like I was pausing for approval, when I should have been proceeding to edits. The user clarified that the command shouldn't have distracted me. Minor; not sure this is a reusable learning since `/effort` is a meta-command not a task. -0.0.
+- **Quality bar vs. previous sessions:** On par with Session 32's 9.5/10 for research discipline. Below Session 34's 10/10 and Session 37's 9/10 on execution cleanliness because of the status-update ambiguity. Above the protocol-erosion signal of Sessions 36/37 (repeated stub fumble) because Learning #29 was applied mechanically. The structural health trend is positive: new Learning #30, zero protocol steps skipped, scope discipline intact.
+
+### Phase 3C: Learnings
+
+Added **Learning #30** to SESSION_RUNNER.md's table:
+
+> **Interim status updates during research phases should be declarative, not volitional.** Phrasing like "Let me verify one more potential drift before producing the edit plan..." can read as a question requesting user approval to proceed rather than a progress report. Declarative framing ("Running one more verification pass before producing the edit plan...") eliminates the ambiguity — the user can see that the session is executing, not pausing. Applies especially during multi-step research phases where interim summaries naturally invite "shall I continue?" phrasing. Mechanical: swap "Let me X" → "Running X" or "Checking X" or "Doing X". Zero-cost phrasing discipline.
+>
+> Source: Session 38 (user asked "Is there supposed to be a question for me in that?" in response to a "Let me verify..." phrasing).
+> When to apply: Any research-heavy session where interim progress updates are natural.
+
+### Phase 3D: Handoff to Session 39
+
+The ACTIVE TASK block at top of this file lists remaining candidates: **Monitoring-and-Operations.md staleness sweep** (new from Session 38 — micro for the single-line `:91` fix; full session if the broader 14-page scan is wanted), plus the carryover menu: tutorial-UX code-block splits, `scripts/render_tutorial.sh` wrapper, statistical terminology glossary, intake/data agent enhancements, B-3 Web UI bridge, automated resume-from-checkpoint. Session 39's operator picks.
+
+### Gotchas for Session 39
+
+1. **Post-Session-38 pre-commit state:** pytest **446/446** at **97.27% coverage**, 0 warnings (from Session 35 baseline; no sqlite code touched this session). ruff / mypy not re-run this session (no code touched); Session 37 state: ruff clean on `src/ tests/ packages/`, mypy clean on 60 files. If Session 39 touches code, re-run all four.
+
+2. **Commits ahead of origin: 1 (pending).** Session 38's commit is unpushed after the close-out commit; Session 37's commit was pushed at the start of Session 38 per user direction. Session 39's Phase 0 may want to push before starting (or not — operator's call).
+
+3. **Learning #29 validated structurally.** Session 38 was the first test after its coining; the grep-before-insert safeguard produced zero stub fumbles despite a substantial Phase 1B stub insert. Sessions 39+ should continue applying the discipline.
+
+4. **Learning #30 coined:** declarative vs. volitional status updates. When narrating interim progress during a research-heavy task, prefer "Running X..." over "Let me X...". Mechanical discipline, zero cost.
+
+5. **BACKLOG "remove, don't flip" at Session #6 of application.** Convention deeply entrenched — Sessions 33 (established), 34, 35, 36, 37, 38 (executed). FM #17 Phase 0 check continues to find zero drift — keep it.
+
+6. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+7. **"Paste, not redraft"** (Learning #27) — Session 38 did not have paste-ready work product to inherit; the audit was discovery-based. If Session 39's handoff from Session 38 includes drafted prose (it doesn't — only a pointer list + the M&O.md single-line fix recipe), apply the discipline.
+
+8. **Session 38's self-assessment was 9.0/10.** Root cause of the -1 deduction: ambiguous "Let me verify..." phrasing that read as a question to the user. Learning #30 is the structural countermeasure.
+
+9. **If Session 39 picks the M&O.md staleness sweep as a micro:** the single fix is `docs/wiki/claims-model-starter/Monitoring-and-Operations.md:91`: `| **Tests** | `pytest -q` (422+ tests, >94% coverage) |` → `| **Tests** | `pytest -q` (440+ tests, >94% coverage) |`. Same phrasing convention Session 38 used for Getting-Started.md. One Edit, one CHANGELOG entry. ~5 min session.
+
+10. **If Session 39 picks the M&O.md staleness sweep as a full session:** scope is the 14 wiki pages NOT touched by Session 38 (Architecture-Decisions, Changelog, Contributing, Data-Guide, Development-Workflow, Extending-the-Pipeline, Generated-Project-Structure, Glossary, Governance-Framework, Intake-Interview-Design, Monitoring-and-Operations, Security-Considerations, Software-Bill-of-Materials, Worked-Examples). Apply the same 3-pattern grep sweep (drift markers + stale host refs + stale test counts) then per-page read.
+
+11. **Content-Recommendations.md is now 93 lines (from 139).** `Current wiki pages` table at lines 7-27 (19 entries) + `Known gaps` section at lines 29-67 (6 gaps) + SBOM sub-recommendations at 69-79 + Wiki maintenance at 81-92. If Session 19/20A/20B's wiki expansion produces new pages, both the table AND the Known gaps section need updating — they're a coupled pair.
+
+### Session 38 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Push 9697689 per user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work (Learning #29 grep-first applied; zero fumble)
+- [x] Inventory pass: grep for drift markers + stale host refs + stale test counts across all 21 wiki pages
+- [x] Per-page audit: read all 6 target pages + cross-verified SBOM.md and M&O.md
+- [x] 3 findings produced (F1 major + F2 minor + F3 minor)
+- [x] Implementation: 4 Edits (F1 opener + F1 body + F2 + F3)
+- [x] Cross-ref verification: grep'd for 11 possible inbound anchor links to old headings → no matches
+- [x] Verification: pytest 446/446 @ 97.27% (unchanged), no regressions
+- [x] CHANGELOG.md Session 38 entry
+- [x] BACKLOG.md: "Wiki freshness sweep" line **removed** (not flipped); follow-up `Monitoring-and-Operations.md staleness sweep` item added
+- [x] Learning #30 added to SESSION_RUNNER.md
+- [x] Phase 3A: Session 37 handoff evaluated and scored above (9.5/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.0/10)
+- [x] Phase 3C: Learning #30 added
+- [x] Phase 3D: Handoff to Session 39 above (ACTIVE TASK candidates + 11 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
 
 ### Post-Session-37 pre-commit state
 - `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — +1 test, same product footprint)
