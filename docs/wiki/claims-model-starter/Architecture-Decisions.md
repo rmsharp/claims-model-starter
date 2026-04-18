@@ -1,6 +1,6 @@
 # Architecture Decisions
 
-Key design choices and their rationale. For the full architecture plan, see `docs/planning/architecture-plan.md`.
+Key design choices and their rationale. For the full architecture plan, see `docs/architecture-history/architecture-plan.md` (archived concept-era plan).
 
 ## AD-1: Sequential pipeline, not parallel agents
 
@@ -36,7 +36,7 @@ Key design choices and their rationale. For the full architecture plan, see `doc
 
 **Decision:** The Data Agent accepts a `DataRequest`, not an `IntakeReport`. The orchestrator performs the adaptation.
 
-**Rationale:** The Data Agent is "potentially reusable" (per `initial_purpose.txt`) as a standalone query-writing tool for analyst teams. If it imported `IntakeReport`, it would be coupled to the pipeline. By defining its own input schema, it can serve CLI users, notebook users, and the pipeline equally. A CI test (`test_data_agent_decoupling.py`) uses AST analysis to verify zero imports of intake schemas.
+**Rationale:** The Data Agent is "potentially reusable" (per `docs/architecture-history/initial_purpose.txt`) as a standalone query-writing tool for analyst teams. If it imported `IntakeReport`, it would be coupled to the pipeline. By defining its own input schema, it can serve CLI users, notebook users, and the pipeline equally. A CI test (`test_data_agent_decoupling.py`) uses AST analysis to verify zero imports of intake schemas.
 
 ## AD-7: Governance proportional to risk tier
 

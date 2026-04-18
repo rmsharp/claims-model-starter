@@ -2,7 +2,7 @@
 
 ## Current State
 
-**All 5 planned build milestones complete** (per `docs/planning/architecture-plan.md` §14). Scope A of "First live end-to-end run" (Session 22) + Scope B-1 real data agent (Session 24) + Scope B-2 scripted-answers intake (Sessions 26-27) have shipped — real LLM-backed intake + data agents are wired into `scripts/run_pipeline.py --live`.
+**All 5 planned build milestones complete** (per `docs/architecture-history/architecture-plan.md` §14). Scope A of "First live end-to-end run" (Session 22) + Scope B-1 real data agent (Session 24) + Scope B-2 scripted-answers intake (Sessions 26-27) have shipped — real LLM-backed intake + data agents are wired into `scripts/run_pipeline.py --live`.
 
 The codebase has **445 tests at 97.26% coverage**; CI gates lint (ruff), typecheck (mypy), test suite, and the 6 decoupling invariants.
 
@@ -28,7 +28,7 @@ All agents operate within the context of a **claims organization in a property &
 ## Completed Milestones
 
 ### M1: Architecture & Pipeline Design — Phase 1
-- Agent boundaries, responsibilities, inputs/outputs, failure modes defined in `docs/planning/architecture-plan.md` §4, §13.
+- Agent boundaries, responsibilities, inputs/outputs, failure modes defined in `docs/architecture-history/architecture-plan.md` §4, §13.
 - Inter-agent handoff protocol — `HandoffEnvelope` with versioning (`src/model_project_constructor/schemas/envelope.py`); registry in `schemas/registry.py`. See §6.
 - Output document schemas — Pydantic models in `src/model_project_constructor/schemas/v1/`. See §5.
 - Technology stack — LangGraph + Claude + python-gitlab/PyGithub + Pydantic. See §9.
@@ -77,8 +77,8 @@ All agents operate within the context of a **claims organization in a property &
 
 - `BACKLOG.md` — Open work items (only).
 - `CHANGELOG.md` — Chronological, session-numbered record of completed work.
-- `docs/planning/architecture-plan.md` — Authoritative design document; §14 phase plan.
+- `docs/architecture-history/architecture-plan.md` — Authoritative design document (archived); §14 phase plan.
 - `docs/planning/scope-b-plan.md` — Scope B (real LLM-backed pipeline) plan.
-- `docs/planning/github-gitlab-abstraction-plan.md` — GitHub/GitLab abstraction plan (Phases A-D, complete).
+- `docs/architecture-history/github-gitlab-abstraction-plan.md` — GitHub/GitLab abstraction plan (Phases A-D, complete; archived).
 - `SESSION_RUNNER.md` — Session operating procedure.
 - `SAFEGUARDS.md` — Commit discipline, blast-radius limits, mode-switching rules.

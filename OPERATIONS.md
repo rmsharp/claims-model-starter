@@ -3,7 +3,7 @@
 Operator-facing runbook for running the Model Project Constructor
 pipeline in a live environment. Audience: whoever is on the hook when a
 run fails or a pilot needs to be re-kicked. For the system design see
-`docs/planning/architecture-plan.md`; for diagnostic walkthroughs by
+`docs/architecture-history/architecture-plan.md`; for diagnostic walkthroughs by
 failure mode see `TROUBLESHOOTING.md`.
 
 ---

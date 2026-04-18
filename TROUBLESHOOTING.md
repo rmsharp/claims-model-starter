@@ -3,7 +3,7 @@
 Diagnostic walkthroughs for each `FAILED_AT_*` halt path in the
 orchestrator pipeline. Each section tells you what to inspect, where the
 files are, and what to do next. For the operational runbook see
-`OPERATIONS.md`; for the system design see `docs/planning/
+`OPERATIONS.md`; for the system design see `docs/architecture-history/
 architecture-plan.md` §12 (orchestration) and §14 (phases).
 
 ---

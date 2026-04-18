@@ -32,7 +32,7 @@ This tool serves a **claims organization within a property & casualty insurance 
 
 ### Agent Design Principles
 
-Each agent in the pipeline follows these principles (derived from `initial_purpose.txt`):
+Each agent in the pipeline follows these principles (derived from `docs/architecture-history/initial_purpose.txt`):
 
 1. **Agents produce structured reports, not free-form text.** Every agent's output has a defined schema with required sections. The receiving agent should be able to parse and act on the report without ambiguity.
 
@@ -40,11 +40,11 @@ Each agent in the pipeline follows these principles (derived from `initial_purpo
 
 3. **The intake agent interviews, not interrogates.** It asks one question at a time (max 10), converging on the 4 output sections. It guides the business stakeholder with its own domain expertise — it doesn't just transcribe answers.
 
-4. **The data agent is potentially reusable.** The `initial_purpose.txt` notes that this agent "would likely be useful for just writing queries in general" for analyst teams. Design it with reuse in mind.
+4. **The data agent is potentially reusable.** The `docs/architecture-history/initial_purpose.txt` notes that this agent "would likely be useful for just writing queries in general" for analyst teams. Design it with reuse in mind.
 
 5. **The website agent produces a draft, not a finished product.** The model website is an initial scaffold for the data science team to refine. It should contain reasonable defaults and clearly mark areas that need human judgment.
 
-### Worked Examples (from initial_purpose.txt)
+### Worked Examples (from docs/architecture-history/initial_purpose.txt)
 
 **Step 2 example:** The intake agent interviews a stakeholder about subrogation recovery in P&C claims. The output document describes: the business problem (lower subrogation outcomes due to new claims system), proposed solution (prompts/external systems to guide adjusters), model solution (supervised classification predicting successful subrogation), and estimated value (10% improvement in recovery rates = hundreds of thousands to millions annually).
 
@@ -52,7 +52,7 @@ Each agent in the pipeline follows these principles (derived from `initial_purpo
 
 ## Key Files
 
-- `initial_purpose.txt` — Original project vision with pipeline description and worked examples for Steps 2 and 3
+- `docs/architecture-history/initial_purpose.txt` — Original project vision with pipeline description and worked examples for Steps 2 and 3
 - `BACKLOG.md` — Active and upcoming tasks, broken down by milestone
 - `ROADMAP.md` — Pipeline overview table, milestone sequence, feature inventory
 - `SESSION_NOTES.md` — Session continuity: active task, handoff notes, session history

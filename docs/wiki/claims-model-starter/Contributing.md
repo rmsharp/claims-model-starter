@@ -209,7 +209,7 @@ These aren't style preferences — they are documented responses to specific pas
    uv run pytest -q
    uv run pytest tests/test_data_agent_decoupling.py -v --no-cov
    ```
-3. **Open the PR against `master`**. Reference any related `docs/planning/` document. If you introduce a new extension surface, add a test per [Extending the Pipeline](Extending-the-Pipeline) §5.
+3. **Open the PR against `master`**. Reference any related `docs/planning/` (active) or `docs/architecture-history/` (archived) document. If you introduce a new extension surface, add a test per [Extending the Pipeline](Extending-the-Pipeline) §5.
 4. **Expect review feedback on `docs/` as strictly as on `src/`.** Architecture plans, wiki pages, and schema docstrings are load-bearing; they are reviewed with the same rigor as code.
 5. **Squash-merge is the norm.** Preserve a clean `master` history. The PR description is the canonical commit message for the merge commit.
 

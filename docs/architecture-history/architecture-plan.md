@@ -1,3 +1,5 @@
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-04-18 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+
 # Architecture Plan: Model Project Constructor
 
 **Status:** Draft v1.0

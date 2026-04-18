@@ -6,7 +6,7 @@ The repository is published as `claims-model-starter` on GitHub; the internal pa
 
 ## Status
 
-Early implementation. Phases and session boundaries are tracked in `SESSION_NOTES.md`; the authoritative design document is `docs/planning/architecture-plan.md`.
+Early implementation. Phases and session boundaries are tracked in `SESSION_NOTES.md`; the authoritative design document is `docs/architecture-history/architecture-plan.md` (archived concept-era plan — see `docs/methodology/PROJECT_CONVENTIONS.md` §3).
 
 | Phase | Scope | State |
 |------:|-------|-------|
@@ -105,7 +105,8 @@ tests/
   fixtures/tier2_intake.json            # tier 2 high + strategic cycle (Phase 4B)
   fixtures/sample_datareport.json       # serialized DataReport for website agent input
   test_data_agent_decoupling.py         # structural decoupling guarantee (2 tests)
-docs/planning/                          # architecture-approaches.md, architecture-plan.md
+docs/planning/                          # active plans: evolution-page-plan.md, scope-b-plan.md
+docs/architecture-history/              # archived concept-era plans: architecture-plan.md + 4 others + initial_purpose.txt
 SESSION_RUNNER.md                       # per-session operating procedure
 SAFEGUARDS.md                           # commit discipline and blast-radius rules
 SESSION_NOTES.md                        # session-by-session continuity log
@@ -194,12 +195,12 @@ uv run python -m model_project_constructor.agents.website \
     --private-token "$GITHUB_TOKEN"
 ```
 
-The `--fake` mode prints the full file tree that would be committed and dumps a `RepoProjectResult` JSON payload. `--host` selects the repo-host adapter (`gitlab` or `github`); the chosen host also drives the emitted CI manifest (`.gitlab-ci.yml` for `--host gitlab`, `.github/workflows/ci.yml` for `--host github`). Pass `--ci-platform {gitlab,github}` to override the CI manifest independently of the repo host (useful for fake-path testing). Phase 4B scaffolds everything in §11 of `docs/planning/architecture-plan.md`, including governance artifacts proportional to `risk_tier` / `cycle_time` per §8.2. Try the tier-1 fixture (`tests/fixtures/tier1_intake.json`) to see the full fan-out including `governance/audit_log/`, `governance/eu_ai_act_compliance.md`, `governance/lcp_integration.md`, and the fairness-audit scaffolds.
+The `--fake` mode prints the full file tree that would be committed and dumps a `RepoProjectResult` JSON payload. `--host` selects the repo-host adapter (`gitlab` or `github`); the chosen host also drives the emitted CI manifest (`.gitlab-ci.yml` for `--host gitlab`, `.github/workflows/ci.yml` for `--host github`). Pass `--ci-platform {gitlab,github}` to override the CI manifest independently of the repo host (useful for fake-path testing). Phase 4B scaffolds everything in §11 of `docs/architecture-history/architecture-plan.md`, including governance artifacts proportional to `risk_tier` / `cycle_time` per §8.2. Try the tier-1 fixture (`tests/fixtures/tier1_intake.json`) to see the full fan-out including `governance/audit_log/`, `governance/eu_ai_act_compliance.md`, `governance/lcp_integration.md`, and the fairness-audit scaffolds.
 
 ## Documents worth reading
 
-- `docs/planning/architecture-plan.md` — the authoritative design document. Sections §4 (agent boundaries), §7 (Data Agent decoupling), §10 (per-agent LangGraph flows), and §14 (implementation phases) are load-bearing.
-- `docs/planning/architecture-approaches.md` — alternatives considered for each architectural decision, with pros/cons.
+- `docs/architecture-history/architecture-plan.md` — the authoritative design document (archived). Sections §4 (agent boundaries), §7 (Data Agent decoupling), §10 (per-agent LangGraph flows), and §14 (implementation phases) are load-bearing.
+- `docs/architecture-history/architecture-approaches.md` — alternatives considered for each architectural decision, with pros/cons.
 - `OPERATIONS.md` — the production runbook: env-var matrix, checkpoint layout, resume procedure, observability integration points.
 - `TROUBLESHOOTING.md` — diagnostic walkthroughs for each `FAILED_AT_*` halt path, keyed to the checkpoint files an operator should inspect.
 - `SESSION_RUNNER.md` — the session protocol. Read before starting any session.
