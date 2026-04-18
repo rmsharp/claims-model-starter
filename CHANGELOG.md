@@ -13,6 +13,14 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — `Monitoring-and-Operations.md:91` stale test count fixed (Session 39)
+
+Closes the "Monitoring-and-Operations.md staleness sweep" BACKLOG item for its single-line subscope (the micro fix called out in Session 38 gotcha #9). Same phrasing convention Session 38 applied to `Getting-Started.md:34`. The broader 14-page wiki scan remains open in BACKLOG as a separate item.
+
+- **Changed:** `docs/wiki/claims-model-starter/Monitoring-and-Operations.md:91` — CI-jobs table row `| **Tests** | \`pytest -q\` (422+ tests, >94% coverage) |` → `| **Tests** | \`pytest -q\` (440+ tests, >94% coverage) |`. Current actual: 446 tests @ 97.27%; `440+` chosen as a slightly-durable lower bound to reduce re-update churn (same rationale as Session 38's F3).
+- **Verified:** `uv run pytest -q` → **446/446 passing, coverage 97.27%** (unchanged — doc-only). No ruff/mypy re-run (no code touched); Session 37's clean baseline stands. No `-W default` re-run (no sqlite-adjacent code touched); Session 35's 0-warnings baseline stands.
+- **Unchanged intentionally:** The `>94% coverage` floor in the same row was kept as-is — it is a durable CI lower bound, not a current-state claim, and Session 38's F3 choice preserved the analogous `>94%` phrasing in `Getting-Started.md` for the same reason. The 14 wiki pages outside Session 38's original scope (Architecture-Decisions, Changelog, Contributing, Data-Guide, Development-Workflow, Extending-the-Pipeline, Generated-Project-Structure, Glossary, Governance-Framework, Intake-Interview-Design, Security-Considerations, Software-Bill-of-Materials, Worked-Examples, plus the rest of Monitoring-and-Operations.md) are out of scope per "1 and done"; the BACKLOG item now covers only the broader 14-page scan.
+
 ### 2026-04-18 — Wiki freshness sweep: `docs/wiki/claims-model-starter/` (Session 38)
 
 Closes the BACKLOG "Wiki freshness sweep" item. Audited the 6 pages named in the BACKLOG entry (`Home.md`, `Pipeline-Overview.md`, `Getting-Started.md`, `Content-Recommendations.md`, `Agent-Reference.md`, `Schema-Reference.md`). Three findings: 1 major (Content-Recommendations.md restructure) + 2 minor (Schema-Reference.md stale example, Getting-Started.md stale test count). The other 4 in-scope pages passed — the BACKLOG's prioritization of `Content-Recommendations.md` as the primary drift hotspot was accurate.

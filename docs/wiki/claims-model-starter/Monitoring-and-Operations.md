@@ -88,7 +88,7 @@ The project's own CI (`.github/workflows/ci.yml`) runs four jobs:
 |-----|---------------|
 | **Lint** | `ruff check src/ tests/ packages/` |
 | **Type check** | `mypy src/` (strict mode) |
-| **Tests** | `pytest -q` (422+ tests, >94% coverage) |
+| **Tests** | `pytest -q` (440+ tests, >94% coverage) |
 | **Decoupling** | Data Agent has zero imports from intake schemas |
 
 CI runs on push to `master` and on pull requests.
