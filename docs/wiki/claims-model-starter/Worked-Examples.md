@@ -229,7 +229,7 @@ uv sync --extra agents --extra ui --extra dev
 uv run python scripts/run_pipeline.py --host gitlab
 ```
 
-By default `scripts/run_pipeline.py` uses the `subrogation` fixture path through the pipeline, writes checkpoints to `.orchestrator/checkpoints/<run_id>/`, and materializes the generated project via `FakeRepoClient` (a list of commits held in memory, no network I/O). To exercise the real GitLab or GitHub code path, add `--live` and set the corresponding token env var (`GITLAB_PRIVATE_TOKEN` or `GITHUB_PRIVATE_TOKEN`).
+By default `scripts/run_pipeline.py` uses the `subrogation` fixture path through the pipeline, writes checkpoints to `.orchestrator/checkpoints/<run_id>/`, and materializes the generated project via `FakeRepoClient` (a list of commits held in memory, no network I/O). To exercise the real GitLab or GitHub code path, add `--live` and set the corresponding token env var (`GITLAB_TOKEN` or `GITHUB_TOKEN`).
 
 For a richer walkthrough including the intake YAML authoring step and the `model-intake-agent` CLI, see the repository tutorial at `docs/tutorial.md`.
 

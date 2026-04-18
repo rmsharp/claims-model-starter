@@ -95,7 +95,7 @@ uv run pytest tests/agents/intake/  # one subdir
 uv run pytest -k "test_envelope"    # by name pattern
 ```
 
-Current snapshot: **120 test functions** across `tests/` subdirectories (`agents/intake/`, `agents/data/`, `agents/website/`, `orchestrator/`, `schemas/`, `ui/intake/`, `data_agent_package/`, `fixtures/`, plus the top-level `test_data_agent_decoupling.py`).
+Current snapshot: **131 test functions** across `tests/` subdirectories (`agents/intake/`, `agents/data/`, `agents/website/`, `orchestrator/`, `schemas/`, `ui/intake/`, `data_agent_package/`, `fixtures/`, `scripts/`, plus the top-level `test_data_agent_decoupling.py`).
 
 ### 2.4 Data-agent decoupling
 
@@ -184,7 +184,7 @@ When adding a new contract, add a structural guard alongside it. CI enforcement 
 
 Non-trivial changes (anything touching more than ~5 files, any refactor, any new agent, any schema change) should follow the session protocol documented at:
 
-- `SESSION_RUNNER.md` (306 lines) — operating procedure: orient → execute → close out.
+- `SESSION_RUNNER.md` (321 lines) — operating procedure: orient → execute → close out.
 - `SAFEGUARDS.md` (183 lines) — commit discipline, blast-radius limits, mode-switching rules.
 - `CLAUDE.md` (61 lines) — project overview and session protocol reference.
 

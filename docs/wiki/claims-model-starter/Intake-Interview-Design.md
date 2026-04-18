@@ -91,9 +91,9 @@ In practice:
 
 - **If the agent still needs information**, it asks another question.
 - **If the agent believes it has enough**, it proceeds to drafting.
-- **If 10 questions have been asked regardless**, it proceeds to drafting and marks the report `DRAFT_INCOMPLETE` with `"questions_cap_reached"` appended to `missing_fields`.
+- **If 20 questions have been asked regardless**, it proceeds to drafting and marks the report `DRAFT_INCOMPLETE` with `"questions_cap_reached"` appended to `missing_fields`.
 
-The soft and hard stops are independent signals. An agent that reaches question 8 and says "I have enough" will stop at question 8. An agent that reaches question 10 without feeling complete will stop at question 10 anyway.
+The soft and hard stops are independent signals. An agent that reaches question 8 and says "I have enough" will stop at question 8. An agent that reaches question 20 without feeling complete will stop at question 20 anyway.
 
 ---
 

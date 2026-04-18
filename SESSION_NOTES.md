@@ -5,14 +5,130 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 40 — operator's discretion. Remaining candidates: wiki freshness sweep of 14 pages not touched by Sessions 38-39 (doc-shaped full session); tutorial-UX code-block splits (small); `scripts/render_tutorial.sh` wrapper (micro); statistical terminology glossary; intake/data agent enhancements. Pilot-shaped: B-3 Web UI bridge, automated resume-from-checkpoint. BACKLOG has 8 `[ ]` items, zero `[x]`.
+**Task:** Session 41 — operator's discretion. Candidates from Session 40's handoff (menu): `protocol.py:34` docstring MAX_QUESTIONS lag (micro, ~5 min — parallel to Session 40's F1 wiki fix); tutorial-UX code-block splits (small); `scripts/render_tutorial.sh` wrapper (micro); statistical terminology glossary; intake/data agent enhancements. Pilot-shaped: B-3 Web UI bridge, automated resume-from-checkpoint. BACKLOG has 8 `[ ]` items, zero `[x]`.
 
-**Status:** Session 39 complete. Monitoring-and-Operations.md:91 test-count fix delivered (`422+` → `440+`, matching Session 38's F3 phrasing). 446/446 @ 97.27%.
+**Status:** Session 40 complete. Wiki freshness sweep of 14 remaining pages delivered: 4 findings, 4 fixes, 10 pages passed. 446/446 @ 97.27%.
 
-### Post-Session-39 pre-commit state
+### Post-Session-40 pre-commit state
 - `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — doc-only)
 - No ruff / mypy re-run (no code touched); carrying forward Session 37's clean baseline
 - `-W default` not re-run (no sqlite-adjacent code touched); Session 35's 0-warnings baseline stands
+
+---
+
+### Session 39 Handoff Evaluation (by Session 40)
+
+**Score: 9.5/10.** Strong handoff that made the session's "1 and done" discipline trivial. Gotcha #7 provided the exact 3-pattern grep recipe that Session 40 used verbatim for the inventory pass — zero discovery cost on methodology. Gotchas #1-#4 preserved the baseline-state, Learning #26/#29 reminders, and scope-discipline framing. Gotcha #9 (BACKLOG "remove, don't flip" at Session #7) applied cleanly at close-out.
+
+- **What helped:** (a) **Gotcha #7's 3-pattern grep recipe, verbatim.** "(a) drift markers: `Recommended [Aa]dditions|Future [Ee]nhancements|...`; (b) stale host refs: `gitlab.example.com|github.example.com`; (c) stale test counts: `4[0-9][0-9]\+? tests` and `40[0-9]\+ tests`. Then per-page read of any page with matches." Session 40 applied this exactly. Zero re-derivation cost. This is Learning #27 (paste-not-redraft) applied at the methodology level — the predecessor transcribed the proven methodology so the successor didn't have to re-invent it. (b) **Gotcha #3 (Learning #29 applied twice in a row).** Session 40 grep'd for `Session 40|### Session 40 Did|### Session 39 Handoff Evaluation|Post-Session-40` before the Phase 1B stub insert — all returned "not present" → zero stub fumble. Third consecutive mechanical application; the safeguard is durable. (c) **Gotcha #1 baseline exact match.** pytest 446/446 @ 97.27%, 0 warnings, ruff/mypy clean. Zero discovery cost. (d) **Session 39's forecast of finding-shape.** The handoff noted explicitly that Session 38's sweep was the reference for Session 40's "full session" path — predicting that the same pattern-greps would find residual drift. That framing made it natural to extend the per-page read to catch narrative-level drift beyond the pattern hits (F1, F3, F4).
+- **What was missing:** (a) **No forecast that `protocol.py:34`'s docstring carries the same MAX_QUESTIONS lag.** The wiki F1 fix (Intake-Interview-Design.md:94's "10 questions" narrative) has a direct twin in source: `src/model_project_constructor/agents/intake/protocol.py:34` says "the hard **10-question** cap from §4.1" in the `NextQuestionResult` docstring. A 30-second grep `MAX_QUESTIONS|10-question|10 question` across `src/` would have found it; Session 39 didn't do this grep during handoff-write. Not a Session 39 scope issue (Session 39 was a micro), but the predecessor-forecast guidance from Learning #24 would have applied. -0.5. (b) No explicit mention of Session 40 possibly encountering count/length citations in Contributing.md. Session 40 surfaced "120 test functions" + `SESSION_RUNNER.md (306 lines)` as drift candidates during the per-page read; a predecessor-side grep for `\b\d+\s+(test|line)` could have flagged them. Minor; -0.0 (scope-creep for a micro handoff).
+- **What was wrong:** Nothing factually wrong. The "440+ tests, >94% coverage" phrasing at `Monitoring-and-Operations.md:91` was applied exactly.
+- **ROI:** ~10× on this session (handoff-read ~3 min; saved ~30 min of methodology re-derivation + grep-pattern invention).
+
+### What Session 40 Did
+**Deliverable:** Wiki freshness sweep of the 14 `docs/wiki/claims-model-starter/` pages not covered by Session 38. **COMPLETE.**
+**Started:** 2026-04-18
+**Completed:** 2026-04-18
+**Commits:** (pending this turn) — single `docs(session-40): wiki freshness sweep — 14 remaining pages, 4 findings` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` first 300 lines (ACTIVE TASK + Session 39 handoff + 10 gotchas); `git status` (clean, 2 commits ahead of origin) + `git log -10` + `git diff --stat`; ran `methodology_dashboard.py` (91/100, medium risk, active). **FM #17 Phase 0 check (Learning #26):** BACKLOG.md had 8 `[ ]` items, zero `[x]`, no `## Completed` section — discipline intact at Session #8 of application. No ghost sessions (Session 39 = `a2524f7`, Session 38 = `a3111e3` both accounted for). Reported findings; waited for user direction.
+
+2. **User directed: doc-shaped full session.** Stated understanding (wiki freshness sweep of 14 pages, AUDIT_WORKSTREAM, mirror Session 38's 3-pattern grep + per-page read). Created 7 tasks (Phase 1B stub, inventory, per-page read, edits, verify, CHANGELOG/BACKLOG, close-out). Wrote Phase 1B IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before technical work. **Learning #29 applied mechanically:** grep'd for `Session 40|### Session 40 Did|### Session 39 Handoff Evaluation|Post-Session-40` before first Phase 1B stub edit — all "not present" → zero stub fumble. Third consecutive validation of Learning #29.
+
+3. **Inventory pass (Session 38's 3 patterns).**
+   - (a) drift markers: **0 matches** across the wiki — Content-Recommendations restructure in Session 38 cleared them all.
+   - (b) stale host refs: 1 match (`Security-Considerations.md:111` uses `github.example.com/api/v3`, already classified as canonical GHE by Session 38, not drift).
+   - (c) stale test counts: `Monitoring-and-Operations.md:91` (already fixed by Session 39), `Getting-Started.md:34` (already fixed by Session 38), `Changelog.md:31` (appropriate historical content — "[0.1.0 — Pilot Ready] — 2026-04-15" dated snapshot, line 165 confirms the audience-facing Changelog design choice).
+
+4. **Per-page audit.** Read all 14 target pages in parallel (4 batches of 4 reads). Read additional source code to verify line-number and narrative claims: `src/.../intake/state.py`, `src/.../intake/nodes.py`, `scripts/run_pipeline.py`, `src/.../intake/anthropic_client.py`, `packages/data-agent/.../anthropic_client.py`, `src/.../intake/protocol.py`, `src/.../website/gitlab_adapter.py`, `src/.../website/github_adapter.py`. Ran `wc -l` on `SESSION_RUNNER.md` / `SAFEGUARDS.md` / `CLAUDE.md` to verify Contributing.md's line-count citations.
+
+5. **Findings produced.** 4 findings across 4 pages. 10 of 14 pages passed unchanged.
+   - **F1 (narrative consistency):** `Intake-Interview-Design.md:94, 96` — "10 questions" → "20 questions". Drift from Session 27 bumping `state.py:57` `MAX_QUESTIONS = 10` → `20`. The page's §2 table already had 20 correctly (line 63); only the §3 prose narrative lagged.
+   - **F2 (env-var names):** `Worked-Examples.md:232` — `GITLAB_PRIVATE_TOKEN` / `GITHUB_PRIVATE_TOKEN` → `GITLAB_TOKEN` / `GITHUB_TOKEN`. The `_PRIVATE_` form never existed; canonical names confirmed via `run_pipeline.py:22`, OPERATIONS.md, Security-Considerations.md, Monitoring-and-Operations.md.
+   - **F3 (test-function count + subdir list):** `Contributing.md:98` — "**120 test functions**" → "**131 test functions**" + added `scripts/` to the subdirectory list. Count derived from `find tests -name "*.py" | xargs grep -h "^def test_" | wc -l`. `tests/scripts/test_run_pipeline_adapter.py` was added since Session 20B wrote the original Contributing.md.
+   - **F4 (line-count citation):** `Contributing.md:187` — `SESSION_RUNNER.md (306 lines)` → `(321 lines)`. SAFEGUARDS.md (183) + CLAUDE.md (61) were also cited on the same page; both still exact (verified via `wc -l`), left unchanged.
+
+6. **Edits applied** — 4 parallel Edits to the 3 affected pages (Intake-Interview-Design.md, Worked-Examples.md, Contributing.md x2).
+
+7. **Verification.** `uv run pytest -q` → **446/446 passing, coverage 97.27%** (unchanged — doc-only). BACKLOG re-counted: 8 `[ ]`, 0 `[x]`. No ruff/mypy re-run (no code touched); Session 37's baseline stands. No `-W default` re-run.
+
+8. **CHANGELOG Session 40 entry** added at top of `## [Unreleased]`. Structure: Context / F1-F4 with per-finding verification / Verified / Unchanged intentionally / Out-of-scope drift noted (the `protocol.py:34` source-code twin of F1).
+
+9. **BACKLOG.md** — **removed** (not flipped) the "Wiki freshness sweep: 14 remaining pages" item per post-Session-33 convention. Added a new micro follow-up item: `protocol.py:34` docstring MAX_QUESTIONS lag (source-code twin of F1). Net count unchanged at 8 `[ ]` items. Applying convention #26 Phase 0 check at close-out: verified `grep -c "^- \[x\]" BACKLOG.md` returns 0.
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Inventoried all 21 wiki pages via targeted greps before reading any page in full. Per-page read of all 14 target pages before drafting any edit. Source-code verification (`state.py`, `nodes.py`, `anthropic_client.py` x2, `protocol.py`, `run_pipeline.py`, adapters, `wc -l` on root protocol docs) for every finding before committing to the edit. No fix-from-memory.
+- **Implementations read, not just descriptions:** Yes. Read `nodes.py:78-82` (evaluate_interview) + `nodes.py:121-151` (finalize status logic) to confirm the Intake-Interview-Design.md narrative matched the branching logic. Read both adapter files to cross-verify Security-Considerations.md's line-number citations (found they're mostly accurate — did not fix the subtly-stale end-line bounds as that's a separate depth of audit).
+- **Stakeholder corrections needed:** 0. User's direction ("work on Doc-shaped (full session)") was sufficient; no clarifications during execution.
+- **What I got right:** (a) **3-pattern grep applied verbatim** from Session 39's gotcha #7 — Learning #27 (paste-not-redraft) applied at the methodology level. Zero re-derivation cost. (b) **Per-page read extended to catch narrative drift beyond pattern hits.** The patterns caught 0 useful hits in the target pages (all 3 pattern-hits were already-handled by Sessions 38-39 or canonical). The 4 findings all came from the per-page editorial read — a signal that Session 38's "3-pattern + per-page read" recipe was load-bearing for this session's value, not just the patterns alone. (c) **Source-code verification for every finding.** F1 verified against `state.py:57` (`MAX_QUESTIONS = 20`); F2 verified against `run_pipeline.py:22`; F3 verified by running the actual grep for test function definitions; F4 verified by `wc -l`. Not one claim written from handoff memory. (d) **Out-of-scope drift noted, not fixed.** `protocol.py:34`'s source-code docstring carries the exact same Session-27 lag as the F1 wiki fix. Scope discipline (FM #2) held: added to BACKLOG as a separate micro follow-up instead of "while I'm at it" fixing in-session. (e) **Learning #29 mechanical application (third consecutive).** Zero stub fumble. The safeguard is durable. (f) **BACKLOG "remove, don't flip" at Session #8 of application.** Convention deeply entrenched. `[x]` count at close-out: 0. (g) **1 and done.** Delivered the 14-page sweep + 4 fixes, closed out. Did not expand to the source-code twin, adjacent wiki pages' line-number citations, or editorial improvements. (h) **Task tracking calibrated better than Session 39.** 7 tasks for a full session (vs. Session 39's 5 tasks for a micro) — right-sized; each task maps to one phase, each move to in_progress/completed marks an actual boundary transition.
+- **What I got wrong:** (a) **Could have forecasted `protocol.py:34` as a Session 40 finding during handoff-read.** Session 39's gotcha #7 named the 3 patterns for wiki scope but didn't flag that source-code docstrings could carry the same drifts. During Phase 0, reading the `MAX_QUESTIONS` reference in Session 39's handoff should have triggered "is this drift also in source?" — a 30-second grep. Instead I discovered it during per-page verification of F1 (reading `protocol.py` for line-number validation). Not a defect (scope discipline held), but a predecessor-forecast opportunity missed. -0.5. (b) Minor: my initial inventory-pass grep for test counts used `4[0-9][0-9]\+? tests|40[0-9]\+ tests|4[0-9][0-9] tests` which has some pattern overlap; a cleaner single pattern would be `4[0-9][0-9]\+? tests?`. Didn't matter — all three patterns caught the same hits — but slight over-engineering. -0.0. (c) Did not verify Security-Considerations.md's exhaustive line-number citations (e.g., `gitlab_adapter.py:56-66`, `github_adapter.py:66-72`, `gitlab_adapter.py:41-155`). Spot-check suggested the line-number ranges are mostly accurate (class starts match, method starts match), but the end-bounds may drift since the files grew. Scoped out intentionally — exhaustive line-number audit is a separate deliverable shape.
+- **Quality bar vs. previous sessions:** On par with Session 38's 9.0/10 for research discipline — the 3-pattern methodology was transferred cleanly without the Session 38 ambiguity that cost Session 38's -0.5 (declarative vs. volitional phrasing — Learning #30). Above Session 38 on finding-shape (Session 38 produced 3 findings from 6 pages; Session 40 produced 4 from 14 pages — similar yield per page; the 10 of 14 pages passing is a healthy ratio). On par with Session 34's 10/10 for execution cleanliness (paste-and-verify at the methodology level). Structural health trend continues strongly positive: Learning #29 third consecutive, BACKLOG discipline Session #8, no new failure modes, zero protocol drift.
+
+### Phase 3C: Learnings
+
+No new learning coined this session. Existing learnings were load-bearing:
+- **Learning #27 (paste-not-redraft):** Applied at the methodology level — Session 39's 3-pattern grep recipe was pasted verbatim into Session 40's inventory pass.
+- **Learning #29 (grep-before-insert):** Third consecutive mechanical validation. Zero stub fumble. Safeguard is durable.
+- **Learning #26 (FM #17 Phase 0 + close-out BACKLOG check):** Session #8 of application. 0 `[x]` at both Phase 0 entry and close-out.
+- **Learning #28 (handoff prescriptions as hints, not contracts):** Applied to the `protocol.py:34` discovery. Session 39's handoff prescribed the wiki scope; Session 40 honored the scope but forecasted the source-code twin as a follow-up item rather than bundling it in. Scope discipline (FM #2) preserved.
+- **Learning #30 (declarative vs. volitional status updates):** Applied throughout — "Running the 3-pattern grep sweep now" / "Edits applied. Running verification." rather than "Let me verify...". Zero clarification round-trips with user.
+
+The session is further evidence that the Session 38-39 methodology has compounded into a durable shape. A 30+ learnings table + 8+ sessions of discipline means the "full session" template executes cleanly with very little per-session invention.
+
+### Phase 3D: Handoff to Session 41
+
+The ACTIVE TASK block at top of this file lists Session 40's handoff menu. The new high-priority item is the **`protocol.py:34` docstring MAX_QUESTIONS lag** — a ~5-minute micro fix that is the source-code twin of Session 40's F1 wiki fix. Other candidates: tutorial-UX code-block splits, `scripts/render_tutorial.sh` wrapper, statistical terminology glossary, intake/data agent enhancements, B-3 Web UI bridge, automated resume-from-checkpoint. Session 41's operator picks.
+
+### Gotchas for Session 41
+
+1. **Post-Session-40 pre-commit state:** pytest **446/446** at **97.27% coverage**, 0 warnings. ruff / mypy not re-run this session (no code touched); Session 37 state: ruff clean on `src/ tests/ packages/`, mypy clean on 60 files. If Session 41 touches code, re-run all four.
+
+2. **Commits ahead of origin: 3 (pending).** Sessions 38 (`a3111e3`), 39 (`a2524f7`), and 40 (this session's commit) are unpushed. Session 41's Phase 0 may want to push before starting (or not — operator's call).
+
+3. **Learning #29 validated three times in a row (Sessions 38, 39, 40).** The grep-before-insert safeguard is mechanical, zero-cost, and durable. Session 41 should continue applying it: `Grep pattern="Session 41|### Session 41 Did|### Session 40 Handoff Evaluation|Post-Session-41"` before the Phase 1B stub insert.
+
+4. **Learning #26 Phase 0 + close-out BACKLOG check.** Session #8 of application — discipline deeply entrenched. Verify `grep -c "^- \[x\]" BACKLOG.md` returns 0 at both Phase 0 and at close-out.
+
+5. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+6. **"Paste, not redraft"** (Learning #27) — Session 40's handoff includes a paste-ready recipe for the `protocol.py:34` micro fix (gotcha #9 below). If Session 41 picks that, apply Learning #27 verbatim.
+
+7. **If Session 41 picks the `protocol.py:34` docstring micro:** the fix is at `src/model_project_constructor/agents/intake/protocol.py:34` in the `NextQuestionResult` docstring: `"The agent still enforces the hard 10-question cap from §4.1 independently."` → `"The agent still enforces the hard 20-question cap from §4.1 independently."`. Parallel to Session 40's F1 wiki fix. Verify against `state.py:57` (`MAX_QUESTIONS = 20`) before editing. One Edit, one CHANGELOG entry. ~5-minute session.
+
+8. **CHANGELOG structure convention (Sessions 33-40):** Each session's `[Unreleased]` entry follows: date + title + (Session N) heading → 1-paragraph context → Changed / Added / Fixed bullets → Verified bullet → Unchanged intentionally bullet. All 8 recent sessions match this shape; mirror it.
+
+9. **BACKLOG "remove, don't flip" convention — Session #8 of application.** Sessions 33 (established), 34, 35, 36, 37, 38, 39, 40 (executed). When closing a task, either (a) remove the line entirely if the work fully closes the item, or (b) narrow the line in-place if only a subscope ships. Never flip `[ ]` → `[x]`. Session 40 used option (a) for the 14-page sweep (fully closed) + added a new line for the `protocol.py:34` follow-up (new open work).
+
+10. **Session 40's self-assessment was 9.5/10.** Root cause of the -0.5: could have forecasted the `protocol.py:34` source-code twin during Phase 0 handoff-read (30-second grep). Not a structural issue — scope discipline (FM #2) held correctly by surfacing it as a follow-up rather than "while I'm at it" fixing.
+
+11. **Security-Considerations.md line-number citations are mostly accurate but not exhaustively audited.** `gitlab_adapter.py:56-66`, `github_adapter.py:66-72`, `gitlab_adapter.py:41-155`, `github_adapter.py:48-161`, etc. Session 40's per-page read spot-checked these (class-start + method-start match the file); the end-bounds may drift since the adapter files grew to 174/185 lines. Exhaustive line-number audit of Security-Considerations.md is a separate session shape if wanted.
+
+12. **Intake-Interview-Design.md has ~20 file:line citations (lines 16, 25-27, 35, 72, 79, 84, 94, 130, 146, 148, 162, 247, 256, 257, 264-275).** Session 40's per-page verification confirmed the ones relevant to F1 (`state.py:57-58`, `nodes.py:52-57/78-82/88-92/94-106/121-151`) but did not exhaustively verify every citation. If Session 41 picks a deeper audit of that page, most citations are still accurate as of this session.
+
+13. **Contributing.md test-count + line-count citations will re-drift.** The exact-count style (`131 test functions`, `321 lines`) means future sessions will need to re-update as tests/docs grow. A floor-style ("130+ test functions", "~320 lines") would reduce re-update churn — analogous to Session 38's F3 choice of `440+` over `446` exact. Session 41 could consider a style-harmonization pass if desired (separate editorial scope, not a freshness sweep).
+
+### Session 40 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work (Learning #29 grep-first applied; zero fumble — 3rd consecutive validation)
+- [x] Inventory pass: 3-pattern grep sweep across 14 target pages
+- [x] Per-page audit: read all 14 target pages in parallel batches + cross-verified source code for every finding
+- [x] 4 findings produced (F1 narrative + F2 env-vars + F3 count/subdir + F4 line-count)
+- [x] Implementation: 4 parallel Edits (3 pages: Intake-Interview-Design + Worked-Examples + Contributing x2)
+- [x] Verification: pytest 446/446 @ 97.27% (unchanged); BACKLOG 8 `[ ]` / 0 `[x]`
+- [x] CHANGELOG.md Session 40 entry
+- [x] BACKLOG.md: "Wiki freshness sweep: 14 remaining pages" **removed** (not flipped); follow-up `protocol.py:34` docstring item added
+- [x] Phase 3A: Session 39 handoff evaluated and scored above (9.5/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.5/10)
+- [x] Phase 3C: No new learning (Learnings #26, #27, #28, #29, #30 all re-applied — structural health evidence)
+- [x] Phase 3D: Handoff to Session 41 above (ACTIVE TASK candidates + 13 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
+
+---
 
 ---
 
