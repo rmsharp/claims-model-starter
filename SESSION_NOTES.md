@@ -5,14 +5,127 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 41 — operator's discretion. Candidates from Session 40's handoff (menu): `protocol.py:34` docstring MAX_QUESTIONS lag (micro, ~5 min — parallel to Session 40's F1 wiki fix); tutorial-UX code-block splits (small); `scripts/render_tutorial.sh` wrapper (micro); statistical terminology glossary; intake/data agent enhancements. Pilot-shaped: B-3 Web UI bridge, automated resume-from-checkpoint. BACKLOG has 8 `[ ]` items, zero `[x]`.
+**Task:** Session 42 — operator's discretion. New high-priority follow-up (Session 41 found): **MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits** (micro, paste-ready in BACKLOG, ~5 min). Carryover menu: tutorial-UX code-block splits (small); `scripts/render_tutorial.sh` wrapper (micro); statistical terminology glossary; intake/data agent enhancements; B-3 Web UI bridge (pilot-shaped); automated resume-from-checkpoint (pilot-shaped). BACKLOG has 8 `[ ]` items, zero `[x]`.
 
-**Status:** Session 40 complete. Wiki freshness sweep of 14 remaining pages delivered: 4 findings, 4 fixes, 10 pages passed. 446/446 @ 97.27%.
+**Status:** Session 41 complete. `protocol.py:34` docstring fixed; end-of-session grep surfaced 4 additional MAX_QUESTIONS drifts (BACKLOG follow-up) that Sessions 38 and 40 sweeps missed.
 
-### Post-Session-40 pre-commit state
-- `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — doc-only)
-- No ruff / mypy re-run (no code touched); carrying forward Session 37's clean baseline
+### Post-Session-41 pre-commit state
+- `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — docstring-only, no behavior change)
+- `uv run ruff check src/ tests/ packages/` → clean (All checks passed!)
+- `uv run mypy src/` → clean on **48 source files** (CI-matching scope per Learning #18; declared-scope `mypy src/ packages/` is 60 files but CI runs only `mypy src/`)
 - `-W default` not re-run (no sqlite-adjacent code touched); Session 35's 0-warnings baseline stands
+
+---
+
+### Session 40 Handoff Evaluation (by Session 41)
+
+**Score: 9.5/10.** Paste-ready micro handoff at its best. Gotcha #7 named file:line + exact before/after strings + phrasing rationale ("parallel to Session 40's F1 wiki fix. Verify against `state.py:57` before editing. One Edit, one CHANGELOG entry. ~5-minute session.") — the recipe executed verbatim. Discovery cost on the primary deliverable: zero. The bonus finding (4 additional MAX_QUESTIONS drifts) came from my end-of-session sanity grep, not from handoff gaps.
+
+- **What helped:** (a) **Gotcha #7 paste-ready recipe.** `src/.../protocol.py:34` + exact before-string `"The agent still enforces the hard 10-question cap from §4.1 independently."` + exact after-string (20-question). Zero-cost discovery. Learning #27 applied from the predecessor side — Session 40 PRODUCED the work product for Session 41, not just a pointer. (b) **Gotcha #1 baseline exact match.** pytest 446/446 @ 97.27%, 0 warnings — carried forward unchanged. (c) **Gotcha #3 Learning #29 reminder** — grep-before-insert `Session 41|### Session 41 Did|### Session 40 Handoff Evaluation|Post-Session-41` returned only pre-existing references from Session 40's handoff. Fourth consecutive mechanical application; zero stub fumble. (d) **Gotcha #2 push-before-starting framing.** Pushed 3 commits (Sessions 38/39/40) at the top of the session — clean separation, origin now up to date. (e) **Gotcha #9 BACKLOG "remove, don't flip" convention** applied cleanly at close-out; session #9 of application. (f) **Gotcha #8 CHANGELOG structure** — Session 41's entry mirrors Sessions 33-40 shape exactly without redrafting: context / Changed / Verified / Unchanged intentionally / Out-of-scope drift noted.
+- **What was missing:** (a) **No `.md`-sweep grep during Phase 0 / inventory.** Gotcha #7 was scoped to the single source-code docstring. My end-of-session `Grep pattern="10-question|10 question|hard 10"` across `src/` found zero additional hits (correct), but the same grep against `*.md` surfaced 4 drifts in `Pipeline-Overview.md:11`, `Agent-Reference.md:45, 52`, and `TROUBLESHOOTING.md:61`. A predecessor-side `.md` grep during Session 40's handoff-write would have front-loaded these into the BACKLOG. Symmetric to the "predecessor-forecast for source code" gap Session 40 self-flagged from Session 39 — each session solves the previous session's gap but introduces a new one at an adjacent scope boundary. -0.5.
+- **What was wrong:** Nothing factually wrong. Gotcha #7's before-string matched the file exactly; `state.py:57` is `MAX_QUESTIONS = 20` as claimed.
+- **ROI:** ~8× on the happy path (handoff read ~2 min; saved ~15 min of pure-discovery execution). Plus the bonus-finding shape is usable — 4 paste-ready one-character replaces for Session 42.
+
+### What Session 41 Did
+**Deliverable:** `src/model_project_constructor/agents/intake/protocol.py:34` `NextQuestionResult` docstring: `"hard 10-question cap from §4.1"` → `"hard 20-question cap from §4.1"`. **COMPLETE.** Plus end-of-session drift-class sweep found 4 additional wiki/TROUBLESHOOTING drifts queued for Session 42 (BACKLOG item).
+**Started:** 2026-04-18
+**Completed:** 2026-04-18
+**Commits:** (pending this turn) — single `fix(session-41): protocol.py:34 MAX_QUESTIONS docstring lag` commit planned; also pushes to origin.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` first 200 lines (ACTIVE TASK + Session 39 handoff eval + 13 gotchas); `git status` (clean, 3 commits ahead) + `git log -10` + `git diff --stat`; ran `methodology_dashboard.py` (91/100, medium risk, active). **FM #17 Phase 0 check (Learning #26):** BACKLOG.md had 8 `[ ]` items, zero `[x]`, no `## Completed` section — discipline intact at Session #9 of application. No ghost sessions (commits `a3111e3`/`a2524f7`/`e4fd21c` map to Sessions 38/39/40). Reported findings; waited for user direction.
+
+2. **User directed: push commits + work on candidate menu item 1** (`protocol.py:34` docstring micro). Stated understanding, created 6 tasks (push, Phase 1B stub, protocol.py edit, verify, CHANGELOG+BACKLOG, close-out). Pushed 3 commits to origin (`9697689..e4fd21c master -> master`). Wrote Phase 1B IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before technical work. **Learning #29 applied mechanically:** grep'd for `Session 41|### Session 41 Did|### Session 40 Handoff Evaluation|Post-Session-41` before first Phase 1B stub edit — returned only pre-existing references from Session 40's handoff (lines 8, 81, 83, 85, 87, 89, 91, 97, 99, 109, 111, 127). Safe to insert; zero stub fumble. **Fourth consecutive** mechanical validation of Learning #29.
+
+3. **Minor Edit-retry.** First stub Edit to SESSION_NOTES.md failed because the old_string expected two consecutive `---` lines around line 17 but there was only one (a one-character pattern-match misread on my part). Cost: one tool call. Re-read lines 6-22 to reconfirm exact content; second Edit succeeded.
+
+4. **Implementation** — single Edit to `protocol.py:34-35` (the docstring line-wraps across 34 + 35, so the edit target is two lines of context). `10-question` → `20-question`. Parallelized with initial sanity-read of `state.py:57` to confirm `MAX_QUESTIONS = 20`.
+
+5. **Verification (code was touched, so full gate ran).**
+   - `uv run pytest -q` → **446/446 passing, coverage 97.27%** (unchanged — docstring-only).
+   - `uv run ruff check src/ tests/ packages/` → clean.
+   - `uv run mypy src/` → `Success: no issues found in 48 source files` (CI-matching scope per Learning #18; the "60 files" figure cited in prior handoffs is the declared-scope `mypy src/ packages/` number, but CI itself runs only `mypy src/`).
+   - `-W default` not re-run (no sqlite-adjacent code touched); Session 35's 0-warnings baseline stands.
+
+6. **End-of-session drift-class sweep (scope-discipline sanity grep).** Ran `Grep pattern="10-question|10 question|hard 10"` across `src/` (zero matches — confirmed no other source-code drift) and against all `*.md` files (found 4 drifts in 3 files that Sessions 38 and 40 missed). Verified each hit by reading surrounding context: (a) `docs/wiki/claims-model-starter/Pipeline-Overview.md:11` "(max 10 questions)"; (b) `docs/wiki/claims-model-starter/Agent-Reference.md:45` "10-question cap"; (c) `docs/wiki/claims-model-starter/Agent-Reference.md:52` "**Max 10 questions**"; (d) `TROUBLESHOOTING.md:61` "10-question cap". Per FM #2 scope discipline, **NOT fixed in this session** — added as a BACKLOG item with paste-ready exact before/after strings for Session 42.
+
+7. **CHANGELOG Session 41 entry** added at top of `## [Unreleased]`. Structure: Context / Changed / Verified / Unchanged intentionally / Out-of-scope drift noted (the 4 `.md` hits).
+
+8. **BACKLOG.md update.** **Removed** (not flipped) the "`protocol.py:34` docstring MAX_QUESTIONS lag" line per post-Session-33 convention. **Added** new line: "MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits" with exact file:line + before/after strings for each of the 4 hits. Net `[ ]` count unchanged at 8; `[x]` count 0 (verified via `grep -c "^- \[x\]" BACKLOG.md` → `0`). Learning #26 Phase 0 + close-out check honored.
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Read SAFEGUARDS + SESSION_RUNNER + SESSION_NOTES first 200 lines before any action. Read `protocol.py:1-80` (full file shape) + `state.py:50-65` (MAX_QUESTIONS line + surrounding context) before the Edit. Grep-before-insert (Learning #29) applied before Phase 1B stub.
+- **Implementations read, not just descriptions:** Yes. Read the actual docstring at `protocol.py:29-36` (not just the line:34 citation) to confirm the wrap across line 34-35 and the surrounding `NextQuestionResult` dataclass context. Read `state.py` to confirm `MAX_QUESTIONS = 20` current value, not relied on handoff memory alone.
+- **Stakeholder corrections needed:** 0. User's direction ("push any commits not pushed; work on item 1") was clear; no clarifications during execution.
+- **What I got right:** (a) **Paste-not-redraft on gotcha #7** — Learning #27 applied. Zero discovery cost on the primary edit. (b) **Learning #29 fourth consecutive validation.** Grep-before-insert caught nothing to worry about → zero stub fumble. (c) **Scope discipline (FM #2) held** when the sanity grep surfaced 4 new drifts — added to BACKLOG with paste-ready recipe, did NOT bundle. This is the identical discipline Session 40 applied when it found `protocol.py:34`. (d) **End-of-session drift-class sweep surfaced value beyond the stated scope.** The sanity grep is now arguably a Learning candidate (see Phase 3C). (e) **BACKLOG discipline Session #9.** Removed (not flipped); added same-class follow-up with exact paste-ready content. Verified 0 `[x]` at close-out. (f) **1 and done.** Delivered the micro; did not expand to fix the 4 new drifts in-session. (g) **CHANGELOG structure** mirrored Sessions 33-40 pattern exactly (context / changed / verified / unchanged / out-of-scope drift noted). (h) **Push discipline.** Cleared the 3-commit backlog at session start so this session's commit is the only delta at close-out.
+- **What I got wrong:** (a) **`.md`-sweep grep could have run during Phase 0 / inventory rather than end-of-session.** If I had grep'd `10-question|10 question|hard 10` across `src/` + `*.md` during orientation, the 4 additional drifts would have been visible BEFORE the single-file edit was committed, enabling an upfront ask-user "bundle or defer?" decision. Instead the finding surfaces during close-out, constraining the user's options to "Session 42 picks it up." Not a structural defect (scope discipline was correctly applied either way), but suboptimal timing. -0.5. (b) **Minor: SESSION_NOTES.md Phase 1B edit failed on first attempt** because I expected two consecutive `---` lines at line 17 and there was only one. Cost: one tool call + one Read to re-verify content. Cosmetic; no impact on outcome.
+- **Quality bar vs. previous sessions:** On par with Session 39's 9.5/10 micro-execution cleanliness. Above pure literal-minimum because of the bonus drift-class finding — this session's output is strictly more useful than "fix protocol.py:34, close out." Below a hypothetical 10/10 that would have caught the `.md` drifts during Phase 0. Learning #29 streak continues (4 consecutive). Learning #26 BACKLOG discipline at Session #9. No new failure modes surfaced.
+
+### Phase 3C: Learnings
+
+**No new learning coined this session** — the end-of-session sanity-grep pattern is a candidate for a future learning if it recurs, but one instance isn't enough to coin. Deferring.
+
+Existing learnings were load-bearing:
+- **Learning #27 (paste-not-redraft):** Session 40's gotcha #7 was the paste-ready recipe; Session 41 paste-applied it in one Edit.
+- **Learning #29 (grep-before-insert):** Fourth consecutive mechanical validation. Safeguard durable.
+- **Learning #26 (FM #17 Phase 0 + close-out BACKLOG check):** Session #9 of application. 0 `[x]` at both Phase 0 entry and close-out.
+- **Learning #28 (handoff prescriptions as hints, not contracts):** Applied inversely — Session 40's gotcha #7 was a faithful recipe, so I used it verbatim. Learning #28 says AUDIT the specifics; when the audit returns clean, paste is correct.
+- **Learning #18 (CI gate scope):** Applied explicitly. `mypy src/` matches CI (48 files), not `mypy src/ packages/` (60 files). Noted in the pre-commit-state block so Session 42 has the current CI-matching number.
+- **Learning #24 (audits generate finding sets, not verdicts):** Applied to the scope of the sanity-grep. Primary deliverable is pass/fail-shaped, but the same grep against adjacent file types produces a finding set. Worth doing routinely.
+
+**Candidate learning (deferred):** "A drift-class micro should include a predecessor-side grep across adjacent file types (src + .md + docs) during handoff-write, not just during the narrow execution." One instance (this session) isn't enough. If Session 42 picks the follow-up and re-validates the pattern from the other side (executor finds no additional drift after predecessor-sweep), the pattern is worth coining. Current count: pending validation.
+
+### Phase 3D: Handoff to Session 42
+
+The ACTIVE TASK block at top of this file lists Session 42's candidates. New high-priority item: **"MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits"** — a ~5-minute micro with paste-ready exact before/after strings in BACKLOG. Other candidates: tutorial-UX code-block splits, `scripts/render_tutorial.sh` wrapper, statistical terminology glossary, intake/data agent enhancements, B-3 Web UI bridge, automated resume-from-checkpoint.
+
+### Gotchas for Session 42
+
+1. **Post-Session-41 pre-commit state:** pytest **446/446** @ **97.27% coverage**, 0 warnings. `ruff` clean on `src/ tests/ packages/`. `mypy src/` clean on **48 source files** (CI-matching scope per Learning #18). If Session 42 touches code, re-run all four.
+
+2. **Commits ahead of origin: 0 at Phase 0 (Session 41 pushed at session start).** Session 41's own commit will be 1 ahead until pushed at close-out; if Session 41 pushes at close-out, Session 42 starts at 0. Phase 0 should check `git status` and push at start if anything is pending.
+
+3. **Learning #29 validated four times in a row (Sessions 38, 39, 40, 41).** Grep-before-insert safeguard is durable and zero-cost. Session 42 should continue applying it: `Grep pattern="Session 42|### Session 42 Did|### Session 41 Handoff Evaluation|Post-Session-42"` before the Phase 1B stub insert.
+
+4. **Learning #26 Phase 0 + close-out BACKLOG check.** Session #9 of application — discipline deeply entrenched. Verify `grep -c "^- \[x\]" BACKLOG.md` returns 0 at both Phase 0 and close-out.
+
+5. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose should use `probability` for `P(event)`.
+
+6. **"Paste, not redraft"** (Learning #27) — Session 41's BACKLOG entry for the 4 MAX_QUESTIONS drifts is paste-ready. Exact before/after strings per hit:
+   - `docs/wiki/claims-model-starter/Pipeline-Overview.md:11` — `"(max 10 questions)"` → `"(max 20 questions)"`
+   - `docs/wiki/claims-model-starter/Agent-Reference.md:45` — `"10-question cap"` → `"20-question cap"`
+   - `docs/wiki/claims-model-starter/Agent-Reference.md:52` — `"**Max 10 questions**"` → `"**Max 20 questions**"`
+   - `TROUBLESHOOTING.md:61` — `"10-question cap"` → `"20-question cap"`
+   Verify against `src/model_project_constructor/agents/intake/state.py:57` (`MAX_QUESTIONS = 20`) before editing. One Edit per file (or parallel Edits). One CHANGELOG entry.
+
+7. **CHANGELOG structure convention (Sessions 33-41):** date + title + (Session N) heading → 1-paragraph context → Changed / Added / Fixed bullets → Verified bullet → Unchanged intentionally bullet → Out-of-scope drift noted (if relevant). All 9 recent sessions match.
+
+8. **BACKLOG "remove, don't flip" convention — Session #9 of application.** Sessions 33-41. When closing a task, either (a) remove the line entirely if the work fully closes the item, or (b) narrow the line in-place if only a subscope ships. Never flip `[ ]` → `[x]`.
+
+9. **Session 41's -0.5 root cause:** did not run the `.md` drift-class grep during Phase 0 / inventory; the finding surfaced during end-of-session verification, which constrained the user's options to "defer to Session 42." If Session 42 handles a similar micro, consider a predecessor-side drift-class grep during Phase 0 to front-load any siblings. Candidate learning pending a second validation.
+
+10. **Learning #18 CI-gate scope reminder:** CI runs `mypy src/` only (48 files currently), NOT `mypy src/ packages/` (60 files). If Session 42 touches `packages/`, verify both locally but only CI gates on `src/`. The previous handoffs' "60 files" reference is declared-scope, not CI-scope.
+
+11. **The 4 MAX_QUESTIONS drifts could also be opportunistically re-phrased to the constant form** (e.g. "`MAX_QUESTIONS` cap" instead of "20-question cap"), which would permanently end this drift class. Session 27's original fix mixed both forms across different files. Style-harmonization is a separate scope decision for Session 42's operator — the BACKLOG entry chose the literal-number form for simplicity; the constant-reference form is a slight upgrade that trades a ~3-minute style decision for ~0-minute future drift.
+
+### Session 41 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] 3 unpushed commits pushed to origin at session start
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work (Learning #29 grep-first applied; zero fumble — 4th consecutive validation)
+- [x] Implementation: single Edit to `protocol.py:34-35` (10-question → 20-question)
+- [x] Verification: pytest 446/446 @ 97.27%, ruff clean, mypy clean on 48 files (CI-matching)
+- [x] End-of-session drift-class sweep: `Grep pattern="10-question|10 question|hard 10"` across `src/` (0 hits) + `*.md` (4 hits surfaced)
+- [x] CHANGELOG.md Session 41 entry with out-of-scope drift note
+- [x] BACKLOG.md: "`protocol.py:34` docstring MAX_QUESTIONS lag" **removed** (not flipped); "MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits" added with paste-ready recipe. Net `[ ]` count: 8; `[x]` count: 0.
+- [x] Phase 3A: Session 40 handoff evaluated above (9.5/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.5/10)
+- [x] Phase 3C: No new learning coined; existing #18, #24, #26, #27, #28, #29 all load-bearing; candidate learning deferred
+- [x] Phase 3D: Handoff to Session 42 above (ACTIVE TASK candidates + 11 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Push + verbal report to user — pending this turn
 
 ---
 

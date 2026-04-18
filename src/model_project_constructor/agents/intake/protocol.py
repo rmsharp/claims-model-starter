@@ -31,7 +31,7 @@ class NextQuestionResult:
     """Returned by :meth:`IntakeLLMClient.next_question`.
 
     ``believe_enough_info`` is the LLM's own judgement that it has gathered
-    enough to draft the report. The agent still enforces the hard 10-question
+    enough to draft the report. The agent still enforces the hard 20-question
     cap from §4.1 independently.
     """
 

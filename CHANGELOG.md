@@ -13,6 +13,15 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — `protocol.py:34` `NextQuestionResult` docstring MAX_QUESTIONS lag fix (Session 41)
+
+Closes the BACKLOG "`protocol.py:34` docstring MAX_QUESTIONS lag" item (source-code twin of Session 40's F1 wiki fix). The `NextQuestionResult` docstring said "the hard **10-question** cap from §4.1" — drift from Session 27's `src/model_project_constructor/agents/intake/state.py:57` bump `MAX_QUESTIONS = 10` → `20`. One-word fix paired with out-of-scope drift-class finding (below).
+
+- **Changed:** `src/model_project_constructor/agents/intake/protocol.py:34` — `"hard 10-question cap from §4.1"` → `"hard 20-question cap from §4.1"`. Verified against `state.py:57` (`MAX_QUESTIONS = 20`).
+- **Verified:** `uv run pytest -q` → **446/446 passing, coverage 97.27%** (unchanged — docstring-only; no behavior change). `uv run ruff check src/ tests/ packages/` clean. `uv run mypy src/` clean on 48 source files (CI-matching scope per Learning #18).
+- **Unchanged intentionally:** No other `protocol.py` content touched. No fixture or test changes — the docstring is not under test.
+- **Out-of-scope drift noted for follow-up:** End-of-session grep `10-question|10 question|hard 10` across `src/` surfaced zero additional source-code hits, but `.md` sweep found 4 more drifts that Sessions 38 and 40 missed (those sweeps used different grep patterns — drift markers, hosts, test counts — not the literal `10-question` string): `docs/wiki/claims-model-starter/Pipeline-Overview.md:11` ("max 10 questions"), `docs/wiki/claims-model-starter/Agent-Reference.md:45` ("10-question cap") + `:52` ("Max 10 questions"), `TROUBLESHOOTING.md:61` ("10-question cap"). Added as a single BACKLOG item ("MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits") for a future micro session. Per FM #2 scope discipline, NOT bundled into this session.
+
 ### 2026-04-18 — Wiki freshness sweep: 14 remaining `docs/wiki/claims-model-starter/` pages (Session 40)
 
 Closes the BACKLOG "Wiki freshness sweep: 14 remaining pages" item. Audited the 14 pages not covered by Session 38 (`Architecture-Decisions`, `Changelog`, `Contributing`, `Data-Guide`, `Development-Workflow`, `Extending-the-Pipeline`, `Generated-Project-Structure`, `Glossary`, `Governance-Framework`, `Intake-Interview-Design`, `Monitoring-and-Operations` minus `:91`, `Security-Considerations`, `Software-Bill-of-Materials`, `Worked-Examples`) using Session 38's proven 3-pattern grep inventory (drift markers, stale host refs, stale test counts) plus per-page read. The inventory pass found 0 drift-marker hits across the wiki (Content-Recommendations restructure in Session 38 cleared them all) and confirmed the only `github.example.com/api/v3` reference (`Security-Considerations.md:111`) is the canonical GHE example, not drift. The per-page read surfaced 4 findings: 1 narrative-consistency drift (intake interview question-cap lag) + 1 env-var-name drift (tokens that never existed) + 2 count/length drifts in the Contributing page. 10 of the 14 target pages passed with zero changes.
