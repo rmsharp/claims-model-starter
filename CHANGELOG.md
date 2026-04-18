@@ -13,6 +13,18 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — MAX_QUESTIONS drift: 4 wiki + TROUBLESHOOTING hits (Session 42)
+
+Closes the BACKLOG "MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits" item seeded by Session 41's end-of-session drift-class sweep. Four paste-ready one-phrase replaces; completes the post-Session-27 `state.py:57` `MAX_QUESTIONS = 10` → `20` lag across the wiki + TROUBLESHOOTING surfaces.
+
+- **Changed:** `docs/wiki/claims-model-starter/Pipeline-Overview.md:11` — `"(max 10 questions)"` → `"(max 20 questions)"` in the ASCII pipeline diagram's intake annotation.
+- **Changed:** `docs/wiki/claims-model-starter/Agent-Reference.md:45` — `"(tracked against 10-question cap)"` → `"(tracked against 20-question cap)"` in the `questions_asked` state-shape bullet.
+- **Changed:** `docs/wiki/claims-model-starter/Agent-Reference.md:52` — `"**Max 10 questions**"` → `"**Max 20 questions**"` in the intake-agent Behavior list.
+- **Changed:** `TROUBLESHOOTING.md:61` — `"10-question cap before converging"` → `"20-question cap before converging"` in the `DRAFT_INCOMPLETE` troubleshooting root-cause list.
+- **Verified:** All 4 before-strings confirmed present before edit; re-grep (`10-question|10 question|hard 10|max 10 questions|Max 10 questions`, case-insensitive) against `*.md` after edit shows only historical references remain (CHANGELOG + SESSION_NOTES Session 41 entries; BACKLOG entry now removed). `uv run pytest -q` → **446/446 passing, coverage 97.27%** (unchanged — doc-only; no behavior change). Baseline against `src/model_project_constructor/agents/intake/state.py:57` (`MAX_QUESTIONS = 20`) re-confirmed.
+- **Unchanged intentionally:** No ruff/mypy/`-W default` re-run (no code touched); Sessions 37/35 baselines stand. The Session 41 CHANGELOG entry is preserved verbatim — it documents the `protocol.py` fix and the deferral of these 4 hits, so its before-strings are historical context, not drift.
+- **Out-of-scope drift noted for follow-up:** Wider case-insensitive grep (`max 10 questions|Max 10 questions|hard 10|10-question|10 question`) across all `.md` surfaced additional MAX_QUESTIONS lag in `docs/planning/architecture-plan.md` (at least 7 hits across §5/§8/§tables) and `docs/planning/pilot-readiness-audit.md:146`. Both are **point-in-time planning artifacts** (the architecture-plan was written pre-Session-27 bump; the pilot-readiness audit captured state on its own write-date), so they were deliberately excluded from the current drift-class scope. If the operator wants the planning docs to reflect current production values, that is a separate (larger) decision — noted here but not added to BACKLOG, since planning-doc freshness is a different convention than wiki/runtime-doc freshness.
+
 ### 2026-04-18 — `protocol.py:34` `NextQuestionResult` docstring MAX_QUESTIONS lag fix (Session 41)
 
 Closes the BACKLOG "`protocol.py:34` docstring MAX_QUESTIONS lag" item (source-code twin of Session 40's F1 wiki fix). The `NextQuestionResult` docstring said "the hard **10-question** cap from §4.1" — drift from Session 27's `src/model_project_constructor/agents/intake/state.py:57` bump `MAX_QUESTIONS = 10` → `20`. One-word fix paired with out-of-scope drift-class finding (below).

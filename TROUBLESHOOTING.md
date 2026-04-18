@@ -58,7 +58,7 @@ print(intake.missing_fields)  # list of fields the stakeholder didn't provide
 
 **Root causes:**
 - The stakeholder didn't answer enough questions (the agent hit its
-  10-question cap before converging on all 4 required sections).
+  20-question cap before converging on all 4 required sections).
 - The fixture used in a scripted run was incomplete or missing fields.
 
 **Resolution:**

@@ -5,9 +5,130 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 42 — operator's discretion. New high-priority follow-up (Session 41 found): **MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits** (micro, paste-ready in BACKLOG, ~5 min). Carryover menu: tutorial-UX code-block splits (small); `scripts/render_tutorial.sh` wrapper (micro); statistical terminology glossary; intake/data agent enhancements; B-3 Web UI bridge (pilot-shaped); automated resume-from-checkpoint (pilot-shaped). BACKLOG has 8 `[ ]` items, zero `[x]`.
+**Task:** Session 43 — operator's discretion. BACKLOG has 7 `[ ]` items, 0 `[x]`. Candidate menu (smallest → largest): `scripts/render_tutorial.sh` wrapper (micro); tutorial-UX code-block splits (small); statistical terminology glossary (small-medium); intake/data agent enhancements (medium); B-3 Web UI bridge (pilot-shaped); automated resume-from-checkpoint (pilot-shaped). Session 42 also surfaced **out-of-scope planning-doc MAX_QUESTIONS drift** in `docs/planning/architecture-plan.md` (~7 hits) and `docs/planning/pilot-readiness-audit.md:146` — operator-discretion whether to treat planning docs as freshness-tracked or point-in-time archives.
 
-**Status:** Session 41 complete. `protocol.py:34` docstring fixed; end-of-session grep surfaced 4 additional MAX_QUESTIONS drifts (BACKLOG follow-up) that Sessions 38 and 40 sweeps missed.
+**Status:** Session 42 complete. 4 MAX_QUESTIONS wiki/TROUBLESHOOTING drifts fixed; BACKLOG item 1 removed.
+
+### Post-Session-42 pre-commit state
+- `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — doc-only, no behavior change)
+- `uv run ruff check src/ tests/ packages/` → not re-run (no code touched); Session 41's clean baseline stands
+- `uv run mypy src/` → not re-run (no code touched); Session 41's clean-on-48-files baseline stands
+- `-W default` not re-run (no sqlite-adjacent code touched); Session 35's 0-warnings baseline stands
+- BACKLOG.md: 7 `[ ]`, 0 `[x]` (was 8 `[ ]` — removed item 1 per convention)
+
+---
+
+### Session 41 Handoff Evaluation (by Session 42)
+
+**Score: 10/10.** This is what a paste-ready micro handoff looks like at its ceiling. Gotcha #6 listed every target with file:line + exact before-string + exact after-string; all 4 edits executed in one parallel Edit batch with zero discovery cost. Gotcha #9 forecast Session 42's -0.5 risk (no Phase 0 drift-class grep) and named the mitigation — though I ended up *not* doing the predecessor's recommended Phase 0 sweep because the 4-hit scope was already paste-ready from gotcha #6; applying a wider Phase 0 sweep would have been scope-creep-seeking-rather-than-scope-avoiding (see my self-assess below). Gotchas #1 (pre-commit baseline), #3 (Learning #29 streak), #4 (BACKLOG convention), #7 (CHANGELOG structure) all carried forward unchanged.
+
+- **What helped:** (a) **Gotcha #6 — paste-ready per-file recipe.** 4 file:line + before + after triples, zero ambiguity. Learning #27 applied from the predecessor side at its clearest. Discovery cost on the primary deliverable: zero. (b) **Gotcha #3 (Learning #29 reminder)** — grep-before-insert ran mechanically; returned 22 pre-existing references from Session 41's narrative with no heading collisions; zero stub fumble. Fifth consecutive validation. (c) **Gotcha #1 baseline exact match** — pytest 446/446 @ 97.27%, 0 warnings carried forward unchanged. (d) **Gotcha #8 (BACKLOG remove-not-flip)** — Session #10 of application; removed the line cleanly; `grep -c "^- \[x\]"` returned 0 at close-out verification. (e) **Gotcha #7 (CHANGELOG structure convention)** — context / Changed / Verified / Unchanged intentionally / Out-of-scope drift noted; mirrored Sessions 33-41 exactly without redrafting. (f) **Gotcha #10 (Learning #18 CI-scope reminder)** — not applicable this session (no code touched, no mypy re-run), but the preserved "48 files CI-scope" figure is correctly retained in post-Session-42 pre-commit state for future reference.
+- **What was missing:** (a) **Gotcha #6's grep pattern was narrower than the actual lag scope.** The 4 paste-ready hits were complete for the `10-question|10 question|hard 10` pattern family Session 41 ran, but a case-insensitive, broader pattern (`10-question|10 question|hard 10|max 10 questions|Max 10 questions`, -i) surfaces ADDITIONAL hits in `docs/planning/architecture-plan.md` (7+ hits) and `docs/planning/pilot-readiness-audit.md:146`. Session 41's grep didn't include the prose form `"max(imum) 10 questions"` or match case-insensitively — so the planning-doc drift class was never in-scope, not just deferred. Handoff would be 10.5/10 if gotcha #6 had called out "planning-doc drift class is a SEPARATE decision from wiki/runtime-doc drift — out of scope unless operator wants it." Minor — doesn't change Session 42's 4-hit scope. No deduction.
+- **What was wrong:** Nothing. All 4 before-strings matched exactly; `state.py:57` confirmed `MAX_QUESTIONS = 20`; edits applied cleanly.
+- **ROI:** ~15× on the happy path (handoff read ~3 min; saved ~45 min of pure-discovery-across-4-files + pattern-invention). The paste-ready form is at its highest-value shape.
+
+### What Session 42 Did
+**Deliverable:** 4 MAX_QUESTIONS drift fixes across `docs/wiki/claims-model-starter/Pipeline-Overview.md:11`, `docs/wiki/claims-model-starter/Agent-Reference.md:45`, `docs/wiki/claims-model-starter/Agent-Reference.md:52`, `TROUBLESHOOTING.md:61`. **COMPLETE.** Plus out-of-scope finding: planning-docs (`docs/planning/architecture-plan.md`, `docs/planning/pilot-readiness-audit.md`) carry the same drift class, noted in CHANGELOG but not added to BACKLOG pending an operator scope decision on planning-doc freshness convention.
+**Started:** 2026-04-18
+**Completed:** 2026-04-18
+**Commits:** (pending this turn) — single `docs(session-42): MAX_QUESTIONS drift sweep — 4 wiki + TROUBLESHOOTING hits` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` first 200 lines (ACTIVE TASK + Session 41 handoff eval + Session 41 close-out narrative + 11 gotchas); `git status` (clean, 0 commits ahead — Session 41 pushed at its close-out) + `git log -10` + BACKLOG.md full read (8 `[ ]`, 0 `[x]`); ran `methodology_dashboard.py` (91/100, medium risk, active). **FM #17 Phase 0 check (Learning #26):** BACKLOG.md had 8 `[ ]` items, zero `[x]`, no `## Completed` section — discipline intact at Session #10 of application. No ghost sessions (commits f95154a/e4fd21c/a2524f7/a3111e3 map to Sessions 41/40/39/38). Reported findings; waited for user direction.
+
+2. **User directed: "work on backlog item 1"** — the MAX_QUESTIONS drift micro. Stated understanding (4 paste-ready `.md` replaces, audit/doc workstream), created 6 tasks (Phase 1B stub, verify strings, apply edits, verify, CHANGELOG+BACKLOG, close-out). Wrote Phase 1B IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before technical work.
+
+3. **Learning #29 applied mechanically (fifth consecutive validation).** Grep'd for `Session 42|### Session 42 Did|### Session 41 Handoff Evaluation|Post-Session-42` before first Phase 1B stub edit — 22 hits returned, all pre-existing narrative references in Session 41's handoff narrative (ACTIVE TASK line + gotchas + close-out checklist). No heading collision. Safe to insert; zero stub fumble.
+
+4. **Pre-edit string verification.** Read (in parallel) `Pipeline-Overview.md:1-25`, `Agent-Reference.md:40-60`, `TROUBLESHOOTING.md:55-70`, `state.py:50-65`. All 4 before-strings confirmed present at documented line numbers. `state.py:57` confirmed `MAX_QUESTIONS = 20`.
+
+5. **Implementation** — 4 parallel Edits, one per drift hit: (a) `Pipeline-Overview.md:11` "(max 10 questions)" → "(max 20 questions)"; (b) `Agent-Reference.md:45` "tracked against 10-question cap" → "tracked against 20-question cap"; (c) `Agent-Reference.md:52` "**Max 10 questions**" → "**Max 20 questions**"; (d) `TROUBLESHOOTING.md:61` "10-question cap" → "20-question cap". All applied successfully.
+
+6. **Verification (doc-only change, narrower gate).**
+   - `uv run pytest -q` → **446/446 passing, coverage 97.27%** (unchanged — doc-only, no behavior change).
+   - Post-edit re-grep across `*.md` with a **wider** pattern (`10-question|10 question|hard 10|max 10 questions|Max 10 questions`, case-insensitive) to sanity-check full coverage AND proactively surface any adjacent drift-class hits the narrower Session 41 grep might have missed.
+   - Remaining hits classified: (i) BACKLOG.md:14 — my own line, removed in step 8; (ii) CHANGELOG.md — Session 41 historical entry (NOT drift — documents past fix and deferral); (iii) SESSION_NOTES.md — append-only historical narrative; (iv) `docs/planning/architecture-plan.md` (7 hits) + `docs/planning/pilot-readiness-audit.md:146` — **new out-of-scope finding** (see point 7).
+   - No ruff/mypy/`-W default` re-run (no code touched); Session 41's clean baseline stands.
+
+7. **Out-of-scope finding surfaced by wider grep.** The wider, case-insensitive pattern surfaced drift in planning docs that Session 41's narrower pattern missed (`max 10 questions` case variants, `Maximum 10 questions`). Per FM #2 scope discipline, **NOT fixed in this session** — added to CHANGELOG's "Out-of-scope drift noted for follow-up" but **NOT added to BACKLOG** pending an operator scope decision: are planning docs freshness-tracked (like the wiki), or point-in-time archives (like SESSION_NOTES)? Both conventions exist in this project's neighborhood; I did not want to presume.
+
+8. **CHANGELOG Session 42 entry** added at top of `## [Unreleased]`. Structure mirrors Sessions 33-41: context / 4 Changed bullets / Verified / Unchanged intentionally / Out-of-scope drift noted.
+
+9. **BACKLOG.md update.** **Removed** (not flipped) the "MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits" line per post-Session-33 convention. Net count 8 → 7 `[ ]`; 0 `[x]`. Verified via `grep -c "^- \[x\]"` → `0`. Learning #26 Session #10.
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; Session 41's handoff narrative + 11 gotchas before any edit. Read each of the 4 target files' surrounding context (not just the precise line) plus `state.py:50-65` to confirm `MAX_QUESTIONS = 20` still holds. No fix-from-memory; every before-string verified against the file before editing.
+- **Implementations read, not just descriptions:** Yes. Pre-edit parallel reads of all 4 target files plus `state.py` for source-of-truth. Post-edit wider-grep catch additionally surfaced planning-doc drift that a narrower narrow-grep would have missed.
+- **Stakeholder corrections needed:** 0. User's direction ("work on backlog item 1") was unambiguous; no clarifications during execution.
+- **What I got right:** (a) **Paste-and-verify, not redraft.** Learning #27 applied — used Session 41 gotcha #6's exact recipe. (b) **Learning #29 fifth consecutive mechanical validation.** Zero stub fumble; the safeguard is deeply durable. (c) **Widened the verification grep.** Instead of re-running Session 41's `10-question|10 question|hard 10`, I used a wider case-insensitive pattern (`...|max 10 questions|Max 10 questions`) which found additional planning-doc drift that the narrower pattern would have missed. This is the "drift-class audit widens post-fix" pattern — catch the siblings in the same sweep. Candidate learning: see Phase 3C. (d) **Scope discipline (FM #2) held.** When the wider grep surfaced 8+ additional planning-doc hits, did NOT bundle them into this session. Noted in CHANGELOG's out-of-scope block with the operator-discretion framing. (e) **Conservative BACKLOG decision on planning-doc drift.** Did NOT add the planning-doc drift to BACKLOG because the scope decision (are planning docs freshness-tracked?) is an operator call, not a session-author call. CHANGELOG's "Out-of-scope drift noted" documents the finding without presuming the answer. (f) **Learning #26 Session #10** — removed (not flipped) the closed BACKLOG line; verified 0 `[x]` at close-out. (g) **1 and done.** Delivered the 4-hit fix; did not expand to planning docs, adjacent wiki styling, or other tidying.
+- **What I got wrong:** (a) **Did not pre-grep the wider pattern during Phase 0** — Session 41's gotcha #9 explicitly recommended this. I ran it during Phase 5 (post-edit verification) instead. The timing cost is real: if I had pre-grep'd during Phase 0, the planning-doc finding could have been raised to the user as "should the scope include these?" BEFORE the Session 42 deliverable was committed. Running wider-grep post-edit constrains the user's options to "defer to Session 43 / optional BACKLOG add." Identical -0.5 shape to Session 41's same self-flag — the pattern recurs (predecessor-side vs. Phase-0-side drift-class sweep). This is starting to look structural; see Phase 3C candidate learning. -0.5.
+- **Quality bar vs. previous sessions:** On par with Session 41's 9.5/10 micro execution — same paste-ready-recipe → parallel-edits → verify → note-out-of-scope shape. Above Session 41 on the verification-grep widening (caught adjacent drift Session 41's post-edit grep would have missed in this session's scope, because this session widened the pattern). Below a hypothetical 10/10 that would have pre-grep'd during Phase 0 per Session 41's gotcha #9 recommendation.
+
+### Phase 3C: Learnings
+
+**Candidate learning coined now (two-instance validation threshold met).** Session 41's self-assess flagged "predecessor-side `.md`-sweep grep would have front-loaded the drift class before commit." Session 42's self-assess flags the symmetric version on the executor side: "Phase-0-side wider-grep would have front-loaded the planning-doc drift class before the single-file commits." Same structural pattern, two consecutive sessions. Meets the two-instance threshold the Session 41 handoff set for coining.
+
+Proposed Learning #31:
+
+> **When a drift-class micro lands in your lap, run the widest reasonable pattern across ALL affected surface types during Phase 0 — not just the narrow handoff-named pattern against narrow handoff-named files.** A drift-class is defined by the symbol + the semantic neighborhood, not by one grep pattern against one file list. Session 41's handoff named 4 hits under a narrow pattern (`10-question|10 question|hard 10`); Session 42's Phase-0 widening (`... |max 10 questions|Max 10 questions`, case-insensitive) across ALL `.md` would have surfaced ~9 additional planning-doc hits during Phase 0, enabling an upfront "bundle or defer?" user decision. Instead, Session 42 ran the wider grep only during post-edit verification, constraining the user's options to "defer to Session 43." The symmetric predecessor-side version (Session 41's own self-flag): when writing the handoff's drift-class recipe, run the widest reasonable pattern BEFORE committing, so the recipe lists all hits not just the narrow-pattern hits. Both sides of the baton benefit from the same discipline. **Cost:** one extra grep in Phase 0 (~30 seconds). **Benefit:** zero post-edit scope surprises, upfront scope-decision visibility for the user, handoff completeness. **Scope:** drift-class micros, constant/value renames, deprecation sweeps. Not applicable to feature work where the scope is defined by design, not by symbol neighborhood.
+
+(Source: Session 41 predecessor-side self-flag + Session 42 executor-side self-flag, same -0.5 shape, two consecutive sessions. If Session 43 lands a drift-class micro and applies the Phase 0 wider-grep upfront, Learning #31 is validated; otherwise it regresses into a "good-idea-in-theory.")
+
+Other existing learnings were load-bearing:
+- **Learning #27 (paste-not-redraft):** Applied at the peak of its value — Session 41's gotcha #6 was 4 file:line + before + after triples; I pasted verbatim into 4 parallel Edits.
+- **Learning #29 (grep-before-insert):** Fifth consecutive mechanical validation. Zero stub fumble. The safeguard is past the "one-off" threshold — it's durable.
+- **Learning #26 (FM #17 Phase 0 + close-out BACKLOG check):** Session #10 of application. 0 `[x]` at both Phase 0 entry and close-out.
+- **Learning #24 (audits generate finding sets, not verdicts):** Applied to the wider-grep step — the primary deliverable was pass/fail-shaped (did all 4 edits apply?), but the wider grep produced an unsolicited finding set (the 9+ planning-doc hits). Routinely expect multi-dimensional findings.
+
+### Phase 3D: Handoff to Session 43
+
+The ACTIVE TASK block at top of this file lists Session 43's candidates. New out-of-scope finding: **planning-docs MAX_QUESTIONS drift** (~9 hits across `docs/planning/architecture-plan.md` + `docs/planning/pilot-readiness-audit.md`). Operator decides scope. Other candidates: `scripts/render_tutorial.sh` wrapper, tutorial-UX code-block splits, statistical terminology glossary, intake/data agent enhancements, B-3 Web UI bridge, automated resume-from-checkpoint.
+
+### Gotchas for Session 43
+
+1. **Post-Session-42 pre-commit state:** pytest **446/446** @ **97.27% coverage**, 0 warnings. `ruff` clean on `src/ tests/ packages/` (per Session 41). `mypy src/` clean on **48 source files** (CI-matching scope per Learning #18). `-W default` 0-warnings (per Session 35). If Session 43 touches code, re-run all four. If doc-only, pytest alone is sufficient per the Session 42 pattern.
+
+2. **Commits ahead of origin: 0 at Phase 0** (Session 41 pushed at its close-out). Session 42's own commit will be 1 ahead until pushed at close-out; if Session 42 pushes at close-out, Session 43 starts at 0. Phase 0 should check `git status` and push at start if anything is pending.
+
+3. **Learning #29 validated FIVE times in a row (Sessions 38, 39, 40, 41, 42).** Grep-before-insert safeguard is durable past the one-off threshold. Session 43 should continue applying it: `Grep pattern="Session 43|### Session 43 Did|### Session 42 Handoff Evaluation|Post-Session-43"` before the Phase 1B stub insert.
+
+4. **Learning #26 Phase 0 + close-out BACKLOG check — Session #10 of application.** Deeply entrenched. Verify `grep -c "^- \[x\]" BACKLOG.md` returns 0 at both Phase 0 and close-out. BACKLOG is now at 7 `[ ]` items (was 8 before Session 42's removal).
+
+5. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose should use `probability` for `P(event)`.
+
+6. **Paste-and-verify shape (Learning #27) at its peak.** Session 41 → Session 42 was a textbook example: 4 file:line + before + after triples → 4 parallel Edits → zero discovery cost. If Session 43's work has a similar shape, continue the pattern.
+
+7. **Candidate Learning #31 (proposed this session — two-instance validation so far).** Drift-class micros benefit from a Phase 0 wider-grep before narrow-scope edits, not post-edit. If Session 43 lands a drift-class micro and applies the Phase 0 wider-grep upfront, Learning #31 is validated. Otherwise it regresses. See Phase 3C above for full text.
+
+8. **CHANGELOG structure convention (Sessions 33-42):** date + title + (Session N) heading → 1-paragraph context → Changed / Added / Fixed bullets → Verified bullet → Unchanged intentionally bullet → Out-of-scope drift noted (if relevant). All 10 recent sessions match.
+
+9. **BACKLOG "remove, don't flip" convention — Session #10 of application.** Sessions 33-42. When closing a task, either (a) remove the line entirely if the work fully closes the item, or (b) narrow the line in-place if only a subscope ships. Never flip `[ ]` → `[x]`.
+
+10. **Planning-doc freshness convention is UNDEFINED.** Session 42 surfaced MAX_QUESTIONS drift in `docs/planning/architecture-plan.md` (~7 hits) + `docs/planning/pilot-readiness-audit.md:146`. Did not add to BACKLOG because the scope decision (are planning docs freshness-tracked, like the wiki? or point-in-time archives, like SESSION_NOTES?) is an operator call. If the operator wants them treated as freshness-tracked, Session 43 should: (a) BACKLOG-add a broader "Planning-docs freshness audit" item; (b) confirm scope; (c) run a case-insensitive wide-pattern grep before editing. Alternative: explicitly document in `docs/methodology/README.md` that planning docs are point-in-time and NOT freshness-tracked, closing the convention gap.
+
+11. **Learning #18 CI-gate scope reminder:** CI runs `mypy src/` only (48 files currently), NOT `mypy src/ packages/` (60 files). If Session 43 touches `packages/`, verify both locally but only CI gates on `src/`. The previous handoffs' "60 files" reference is declared-scope, not CI-scope.
+
+12. **Session 42's -0.5 root cause (identical to Session 41's):** did not run the wider-pattern `.md` drift-class grep during Phase 0; the finding (planning-doc drift) surfaced during post-edit verification, which constrained the operator's options to "defer to Session 43 / optional BACKLOG add." Proposed Learning #31 (Phase 3C) codifies the mitigation. If Session 43 applies the mitigation structurally, the learning is validated; the -0.5 stops recurring.
+
+### Session 42 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work (Learning #29 grep-first applied; zero fumble — 5th consecutive validation)
+- [x] Pre-edit verification: all 4 target before-strings confirmed present at documented line numbers; `state.py:57` confirmed `MAX_QUESTIONS = 20`
+- [x] Implementation: 4 parallel Edits applied successfully
+- [x] Verification: pytest 446/446 @ 97.27% (doc-only, no ruff/mypy re-run); post-edit wider-grep confirms full coverage + surfaces planning-doc drift as separate finding
+- [x] CHANGELOG.md Session 42 entry with out-of-scope planning-doc drift note
+- [x] BACKLOG.md: "MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits" **removed** (not flipped). Net `[ ]` count: 8 → 7; `[x]` count: 0.
+- [x] Phase 3A: Session 41 handoff evaluated above (10/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.5/10)
+- [x] Phase 3C: Candidate Learning #31 coined (Phase 0 wider-grep for drift-class micros); existing #24, #26, #27, #29 all load-bearing
+- [x] Phase 3D: Handoff to Session 43 above (ACTIVE TASK candidates + 12 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Push + verbal report to user — pending this turn
+
+---
 
 ### Post-Session-41 pre-commit state
 - `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — docstring-only, no behavior change)

@@ -42,14 +42,14 @@ IntakeReport
     regulatory_frameworks:     list[str]
     affects_consumers:         bool
     uses_protected_attributes: bool
-  questions_asked:   int  (tracked against 10-question cap)
+  questions_asked:   int  (tracked against 20-question cap)
   revision_cycles:   int
 ```
 
 ### Behavior
 
 - Asks **one question at a time** (not multiple)
-- **Max 10 questions** -- converges toward the four required sections
+- **Max 20 questions** -- converges toward the four required sections
 - Guides the stakeholder with domain expertise -- does not just transcribe answers
 - Presents a draft for stakeholder review with up to **3 revision cycles**
 - Status is `DRAFT_INCOMPLETE` if the cap is hit with gaps or the stakeholder rejects after 3 revisions

@@ -8,7 +8,7 @@ The pipeline is a sequential chain of three LLM-backed agents, each producing a 
 Stakeholder
     |
     v
-[Intake Agent]  -- guided interview (max 10 questions)
+[Intake Agent]  -- guided interview (max 20 questions)
     | IntakeReport
     v
 [Data Agent]    -- SQL generation + quality checks
