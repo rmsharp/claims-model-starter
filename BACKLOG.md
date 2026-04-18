@@ -4,7 +4,6 @@
 
 ## Open Items
 
-- [ ] **`docs/tutorial.md` §5 `--ci-platform` mention** — Tutorial §5 describes the website CLI but doesn't mention `--ci-platform`. One-line addition would synchronize the fourth doc surface (after README:197 + OPERATIONS §4.1 which Session 34 filled in); the wiki `Schema-Reference.md` is the remaining gap.
 - [ ] **GitHub explicit-override test symmetry** (Session 32 gotcha #10) — Add `test_cli_host_github_explicit_host_url_override` in `tests/agents/website/test_cli.py` parallel to `test_cli_host_gitlab_explicit_host_url_override` that Session 32 added. Restores full platform symmetry (currently GitLab has both default-path + explicit-override tests; GitHub has only default-path). Micro-session; +1 test (445 → 446).
 - [ ] **B-3 (optional): Web UI bridge** — Per `docs/planning/scope-b-plan.md` §7.3. `--resume-intake <session_id>` reads completed `IntakeReport` from the intake UI's SQLite store. Plan §8.3 recommends deferring unless user wants a production-shape demo; "Automated resume-from-checkpoint" below may supersede.
 - [ ] **Automated resume-from-checkpoint** — CLI or orchestrator logic to resume a failed pipeline run from the last successful checkpoint.

@@ -269,6 +269,8 @@ uv run python scripts/run_pipeline.py --host github
 
 The generated project will contain `.github/workflows/ci.yml` instead of `.gitlab-ci.yml`.
 
+**Decoupling CI from host.** `scripts/run_pipeline.py` always ties the CI manifest to `--host`. To emit a CI manifest that differs from the repo host (e.g. a GitHub Actions workflow into a GitLab project for fake-mode cross-platform testing), use the standalone website CLI with `--ci-platform {gitlab,github}`; see `OPERATIONS.md` §4.1 for the recipe.
+
 ---
 
 ## Step 4: Inspect the checkpoints

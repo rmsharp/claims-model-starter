@@ -13,6 +13,14 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-17 — `--ci-platform` flag mentioned in `docs/tutorial.md` §3 (Session 36)
+
+Closes the BACKLOG "`docs/tutorial.md` §5 `--ci-platform` mention" item. Placement moved from the BACKLOG-suggested §5 to §3's "Try GitHub CI output" subsection after verification that `scripts/run_pipeline.py` (the only CLI the tutorial invokes across §3, §5, and §6) does **not** expose `--ci-platform` — `scripts/run_pipeline.py:262` hardcodes `ci_platform = host` and never reads the flag. The flag only exists on the standalone website CLI at `src/model_project_constructor/agents/website/cli.py:107-116`. Learning #28 (handoff fix-shape prescriptions as hints, not contracts) applied: honored the handoff's intent (document the flag in the tutorial), corrected the handoff's specific (§3 instead of §5 — §3 is where `--host` is first introduced as the CI-manifest toggle, so the "you can decouple them" note lands at peak relevance).
+
+- **Added:** 2-sentence paragraph at `docs/tutorial.md:272` (end of §3's "Try GitHub CI output" subsection, directly after the `.github/workflows/ci.yml` vs `.gitlab-ci.yml` explanation). Covers (a) the coupling — `scripts/run_pipeline.py` always ties the CI manifest to `--host`, (b) the override path — use the standalone website CLI with `--ci-platform {gitlab,github}` to emit a CI manifest that differs from the repo host (primarily for fake-mode cross-platform testing), (c) the pointer — see `OPERATIONS.md` §4.1 for the website-CLI recipe.
+- **Verified:** `uv run pytest -q` 445/445 passing, coverage **97.27%** (unchanged — doc-only). No code touched; no ruff / mypy re-run.
+- **Unchanged (intentionally):** `docs/wiki/claims-model-starter/Schema-Reference.md:302` still references `gitlab.example.com` as a fifth operator-facing doc surface; the "Wiki freshness sweep" BACKLOG item covers that gap and kept out of scope here per "1 and done." No change to the §3 "Command-line options" table (lines 257-262) — that table documents `scripts/run_pipeline.py` flags specifically and `--ci-platform` is genuinely not one of them.
+
 ### 2026-04-17 — Unclosed-SQLite `ResourceWarning` noise eliminated (Session 35)
 
 Closes the BACKLOG "Fix unclosed SQLite connection warnings" item (prior count "~20 + 1"; Session 34 characterized the actual count as 26 running `uv run pytest -W default`; Session 35's pre-change tracemalloc pass measured 28 — the 2-warning delta is scheduling noise between runs, all of the same class). Two independent root causes, both in test-side lifecycle gaps rather than production defects:

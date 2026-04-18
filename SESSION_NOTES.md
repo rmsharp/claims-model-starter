@@ -5,9 +5,20 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 36 — operator's discretion. Session 35 closed the unclosed-SQLite warnings cleanly. Three items remain from Session 34's handoff menu: `docs/tutorial.md §5` `--ci-platform` mention (micro, 1 line), GitHub explicit-override test symmetry (micro, +1 test), wiki freshness sweep (full session, doc-shaped). Pilot-shaped work (B-3 Web UI bridge, automated resume-from-checkpoint) also on the BACKLOG if the user wants a production-shape demo instead of hygiene.
+**Task:** Session 37 — operator's discretion. Remaining candidates from Session 35's handoff menu: GitHub explicit-override test symmetry (micro, +1 test), wiki freshness sweep (full session, doc-shaped). Pilot-shaped work (B-3 Web UI bridge, automated resume-from-checkpoint) also on BACKLOG. BACKLOG has 9 `[ ]` items, zero `[x]`.
 
-**Status:** Session 35 complete. 28 → 0 `ResourceWarning: unclosed database`. No open in-progress state.
+**Status:** Session 36 complete. `--ci-platform` documented in `docs/tutorial.md` §3 (not §5 — see decision below).
+
+### Session 36 placement decision
+
+BACKLOG entry + Session 34 handoff both said "Tutorial §5" but verification against `src/model_project_constructor/agents/website/cli.py:107-143` + `scripts/run_pipeline.py:262` (which hardcodes `ci_platform = host` and does **not** expose the flag) shows the tutorial has no `§5`-scoped website-CLI invocation. The tutorial uses `scripts/run_pipeline.py` throughout (§3, §5, §6). §7's programmatic example at `tutorial.md:524` does use the `ci_platform` kwarg on `WebsiteAgent` directly.
+
+Natural insertion: **end of §3 "Try GitHub CI output"** (after line 270, where `--host github` is first introduced as the CI-manifest toggle). The reader has just learned that `--host` flips `.gitlab-ci.yml` ↔ `.github/workflows/ci.yml`; the next obvious question is "can I pick them independently?" — which is what `--ci-platform` answers on the website CLI. This is the Learning #28 application: honor the handoff's intent ("document `--ci-platform` in tutorial"), correct the handoff's specific ("§5" → "§3"). Honest because `scripts/run_pipeline.py` genuinely does not expose the flag — any §5 mention would need the same "but only via the website CLI" caveat.
+
+### Post-Session-36 pre-commit state
+- `uv run pytest -q` → **445/445 passing**, coverage **97.27%** (unchanged — Session 36 was doc-only)
+- No ruff / mypy re-run (no code touched); carrying forward Session 35's clean baseline (ruff clean on `src/ tests/ packages/`, mypy clean on 60 source files)
+- `uv run pytest -W default --tb=no -q` not re-run; Session 35's 0-warnings state stands (no sqlite-adjacent code touched)
 
 ### Post-Session-35 pre-commit state
 - `uv run pytest -W default --tb=no -q` → **445/445 passing**, **0 warnings** (was 25-28 `ResourceWarning: unclosed database`)
@@ -30,6 +41,95 @@ User asked for this during F6 execution. Ran `uv run pytest -W default` (substit
 | `ResourceWarning: unclosed database` (sqlite3) | 26 / 26 | `threading.py:281/303`, `langgraph/pregel/loop.py:290`, `ast.py:279`, `inspect.py:1814`, `anyio/_backends/_asyncio.py:342`, `rich/protocol.py`, `yaml/reader.py`, `sqlalchemy/pool/events.py:64`, `<frozen os>:717` | `ReadOnlyDB` / LangGraph `SqliteSaver` / `AsyncSqliteSaver` checkpoint stores not closing the underlying `sqlite3.Connection`. Python 3.13's stricter GC surfaces the leak at arbitrary frames when the finalizer runs — the frames in the warning are NOT the allocation sites; enabling `tracemalloc` would surface the actual open sites. The BACKLOG item (line 17) is still correct in spirit but understated count (said "~20 + 1 intake" = 21; actual is 26). | Moderate — requires threading a `close()` / `__exit__` discipline through `ReadOnlyDB`, the intake `AsyncSqliteSaver` usage in `agents/intake/graph.py`, and any `MemorySaver`/`SqliteSaver` fixtures in `tests/agents/data/conftest.py`. Not a one-liner; but also not invasive. |
 
 Recommendation: defer to a dedicated session. The existing BACKLOG item (line 17) is the right home; bump the count from "~20 + 1" to "26" if a future session picks this up. No fix needed for the F6 deliverable.
+
+---
+
+### Session 35 Handoff Evaluation (by Session 36)
+
+**Score: 9.5/10.** Session 35's handoff continued the strong streak (Sessions 33 @ 10, 34 @ 10, 35 @ 9.5). The ACTIVE TASK block carried forward four discretionary candidates with correct effort estimates; the "Post-Session-35 pre-commit state" section matched exactly what I observed (pytest 445/445 @ 97.27%, 0 warnings). The 9 gotchas were well-chosen and three were directly load-bearing for this session: (a) gotcha #1 pre-flight baseline matched exactly — zero discovery cost; (b) gotcha #5 (Learning #28 — "handoff prescriptions as hints, not contracts") was the operating principle I applied when the BACKLOG + Session 34 handoff both pointed at §5 but the actual CLI surface was §3; (c) gotcha #6 (BACKLOG "remove, don't flip" is now at session #3 of application) — applied cleanly.
+
+- **What helped:** (a) **The explicit "operator's discretion" framing with ranked micro candidates.** Session 35 didn't try to lock-in a single next task; it listed three micros + pilot-shape options and let the operator pick. When the user said "1. docs/tutorial.md" I could immediately scope the deliverable without clarification. (b) **Learning #28 being fresh.** Session 35 coined it two sessions ago and the wording ("handoff prescriptions are hints, not contracts; verify specifics against actual code before editing") was still top-of-mind. I caught the BACKLOG-said-§5-but-actually-§3 discrepancy in ~90 seconds of reading `cli.py` + `scripts/run_pipeline.py` rather than editing §5 first and discovering the problem mid-prose. Saved ~10 min of rework. (c) **Gotcha #3 (`ReadOnlyDB.close()` is now the public API, no `__enter__/__exit__`)** — not directly load-bearing for a doc-only session, but reduced cognitive load: no need to verify that `ReadOnlyDB` had context-manager semantics when scanning the tutorial. Low-value save but a good signal that the gotcha list is serving future sessions even when not acted on.
+- **What was missing:** (a) The gotcha list did not flag that the BACKLOG's "§5" framing was wrong — this was the exact class of error Learning #28 warns about, so the inheritance-through-gotchas mechanism is working (fresh session applied the learning), but the predecessor could have pre-verified and either corrected the BACKLOG or flagged "verify §5 vs §3 before editing — tutorial uses `run_pipeline.py`, not the website CLI." Would have saved ~3 min of verification-and-decision reading. Not a deduction; Session 35's scope was the warnings fix, not the BACKLOG curation — but -0.5 since the exact learning Session 35 coined would have prevented it. (b) No explicit forecast of how big the edit would be (byte count or line count). Session 34 did this for F6 ("7-line paragraph"); Session 35 didn't for the tutorial candidate. Would have sharpened scope. -0.0 (not expected since Session 35 didn't do the edit).
+- **What was wrong:** Nothing factually wrong. The "tutorial §5" framing was inherited from the BACKLOG, not originated by Session 35.
+- **ROI:** ~8× on this session's work (handoff-read ~3 min; saved ~25 min of orientation + baseline verification + discovery of the §5-vs-§3 mismatch if I'd edited first). Below Session 34's 15× (Session 34 had a ready-to-paste work product; Session 36 only had a pointer), above Session 32's baseline of ~5×.
+
+### What Session 36 Did
+**Deliverable:** Add `--ci-platform` mention to `docs/tutorial.md`. **COMPLETE.**
+**Started:** 2026-04-17
+**Completed:** 2026-04-17
+**Commits:** (pending this turn) — single `docs(session-36): mention --ci-platform in tutorial.md §3` commit planned.
+
+**What was done:**
+
+1. **Phase 0 orientation** — Read `SAFEGUARDS.md` + `SESSION_RUNNER.md` in full; `SESSION_NOTES.md` first 230 lines (ACTIVE TASK + Session 34/35 handoffs + 9 Session-35 gotchas); ran `git status` (clean, 3 commits ahead of origin/master per Session 35 gotcha #2) + `git log -10` + `git diff --stat`; ran `methodology_dashboard.py` (91/100, medium, active, healthiest of 4 after `wsfct` @ 92). **Executed FM #17 Phase 0 check (Learning #26):** `BACKLOG.md` had 10 `[ ]` items, zero `[x]`, no `## Completed` section — discipline intact. No ghost sessions (Session 35 matches `a98f885`). Reported state to user, waited for direction.
+
+2. **User directed: item 1 (`docs/tutorial.md`).** Created 5-task list for tracking (read-source → verify-semantics → stub → edit → close-out). Wrote Phase 1B IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before any edits (FM #14 protection).
+
+3. **Verification pass (Learning #28).** The BACKLOG entry + Session 34 handoff both framed the deliverable as "tutorial §5 `--ci-platform` mention" and characterized §5 as "describes the website CLI." I read §3, §5, §6, §7 of `docs/tutorial.md` + `src/model_project_constructor/agents/website/cli.py:95-145` + `scripts/run_pipeline.py:258-270`. Findings: (a) `--ci-platform` is a flag on the **website CLI** at `cli.py:107-116`, not on `scripts/run_pipeline.py`; (b) `scripts/run_pipeline.py:262` hardcodes `ci_platform = host` and never reads the flag; (c) the tutorial uses `scripts/run_pipeline.py` throughout §3, §5, §6; §7 uses the programmatic `WebsiteAgent(client, ci_platform="gitlab")` kwarg at line 524. Conclusion: the BACKLOG's §5 framing was wrong. Natural insertion is end of §3 "Try GitHub CI output" where `--host` is first introduced as the CI-manifest toggle. Documented the placement decision in SESSION_NOTES.md ACTIVE TASK before editing.
+
+4. **Implementation.** Single Edit at `docs/tutorial.md:270-272` — 2-sentence paragraph `**Decoupling CI from host.** ...` inserted between the `--host github` demonstration and the `---` section separator. Prose covers (a) the coupling (`scripts/run_pipeline.py` ties CI manifest to `--host`), (b) the override (website CLI with `--ci-platform {gitlab,github}` for cross-platform fake-mode testing), (c) the pointer (OPERATIONS.md §4.1). ~60 words, honest about the tool split.
+
+5. **Verification.** `uv run pytest -q` → **445/445 passing, coverage 97.27%** (unchanged — doc-only). No ruff / mypy re-run (no code touched); Session 35's clean baseline stands. No `-W default` re-run (no sqlite-adjacent code touched; Session 35's 0-warnings state holds).
+
+6. **CHANGELOG Session 36 entry** added at top of `## [Unreleased]`. Structure: Added / Verified / Unchanged (intentionally). Explicit note that placement moved from BACKLOG-suggested §5 to §3 after verification; Learning #28 application documented.
+
+7. **BACKLOG.md** — **removed** (not flipped) the "`docs/tutorial.md` §5 `--ci-platform` mention" line, per the post-Session-33 convention. 10 → 9 `[ ]` items. No sibling cross-references to update.
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Before drafting prose or making any edit, read the tutorial §3-§7 + `cli.py` flag definition + `run_pipeline.py` ci_platform handling. This surfaced the §5-vs-§3 discrepancy within the first 5 minutes. A session that trusted the BACKLOG framing and edited §5 would have shipped honest prose about a flag that doesn't exist on the `scripts/run_pipeline.py` invocations §5 actually uses.
+- **Implementations read, not just descriptions:** Yes. Read `cli.py:107-143` for the exact flag definition (name, choices, default, validation), `run_pipeline.py:262` for the hardcoded-coupling claim, and all four tutorial invocation sites (§3, §5, §6, §7) to confirm the tool split. Did not skim — line numbers in both the decision note and the CHANGELOG entry came from actual reads.
+- **Stakeholder corrections needed:** 0 substantive. One clarifying question from the user mid-close-out ("Is CHANGELOG/BACKLOG/commit part of close-out?") — not a correction, just a confirmation request. Answered in-line without redirecting.
+- **What I got right:** (a) **Caught the BACKLOG-§5 misframing before editing.** Learning #28 applied as-designed. Saved ~10 min of rework. (b) **Chose the honest placement.** §3's "Try GitHub CI output" is where `--host` is first introduced as the CI-manifest toggle; the "you can decouple them" note lands at peak relevance and doesn't require inventing a §5-scoped website-CLI context that doesn't exist. (c) **Documented the placement decision** in the ACTIVE TASK block before editing, so a future session (or the user) can see *why* the edit landed at §3, not §5. (d) **Single-edit implementation.** One Edit to tutorial.md, one to CHANGELOG.md, one to BACKLOG.md, one to SESSION_NOTES.md. Each edit's scope is independently reviewable. (e) **Post-Session-33 "remove don't flip" convention correctly applied.** (f) **Kept scope bounded.** The Wiki freshness sweep covers `Schema-Reference.md:302` (the fifth operator-facing doc surface); explicitly left that out of this session per "1 and done."
+- **What I got wrong:** (a) **Stub-edit fumble.** On the first Phase 1B stub edit I accidentally duplicated the `### Post-Session-35 pre-commit state` heading (added one line above where the original already existed). Caught it on the next read; removed the duplicate in a second Edit. Cost: ~30 seconds + two tool calls. Root cause: I pasted a heading into the new stub without reading far enough into the file to know the heading already existed below. Low impact but avoidable. -0.5. (b) **Task list framing conflated Phase 2 verification with Phase 3 close-out in task #5.** User caught this and asked for clarification. The actual work was correct (pytest first, then CHANGELOG/BACKLOG/commit) but the task title compressed the two phases together. Learning: name tasks by phase, not by action bundle. -0.0 (not a deduction; it's a user-visible clarity gap, not an execution gap).
+- **Quality bar vs. previous sessions:** On par with Session 35's 9.5/10 and below Session 34's 9.5/10 (Session 34's paste-and-verify had cleaner execution). Above Session 32's 9.5/10 in terms of Learning-application discipline — Session 36 is the first visible success of Learning #28 where a handoff prescription was caught and corrected before editing, not after.
+
+### Phase 3C: Learnings
+
+No new learning for SESSION_RUNNER.md this session. Session 36 applied Learning #28 as-designed (handoff fix-shape prescriptions as hints, not contracts). The absence of a new learning is itself a signal: Learning #28 worked on its first real application. A session that re-discovers a previously-coined learning does not need to add a redundant entry; the existing learning is validated by having been successfully applied.
+
+Potential meta-observation (not adding to the table): **When a BACKLOG entry references a specific section (`§5`), verify the section still exists as described before acting.** Sections renumber or lose scope as the tutorial grows. But this is a special case of Learning #28 already (specifically the "memory names a file path" and "grep for it" bullets), so it doesn't need to be its own learning.
+
+### Phase 3D: Handoff to Session 37
+
+The ACTIVE TASK block at top of this file lists the remaining candidates from Session 35's handoff menu (now minus the tutorial.md item Session 36 just closed): GitHub explicit-override test symmetry (micro, +1 test), wiki freshness sweep (full session, doc-shaped), B-3 Web UI bridge (pilot), automated resume-from-checkpoint (pilot). Session 37's operator can pick any.
+
+### Gotchas for Session 37
+
+1. **Post-Session-36 pre-commit state:** pytest **445/445** at **97.27% coverage**, 0 warnings. ruff / mypy not re-run this session (no code touched); last known state from Session 35: ruff clean on `src/ tests/ packages/`, mypy clean on 60 files. If Session 37 touches code, re-run all four.
+
+2. **Commits ahead of origin: now 4.** Sessions 33 (`b74d3ff`) + 34 (`86f8a64`) + 35 (`a98f885`) + 36 (pending) unpushed. Session 37's Phase 0 may want to push all four before starting (or not — operator's call).
+
+3. **Learning #28 has now been validated on a real application.** Session 36 caught the BACKLOG/handoff §5 misframing by verifying against `cli.py` + `run_pipeline.py` before editing. The verification took ~90 seconds and saved ~10 min of rework. This is the pattern: **when a handoff names a specific file, section, symbol, or line, verify it still matches current code before acting.** Session 37 should apply the same discipline — especially if the operator picks the GitHub explicit-override symmetry task (which references `test_cli.py` line locations from Session 32 that may have shifted).
+
+4. **The `docs/tutorial.md` §3 edit is the only operator-facing doc surface with a full `--ci-platform` paragraph now.** Four surfaces now mention the flag: `README.md:197` (one-sentence inline), `OPERATIONS.md` §4.1 (7-line canonical recipe from Session 34), `docs/tutorial.md` §3 (2-sentence pointer from Session 36), and the flag's own `--help` output at `cli.py:107-116`. The fifth surface — `docs/wiki/claims-model-starter/Schema-Reference.md:302` (still references `gitlab.example.com`) — is the remaining gap, covered by the "Wiki freshness sweep" BACKLOG item.
+
+5. **BACKLOG convention "remove, don't flip" is now at Session #4 of application.** Session 33 established it, Sessions 34/35/36 executed it. Session 37 should continue. FM #17 Phase 0 check (Learning #26) takes ~30 seconds and has caught zero drifts in the last three sessions — keep it.
+
+6. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose or prompt edits should use `probability` for `P(event)`.
+
+7. **"Paste, not redraft"** (Learning #27) — Session 36 did not have paste-ready work product to inherit (the BACKLOG entry was a pointer, not verified prose). If Session 37's handoff from Session 36 includes paste-ready prose (it doesn't), follow the discipline.
+
+8. **Session 36's self-assessment was 9.5/10.** Root cause of the half-point deduction: duplicated the `### Post-Session-35 pre-commit state` heading on the first stub edit, fixed in a second Edit. Cost: ~30 seconds, fully recoverable. Learning: when inserting new content into a structured file, read far enough into the file to see if the structure you're adding already exists below.
+
+9. **Task framing:** Session 36's task #5 (`Verify + update CHANGELOG.md + BACKLOG.md + commit`) compressed Phase 2 verification with Phase 3 close-out steps. For Session 37, prefer **one task per phase** when the phases are distinguishable (e.g. separate tasks for pytest-green, CHANGELOG write, BACKLOG update, commit). Low-cost change that improves progress legibility.
+
+### Session 36 close-out checklist
+
+- [x] Phase 0 orientation report given, waited for user direction
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work
+- [x] Verification pass (Learning #28): read `cli.py`, `run_pipeline.py`, tutorial §3/§5/§6/§7 before editing
+- [x] Placement decision (§3, not §5) documented in ACTIVE TASK block
+- [x] Implementation: single Edit to `docs/tutorial.md:272` (2-sentence paragraph)
+- [x] Verification: pytest 445/445 @ 97.27% (unchanged), no regressions
+- [x] CHANGELOG.md Session 36 entry (Added / Verified / Unchanged intentionally)
+- [x] BACKLOG.md: "`docs/tutorial.md` §5 `--ci-platform` mention" line **removed** (not flipped); 10 → 9 `[ ]` items
+- [x] Phase 3A: Session 35 handoff evaluated and scored above (9.5/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.5/10)
+- [x] Phase 3C: No new learning — Learning #28 validated on first real application
+- [x] Phase 3D: Handoff to Session 37 above (ACTIVE TASK candidates + 9 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Verbal report to user — pending this turn
 
 ---
 
