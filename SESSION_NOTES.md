@@ -5,9 +5,146 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 43 — operator's discretion. BACKLOG has 7 `[ ]` items, 0 `[x]`. Candidate menu (smallest → largest): `scripts/render_tutorial.sh` wrapper (micro); tutorial-UX code-block splits (small); statistical terminology glossary (small-medium); intake/data agent enhancements (medium); B-3 Web UI bridge (pilot-shaped); automated resume-from-checkpoint (pilot-shaped). Session 42 also surfaced **out-of-scope planning-doc MAX_QUESTIONS drift** in `docs/planning/architecture-plan.md` (~7 hits) and `docs/planning/pilot-readiness-audit.md:146` — operator-discretion whether to treat planning docs as freshness-tracked or point-in-time archives.
+**Task:** Session 44 — **Operator sign-off required before Phase 1 starts.** Review `docs/planning/evolution-page-plan.md` §4 (9 open decisions — archive directory name, Framing A vs B, `initial_purpose.txt` disposition, project-local convention home, banner exact wording ×2, review-gate convention, SESSION_RUNNER.md reference handling, Evolution page filename, Phase 1+4 bundling). Confirm or specify alternatives. Then Session 44 executes Phase 1 (methodology + openers + word-tightening) per plan §5.
 
-**Status:** Session 42 complete. 4 MAX_QUESTIONS wiki/TROUBLESHOOTING drifts fixed; BACKLOG item 1 removed.
+**Status:** Session 43 complete. Plan document at `docs/planning/evolution-page-plan.md` (~650 lines, 13 sections, evidence-based inventory + per-phase criteria + 9 operator decisions).
+
+### Post-Session-43 pre-commit state
+- `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — plan is new-file-only, no behavior or surface change)
+- `uv run ruff check src/ tests/ packages/` → not re-run (no code touched); Session 41's clean baseline stands
+- `uv run mypy src/` → not re-run (no code touched); Session 41's clean-on-48-files baseline stands
+- `-W default` not re-run (no sqlite-adjacent code touched); Session 35's 0-warnings baseline stands
+- BACKLOG.md: 8 `[ ]`, 0 `[x]` (was 7 `[ ]` — added Evolution-plan pointer)
+- CHANGELOG.md: Session 43 entry at top of [Unreleased]
+- 1 new file committed: `docs/planning/evolution-page-plan.md`
+
+---
+
+### Session 42 Handoff Evaluation (by Session 43)
+
+**Score: 9.0/10.** The handoff was calibrated for either a drift-class micro (Learning #31 proposal path) OR an operator's-discretion general session. It landed in the latter. Gotcha #10 ("Planning-doc freshness convention is UNDEFINED") was the single load-bearing pointer — it framed the exact problem that Session 42→43's conversational envelope spent 5+ turns discussing and that this plan resolves. Without gotcha #10, the multi-turn design discussion would have had to invent the framing from scratch.
+
+- **What helped:** (a) **Gotcha #10 framing.** Named the convention gap, suggested "are planning docs freshness-tracked or point-in-time archives?" with both options on the table, and suggested documenting the decision in `docs/methodology/README.md`. The framing was directly adopted; the user selected "point-in-time archive with explicit move," which became this plan's Design Decision 4. (b) **Gotcha #1 baseline exact match** — pytest 446/446 @ 97.27%, ruff/mypy clean on Session 41 baseline, 0 warnings. Zero re-verification cost for the baseline figures. (c) **Gotcha #3 (Learning #29 streak)** — grep-before-insert `Session 43|### Session 43 Did|### Session 42 Handoff Evaluation|Post-Session-43` applied mechanically; returned only pre-existing Session 42 narrative references (lines 77, 87, 89, 91, 93, 95, 101, 103, 111, 113, 127 — all in Session 42's handoff narrative, none as headings). Sixth consecutive Learning #29 validation. (d) **Gotcha #4 BACKLOG count** — carried forward correctly; I updated from 7 → 8 `[ ]` cleanly with the Evolution-plan pointer. (e) **Gotcha #7 (Learning #31 — candidate)** — not applicable this session (planning workstream, no drift-class micro). Learning #31 remains pending 3rd validation. (f) **Gotcha #8 (CHANGELOG structure convention)** — Session 43 entry mirrors the Sessions 33-42 shape (context / Added / Verified / Unchanged intentionally / Next). Zero re-derivation. (g) **Gotcha #9 (BACKLOG remove-not-flip)** — Session #10 of application; applied by adding (not flipping) the Evolution plan pointer.
+- **What was missing:** (a) **`docs/methodology/README.md` upstream-provenance.** Gotcha #10 recommended "documenting the decision in `docs/methodology/README.md`" — but that file is upstream framework material (Copyright 2026 Terrell Deppe at `:253-255`). Editing it would pollute material that future methodology pulls may overwrite. This was only discovered during plan-writing Phase 0 inventory; it reshaped plan §4.4 (project-local convention home). Session 42 could not reasonably have forecasted this, but a Session 42 sanity-read of `docs/methodology/README.md` top-10 lines (it shows the imgs.shields badges first, a strong signal it's imported) would have caught it. -0.5. (b) **No forecast that the session might pivot to planning-workstream.** Gotcha #10 framed the convention-decision as a policy call. If the policy call's answer requires a multi-phase implementation (as it did), the session shape is Planning, not a micro or a single-session fix. Minor; planning-workstream discipline took over naturally once "three-phase implementation" emerged. -0.5.
+- **What was wrong:** Nothing factually wrong. Baseline figures exact. Gotcha #10 framing productively adopted.
+- **ROI:** ~5× on the specific gotcha #10 framing value. Lower than Session 41→42's ~15× paste-ready ROI because this session's work was creative (plan-write), not mechanical (paste-and-verify). Gotcha #10 set the frame; the plan's structure was invented this session.
+
+### What Session 43 Did
+**Deliverable:** `docs/planning/evolution-page-plan.md` — 3-phase implementation plan with evidence-based inventory, 9 open decisions awaiting operator sign-off, per-phase completion criteria + verification commands + session boundaries, dependency graph, outstanding risks + mitigations. **COMPLETE.**
+**Started:** 2026-04-18
+**Completed:** 2026-04-18
+**Commits:** (pending this turn) — single `docs(session-43): Evolution page + documentation convention plan` commit planned.
+
+**What was done:**
+
+1. **Phase 0 brief orientation.** git status clean (0 commits ahead of origin — Session 42 pushed at close-out); git log -3 confirmed commits f95154a/e4fd21c/6558a5d map to Sessions 41/40/42 with no gaps. No formal orientation report because this is a mid-conversation session pivot from Session 42's design discussion; shared state was live throughout the prior turns.
+
+2. **Phase 1B claim.** Grep-before-insert for `Session 43|### Session 43 Did|### Session 42 Handoff Evaluation|Post-Session-43` returned 22 hits, all in Session 42's handoff narrative (references, not headings). Safe to insert. Stub written to SESSION_NOTES.md ACTIVE TASK block before any technical work. **Learning #29 applied mechanically — sixth consecutive validation.**
+
+3. **Evidence-based inventory (planning workstream requirement).** Parallel greps for:
+   - `docs/planning/` references across all `*.md`: 17 files matched. Classified per §3.2 (outward wiki, 3 files / 4 hits) + §3.3 (inward docs, 5 files / 15 hits active + 2 files of historical — append-only SESSION_NOTES + CHANGELOG — skipped).
+   - `contributor-facing` single-hit at `CHANGELOG.md:8` confirmed.
+   - Full directory listings: `docs/planning/` (6 files including PDF), `docs/wiki/claims-model-starter/` (21 pages).
+   - Parallel reads: `docs/methodology/README.md`, `README.md` (repo root), `docs/wiki/claims-model-starter/Architecture-Decisions.md`, `docs/wiki/claims-model-starter/Changelog.md`, `docs/wiki/claims-model-starter/Contributing.md`.
+
+4. **Upstream-methodology discovery.** `docs/methodology/README.md:253-255` License section reveals "Copyright 2026 by Terrell Deppe" and points at the upstream https://github.com/KJ5HST/methodology source. This surfaced during inventory — not forecasted in Session 42's handoff. Reshaped plan §4.4 from "edit methodology README" (user's original phrasing) to "new project-local `PROJECT_CONVENTIONS.md` to avoid upstream pollution" (with the other 3 options listed for operator choice).
+
+5. **Plan document written to `docs/planning/evolution-page-plan.md`.** 13 sections, ~650 lines. Structure:
+   - §1 Goal and non-goals.
+   - §2 Design decisions (5, settled prior to the plan).
+   - §3 Evidence-based inventory (7 subsections — grep counts from actual runs per Learning #19).
+   - §4 Open decisions (9 — recommendations with rationale).
+   - §5 Phase 1 (convention + openers + word-tightening + update discipline — bundled per §4.9).
+   - §6 Phase 2 (archive directory + move + banner + link updates).
+   - §7 Phase 3 (wiki/Evolution.md initial write with pre-work research, deliverables, review gate per §4.6, built-in checkpoint per §7.5).
+   - §8 Future Evolution rewrites (out of this plan's scope; governed by Phase 1's convention doc).
+   - §9 Phase dependency graph (sequential, one session each).
+   - §10 Planning-session checklist (per SESSION_RUNNER.md).
+   - §11 Outstanding risks (7 risks with mitigations).
+   - §12 Out-of-scope notes (explains how Session 42's MAX_QUESTIONS drift finding is resolved by Phase 2's archive).
+   - §13 Close-out (operator sign-off requested before Phase 1).
+
+6. **BACKLOG.md update.** Added line pointing at the plan; net count 7 → 8 `[ ]`; 0 `[x]` (verified).
+
+7. **CHANGELOG.md Session 43 entry** added at top of `## [Unreleased]`. Structure mirrors Sessions 33-42: context / Added / Verified / Unchanged intentionally / Next. First CHANGELOG entry this session that explicitly flags the new-file-only nature of the deliverable.
+
+### Phase 3B: Self-assess — 9.0/10
+
+- **Research before creative work:** Yes. Read SAFEGUARDS + SESSION_RUNNER in full at Session 42 start (shared state); re-read SESSION_NOTES Session 42 handoff + 12 gotchas at Session 43 start. Ran comprehensive inventory greps before drafting a single plan sentence. Read 5 affected files in full before writing §3 inventory. Upstream-methodology discovery came from reading `docs/methodology/README.md` end-to-end — not assuming.
+- **Implementations read, not just descriptions:** Yes. `README.md` (210 lines), `docs/methodology/README.md` (255 lines), `wiki/Architecture-Decisions.md` (64 lines), `wiki/Changelog.md` (165 lines), `wiki/Contributing.md` (240 lines) all read end-to-end before plan draft. Glob outputs enumerated every file in `docs/planning/` and `docs/wiki/claims-model-starter/`. Grep outputs drove the §3.2-§3.3 link-update inventory.
+- **Stakeholder corrections needed:** 0 during plan production. The multi-turn design discussion (prior turns) resolved 5 design decisions and 1 banner commitment cleanly before plan-writing started.
+- **What I got right:** (a) **Detected upstream-methodology issue and flagged it as an open decision** rather than silently creating `docs/methodology/PROJECT_CONVENTIONS.md` under assumption. Operator gets to decide. (b) **Evidence-based inventory thorough** per planning workstream requirement — 7 subsections, per-pattern grep counts (Learning #19 applied), file-level link classification for Phase 2 preparation. (c) **Per-phase completion criteria + verification commands + explicit session boundaries** per Learning #6 (plan-as-deliverable). Each phase has STOP points. (d) **9 open decisions surfaced rather than presumed.** Each with recommendation + rationale. Operator can confirm or override quickly. (e) **Bundled Phase 1 + Phase 4 into a single phase (§4.9)** when evidence showed natural fit — Phase 4's update-discipline doc writes to the same `PROJECT_CONVENTIONS.md` as Phase 1's convention declaration. (f) **Risks enumerated with concrete mitigations (§11).** Not hand-waved; each risk has either a plan-level mitigation (link-break grep in §6.5) or a convention-level one (banner for drift between rewrites). (g) **Scope discipline (FM #2, Learning #6).** Did NOT start implementing. Plan-write only. (h) **Noted how Session 42's out-of-scope finding resolves via Phase 2 (§12).** The ~9 planning-doc MAX_QUESTIONS drift hits become archaeology (not freshness-tracked) under the archive move — no separate fix needed. (i) **Framing B recommendation for archive scope** handles scope-b-plan.md's B3-pending status cleanly via the tiebreaker criterion; avoids moving a doc whose primary-scope plan is still referenced by an open BACKLOG item.
+- **What I got wrong:** (a) **Plan is long (~650 lines).** Per Learning #9, single-document multi-phase plans favor consistency over navigability for 3+ phases with ≥3 shared invariants. This plan qualifies (3 phases + 5 shared design decisions). But 650 lines is at the heavier end; a 400-line version could have been cleaner. -0.5. (b) **Upstream-methodology issue should have surfaced during design discussion, not during plan Phase 0.** The user's prior-turn phrasing ("methodology README should state explicitly...") went unchallenged for multiple turns; I accepted the premise. Only when I opened `docs/methodology/README.md` to write the plan's §3.6 provenance note did the upstream marker appear. A proactive "is docs/methodology/README.md ours or imported?" check in the first design turn would have saved one `docs/methodology/PROJECT_CONVENTIONS.md`-vs-README-edit discussion cycle. -0.5. (c) **Did not exhaustively verify wiki pages for "evolution"/"history"/"arc" as an existing Known Gap** in `Content-Recommendations.md`. Flagged as a "spot-check during Phase 3" in §7.2 step 4 rather than checking now. Minor — the grep is 30 seconds and would have foreclosed one Phase 3 follow-up. -0.0 (absorbed into §4 open decision bookkeeping).
+- **Quality bar vs. previous sessions:** Above Session 10 (GitHub/GitLab abstraction plan, 720 lines) on evidence-inventory density (§3 has 7 subsections with grep-verified counts; Session 10's was 4 subsections). Below Session 24 (scope-b-plan.md, 822 lines) on per-phase specificity — Session 24's §7.2.2 had a complete reference-implementation code block; this plan's §7.2 has a research procedure, not code. That tracks: Scope B was a clearly-scoped implementation; this is a documentation convention. Different artifact shapes justify different plan density.
+
+### Phase 3C: Learnings
+
+**No new learning coined this session.** Existing learnings were load-bearing:
+- **Learning #6 (plan-as-deliverable):** Applied throughout. This session's commit history will show exactly one commit: `docs(session-43): Evolution page + documentation convention plan`. No implementation bleed.
+- **Learning #9 (single-document for multi-phase plans with shared invariants):** Applied. 3 phases + 5 shared design decisions → single document preferred over phase-per-file. Consistency >> navigability for this shape.
+- **Learning #19 (grep counts from actual runs, not memory):** Applied to §3.2 (4 hits), §3.3 (15 hits active + 2 files historical), §3.4 (1 hit), §3.5 (21 files). All counts come from the paste-ready grep output, not prior-turn recall.
+- **Learning #29 (grep-before-insert):** Sixth consecutive mechanical validation. Zero stub fumble.
+- **Learning #26 (BACKLOG discipline at both Phase 0 + close-out):** Session #10 of application.
+
+**Candidate Learning #31 (proposed Session 42):** not applicable this session (no drift-class micro landed in scope). Learning #31 remains at 2-instance coining + pending 3rd validation. Session 44's shape (Phase 1 implementation) doesn't naturally exercise it either; Learning #31 validation may take several sessions to arrive organically.
+
+### Phase 3D: Handoff to Session 44
+
+**Critical path:** operator reviews plan §4 (9 open decisions) → confirms or specifies alternatives → Session 44 executes Phase 1 only.
+
+If operator confirms all recommendations verbatim, Phase 1 deliverable is:
+1. Create `docs/methodology/PROJECT_CONVENTIONS.md` (~150 lines, 4 sections per plan §5.1).
+2. Edit `CHANGELOG.md:8` — `contributor-facing` → `maintainer-facing`.
+3. Prepend opener to `CHANGELOG.md` and `docs/wiki/claims-model-starter/Changelog.md` (exact wording in plan §5.1 items 3-4).
+Commit message shape in plan §5.5.
+
+### Gotchas for Session 44
+
+1. **Post-Session-43 pre-commit state:** pytest **446/446** @ **97.27% coverage**, 0 warnings. ruff / mypy / `-W default` not re-run (no code touched); Session 41 baseline stands. If Session 44 touches code, re-run all four. Phase 1 is doc-only — pytest smoke-check sufficient.
+
+2. **Commits ahead of origin: 0 at Phase 0** (Session 42 pushed at close-out). Session 43's own commit will be 1 ahead until pushed at close-out.
+
+3. **Plan is the contract.** Read `docs/planning/evolution-page-plan.md` in full at Phase 0 before touching any file. §4 open decisions MUST be resolved before Phase 1 starts. §5 is the exact Phase 1 deliverable spec.
+
+4. **Learning #29 validated SIX times in a row (Sessions 38-43).** Continue applying: `Grep pattern="Session 44|### Session 44 Did|### Session 43 Handoff Evaluation|Post-Session-44"` before the Phase 1B stub insert.
+
+5. **Learning #26 Phase 0 + close-out BACKLOG check — Session #10 of application.** BACKLOG is at 8 `[ ]`, 0 `[x]`. Verify at Phase 0.
+
+6. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose should use `probability` for `P(event)`.
+
+7. **Review gate for Evolution rewrites is Phase 3 only.** Phases 1 and 2 commit autonomously (plan §4.6 + §11 risk #7). Do NOT introduce a Phase 1 or Phase 2 review gate unless operator changes §4.6.
+
+8. **Upstream-methodology risk.** `docs/methodology/*.md` files (README, HOW_TO_USE, ITERATIVE_METHODOLOGY, workstreams/*) are imported framework material (Copyright 2026 T. Deppe — see `docs/methodology/README.md:253-255`). Do NOT edit these. `docs/methodology/PROJECT_CONVENTIONS.md` (new Phase 1 file) is project-local; fine to edit freely. Every future session that considers a `docs/methodology/` edit should first grep for upstream provenance markers.
+
+9. **CHANGELOG structure convention (Sessions 33-43):** date + title + (Session N) heading → 1-paragraph context → Added / Changed / Fixed bullets → Verified bullet → Unchanged intentionally bullet → Next bullet (or Out-of-scope drift noted if relevant). All 11 recent sessions match.
+
+10. **BACKLOG "remove, don't flip" convention — Session #10 of application.** When Phase 1 completes, if it fully closes the "Evolution page + documentation convention (Phases 1-3)" BACKLOG item's Phase 1 subscope, narrow the BACKLOG line to reflect "Phases 2-3 remaining" rather than flipping or removing.
+
+11. **Session 43's -0.5 root cause (plan length):** ~650 lines is heavier than necessary. If Session 44's Phase 1 or Session 45's Phase 2 encounters a plan section that's verbose, trust the phase's verification commands and recipe — the surrounding prose is context, not instructions.
+
+12. **Session 43's -0.5 root cause (upstream-methodology issue timing):** discovered during plan-writing Phase 0, not during design discussion. Mitigation for future work: when a design discussion references a file's location, spot-check the file's top-of-file markers (copyright, imgs.shields badges, "upstream from...") in the same turn. Cheap check; catches imported-material confusion early.
+
+13. **Plan §4 open decisions that most affect Phase 1 shape:**
+    - §4.4 (convention home): affects WHERE Phase 1 creates the file.
+    - §4.9 (Phase 1+4 bundling): affects WHAT Phase 1 contains (currently bundled per recommendation).
+    If §4.4 changes to Option A/C/D, plan §5 needs minor regen before Phase 1 starts — flag back to operator for a plan amendment.
+
+### Session 43 close-out checklist
+
+- [x] Phase 0 brief orientation (mid-conversation pivot; no formal report)
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work (Learning #29 grep-first applied; zero fumble — 6th consecutive validation)
+- [x] Evidence-based inventory completed (7 subsections; grep-verified counts per Learning #19)
+- [x] Plan document written to `docs/planning/evolution-page-plan.md` (~650 lines, 13 sections)
+- [x] CHANGELOG.md Session 43 entry at top of [Unreleased]
+- [x] BACKLOG.md: added "Evolution page + documentation convention (Phases 1-3)" pointer. Net `[ ]` count: 7 → 8; `[x]` count: 0.
+- [x] Phase 3A: Session 42 handoff evaluated above (9.0/10)
+- [x] Phase 3B: Self-assessment scored and written above (9.0/10)
+- [x] Phase 3C: No new learning coined; existing #6, #9, #19, #26, #29 load-bearing
+- [x] Phase 3D: Handoff to Session 44 above (ACTIVE TASK + 13 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Push + verbal report to user — pending this turn
+
+---
 
 ### Post-Session-42 pre-commit state
 - `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — doc-only, no behavior change)

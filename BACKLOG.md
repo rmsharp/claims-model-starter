@@ -4,6 +4,7 @@
 
 ## Open Items
 
+- [ ] **Evolution page + documentation convention (Phases 1-3)** — Per `docs/planning/evolution-page-plan.md`. Three-session implementation: Phase 1 establishes `docs/methodology/PROJECT_CONVENTIONS.md` + per-file openers + CHANGELOG word-tightening; Phase 2 moves completed plans to `docs/architecture-history/` with banners; Phase 3 writes `docs/wiki/claims-model-starter/Evolution.md` (decision-arc narrative). Plan §4 has 9 open decisions awaiting operator sign-off before Phase 1 starts.
 - [ ] **B-3 (optional): Web UI bridge** — Per `docs/planning/scope-b-plan.md` §7.3. `--resume-intake <session_id>` reads completed `IntakeReport` from the intake UI's SQLite store. Plan §8.3 recommends deferring unless user wants a production-shape demo; "Automated resume-from-checkpoint" below may supersede.
 - [ ] **Automated resume-from-checkpoint** — CLI or orchestrator logic to resume a failed pipeline run from the last successful checkpoint.
 - [ ] **Add `scripts/render_tutorial.sh`** — Wrap the pandoc invocation with inline CSS (body width, hr margins, table borders) so rendering the tutorial to HTML is a one-liner.

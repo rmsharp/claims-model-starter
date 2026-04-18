@@ -13,6 +13,17 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — Evolution page + documentation convention plan (Session 43)
+
+Planning session. Produces `docs/planning/evolution-page-plan.md` — a 3-phase implementation plan for (a) a project-local maintainer/user documentation convention, (b) a physical archive split of completed planning docs, and (c) a new `wiki/Evolution.md` decision-arc narrative that addresses the "why is it like this?" gap between current-state wiki pages and the raw session log.
+
+- **Added:** `docs/planning/evolution-page-plan.md` — ~650-line plan document. Evidence-based inventory (§3, 7 subsections), 9 open decisions awaiting operator sign-off (§4), 3 sequential implementation phases with per-phase completion criteria + verification commands + session boundaries (§5-§7), dependency graph (§9), outstanding risks with mitigations (§11), out-of-scope notes (§12).
+- **Added:** BACKLOG.md item pointing at the plan (Phases 1-3 blocked on §4 operator sign-off).
+- **Context:** Follow-on from Session 42's out-of-scope planning-doc MAX_QUESTIONS drift finding + multi-turn design discussion settling 5 load-bearing design decisions: (1) inward (maintainer) vs outward (wiki) documentation split with user-supplied convention sentence; (2) three-surface "what changed" split (CHANGELOG.md maintainer ledger / wiki/Changelog.md audience summary / wiki/Evolution.md decision arc); (3) user-triggered full-rewrite Evolution cadence with banner + CHANGELOG-as-checklist + SESSION_NOTES-as-rationale discipline; (4) planning-doc physical move to `docs/architecture-history/` with in-file banner; (5) wiki/Changelog.md content unchanged.
+- **Verified:** evidence-based inventory greps completed (6 planning files enumerated; 4 outward-wiki references + ~15 inward references to `docs/planning/` catalogued with update disposition; `contributor-facing` single-hit at `CHANGELOG.md:8` confirmed; `docs/methodology/README.md` upstream-provenance discovered via License section at `:253-255` — drives §4.4 recommendation against editing upstream). pytest 446/446 @ 97.27% unchanged (plan-only, no code or doc behavior change to existing surfaces).
+- **Unchanged intentionally:** no phase implementation. Plan is the deliverable; implementation is in subsequent sessions per `SESSION_RUNNER.md` §Planning Sessions. Existing wiki, CHANGELOG, and planning-doc contents unmodified.
+- **Next:** Session 44 starts Phase 1 only after operator confirms §4 open decisions.
+
 ### 2026-04-18 — MAX_QUESTIONS drift: 4 wiki + TROUBLESHOOTING hits (Session 42)
 
 Closes the BACKLOG "MAX_QUESTIONS drift: 4 additional wiki + TROUBLESHOOTING hits" item seeded by Session 41's end-of-session drift-class sweep. Four paste-ready one-phrase replaces; completes the post-Session-27 `state.py:57` `MAX_QUESTIONS = 10` → `20` lag across the wiki + TROUBLESHOOTING surfaces.
