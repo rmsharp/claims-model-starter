@@ -1,17 +1,32 @@
 # Changelog
 
+> *Maintainer-facing commit-linked ledger. For the user-facing release summary, see `docs/wiki/claims-model-starter/Changelog.md`. For the design-decision arc, see `docs/wiki/claims-model-starter/Evolution.md`.*
+
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 When completing work, remove the item from `BACKLOG.md` and add an entry here.
 
-This file is the **authoritative, contributor-facing record** of completed work. The wiki page `Changelog` (under `claims-model-starter/wiki`, mirrored at `docs/wiki/claims-model-starter/Changelog.md`) is an audience-facing summary whose tone and level of detail may evolve over time; this file stays stable and complete. When the two disagree, this file is canonical.
+This file is the **authoritative, maintainer-facing record** of completed work. The wiki page `Changelog` (under `claims-model-starter/wiki`, mirrored at `docs/wiki/claims-model-starter/Changelog.md`) is an audience-facing summary whose tone and level of detail may evolve over time; this file stays stable and complete. When the two disagree, this file is canonical.
 
 Dates are commit dates on `master`. Commit hashes are short-form as produced by `git log --oneline`. Session numbers refer to entries in `SESSION_NOTES.md`.
 
 ---
 
 ## [Unreleased]
+
+### 2026-04-18 — Phase 1 of Evolution plan: project conventions + per-file openers + word-tightening (Session 44)
+
+Executes Phase 1 of `docs/planning/evolution-page-plan.md` after operator confirmed all 9 §4 recommendations verbatim. Establishes the project-local maintainer/user documentation convention + Evolution.md update discipline in one new file, adds per-file openers to both CHANGELOG surfaces, and tightens `CHANGELOG.md:8` from "contributor-facing" to "maintainer-facing" to align with the three-surface split. Phases 2 and 3 remain — each is a separate session per plan §9.
+
+- **Added:** `docs/methodology/PROJECT_CONVENTIONS.md` — 97-line project-local convention doc. Four sections: (1) inward vs outward documentation with user-supplied convention sentence; (2) three-surface "what changed" split table (CHANGELOG.md maintainer ledger / wiki/Changelog.md audience summary / wiki/Evolution.md decision arc); (3) planning-doc archive convention (tiebreaker for when a plan moves, banner template, scope boundaries); (4) Evolution.md update discipline (full rewrite, CHANGELOG-as-checklist, SESSION_NOTES-as-rationale, deliberately-omitted appendix, diff-against-prior, explicit review gate).
+- **Added:** `CHANGELOG.md` per-file opener blockquote (line 3) pointing at `docs/wiki/claims-model-starter/Changelog.md` and `Evolution.md`.
+- **Added:** `docs/wiki/claims-model-starter/Changelog.md` per-file opener blockquote (line 3) pointing at the maintainer ledger and sibling Evolution page.
+- **Changed:** `CHANGELOG.md:10` (was line 8 pre-opener) — `"authoritative, contributor-facing record"` → `"authoritative, maintainer-facing record"`.
+- **Verified:** `test -f docs/methodology/PROJECT_CONVENTIONS.md` → present (97 lines). `grep -c "maintainer-facing" CHANGELOG.md` → 1 (expected ≥1). pytest 446/446 @ 97.27% coverage unchanged. Both CHANGELOG surfaces show the opener in the first 10 lines.
+- **Plan criterion §5.3 note:** `grep -c "contributor-facing" CHANGELOG.md` returned 1, not the expected 0. The remaining hit is at line 25 inside Session 43's append-only CHANGELOG entry describing the Session 43 state. Per plan §3.3 ("CHANGELOG.md historical entries: DO NOT UPDATE — append-only history"), the append-only convention takes precedence over the literal §5.3 grep criterion. Line-8 intent is satisfied; historical accuracy preserved.
+- **Unchanged intentionally:** no upstream methodology files touched (README.md, HOW_TO_USE.md, ITERATIVE_METHODOLOGY.md, `workstreams/*.md` — imported framework material per `docs/methodology/README.md:253-255`). No planning-doc moves (Phase 2). No Evolution.md write (Phase 3). No link updates across wiki or inward docs (Phase 2). No changes to `wiki/Changelog.md` content shape (per plan Design Decision 5 — opener only).
+- **Next:** Session 45 executes Phase 2 (archive directory + planning-doc move + banner + link updates) per plan §6.
 
 ### 2026-04-18 — Evolution page + documentation convention plan (Session 43)
 

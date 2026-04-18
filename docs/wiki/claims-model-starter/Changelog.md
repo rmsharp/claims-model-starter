@@ -1,5 +1,7 @@
 # Changelog
 
+> *Audience-facing release summary. For the maintainer commit-linked ledger, see `CHANGELOG.md` at the repository root. For the design-decision arc, see `Evolution` (sibling wiki page).*
+
 This page records notable changes to the Model Project Constructor, grouped by implementation phase. Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Dates are the commit dates on `master`; phases map to the structure in `docs/planning/architecture-plan.md` §14.
 
 The repository is currently at version `0.1.0` (pre-1.0, pilot-ready). No external releases have been cut; the `master` branch is the sole integration target.
