@@ -338,6 +338,43 @@ def test_cli_host_github_with_token_invokes_pygithub_adapter(
     assert ".gitlab-ci.yml" not in payload["files_created"]
 
 
+def test_cli_host_github_explicit_host_url_override(
+    intake_report_path: Path,
+    data_report_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Explicit ``--host-url`` (GitHub Enterprise) flows through to the
+    adapter kwargs, overriding the public ``api.github.com`` default."""
+
+    _StandinGitHubAdapter.last_init_kwargs = {}
+    monkeypatch.setattr(
+        "model_project_constructor.agents.website.github_adapter.PyGithubAdapter",
+        _StandinGitHubAdapter,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--intake",
+            str(intake_report_path),
+            "--data",
+            str(data_report_path),
+            "--host",
+            "github",
+            "--private-token",
+            "fake-github-token",
+            "--host-url",
+            "https://github.example.com/api/v3",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert "Status:  COMPLETE" in result.stdout
+    assert _StandinGitHubAdapter.last_init_kwargs == {
+        "host_url": "https://github.example.com/api/v3",
+        "private_token": "fake-github-token",
+    }
+
+
 # ---------------------------------------------------------------------------
 # Phase D: removed deprecated aliases
 # ---------------------------------------------------------------------------

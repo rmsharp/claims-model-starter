@@ -13,6 +13,14 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — GitHub explicit-override test symmetry (Session 37)
+
+Closes the BACKLOG "GitHub explicit-override test symmetry" item. Completes the test-coverage symmetry Session 32 began (Learning #25): both repo-host platforms now have default-path **and** explicit-override test paths in `tests/agents/website/test_cli.py`. Before: GitLab had both (`test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter` at lines 233-263 + `test_cli_host_gitlab_explicit_host_url_override` at lines 266-300), GitHub had only the default-path (`test_cli_host_github_with_token_invokes_pygithub_adapter` at lines 303-338). The asymmetry was noted in Session 32's gotcha #10; this session mirrors the GitLab sibling exactly so future refactors that touch either path trip both tests identically.
+
+- **Added:** `test_cli_host_github_explicit_host_url_override` at `tests/agents/website/test_cli.py:341-377`. Mirrors the GitLab sibling's shape (`--host-url` explicit + monkeypatched adapter + kwargs assertion). Uses `"https://github.example.com/api/v3"` as the canonical GitHub Enterprise example URL (consistent with the pattern in prior session notes and with the GHE URL shape required by the `/api/v3` suffix).
+- **Verified:** `uv run pytest -q` → **446/446** passing (up from 445), coverage **97.27%** (unchanged). `uv run ruff check src/ tests/ packages/` clean. `uv run mypy src/ packages/` clean on 60 source files.
+- **Unchanged (intentionally):** No production-code changes. `GITHUB_DEFAULT_HOST_URL = "https://api.github.com"` at `cli.py:40` remains the public-GitHub default; the new test only exercises the override branch the existing default-path test doesn't cover.
+
 ### 2026-04-17 — `--ci-platform` flag mentioned in `docs/tutorial.md` §3 (Session 36)
 
 Closes the BACKLOG "`docs/tutorial.md` §5 `--ci-platform` mention" item. Placement moved from the BACKLOG-suggested §5 to §3's "Try GitHub CI output" subsection after verification that `scripts/run_pipeline.py` (the only CLI the tutorial invokes across §3, §5, and §6) does **not** expose `--ci-platform` — `scripts/run_pipeline.py:262` hardcodes `ci_platform = host` and never reads the flag. The flag only exists on the standalone website CLI at `src/model_project_constructor/agents/website/cli.py:107-116`. Learning #28 (handoff fix-shape prescriptions as hints, not contracts) applied: honored the handoff's intent (document the flag in the tutorial), corrected the handoff's specific (§3 instead of §5 — §3 is where `--host` is first introduced as the CI-manifest toggle, so the "you can decouple them" note lands at peak relevance).
