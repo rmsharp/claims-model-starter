@@ -5,6 +5,173 @@
 ---
 
 ## ACTIVE TASK
+**Task:** Session 54 — BACKLOG item 1 (numerical order per operator directive "work on backlog items in numerical order; 1 per session"): create `scripts/render_tutorial.sh`, a one-liner pandoc wrapper with inline CSS (body width, hr margins, table borders) for rendering `docs/tutorial.md` to HTML.
+
+**Status:** Session 54 COMPLETE. `scripts/render_tutorial.sh` shipped (89 lines, `chmod +x`). Pandoc wrapper with heredoc-to-mktemp'd `--include-in-header` CSS covering body width (860px), hr margins (2.5em), table borders (1px `#d0d7de`), code-block styling. Smoke-test rendered `docs/tutorial.md` → `docs/tutorial.html` (72,597 bytes) cleanly; CSS sentinels present; title extracted from first H1; rendered artifact gitignored. Verification: pytest **475/475 passing** @ **97.19% coverage** (unchanged — no Python code paths added). ruff clean; mypy 0 issues in both `src/` (48 files) and `packages/data-agent/src/` (12 files). BACKLOG 5 → 4 `[ ]` (Learning #26 Session #23 of application). Commit pending this turn. Next session: BACKLOG item 2 per operator's numerical-order directive — "Tutorial UX: split code blocks".
+
+### Session 53 Handoff Evaluation (by Session 54)
+
+**Score: 9.5/10.** Session 53's handoff was unusually complete for a session that ended with "no single natural follow-up." The 11 gotchas named the post-session state precisely (pytest 475/475 @ 97.19%), the running consecutive-validation counters (Learning #29 @ 17, Learning #34 @ 6th post-promotion, Learning #26 @ Session #22) let me fire each discipline mechanically in Phase 0, and the 5-item "priority order" list in Phase 3D was exactly what I walked down when the operator named "numerical order." The load-bearing hint that saved the most time was gotcha #7's note that `src/model_project_constructor/agents/intake/anthropic_client.py` has a "likely-analogous" bug in its own `_extract_json` — _I did not need it this session_ (different deliverable), but reading it confirmed that Session 53's fix-scope discipline (Learning #18) is being consistently applied, which shaped my own "no changes to `docs/tutorial.md` content" scope decision.
+
+- **What helped:** (a) **Gotcha #1 pre-commit state** (pytest 475/475 @ 97.19%) — benchmark for the "did anything regress?" check. Post-session is identical (the shell script adds no Python code paths), so the floor still holds at 97.19% with 2.19-point headroom. (b) **Gotcha #2 BACKLOG count** (5 `[ ]`, 0 `[x]`) + Learning #26 Session #22 of application — gave me both the Phase 0 baseline and the close-out target (4 `[ ]` post-removal). Mechanical verification at both ends. (c) **Phase 3D "natural follow-up" menu** — the 5 candidate items with rough effort estimates ("half session", "one session", "1.5 sessions") let me report options in Phase 0 without additional discovery. When the operator said "work on backlog items in numerical order; 1 per session," I already had the BACKLOG item 1 scope internalized. (d) **Gotcha #8 `_extract_json` bare-parse-first ordering is load-bearing** — not directly relevant this session but reinforced the general discipline of "preserve a fast-path happy branch before slow-path fallback" which I applied implicitly in the script's control flow (existence-check pandoc, existence-check input, THEN build heredoc; don't pre-compute the CSS file for non-viable runs). (e) **Learning #29 grep-before-insert — 18th consecutive mechanical validation.** Grep pattern `Session 54|### What Session 54 Did|### Session 53 Handoff Evaluation|Post-Session-54` returned 6 hits, all pre-existing forward references in Session 53's handoff (lines 68, 85, 103, 109, 113, 142). Zero fumble on the Phase 1B stub. (f) **Learning #34 parallel-Read-before-parallel-Edit — 7th consecutive validation (post-promotion).** Single parallel batch: `docs/tutorial.md` + `pandoc`-grep + `scripts/run_pipeline.py` top + `.gitignore` + git history for `.sh` files + tutorial H1 check. Zero "File has not been read yet" errors on subsequent Edits. (g) **CHANGELOG 21-consecutive-match convention** — gave me the entry shape (context / Added / Removed / Verified / Unchanged intentionally / Next) on autopilot; Session 54's entry is the 22nd consecutive match.
+- **What was missing:** (a) **No hint that Session 18 filed the pain point.** Gotcha #5 of Session 18 (`SESSION_NOTES.md:4793`) literally named "Pandoc rendering needs `-V header-includes` CSS to avoid hr/code-block overlap. The backlog item for `scripts/render_tutorial.sh` captures this." Without grepping for "pandoc" across SESSION_NOTES I would have designed the CSS without knowing the original pain point was specifically hr/code-block overlap. Cost: ~2 minutes of extra research; net positive because it reaffirmed the BACKLOG line's three listed concerns (body width, hr margins, table borders) are the actual pain points, not invented. A one-line "Session 18 filed this in gotcha #5" in Session 53's priority-order menu would have saved the grep. -0.25 (cosmetic). (b) **Candidate Learning #36 (don't-eagerly-precompute-across-short-circuits) — no natural instance this session.** The shell script's control flow has early-exits (`pandoc missing`, `input missing`) but the "precompute above early returns" anti-pattern didn't surface because nothing was tempting to pre-compute in shell. Candidate stays at 1/2. Carry forward to Session 55+. (c) **Candidate Learning #37 (parser-bug greps should include preprocessing-helper names) — no instance this session** (not a parser-bug deliverable). Stays at 1/2. Carry forward.
+- **What was wrong:** Nothing factually wrong. All consecutive-validation counters held; pre-commit state matched. Zero plan-signature drift (no plan to verify — this was a BACKLOG line, not a plan-driven session).
+- **ROI:** ~3.5× on the handoff package. The 11 gotchas + 5-item priority-order menu + CHANGELOG convention let me proceed from Phase 0 → committable state in ~35 minutes. The BACKLOG line + Session 18 gotcha together named the three specific CSS concerns (body width, hr margins, table borders) so the design decision was "which exact CSS values + which pandoc flag (`-V header-includes` vs `--include-in-header`)" — not "what does the fix look like."
+
+### What Session 54 Did
+
+**Deliverable:** BACKLOG item 1 — `scripts/render_tutorial.sh` pandoc wrapper with inline CSS. **COMPLETE.**
+**Started:** 2026-04-19
+**Completed:** 2026-04-19
+**Commit (pending):** `feat(scripts): add render_tutorial.sh pandoc wrapper with inline CSS`.
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS.md + SESSION_RUNNER.md read in full. SESSION_NOTES.md ACTIVE TASK + Session 53 handoff + 11 gotchas. git status (clean, 1 commit ahead of origin: Session 53's fix). git log -10. BACKLOG (5 `[ ]`, 0 `[x]` — Learning #26 Session #23 of application). Methodology dashboard (91/100 medium risk, unchanged from Session 53). Ghost-session check clean (git log aligns with session notes). Reported findings to operator; operator directed "work on backlog items in numerical order; 1 per session" — BACKLOG item 1 (`scripts/render_tutorial.sh`) is the deliverable.
+
+2. **Phase 1 understanding stated.** "Session 54 deliverable: create `scripts/render_tutorial.sh` (BACKLOG item 1) following DEVELOPMENT_WORKSTREAM. I'll close out when the script renders `docs/tutorial.md` via pandoc with inline CSS, and pytest/ruff/mypy gates stay green." No operator correction.
+
+3. **Phase 1B stub — Learning #29 18th consecutive mechanical validation.** Grep-before-insert pattern `Session 54|### What Session 54 Did|### Session 53 Handoff Evaluation|Post-Session-54` → 6 hits, all pre-existing forward references in Session 53's handoff at lines 68, 85, 103, 109, 113, 142. Safe to insert. Wrote IN-PROGRESS stub to ACTIVE TASK + archived Session 53's previous ACTIVE TASK before any research code.
+
+4. **Task tracking — 10 tasks via TaskCreate.** Tracked each through pending → in_progress → completed.
+
+5. **Parallel Read batch — Learning #34 7th consecutive validation (post-promotion).** Read `docs/tutorial.md` (full, 619 lines) + `grep pandoc` across repo + `pandoc --version` system check + `.gitignore` + `scripts/` dir listing + `scripts/run_pipeline.py` top (for convention precedent) in one parallel batch. Follow-up parallel batch: `SESSION_NOTES.md:4775-4835` (Session 18 history for the original pain-point filing) + H1 count on tutorial. Zero "File has not been read yet" errors on the 3 subsequent Edits (`scripts/render_tutorial.sh` Write + `.gitignore` Edit + `CHANGELOG.md` Edit + `BACKLOG.md` Edit + `SESSION_NOTES.md` Edit).
+
+6. **Root-cause grounding from Session 18.** Session 18's gotcha #5 (`SESSION_NOTES.md:4793`): "Pandoc rendering needs `-V header-includes` CSS to avoid hr/code-block overlap." This confirmed the BACKLOG line's three specific CSS concerns (body width, hr margins, table borders) were the actual observed pain points, not speculative concerns.
+
+7. **Design decisions.**
+   - **Pandoc flag choice:** `--include-in-header=<file>` over `-V header-includes=<inline-string>`. Rationale: `-V` requires shell-quoting multi-line CSS on a single logical line; a heredoc-to-mktemp'd file is cleaner, pure POSIX (works in both `bash` and `zsh`), and easier to extend.
+   - **Arg shape:** `[INPUT] [OUTPUT]` positional with defaults `docs/tutorial.md` → `docs/tutorial.html`. The `OUTPUT` default derives from `INPUT` via `${INPUT%.md}.html` so overriding just `INPUT` gives a sensible output.
+   - **Title:** Extracted from first `^# ` heading via `grep -m1 | sed`; falls back to `"Tutorial"` if no H1 found. Avoids pandoc's `--standalone` "this document has no title" warning without hardcoding a specific tutorial title (keeps the script reusable).
+   - **Temp-file discipline:** `mktemp -t render_tutorial.XXXXXX` + `trap 'rm -f "$HEADER_FILE"' EXIT`. Failed renders don't leak into `/tmp`.
+   - **CSS scope:** Covers BACKLOG-named concerns (body width 860px, hr margin 2.5em 0, table `border-collapse` with 1px `#d0d7de` borders + padding) plus code-block readability (light-grey `pre` background, 6px `border-radius`, `overflow-x: auto` for long commands) plus blockquote styling (left border, muted color). GitHub-style color palette (`#24292f` text, `#f6f8fa` code background, `#d0d7de` borders) — visually familiar to contributors.
+   - **CSS cascade verification:** Confirmed `max-width: 860px` at line 229 of rendered HTML follows pandoc's default `max-width: 36em` at line 15 — same-specificity body-level selectors, later rule wins.
+   - **Pre-flight checks:** `command -v pandoc` (exits 1 with installation URL if missing); `[ -f "$INPUT" ]` (exits 1 if input missing). Both error messages go to stderr.
+   - **`.gitignore` entry:** Added `docs/tutorial.html` line so the rendered artifact is a local reading convenience, not a committed asset. `docs/tutorial.md` stays authoritative; contributors regenerate on demand.
+
+8. **Implementation — 1 Write (script) + 2 Edits (`.gitignore`, `CHANGELOG.md`) + 2 Edits (`BACKLOG.md`, `SESSION_NOTES.md`).** 89-line bash script with header comment describing usage + exit codes. Shebang `#!/usr/bin/env bash` (portable across bash 3.2 on macOS and modern Linux bash). `set -euo pipefail` for fail-fast. `chmod +x` applied post-creation.
+
+9. **Smoke test.** `./scripts/render_tutorial.sh` from repo root: stdout `rendered docs/tutorial.md -> docs/tutorial.html`, exit 0, output file 72,597 bytes. Confirmed CSS sentinels present in rendered HTML (`max-width: 860px`, `border: 1px solid #d0d7de`, `margin: 2.5em 0`). Confirmed title inferred correctly (`<title>Tutorial: Running the Model Project Constructor Pipeline</title>` in `<head>`). Confirmed `.gitignore` rule matches via `git check-ignore -v docs/tutorial.html`.
+
+10. **Verification — all four commands green, all unchanged from Session 53.** `uv run pytest -q` → **475/475 passing** (unchanged — shell script adds no Python code paths). Coverage **97.19%** (unchanged). `uv run ruff check src/ tests/ packages/` → `All checks passed!`. `uv run mypy src/` → `Success: no issues found in 48 source files`. `uv run mypy packages/data-agent/src/` → `Success: no issues found in 12 source files`.
+
+11. **CHANGELOG Session 54 entry at top of [Unreleased]** (22nd consecutive structure match: context / Added / Added / Removed / Verified / Unchanged intentionally / Next).
+
+12. **BACKLOG.md −1 line** per Learning #26 (delete, do NOT flip to `[x]`). Removed the `scripts/render_tutorial.sh` item. BACKLOG net change: 5 `[ ]` → 4 `[ ]`, 0 `[x]` → 0 `[x]`.
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Read SAFEGUARDS + SESSION_RUNNER + SESSION_NOTES ACTIVE TASK + Session 53 handoff + 11 gotchas + docs/tutorial.md (full) + Session 18 gotcha #5 origin + scripts/run_pipeline.py top for convention + .gitignore + BACKLOG + CHANGELOG top. Grep'd for `pandoc|render_tutorial|\.html` to confirm no prior implementation existed. Verified pandoc 3.1.1 on PATH before designing.
+- **Stakeholder corrections:** 0. Operator's "work on backlog items in numerical order; 1 per session" was unambiguous — BACKLOG item 1 + operational rule for future sessions. No mid-course corrections.
+- **What I got right:** (a) **Scoped to the BACKLOG item exactly.** Did NOT touch `docs/tutorial.md` content (item 2), did NOT add a `test_render_tutorial.sh` (no project precedent for unit-testing shell utilities; `scripts/run_pipeline.py` has integration tests via `tests/scripts/` but no isolated unit tests), did NOT add the script to pre-commit hooks, did NOT auto-render in CI. Learning #18 planning-to-implementation discipline applied to fix-scope: ship the one item, stop. (b) **Learning #29 grep-before-insert — 18th consecutive clean validation.** No heading-duplication fumble on the Phase 1B stub. (c) **Learning #34 parallel-Read-before-parallel-Edit — 7th consecutive validation (post-promotion).** Two parallel batches covered all context before first Edit. (d) **Learning #26 BACKLOG discipline — Session #23 of application.** Phase 0 (5 `[ ]`) + close-out (4 `[ ]`) both clean. Removed, did not `[x]`-flip. (e) **CSS cascade verified empirically.** Didn't assume my styles would override pandoc's defaults; checked the line numbers in the rendered output and reasoned about same-specificity later-rule-wins. Future readers of the CHANGELOG have the verification recipe. (f) **Script ergonomics.** Positional args with sensible defaults + optional overrides; pre-flight checks with installation URLs; trap-cleaned temp file; title extraction avoids pandoc warnings without hardcoding a tutorial name. (g) **`.gitignore` added proactively.** Without it, the first contributor to run the script would get a spurious `git status` entry for `docs/tutorial.html`. Ship the escape hatch with the feature. (h) **CHANGELOG convention 22nd consecutive match.** (i) **Task tracking discipline.** 10 tasks created upfront; each marked `in_progress` → `completed` at natural breakpoints.
+- **What I got wrong:** (a) **Initial design pass considered `-V header-includes=<inline-string>` before settling on `--include-in-header=<file>`.** Cost: ~1 minute of internal deliberation before I remembered the multi-line-shell-quoting friction. Net zero because I arrived at the right design; but a quicker route would have been "multi-line CSS always wants a file, not a variable." -0.25 (cosmetic; no user-visible impact). (b) **Did not verify the script works from a directory other than repo root.** The defaults are `docs/tutorial.md` → `docs/tutorial.html`, which work from repo root. If a contributor invokes `./scripts/render_tutorial.sh` from `scripts/`, the defaults would fail (no `docs/` from that cwd). Not a bug — the script works when invoked per the documented usage — but a future quality-of-life improvement could auto-detect repo root. Not worth shipping in this session (scope discipline); noted for future. -0.25. Net self-score: **9.5/10**.
+- **Quality bar vs previous sessions:** Comparable to Session 53 (surgical deliverable, zero scope creep, all gates green). Below Session 46 (Evolution.md) on deliverable volume but that was a different workstream class. Above Session 47 (coverage floor bump) on design-decision depth (CSS cascade verification + title extraction + temp-file trap were deliberate choices, not paint-by-numbers). The "half a session" effort estimate from Session 53's handoff was accurate — roughly 35 minutes of active work.
+
+### Phase 3C: Learnings
+
+**Learning #34 post-promotion validation — 7th consecutive clean.** The parallel-Read-before-parallel-Edit discipline continues to fire automatically without explicit mental effort. 7 consecutive post-promotion sessions (48→49→50→51→52→53→54) with zero "File has not been read yet" errors. The habit is load-bearing.
+
+**Learning #29 grep-before-insert — 18th consecutive clean validation.** No heading-duplication fumble in Session 54.
+
+**Candidate Learning #36 post-Session-52 — no instance to validate this session.** The don't-eagerly-precompute-across-short-circuits pattern didn't have a natural opportunity in shell-script design. The script's early-exits (`pandoc missing`, `input missing`) exit before the heredoc is built, which is the correct shape, but the "temptation to precompute above short-circuit" didn't arise. Candidate stays at 1/2. Carry forward.
+
+**Candidate Learning #37 (parser-bug greps should include preprocessing-helper names) — no instance this session.** Not a parser-bug deliverable. Stays at 1/2. Carry forward.
+
+**Candidate Learning #38 (new this session): read predecessor sessions' gotchas for deliverable-motivation provenance.** When a BACKLOG item references a specific pain point ("Wrap pandoc with inline CSS ... body width, hr margins, table borders"), the original filing session's gotchas often name the concrete failure mode the item is addressing. Session 18's gotcha #5 (`SESSION_NOTES.md:4793`) named "Pandoc rendering needs `-V header-includes` CSS to avoid hr/code-block overlap" — confirming the BACKLOG line's three CSS concerns are observed failures, not speculative concerns. **Mechanical:** when starting a BACKLOG item, grep SESSION_NOTES.md for the item's key noun (here: `pandoc|render_tutorial|\.html`) to find the filing session's gotcha entries. The cost is one grep; the benefit is design-grounding the fix in observed evidence. Complement to Learning #11 (trust code over plan for signatures) — this is "trust filing-session gotchas over BACKLOG-line surface text for design constraints." Pending 2nd-instance validation before formal coining.
+
+**Existing learnings load-bearing this session:**
+- **Learning #11** (trust code over plan for signatures): N/A in the traditional sense (no plan to verify). Applied analogously — trusted the Session 18 gotcha over my own reading of the BACKLOG surface text for the design rationale.
+- **Learning #18** (planning-to-implementation boundaries): Applied to fix-scope. Did NOT touch `docs/tutorial.md` content (adjacent BACKLOG item 2) despite rendering it. Ship one thing; close out.
+- **Learning #26** (BACKLOG discipline): Session #23 of application. Phase 0 + close-out both clean. Removed the fixed item (not `[x]` flip).
+- **Learning #28** (audit handoff specifics against code): N/A strictly (no prescriptive fix shape in the handoff). Applied analogously — treated Session 53's 5-item "priority order" menu as input to the operator's decision, not prescriptive for me.
+- **Learning #29** (grep-before-insert for stub): 18th consecutive mechanical validation. Zero fumble.
+- **Learning #30** (declarative progress narration): Active discipline. "Running Learning #29 grep-before-insert..." (declarative) rather than "Let me verify..." (volitional). No slippage.
+- **Learning #32** (historical-prose in append-only / freshness-tracked files): N/A this session (no edits to CHANGELOG historical entries; only additions at top).
+- **Learning #34** (parallel-Read-before-parallel-Edit): 7th consecutive validation post-promotion.
+
+### Phase 3D: Handoff to Session 55
+
+**Next deliverable (per operator directive "work on backlog items in numerical order; 1 per session"):**
+
+**BACKLOG item 2 — Tutorial UX: split code blocks.** Split multi-command code blocks in `docs/tutorial.md` into individually-copyable blocks. Pandoc/GitHub rendering doesn't provide per-block copy buttons, so also consider rendering to a format that does (e.g. MkDocs, Docusaurus). Scope: `docs/tutorial.md` only. Probably half a session. Important considerations for Session 55:
+
+1. **Evidence-based scoping.** Grep `docs/tutorial.md` for multi-command `bash` code blocks (those with multiple `$` prompts or multiple `uv run` / `cd` / `export` invocations in one block). Count them. A typical tutorial session has ~10-30 such blocks; identify which are the highest-pain targets (those most likely to be copied in isolation).
+2. **Split strategy.** Each logical command gets its own ` ```bash … ``` ` block with a one-line description above explaining what the command does. The previous "run these in sequence" framing becomes a section header or a numbered-list leading into each block.
+3. **Renderer consideration (optional, deferrable).** MkDocs/Docusaurus is a larger deliverable than the split itself. If Session 55 decides to defer the renderer choice, file a separate BACKLOG item for "Migrate tutorial to MkDocs with copy-button plugin" and keep the scope of Session 55 to just the split. The operator's "1 per session" rule likely implies deferring the renderer migration.
+4. **Use `scripts/render_tutorial.sh` to preview the rendered HTML before committing.** That script now exists (Session 54). Invoke `./scripts/render_tutorial.sh` after the split and visually inspect that the hr/code-block overlap fix still works with more (shorter) code blocks.
+
+**Future deliverables (numerical order continuing):**
+- **Item 3:** Intake agent data-source discovery prompts. One session.
+- **Item 4:** Data agent metadata discovery mode. One session (maybe 1.5).
+- **Item 5:** Statistical terminology glossary. One session.
+- **Optional Plan Phase 4:** UI writes `IntakeReport.json` envelope on interview completion. Plan §7.4 OPTIONAL. Do only if a pilot operator demands the UI → `--resume` workflow.
+
+**Commits ahead of origin: 2 at Session 54 close-out** (Session 53's `795e254` + this session's own commit). Push per operator instruction.
+
+### Gotchas for Session 55
+
+1. **Post-Session-54 pre-commit state:** pytest **475/475 passing** @ **97.19% coverage** with `Required test coverage of 95% reached`. ruff clean (`src/ tests/ packages/`). mypy 0 issues in both `src/` (48 source files) and `packages/data-agent/src/` (12 source files). All four commands UNCHANGED from Session 53's post-commit state (the shell script adds no Python code paths). New files/deltas: `scripts/render_tutorial.sh` (+89 lines, `chmod +x`), `.gitignore` (+1 line: `docs/tutorial.html`), `CHANGELOG.md` (+8 lines: Session 54 entry at top of [Unreleased]), `BACKLOG.md` (-1 line: `render_tutorial.sh` item removed), `SESSION_NOTES.md` (Session 54 handoff).
+
+2. **BACKLOG at Phase 0:** **4 `[ ]`, 0 `[x]`** (was 5; removed fixed item per Learning #26). Learning #26 Session #24 of application. Phase 0 check + close-out check both mandatory.
+
+3. **Learning #29 mechanical — 18th consecutive validation in Session 54.** Continue: grep-before-insert for stub pattern `Session 55|### What Session 55 Did|### Session 54 Handoff Evaluation|Post-Session-55`.
+
+4. **Learning #34 POST-PROMOTION 7th consecutive validation in Session 54.** Parallel-Read-before-parallel-Edit remains "mechanically reliable" — fire it automatically on any multi-file session. For BACKLOG item 2 (tutorial split), a single parallel batch should cover: `docs/tutorial.md` full read + `scripts/render_tutorial.sh` (to preview changes) + BACKLOG + CHANGELOG top.
+
+5. **Candidate Learning #36 (don't-eagerly-precompute-across-short-circuits).** 1st instance Session 52; no instance Sessions 53 or 54. Carry forward to Session 55+.
+
+6. **Candidate Learning #37 (parser-bug greps should include preprocessing-helper names).** 1st instance Session 53; no instance Session 54 (not a parser-bug deliverable). Carry forward.
+
+7. **Candidate Learning #38 (read predecessor sessions' gotchas for deliverable-motivation provenance).** 1st instance Session 54. When starting a BACKLOG item, grep SESSION_NOTES.md for the item's key noun to find the filing session's gotcha entries; ground the design in observed evidence. Pending 2nd-instance validation. Session 55 has an opportunity: the tutorial split-code-blocks item (BACKLOG item 2) was filed by Session 18; grep `SESSION_NOTES.md` for "copy" / "copy-paste" / "split" near Session 18's handoff to see if a specific user-testing observation motivated it.
+
+8. **`scripts/render_tutorial.sh` is now the preview tool for tutorial edits.** After any edit to `docs/tutorial.md`, run `./scripts/render_tutorial.sh` to see the rendered HTML locally. The script builds to `docs/tutorial.html` (gitignored — won't pollute `git status`). If the BACKLOG item 2 split introduces more code blocks, the script should handle them gracefully (all pandoc GFM code blocks render as `<pre><code>` with the CSS's code-block styling).
+
+9. **Script assumes invocation from repo root.** The defaults are `docs/tutorial.md` → `docs/tutorial.html`, which work when cwd is repo root. If Session 55 wants to invoke from `scripts/` or elsewhere, pass explicit positional args. Auto-detecting repo root via `git rev-parse --show-toplevel` is a future quality-of-life improvement; not shipped this session (scope discipline).
+
+10. **CSS cascade in rendered output:** pandoc's default `<style>` block goes first in `<head>`; my `--include-in-header` styles come after. Same-specificity body-level selectors in my styles override pandoc's defaults (empirically verified: `max-width: 860px` at line 229 overrides `max-width: 36em` at line 15). If Session 55 or later adds new CSS rules and wants them to override pandoc's defaults, they need no additional specificity — just be in the `--include-in-header` block.
+
+11. **CHANGELOG structure convention (Sessions 33–54, 22 consecutive):** context paragraph / Added/Changed (multiple) / Added / Changed / Removed / Verified / Unchanged intentionally / (optional Live-LLM status) / Next bullet. Session 54's entry lands the 22nd match.
+
+12. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose uses `probability` for P(event). N/A this session.
+
+13. **Upstream-methodology risk unchanged.** Do NOT edit `docs/methodology/{README,HOW_TO_USE,ITERATIVE_METHODOLOGY,workstreams/*}.md`. `PROJECT_CONVENTIONS.md` is project-local; fine to extend.
+
+14. **Operator's durable directive (Session 54 onward): "work on backlog items in numerical order; 1 per session."** This replaces the "pick natural follow-up" pattern for BACKLOG work. Future sessions should respect the numerical-order rule unless the operator explicitly overrides it. Session 55's item is BACKLOG item 2 (tutorial UX: split code blocks).
+
+### Session 54 close-out checklist
+
+- [x] Phase 0 orientation (SAFEGUARDS + SESSION_RUNNER read in full; SESSION_NOTES ACTIVE TASK + Session 53 handoff + 11 gotchas + Session 18 gotcha #5 origin; git status + log; BACKLOG; dashboard 91/100; ghost-session check clean; report delivered; operator directed numerical-order rule + BACKLOG item 1)
+- [x] Phase 1 understanding stated back (operator gave no correction)
+- [x] Phase 1B stub written to SESSION_NOTES ACTIVE TASK before technical work (Learning #29 grep-first; 18th consecutive validation)
+- [x] Task list created (10 tasks tracked via TaskCreate + TaskUpdate)
+- [x] Parallel Read batch before first Edit (Learning #34 7th consecutive validation, post-promotion)
+- [x] `scripts/render_tutorial.sh` written + `chmod +x` applied
+- [x] `.gitignore` updated: +`docs/tutorial.html` line
+- [x] Smoke test: `./scripts/render_tutorial.sh` produced `docs/tutorial.html` (72,597 bytes); CSS sentinels present; title inferred; gitignore rule active
+- [x] Verification: pytest 475/475 @ 97.19%; ruff clean; mypy 0 issues in both `src/` and `packages/data-agent/src/` (all unchanged from Session 53 — shell script adds no Python code paths)
+- [x] CHANGELOG Session 54 entry at top of [Unreleased] (22nd consecutive structure match)
+- [x] BACKLOG check at close-out: 4 `[ ]`, 0 `[x]` (was 5; removed fixed item per Learning #26)
+- [x] Phase 3A: Session 53 handoff evaluated (9.5/10)
+- [x] Phase 3B: Self-assessment scored and written (9.5/10, -0.5 deduction noted: brief initial deliberation over `-V header-includes` vs `--include-in-header`, script doesn't auto-detect repo root)
+- [x] Phase 3C: Learnings — Learning #34 7th consecutive validation post-promotion; candidate Learning #38 (read predecessor sessions' gotchas for deliverable-motivation provenance) noted
+- [x] Phase 3D: Handoff to Session 55 above (4 remaining BACKLOG items; BACKLOG item 2 is the next in numerical order; 14 gotchas; operator's numerical-order directive captured as gotcha #14)
+- [ ] Phase 3E: Commit `scripts/render_tutorial.sh` + `.gitignore` + `CHANGELOG.md` + `BACKLOG.md` + `SESSION_NOTES.md` — pending this turn
+- [ ] Phase 3F: Report and STOP — pending this turn
+
+### Post-Session-54 pre-commit state
+- `uv run pytest -q` → **475/475 passing**, coverage **97.19%** with `Required test coverage of 95% reached` — FLOOR HOLDS (2.19-point headroom; UNCHANGED from Session 53 — shell script adds no Python code paths)
+- `uv run ruff check src/ tests/ packages/` → `All checks passed!`
+- `uv run mypy src/` → `Success: no issues found in 48 source files`
+- `uv run mypy packages/data-agent/src/` → `Success: no issues found in 12 source files`
+- `./scripts/render_tutorial.sh` → exit 0, `rendered docs/tutorial.md -> docs/tutorial.html`, 72,597 bytes
+- `git check-ignore -v docs/tutorial.html` → `.gitignore:21:docs/tutorial.html	docs/tutorial.html` (rule active)
+- BACKLOG.md: 4 `[ ]`, 0 `[x]` (render_tutorial.sh item removed per Learning #26)
+- CHANGELOG.md: Session 54 entry at top of [Unreleased] (22nd consecutive structure match)
+- 5 files modified for the Session 54 commit: `scripts/render_tutorial.sh` (+89, new file, `chmod +x`), `.gitignore` (+1 line), `CHANGELOG.md` (+8 lines: Session 54 entry), `BACKLOG.md` (-1 line: render_tutorial.sh item removed), `SESSION_NOTES.md` (close-out)
+
+---
+
+## (archived) Previous ACTIVE TASK — Session 53
 **Task:** Session 53 — BACKLOG item 1 (Session 51 finding #2): fix the data-agent JSON parser so markdown-fenced output from `claude-sonnet-4-6` (` ```json … ``` ` with surrounding prose) parses instead of raising `LLMParseError`.
 
 **Status:** Session 53 COMPLETE. Fix shipped: `_extract_json` restructured into bare-parse-first + fence-search-fallback; fence regex loosened from anchored-entire-response to unanchored-search so prose before/after the fence no longer breaks parsing. Pre-commit verification: pytest **475/475 passing** @ **97.19% coverage** (was 470/97.27; +5 regression tests, -0.08 coverage from defensive nested-except in fence-fallback). ruff clean; mypy 0 issues in both `src/` (48 files) and `packages/data-agent/src/` (12 files). BACKLOG 6 → 5 `[ ]`. Commit pending this turn. Next session: 5 `[ ]` remaining (no single natural follow-up — pick any).

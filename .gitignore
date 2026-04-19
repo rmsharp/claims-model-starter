@@ -18,3 +18,4 @@ intake_sessions.db-wal
 .orchestrator/
 my_intake.yaml
 my_intake_report.json
+docs/tutorial.html
