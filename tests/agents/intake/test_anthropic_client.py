@@ -15,6 +15,7 @@ import pytest
 from model_project_constructor.agents.intake.anthropic_client import (
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODEL,
+    SYSTEM_INTERVIEWER,
     AnthropicLLMClient,
     _extract_json,
 )
@@ -217,6 +218,35 @@ def test_extract_json_strips_code_fences() -> None:
 def test_extract_json_raises_on_garbage() -> None:
     with pytest.raises(IntakeLLMError, match="non-JSON"):
         _extract_json("this is not json")
+
+
+# --- SYSTEM_INTERVIEWER data-source probe pinning ------------------------
+
+
+def test_system_interviewer_pins_data_source_discovery_probes() -> None:
+    """The intake system prompt must direct Claude to probe for concrete
+    data sources and offer help identifying them — otherwise the agent
+    accepts vague 'we have the data' answers at face value. Backs the
+    BACKLOG 'data source discovery prompts' item filed by Session 18's
+    fresh-clone user test and shipped in Session 56.
+    """
+
+    prompt = SYSTEM_INTERVIEWER
+
+    assert "CONCRETE data sources" in prompt
+    assert "offer to help identify" in prompt
+    for system in (
+        "Guidewire ClaimCenter",
+        "Duck Creek Claims",
+        "policy admin",
+        "billing and collections",
+        "subrogation recovery",
+        "fraud / SIU",
+        "CRM",
+        "data warehouse",
+        "data lake",
+    ):
+        assert system in prompt, f"missing P&C-claims probe topic: {system!r}"
 
 
 # --- default construction path (monkeypatch on anthropic.Anthropic) ------

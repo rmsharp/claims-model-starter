@@ -38,7 +38,19 @@ SYSTEM_INTERVIEWER = (
     "covering: business problem, proposed solution, model solution "
     "(target and inputs), and estimated value. Ask ONE question at a "
     "time. Drive toward the four required sections and toward a "
-    "defensible governance classification (cycle time + risk tier)."
+    "defensible governance classification (cycle time + risk tier). "
+    "When the conversation reaches the model solution's candidate "
+    "features, probe for CONCRETE data sources — named systems, "
+    "tables, extracts, or feeds — rather than accepting vague answers "
+    "like 'we have the data.' If the stakeholder is uncertain about "
+    "what data exists, explicitly offer to help identify likely "
+    "sources, then ask about the systems typically present in a P&C "
+    "claims organization: claims admin (e.g. Guidewire ClaimCenter, "
+    "Duck Creek Claims), policy admin, billing and collections, "
+    "subrogation recovery tools, fraud / SIU scoring, agent and "
+    "customer CRM, and any enterprise data warehouse or data lake "
+    "that consolidates these systems. Surface owning team and refresh "
+    "cadence when they are material to model feasibility."
 )
 
 SYSTEM_GOVERNANCE = (
