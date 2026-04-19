@@ -466,9 +466,12 @@ class TestDetermineResumePoint:
     """One test per row of `resume-from-checkpoint-plan.md` §5 truth table.
 
     Six valid rows (S0–S5) plus three INVALID rows (successor present
-    without its predecessor). ``determine_resume_point`` is pure — these
-    tests use an empty checkpoint dir and ``touch``-style file creation
-    because the function only reads file existence.
+    without its predecessor). S1–S5 seed real envelopes with
+    ``status="COMPLETE"`` payloads because ``determine_resume_point``
+    consults saved status to distinguish a completed handoff from a
+    FAILED halt artifact (§11 risk #8). S0 and the INVALID rows fire
+    before any payload load, so ``touch``-style creation is sufficient
+    for those cases.
     """
 
     def test_s0_empty_dir_returns_intake(self, tmp_path: Path) -> None:
@@ -478,24 +481,33 @@ class TestDetermineResumePoint:
     def test_s1_only_intake_returns_intake_to_data_adapter(
         self, tmp_path: Path
     ) -> None:
-        _touch_checkpoint(tmp_path, "run_s1", intake=True)
         store = CheckpointStore(tmp_path)
+        _seed_envelope(store, "run_s1", "IntakeReport", _load_intake())
         assert determine_resume_point(store, "run_s1") == "intake_to_data_adapter"
 
     def test_s2_intake_and_data_request_returns_data(self, tmp_path: Path) -> None:
-        _touch_checkpoint(tmp_path, "run_s2", intake=True, data_request=True)
         store = CheckpointStore(tmp_path)
+        intake = _load_intake()
+        _seed_envelope(store, "run_s2", "IntakeReport", intake)
+        _seed_envelope(
+            store,
+            "run_s2",
+            "DataRequest",
+            intake_report_to_data_request(intake, "run_s2"),
+        )
         assert determine_resume_point(store, "run_s2") == "data"
 
     def test_s3_through_data_report_returns_website(self, tmp_path: Path) -> None:
-        _touch_checkpoint(
-            tmp_path,
-            "run_s3",
-            intake=True,
-            data_request=True,
-            data_report=True,
-        )
         store = CheckpointStore(tmp_path)
+        intake = _load_intake()
+        _seed_envelope(store, "run_s3", "IntakeReport", intake)
+        _seed_envelope(
+            store,
+            "run_s3",
+            "DataRequest",
+            intake_report_to_data_request(intake, "run_s3"),
+        )
+        _seed_envelope(store, "run_s3", "DataReport", _load_data())
         assert determine_resume_point(store, "run_s3") == "website"
 
     def test_s4_with_saved_repo_target_returns_website(self, tmp_path: Path) -> None:
@@ -503,30 +515,35 @@ class TestDetermineResumePoint:
         ``config wins`` decision means the saved envelope is ignored on
         resume. Same resume point as S3."""
 
-        _touch_checkpoint(
-            tmp_path,
-            "run_s4",
-            intake=True,
-            data_request=True,
-            data_report=True,
-            repo_target=True,
-        )
         store = CheckpointStore(tmp_path)
+        intake = _load_intake()
+        _seed_envelope(store, "run_s4", "IntakeReport", intake)
+        _seed_envelope(
+            store,
+            "run_s4",
+            "DataRequest",
+            intake_report_to_data_request(intake, "run_s4"),
+        )
+        _seed_envelope(store, "run_s4", "DataReport", _load_data())
+        # RepoTarget is a touch — determine_resume_point never inspects it.
+        (tmp_path / "run_s4" / "RepoTarget.json").write_text("{}")
         assert determine_resume_point(store, "run_s4") == "website"
 
     def test_s5_terminal_result_present_returns_already_complete(
         self, tmp_path: Path
     ) -> None:
-        _touch_checkpoint(
-            tmp_path,
-            "run_s5",
-            intake=True,
-            data_request=True,
-            data_report=True,
-            repo_target=True,
-            result=True,
-        )
         store = CheckpointStore(tmp_path)
+        intake = _load_intake()
+        _seed_envelope(store, "run_s5", "IntakeReport", intake)
+        _seed_envelope(
+            store,
+            "run_s5",
+            "DataRequest",
+            intake_report_to_data_request(intake, "run_s5"),
+        )
+        _seed_envelope(store, "run_s5", "DataReport", _load_data())
+        (tmp_path / "run_s5" / "RepoTarget.json").write_text("{}")
+        (tmp_path / "run_s5" / "RepoProjectResult.result.json").write_text("{}")
         assert determine_resume_point(store, "run_s5") == "already_complete"
 
     def test_invalid_result_without_data_report_raises(self, tmp_path: Path) -> None:
@@ -557,6 +574,47 @@ class TestDetermineResumePoint:
         store = CheckpointStore(tmp_path)
         with pytest.raises(ResumeInconsistent, match="IntakeReport"):
             determine_resume_point(store, "run_invalid_c")
+
+    def test_failed_data_report_demotes_to_data(self, tmp_path: Path) -> None:
+        """§11 risk #8: a ``DataReport`` on disk with ``status="EXECUTION_FAILED"``
+        is the halt artifact of a prior ``FAILED_AT_DATA`` run, not a
+        completed handoff. The resume point must demote to ``"data"`` so
+        the data agent re-executes. Without this, the FAILED report would
+        be handed to the website agent — the bug filed as BACKLOG item #1
+        from Session 51's live-LLM round-trip (run_id
+        ``run_b1_resume_live_1776570556``)."""
+
+        store = CheckpointStore(tmp_path)
+        intake = _load_intake()
+        request = intake_report_to_data_request(intake, "run_failed_data")
+        _seed_envelope(store, "run_failed_data", "IntakeReport", intake)
+        _seed_envelope(store, "run_failed_data", "DataRequest", request)
+        _seed_envelope(
+            store,
+            "run_failed_data",
+            "DataReport",
+            _incomplete_data_report(request),
+        )
+        assert determine_resume_point(store, "run_failed_data") == "data"
+
+    def test_draft_incomplete_intake_demotes_to_intake(
+        self, tmp_path: Path
+    ) -> None:
+        """§11 risk #8: an ``IntakeReport`` on disk with
+        ``status="DRAFT_INCOMPLETE"`` is the halt artifact of a prior
+        ``FAILED_AT_INTAKE`` run. The resume point must demote to
+        ``"intake"`` so the interview re-executes. Without this, the
+        DRAFT_INCOMPLETE report would be adapted to a DataRequest and
+        handed to the data agent."""
+
+        store = CheckpointStore(tmp_path)
+        _seed_envelope(
+            store,
+            "run_draft_intake",
+            "IntakeReport",
+            _draft_incomplete_intake(),
+        )
+        assert determine_resume_point(store, "run_draft_intake") == "intake"
 
 
 # --- Resume execution (resume-from-checkpoint-plan §7.2) ----------------

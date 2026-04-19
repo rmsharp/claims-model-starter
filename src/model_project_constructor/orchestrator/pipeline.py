@@ -74,16 +74,28 @@ def determine_resume_point(store: CheckpointStore, run_id: str) -> ResumePoint:
     """Inspect the on-disk envelopes for ``run_id`` and return the first
     stage that must be re-executed.
 
-    Pure function — no side effects beyond reading the checkpoint dir.
+    Reads the checkpoint dir (pure in the side-effect sense — no mutation)
+    and consults the saved ``IntakeReport`` / ``DataReport`` payloads'
+    ``status`` field. A non-``"COMPLETE"`` payload is the halt artifact of
+    a prior run, not a completed handoff: it demotes the resume point to
+    re-execute that stage. See ``docs/planning/resume-from-checkpoint-plan.md``
+    §11 risk #8 (the inverse of risk #5).
+
     Does NOT consult ``RepoTarget`` (``T`` in the truth table): per the
     plan §6.4, the operator-supplied ``config.repo_target`` always wins
     on resume, so a saved ``RepoTarget`` envelope is not load-bearing for
     the resume-point decision.
 
+    Terminal ``RepoProjectResult`` is handled by ``already_complete`` ->
+    CLI's ``_handle_already_complete``, which inspects status and offers
+    the operator opt-in-to-retry for the FAILED case (website has
+    irreversible side effects; auto-retry would be wrong).
+
     See ``docs/planning/resume-from-checkpoint-plan.md`` §5 for the
     truth table this function implements. Raises
     :class:`ResumeInconsistent` for rows marked INVALID (a successor
-    envelope without its predecessor).
+    envelope without its predecessor). A FAILED envelope is NOT
+    ``ResumeInconsistent`` — it is a legitimate halt artifact.
     """
 
     intake_present = store.has(run_id, "IntakeReport")
@@ -104,15 +116,54 @@ def determine_resume_point(store: CheckpointStore, run_id: str) -> ResumePoint:
             f"Run {run_id!r}: DataRequest/DataReport exist but IntakeReport is missing."
         )
 
+    # RepoProjectResult short-circuits: the CLI's _handle_already_complete
+    # (scripts/run_pipeline.py:346) reads the saved result and decides
+    # COMPLETE vs FAILED opt-in-to-retry. Status of any predecessor
+    # envelope is not load-bearing here.
     if result_present:
         return "already_complete"
+
+    # Status-aware demotion: an IntakeReport or DataReport on disk is
+    # the halt artifact of a prior FAILED_AT_{INTAKE,DATA} run when its
+    # saved status is not "COMPLETE". Loads happen only when status
+    # materially affects the resume point — short-circuit above keeps
+    # the hot path free of payload deserialization when a terminal
+    # result is present.
     if report_present:
-        return "website"
+        if _is_saved_payload_complete(store, run_id, "DataReport"):
+            return "website"
+        return "data"  # DataReport FAILED → re-run data stage.
     if request_present:
-        return "data"
+        # DataRequest present with IntakeReport missing is already caught
+        # by the INVALID check above, so intake_present is True here.
+        # Intake must be COMPLETE for the pipeline to have advanced to
+        # DataRequest (pipeline.py:205-215 halts before save_request on
+        # non-COMPLETE intake), so demotion from "data" is defensive
+        # only — the branch fires for a hand-mutated dir.
+        if _is_saved_payload_complete(store, run_id, "IntakeReport"):
+            return "data"
+        return "intake"
     if intake_present:
-        return "intake_to_data_adapter"
+        if _is_saved_payload_complete(store, run_id, "IntakeReport"):
+            return "intake_to_data_adapter"
+        return "intake"  # DRAFT_INCOMPLETE intake → re-run interview.
     return "intake"
+
+
+def _is_saved_payload_complete(
+    store: CheckpointStore, run_id: str, payload_type: str
+) -> bool:
+    """Return True iff the saved envelope's payload has ``status == "COMPLETE"``.
+
+    Used by :func:`determine_resume_point` to distinguish a completed
+    handoff (skip the stage) from a FAILED halt artifact (re-execute the
+    stage). Propagates ``pydantic.ValidationError`` on schema drift —
+    that is a different failure class than :class:`ResumeInconsistent`
+    (which is reserved for missing-predecessor structural problems).
+    """
+
+    payload = store.load_payload(run_id, payload_type)
+    return getattr(payload, "status", None) == "COMPLETE"
 
 
 @dataclass

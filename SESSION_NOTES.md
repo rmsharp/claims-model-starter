@@ -5,9 +5,141 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 51 — Phase 3 of `docs/planning/resume-from-checkpoint-plan.md` (§7.3): `--resume <run_id>` CLI flag in `scripts/run_pipeline.py` + 7 CLI tests + OPERATIONS §5 rewrite + `docs/tutorial.md` §7 + README +1 line + CHANGELOG entry + BACKLOG −2 lines (removed "Automated resume-from-checkpoint" AND "B-3 Web UI bridge" per plan §1.3 supersession).
+**Task:** Session 52 — BACKLOG item 1 (Session 51 live-LLM finding): fix `determine_resume_point` so a FAILED `DataReport` / non-COMPLETE `IntakeReport` on disk demotes to the re-execution point for that stage instead of being treated as a completed handoff.
 
-**Status:** Session 51 COMPLETE (close-out pending). Plan critical path Phases 1–3 shipped across Sessions 49/50/51. Pre-commit verification: pytest **468/468 passing** @ **97.33% coverage** (was 461; +7 new CLI tests); ruff clean; mypy 0 issues; CLI smoke + synthetic round-trip captured. Commit `feat(resume-phase3): --resume CLI + operations + tutorial` pending this turn. Live-LLM round-trip (plan §7.3.3 item 3) **deferred pending operator authorization** — synthetic fake-mode round-trip is captured in CHANGELOG; the Anthropic-backed round-trip (~$0.30) remains optional follow-up. Next session: optional plan Phase 4 (UI writes envelope, §7.4) OR pick from 5 remaining BACKLOG items.
+**Status:** Session 52 COMPLETE. Fix shipped: `determine_resume_point` is status-aware for `IntakeReport` / `DataReport`; `RepoProjectResult` path untouched (opt-in-to-retry for website preserves irreversible-side-effects UX); `ResumeInconsistent` contract unchanged (narrow: missing-predecessor only). Pre-commit verification: pytest **470/470 passing** @ **97.27% coverage** (was 468/97.33; +2 regression tests, -0.06 coverage from defensive-only branch in new helper). ruff clean; mypy 0 issues. BACKLOG 7 → 6 `[ ]`. Commit pending this turn. Next session: 6 `[ ]` remaining (natural follow-up: Session 51 finding #2 — data-agent markdown-fence JSON parser).
+
+### Session 51 Handoff Evaluation (by Session 52)
+
+**Score: 9.5/10.** Session 51's handoff was unusually complete: the addendum describing the live-LLM round-trip explicitly filed the bug with a repro (`run_id=run_b1_resume_live_1776570556`), named the plan §11 risk #5 framing ("the inverse"), and listed three fix candidates. The existing test file already had `_seed_envelope` + `_incomplete_data_report` + `_draft_incomplete_intake` helpers that Session 50 had landed for the TestRunPipelineResume class, which made the two new regression tests mechanical.
+
+- **What helped:** (a) **BACKLOG line with three fix candidates.** Gave me the design-decision landscape in one sentence. Picking option (a) narrowed to "status-aware load in `determine_resume_point`, website path untouched" was a 2-minute conversation with the operator, not a 20-minute design round-trip. (b) **Plan §11 risk #5's exact framing.** Session 51 wrote "the inverse of risk #5" — that phrasing became the §11 risk #8 header directly. (c) **Captured repro `run_id=run_b1_resume_live_1776570556`.** Cited in both regression tests + CHANGELOG — future readers can trace the fix to its production evidence. (d) **Session 50's test helpers.** `_seed_envelope` + `_incomplete_data_report` + `_draft_incomplete_intake` were already in the file from Phase 2, so the two new tests each fit in ~15 LOC. No helper duplication. (e) **Gotcha #1 pre-commit state** (pytest 468/468 @ 97.33%) + the running "+N consecutive Learning #29 / #34 validations" counters steered Phase 0 + Phase 1B mechanically. Zero fumbles on the stub insert (Learning #29 Session #16 of consecutive validation). Zero "File has not been read yet" errors on Edits (Learning #34 Session #5 of consecutive validation — **promotes to mechanically reliable** per the gotcha #4 threshold).
+- **What was missing:** (a) **Plan §11 risk #5 made the inverse-bug not-inconceivable-in-retrospect.** The plan named "a loaded envelope wrongly triggers halt" but didn't extend the symmetry check to "a loaded envelope wrongly skips re-execution." Session 51 surfaced it with a live run; Session 48 (the plan author) could have caught it with one line of `determine_resume_point`-level reasoning. Not Session 51's fault — the plan is the load-bearing artifact. Cost: the Session 51 live-LLM spend (~$0.05-0.10). -0 (the plan's author was Session 48, not Session 51; Session 51 was the *discoverer*). (b) **Session 51 gotcha #2 BACKLOG count** said "5 `[ ]`, 0 `[x]`" at Phase 0, but the addendum added 2 new findings (→ 7 `[ ]` at session end). A one-line "post-addendum: 7 `[ ]`" marker in the addendum's close-out section would have saved me a `grep -c` step. -0.25 (cosmetic). (c) **Gotcha #10 candidate Learning #35** (single-word affirmation discipline) was named as "pending 2nd-instance validation before formal coining." Session 52 had no single-word-affirmation interaction to validate against (operator gave clear multi-sentence direction throughout), so the candidate stays at 1/2. -0.
+- **What was wrong:** Nothing factually wrong. All plan signatures matched current code. The second Session 51 finding (data-agent markdown-fence) was correctly filed as a separate BACKLOG item; Session 52 did NOT chase it down despite being in the same session-history neighborhood (discipline held).
+- **ROI:** ~4× on the handoff package. The three fix candidates alone saved ~15 min of design work. The plan §11 risk #5 framing directly authored §11 risk #8's header. The captured `run_id` is a permanent artifact future sessions can reproduce.
+
+### What Session 52 Did
+
+**Deliverable:** Fix BACKLOG item 1. `determine_resume_point` is now status-aware for `IntakeReport` / `DataReport`. **COMPLETE.**
+**Started:** 2026-04-19
+**Completed:** 2026-04-19
+**Commit (pending):** `fix(resume): status-aware demotion for FAILED envelopes`.
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS.md + SESSION_RUNNER.md read in full. SESSION_NOTES.md ACTIVE TASK + Session 51 handoff + addendum + 10 gotchas. git status (clean, 0 commits ahead). git log -10. BACKLOG (7 `[ ]`, 0 `[x]` — Learning #26 discipline holds despite Session 51's +2 addendum, Session #21 of application). Methodology dashboard (91/100 medium risk, unchanged from Session 51). Ghost-session check clean. Reported findings to operator with three suggested deliverables (BACKLOG items 1-2, optional Phase 4, other BACKLOG). Operator chose BACKLOG item 1.
+
+2. **Phase 1 approach proposal.** Before any code, surfaced the three BACKLOG-line fix candidates, proposed option (a) narrowed (status-aware load inside `determine_resume_point`), explained the `RepoProjectResult` asymmetry rationale (website has irreversible side effects so opt-in-to-retry stays), asked about the `ResumeInconsistent` contract (operator: "keep contract narrow"). Waited for explicit confirmation before writing code.
+
+3. **Phase 1B stub — Learning #29 16th consecutive mechanical validation.** Grep-before-insert pattern `Session 52|### What Session 52 Did|### Session 51 Handoff Evaluation|Post-Session-52` → 5 hits, all pre-existing forward references in Session 51's handoff. Safe to insert. Wrote IN-PROGRESS stub to ACTIVE TASK before any research.
+
+4. **Parallel Read batch — Learning #34 5th consecutive validation (PROMOTION THRESHOLD REACHED).** Read `pipeline.py` + `checkpoints.py` + `test_pipeline.py` (3 reads with target line ranges) + `resume-from-checkpoint-plan.md` §11 + `scripts/run_pipeline.py` Phase-3 helpers + `CHANGELOG.md` top + `BACKLOG.md` before any Edit. Zero "File has not been read yet" errors on subsequent 6 Edits.
+
+5. **Implementation — single surgical Edit to `determine_resume_point` + new helper.** First attempt eagerly computed `intake_complete` / `report_complete` before the `result_present` short-circuit, which crashed Session 51's CLI tests (they seed stub `{"status": "COMPLETE"}` envelopes that don't parse as full `DataReport` schema). Restructured to defer loads into each branch: `result_present` short-circuits before any load; `_is_saved_payload_complete` called only when status materially affects the resume decision. Added `_is_saved_payload_complete(store, run_id, payload_type) -> bool` private helper using `store.load_payload` + `getattr(payload, "status", None) == "COMPLETE"`. Docstring updated to cross-reference plan §11 risk #8, explain the `RepoProjectResult` asymmetry, and clarify that a FAILED envelope is NOT `ResumeInconsistent` (it's a legitimate halt artifact, not structural corruption).
+
+6. **Test migration — S1–S5 `_touch_checkpoint` → `_seed_envelope`.** The old pure-function tests wrote empty `{}` JSON because the function only called `store.has()`. Now that the function loads payloads on the status-check branches, the empty JSON doesn't parse. Migrated S1–S5 to seed real envelopes via `_seed_envelope` + existing `_load_intake()` / `_load_data()` + `intake_report_to_data_request`. S0 and INVALID A/B/C tests stay on `_touch_checkpoint` because they fire before any load attempt. Verified each INVALID branch still fires its raise before the load-requiring code path.
+
+7. **New regression tests — 2 tests.** `test_failed_data_report_demotes_to_data` seeds IntakeReport COMPLETE + DataRequest + DataReport with `status=EXECUTION_FAILED` → asserts `"data"`. `test_draft_incomplete_intake_demotes_to_intake` seeds IntakeReport with `status=DRAFT_INCOMPLETE` alone → asserts `"intake"`. Each cites `run_id=run_b1_resume_live_1776570556` in its docstring so future readers can trace the fix to its production evidence.
+
+8. **Verification — all four commands green.** `uv run pytest -q` → **470/470 passing** (was 468; +2). Coverage **97.27%** with `Required test coverage of 95% reached`. 0.06-point drop from Session 51's 97.33% is the new helper's defensive `if request_present and not intake_complete -> return "intake"` branch, which is unreachable under normal pipeline semantics (pipeline.py:205-215 halts before saving DataRequest on non-COMPLETE intake) but kept as defensive code for hand-mutated dirs. `uv run ruff check src/ tests/ packages/` → `All checks passed!`. `uv run mypy src/` → `Success: no issues found in 48 source files`.
+
+9. **Plan §11 risk #8 added.** One new row in `docs/planning/resume-from-checkpoint-plan.md` §11 table: names the bug as "the inverse of #5", documents the production observation (Session 51's run_id), names the Session 52 fix, explains the `RepoProjectResult` asymmetry, documents the `ResumeInconsistent` contract narrowing.
+
+10. **CHANGELOG Session 52 entry at top of [Unreleased]** (20th consecutive structure match: context / Changed / Changed / Added / Changed / Removed / Verified / Unchanged intentionally / Next).
+
+11. **BACKLOG.md −1 line** per Learning #26 (delete, do NOT flip to `[x]`). Removed "Resume of FAILED data stage skips re-execution" — now fixed. BACKLOG net change: 7 `[ ]` → 6 `[ ]`, 0 `[x]` → 0 `[x]`.
+
+### Phase 3B: Self-assess — 9/10
+
+- **Research before creative work:** Yes. Read SAFEGUARDS + SESSION_RUNNER + SESSION_NOTES ACTIVE TASK + Session 51 handoff + addendum + 10 gotchas + plan §11 risk #5 + `pipeline.py` (full) + `checkpoints.py` (full) + `test_pipeline.py` (first 130 lines + relevant sections via grep-targeted reads) + current `scripts/run_pipeline.py` Phase-3 helpers + CHANGELOG top + BACKLOG. Learning #11 signature verification mechanical (all plan signatures matched current code).
+- **Stakeholder corrections:** 0. Operator gave clear multi-sentence direction throughout. Candidate Learning #35 (single-word affirmation discipline) had no case to validate against this session.
+- **What I got right:** (a) **Approach proposal before code.** Phase 1 surfaced the three fix candidates + the `RepoProjectResult` asymmetry reasoning + the `ResumeInconsistent` contract question in one message. Operator confirmed with two clean corrections ("Explain what a ResumeInconsistent exception shape is" → I explained → "keep contract narrow"). Zero downstream rework. (b) **Learning #29 grep-before-insert — 16th consecutive clean validation.** No heading-duplication fumble on the Phase 1B stub. (c) **Learning #34 parallel-Read-before-parallel-Edit — 5th consecutive mechanical validation.** Promotion threshold reached (gotcha #4 of Session 51's handoff named "one more clean validation = promotion to 'mechanically reliable' status"). Will note in handoff. (d) **Learning #26 BACKLOG discipline — Session #21 of application.** Phase 0 check (7 `[ ]`) + close-out check (6 `[ ]`) both clean. Removed the fixed item; did not flip to `[x]`. (e) **Asymmetry rationale made explicit in docstring.** Future readers will not wonder "why doesn't `RepoProjectResult` FAILED demote to `website`?" — the docstring names the reason (irreversible side effects → opt-in UX at CLI layer). (f) **Two new tests cite the production repro `run_id`.** Future forensics can reproduce from the captured checkpoint dir. (g) **Short-circuit restructure caught Session 51 test breakage on first pytest run.** Not initially foreseen, but diagnosed in one pytest output read (the Pydantic validation error on stub `{"status": "COMPLETE"}` envelopes was unambiguous) and fixed with a single Edit. Ship-grade turnaround. (h) **CHANGELOG convention 20th consecutive match.**
+- **What I got wrong:** (a) **First-pass `determine_resume_point` restructure was too eager.** I computed `intake_complete` and `report_complete` BEFORE the `if result_present` short-circuit, which loaded payloads that the short-circuit would have made moot AND crashed Session 51's CLI tests (they seed stub envelopes). Root cause: I thought in set-theory terms ("compute the two key booleans upfront, then branch") instead of control-flow terms ("only load what the current branch actually needs"). Cost: one test run + one Edit. -0.5. Learning candidate: **when a function gains a payload-load dependency, examine each pre-existing call site to check whether the load is actually needed on the code path taken — don't eagerly compute booleans that pre-existing short-circuits would skip.** Pending 2nd-instance validation before formal coining. (b) **Coverage dropped 0.06 (97.33 → 97.27).** The new helper's defensive `if request_present and not intake_complete -> return "intake"` branch is unreachable under normal pipeline semantics (the pipeline halts at intake before saving DataRequest on non-COMPLETE intake) but I kept it as defensive code for hand-mutated dirs. Valid design call, but a test for that branch would have held coverage. -0 (cosmetic; floor still holds with 2.27-point headroom). Net self-score: **9/10** with -0.5 deduction for the eager-load restructure.
+- **Quality bar vs previous sessions:** Comparable to Session 32 (sibling-test-restructure precedent research) and Session 51 (Phase 3 implementation) on technical precision — scoped fix, asymmetric design call justified in docstring + CHANGELOG + plan, zero scope creep. Below Session 46 (Evolution.md synthesis) on deliverable volume but that was a different workstream.
+
+### Phase 3C: Learnings
+
+**Learning #34 promotion — parallel-Read-before-parallel-Edit is now "mechanically reliable."** 5th consecutive clean validation (Sessions 47 initial failure; 49 preemptive success; 50 preemptive success; 51 preemptive success; 52 preemptive success). Session 51's gotcha #4 explicitly named the promotion threshold as "one more clean validation = promotion." That threshold is met. Future sessions should treat this as a standing discipline: any session touching multiple files Reads them all in one parallel batch before issuing any Edit. No longer a learning-candidate — it's a mechanical default.
+
+**Candidate Learning #36 (don't-eagerly-precompute-across-short-circuits) — 1st instance.** When extending a function to add a payload-load (or any side-effect-ish computation) that a pre-existing early-return would make moot, do NOT hoist the computation above the early-return as "set up all the booleans first." Instead, push the computation into the branch that actually needs it. Rationale: pre-existing short-circuits often protect callers who pass minimal stub inputs that would fail the new computation; hoisting breaks those callers silently. Mechanical diagnostic: before hoisting a computation, trace each pre-existing early-return branch and confirm the new computation is reachable + needed on that branch. Session 52's first pass failed this check on the `result_present` branch (Session 51's CLI tests passed stub envelopes whose Pydantic validation would have succeeded under existence-only semantics but fails under load-and-validate semantics). Pending 2nd-instance validation before formal coining; carry forward.
+
+**Existing learnings load-bearing this session:**
+- **Learning #11** (trust code over plan for signatures): Applied in Phase 0. All plan signatures matched current code — no drift.
+- **Learning #18** (planning-to-implementation boundaries): Applied. Did NOT chase down Session 51's second finding (data-agent markdown-fence) despite it being filed in the same addendum — it's a separate bug class in a different module. Session boundary held cleanly.
+- **Learning #19** (counts after running, not from memory): N/A this session (no evidence-inventory greps beyond BACKLOG count).
+- **Learning #26** (BACKLOG discipline): Session #21 of application. Phase 0 + close-out both clean. **Removed** the fixed item (not `[x]` flip).
+- **Learning #28** (audit handoff specifics against code): Applied when the BACKLOG line listed three fix candidates — I verified each against actual code (particularly: does `_handle_already_complete` already handle FAILED `RepoProjectResult`? yes — which made the "website symmetric" option (b) undesirable; the asymmetric call was justified in code, not just design preference).
+- **Learning #29** (grep-before-insert for stub): 16th consecutive mechanical validation. Zero fumble.
+- **Learning #30** (declarative progress narration): Active discipline. No "Let me ..." slippage this session.
+- **Learning #32** (historical-prose in append-only / freshness-tracked files): N/A this session (no edits to such files).
+- **Learning #34** (parallel-Read-before-parallel-Edit): **PROMOTED to mechanically reliable.** 5th consecutive validation. No longer counts as a learning-candidate — it's a default discipline.
+
+### Phase 3D: Handoff to Session 53
+
+**Next deliverables** (in rough priority order):
+
+1. **(Natural follow-up) Session 51 finding #2 — data-agent markdown-fence JSON parser.** BACKLOG item #1 in the current (post-Session-52) list: `claude-sonnet-4-6` returns the quality-check list wrapped in ` ```json … ``` ` markdown fences; the data-agent's `json.loads` raises on the leading backticks. Reproducible with `--llm data --model claude-sonnet-4-6 --db-url sqlite:///does-not-exist.db`. Fix shape is TBD — two options: (a) tighten the prompt to forbid fences (may not hold against all model versions); (b) strip leading / trailing ``` ```json ``` ``` fences in the JSON parser before `json.loads`. (b) is more defensive. Scope: 1 production file change in `packages/data-agent/src/...` + 2-3 tests. One session.
+
+2. **Tutorial UX: split code blocks** — Split multi-command code blocks in `docs/tutorial.md` into individually-copyable blocks. Scope: `docs/tutorial.md` only. One session.
+
+3. **`scripts/render_tutorial.sh`** — Wrap pandoc with inline CSS. Scope: new shell script. Half a session.
+
+4. **Intake agent data-source discovery prompts** / **Data agent metadata discovery mode** / **Statistical terminology glossary** — each is a BACKLOG item; each is ~1 session.
+
+5. **(Optional) Plan Phase 4** — UI writes `IntakeReport.json` envelope on interview completion. Plan §7.4 OPTIONAL. Do only if a pilot operator demands the UI → `--resume` workflow.
+
+**Commits ahead of origin: 1 at Session 52 close-out** (this session's own fix commit). Push per operator instruction.
+
+### Gotchas for Session 53
+
+1. **Post-Session-52 pre-commit state:** pytest **470/470 passing** @ **97.27% coverage** with `Required test coverage of 95% reached`. ruff clean (`src/ tests/ packages/`). mypy 0 issues in 48 source files. `src/model_project_constructor/orchestrator/pipeline.py` body grew from ~351 → ~389 lines (+38 LOC: new helper + restructured `determine_resume_point` + docstring extension).
+
+2. **BACKLOG at Phase 0:** **6 `[ ]`, 0 `[x]`** (was 7; removed fixed item per Learning #26). Learning #26 Session #22 of application. Phase 0 check + close-out check both mandatory.
+
+3. **Learning #29 mechanical — 16th consecutive validation in Session 52.** Continue: grep-before-insert for stub pattern `Session 53|### What Session 53 Did|### Session 52 Handoff Evaluation|Post-Session-53`.
+
+4. **Learning #34 PROMOTED to mechanically reliable** in Session 52. No longer a learning-candidate — it's a default discipline. Any session touching multiple files Reads them all in one parallel batch before issuing any Edit. Continue mechanically.
+
+5. **Candidate Learning #36 (don't-eagerly-precompute-across-short-circuits).** 1st instance this session. When adding a payload-load (or side-effect-ish computation) to a function that has pre-existing early-returns, push the new computation into the branch that needs it; do NOT hoist it above the early-return. Rationale: pre-existing callers that pass minimal stub inputs may depend on the early-return to skip validation that the new computation would trigger. Session 52's first pass failed this check against Session 51's CLI tests. Pending 2nd-instance validation in Session 53+.
+
+6. **`determine_resume_point` is now status-aware for `IntakeReport` and `DataReport`.** If any future session adds a fourth envelope type with a `status` field (e.g. a hypothetical `ModelValidationReport`), extend the truth table in plan §5 + add a symmetric demotion branch + update risk #8's rationale. If the new envelope has NO status field, no extension needed — the existing logic for `DataRequest` / `RepoTarget` is the template.
+
+7. **`RepoProjectResult` FAILED treatment is deliberately asymmetric.** If a future session proposes auto-retry of website on FAILED, push back: website has irreversible side effects (GitLab/GitHub project creation). Opt-in via `_handle_already_complete`'s "delete the result file to retry" UX is the correct semantic. Docstring in `pipeline.py:determine_resume_point` names this.
+
+8. **CHANGELOG structure convention (Sessions 33–52, 20 consecutive):** context paragraph / Added/Changed (multiple) / Added / Changed / Removed / Verified / Unchanged intentionally / (optional Live-LLM status) / Next bullet. Session 52's entry lands the 20th match.
+
+9. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose uses `probability` for P(event). N/A this session.
+
+10. **Upstream-methodology risk unchanged.** Do NOT edit `docs/methodology/{README,HOW_TO_USE,ITERATIVE_METHODOLOGY,workstreams/*}.md`. `PROJECT_CONVENTIONS.md` is project-local; fine to extend.
+
+### Session 52 close-out checklist
+
+- [x] Phase 0 orientation (SAFEGUARDS + SESSION_RUNNER read in full; SESSION_NOTES ACTIVE TASK + Session 51 handoff + addendum + 10 gotchas; git status + log; BACKLOG; dashboard 91/100; ghost-session check clean; report delivered; operator directed BACKLOG item 1)
+- [x] Phase 1 approach proposal (three fix candidates; option (a) narrowed; `RepoProjectResult` asymmetry; `ResumeInconsistent` contract → "keep narrow")
+- [x] Phase 1B stub written to SESSION_NOTES ACTIVE TASK before technical work (Learning #29 grep-first; 16th consecutive validation)
+- [x] Task list created (6 tasks tracked via TaskCreate + TaskUpdate)
+- [x] Parallel Read batch before parallel/surgical Edit batch (Learning #34 5th consecutive validation → **PROMOTED**)
+- [x] `determine_resume_point` restructured for status-aware demotion + `_is_saved_payload_complete` helper + docstring update
+- [x] 2 regression tests: `test_failed_data_report_demotes_to_data`, `test_draft_incomplete_intake_demotes_to_intake`
+- [x] S1–S5 tests migrated from `_touch_checkpoint` to `_seed_envelope`
+- [x] Verification: pytest 470/470 @ 97.27%; ruff clean; mypy 0 issues
+- [x] Plan §11 risk #8 added
+- [x] CHANGELOG Session 52 entry at top of [Unreleased] (20th consecutive structure match)
+- [x] BACKLOG check at close-out: 6 `[ ]`, 0 `[x]` (was 7; removed fixed item per Learning #26)
+- [x] Phase 3A: Session 51 handoff evaluated (9.5/10)
+- [x] Phase 3B: Self-assessment scored and written (9/10, -0.5 deduction noted: eager-load restructure)
+- [x] Phase 3C: Learnings — Learning #34 PROMOTED (5th consecutive validation); candidate Learning #36 (don't-eagerly-precompute-across-short-circuits) noted
+- [x] Phase 3D: Handoff to Session 53 above (6 remaining BACKLOG items; 10 gotchas; natural follow-up is Session 51 finding #2)
+- [ ] Phase 3E: Commit SESSION_NOTES + pipeline.py + test_pipeline.py + plan + CHANGELOG + BACKLOG — pending this turn
+- [ ] Phase 3F: Report and STOP — pending this turn
+
+### Post-Session-52 pre-commit state
+- `uv run pytest -q` → **470/470 passing**, coverage **97.27%** with `Required test coverage of 95% reached` — FLOOR HOLDS (2.27-point headroom; 0.06-pt drop from 97.33 is new helper's defensive branch)
+- `uv run ruff check src/ tests/ packages/` → `All checks passed!`
+- `uv run mypy src/` → `Success: no issues found in 48 source files`
+- BACKLOG.md: 6 `[ ]`, 0 `[x]` (resume-of-FAILED-data line removed per Learning #26)
+- CHANGELOG.md: Session 52 entry at top of [Unreleased] (20th consecutive structure match)
+- 5 files modified for the Session 52 commit: `src/model_project_constructor/orchestrator/pipeline.py` (+38 approx: `_is_saved_payload_complete` helper + restructured `determine_resume_point` + docstring extension), `tests/orchestrator/test_pipeline.py` (+60/-20 approx: S1–S5 migrated to `_seed_envelope`, 2 new regression tests, class docstring updated), `docs/planning/resume-from-checkpoint-plan.md` (+1 row in §11 risks table), `CHANGELOG.md` (+9 lines), `BACKLOG.md` (-1), `SESSION_NOTES.md` (close-out)
 
 ### Session 50 Handoff Evaluation (by Session 51)
 
