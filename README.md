@@ -121,7 +121,7 @@ uv sync --extra agents --extra dev
 uv run pytest
 ```
 
-All 422 tests should pass with coverage above 94% (currently ≈97.2%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 440+ tests should pass with coverage above 95% (currently ≈97.2%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
 
 Production deployments read every secret and every deployment-variable parameter from the environment (or from a `.env` file loaded by the caller). See `.env.example` for the full matrix and `OPERATIONS.md` for the runbook. Common failure modes and resume recipes live in `TROUBLESHOOTING.md`.
 

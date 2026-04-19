@@ -83,8 +83,8 @@ Configuration at `pyproject.toml:58-77`:
 
 - `testpaths = ["tests"]`
 - `pythonpath = ["src", "packages/data-agent/src"]`
-- `addopts = "-ra --cov=model_project_constructor --cov=model_project_constructor_data_agent --cov-report=term-missing --cov-fail-under=94"`
-- Coverage floor: **94%** across both packages combined, branch coverage enabled.
+- `addopts = "-ra --cov=model_project_constructor --cov=model_project_constructor_data_agent --cov-report=term-missing --cov-fail-under=95"`
+- Coverage floor: **95%** across both packages combined, branch coverage enabled.
 - Excluded from coverage by pragma: `pragma: no cover`, `raise NotImplementedError`, `if TYPE_CHECKING:`.
 
 Run locally:

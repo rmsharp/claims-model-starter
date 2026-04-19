@@ -5,9 +5,9 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 46 — **Execute Phase 3 of `docs/planning/evolution-page-plan.md`** (plan §7). Full-rewrite `docs/wiki/claims-model-starter/Evolution.md`: pre-work research (CHANGELOG classification table + SESSION_NOTES rationale extraction + thematic outline), narrative draft per §7.1 outline, "Deliberately omitted" appendix, Last-updated banner per PROJECT_CONVENTIONS.md §4.4, updates to `_Sidebar.md` and `Home.md`, optional Content-Recommendations.md Known-Gap removal. **Explicit review gate per plan §4.6:** present draft, stop for user review, commit only after explicit approval.
+**Task:** Session 47 — Bump pytest coverage floor `94` → `95`. Drift-class micro per Learning #31: canonical `pyproject.toml:61` + 5 doc mirrors (`README.md:124`, `Contributing.md:86,87`, `Changelog.md:141`, `Monitoring-and-Operations.md:91`). 8 historical-prose hits in `CHANGELOG`/`Evolution`/`SESSION_NOTES`/archive intentionally untouched per Learning #32.
 
-**Status:** Session 46 COMPLETE. Phase 3 shipped — `docs/wiki/claims-model-starter/Evolution.md` (305 lines) + sidebar/home/content-recommendations updates. The full 3-phase Evolution plan is now shipped. Review gate per plan §4.6 / PROJECT_CONVENTIONS.md §4.7 engaged; operator approved after two rounds of revision. Next session has no pre-assigned deliverable — pick from `BACKLOG.md` (7 `[ ]` items; Evolution-plan line removed).
+**Status:** Session claimed. Work beginning.
 
 ### Session 45 Handoff Evaluation (by Session 46)
 

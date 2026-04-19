@@ -15,6 +15,16 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — Coverage floor bump 94% → 95% (Session 47)
+
+Raises the pytest coverage floor by one point. No-cost at current actual coverage (97.27%). Canonical change at `pyproject.toml:61`; five doc mirrors updated so maintainer-facing + audience-facing references stay consistent. Wiki Changelog history-row backfill lands as a follow-up commit once this commit's sha is known (mirrors the Session 20B backfill pattern for `c3943a8`).
+
+- **Changed:** `pyproject.toml:61` — `--cov-fail-under=94` → `95` (canonical).
+- **Changed:** `docs/wiki/claims-model-starter/Contributing.md:86-87`, `docs/wiki/claims-model-starter/Changelog.md:141`, `docs/wiki/claims-model-starter/Monitoring-and-Operations.md:91`, `README.md:124` — doc mirrors updated `94` → `95`. README.md "422 tests" string also bumped to "440+" to reduce re-update churn (Session 38 F3 / Session 39 durable-lower-bound pattern).
+- **Verified:** `uv run pytest -q` → **446/446 @ 97.27% coverage** with `Required test coverage of 95% reached` in the output. Floor holds with 2.27-point headroom.
+- **Unchanged intentionally:** `CHANGELOG.md` / `SESSION_NOTES.md` / `docs/architecture-history/` historical prose (append-only; Learning #32 class); `Evolution.md` historical rows at `:49`, `:236`, `:277` and the earlier floor-bump rows at `Changelog.md:138-139` (historical-record entries in freshness-tracked file); `Contributing.md:135` commit-message example (`93% → 94%` shown as past bump). `wiki/Changelog.md:138-139` history-table row for the 94→95 bump is added in the follow-up commit.
+- **Next:** no further floor bump planned; backlog items unchanged.
+
 ### 2026-04-18 — Phase 3 of Evolution plan: `wiki/Evolution.md` initial write (Session 46)
 
 Closes the Evolution page + documentation convention plan per plan §7. Full-rewrite `docs/wiki/claims-model-starter/Evolution.md` (305 lines) organized thematically — concept origins / foundational architecture / intake-agent arc / data-agent arc / website-agent arc / platform-abstraction arc / methodology arc / current state — plus §9 chronological index (41 session rows) and a deliberately-omitted appendix. Explicit review gate per plan §4.6 / PROJECT_CONVENTIONS.md §4.7 engaged; operator approved after two rounds of revision (reclassification of Sessions 21/36 into Methodology arc, Sessions 40/41/42 into documentation-reorganization thread; expansion from 195 → 305 lines; addition of timeline table). Closes the full 3-phase Evolution plan (Phase 1 Session 44, Phase 2 Session 45, Phase 3 this session).
