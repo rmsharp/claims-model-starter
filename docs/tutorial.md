@@ -485,7 +485,44 @@ How it differs from `--llm data`:
 
 ---
 
-## Step 7: Using the orchestrator programmatically
+## Step 7: Resuming a partial run
+
+Pipelines fail. A rate-limited Claude call, a transient GitLab 5xx, a
+network hiccup mid-website-push — any of these can halt a run partway
+through. Because every inter-agent handoff is persisted as a checkpoint
+envelope (see Step 4), you can pick up where the run halted instead of
+starting over:
+
+```bash
+uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm data \
+    --resume run_b1_20260418_142307
+```
+
+The orchestrator inspects `<checkpoint_dir>/<run_id>/`, loads every
+envelope already on disk, and re-executes from the first missing stage.
+The banner names the resume point and the stages it is skipping:
+
+```
+  Run ID: run_b1_20260418_142307  (RESUMED from: data)
+  Skipping: intake, intake_to_data_adapter
+```
+
+`--resume` overrides `--run-id` — pass only the resumed run's id. If
+the checkpoint directory is missing, the run is already complete, or
+the envelopes on disk are inconsistent (a successor without its
+predecessor), the script exits with a friendly message and a non-zero
+exit code instead of silently starting fresh.
+
+For the full case-by-case behavior (what counts as "already complete",
+how to retry a `FAILED` website stage, how to recover from manual
+checkpoint-dir mutation) see `OPERATIONS.md` §5. The truth table that
+drives the resume-point decision lives in
+`docs/planning/resume-from-checkpoint-plan.md` §5.
+
+---
+
+## Step 8: Using the orchestrator programmatically
 
 For integration into larger systems, use the `run_pipeline` function directly:
 

@@ -42,11 +42,19 @@ Options:
     --db-url URL       SQLAlchemy URL for the data agent's read-only DB.
                        When omitted, data quality checks are generated but
                        not executed. Ignored when --llm=none.
+    --resume RUN_ID    Resume a previously checkpointed run from the first
+                       missing envelope on disk. Overrides --run-id with
+                       the resumed run's id. Reads
+                       <checkpoint_dir>/<RUN_ID>/ to determine where to
+                       pick up; rejects if the directory is missing or if
+                       the run is already complete. See
+                       docs/planning/resume-from-checkpoint-plan.md §7.3.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 import uuid
@@ -63,9 +71,13 @@ sys.path.insert(0, str(PROJECT_ROOT / "packages" / "data-agent" / "src"))
 from model_project_constructor.agents.website.agent import WebsiteAgent  # noqa: E402
 from model_project_constructor.agents.website.fake_client import FakeRepoClient  # noqa: E402
 from model_project_constructor.orchestrator import (  # noqa: E402
+    CheckpointStore,
     MetricsRegistry,
     OrchestratorSettings,
     PipelineConfig,
+    ResumeInconsistent,
+    ResumePoint,
+    determine_resume_point,
     make_logged_runner,
     make_measured_runner,
     run_pipeline,
@@ -298,6 +310,95 @@ def instrument(runner, *, name: str, config: PipelineConfig, metrics: MetricsReg
 
 
 # ---------------------------------------------------------------------------
+# Resume helpers (Phase 3 of resume-from-checkpoint-plan.md §7.3)
+# ---------------------------------------------------------------------------
+
+# Stages that are skipped (loaded from disk) for each resume point. Used to
+# render the operator-facing "Skipping: ..." banner. Keys mirror ResumePoint
+# values; "intake" loads nothing and re-executes everything.
+_SKIPPED_STAGES_BY_RESUME_POINT: dict[ResumePoint, list[str]] = {
+    "intake": [],
+    "intake_to_data_adapter": ["intake"],
+    "data": ["intake", "intake_to_data_adapter"],
+    "website": ["intake", "intake_to_data_adapter", "data"],
+    "already_complete": ["intake", "intake_to_data_adapter", "data", "website"],
+}
+
+
+def _resume_preflight(checkpoint_dir: Path, run_id: str) -> None:
+    """Reject ``--resume <run_id>`` when no checkpoint directory exists.
+
+    Plan §6.6 + §8.1: the pipeline-level ``determine_resume_point`` returns
+    ``"intake"`` for an empty checkpoint dir (i.e. it would silently start
+    fresh), but the CLI rejects this case because from an operator's
+    perspective ``--resume`` on a bare run_id is almost certainly a typo.
+    """
+    run_dir = checkpoint_dir / run_id
+    if not run_dir.exists():
+        print(
+            f"Run {run_id!r} has no checkpoints at {run_dir}. "
+            f"Start a new run without --resume.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+
+def _handle_already_complete(store: CheckpointStore, run_id: str) -> None:
+    """Translate the ``already_complete`` resume point into operator output.
+
+    Plan §6.4 + §8.2: the result file may be ``COMPLETE`` (idempotent
+    no-op, exit 0) OR ``FAILED`` (operator must opt in to retry by
+    deleting the result file, exit 2). We read the saved result JSON
+    rather than re-loading the envelope because the terminal artifact is
+    a plain ``RepoProjectResult`` model dump (not envelope-wrapped per
+    ``CheckpointStore.save_result``).
+    """
+    result_path = store._result_path(run_id, "RepoProjectResult")  # noqa: SLF001
+    payload = json.loads(result_path.read_text())
+    status = payload.get("status", "UNKNOWN")
+    project_url = payload.get("project_url") or "(no project URL recorded)"
+
+    if status == "COMPLETE":
+        print(
+            f"Run {run_id!r} is already complete. Nothing to resume. "
+            f"Result: {project_url}"
+        )
+        sys.exit(0)
+    print(
+        f"Run {run_id!r} ended with status={status!r} at the website stage. "
+        f"Delete {result_path} to retry the website stage, or start a new run.",
+        file=sys.stderr,
+    )
+    sys.exit(2)
+
+
+def _resolve_resume(
+    checkpoint_dir: Path, run_id: str
+) -> ResumePoint:
+    """Run pre-flight + ``determine_resume_point`` + terminal-state branching.
+
+    Returns the :class:`ResumePoint` to feed into ``PipelineConfig.resume_from``
+    when execution should proceed. Exits the process directly for the
+    rejection paths (S0 missing dir, ``already_complete``, inconsistent
+    envelopes) so ``main()`` can stay linear.
+    """
+    _resume_preflight(checkpoint_dir, run_id)
+    store = CheckpointStore(checkpoint_dir)
+    try:
+        point = determine_resume_point(store, run_id)
+    except ResumeInconsistent as exc:
+        print(
+            f"Checkpoint directory for run {run_id!r} has inconsistent envelopes: "
+            f"{exc}. Manual intervention required.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    if point == "already_complete":
+        _handle_already_complete(store, run_id)
+    return point
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -362,11 +463,30 @@ def main() -> None:
             "ignored when --llm=none)"
         ),
     )
+    parser.add_argument(
+        "--resume",
+        default=None,
+        metavar="RUN_ID",
+        help=(
+            "Resume the previously-checkpointed run RUN_ID from the first "
+            "missing envelope on disk. Overrides --run-id. Rejects if the "
+            "checkpoint directory is missing or the run is already complete."
+        ),
+    )
     args = parser.parse_args()
 
     # Fail fast: --llm both requires --intake-fixture.
     if args.llm == "both" and not args.intake_fixture:
         parser.error("--llm both requires --intake-fixture")
+
+    # --- Resume resolution (Phase 3 of resume-from-checkpoint-plan.md) ---
+    # When --resume is set, override the auto-generated run_id with the
+    # resumed run's id (plan §11 risk #3) BEFORE the banner prints. The
+    # helper exits the process for S0/already_complete/inconsistent paths.
+    resume_point: ResumePoint | None = None
+    if args.resume:
+        args.run_id = args.resume
+        resume_point = _resolve_resume(args.checkpoint_dir, args.resume)
 
     # --- Banner ---
     mode = "LIVE" if args.live else "FAKE (dry run)"
@@ -379,7 +499,13 @@ def main() -> None:
     print(f"\n{'=' * 60}")
     print("  Model Project Constructor — End-to-End Pipeline Run")
     print(f"  Mode: {mode}  |  Host: {args.host}  |  LLM: {llm_label}")
-    print(f"  Run ID: {args.run_id}")
+    if resume_point is not None:
+        print(f"  Run ID: {args.run_id}  (RESUMED from: {resume_point})")
+        skipped = _SKIPPED_STAGES_BY_RESUME_POINT[resume_point]
+        if skipped:
+            print(f"  Skipping: {', '.join(skipped)}")
+    else:
+        print(f"  Run ID: {args.run_id}")
     print(f"{'=' * 60}\n")
 
     # --- Load fixture data ---
@@ -408,6 +534,7 @@ def main() -> None:
         run_id=args.run_id,
         repo_target=repo_target,
         checkpoint_dir=args.checkpoint_dir,
+        resume_from=resume_point,
     )
     print(f"      Target: {repo_target.namespace} on {repo_target.host_url}")
     print(f"      Checkpoints: {config.checkpoint_dir}")

@@ -328,28 +328,65 @@ the real LLM ran. For B2, also inspect the intake envelope: the
 
 ## 5. Resume after a partial run
 
-The orchestrator does not resume-in-place — a crashed run cannot be
-continued from the middle. The intended recovery is:
+A crashed run is resumed with `--resume <run_id>`. The orchestrator
+inspects `$MPC_CHECKPOINT_DIR/<run_id>/`, reuses every envelope already
+on disk, and re-executes from the first missing stage onward.
 
-1. Inspect `$MPC_CHECKPOINT_DIR/<run_id>/` to understand how far the
-   run got. See §2 above.
-2. Read the relevant envelope with `CheckpointStore.load_payload`:
-   ```python
-   from pathlib import Path
-   from model_project_constructor.orchestrator import CheckpointStore
+### 5.1 Recommended path: `--resume`
 
-   store = CheckpointStore(Path("/var/lib/mpc/checkpoints"))
-   intake = store.load_payload("run_abc", "IntakeReport")
-   data   = store.load_payload("run_abc", "DataReport")   # if present
-   ```
-3. Decide: either fix the upstream problem and re-run with a fresh
-   `run_id` (clean slate), or stub the already-complete stages with
-   runners that return the loaded payloads and re-run with the SAME
-   `run_id` to overwrite the halted state.
+```bash
+uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm data \
+    --resume run_b1_20260418_142307
+```
 
-Phase 6 deliberately ships the second option as a manual recipe, not
-automated resume logic — the architecture-plan §12 explicitly notes
-that retry is the caller's decision.
+Behavior by checkpoint state:
+
+| On disk | Resumes at | Operator outcome |
+|---|---|---|
+| (no dir) | — | Exit 2 with `no checkpoints at <path>` |
+| `IntakeReport.json` only | `intake_to_data_adapter` | Re-derives request, runs data + website |
+| `+ DataRequest.json` | `data` | Runs data + website |
+| `+ DataReport.json` | `website` | Runs website only |
+| `+ RepoProjectResult.result.json` (status=`COMPLETE`) | (no-op) | Exit 0 with project URL |
+| `+ RepoProjectResult.result.json` (status=`FAILED`) | (refused) | Exit 2 with retry recipe |
+| Successor without predecessor | (refused) | Exit 2 (`ResumeInconsistent`) |
+
+The resume banner names the chosen point and the skipped stages, e.g.:
+
+```
+  Run ID: run_b1_20260418_142307  (RESUMED from: data)
+  Skipping: intake, intake_to_data_adapter
+```
+
+`--resume` overrides `--run-id` — there is no need to pass both. The
+operator-supplied `MPC_NAMESPACE` / `MPC_HOST_URL` (i.e.
+`config.repo_target`) **always** wins over any saved `RepoTarget.json`
+on the resumed run; if the operator deliberately re-points to a
+different host between runs, that is the active intent (plan §6.4).
+
+The truth table that drives the `(point, skipped, re-executed)` mapping
+lives in `docs/planning/resume-from-checkpoint-plan.md` §5.
+
+### 5.2 Manual fallback (unusual cases)
+
+For one-off recovery work that does not fit the `--resume` envelope —
+e.g. you want to load an envelope into a Python REPL, mutate it, and
+hand-run the next stage — read the envelope directly:
+
+```python
+from pathlib import Path
+from model_project_constructor.orchestrator import CheckpointStore
+
+store = CheckpointStore(Path("/var/lib/mpc/checkpoints"))
+intake = store.load_payload("run_abc", "IntakeReport")
+data   = store.load_payload("run_abc", "DataReport")   # if present
+```
+
+Then construct a `PipelineConfig` and call `run_pipeline` programmatically
+with stub runners that return the loaded payloads. This is the recipe
+that `--resume` automates; reach for it only when the CLI does not
+fit the situation.
 
 ---
 
