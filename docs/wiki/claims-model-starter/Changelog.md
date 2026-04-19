@@ -137,6 +137,7 @@ Coverage floor increases trace the maturation of the test suite:
 | 2026-04-14 | `0b30014` | 80% → 90% | Post Phase 2B |
 | 2026-04-15 | `e91c9f2` | 90% → 93% | Post Phase 4B |
 | 2026-04-15 | `c3943a8` | 93% → 94% | Post Phase 5 |
+| 2026-04-18 | `7d90885` | 94% → 95% | Session 47 |
 
 Current floor: **95%**, enforced by `--cov-fail-under=95` in CI.
 
