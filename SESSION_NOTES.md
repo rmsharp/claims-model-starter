@@ -7,7 +7,137 @@
 ## ACTIVE TASK
 **Task:** Session 47 — Bump pytest coverage floor `94` → `95`. Drift-class micro per Learning #31: canonical `pyproject.toml:61` + 5 doc mirrors (`README.md:124`, `Contributing.md:86,87`, `Changelog.md:141`, `Monitoring-and-Operations.md:91`). 8 historical-prose hits in `CHANGELOG`/`Evolution`/`SESSION_NOTES`/archive intentionally untouched per Learning #32.
 
-**Status:** Session claimed. Work beginning.
+**Status:** Session 47 COMPLETE. Floor bumped 94% → 95% at `pyproject.toml:61` + 5 doc mirrors; 446/446 tests pass at 97.27% coverage with `Required test coverage of 95% reached`. Two commits: `7d90885` (canonical bump + CHANGELOG + doc mirrors) and `d9ab6f4` (wiki Changelog history-row backfill, per Session 20B precedent for c3943a8). BACKLOG untouched (bump was not a BACKLOG line item). Next session: no pre-assigned deliverable — pick from `BACKLOG.md` (7 `[ ]` items unchanged).
+
+### Session 46 Handoff Evaluation (by Session 47)
+
+**Score: 9/10.** Session 46's 10 gotchas were short, specific, and load-bearing. Gotcha #3 (Learning #29 grep-before-insert) fired mechanically — 11th consecutive validation, zero fumble. Gotcha #7 (methodology upstream off-limits) irrelevant this session (no methodology edits). Gotcha #8 (CHANGELOG structure convention) directly shaped the Session 47 entry — 15th consecutive session matching the pattern.
+
+- **What helped:** (a) Gotcha #1 (pre-commit state baseline) was the forecast against which pytest's `Required test coverage of 95% reached. Total coverage: 97.27%` landed unchanged — zero discovery overhead. (b) Gotcha #3 mechanical grep-before-insert applied to the Session 47 stub; `Session 47|### Session 47 Did|### Session 46 Handoff Evaluation|Post-Session-47` returned 11 hits, all pre-existing forward refs. Learning #29's track record is now 11 consecutive sessions without a stub-heading fumble. (c) Gotcha #9 (review gate is the exception, not the rule) implicitly enabled the autonomous-commit pattern this session — zero unnecessary confirmation round-trips.
+- **What was missing:** (a) The coverage-floor ecosystem (pyproject canonical + 5 doc mirrors + 1 wiki history-table row + CHANGELOG + BACKLOG check) was not catalogued in any handoff or project-convention doc. A 30-second "operational constants" inventory (floor, MAX_QUESTIONS, model IDs) would have made the Phase 0 grep pattern obvious. -0.5. (b) No pre-forecast of the wiki-Changelog history-row backfill workflow — the precedent was in git history (Session 20B → c3943a8) but not called out anywhere accessible. Session 47 had to reconstruct it via `git log -S c3943a8` + `git show c3943a8`. -0.5.
+- **What was wrong:** Nothing factually wrong.
+- **ROI:** ~4× on the handoff package. 10 gotchas + clear backlog prioritization saved ~10 min of discovery; pre-commit baseline numbers landed accurate.
+
+### What Session 47 Did
+
+**Deliverable:** Coverage floor bump 94% → 95%. **COMPLETE.**
+**Started:** 2026-04-18
+**Completed:** 2026-04-18
+**Commits:** `7d90885` (canonical bump + CHANGELOG + doc mirrors), `d9ab6f4` (wiki Changelog history-row backfill).
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS.md + SESSION_RUNNER.md read in full; SESSION_NOTES.md top + ACTIVE TASK + Session 46 handoff + 10 gotchas; git status (clean); methodology dashboard (91/100 medium-risk active); BACKLOG (7 `[ ]`, 0 `[x]` — Learning #26 discipline intact); ghost-session check clean. Reported findings, listed 5 priority candidates, waited for operator direction.
+
+2. **Operator question mid-Phase-0.** Operator asked "How does Automated resume-from-checkpoint supersede B-3 Web UI bridge?" Pivoted from coverage-task info-gathering to answer from `docs/planning/scope-b-plan.md` (plan §7.3 B-3 rationale at line 309 explicitly says B-3 is skippable if resume-from-checkpoint lands first; the general resume path absorbs the bespoke UI→CLI bridge). Session resumed the coverage task per operator's follow-up "finish code coverage bump."
+
+3. **Phase 1B stub.** Grep-before-insert pattern `Session 47|### Session 47 Did|### Session 46 Handoff Evaluation|Post-Session-47` → 11 hits, all pre-existing forward refs from Session 46. Safe to insert. Wrote IN-PROGRESS stub to ACTIVE TASK. Learning #29 — **11th consecutive mechanical validation**.
+
+4. **Drift-class inventory (Learning #31 widest-reasonable-grep).** Two patterns: `fail.under|cov-fail-under` (locates the canonical constant + its literal mirrors) and `94` in coverage context (locates prose "94%" references). 14 total hits surfaced, classified:
+   - **Must update (drift):** 6 hits across 5 files — `pyproject.toml:61`, `docs/wiki/claims-model-starter/Contributing.md:86,87`, `docs/wiki/claims-model-starter/Changelog.md:141`, `README.md:124`, `docs/wiki/claims-model-starter/Monitoring-and-Operations.md:91`.
+   - **Must NOT update (Learning #32 historical-prose):** 8 hits — `CHANGELOG.md:103,116,300` (append-only entries describing past work), `Evolution.md:49,236,277` (historical-record rows in freshness-tracked file), `SESSION_NOTES.md:4245,4296,4302,4410,5459` (append-only), `docs/architecture-history/github-gitlab-abstraction-plan.md:358,523` (archived concept-era plan).
+   - **Deliberate judgment call (not updated):** `Contributing.md:135` is a commit-message example text (`chore(coverage): raise pytest coverage floor 93% → 94%`) — historical in nature as an example of how past bumps were named; leaving this unchanged preserves the example's provenance. A future session could update the example to show this bump (`94% → 95%`) but doing so is optional polish, not drift-fix.
+
+5. **5-file parallel edit.** First attempt failed with `File has not been read yet` for all 5 — I had only grep-read the files, not Read-toolread. Re-read each in a parallel Read batch (5 files, 3-15 lines each, targeted offsets), then re-issued the 5 Edits in parallel. All succeeded.
+
+6. **pytest verification.** `uv run pytest -q` → `Required test coverage of 95% reached. Total coverage: 97.27%`, 446/446 passing. Floor holds with 2.27-point headroom.
+
+7. **CHANGELOG Session 47 entry** at top of `## [Unreleased]` — context paragraph / Changed (canonical) / Changed (mirrors) / Verified / Unchanged intentionally / Next. Structure matches Sessions 33-46 convention (16th consecutive).
+
+8. **Commit 1 (`7d90885`):** `chore(coverage): raise pytest coverage floor 94% → 95%`. 7 files, +18/-8. Message mirrors Session 12's / Session 16's floor-bump commit naming (`e91c9f2` / `c3943a8`) and notes the follow-up history-row backfill plan.
+
+9. **Wiki history-row backfill.** Added `| 2026-04-18 | \`7d90885\` | 94% → 95% | Session 47 |` row to the floor-bump table in `docs/wiki/claims-model-starter/Changelog.md` between the `c3943a8` row and the current-floor line. Decision to split into a separate commit came from git-log archaeology — Session 20B (`9535665`) retrospectively added the first two history rows (`e91c9f2`, `c3943a8`) in a later commit, not in the bump commit itself. Mirroring the precedent.
+
+10. **Commit 2 (`d9ab6f4`):** `docs(session-47): wiki Changelog history-table row for 94% → 95% bump`. 1 file, +1.
+
+11. **BACKLOG check.** No `[x]` items; 7 `[ ]` unchanged (coverage bump was not a BACKLOG line). Learning #26 discipline — Session #14 of application: Phase 0 check + close-out check.
+
+### Phase 3B: Self-assess — 9/10
+
+- **Research before creative work:** Yes. Read SAFEGUARDS + SESSION_RUNNER + SESSION_NOTES + BACKLOG + dashboard + ran wide grep per Learning #31 + read each target file BEFORE any edit. Consulted git history for the floor-bump-commit precedent (`git show c3943a8`) before deciding on single vs two-commit shape.
+- **Stakeholder corrections:** 0. The only user-triggered pivot was the mid-Phase-0 B-3 / resume-from-checkpoint question (answered in-place, did not block the coverage work).
+- **What I got right:** (a) **Learning #31 wide-grep applied mechanically in Phase 0** — drift-class inventory ran both the canonical pattern and the prose-number pattern before any edit. Classified 14 hits into 6 drift + 8 historical + 1 judgment-call. Zero post-edit surprise. (b) **Learning #29 grep-before-insert — 11th consecutive clean validation.** Zero stub fumble. (c) **Learning #32 applied to historical-prose exclusions.** CHANGELOG/SESSION_NOTES/Evolution historical rows left alone; decision documented in the Session 47 CHANGELOG "Unchanged intentionally" bullet. (d) **Learning #26 BACKLOG discipline.** Session #14 — Phase 0 clean, close-out clean. (e) **Precedent research via git.** Ran `git show c3943a8` to confirm the Session 16 bump's commit shape (canonical-only, no doc-mirror updates, no wiki history row) and `git log -S c3943a8` to find when the wiki row was added (Session 20B `9535665`, 2 sessions later). This is an active research discipline — trust code/git, not assumption. (f) **Two-commit split was the right call.** Commit 1 is canonical + doc mirrors (atomic for revert); Commit 2 is wiki-history-row backfill (requires Commit 1's sha). Single commit would require placeholder-then-amend; split is cleaner.
+- **What I got wrong:** (a) **First parallel-edit batch failed with `File has not been read yet`** for all 5 files — I had only grep-read them, not Read-read. Lost one batch to the misstep. Root cause: I treated Grep output as equivalent to Read for Edit-tool purposes, which the tool contract explicitly rejects. Mechanical fix: always precede a parallel-Edit batch with a parallel-Read batch on the exact offsets. -0.5. (b) **CHANGELOG entry length.** The Session 47 CHANGELOG entry is mid-length (~5 bullets); Session 46's handoff-gotcha #8 noted Session 46's own entry was short per operator preference. Session 47's entry is longer because of the 2-commit structure + Learning #32 exclusion documentation. Borderline; could have been terser. -0.25.
+- **Quality bar:** Comparable to Session 42 (MAX_QUESTIONS drift-sweep, same Learning #31 discipline). Above Session 34 (paste-and-verify) on independent research — I did the drift inventory + precedent research from scratch rather than paste-and-verify from a handoff.
+
+### Phase 3C: Learnings
+
+**No new Learning coined this session.** Session 47 validated existing Learnings #26, #29, #31, #32.
+
+**Candidate Learning #33 (NOT coined, pending 2nd instance — carried from Session 46):** *"When a plan specifies a soft range for deliverable size (e.g. '~300-600 lines'), calibrate first drafts to the middle of the range, not the floor."* Not applicable to Session 47 (no plan-ranged deliverable). Still 1 instance (Session 46). Drop the candidate if a 3rd session elapses without a 2nd instance.
+
+**Candidate Learning #34 (NOT coined, 1st instance — this session):** *"Before issuing a parallel batch of Edit tool calls, first issue a parallel batch of Read tool calls on the exact offsets to be edited. The Edit tool requires that a file has been Read (tool-read, not grep-read) in the current conversation. Grep output does not satisfy the read-first contract. Cost of the pre-read batch: one tool call round-trip. Cost of skipping it: N Edit-tool errors, then the same pre-read batch anyway, then a re-issued Edit batch — net 3× the tool calls."* Coin as Learning #34 if a 2nd session hits the same pattern. This is a mechanical tool-contract gotcha, not a judgment-call learning; may never repeat in sessions that follow a strict Read-before-Edit discipline from the outset.
+
+**Existing learnings load-bearing this session:**
+- **Learning #26** (BACKLOG discipline): Session #14 of application. Phase 0 + close-out checks both clean.
+- **Learning #29** (grep-before-insert for stub): 11th consecutive mechanical validation. Zero fumble.
+- **Learning #31** (wide-grep during Phase 0 for drift-class): Applied — two patterns (`fail.under|cov-fail-under` and `94` in coverage context) surfaced 14 hits pre-edit; zero post-edit scope surprise.
+- **Learning #32** (historical-prose exclusion): Applied to 8 hits (CHANGELOG/SESSION_NOTES/Evolution/archive historical-record prose).
+
+### Phase 3D: Handoff to Session 48
+
+**Critical path:** No pre-assigned deliverable. Session 48 reads `BACKLOG.md` (7 `[ ]` items unchanged from Session 46's handoff) and picks. Priorities (operator preference will dictate):
+
+1. **Automated resume-from-checkpoint** — general resume mechanism for any failed pipeline run from the last successful checkpoint. Per `scope-b-plan.md:309`, this supersedes B-3 (Web UI bridge) — the general path absorbs the bespoke UI→CLI bridge. Would need (a) checkpoint schema spanning intake/data/website phases, (b) general `--resume-from <checkpoint>` CLI, (c) intake Web UI writing compatible checkpoints. Plan-session deliverable first (write `docs/planning/resume-from-checkpoint-plan.md`), implementation in a separate session per Learning #18.
+2. **Session 23 CHANGELOG retro-entry** — micro. Session 46 surfaced the gap (Session 23 wrote `scope-b-plan.md` 822 lines but never wrote a CHANGELOG entry). Retro-entry in `## [Unreleased]` with explicit "retro entry — missed at the time" note, dated 2026-04-16. Good candidate for a single-session micro; Session 46 handoff gotcha #4 has the discipline notes.
+3. **Tutorial UX** — `scripts/render_tutorial.sh` + tutorial.md code-block splitting. Two separable micros.
+4. **Agent enhancements** — intake data-source-discovery prompts, data-agent metadata-discovery mode, statistical-terminology glossary. Each is its own session.
+5. **B-3 Web UI bridge** — deferred per scope-b-plan.md:309 unless resume-from-checkpoint is explicitly descoped. Lowest priority.
+
+**Commits ahead of origin: 2 at Session 47 close-out** (`7d90885` + `d9ab6f4` + this SESSION_NOTES close-out commit = 3 after Phase 3E). Push in Phase 3F per operator instruction.
+
+### Gotchas for Session 48
+
+1. **Post-Session-47 pre-commit state:** pytest **446/446** @ **97.27% coverage**, `Required test coverage of 95% reached` in the output. Floor is 95%, 2.27-point headroom. 0 warnings. ruff / mypy / `-W default` not re-run (no code touched). Session 41 baselines stand.
+
+2. **BACKLOG at Phase 0:** 7 `[ ]`, 0 `[x]`. Learning #26 Session #15 of application. Phase 0 check + close-out check both mandatory.
+
+3. **Learning #29 mechanical — 11th consecutive validation in Session 47.** Continue: grep-before-insert for stub pattern `Session 48|### Session 48 Did|### Session 47 Handoff Evaluation|Post-Session-48`.
+
+4. **Coverage floor history:** 80% (Session 3) → 90% (Session 5 `e91c9f2` — actually in that same session per wiki row `e91c9f2: 90→93`… wait, re-read: `e91c9f2` is 90→93, `c3943a8` is 93→94, `7d90885` is 94→95). The wiki Changelog `docs/wiki/claims-model-starter/Changelog.md` has the full table. Next bump follows the same shape: canonical `pyproject.toml:61` + doc mirrors + follow-up wiki history-row backfill.
+
+5. **Floor-bump commit convention (now 3 precedents):** `e91c9f2`, `c3943a8`, `7d90885` — all named `chore(coverage): raise pytest coverage floor X% → Y%`. Session 48 should match if bumping again.
+
+6. **Candidate Learning #34 (1st instance):** Before a parallel Edit batch, issue a parallel Read batch on the same offsets. Grep output does NOT satisfy the Read-before-Edit contract. Mechanical discipline — coin in Session 48 if re-validated.
+
+7. **Candidate Learning #33 (still pending 2nd instance, carried from Session 46):** Calibrate first-draft length to middle of plan's soft range, not floor. 1 instance (Session 46's 195-line draft vs. plan's 300-600 range). Not validated this session.
+
+8. **CHANGELOG structure convention (Sessions 33-47, 15 consecutive):** context paragraph / Added + Changed + Fixed + Found bullets / Verified bullet / Unchanged intentionally bullet / Next bullet. Session 47's entry is mid-length (~5 bullets); operator preference is toward concise unless the work warrants detail.
+
+9. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose uses `probability` for P(event).
+
+10. **Upstream-methodology risk unchanged.** Do NOT edit `docs/methodology/{README,HOW_TO_USE,ITERATIVE_METHODOLOGY,workstreams/*}.md`. `PROJECT_CONVENTIONS.md` is project-local; fine to extend.
+
+### Session 47 close-out checklist
+
+- [x] Phase 0 orientation (SAFEGUARDS + SESSION_RUNNER read in full; SESSION_NOTES top + BACKLOG + dashboard read; git state clean; ghost-session check clean; report delivered; answered operator's mid-Phase-0 B-3 question; waited for follow-up direction)
+- [x] Phase 1B stub written to SESSION_NOTES ACTIVE TASK before technical work (Learning #29 grep-first; 11th consecutive validation)
+- [x] Wide Learning #31 inventory run in Phase 0 before any edit; 14 hits classified into 6-drift / 8-historical / 1-judgment-call
+- [x] 5 target files Read (post-failed-first-Edit-batch) then Edit in parallel; 6 hits updated
+- [x] pytest verification: 446/446 @ 97.27% coverage with `Required test coverage of 95% reached`
+- [x] CHANGELOG Session 47 entry at top of `[Unreleased]`
+- [x] Commit 1 `7d90885`: canonical bump + CHANGELOG + 5 doc mirrors
+- [x] Wiki history-row backfill `2026-04-18 | 7d90885 | 94% → 95% | Session 47` per Session 20B precedent
+- [x] Commit 2 `d9ab6f4`: wiki history-row backfill
+- [x] BACKLOG check at close-out: 7 `[ ]`, 0 `[x]` unchanged (bump was not a BACKLOG line)
+- [x] Phase 3A: Session 46 handoff evaluated (9/10)
+- [x] Phase 3B: Self-assessment scored and written (9/10)
+- [x] Phase 3C: No new Learning coined; candidate #33 (carried) + new candidate #34 (parallel-Read-before-parallel-Edit) noted
+- [x] Phase 3D: Handoff to Session 48 above (no pre-assigned deliverable; 10 gotchas)
+- [ ] Phase 3E: Commit SESSION_NOTES close-out — pending this turn
+- [ ] Phase 3F: Report and STOP — pending this turn
+
+### Post-Session-46 pre-commit state
+- `uv run pytest -q` → **446/446 passing**, coverage **97.27%** with `Required test coverage of 95% reached. Total coverage: 97.27%`
+- `uv run ruff check src/ tests/ packages/` → not re-run (no code touched); Session 41's clean baseline stands
+- `uv run mypy src/` → not re-run (no code touched); Session 41's clean-on-48-files baseline stands
+- `-W default` not re-run (no sqlite-adjacent code touched); Session 35's 0-warnings baseline stands
+- BACKLOG.md: 7 `[ ]`, 0 `[x]` (unchanged — Session 47 was not a BACKLOG line)
+- CHANGELOG.md: Session 47 entry at top of [Unreleased]
+- 7 files modified across the bump: `pyproject.toml`, `README.md`, `docs/wiki/claims-model-starter/Contributing.md`, `docs/wiki/claims-model-starter/Changelog.md` (bumped + history-row), `docs/wiki/claims-model-starter/Monitoring-and-Operations.md`, `CHANGELOG.md`, `SESSION_NOTES.md`
+- Commits: `7d90885` (canonical), `d9ab6f4` (wiki history row), plus SESSION_NOTES close-out commit landing this turn
+
+---
 
 ### Session 45 Handoff Evaluation (by Session 46)
 
