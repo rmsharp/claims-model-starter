@@ -15,6 +15,17 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — Resume-from-checkpoint plan (Session 48)
+
+Planning-workstream deliverable per Learning #18 (plan IS the deliverable; implementation happens in later sessions). `docs/planning/resume-from-checkpoint-plan.md` (768 lines, 17 sections) covers BACKLOG item "Automated resume-from-checkpoint" and explicitly supersedes the B-3 Web UI bridge (scope-b-plan.md:309). Structured in 4 phases — Phase 1 `determine_resume_point` pure function, Phase 2 `run_pipeline` resume branching, Phase 3 `--resume` CLI + OPERATIONS + tutorial (also removes both BACKLOG lines), Phase 4 (optional) UI writes `IntakeReport.json` envelope. Critical path = 3 sessions; Phase 4 optional.
+
+- **Added:** `docs/planning/resume-from-checkpoint-plan.md` — plan with evidence inventory (§3, grep counts for `CheckpointStore`/`PipelineConfig`/`run_pipeline`/CLI flags/`checkpoint_dir`), resume truth table (§5, cases S0–S5 + 3 INVALID keyed off envelope existence on disk), six architecture decisions (§6, notably §6.3 load-vs-re-derive, §6.4 terminal handling), per-phase implementation plans with files/LOC/shape/completion-criteria/verification commands (§7), five operator decisions resolved at review gate (§8), anti-scope (§10), risks (§11), test strategy (§12), per-phase session boundaries (§14), file reference map (§15), sign-off checklist (§16).
+- **Resolved at review gate:** §8.1 reject `--resume` with no checkpoints; §8.2 no-op on `COMPLETE`, error on `FAILED`; §8.3 config `RepoTarget` wins over disk; §8.4 flag name is `--resume`; §8.5 Phase 4 is optional (not critical path).
+- **Supersedes:** B-3 Web UI bridge from `docs/planning/scope-b-plan.md §7.3`. Phase 3 of this plan removes both the "Automated resume-from-checkpoint" and "B-3" lines from `BACKLOG.md`.
+- **Verified:** plan self-consistent against current codebase (file:line citations for `CheckpointStore` at `checkpoints.py:13-16`, `97-100`, `91-95`, `102-105`; `run_pipeline` at `pipeline.py:97-209`, `:114`; `intake_report_to_data_request` at `adapters.py:44-77`; OPERATIONS.md §5 at `:329-353`; scope-b-plan.md §10 at `:619-637`, §14 item 3 at `:721`). Grep counts all re-run in Phase 0 (Learning #19 discipline).
+- **Unchanged intentionally:** no production code touched this session (plan-session discipline per Learning #18). BACKLOG.md line for "Automated resume-from-checkpoint" stays open — it closes during Phase 3 per plan §7.3.1.
+- **Next:** future session picks up Phase 1 (`determine_resume_point` pure function + 9 truth-table tests). Each of plan's 4 phases is a separate session per §14.
+
 ### 2026-04-18 — Coverage floor bump 94% → 95% (Session 47)
 
 Raises the pytest coverage floor by one point. No-cost at current actual coverage (97.27%). Canonical change at `pyproject.toml:61`; five doc mirrors updated so maintainer-facing + audience-facing references stay consistent. Wiki Changelog history-row backfill lands as a follow-up commit once this commit's sha is known (mirrors the Session 20B backfill pattern for `c3943a8`).
