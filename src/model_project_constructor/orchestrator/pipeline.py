@@ -49,6 +49,71 @@ PipelineStatus = Literal[
     "FAILED_AT_WEBSITE",
 ]
 
+ResumePoint = Literal[
+    "intake",
+    "intake_to_data_adapter",
+    "data",
+    "website",
+    "already_complete",
+]
+
+
+class ResumeInconsistent(RuntimeError):
+    """Raised when a checkpoint dir has a successor envelope without its predecessor.
+
+    Example: a ``DataReport.json`` exists under the run's checkpoint
+    directory but ``DataRequest.json`` does not. The resume logic refuses
+    to guess the missing predecessor and surfaces this exception so the
+    CLI layer can prompt the operator to investigate (the dir was likely
+    mutated by hand). See ``docs/planning/resume-from-checkpoint-plan.md``
+    §5 for the full truth table.
+    """
+
+
+def determine_resume_point(store: CheckpointStore, run_id: str) -> ResumePoint:
+    """Inspect the on-disk envelopes for ``run_id`` and return the first
+    stage that must be re-executed.
+
+    Pure function — no side effects beyond reading the checkpoint dir.
+    Does NOT consult ``RepoTarget`` (``T`` in the truth table): per the
+    plan §6.4, the operator-supplied ``config.repo_target`` always wins
+    on resume, so a saved ``RepoTarget`` envelope is not load-bearing for
+    the resume-point decision.
+
+    See ``docs/planning/resume-from-checkpoint-plan.md`` §5 for the
+    truth table this function implements. Raises
+    :class:`ResumeInconsistent` for rows marked INVALID (a successor
+    envelope without its predecessor).
+    """
+
+    intake_present = store.has(run_id, "IntakeReport")
+    request_present = store.has(run_id, "DataRequest")
+    report_present = store.has(run_id, "DataReport")
+    result_present = store.has_result(run_id, "RepoProjectResult")
+
+    if result_present and not report_present:
+        raise ResumeInconsistent(
+            f"Run {run_id!r}: RepoProjectResult exists but DataReport is missing."
+        )
+    if report_present and not request_present:
+        raise ResumeInconsistent(
+            f"Run {run_id!r}: DataReport exists but DataRequest is missing."
+        )
+    if (request_present or report_present) and not intake_present:
+        raise ResumeInconsistent(
+            f"Run {run_id!r}: DataRequest/DataReport exist but IntakeReport is missing."
+        )
+
+    if result_present:
+        return "already_complete"
+    if report_present:
+        return "website"
+    if request_present:
+        return "data"
+    if intake_present:
+        return "intake_to_data_adapter"
+    return "intake"
+
 
 @dataclass
 class PipelineConfig:
@@ -236,6 +301,9 @@ __all__ = [
     "PipelineConfig",
     "PipelineResult",
     "PipelineStatus",
+    "ResumeInconsistent",
+    "ResumePoint",
     "WebsiteRunner",
+    "determine_resume_point",
     "run_pipeline",
 ]

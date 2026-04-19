@@ -32,6 +32,8 @@ from model_project_constructor.orchestrator import (
     CheckpointStore,
     PipelineConfig,
     PipelineResult,
+    ResumeInconsistent,
+    determine_resume_point,
     run_pipeline,
 )
 from model_project_constructor.schemas.v1.data import DataReport, DataRequest
@@ -418,3 +420,136 @@ class TestPipelineConfig:
             website_runner=lambda _i, _d, _t: _failed_repo_project_result("n/a"),
         )
         assert result.project_url is None
+
+
+# --- Resume-point determination (resume-from-checkpoint-plan §5 truth table)
+
+
+def _touch_checkpoint(
+    base_dir: Path,
+    run_id: str,
+    *,
+    intake: bool = False,
+    data_request: bool = False,
+    data_report: bool = False,
+    repo_target: bool = False,
+    result: bool = False,
+) -> None:
+    """Create empty files at the paths ``CheckpointStore.has`` / ``has_result``
+    inspect, without constructing real envelopes.
+
+    ``determine_resume_point`` only reads file existence, not envelope
+    contents, so minimal ``touch`` calls are sufficient to exercise
+    every row of the §5 truth table without the envelope-construction
+    overhead of ``run_pipeline`` integration tests.
+    """
+
+    run_dir = base_dir / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    if intake:
+        (run_dir / "IntakeReport.json").write_text("{}")
+    if data_request:
+        (run_dir / "DataRequest.json").write_text("{}")
+    if data_report:
+        (run_dir / "DataReport.json").write_text("{}")
+    if repo_target:
+        (run_dir / "RepoTarget.json").write_text("{}")
+    if result:
+        (run_dir / "RepoProjectResult.result.json").write_text("{}")
+
+
+class TestDetermineResumePoint:
+    """One test per row of `resume-from-checkpoint-plan.md` §5 truth table.
+
+    Six valid rows (S0–S5) plus three INVALID rows (successor present
+    without its predecessor). ``determine_resume_point`` is pure — these
+    tests use an empty checkpoint dir and ``touch``-style file creation
+    because the function only reads file existence.
+    """
+
+    def test_s0_empty_dir_returns_intake(self, tmp_path: Path) -> None:
+        store = CheckpointStore(tmp_path)
+        assert determine_resume_point(store, "run_s0") == "intake"
+
+    def test_s1_only_intake_returns_intake_to_data_adapter(
+        self, tmp_path: Path
+    ) -> None:
+        _touch_checkpoint(tmp_path, "run_s1", intake=True)
+        store = CheckpointStore(tmp_path)
+        assert determine_resume_point(store, "run_s1") == "intake_to_data_adapter"
+
+    def test_s2_intake_and_data_request_returns_data(self, tmp_path: Path) -> None:
+        _touch_checkpoint(tmp_path, "run_s2", intake=True, data_request=True)
+        store = CheckpointStore(tmp_path)
+        assert determine_resume_point(store, "run_s2") == "data"
+
+    def test_s3_through_data_report_returns_website(self, tmp_path: Path) -> None:
+        _touch_checkpoint(
+            tmp_path,
+            "run_s3",
+            intake=True,
+            data_request=True,
+            data_report=True,
+        )
+        store = CheckpointStore(tmp_path)
+        assert determine_resume_point(store, "run_s3") == "website"
+
+    def test_s4_with_saved_repo_target_returns_website(self, tmp_path: Path) -> None:
+        """``RepoTarget`` existing does not change the resume point — §6.4's
+        ``config wins`` decision means the saved envelope is ignored on
+        resume. Same resume point as S3."""
+
+        _touch_checkpoint(
+            tmp_path,
+            "run_s4",
+            intake=True,
+            data_request=True,
+            data_report=True,
+            repo_target=True,
+        )
+        store = CheckpointStore(tmp_path)
+        assert determine_resume_point(store, "run_s4") == "website"
+
+    def test_s5_terminal_result_present_returns_already_complete(
+        self, tmp_path: Path
+    ) -> None:
+        _touch_checkpoint(
+            tmp_path,
+            "run_s5",
+            intake=True,
+            data_request=True,
+            data_report=True,
+            repo_target=True,
+            result=True,
+        )
+        store = CheckpointStore(tmp_path)
+        assert determine_resume_point(store, "run_s5") == "already_complete"
+
+    def test_invalid_result_without_data_report_raises(self, tmp_path: Path) -> None:
+        """Truth-table INVALID row: ``R=✓, D=✗``."""
+
+        _touch_checkpoint(tmp_path, "run_invalid_a", result=True)
+        store = CheckpointStore(tmp_path)
+        with pytest.raises(ResumeInconsistent, match="RepoProjectResult"):
+            determine_resume_point(store, "run_invalid_a")
+
+    def test_invalid_data_report_without_data_request_raises(
+        self, tmp_path: Path
+    ) -> None:
+        """Truth-table INVALID row: ``D=✓, Q=✗``."""
+
+        _touch_checkpoint(tmp_path, "run_invalid_b", intake=True, data_report=True)
+        store = CheckpointStore(tmp_path)
+        with pytest.raises(ResumeInconsistent, match="DataReport"):
+            determine_resume_point(store, "run_invalid_b")
+
+    def test_invalid_data_request_without_intake_raises(
+        self, tmp_path: Path
+    ) -> None:
+        """Truth-table INVALID row: ``I=✗`` with successor present
+        (``Q=✓``)."""
+
+        _touch_checkpoint(tmp_path, "run_invalid_c", data_request=True)
+        store = CheckpointStore(tmp_path)
+        with pytest.raises(ResumeInconsistent, match="IntakeReport"):
+            determine_resume_point(store, "run_invalid_c")

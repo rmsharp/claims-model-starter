@@ -43,7 +43,10 @@ from model_project_constructor.orchestrator.pipeline import (
     IntakeRunner,
     PipelineConfig,
     PipelineResult,
+    ResumeInconsistent,
+    ResumePoint,
     WebsiteRunner,
+    determine_resume_point,
     run_pipeline,
 )
 
@@ -61,7 +64,10 @@ __all__ = [
     "OrchestratorSettings",
     "PipelineConfig",
     "PipelineResult",
+    "ResumeInconsistent",
+    "ResumePoint",
     "WebsiteRunner",
+    "determine_resume_point",
     "get_logger",
     "infer_target_granularity",
     "intake_report_to_data_request",

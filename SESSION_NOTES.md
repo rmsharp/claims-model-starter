@@ -5,9 +5,145 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 48 — Write `docs/planning/resume-from-checkpoint-plan.md` (BACKLOG "Automated resume-from-checkpoint"). Planning session per Learning #18.
+**Task:** Session 49 — Phase 1 of `docs/planning/resume-from-checkpoint-plan.md`: `determine_resume_point` pure function + `ResumePoint` Literal + `ResumeInconsistent` exception + 9 truth-table unit tests + `__init__` re-exports + CHANGELOG entry.
 
-**Status:** Session 48 COMPLETE. Plan delivered at `docs/planning/resume-from-checkpoint-plan.md` (768 lines, 17 sections, 4 phases). All five §8 operator decisions resolved at review gate (accepted). Single `docs(session-48)` commit planned. Next session: Phase 1 of resume-from-checkpoint-plan.md (OR any open BACKLOG item at operator's discretion — see Session 48 handoff below).
+**Status:** Session 49 COMPLETE. All four verification commands green (pytest 455/455 @ 97.31%; ruff clean; mypy 0 issues in 48 files; `pipeline.py` at 100% coverage). Commit `feat(resume-phase1): add determine_resume_point pure function` pending this turn. Next session: Phase 2 of resume-from-checkpoint-plan.md (§7.2 — `PipelineConfig.resume_from` + `run_pipeline` branch logic + ~6 new tests).
+
+### Session 48 Handoff Evaluation (by Session 49)
+
+**Score: 9/10.** Session 48's 10 gotchas were specific and load-bearing. The plan itself (`docs/planning/resume-from-checkpoint-plan.md`) is the load-bearing deliverable; Session 48 correctly resolved the planning-workstream closure and the handoff pointed me at §7.1 as the Phase 1 spec.
+
+- **What helped:** (a) **Plan §7.1.2 code sketch** gave me the exact function shape; I transcribed it almost verbatim (with docstring elaboration + renamed local variables `intake_present`/`request_present`/`report_present`/`result_present` for clarity over the 1-letter `I`/`Q`/`D`/`R` in the plan). (b) **Plan §5 truth table** maps one-to-one onto the 9 required tests — no synthesis needed. (c) **Gotcha #4 Learning #11 reminder** to trust code over plan fired this session during the Phase 0 `CheckpointStore` verification — all signatures matched the plan, so no drift to record, but the check was mechanical and fast. (d) **Gotcha #1 pre-commit state** (pytest 446/446 @ 97.27%) was my benchmark; post-session 455/455 @ 97.31% lines up exactly (+9 tests, +0.04 coverage from the new pipeline.py branches). (e) **Gotcha #7 CHANGELOG convention** (16 consecutive session-entry structures) steered my Session 49 entry — context + Added + Verified + Unchanged intentionally + Next. 17th consecutive match.
+- **What was missing:** (a) The plan's §5 truth table includes a `T` (RepoTarget) column on every row, but §7.1.2's code sketch explicitly does NOT check `T` (comment: "# T = store.has(...)  # not needed for the decision; see §6.4"). A 10-second reader is left wondering whether INVALID rows can also fire on `T`-related mismatches. A one-liner in §7.1.2 like "T never participates in INVALID checks — T-related mismatches fall through to `return 'intake'` and the CLI layer catches them in the S0 pre-flight check" would have resolved the tension immediately. I resolved it by reading §6.4 + §6.6 together. -0.5.
+- **What was wrong:** Nothing factually wrong. Plan signatures all matched current code.
+- **ROI:** ~5× on the handoff package. 10 gotchas + plan §7.1 spec + §5 truth table saved ~15 minutes of Phase 0 discovery and eliminated all ambiguity about what "Phase 1 done" means.
+
+### What Session 49 Did
+
+**Deliverable:** Phase 1 of `docs/planning/resume-from-checkpoint-plan.md` — `determine_resume_point` pure function + `ResumePoint` Literal + `ResumeInconsistent` exception + 9 truth-table unit tests + `__init__` re-exports + CHANGELOG entry. **COMPLETE.**
+**Started:** 2026-04-18
+**Completed:** 2026-04-18
+**Commit (pending):** `feat(resume-phase1): add determine_resume_point pure function`.
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS.md + SESSION_RUNNER.md read in full; SESSION_NOTES.md top + ACTIVE TASK + Session 48 handoff + 10 gotchas; git status (clean, 1 commit ahead of origin — pushed at operator instruction); git log -5; BACKLOG (7 `[ ]`, 0 `[x]` — Learning #26 intact); methodology dashboard (91/100 medium risk active); ghost-session check clean. Reported findings + Session 48's two recommended paths + commit-ahead note. Operator instructed: push `2570614` + work on Critical path Phase 1.
+
+2. **Push of Session 48's commit.** `git push origin master` → `2570614` live on origin.
+
+3. **Phase 1B stub — Learning #29 13th consecutive mechanical validation.** Grep-before-insert pattern `Session 49|### What Session 49 Did|### Session 48 Handoff Evaluation|Post-Session-49` → 10 hits, all pre-existing forward references in Session 48's handoff at lines 68, 78, 82, 86, 88, 90, 92, 94, 100, 125. No existing `### What Session 49 Did` / `### Session 48 Handoff Evaluation (by Session 49)` headings. Safe to insert. Wrote IN-PROGRESS stub to SESSION_NOTES ACTIVE TASK before any research.
+
+4. **Task tracking.** Created 7 tasks via TaskCreate, marked each in-progress when starting + completed when done.
+
+5. **Learning #11 signature verification (Phase 2 of plan — "verify plan against code").** Read current `pipeline.py` (242 lines full) + `__init__.py` (72 lines full) + `checkpoints.py` (131 lines full) + `test_pipeline.py` (421 lines full) in one parallel Read batch. Confirmed: `CheckpointStore.has(run_id, payload_type)` at `checkpoints.py:97` — matches plan. `has_result(run_id, name)` at `checkpoints.py:102` — matches plan. `Literal` already imported at `pipeline.py:27`. `CheckpointStore` already imported at `pipeline.py:32`. Test file uses real `CheckpointStore` + `tmp_path` (class-based style `TestHappyPath` / `TestHaltPaths`). Zero drift — plan signatures current. Mirrored the existing test style for the new `TestDetermineResumePoint` class.
+
+6. **Implementation via parallel Edits (Candidate Learning #34 2nd validation — coined formally this session, see §3C).** Three Edits in parallel, all files pre-Read: (a) `pipeline.py` — added `ResumePoint` Literal + `ResumeInconsistent` exception + `determine_resume_point` pure function immediately after `PipelineStatus`; (b) `pipeline.py` — updated `__all__` to export the three new symbols; (c) `__init__.py` — added re-exports to the pipeline-origin import block and to the package `__all__`. All three Edits succeeded on the first attempt. No "File has not been read yet" errors. The parallel-Read-before-parallel-Edit discipline is now validated on 2 sessions (Session 47 validated the failure mode; Session 49 validated the preemptive read).
+
+7. **Test implementation — `TestDetermineResumePoint`.** One test per truth-table row: S0 (empty), S1 (intake only), S2 (+DataRequest), S3 (+DataReport), S4 (+RepoTarget — same outcome as S3, pins that T doesn't change the point), S5 (+RepoProjectResult.result.json), then 3 INVALID tests (R without D, D without Q, Q without I). Tests use a `_touch_checkpoint(base_dir, run_id, intake=..., data_request=..., ...)` helper that writes empty-JSON files at the `CheckpointStore.has()` / `has_result()` inspection paths — no envelope construction needed because `determine_resume_point` only reads file existence. Approach choice: mirror the existing project test style (real `CheckpointStore` + `tmp_path`) rather than a fake-class duck-type, so mypy is happy without `typing.cast`.
+
+8. **Verification — all four commands green.**
+   - `uv run pytest -q tests/orchestrator/test_pipeline.py` → 22/22 passing; `orchestrator/pipeline.py` at **100% coverage** (82 stmts + 24 branches).
+   - `uv run pytest -q` → **455/455 passing** (was 446; +9). Coverage **97.31%** with `Required test coverage of 95% reached`.
+   - `uv run ruff check src/ tests/ packages/` → `All checks passed!`.
+   - `uv run mypy src/` → `Success: no issues found in 48 source files`.
+
+9. **CHANGELOG Session 49 entry at top of [Unreleased].** Structure matches Sessions 33–48 convention (17th consecutive): context paragraph / Added (x3 bullets) / Verified / Unchanged intentionally / Next bullet.
+
+10. **BACKLOG check at Phase 0 AND close-out.** Both times: 7 `[ ]`, 0 `[x]`. Learning #26 discipline — Session #17 of application. The "Automated resume-from-checkpoint" line stays open until plan's Phase 3 per §7.3.1 (Session 48's gotcha #2 re-stated this; followed mechanically).
+
+### Phase 3B: Self-assess — 9/10
+
+- **Research before creative work:** Yes. Before writing any prose or code: read SAFEGUARDS + SESSION_RUNNER + full SESSION_NOTES ACTIVE TASK + Session 48 handoff + 10 gotchas + BACKLOG + CHANGELOG-top + all 4 production/test files that Phase 1 touches. Learning #11 signature verification was mechanical (all plan signatures matched current code — no drift).
+- **Stakeholder corrections:** 0. Operator's directive was unambiguous ("push 2570614; work on Critical path Phase 1"); executed straight through.
+- **What I got right:** (a) **Learning #18 applied mechanically.** Phase 1 only, no Phase 2 bleed. `run_pipeline` is intentionally unchanged per plan §7.1.1 — I resisted the temptation to "while I'm at it" add the `resume_from` field to `PipelineConfig`. Scope discipline clean. (b) **Learning #29 grep-before-insert — 13th consecutive clean validation.** No heading-duplication fumble. (c) **Candidate Learning #34 (parallel-Read-before-parallel-Edit) 2nd validation — coined formally this session** (see §3C). All 3 edited files were Read in the same parallel batch before any Edit. Zero "File has not been read yet" errors. This is the promotion threshold. (d) **Learning #26 BACKLOG discipline — Session #17 of application.** Phase 0 clean, close-out clean, resume-line correctly left open per plan §7.3.1. (e) **Plan-to-code transcription was faithful.** `determine_resume_point` reads the same I/Q/D/R booleans in the same order, raises the same three invariant violations. Local variables renamed `intake_present`/etc. for readability, but the logic mirrors §7.1.2 exactly. (f) **Test strategy choice: `_touch_checkpoint` helper + real `CheckpointStore`.** Avoids constructing valid `HandoffEnvelope` JSON for 9 tests; mirrors the existing project style (real store + `tmp_path`); lets mypy pass without `typing.cast`. (g) **CHANGELOG convention 17th consecutive match.** Structure preserved. (h) **All four verification commands green on first run** — no iteration. (i) **Coverage on `pipeline.py` at 100%** — new code fully exercised.
+- **What I got wrong:** (a) **Did not include a "T-only" test.** The truth table's first INVALID row `I=✗, *, *, *, *` permits a state where only `RepoTarget` is present, but my code doesn't check T. A test documenting this ("T-only dir returns 'intake', does NOT raise") would have pinned the §6.4 decision mechanically. I judged it out-of-scope because the CLI pre-flight (§6.6) catches it, but a unit test here would be cheaper. Not a bug — a missing pin. -0.25. (b) **Did not update the `BACKLOG.md:7` resume-line body** to note "Phase 1 complete (commit `<sha>`); Phase 2 pending." The plan says the line stays open until Phase 3, and I followed that — but a per-phase status annotation on the open item would help the next Phase-0-orient operator see progress at a glance. Borderline; plan didn't require it. -0.25. (c) **Did not run `uv run pytest -q tests/orchestrator/test_pipeline.py -v` to eyeball the exact 9 new test IDs** before the full-suite run. The 455-446=9 delta confirmed count arithmetic; a `-v` run would have printed the 9 test names for the CHANGELOG. -0 (borderline, no deduction). Net self-score: **9/10** with two -0.25 deductions.
+- **Quality bar vs previous sessions:** Above Session 47 (coverage floor bump — simpler scope, zero new logic). Comparable to Session 32 (symmetric test restructure + precedent research) on research discipline. Below Session 46 (Evolution.md — 305-line synthesis from 45+ sessions) on synthesis breadth, matched on technical precision.
+
+### Phase 3C: Learnings
+
+**Learning #34 coined formally this session** (2nd-instance threshold met):
+
+| # | Learning | Source | When to Apply |
+|---|----------|--------|---------------|
+| 34 | **Before issuing a parallel batch of Edit tool calls, first issue a parallel batch of Read tool calls on every file to be edited.** The Edit tool requires that a file has been Read (tool-read, not grep-read) in the current conversation. Grep output does not satisfy the read-first contract. **Cost of the pre-read batch:** one tool-call round-trip (or zero if you were going to read the file anyway for context). **Cost of skipping it:** N Edit-tool errors, then the same pre-read batch anyway, then a re-issued Edit batch — net 3× the tool calls plus backtracking. **Mechanical check before any parallel Edit batch:** "has every file I'm about to edit been tool-Read, not just grep-Read, earlier in this conversation?" If no → issue the parallel Read batch first. Special case of the "verify tool contract" class of checks. Session 47 fumbled this (grep-only, parallel Edit failed on all 5 files); Session 49 applied it preemptively (3 production files all pre-Read via a single parallel Read batch that also did Phase-0 signature verification — dual-purpose, zero extra cost). | Session 47 (failure), Session 49 (preemptive success — 2nd-instance validation). | Any session about to issue a parallel batch of Edit tool calls. Especially when the edit targets were surfaced via Grep rather than Read. |
+
+**Existing learnings load-bearing this session:**
+- **Learning #11** (trust code over plan for signatures): Applied in Phase 0 signature verification. All plan signatures matched current code — no drift to record, but the check was mechanical and fast.
+- **Learning #18** (planning-to-implementation boundaries): Applied. Phase 1 only; no Phase 2 bleed. The `resume_from` field on `PipelineConfig` was visible in plan §7.2.2 but deliberately NOT added this session.
+- **Learning #19** (counts after running, not from memory): N/A this session (no evidence-inventory greps).
+- **Learning #26** (BACKLOG discipline): Session #17 of application. Phase 0 + close-out both clean. Resume line stays open per plan §7.3.1.
+- **Learning #29** (grep-before-insert for stub): 13th consecutive mechanical validation. Zero fumble.
+- **Learning #32** (historical-prose in append-only / freshness-tracked files): N/A this session (no edits to such files).
+
+**Candidate Learning #33** (first-draft length calibration to middle of plan's soft range): Still pending 2nd instance. This session's deliverable had no prescribed soft-range. Carry forward.
+
+### Phase 3D: Handoff to Session 50
+
+**Critical path:** `docs/planning/resume-from-checkpoint-plan.md` **Phase 2** — wire `resume_from` into `run_pipeline` execution. Plan §7.2 has the full spec:
+- `PipelineConfig.resume_from: ResumePoint | None = None` (new field).
+- `PipelineResult.resume_point: ResumePoint | None = None` (new field for observability).
+- Branch logic in `run_pipeline`: for each stage, IF `resume` says "skip this stage" THEN load the envelope from `CheckpointStore` ELSE execute the runner and save as today. Halt logic fires only when the runner **executed**.
+- ~5-6 new `TestRunPipelineResume` tests in `tests/orchestrator/test_pipeline.py` — one per S1–S4 case + a regression pin that halt semantics still fire correctly under resume.
+- Estimated ~90 LOC production + ~180 LOC tests = ~270 LOC change.
+- One session. Commit `feat(resume-phase2): run_pipeline honors resume_from`. Plan §7.2.3 has the completion criteria.
+
+**Alternative:** operator may pick any other open BACKLOG item (6 `[ ]` remaining; resume-line stays open until Phase 3 per plan §7.3.1).
+
+**Commits ahead of origin: 1 at Session 49 close-out** (this session's own `feat(resume-phase1)` commit). Push per operator instruction.
+
+### Gotchas for Session 50
+
+1. **Post-Session-49 pre-commit state:** pytest **455/455 passing** @ **97.31% coverage** with `Required test coverage of 95% reached`. ruff clean (`src/ tests/ packages/`). mypy 0 issues in 48 source files. `src/model_project_constructor/orchestrator/pipeline.py` at **100% coverage** (82 stmts + 24 branches).
+
+2. **BACKLOG at Phase 0:** 7 `[ ]`, 0 `[x]`. Learning #26 Session #18 of application. Phase 0 check + close-out check both mandatory. **The "Automated resume-from-checkpoint" line stays open** until plan's Phase 3 (Session 51 or later). Do NOT remove it at Phase 2 close-out.
+
+3. **Learning #29 mechanical — 13th consecutive validation in Session 49.** Continue: grep-before-insert for stub pattern `Session 50|### What Session 50 Did|### Session 49 Handoff Evaluation|Post-Session-50`.
+
+4. **Learning #34 coined this session (2-instance validation).** Mechanical: before any parallel Edit batch, ensure every target file has been Read (tool-Read, not grep-Read) earlier in the conversation. Session 47 fumble + Session 49 preemptive-success = 2-instance coining.
+
+5. **If Session 50 picks resume-from-checkpoint Phase 2:** plan §7.2 is the spec. §7.2.1 file list, §7.2.2 code sketch, §7.2.3 completion criteria. **Phase 1's public API is live** — `from model_project_constructor.orchestrator import ResumePoint, ResumeInconsistent, determine_resume_point` works today (verified by `uv run pytest -q tests/orchestrator/test_pipeline.py::TestDetermineResumePoint`). **Learning #11 applies:** if plan §7.2.2 signatures contradict current code (e.g. plan says `resume_point=` but after Phase 1 the attribute is something else), trust the code. Plan's `PipelineResult.resume_point` field is NEW — adding this session.
+
+6. **Phase 2 halt-semantics regression risk (plan §11 risk #5).** If Phase 2's branch logic accidentally fires `FAILED_AT_INTAKE` when intake was loaded from disk (not executed), the resumed run would re-halt on an already-succeeded intake. Mitigation: halt checks (`intake_report.status != "COMPLETE"`) must ONLY fire in the branch that ACTUALLY CALLED the runner. Add one regression test per halt point under resume. Plan §7.2.3 item 3 pins this.
+
+7. **CHANGELOG structure convention (Sessions 33–49, 17 consecutive):** context paragraph / Added + Changed + Fixed + Verified + Unchanged intentionally + Next bullet. Session 49's entry follows this pattern; keep pattern for Session 50.
+
+8. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose uses `probability` for P(event). N/A this session (no LLM-adjacent prose); preserved for future sessions.
+
+9. **Upstream-methodology risk unchanged.** Do NOT edit `docs/methodology/{README,HOW_TO_USE,ITERATIVE_METHODOLOGY,workstreams/*}.md`. `PROJECT_CONVENTIONS.md` is project-local; fine to extend.
+
+10. **Autonomous commit is the default for implementation sessions.** Session 49 committed without a review gate (standard for feat work). Plan sessions are the exception (Session 46 Evolution.md, Session 48 resume-plan — both had explicit review gates). Phase 2 is an implementation session → default autonomous commit.
+
+### Session 49 close-out checklist
+
+- [x] Phase 0 orientation (SAFEGUARDS + SESSION_RUNNER read in full; SESSION_NOTES top + ACTIVE TASK + Session 48 handoff + 10 gotchas; git status + log; BACKLOG; dashboard 91/100; ghost-session check clean; report delivered; operator directed push + Phase 1)
+- [x] Phase 1B stub written to SESSION_NOTES ACTIVE TASK before technical work (Learning #29 grep-first; 13th consecutive validation)
+- [x] Task list created (7 tasks, tracked via TaskCreate + TaskUpdate)
+- [x] Push of Session 48's commit (`2570614` → origin/master)
+- [x] Learning #11 signature verification: `CheckpointStore.has()`/`has_result()`, `Literal` import, `CheckpointStore` import all match plan
+- [x] Parallel Read batch before parallel Edit batch (Candidate → Learning #34 formal coining)
+- [x] `ResumePoint` + `ResumeInconsistent` + `determine_resume_point` added to `pipeline.py` with `__all__` update
+- [x] Re-exports added to `orchestrator/__init__.py` with `__all__` update
+- [x] 9 truth-table tests in `TestDetermineResumePoint` (S0–S5 + 3 INVALID)
+- [x] Verification: pytest 455/455 @ 97.31%; ruff clean; mypy 0 issues; pipeline.py 100% coverage
+- [x] CHANGELOG Session 49 entry at top of [Unreleased] (17th consecutive structure match)
+- [x] BACKLOG check at close-out: 7 `[ ]`, 0 `[x]` unchanged (resume line stays open until plan's Phase 3)
+- [x] Phase 3A: Session 48 handoff evaluated (9/10)
+- [x] Phase 3B: Self-assessment scored and written (9/10, two -0.25 deductions noted)
+- [x] Phase 3C: Learning #34 coined formally (2-instance validation: Session 47 failure + Session 49 preemptive success)
+- [x] Phase 3D: Handoff to Session 50 above (Phase 2 of resume-from-checkpoint-plan critical path; 10 gotchas)
+- [ ] Phase 3E: Commit SESSION_NOTES + pipeline.py + __init__.py + test_pipeline.py + CHANGELOG — pending this turn
+- [ ] Phase 3F: Report and STOP — pending this turn
+
+### Post-Session-49 pre-commit state
+- `uv run pytest -q` → **455/455 passing**, coverage **97.31%** with `Required test coverage of 95% reached` — FLOOR HOLDS (2.31-point headroom)
+- `uv run ruff check src/ tests/ packages/` → `All checks passed!`
+- `uv run mypy src/` → `Success: no issues found in 48 source files`
+- `uv run pytest -q tests/orchestrator/test_pipeline.py` → 22/22, `orchestrator/pipeline.py` at **100% coverage**
+- BACKLOG.md: 7 `[ ]`, 0 `[x]` (resume-from-checkpoint line stays open until plan's Phase 3)
+- CHANGELOG.md: Session 49 entry at top of [Unreleased] (17th consecutive structure match)
+- 4 files modified for the Session 49 commit: `src/model_project_constructor/orchestrator/pipeline.py` (+75/-1), `src/model_project_constructor/orchestrator/__init__.py` (+6/-0), `tests/orchestrator/test_pipeline.py` (+123/-1), `CHANGELOG.md` (+10), `SESSION_NOTES.md` (close-out)
+
+---
 
 ### Session 47 Handoff Evaluation (by Session 48)
 

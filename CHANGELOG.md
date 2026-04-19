@@ -15,6 +15,17 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — Resume-from-checkpoint Phase 1: `determine_resume_point` pure function (Session 49)
+
+Executes Phase 1 of `docs/planning/resume-from-checkpoint-plan.md` per plan §7.1. Lands the pure truth-table function + its exception class + 9 unit tests in isolation — `run_pipeline` is intentionally unchanged so the Phase 1 diff is small and reviewable. Phase 2 (wiring `resume_from` into `run_pipeline` execution) is a separate session per plan §14.
+
+- **Added:** `src/model_project_constructor/orchestrator/pipeline.py` — `ResumePoint` `Literal["intake", "intake_to_data_adapter", "data", "website", "already_complete"]`, `ResumeInconsistent(RuntimeError)` exception with specific error messages naming the missing predecessor envelope, and `determine_resume_point(store, run_id) -> ResumePoint` pure function implementing plan §5's truth table (S0–S5 valid rows + 3 INVALID raise paths). `RepoTarget` (`T`) is deliberately NOT consulted per plan §6.4 — config wins on resume.
+- **Added:** re-exports of `ResumePoint`, `ResumeInconsistent`, `determine_resume_point` from `model_project_constructor.orchestrator/__init__.py`.
+- **Added:** `TestDetermineResumePoint` class in `tests/orchestrator/test_pipeline.py` — 9 tests, one per truth-table row (6 valid + 3 INVALID). Uses a real `CheckpointStore` with `tmp_path` + a `_touch_checkpoint` helper that writes empty-JSON files at the `has()` / `has_result()` inspection paths (no envelope-construction overhead since the function only reads file existence).
+- **Verified:** `uv run pytest -q` → **455/455 passing** (was 446 pre-session; +9 new tests). Coverage **97.31%** with `Required test coverage of 95% reached`. `src/model_project_constructor/orchestrator/pipeline.py` → **100% coverage** on the 82 statements + 24 branches. `uv run ruff check src/ tests/ packages/` → `All checks passed!`. `uv run mypy src/` → `Success: no issues found in 48 source files`.
+- **Unchanged intentionally:** `run_pipeline` is untouched — Phase 2 adds `PipelineConfig.resume_from` and the skip-on-resume branch logic; Phase 1 deliberately lands the pure function in isolation. No CLI changes (Phase 3). No UI changes (Phase 4, optional). BACKLOG "Automated resume-from-checkpoint" line stays open until plan's Phase 3 per §7.3.1.
+- **Next:** Phase 2 of `resume-from-checkpoint-plan.md` (§7.2) — add `PipelineConfig.resume_from` field, branch `run_pipeline` to load envelopes up to the resume point and re-execute from there, 5–6 new `TestRunPipelineResume` tests.
+
 ### 2026-04-18 — Resume-from-checkpoint plan (Session 48)
 
 Planning-workstream deliverable per Learning #18 (plan IS the deliverable; implementation happens in later sessions). `docs/planning/resume-from-checkpoint-plan.md` (768 lines, 17 sections) covers BACKLOG item "Automated resume-from-checkpoint" and explicitly supersedes the B-3 Web UI bridge (scope-b-plan.md:309). Structured in 4 phases — Phase 1 `determine_resume_point` pure function, Phase 2 `run_pipeline` resume branching, Phase 3 `--resume` CLI + OPERATIONS + tutorial (also removes both BACKLOG lines), Phase 4 (optional) UI writes `IntakeReport.json` envelope. Critical path = 3 sessions; Phase 4 optional.
