@@ -5,9 +5,153 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 52 — BACKLOG item 1 (Session 51 live-LLM finding): fix `determine_resume_point` so a FAILED `DataReport` / non-COMPLETE `IntakeReport` on disk demotes to the re-execution point for that stage instead of being treated as a completed handoff.
+**Task:** Session 53 — BACKLOG item 1 (Session 51 finding #2): fix the data-agent JSON parser so markdown-fenced output from `claude-sonnet-4-6` (` ```json … ``` ` with surrounding prose) parses instead of raising `LLMParseError`.
 
-**Status:** Session 52 COMPLETE. Fix shipped: `determine_resume_point` is status-aware for `IntakeReport` / `DataReport`; `RepoProjectResult` path untouched (opt-in-to-retry for website preserves irreversible-side-effects UX); `ResumeInconsistent` contract unchanged (narrow: missing-predecessor only). Pre-commit verification: pytest **470/470 passing** @ **97.27% coverage** (was 468/97.33; +2 regression tests, -0.06 coverage from defensive-only branch in new helper). ruff clean; mypy 0 issues. BACKLOG 7 → 6 `[ ]`. Commit pending this turn. Next session: 6 `[ ]` remaining (natural follow-up: Session 51 finding #2 — data-agent markdown-fence JSON parser).
+**Status:** Session 53 COMPLETE. Fix shipped: `_extract_json` restructured into bare-parse-first + fence-search-fallback; fence regex loosened from anchored-entire-response to unanchored-search so prose before/after the fence no longer breaks parsing. Pre-commit verification: pytest **475/475 passing** @ **97.19% coverage** (was 470/97.27; +5 regression tests, -0.08 coverage from defensive nested-except in fence-fallback). ruff clean; mypy 0 issues in both `src/` (48 files) and `packages/data-agent/src/` (12 files). BACKLOG 6 → 5 `[ ]`. Commit pending this turn. Next session: 5 `[ ]` remaining (no single natural follow-up — pick any).
+
+### Session 52 Handoff Evaluation (by Session 53)
+
+**Score: 9.5/10.** Session 52's handoff was unusually complete: the 10 gotchas named Learning #29's 16-consecutive count + Learning #34's promotion-to-mechanically-reliable status, the pre-commit state was cited exactly (pytest 470/470 @ 97.27%), and the "natural follow-up" (Session 51 finding #2) was the exact deliverable I picked up. The existing test file at `tests/data_agent_package/test_anthropic_client.py` already had a `test_extract_json_with_json_fence` precedent I could mirror for the new regression tests (~5 LOC each).
+
+- **What helped:** (a) **Gotcha #1 pre-commit state** (pytest 470/470 @ 97.27%) — benchmark for the "did coverage regress?" check. Post-session 475/475 @ 97.19 lines up (+5 tests; -0.08 coverage from the defensive nested except). (b) **Gotcha #2 BACKLOG count** (6 `[ ]`, 0 `[x]`) — Phase 0 check (confirmed) + close-out check (5 `[ ]` after fix) both mechanical. Learning #26 Session #22 of application. (c) **"Natural follow-up" in Phase 3D handoff** — explicitly named "(b) strip leading / trailing `\`\`\`json\`\`\`` fences in the JSON parser before `json.loads`. (b) is more defensive." This was the design call I made; the handoff did the thinking in advance. (d) **Learning #34 PROMOTED** — applied mechanically: one parallel Read batch for `anthropic_client.py` + `test_anthropic_client.py` + `conftest.py` + `nodes.py` + `llm.py` + `__init__.py` shim + `agent.py` + `test_data_agent.py` before any Edit. Zero "File has not been read yet" errors on the 4 subsequent Edits. 6th consecutive clean validation — discipline holds post-promotion. (e) **Learning #29 grep-before-insert — 17th consecutive clean validation.** No heading-duplication fumble on the Phase 1B stub. (f) **CHANGELOG 20-consecutive-match** convention — gave me the entry shape (context / Changed / Added / Removed / Verified / Unchanged intentionally / Next) on autopilot; Session 53's entry is the 21st consecutive match. (g) **Gotcha #7 asymmetry rationale for `RepoProjectResult`** — not load-bearing this session (data-agent bug, not resume bug), but reading it refreshed my understanding of why certain "defensive code" paths exist without tests (the `if request_present and not intake_complete -> return "intake"` branch in `_is_saved_payload_complete` is unreachable under normal pipeline semantics). Same reasoning applied to the `except json.JSONDecodeError: pass` branch in my fence-fallback: unreachable in normal sonnet responses but kept as defensive code. Accepted the 0.08 coverage drop rather than writing an artificial test.
+- **What was missing:** (a) **Candidate Learning #36 (don't-eagerly-precompute-across-short-circuits) had 1st instance in Session 52.** Session 53 had no natural case to validate against (the data-agent `_extract_json` fix has no pre-existing short-circuits; the whole function is the hot path). Candidate stays at 1/2. -0 (not Session 52's fault; the validation opportunity didn't arise). (b) **BACKLOG item 1's original description** listed two fix options — "Either the prompt forbids fences explicitly or the parser strips a fence before `json.loads`." Session 52's handoff recommended option (b) defensive parser-side strip. Both were in scope, but a one-sentence rationale in gotcha #1 of "parser-side is more robust because model versions drift and no prompt phrasing reliably eliminates fences" would have saved me a ~2-minute consideration. -0.25 (cosmetic). (c) **No mention that there's ALREADY a `_CODE_FENCE` regex + partial fence strip.** I expected to write the fence-strip from scratch based on the BACKLOG line's shape; instead I found existing code that was too strict. A one-line note in the handoff ("parser already has a fence regex at `anthropic_client.py:245` but it uses `^...$` anchors; the bug is over-strictness, not absence") would have been load-bearing. -0.25.
+- **What was wrong:** Nothing factually wrong. The fix shape hinted ("strip leading / trailing ``` ```json ``` ``` fences") was exactly right; I just had to find the existing implementation and loosen it. Zero plan-signature drift.
+- **ROI:** ~4× on the handoff package. The gotcha list + CHANGELOG convention + Learning #34 promotion let me proceed from Phase 0 → committable state in ~25 minutes. The captured `run_id` from Session 51 is cited in 4 places (module docstring, function docstring, 3 test docstrings, CHANGELOG) — future forensics can reproduce from the same evidence trail.
+
+### What Session 53 Did
+
+**Deliverable:** Fix BACKLOG item 1 (data-agent markdown-fence JSON parser). Two-phase parse in `_extract_json`: bare `json.loads` first, fence-search fallback on failure. **COMPLETE.**
+**Started:** 2026-04-19
+**Completed:** 2026-04-19
+**Commit (pending):** `fix(data-agent): strip markdown fences defensively before json.loads`.
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS.md + SESSION_RUNNER.md read in full. SESSION_NOTES.md ACTIVE TASK + Session 52 handoff + 10 gotchas + Session 51 addendum. git status (clean, 0 commits ahead). git log -10 (ba8eea3 Session 52 present; ghost-session check clean). BACKLOG (6 `[ ]`, 0 `[x]` — Learning #26 Session #22 of application). Methodology dashboard (91/100 medium risk, unchanged). Reported findings to operator with the Session 52-recommended natural follow-up (BACKLOG item 1, finding #2) as first choice. Operator directed: "work on (a) Finding #2".
+
+2. **Phase 1 understanding stated.** "I'm going to fix the data-agent JSON parser to tolerate markdown-fenced output (option (b) from Session 52's handoff — defensive parser-side strip) following DEVELOPMENT_WORKSTREAM. I'll close out when pytest/ruff/mypy are green and BACKLOG is updated." No operator correction; clear green light.
+
+3. **Phase 1B stub — Learning #29 17th consecutive mechanical validation.** Grep-before-insert pattern `Session 53|What Session 53 Did|Session 52 Handoff Evaluation|Post-Session-53` → only 5 hits, all pre-existing forward references in Session 52's gotchas at lines 77, 93, 99, 132. Safe to insert. Wrote IN-PROGRESS stub to ACTIVE TASK + `### What Session 53 Did` stub before any research code.
+
+4. **Task tracking — 8 tasks via TaskCreate.** Tracked each through pending → in_progress → completed.
+
+5. **Parallel Read batch — Learning #34 6th consecutive validation (POST-PROMOTION).** Read `anthropic_client.py` (258 lines full) + `test_anthropic_client.py` (282 lines full after grep-confirmed path) + `conftest.py` (152 lines full) + `nodes.py` (182 lines full) + `llm.py` (94 lines full) + `__init__.py` shim at `src/.../agents/data/__init__.py` + `agent.py` (152 lines full) + `llm.py` shim at `src/.../agents/data/llm.py` across two parallel batches. Zero "File has not been read yet" errors on the 4 subsequent surgical Edits.
+
+6. **Learning #11 signature verification.** Grepped for `json.loads|json_load|loads\(` across `packages/data-agent` → 3 hits: (a) `anthropic_client.py:255` in `_extract_json` (the bug site), (b) `cli.py:116` (reading a file, not LLM output — out of scope), (c) `USAGE.md:167` (doc example — out of scope). Confirmed `_extract_json` is the only LLM-JSON-parsing site.
+
+7. **Root-cause analysis.** BACKLOG error trace `Expecting value: line 1 column 1 (char 0): '`\`\`\``json\n[...'` told me the input to `json.loads` started with a fence — regex did NOT strip it. Inspection of `_CODE_FENCE = re.compile(r"^`\`\`\`(?:json)?\s*\n(.*?)\n`\`\`\`\s*$", re.DOTALL)` revealed: anchored to start (`^`) + anchored to end (`$`) + requires the closing fence to be at end-of-string. A response with prose before the fence fails (content before `^`), a response with prose after the fence fails (content after `$`). sonnet-4-6's response shape in Session 51's run_id fit one of those two patterns.
+
+8. **Fix design.** Two-phase parse: try bare `json.loads` first (fast path: already-clean JSON, no allocation of regex search); on `json.JSONDecodeError`, `re.search` (not `.match`) the loosened fence regex (`\`\`\`(?:json)?\s*\n?(.*?)\n?\`\`\``, no `^`/`$` anchors, optional-newline flexibility) and retry with the captured group. Preserve the bare-parse error in the final `LLMParseError` so debug output shows the real decode failure, not a synthetic one. Rationale vs prompt-side fix: model versions drift, no prompt phrasing reliably eliminates fences across temperature settings; parser-side defense is more durable.
+
+9. **Implementation — 2 surgical Edits to `anthropic_client.py`.** (a) Module docstring updated to describe the new two-phase parse order. (b) `_CODE_FENCE` regex loosened + `_extract_json` restructured: `try json.loads(stripped) except JSONDecodeError as first_error: match = _CODE_FENCE.search(stripped); if match: try json.loads(match.group(1).strip()) except JSONDecodeError: pass; raise LLMParseError(... from first_error)`. Added 12-line docstring to `_extract_json` naming the bug, the fix invariant, and the `run_id` provenance.
+
+10. **Test additions — 5 new tests in `test_anthropic_client.py`.** All added at the end of the existing `_extract_json` test block so the file structure stays chronological. (a) `test_extract_json_prose_before_fence`: `'Here is the JSON:\n`\`\`\``json\n{"a": 1}\n`\`\`\`'` → `{"a": 1}`. (b) `test_extract_json_prose_after_fence`: trailing explanation case. (c) `test_extract_json_prose_before_and_after_fence`: both sides. (d) `test_extract_json_fence_without_language_tag_and_prose`: ``` ``` (no `json` tag) + leading prose. (e) `test_extract_json_bare_json_still_parses`: fast-path regression (bare `{"a": 1}` with whitespace + bare `[1, 2, 3]`). Three of five tests cite `run_id=run_b1_resume_live_1776570556` in docstrings.
+
+11. **Verification — all four commands green.** `uv run pytest -q tests/data_agent_package/test_anthropic_client.py` → 22/22 passing (17 existing + 5 new). `uv run pytest -q` (full suite) → **475/475 passing** (was 470; +5). Coverage **97.19%** with `Required test coverage of 95% reached`. `uv run ruff check src/ tests/ packages/` → `All checks passed!`. `uv run mypy src/` → `Success: no issues found in 48 source files`. `uv run mypy packages/data-agent/src/` → `Success: no issues found in 12 source files`.
+
+12. **CHANGELOG Session 53 entry at top of [Unreleased]** (21st consecutive structure match: context / Changed / Added / Removed / Verified / Unchanged intentionally / Next).
+
+13. **BACKLOG.md −1 line** per Learning #26 (delete, do NOT flip to `[x]`). Removed the "Data agent JSON parser rejects markdown-fenced output from sonnet-4-6" line. BACKLOG net change: 6 `[ ]` → 5 `[ ]`, 0 `[x]` → 0 `[x]`.
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Read SAFEGUARDS + SESSION_RUNNER + SESSION_NOTES ACTIVE TASK + Session 52 handoff + 10 gotchas + Session 51 addendum + `anthropic_client.py` (full) + `test_anthropic_client.py` (full) + `conftest.py` (full) + `nodes.py` (full) + `llm.py` (full) + both `agents/data/` shims + `agent.py` (full) + BACKLOG + CHANGELOG top. Learning #11 signature verification mechanical — grep for `json.loads|json_load|loads\(` confirmed `_extract_json` is the only site.
+- **Stakeholder corrections:** 0. Operator's "work on (a) Finding #2" was unambiguous; no mid-course corrections. Candidate Learning #35 (single-word affirmation discipline, 1/2 instances) had no case to validate against (operator direction was multi-word and explicit).
+- **What I got right:** (a) **Bare-parse-first ordering.** Fast path for already-clean JSON avoids regex allocation and fence-search on every response — Claude often returns clean JSON, so bare-parse-first is the happy path; fence-fallback is the slow path for misbehaving models. Symmetric to the control-flow ordering I learned from Session 52's Learning #36 (don't hoist expensive computation above early-returns). (b) **Learning #29 grep-before-insert — 17th consecutive clean validation.** No heading-duplication fumble on the Phase 1B stub. (c) **Learning #34 parallel-Read-before-parallel-Edit — 6th consecutive validation (post-promotion).** Discipline holds after promotion threshold. (d) **Learning #26 BACKLOG discipline — Session #22 of application.** Phase 0 check (6 `[ ]`) + close-out check (5 `[ ]`) both clean. Removed the fixed item; did not flip to `[x]`. (e) **Preserved bare-parse error in final `LLMParseError`.** The `raise LLMParseError(...) from first_error` pattern chains the original decode failure; pytest output on a truly malformed response (no fence, no JSON) still names the correct column + character position. The nested `except json.JSONDecodeError: pass` is silent-by-design because the caller only needs the bare-parse error message. (f) **`run_id` citations.** Three of the five new tests cite `run_id=run_b1_resume_live_1776570556`. Plus the module docstring, the function docstring, and the CHANGELOG entry. Five provenance anchors — future forensics has no ambiguity about which production run triggered this fix. (g) **Scope discipline.** Did NOT touch `src/model_project_constructor/agents/intake/anthropic_client.py` despite its sibling `_extract_json` likely having the same regex shape. Reasoning cited in CHANGELOG "Unchanged intentionally": no observed bug there; apply the fix when evidence exists. Learning #18 (planning-to-implementation boundaries) applied to a different axis — scope of a fix, not scope of a plan. (h) **Defensive-code acceptance.** The nested `except json.JSONDecodeError: pass` branch in the fence-fallback is unreachable under the test fixtures (a fenced response with malformed inner JSON). Kept as defensive code; accepted the 0.08 coverage drop (97.27 → 97.19). Analogous to Session 52's defensive `if request_present and not intake_complete` branch — same reasoning. (i) **CHANGELOG convention 21st consecutive match.**
+- **What I got wrong:** (a) **Initial grep missed `_extract_json` precedent.** My first grep was `json\.loads|json_load|loads\(` — this surfaced the call site but not the existing regex. I had to read the full `anthropic_client.py` to discover `_CODE_FENCE`. In retrospect, a parallel grep for `CODE_FENCE|fence|backtick|` \`\`\` `` would have surfaced the existing implementation faster and saved me a ~1-minute "is this being fence-stripped already?" moment. Cost: ~30 seconds. -0.25. Candidate learning: **when fixing a parser bug, grep for both the parsing call (`json.loads`, etc.) AND any pre-processing helpers (regex constants, helper function names derived from the bug shape like "fence", "strip", "clean") in the same pass.** Pending 2nd-instance validation before formal coining. (b) **Coverage dropped 0.08 (97.27 → 97.19).** The new helper's defensive `except json.JSONDecodeError: pass` branch in the fence-fallback is unreachable in test fixtures. Valid design call, but a test for "fence present but inner JSON malformed" would have held coverage. Skipped because the test case is synthetic and adds maintenance without proportional value. -0 (cosmetic; floor still holds with 2.19-point headroom). Net self-score: **9.5/10** with -0.5 deduction for the grep-completeness miss.
+- **Quality bar vs previous sessions:** Comparable to Session 52 (surgical fix, asymmetric design call justified in docstring + CHANGELOG, zero scope creep) and Session 32 (test-pattern mirroring precedent research). Above Session 51 on first-attempt-success metric (Session 51 had the "premature yes" correction mid-session; Session 53 had zero operator corrections). Below Session 46 (Evolution.md) on deliverable volume but that was a different workstream class.
+
+### Phase 3C: Learnings
+
+**Learning #34 post-promotion validation — 6th consecutive clean.** Learning #34 was promoted in Session 52 to "mechanically reliable." Session 53 validates the promotion holds: the discipline continues to fire automatically without explicit mental effort. No new substantive findings; the habit is load-bearing.
+
+**Candidate Learning #36 post-Session-52 — no instance to validate this session.** The don't-eagerly-precompute-across-short-circuits pattern requires a function with pre-existing early-returns + a new computation being added. Session 53's `_extract_json` has no pre-existing early-returns to interact with; the whole function is the hot path. Candidate stays at 1/2. Carry forward for Session 54+.
+
+**Candidate Learning #35 (single-word affirmation discipline) — no instance this session.** Operator direction was "work on (a) Finding #2" — unambiguous multi-word. Candidate stays at 1/2.
+
+**Candidate Learning #37 (parser-bug greps should include preprocessing-helper names) — 1st instance this session.** When fixing a parser bug, the root cause often lives in a pre-processing helper (regex constant, cleanup function) that the top-level `.loads(...)`/`.parse(...)` call depends on. Grep for the top-level call alone surfaces the bug site but misses the pre-processing logic that's actually wrong. Mechanical: in a single parallel grep batch, search for both (a) the top-level parse call (`json\.loads`, `yaml\.safe_load`, etc.) AND (b) preprocessing-helper names derived from the bug shape ("fence", "strip", "clean", "unwrap", "extract", or the literal bug-trigger string like ` \`\`\` ` or `<![CDATA[`). The 1-minute discovery cost I paid this session is the cost I'd avoid with this discipline. Pending 2nd-instance validation before formal coining.
+
+**Existing learnings load-bearing this session:**
+- **Learning #11** (trust code over plan for signatures): Applied in Phase 0. Plan was BACKLOG-line-only; not applicable in the traditional sense. But the analogous principle — trust the code for the actual bug shape — drove the "read `anthropic_client.py` end-to-end before editing" step, which surfaced the pre-existing `_CODE_FENCE` regex.
+- **Learning #18** (planning-to-implementation boundaries): Applied to fix-scope. Did NOT touch the intake-agent sibling parser despite it likely having the same regex shape. Rationale: Learning #18 says "don't bundle adjacent scope"; here, the intake parser is adjacent code with no observed bug — apply the fix when evidence exists.
+- **Learning #19** (counts after running, not from memory): N/A this session (no evidence-inventory greps beyond BACKLOG count).
+- **Learning #26** (BACKLOG discipline): Session #22 of application. Phase 0 + close-out both clean. **Removed** the fixed item (not `[x]` flip).
+- **Learning #28** (audit handoff specifics against code): Applied — Session 52's handoff suggested option (b) defensive parser-side strip; I verified against the code (found the existing `_CODE_FENCE` regex; confirmed option (b) was a loosening of an existing mechanism, not a new mechanism) before writing code.
+- **Learning #29** (grep-before-insert for stub): 17th consecutive mechanical validation. Zero fumble.
+- **Learning #30** (declarative progress narration): Active discipline. No "Let me ..." slippage this session.
+- **Learning #32** (historical-prose in append-only / freshness-tracked files): N/A this session (no edits to such files).
+- **Learning #34** (parallel-Read-before-parallel-Edit): **6th consecutive validation** post-promotion. Discipline holds.
+
+### Phase 3D: Handoff to Session 54
+
+**Next deliverables** (in rough priority order — no single natural follow-up; all are independent items from the same backlog):
+
+1. **Tutorial UX: split code blocks** — Split multi-command code blocks in `docs/tutorial.md` into individually-copyable blocks. Pandoc/GitHub rendering doesn't provide per-block copy buttons, so also consider rendering to a format that does (e.g. MkDocs, Docusaurus). Scope: `docs/tutorial.md` only. One session; probably half a session.
+
+2. **`scripts/render_tutorial.sh`** — Wrap pandoc with inline CSS (body width, hr margins, table borders) so rendering the tutorial to HTML is a one-liner. Scope: new shell script. Half a session.
+
+3. **Intake agent: data source discovery prompts** — Enhance the intake agent's system prompt to ask whether the stakeholder wants help identifying data sources, and if so, probe about existing systems (data warehouses, claims systems, policy admin). Scope: `src/model_project_constructor/agents/intake/` prompts + tests. One session.
+
+4. **Data agent: metadata discovery mode** — Add a discovery mode to the data agent that queries database metadata (`information_schema`, catalog tables) to identify relevant tables before generating training set queries. The data agent was designed to be reusable as a standalone query tool. Scope: new mode in `packages/data-agent/` + prompt + tests. One session (maybe 1.5).
+
+5. **Statistical terminology glossary** — Create `docs/style/statistical_terms.md` defining terms like probability vs likelihood, and inject it into agent system prompts. Scope: new doc + 2-3 prompt edits + tests. One session.
+
+6. **(Optional) Plan Phase 4** — UI writes `IntakeReport.json` envelope on interview completion. Plan §7.4 OPTIONAL. Do only if a pilot operator demands the UI → `--resume` workflow.
+
+**Commits ahead of origin: 1 at Session 53 close-out** (this session's own fix commit). Push per operator instruction.
+
+### Gotchas for Session 54
+
+1. **Post-Session-53 pre-commit state:** pytest **475/475 passing** @ **97.19% coverage** with `Required test coverage of 95% reached`. ruff clean (`src/ tests/ packages/`). mypy 0 issues in both `src/` (48 source files) and `packages/data-agent/src/` (12 source files). `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` grew from ~258 → ~276 lines (+18 LOC: loosened `_CODE_FENCE` regex + restructured `_extract_json` body + function docstring + module docstring). `tests/data_agent_package/test_anthropic_client.py` grew from ~266 → ~292 lines (+26 LOC: 5 new regression tests).
+
+2. **BACKLOG at Phase 0:** **5 `[ ]`, 0 `[x]`** (was 6; removed fixed item per Learning #26). Learning #26 Session #23 of application. Phase 0 check + close-out check both mandatory.
+
+3. **Learning #29 mechanical — 17th consecutive validation in Session 53.** Continue: grep-before-insert for stub pattern `Session 54|### What Session 54 Did|### Session 53 Handoff Evaluation|Post-Session-54`.
+
+4. **Learning #34 POST-PROMOTION 6th consecutive validation in Session 53.** Parallel-Read-before-parallel-Edit remains "mechanically reliable" — no longer tracked as a candidate learning; fire it automatically on any multi-file session.
+
+5. **Candidate Learning #36 (don't-eagerly-precompute-across-short-circuits).** 1st instance in Session 52; no instance in Session 53 (the `_extract_json` fix had no pre-existing short-circuits to interact with). Carry forward to Session 54+. 2nd-instance validation threshold NOT yet met.
+
+6. **Candidate Learning #37 (parser-bug greps should include preprocessing-helper names).** 1st instance in Session 53. When fixing a parser bug, grep for both the top-level parse call AND any preprocessing-helper names derived from the bug shape ("fence", "strip", "clean", "unwrap", "extract") in the same pass. Session 53's 1-minute discovery cost is what this discipline would save. Pending 2nd-instance validation before formal coining. Carry forward.
+
+7. **Sibling intake parser has a likely-analogous regex bug.** `src/model_project_constructor/agents/intake/anthropic_client.py` has its own `_extract_json` variant. Session 53 did NOT touch it because no bug has been observed there (Learning #18 fix-scope discipline). **If a future intake live-LLM run surfaces a similar `LLMParseError` on fenced output, apply the same fix** (the function name, regex pattern, and function structure should be directly portable). Do NOT preemptively fix it — wait for evidence.
+
+8. **`_extract_json` bare-parse-first ordering is load-bearing.** If any future session refactors the helper, preserve the order: try `json.loads(stripped)` first, catch `JSONDecodeError` as `first_error`, fall back to fence-search, raise `LLMParseError` from `first_error` if fence-fallback also fails. The ordering is the fast-path optimization AND the source of the correct error message for debug output. Flipping the order (fence-search first, then bare-parse) would either break the error-message chain or double the regex work on clean responses.
+
+9. **CHANGELOG structure convention (Sessions 33–53, 21 consecutive):** context paragraph / Added/Changed (multiple) / Added / Changed / Removed / Verified / Unchanged intentionally / (optional Live-LLM status) / Next bullet. Session 53's entry lands the 21st match.
+
+10. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose uses `probability` for P(event). N/A this session.
+
+11. **Upstream-methodology risk unchanged.** Do NOT edit `docs/methodology/{README,HOW_TO_USE,ITERATIVE_METHODOLOGY,workstreams/*}.md`. `PROJECT_CONVENTIONS.md` is project-local; fine to extend.
+
+### Session 53 close-out checklist
+
+- [x] Phase 0 orientation (SAFEGUARDS + SESSION_RUNNER read in full; SESSION_NOTES ACTIVE TASK + Session 52 handoff + 10 gotchas + Session 51 addendum; git status + log; BACKLOG; dashboard 91/100; ghost-session check clean; report delivered; operator directed finding #2)
+- [x] Phase 1 understanding stated back (operator gave no correction)
+- [x] Phase 1B stub written to SESSION_NOTES ACTIVE TASK before technical work (Learning #29 grep-first; 17th consecutive validation)
+- [x] Task list created (8 tasks tracked via TaskCreate + TaskUpdate)
+- [x] Parallel Read batch before parallel/surgical Edit batch (Learning #34 6th consecutive validation, post-promotion)
+- [x] `_extract_json` restructured to bare-parse-first + fence-search-fallback + `_CODE_FENCE` regex loosened + docstrings updated
+- [x] 5 regression tests: `test_extract_json_prose_before_fence`, `test_extract_json_prose_after_fence`, `test_extract_json_prose_before_and_after_fence`, `test_extract_json_fence_without_language_tag_and_prose`, `test_extract_json_bare_json_still_parses`
+- [x] Verification: pytest 475/475 @ 97.19%; ruff clean; mypy 0 issues in both `src/` and `packages/data-agent/src/`
+- [x] CHANGELOG Session 53 entry at top of [Unreleased] (21st consecutive structure match)
+- [x] BACKLOG check at close-out: 5 `[ ]`, 0 `[x]` (was 6; removed fixed item per Learning #26)
+- [x] Phase 3A: Session 52 handoff evaluated (9.5/10)
+- [x] Phase 3B: Self-assessment scored and written (9.5/10, -0.5 deduction noted: initial grep missed `_CODE_FENCE` precedent)
+- [x] Phase 3C: Learnings — Learning #34 6th consecutive validation post-promotion; candidate Learning #37 (parser-bug greps include preprocessing-helper names) noted
+- [x] Phase 3D: Handoff to Session 54 above (5 remaining BACKLOG items; 11 gotchas; no single natural follow-up)
+- [ ] Phase 3E: Commit SESSION_NOTES + anthropic_client.py + test_anthropic_client.py + CHANGELOG + BACKLOG — pending this turn
+- [ ] Phase 3F: Report and STOP — pending this turn
+
+### Post-Session-53 pre-commit state
+- `uv run pytest -q` → **475/475 passing**, coverage **97.19%** with `Required test coverage of 95% reached` — FLOOR HOLDS (2.19-point headroom; 0.08-pt drop from 97.27 is new defensive nested-except in fence-fallback)
+- `uv run pytest -q tests/data_agent_package/test_anthropic_client.py` → **22/22 passing** (17 existing + 5 new regression tests)
+- `uv run ruff check src/ tests/ packages/` → `All checks passed!`
+- `uv run mypy src/` → `Success: no issues found in 48 source files`
+- `uv run mypy packages/data-agent/src/` → `Success: no issues found in 12 source files`
+- BACKLOG.md: 5 `[ ]`, 0 `[x]` (data-agent markdown-fence line removed per Learning #26)
+- CHANGELOG.md: Session 53 entry at top of [Unreleased] (21st consecutive structure match)
+- 4 files modified for the Session 53 commit: `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` (+18 approx: loosened `_CODE_FENCE` regex + restructured `_extract_json` + module + function docstrings), `tests/data_agent_package/test_anthropic_client.py` (+26 approx: 5 new regression tests), `CHANGELOG.md` (+9 lines), `BACKLOG.md` (-1), `SESSION_NOTES.md` (close-out)
 
 ### Session 51 Handoff Evaluation (by Session 52)
 

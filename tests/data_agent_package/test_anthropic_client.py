@@ -265,6 +265,34 @@ def test_extract_json_malformed_raises() -> None:
         _extract_json("not json at all")
 
 
+def test_extract_json_prose_before_fence() -> None:
+    """Regression for run_id=run_b1_resume_live_1776570556 (Session 51)."""
+    raw = 'Here is the JSON:\n```json\n{"a": 1}\n```'
+    assert _extract_json(raw) == {"a": 1}
+
+
+def test_extract_json_prose_after_fence() -> None:
+    """Regression for run_id=run_b1_resume_live_1776570556 (Session 51)."""
+    raw = '```json\n[{"check_name": "n1"}]\n```\n\nExplanation: n1 checks rows.'
+    assert _extract_json(raw) == [{"check_name": "n1"}]
+
+
+def test_extract_json_prose_before_and_after_fence() -> None:
+    raw = 'Response below:\n```json\n{"x": [1, 2]}\n```\nLet me know if...'
+    assert _extract_json(raw) == {"x": [1, 2]}
+
+
+def test_extract_json_fence_without_language_tag_and_prose() -> None:
+    raw = 'Sure, here you go:\n```\n{"ok": true}\n```'
+    assert _extract_json(raw) == {"ok": True}
+
+
+def test_extract_json_bare_json_still_parses() -> None:
+    """Fast path: bare JSON (no fence) must not regress after fence rework."""
+    assert _extract_json('  {"a": 1}  ') == {"a": 1}
+    assert _extract_json('[1, 2, 3]') == [1, 2, 3]
+
+
 def test_default_construction_uses_anthropic_sdk(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

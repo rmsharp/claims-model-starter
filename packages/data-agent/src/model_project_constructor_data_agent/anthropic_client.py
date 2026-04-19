@@ -18,9 +18,12 @@ Design notes:
   authoring). Callers can override via the ``model`` argument.
 
 - Parsing is defensive: Claude sometimes wraps JSON in ``` ```json ... ``` ```
-  code fences. :func:`_extract_json` strips them. Unparseable responses raise
-  :class:`LLMParseError` so the Data Agent's outer try/except surfaces them
-  as ``status="EXECUTION_FAILED"`` instead of crashing.
+  code fences, sometimes with surrounding prose. :func:`_extract_json` tries
+  a bare parse first (fast path for clean JSON) and falls back to a
+  fence-search on failure, so prose before or after the fence does not break
+  parsing. Unparseable responses raise :class:`LLMParseError` so the Data
+  Agent's outer try/except surfaces them as ``status="EXECUTION_FAILED"``
+  instead of crashing.
 """
 
 from __future__ import annotations
@@ -242,16 +245,36 @@ def _dump_qc_status(
     return header + ("\n".join(lines) if lines else "(no checks)")
 
 
-_CODE_FENCE = re.compile(r"^```(?:json)?\s*\n(.*?)\n```\s*$", re.DOTALL)
+_CODE_FENCE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?```", re.DOTALL)
 
 
 def _extract_json(raw: str) -> Any:
-    """Strip code fences if present and parse the remainder as JSON."""
+    """Parse JSON from an LLM response, defensively stripping markdown fences.
+
+    Models sometimes return clean JSON and sometimes wrap it in a ``` ```json
+    … ``` ``` (or ``` ``` … ``` ```) fence, occasionally with prose before or
+    after the fence. We try the bare response first (fast path: already valid
+    JSON); on :class:`json.JSONDecodeError` we search for a fenced block
+    anywhere in the response and retry with its contents. Only if both attempts
+    fail do we raise :class:`LLMParseError`, surfacing the bare-parse error
+    since that's what the caller sees on a truly malformed response.
+
+    Tracked bug: Session 51 live-LLM run `run_id=run_b1_resume_live_1776570556`
+    crashed here because the previous regex required the entire stripped
+    response to be a fenced block (``^…$`` anchors); sonnet-4-6 added prose
+    around the fence, and :func:`json.loads` saw the opening backticks.
+    """
     stripped = raw.strip()
-    match = _CODE_FENCE.match(stripped)
-    if match:
-        stripped = match.group(1).strip()
     try:
         return json.loads(stripped)
-    except json.JSONDecodeError as e:
-        raise LLMParseError(f"Claude returned non-JSON: {e}: {stripped[:200]!r}") from e
+    except json.JSONDecodeError as first_error:
+        match = _CODE_FENCE.search(stripped)
+        if match:
+            candidate = match.group(1).strip()
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                pass
+        raise LLMParseError(
+            f"Claude returned non-JSON: {first_error}: {stripped[:200]!r}"
+        ) from first_error

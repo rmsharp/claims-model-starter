@@ -4,7 +4,6 @@
 
 ## Open Items
 
-- [ ] **Data agent JSON parser rejects markdown-fenced output from sonnet-4-6** — During Session 51 live-LLM round-trip, `claude-sonnet-4-6` returned the quality-check list wrapped in ` ```json … ``` ` markdown fences; the data-agent's JSON parser raised `Expecting value: line 1 column 1 (char 0): '```json\n[...'` and the agent graph crashed with `EXECUTION_FAILED`. Either the prompt forbids fences explicitly or the parser strips a fence before `json.loads`. Repro: `--llm data --model claude-sonnet-4-6 --db-url sqlite:///does-not-exist.db`. Found via Session 51 live-LLM round-trip (`run_id=run_b1_resume_live_1776570556`).
 - [ ] **Add `scripts/render_tutorial.sh`** — Wrap the pandoc invocation with inline CSS (body width, hr margins, table borders) so rendering the tutorial to HTML is a one-liner.
 - [ ] **Tutorial UX: split code blocks** — Split multi-command code blocks in `docs/tutorial.md` into individual blocks so each command is independently copyable. Pandoc/GitHub rendering doesn't provide per-block copy buttons, so also consider rendering to a format that does (e.g. MkDocs, Docusaurus).
 - [ ] **Intake agent: data source discovery prompts** — Enhance the intake agent's system prompt to ask whether the stakeholder wants help identifying data sources, and if so, probe about existing systems (data warehouses, claims systems, policy admin). Currently the agent accepts whatever the stakeholder says about available data at face value.
