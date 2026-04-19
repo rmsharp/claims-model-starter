@@ -194,6 +194,11 @@ from model_project_constructor_data_agent import (
     Datasheet,           # schema: Gebru 2021 datasheet
     PrimaryQuery,        # schema: generated SQL + QC + datasheet
     QualityCheck,        # schema: single QC result
+    # Data-source-inventory contract (see "Data source inventory" below)
+    ColumnMetadata,      # schema: per-column metadata
+    DataSourceEntry,     # schema: one table/view/dataset entry
+    DataSourceInventory, # schema: collection of entries + producer metadata
+    ProducerMetadata,    # schema: which tool produced which entries
     ReadOnlyDB,          # SQLAlchemy wrapper
     LLMClient,           # Protocol — implement this for alternate LLM vendors
     PrimaryQuerySpec,    # intermediate dataclass returned by LLMClient
@@ -206,6 +211,29 @@ from model_project_constructor_data_agent.anthropic_client import (
     LLMParseError,
 )
 ```
+
+## Data source inventory
+
+The data agent accepts an optional `DataSourceInventory` describing which
+tables / views / datasets are relevant to a `DataRequest`. The inventory is a
+plug-in contract: discovery (identifying sources) is a separate activity,
+and multiple producer classes populate the same consumer shape:
+
+- **Curated** — hand-maintained JSON/YAML files from teams that already know
+  their canonical tables and factors. No code required.
+- **Automated** — probes like `information_schema` against a live DB
+  (reference implementation is planned for a future release).
+- **Interview** — converter from stakeholder-named systems captured by the
+  intake agent (Guidewire, Duck Creek, etc.) into inventory entries.
+- **External catalog** — DataHub, Amundsen, Collibra, and similar metadata
+  catalogs (future).
+
+Phase 1 ships the schema only. `DataRequest.data_source_inventory` and the
+downstream prompt integration land in a later phase; today's callers continue
+to work unchanged. See
+`docs/planning/data-source-inventory-contract-plan.md` for the full plan and
+`tests/fixtures/sample_curated_inventory.json` for a valid curated-producer
+example.
 
 ## Error contract
 

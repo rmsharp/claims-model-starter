@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0.0",
+  "created_at": "2026-04-19T12:00:00+00:00",
+  "request_context": "subrogation recovery classifier",
+  "producers": [
+    {
+      "producer_id": "curated:claims-analytics-team",
+      "producer_type": "curated",
+      "produced_at": "2026-04-19T12:00:00+00:00",
+      "producer_version": "2026.04",
+      "notes": "Hand-maintained list of core claims-domain tables."
+    }
+  ],
+  "entries": [
+    {
+      "schema_version": "1.0.0",
+      "name": "claim_events",
+      "namespace": "public",
+      "source_system": "claims_warehouse",
+      "fully_qualified_name": "public.claim_events",
+      "entity_kind": "table",
+      "columns": [
+        {
+          "name": "claim_id",
+          "data_type": "VARCHAR(36)",
+          "nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": false
+        },
+        {
+          "name": "event_type",
+          "data_type": "VARCHAR(64)",
+          "nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false
+        },
+        {
+          "name": "event_timestamp",
+          "data_type": "TIMESTAMPTZ",
+          "nullable": false,
+          "is_primary_key": false,
+          "is_foreign_key": false
+        }
+      ],
+      "primary_key_columns": ["claim_id", "event_timestamp"],
+      "row_count_estimate": 48000000,
+      "description": "Append-only log of claim lifecycle events.",
+      "business_domain": "claims",
+      "entity_types": ["claim"],
+      "refresh_cadence": "hourly",
+      "owning_team": "claims_analytics",
+      "producer_id": "curated:claims-analytics-team"
+    },
+    {
+      "schema_version": "1.0.0",
+      "name": "subrogation_outcomes",
+      "namespace": "public",
+      "source_system": "subrogation_recovery_tool",
+      "fully_qualified_name": "public.subrogation_outcomes",
+      "entity_kind": "table",
+      "columns": [
+        {
+          "name": "claim_id",
+          "data_type": "VARCHAR(36)",
+          "nullable": false,
+          "is_primary_key": true,
+          "is_foreign_key": true,
+          "foreign_key_target": "public.claim_events.claim_id"
+        },
+        {
+          "name": "recovered_amount",
+          "data_type": "NUMERIC(12,2)",
+          "nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false
+        },
+        {
+          "name": "closed_date",
+          "data_type": "DATE",
+          "nullable": true,
+          "is_primary_key": false,
+          "is_foreign_key": false
+        }
+      ],
+      "primary_key_columns": ["claim_id"],
+      "row_count_estimate": 2400000,
+      "description": "Subrogation recovery outcome per closed claim.",
+      "business_domain": "claims",
+      "entity_types": ["claim", "recovery"],
+      "refresh_cadence": "daily",
+      "owning_team": "subrogation_ops",
+      "producer_id": "curated:claims-analytics-team"
+    }
+  ]
+}

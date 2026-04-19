@@ -22,24 +22,32 @@ from model_project_constructor_data_agent.llm import (
     SummaryResult,
 )
 from model_project_constructor_data_agent.schemas import (
+    ColumnMetadata,
     DataGranularity,
     DataReport,
     DataRequest,
     Datasheet,
+    DataSourceEntry,
+    DataSourceInventory,
     PrimaryQuery,
+    ProducerMetadata,
     QualityCheck,
 )
 
 __all__ = [
+    "ColumnMetadata",
     "DataAgent",
     "DataGranularity",
     "DataReport",
     "DataRequest",
+    "DataSourceEntry",
+    "DataSourceInventory",
     "Datasheet",
     "DBConnectionError",
     "LLMClient",
     "PrimaryQuery",
     "PrimaryQuerySpec",
+    "ProducerMetadata",
     "QualityCheck",
     "QualityCheckSpec",
     "ReadOnlyDB",

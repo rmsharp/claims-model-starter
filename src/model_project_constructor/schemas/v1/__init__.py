@@ -12,11 +12,15 @@ from model_project_constructor.schemas.v1.common import (
     RiskTier,
 )
 from model_project_constructor.schemas.v1.data import (
+    ColumnMetadata,
     DataGranularity,
     DataReport,
     DataRequest,
     Datasheet,
+    DataSourceEntry,
+    DataSourceInventory,
     PrimaryQuery,
+    ProducerMetadata,
     QualityCheck,
 )
 from model_project_constructor.schemas.v1.intake import (
@@ -42,11 +46,15 @@ __all__ = [
     "IntakeReport",
     "ModelSolution",
     # data
+    "ColumnMetadata",
     "DataGranularity",
     "DataReport",
     "DataRequest",
+    "DataSourceEntry",
+    "DataSourceInventory",
     "Datasheet",
     "PrimaryQuery",
+    "ProducerMetadata",
     "QualityCheck",
     # repo
     "GovernanceManifest",

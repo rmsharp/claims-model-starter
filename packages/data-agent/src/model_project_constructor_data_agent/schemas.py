@@ -23,7 +23,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StrictBase(BaseModel):
@@ -101,6 +101,77 @@ class DataReport(StrictBase):
     created_at: datetime
 
 
+class ColumnMetadata(StrictBase):
+    name: str
+    data_type: str
+    nullable: bool | None = None
+    description: str | None = None
+    is_primary_key: bool = False
+    is_foreign_key: bool = False
+    foreign_key_target: str | None = None
+
+
+class ProducerMetadata(StrictBase):
+    producer_id: str
+    producer_type: Literal["curated", "automated", "interview", "external_catalog"]
+    produced_at: datetime
+    producer_version: str | None = None
+    notes: str | None = None
+
+
+class DataSourceEntry(StrictBase):
+    schema_version: Literal["1.0.0"] = "1.0.0"
+
+    name: str
+    namespace: str | None = None
+    source_system: str | None = None
+    fully_qualified_name: str
+
+    entity_kind: Literal[
+        "table", "view", "materialized_view", "file_dataset", "feature_view", "other"
+    ]
+
+    columns: list[ColumnMetadata] = Field(default_factory=list)
+    primary_key_columns: list[str] = Field(default_factory=list)
+    row_count_estimate: int | None = None
+
+    description: str | None = None
+    business_domain: str | None = None
+    entity_types: list[str] = Field(default_factory=list)
+
+    relevance_score: float | None = None
+    relevance_reason: str | None = None
+
+    last_updated_at: datetime | None = None
+    refresh_cadence: str | None = None
+    access_notes: str | None = None
+    owning_team: str | None = None
+
+    producer_id: str
+
+    extra: dict[str, Any] = Field(default_factory=dict)
+
+
+class DataSourceInventory(StrictBase):
+    schema_version: Literal["1.0.0"] = "1.0.0"
+    entries: list[DataSourceEntry] = Field(default_factory=list)
+    producers: list[ProducerMetadata] = Field(default_factory=list)
+    created_at: datetime
+    request_context: str | None = None
+
+    @model_validator(mode="after")
+    def _producer_ids_resolve(self) -> DataSourceInventory:
+        known = {p.producer_id for p in self.producers}
+        dangling = sorted({e.producer_id for e in self.entries if e.producer_id not in known})
+        if dangling:
+            raise ValueError(
+                f"DataSourceEntry.producer_id values do not resolve to any "
+                f"ProducerMetadata.producer_id: {dangling}. "
+                f"Known producers: {sorted(known)}."
+            )
+        return self
+
+
 __all__ = [
     "StrictBase",
     "DataGranularity",
@@ -109,4 +180,8 @@ __all__ = [
     "Datasheet",
     "PrimaryQuery",
     "DataReport",
+    "ColumnMetadata",
+    "ProducerMetadata",
+    "DataSourceEntry",
+    "DataSourceInventory",
 ]

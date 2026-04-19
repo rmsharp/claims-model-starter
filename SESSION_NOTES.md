@@ -5,9 +5,183 @@
 ---
 
 ## ACTIVE TASK
+**Task:** Session 58 — BACKLOG item 1 (numerical order per operator's durable directive): Data source inventory Phase 1 — Contract schema. Implement the four Pydantic types (`DataSourceInventory`, `DataSourceEntry`, `ProducerMetadata`, `ColumnMetadata`) per `docs/planning/data-source-inventory-contract-plan.md` §4 + §9 Phase 1. Re-exports. Tests. Sample curated fixture. USAGE.md inventory-types stub. No consumer/producer code.
+
+**Status:** Session 58 COMPLETE. Four Pydantic types added to `packages/data-agent/src/model_project_constructor_data_agent/schemas.py` with cross-field validator pinning `DataSourceEntry.producer_id` → `ProducerMetadata.producer_id` FK integrity. Re-exports mirrored in `packages/data-agent/.../__init__.py` and `src/model_project_constructor/schemas/v1/{data.py,__init__.py}` + `__all__` lists. 33 new tests in `tests/data_agent_package/test_inventory_schemas.py` (column / producer / entry / inventory / fixture-drift + re-export-path identity). Sample curated fixture `tests/fixtures/sample_curated_inventory.json` (2 entries, 1 producer, full column metadata). USAGE.md Public-API list expanded + new "Data source inventory" section. Verification: pytest **509/509 passing** @ **97.25% coverage** (was 476 @ 97.19 — +33 tests, +0.06% coverage). ruff clean. mypy 0 issues in `src/` (48 files) and `packages/data-agent/src/` (12 files). Decoupling guarantee preserved (no `IntakeReport` import). BACKLOG: 6 `[ ]` → 5 `[ ]` (shipped item removed per Learning #26 Session #28 of application). CHANGELOG 26th consecutive structure match. Commit pending this turn. Next session: BACKLOG item 1 (Data source inventory Phase 2: `information_schema` reference producer).
+
+### Session 57 Handoff Evaluation (by Session 58)
+
+**Score: 9.5/10.** Session 57's handoff was highly actionable. The 20 gotchas + plan §4 + §9 Phase 1 end-to-end conversion to code took ~90 minutes of focused work with zero re-reads forced by handoff omissions. The plan document itself carried most of the load — gotchas #1, #3, #4, #5, #6, #8, #9, #11, #12, #13, #14 all converted directly to implementation actions (schema field list, cross-field validator shape, test coverage list, decoupling guarantee call-out, `extra: dict[str, Any]` subtle-field test, re-export pattern, StrictBase duplication rationale, consecutive-validation counters). The pre-answered "open questions Q1/Q8/Q9/Q10 resolvable in Phase 1" (gotcha #10) let me implement each default without a deliberation round-trip with the operator.
+
+- **What helped:** (a) **Gotcha #1 pre-commit state** (pytest 476/476 @ 97.19%) — matched exactly at Phase 0 baseline; +33 new tests landed cleanly as predicted. (b) **Gotcha #2 BACKLOG count** (6 `[ ]`, 0 `[x]`) + Learning #26 Session #28 of application — Phase 0 baseline matched; close-out removed 1 line per convention. (c) **Gotcha #4 parallel-Read recipe** — prescriptive list (`schemas.py` + both `__init__.py` + `src/.../schemas/v1/data.py` + test file + data_agent_package/ listing + plan §4/§9 Phase 1) matched the actual Phase 1 surface exactly; single parallel batch landed all context. (d) **Gotcha #5 read plan end-to-end** — plan §4 field-by-field rationale + §9 Phase 1 scope + Phase 1 forecast gotchas all drove concrete code choices (e.g., gotcha #12 "extra: dict[str, Any] is load-bearing AND subtle" → `test_extra_field_accepts_producer_specific_keys` + `test_top_level_extra_keys_still_forbidden`). (e) **Gotcha #10 pre-answered Q1/Q8/Q9/Q10** — zero deliberation round-trip; Q1 `float | None`, Q8 JSON-only (no YAML code), Q9 Literal-pinned, Q10 free text. All four landed per defaults. (f) **Gotcha #11 decoupling guarantee** — zero `IntakeReport` import needed in Phase 1; decoupling test auto-verified green post-suite. (g) **Gotcha #13 re-export pattern** — mirrored `DataRequest` / `DataReport` shape exactly in all three re-export sites + `__all__` lists. (h) **Gotcha #14 StrictBase duplication** — used the data-agent-package StrictBase for all four types; zero coupling-cross. (i) **Gotcha #6 new test file over extending `test_data.py`** — `tests/data_agent_package/test_inventory_schemas.py` matches the sibling convention and keeps schema tests local to the data-agent package. (j) **Plan §3.4 precedence (inventory wins when both present)** — Phase 3 concern, but the rationale let me confidently write "no Phase 3 work" today. (k) **Learning #29 grep-before-insert — 22nd consecutive clean validation.** 15 hits, all pre-existing forward references in Session 57's handoff. Zero fumble on Phase 1B stub. (l) **Learning #34 parallel-Read-before-parallel-Edit — 11th consecutive post-promotion validation.** One 9-call parallel batch (plan + schemas.py + 2 __init__.py + data.py + test_data.py + decoupling test + data_agent_package listing + fixtures listing + memory file) covered all context; zero "File has not been read yet" errors on 6 subsequent Edits. (m) **Gotcha #15 CHANGELOG 25-consecutive-structure match** — extending to 26 on autopilot.
+- **What was missing:** (a) **Plan §4 mentioned `extra: dict[str, Any]` but did NOT flag that `extra` is a potential reserved name in Pydantic v2.** I independently verified `extra` is safe as a field name (it is a `ConfigDict` option but not a reserved attribute), but a line in Session 57's gotcha #12 saying "verified `extra` is safe as a field name in Pydantic v2" would have saved ~2 minutes of caution. -0.25 (cosmetic; caught independently). (b) **No explicit hint about whether the sample curated fixture should be registered anywhere for future phases.** I chose to add a `TestSampleCuratedFixture::test_fixture_validates` regression test to prevent fixture drift — this is the right call for a JSON fixture that Phase 2/3 will rely on, but Session 57's plan §9 Phase 1 step 5 said only "recommended" without naming the drift-protection mechanism. -0.0 (caught; right call made independently). (c) **Ruff `I001` import-ordering autofix required a second pass.** Inserting new imports in alphabetical-by-line order did not match ruff's expected shape (ruff put `DataSourceEntry` / `DataSourceInventory` AFTER `Datasheet` because uppercase-D-s comes alphabetically before lowercase-r but the per-letter sort is case-sensitive). One `--fix` pass cleaned it up; no behavioral change. A Session 57 gotcha "expect one ruff `--fix` pass on the re-export edits" would have saved a ~30 second cycle. -0.0 (trivial; autofix was fast).
+- **What was wrong:** Nothing factually wrong. Pre-commit state matched exactly. Gotcha #10's Q1/Q8/Q9/Q10 defaults remained sensible during implementation. The re-export pattern worked as described. StrictBase and decoupling guarantee both preserved without incident.
+- **ROI:** ~8× on the handoff package. The plan document did most of the work. Without the plan, Phase 1 would have bundled field-by-field deliberation (pick field names, pick Literal values, pick defaults) with implementation — 3-4 hours instead of ~90 minutes. The prescriptive gotcha list (#11 decoupling, #12 extra-field, #13 re-export, #14 StrictBase) converted directly to code actions, each saving 5–10 minutes of re-derivation.
+
+### What Session 58 Did
+
+**Deliverable:** BACKLOG item 1 — Data source inventory Phase 1: Contract schema. **COMPLETE.**
+**Started:** 2026-04-19
+**Completed:** 2026-04-19
+**Commit (pending):** `feat(data-agent): add DataSourceInventory contract schema (Phase 1)`.
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS.md + SESSION_RUNNER.md read in full. SESSION_NOTES.md ACTIVE TASK + Session 57 handoff + 20 gotchas. git status (clean, 2 commits ahead of origin — Session 56 `4818486` + Session 57 `f124248` not yet pushed). git log -5. BACKLOG (6 `[ ]`, 0 `[x]`). Methodology dashboard (91/100 medium risk, unchanged from S57). Ghost-session check clean. Reported findings to operator; operator directed "work on BACKLOG item 1" — Data source inventory Phase 1.
+
+2. **Phase 1 understanding.** Stated back: implement Phase 1 contract schema per DEVELOPMENT_WORKSTREAM, close out when Phase 2 is a separate session. No operator re-scope; the plan is the authoritative spec.
+
+3. **Phase 1B stub — Learning #29 22nd consecutive mechanical validation.** Grep-before-insert pattern `Session 58|### What Session 58 Did|### Session 57 Handoff Evaluation|Post-Session-58` → 15 hits, all pre-existing forward references in Session 57's handoff. Stub written BEFORE any technical work.
+
+4. **Task tracking — 7 tasks via TaskCreate.** Tracked each through pending → in_progress → completed.
+
+5. **Parallel Read batches — Learning #34 11th consecutive post-promotion validation.** One batch: plan §4 + §9 Phase 1 + schemas.py + __init__.py (both) + schemas/v1/data.py + schemas/v1/__init__.py + test_data.py + test_data_agent_decoupling.py + data_agent_package directory listing + fixtures/ directory listing + fixtures.py helpers + USAGE.md + feedback memory. Zero "File has not been read yet" errors on 6 subsequent Edits.
+
+6. **Schema design (`packages/data-agent/.../schemas.py`).** Added 4 new classes + 1 import (`model_validator`) + 4 entries in `__all__`. Total +77 lines. Classes in file order: `ColumnMetadata` (7 fields), `ProducerMetadata` (5 fields + `producer_type` Literal of 4 values), `DataSourceEntry` (20 fields including `extra: dict[str, Any]` producer-extension point + `entity_kind` Literal of 6 values), `DataSourceInventory` (5 fields + cross-field validator). The `@model_validator(mode="after")` on `DataSourceInventory` walks `entries` × `producers` and raises `ValueError` with the set of dangling `producer_id` values + set of known producers (enables debugging without a second round-trip). Q1/Q8/Q9/Q10 resolved per plan defaults (`float | None`, JSON-only, Literal-pinned, free-text `business_domain`).
+
+7. **Re-exports in three places.** `packages/data-agent/.../__init__.py` (+4 names in import + +4 in `__all__`), `src/model_project_constructor/schemas/v1/data.py` (+4 in import + +4 in `__all__`), `src/model_project_constructor/schemas/v1/__init__.py` (+4 in import + +4 in `__all__`). Ruff `--fix` applied once for import ordering; zero behavioral change.
+
+8. **Test file (`tests/data_agent_package/test_inventory_schemas.py`).** 33 tests across 6 test classes: `TestColumnMetadata` (3 tests — minimal / full / extra-forbidden), `TestProducerMetadata` (4+4 parametrized = 4 tests — all types parametrized / invalid rejected / optional defaults / extra-forbidden), `TestDataSourceEntry` (9+6 parametrized = 9 tests — minimal / all entity_kinds parametrized / invalid kind / columns+PK / relevance as float / freshness fields / extra dict extension / top-level extra forbidden / schema_version Literal), `TestDataSourceInventory` (7 tests — happy path / empty entries / dangling producer_id / multi-producer+entry / schema_version Literal / extra-forbidden / round-trip), `TestSampleCuratedFixture` (1 test — fixture validates). Test helpers `_make_producer` / `_make_entry` / `_make_inventory` mirror the `make_data_request` / `make_data_report` pattern in `tests/schemas/fixtures.py`.
+
+9. **Sample curated fixture (`tests/fixtures/sample_curated_inventory.json`).** 2 entries (`public.claim_events`, `public.subrogation_outcomes`) + 1 producer (`curated:claims-analytics-team`) + full column metadata per entry including primary-key flags + foreign-key target on `subrogation_outcomes.claim_id` → `claim_events.claim_id`. Ready for Phase 2/3 as a fake-producer input. Regression-tested by `TestSampleCuratedFixture::test_fixture_validates` to prevent drift.
+
+10. **USAGE.md updates.** Public-API list expanded from 6 schema names (`DataGranularity`, `DataReport`, `DataRequest`, `Datasheet`, `PrimaryQuery`, `QualityCheck`) to 10 (adds `ColumnMetadata`, `DataSourceEntry`, `DataSourceInventory`, `ProducerMetadata`). New "Data source inventory" section (~25 lines) naming the four producer classes (curated, automated, interview, external_catalog) and pointing to the plan + sample fixture.
+
+11. **CHANGELOG Session 58 entry at top of Unreleased** — **26th consecutive structure match** (context / Changed / Added / Removed / Verified / Unchanged intentionally / Next). All numeric claims pasted from live pytest/ruff/mypy output (Learning #39 applied — 4th instance).
+
+12. **BACKLOG Learning #26 Session #28 of application.** Removed "Data source inventory — Phase 1: Contract schema" (shipped). BACKLOG net change: 6 `[ ]` → 5 `[ ]`, 0 `[x]` → 0 `[x]`.
+
+13. **Verification — all four gate commands green.** `uv run pytest -q` → **509/509 passing** @ **97.25% coverage** (was 476 @ 97.19; +33 tests, +0.06% coverage). `uv run ruff check src/ tests/ packages/` → `All checks passed!` (after one `--fix` pass for import ordering). `uv run mypy src/` → `Success: no issues found in 48 source files`. `uv run mypy packages/data-agent/src/` → `Success: no issues found in 12 source files`. Decoupling guarantee test `tests/test_data_agent_decoupling.py` green (confirmed in full suite).
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Read SAFEGUARDS + SESSION_RUNNER + SESSION_NOTES ACTIVE TASK + Session 57 handoff + all 20 gotchas before any action. Parallel-Read the 9 context files including plan §4 + §9 Phase 1 before any Edit. Verified via smoke-test `uv run python -c "from model_project_constructor_data_agent import DataSourceInventory..."` that imports work before writing tests. Read existing test patterns (`tests/schemas/fixtures.py` helper style, `test_data.py` test-class shape) before drafting new tests.
+- **Stakeholder corrections:** 0. Operator's "work on BACKLOG item 1" was unambiguous; plan §9 Phase 1 gave the scope; no re-scopes or re-clarifications needed.
+- **What I got right:** (a) **Followed the plan's refinement discretion (gotcha #9) without over-exercising it.** Kept all field names from plan §4 verbatim; no cosmetic churn. The only "refinement" was adding a `TestSampleCuratedFixture::test_fixture_validates` drift-protection test — a one-test addition that didn't require plan updates. (b) **Used the data-agent-package `StrictBase` for all four new types** per gotcha #14; zero coupling to the main-package `StrictBase`. (c) **Cross-field validator error message includes both dangling and known producer_ids.** Enables debugging without a second validation round-trip; future Phase 2 producers will surface dangling-id bugs with one clear message. (d) **Re-export identity checked in a test** (`test_both_reexport_paths_import_same_class` asserts `DSI_v1 is DataSourceInventory is DSI_v1_data`). Pins the re-export pattern; a future drift that creates a second class is an immediate test failure. (e) **Sample fixture includes a FK relationship** (`subrogation_outcomes.claim_id` → `claim_events.claim_id`). Not strictly required by plan §9 Phase 1 step 5 but lets Phase 2/3 exercise the FK path without constructing a second fixture. (f) **`extra: dict[str, Any]` tested both directions** per gotcha #12 — positive (`test_extra_field_accepts_producer_specific_keys`) + negative (`test_top_level_extra_keys_still_forbidden`). Without both, a future "tightening" of the schema could silently remove the extension point. (g) **Parametrized tests for Literal enforcement** (`test_all_producer_types_accepted`, `test_all_entity_kinds_accepted`). Adding a new Literal value in a future version now requires a parametrize list update AND a test, not just a type annotation change — the test surface tracks the contract surface. (h) **Learning #29 22nd consecutive, Learning #34 11th post-promotion, Learning #39 4th instance.** All discipline counters held. (i) **Task-tracking discipline.** 7 tasks through pending → in_progress → completed; no abandoned tasks.
+- **What I got wrong:** (a) **Initial import-ordering in the new `__init__.py` entries was alphabetical-by-eye but not ruff-compliant.** I placed `DataSourceEntry` / `DataSourceInventory` before `Datasheet` (case-insensitive alphabetical feels natural), but ruff sorts case-sensitively — uppercase `D-S` < uppercase `D-a` is false, ruff wants `DataSourceEntry` after `Datasheet`. Caught by `ruff check`; fixed by `ruff --fix`. ~30 second cost. -0.25 (small; autofix resolved it cleanly). (b) **Ran `uv run pytest tests/data_agent_package/test_inventory_schemas.py -q` as a first sanity check and got a misleading "coverage failure" because single-file pytest runs against the 95% gate show 10.86% coverage.** Not a real issue — the full suite recovers to 97.25% — but I should have either used `--no-cov` for the sanity check or skipped directly to the full suite. Trivial. -0.0 (ignored the noise; full suite confirmed green). (c) **One progress-narration check during the session.** No "Let me..." phrasing observed on my scan; Learning #30 compliance holds. -0.0.
+- **Quality bar vs previous sessions:** Comparable to Session 36 (retry kwarg implementation), Session 52 (resume demotion), Session 53 (JSON parser tolerance) — all single-file / single-concern implementation sessions whose deliverable is schema or control-flow code with high test coverage. Slightly above average on test-per-class ratio (9 tests for `DataSourceEntry`'s 20 fields is healthy; parametrized Literals cover 10 more in-line). On par with Session 56 for close-out completeness and on par with Session 57 for handoff-package reuse ROI. Net self-score: **9.5/10** (deduction: -0.25 ruff import-ordering miss + -0.25 one cycle burned on single-file-pytest coverage noise).
+
+### Phase 3C: Learnings
+
+**Learning #29 grep-before-insert — 22nd consecutive clean validation.** No heading-duplication fumble in Session 58. Running count: 22. Institutional reliability confirmed.
+
+**Learning #34 parallel-Read-before-parallel-Edit — 11th consecutive post-promotion validation.** One 9-call batch, 6 subsequent Edits, zero "File has not been read yet" errors. Running count: 11 post-promotion. The habit is load-bearing; mechanically reliable.
+
+**Learning #38 read filing-session provenance — 5th-instance validation.** Session 58's grounding was Session 57's plan (the filing session). Plan §4 field-by-field rationale + §9 Phase 1 scope + gotchas list all converted to code decisions without re-derivation. Running count: 5 instances. Candidate for PROMOTION next session if it holds.
+
+**Learning #39 grep-inventory-derived prose numbers re-verified at write time — 4th-instance validation.** CHANGELOG Verified bullet cites fresh pytest (509/509 @ 97.25%) / ruff / mypy output. No memory-based numbers. Running count: 4 instances. Candidate for PROMOTION next session if it holds.
+
+**Candidate Learning #40 (sibling-package pattern before prompt edits) — no instance this session.** Not a prompt-edit session. 1st instance still stands (Session 56). Carry forward.
+
+**Candidate Learning #41 (shared-abstraction check for adjacent BACKLOG items) — no concrete instance this session.** Session 58's BACKLOG item is Phase 1 of a plan Session 57 already framed as an architectural contract — the shared abstraction is explicit. The learning's mechanical test (do adjacent items produce / consume the same data shape?) is satisfied by design. No new instance to log; 1st instance (Session 57) still stands. Carry forward.
+
+**Candidate Learning #42 (new this session): when implementing a Pydantic cross-field validator, raise from `@model_validator(mode="after")` with BOTH the offending values AND the set of known-valid values in the error message.**
+
+> The data-source-inventory validator checks that every `DataSourceEntry.producer_id` resolves to a `ProducerMetadata.producer_id`. Simplest form: `if dangling: raise ValueError(f"dangling: {dangling}")`. Richer form (chosen): `raise ValueError(f"... do not resolve ...: {dangling}. Known producers: {sorted(known)}.")`. The cost is trivial (one f-string computation) and the benefit is concrete: when a Phase 2 producer later emits an inventory where `producer_id` has a typo (`information_schema_probe_v2` vs the declared `_v1`), the error message names both the typo AND the correct value in a single line. Future debuggers see "expected one of {v1}, got {v2}" not "dangling: {v2}" and then need a second grep to see what producers are declared.
+> **Mechanical:** every `@model_validator` that raises on a cross-field constraint should include the set/list of valid options in the error message when the valid set is known and small. Single-offender shape: `ValueError(f"{field} {value} must be one of {sorted(valid)}")`. Multi-offender shape: `ValueError(f"{field} values {offenders} not in {sorted(valid)}")`.
+> **Not applicable when** the valid set is large / unbounded (e.g., validating that a datetime is later than another — there's no "known-valid set" to print) OR when the valid set leaks sensitive data (e.g., user IDs). In those cases, the simple shape is correct.
+> **1st instance:** Session 58 (`DataSourceInventory._producer_ids_resolve`). Carry forward; needs 2 more instances before promotion.
+
+**Existing learnings load-bearing this session:**
+- **Learning #11** (trust code over plan for signatures): N/A this session — plan §4 signatures matched Pydantic v2 conventions without adjustment.
+- **Learning #18** (planning-to-implementation boundaries): Applied. ONE phase implemented. Did NOT start Phase 2 (information_schema producer) despite having a clear design in mind from plan §5.2. Phase 2 is Session 59's scope.
+- **Learning #21** (MAX_QUESTIONS / status-decision invariant): N/A this session — no DataAgent graph edits; no status-decision code touched.
+- **Learning #26** (BACKLOG discipline — remove shipped lines; do not `[x]`): Session #28 of application. Removed one line; no `[x]` drift; additive-only BACKLOG edits.
+- **Learning #28** (audit handoff specifics against code): Applied to Session 57's gotcha list. Verified each gotcha's claim against the code (e.g., gotcha #12's "`extra: dict[str, Any]` is load-bearing AND subtle" validated by running `entry.extra["custom_key"] == "value"` in a test).
+- **Learning #29** (grep-before-insert for stub): 22nd consecutive validation.
+- **Learning #30** (declarative progress narration): Active; no "Let me..." slippage.
+- **Learning #32** (historical-prose in append-only / freshness-tracked files): N/A this session — no CHANGELOG/SESSION_NOTES historical sections touched other than the standard Session 58 additions.
+- **Learning #34** (parallel-Read-before-parallel-Edit): 11th consecutive post-promotion validation.
+- **Learning #38** (filing-session provenance grep): 5th-instance validation. PROMOTION candidate next session.
+- **Learning #39** (grep-inventory numbers re-verified at write time): 4th-instance validation. PROMOTION candidate next session.
+- **Candidate Learning #42** (cross-field validator error messages name both offenders + known-valid set): 1st instance this session.
+
+### Phase 3D: Handoff to Session 59
+
+**Next deliverable (per operator's numerical-order directive + plan §9 Phase 2):**
+
+**BACKLOG item 1 — Data source inventory Phase 2: `information_schema` reference producer.** Add `ReadOnlyDB.get_information_schema(schemas: list[str] | None = None) -> list[dict]` method in `packages/data-agent/.../db.py`. Add `probe_information_schema(db, ...) -> DataSourceInventory` function in a new `packages/data-agent/.../discovery.py` module. Add `discover` CLI subcommand in `packages/data-agent/.../cli.py` with flags `--db-url`, `--output`, `--include-schemas`, `--rank-with-llm`, `--fake-llm`. Fake-DB / fake-LLM coverage only; live-DB deferred. Plan §9 Phase 2 pins scope + completion criteria + forecast gotchas. Probably 1-2 sessions depending on `--rank-with-llm` LLM method scope.
+
+Important considerations for Session 59:
+
+1. **Read plan §5.2 (producer public-API sketch) + §9 Phase 2 (scope + completion criteria + forecast gotchas) end-to-end BEFORE first Edit.** The plan's public-API sketch for `probe_information_schema` is prescriptive about the signature (`db, *, include_schemas, llm, request_context`); follow it unless you find a concrete reason to deviate.
+
+2. **Phase 1 contract schema is locked. You can import and USE `DataSourceInventory` / `DataSourceEntry` / `ProducerMetadata` / `ColumnMetadata` from `model_project_constructor_data_agent`.** Every field is tested (33 tests in `tests/data_agent_package/test_inventory_schemas.py`). The cross-field validator rejects dangling `producer_id`s — Phase 2 must construct `ProducerMetadata` BEFORE building entries, else the validator fails.
+
+3. **The sample curated fixture (`tests/fixtures/sample_curated_inventory.json`) is a valid reference shape.** 2 entries, 1 producer, full column metadata including a FK. Phase 2 can use it as a comparison target for what a valid `DataSourceInventory` JSON looks like, but the fixture itself is for Phase 2/3 consumers — Phase 2's producer will emit its OWN inventory, not parse this one.
+
+4. **`information_schema` dialect differences.** Per gotcha #2 of plan §9 Phase 2: target PostgreSQL + SQLite first; other dialects (MySQL / BigQuery / Snowflake) fall back to `NotImplementedError` or an empty-entries inventory with a `ProducerMetadata.notes` field naming the unsupported dialect. SQLite exposes `sqlite_master` rather than `information_schema` — the probe may need a dialect-switch; confirm with `db.url.drivername` or similar.
+
+5. **The `--rank-with-llm` flag is OPTIONAL for Phase 2 MVP.** If LLM ranking adds scope pressure, DEFER it — ranking without LLM is valid (`relevance_score=None`). Phase 2 closure does NOT require the ranking path if all other criteria are green.
+
+6. **Cross-field validator blast radius.** The `DataSourceInventory._producer_ids_resolve` validator fires AT CONSTRUCTION. If Phase 2's producer builds entries incrementally and assembles the inventory at the end, the validator runs once at the end. If Phase 2 tries to stream entries into a partial inventory (not recommended), the validator may reject intermediate states. Build complete inventory in one `DataSourceInventory(...)` call.
+
+7. **`extra: dict[str, Any]` is a deliberate extension point for the `information_schema` probe.** Phase 2 can include PostgreSQL-specific metadata here (tablespace, oid, replica status) without polluting the core schema. Test that the probe's output passes round-trip through `model_dump_json` → `model_validate_json`.
+
+8. **Phase 2 gotchas list on plan §9 Phase 2 names: `information_schema` dialects, `rank_candidate_tables` LLM method, `--fake-llm` flag.** Read those carefully before scoping.
+
+9. **Decoupling guarantee still applies.** Phase 2 stays inside `packages/data-agent/`; no `IntakeReport` imports. `tests/test_data_agent_decoupling.py` verifies.
+
+10. **`tests/data_agent_package/test_inventory_schemas.py` tests should remain UNCHANGED by Phase 2.** They pin the contract; Phase 2 is a producer implementation. If Phase 2 needs to modify any of those tests, that's a signal the contract is changing — stop and re-open Phase 1 instead of editing tests.
+
+11. **Memory `feedback_data_source_discovery.md` auto-loads in Session 59's context.** It reaffirms the architectural invariants; if Phase 2 is tempted to embed discovery inside `DataAgent.run()`, the memory is the citation for pushing back.
+
+**Future deliverables (numerical order continuing):**
+- **Item 2 (after Phase 2):** Data source inventory Phase 3 — consumer integration. One session, biggest Phase.
+- **Item 3 (optional):** Data source inventory Phase 4 — intake coupling. Deferred unless pilot demands.
+- **Item 4:** Statistical terminology glossary. One session.
+- **Item 5:** Tutorial renderer: migrate to MkDocs. Probably 1-2 sessions.
+
+**Commits ahead of origin at Session 58 close-out: 3** (Session 56 `4818486` + Session 57 `f124248` + this session's pending commit). Push per operator instruction.
+
+### Gotchas for Session 59
+
+1. **Post-Session-58 pre-commit state:** pytest **509/509 passing** @ **97.25% coverage** with `Required test coverage of 95% reached`. ruff clean (`src/ tests/ packages/`). mypy 0 issues in both `src/` (48 files) and `packages/data-agent/src/` (12 files). Deltas this session: `packages/data-agent/src/model_project_constructor_data_agent/schemas.py` (+77 lines, 4 new classes + 1 import + 4 `__all__` entries); `packages/data-agent/src/model_project_constructor_data_agent/__init__.py` (+8 lines); `src/model_project_constructor/schemas/v1/data.py` (+8 lines); `src/model_project_constructor/schemas/v1/__init__.py` (+8 lines); `packages/data-agent/USAGE.md` (+28 lines); `tests/data_agent_package/test_inventory_schemas.py` (+~250 lines, 33 tests, new file); `tests/fixtures/sample_curated_inventory.json` (+~85 lines, new file); `CHANGELOG.md` (+1 Session 58 entry at top of Unreleased); `BACKLOG.md` (-1 shipped line); `SESSION_NOTES.md` (Session 58 handoff).
+
+2. **BACKLOG at Phase 0:** **5 `[ ]`, 0 `[x]`.** Learning #26 Session #29 of application. Phase 0 check + close-out check both mandatory. Current numerical order: (1) Data source inventory Phase 2 `information_schema` producer, (2) Phase 3 consumer integration, (3) Phase 4 (optional) intake coupling, (4) Statistical terminology glossary, (5) Tutorial renderer MkDocs migration.
+
+3. **Learning #29 mechanical — 22nd consecutive validation in Session 58.** Continue: grep-before-insert for stub pattern `Session 59|### What Session 59 Did|### Session 58 Handoff Evaluation|Post-Session-59`.
+
+4. **Learning #34 POST-PROMOTION 11th consecutive validation in Session 58.** For Phase 2 implementation, a single parallel batch should cover: `packages/data-agent/src/model_project_constructor_data_agent/{db,cli,llm,anthropic_client,agent,nodes,graph}.py` + `tests/data_agent_package/` directory listing + `docs/planning/data-source-inventory-contract-plan.md` §5.2 + §9 Phase 2 + BACKLOG + CHANGELOG top + `tests/fixtures/sample_curated_inventory.json` (for reference shape) + existing `tests/data_agent_package/test_inventory_schemas.py` (to understand the contract surface Phase 2 consumes).
+
+5. **Learning #38 5th-instance validation in Session 58. PROMOTION candidate next session.** For Session 59's Phase 2 scope, the "filing session" IS Session 57 (the plan document) + Session 58 (the contract now exists). Read plan §5.2 + §9 Phase 2 end-to-end before first Edit.
+
+6. **Learning #39 4th-instance validation in Session 58. PROMOTION candidate next session.** Any CHANGELOG entry, plan update, or gotcha in Session 59 that cites counts (test counts, coverage %, file counts, line ranges) runs the grep/command fresh at write time. Memory-based numbers are a protocol violation.
+
+7. **Candidate Learning #40 (sibling-package pattern before prompt edits).** Not applicable to Session 59 Phase 2 (DB/discovery code, not prompt-edit). Carry forward.
+
+8. **Candidate Learning #41 (shared-abstraction check for adjacent BACKLOG items).** 1st instance Session 57. N/A for Phase 2 (same plan, same abstraction). Carry forward.
+
+9. **Candidate Learning #42 (NEW this session — cross-field validator error messages name both offenders + known-valid set).** 1st instance Session 58. Apply during Phase 2 if any new validators land (e.g., an `--include-schemas` flag that rejects unknown schema names — the error should list BOTH the unknown input AND the set of discoverable schemas). Carry forward; needs 2 more instances before promotion.
+
+10. **The sample curated fixture (`tests/fixtures/sample_curated_inventory.json`) is a valid REFERENCE shape, not a Phase 2 input.** Phase 2's `information_schema` probe emits its OWN inventory (`producer_type="automated"`). The fixture exists so Phase 2 (and Phase 3) can verify "what does a valid `DataSourceInventory` JSON look like" without re-deriving it.
+
+11. **`DataSourceInventory._producer_ids_resolve` validator fires at construction.** Phase 2 must build `ProducerMetadata` first, then entries referencing its `producer_id`, then `DataSourceInventory(entries=..., producers=...)`. Incremental / partial construction will reject.
+
+12. **Phase 2 must NOT modify `tests/data_agent_package/test_inventory_schemas.py`.** Those tests pin the contract; a change there signals a contract modification, not a producer implementation.
+
+13. **`information_schema` dialect coverage:** PostgreSQL + SQLite for Phase 2 MVP. Other dialects = `NotImplementedError` or empty-inventory + notes. Don't over-scope.
+
+14. **`--rank-with-llm` flag is OPTIONAL in Phase 2.** If scope pressure, defer to a post-Phase-2 follow-up. Phase 2 closure does not require it.
+
+15. **Decoupling guarantee preserved.** `tests/test_data_agent_decoupling.py` walks every `packages/data-agent/.../*.py` file and rejects `IntakeReport` / `schemas.v1.intake` imports. Phase 2 adds `discovery.py`; no intake import allowed.
+
+16. **CHANGELOG 26-consecutive-structure match in Session 58.** Continue: context paragraph / Changed (multiple) / Added / Changed / Removed / Verified / Unchanged intentionally / Next bullet. Session 59 = 27th match target.
+
+17. **`probability` vs `likelihood`** — durable user correction. Any LLM-adjacent prose uses `probability` for P(event). Phase 2's `--rank-with-llm` LLM call is the natural trigger for this; if the prompt says "likelihood" for P(relevance), swap to "probability."
+
+18. **Upstream-methodology risk unchanged.** Do NOT edit `docs/methodology/{README,HOW_TO_USE,ITERATIVE_METHODOLOGY,workstreams/*}.md`.
+
+19. **Operator's durable directive (still active):** "work on backlog items in numerical order; 1 per session." Session 59's item is BACKLOG item 1 (Data source inventory Phase 2).
+
+20. **Memory `feedback_data_source_discovery.md` auto-loads.** Architectural invariants (discovery upstream, inventory interface, consumption downstream) enforced by plan + memory. Any future session that considers embedding discovery inside the data agent's `run()` path should cite a concrete use case, not preference.
+
+### Session 57 ARCHIVED ACTIVE TASK
 **Task:** Session 57 — Plan (architectural): data-source-inventory contract. Replace BACKLOG item 1's single-feature framing ("Data agent: metadata discovery mode") with a multi-phase architectural plan after operator reframe: discovery is a separate activity upstream of the data agent; a contract is the plug-in boundary; multiple producers feed one consumer shape.
 
-**Status:** Session 57 COMPLETE. Plan written to `docs/planning/data-source-inventory-contract-plan.md` (~640 lines / 14 sections). Operator's architectural guidance captured verbatim + saved as durable memory `feedback_data_source_discovery.md`. BACKLOG: 3 `[ ]` → 6 `[ ]` (1 line removed, 4 per-phase lines added). CHANGELOG 25th consecutive structure match. Zero production code edited. Verification: pytest **476/476 passing** @ **97.19% coverage** (unchanged from pre-session — no source / test edits). ruff clean. mypy 0 issues in both `src/` (48 files) and `packages/data-agent/src/` (12 files). Commit pending this turn. Next session: BACKLOG item 1 (Data source inventory Phase 1: contract schema).
+**Status:** Session 57 COMPLETE.
+
+---
 
 ### Session 56 Handoff Evaluation (by Session 57)
 

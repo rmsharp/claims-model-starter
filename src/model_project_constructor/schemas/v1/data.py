@@ -14,19 +14,27 @@ package and the re-export propagates automatically.
 from __future__ import annotations
 
 from model_project_constructor_data_agent.schemas import (
+    ColumnMetadata,
     DataGranularity,
     DataReport,
     DataRequest,
     Datasheet,
+    DataSourceEntry,
+    DataSourceInventory,
     PrimaryQuery,
+    ProducerMetadata,
     QualityCheck,
 )
 
 __all__ = [
+    "ColumnMetadata",
     "DataGranularity",
     "DataReport",
     "DataRequest",
+    "DataSourceEntry",
+    "DataSourceInventory",
     "Datasheet",
     "PrimaryQuery",
+    "ProducerMetadata",
     "QualityCheck",
 ]
