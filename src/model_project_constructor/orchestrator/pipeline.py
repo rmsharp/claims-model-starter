@@ -24,7 +24,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from model_project_constructor.orchestrator.adapters import (
     intake_report_to_data_request,
@@ -129,6 +129,7 @@ class PipelineConfig:
     repo_target: RepoTarget
     checkpoint_dir: Path
     correlation_id: str = field(default="")
+    resume_from: ResumePoint | None = None
 
     def __post_init__(self) -> None:
         if not self.correlation_id:
@@ -151,6 +152,7 @@ class PipelineResult:
     data_report: DataReport | None = None
     project_result: RepoProjectResult | None = None
     failure_reason: str | None = None
+    resume_point: ResumePoint | None = None
 
     @property
     def project_url(self) -> str | None:
@@ -177,62 +179,99 @@ def run_pipeline(
     """
 
     checkpoint_store = store or CheckpointStore(config.checkpoint_dir)
+    resume = config.resume_from
 
-    intake_report = intake_runner()
-    checkpoint_store.save(
-        _envelope(
-            run_id=config.run_id,
-            correlation_id=config.correlation_id,
-            source="orchestrator",
-            target="data",
-            payload_type="IntakeReport",
-            payload=intake_report.model_dump(mode="json"),
-        )
-    )
-    if intake_report.status != "COMPLETE":
-        return PipelineResult(
-            run_id=config.run_id,
-            status="FAILED_AT_INTAKE",
-            intake_report=intake_report,
-            failure_reason=(
-                f"intake_status={intake_report.status}; "
-                f"missing_fields={intake_report.missing_fields}"
-            ),
+    if resume == "already_complete":
+        raise ValueError(
+            f"Run {config.run_id!r}: already_complete — nothing to resume."
         )
 
-    data_request = intake_report_to_data_request(intake_report, config.run_id)
-    checkpoint_store.save(
-        _envelope(
-            run_id=config.run_id,
-            correlation_id=config.correlation_id,
-            source="orchestrator",
-            target="data",
-            payload_type="DataRequest",
-            payload=data_request.model_dump(mode="json"),
+    # Intake stage — execute unless resume says a later stage is the
+    # re-execution point. When loaded, halt logic does not fire (the
+    # saved envelope is treated as trusted predecessor output; see
+    # resume-from-checkpoint-plan.md §11 risk #5).
+    if resume is None or resume == "intake":
+        intake_report = intake_runner()
+        checkpoint_store.save(
+            _envelope(
+                run_id=config.run_id,
+                correlation_id=config.correlation_id,
+                source="orchestrator",
+                target="data",
+                payload_type="IntakeReport",
+                payload=intake_report.model_dump(mode="json"),
+            )
         )
-    )
+        if intake_report.status != "COMPLETE":
+            return PipelineResult(
+                run_id=config.run_id,
+                status="FAILED_AT_INTAKE",
+                intake_report=intake_report,
+                failure_reason=(
+                    f"intake_status={intake_report.status}; "
+                    f"missing_fields={intake_report.missing_fields}"
+                ),
+                resume_point=resume,
+            )
+    else:
+        intake_report = cast(
+            IntakeReport,
+            checkpoint_store.load_payload(config.run_id, "IntakeReport"),
+        )
 
-    data_report = data_runner(data_request)
-    checkpoint_store.save(
-        _envelope(
-            run_id=config.run_id,
-            correlation_id=config.correlation_id,
-            source="orchestrator",
-            target="website",
-            payload_type="DataReport",
-            payload=data_report.model_dump(mode="json"),
+    # Adapter stage — deterministic pure code. On resume from "data" or
+    # later, load the saved DataRequest instead of re-deriving (§6.3:
+    # the envelope on disk is ground truth for what the data agent saw).
+    if resume in (None, "intake", "intake_to_data_adapter"):
+        data_request = intake_report_to_data_request(intake_report, config.run_id)
+        checkpoint_store.save(
+            _envelope(
+                run_id=config.run_id,
+                correlation_id=config.correlation_id,
+                source="orchestrator",
+                target="data",
+                payload_type="DataRequest",
+                payload=data_request.model_dump(mode="json"),
+            )
         )
-    )
-    if data_report.status != "COMPLETE":
-        return PipelineResult(
-            run_id=config.run_id,
-            status="FAILED_AT_DATA",
-            intake_report=intake_report,
-            data_request=data_request,
-            data_report=data_report,
-            failure_reason=f"data_status={data_report.status}",
+    else:
+        data_request = cast(
+            DataRequest,
+            checkpoint_store.load_payload(config.run_id, "DataRequest"),
         )
 
+    # Data stage — halt logic only fires when data_runner executed.
+    if resume in (None, "intake", "intake_to_data_adapter", "data"):
+        data_report = data_runner(data_request)
+        checkpoint_store.save(
+            _envelope(
+                run_id=config.run_id,
+                correlation_id=config.correlation_id,
+                source="orchestrator",
+                target="website",
+                payload_type="DataReport",
+                payload=data_report.model_dump(mode="json"),
+            )
+        )
+        if data_report.status != "COMPLETE":
+            return PipelineResult(
+                run_id=config.run_id,
+                status="FAILED_AT_DATA",
+                intake_report=intake_report,
+                data_request=data_request,
+                data_report=data_report,
+                failure_reason=f"data_status={data_report.status}",
+                resume_point=resume,
+            )
+    else:
+        data_report = cast(
+            DataReport,
+            checkpoint_store.load_payload(config.run_id, "DataReport"),
+        )
+
+    # Website stage — always re-executes when reached. RepoTarget from
+    # config always wins on resume (§6.4); any prior saved RepoTarget is
+    # overwritten.
     checkpoint_store.save(
         _envelope(
             run_id=config.run_id,
@@ -262,6 +301,7 @@ def run_pipeline(
                 project_result.failure_reason
                 or f"website_status={project_result.status}"
             ),
+            resume_point=resume,
         )
 
     return PipelineResult(
@@ -271,6 +311,7 @@ def run_pipeline(
         data_request=data_request,
         data_report=data_report,
         project_result=project_result,
+        resume_point=resume,
     )
 
 

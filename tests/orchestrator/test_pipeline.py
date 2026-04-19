@@ -36,6 +36,10 @@ from model_project_constructor.orchestrator import (
     determine_resume_point,
     run_pipeline,
 )
+from model_project_constructor.orchestrator.adapters import (
+    intake_report_to_data_request,
+)
+from model_project_constructor.schemas.envelope import HandoffEnvelope
 from model_project_constructor.schemas.v1.data import DataReport, DataRequest
 from model_project_constructor.schemas.v1.intake import IntakeReport
 from model_project_constructor.schemas.v1.repo import (
@@ -553,3 +557,301 @@ class TestDetermineResumePoint:
         store = CheckpointStore(tmp_path)
         with pytest.raises(ResumeInconsistent, match="IntakeReport"):
             determine_resume_point(store, "run_invalid_c")
+
+
+# --- Resume execution (resume-from-checkpoint-plan §7.2) ----------------
+
+
+def _seed_envelope(
+    store: CheckpointStore,
+    run_id: str,
+    payload_type: str,
+    payload_model: IntakeReport | DataRequest | DataReport,
+    *,
+    source: Literal["intake", "data", "website", "orchestrator"] = "orchestrator",
+    target: Literal["intake", "data", "website"] = "data",
+) -> None:
+    """Write a real ``HandoffEnvelope`` to the store for resume-execution tests.
+
+    Unlike :func:`_touch_checkpoint` (used by the pure-function tests that
+    only read existence), these tests call ``load_payload``, which resolves
+    the payload through the schema registry — so the envelope must contain
+    a valid payload for the named type.
+    """
+
+    envelope = HandoffEnvelope(
+        run_id=run_id,
+        source_agent=source,
+        target_agent=target,
+        payload_type=payload_type,
+        payload_schema_version="1.0.0",
+        payload=payload_model.model_dump(mode="json"),
+        created_at=datetime.now(UTC),
+        correlation_id=run_id,
+    )
+    store.save(envelope)
+
+
+def _make_resume_config(
+    tmp_path: Path,
+    *,
+    run_id: str,
+    resume_from: Literal[
+        "intake",
+        "intake_to_data_adapter",
+        "data",
+        "website",
+        "already_complete",
+    ],
+) -> PipelineConfig:
+    target = RepoTarget(
+        host_url="https://fake.host.test",
+        namespace="data-science/model-drafts",
+        project_name_hint="subrogation_pilot",
+        visibility="private",
+    )
+    return PipelineConfig(
+        run_id=run_id,
+        repo_target=target,
+        checkpoint_dir=tmp_path / "checkpoints",
+        resume_from=resume_from,
+    )
+
+
+class TestRunPipelineResume:
+    """Phase 2 — ``run_pipeline`` honors ``PipelineConfig.resume_from``.
+
+    Per ``docs/planning/resume-from-checkpoint-plan.md`` §7.2: stages
+    earlier than the resume point load their envelopes from disk via
+    ``CheckpointStore.load_payload``; the resume point and every stage
+    after it re-executes. Halt logic (``FAILED_AT_*``) only fires when
+    the stage actually ran — §11 risk #5.
+    """
+
+    def test_default_behavior_unchanged_when_resume_from_is_none(
+        self, tmp_path: Path
+    ) -> None:
+        """Happy path with ``resume_from=None`` matches the pre-Phase-2
+        contract: every runner is called once and ``resume_point`` is
+        ``None`` on the result."""
+
+        intake = _load_intake()
+        data = _load_data()
+        client = FakeRepoClient()
+        agent = WebsiteAgent(client, ci_platform="gitlab")
+        config = _make_config(tmp_path, run_id="run_resume_none")
+
+        intake_calls = {"n": 0}
+        data_calls = {"n": 0}
+
+        def intake_runner() -> IntakeReport:
+            intake_calls["n"] += 1
+            return intake
+
+        def data_runner(_req: DataRequest) -> DataReport:
+            data_calls["n"] += 1
+            return data
+
+        result = run_pipeline(
+            config,
+            intake_runner=intake_runner,
+            data_runner=data_runner,
+            website_runner=agent.run,
+        )
+
+        assert result.status == "COMPLETE"
+        assert result.resume_point is None
+        assert intake_calls["n"] == 1
+        assert data_calls["n"] == 1
+
+    def test_s1_resume_intake_to_data_adapter_skips_intake_runner(
+        self, tmp_path: Path
+    ) -> None:
+        """S1 — intake envelope on disk; resume at
+        ``intake_to_data_adapter``. Intake loads; adapter + data +
+        website re-execute."""
+
+        intake = _load_intake()
+        data = _load_data()
+        run_id = "run_resume_s1"
+        pre_store = CheckpointStore(tmp_path / "checkpoints")
+        _seed_envelope(pre_store, run_id, "IntakeReport", intake)
+
+        client = FakeRepoClient()
+        agent = WebsiteAgent(client, ci_platform="gitlab")
+        config = _make_resume_config(
+            tmp_path, run_id=run_id, resume_from="intake_to_data_adapter"
+        )
+
+        intake_calls = {"n": 0}
+        data_calls = {"n": 0}
+
+        def intake_runner() -> IntakeReport:
+            intake_calls["n"] += 1
+            return intake
+
+        def data_runner(_req: DataRequest) -> DataReport:
+            data_calls["n"] += 1
+            return data
+
+        result = run_pipeline(
+            config,
+            intake_runner=intake_runner,
+            data_runner=data_runner,
+            website_runner=agent.run,
+        )
+
+        assert intake_calls["n"] == 0
+        assert data_calls["n"] == 1
+        assert result.status == "COMPLETE"
+        assert result.resume_point == "intake_to_data_adapter"
+        assert result.intake_report is not None
+        assert result.data_request is not None
+
+    def test_s2_resume_data_loads_request_from_disk_not_adapter(
+        self, tmp_path: Path
+    ) -> None:
+        """S2 — §6.3 decision: on resume from ``data``, the saved
+        ``DataRequest`` envelope is ground truth. The data runner sees
+        the on-disk request, not a freshly-derived one."""
+
+        intake = _load_intake()
+        data = _load_data()
+        run_id = "run_resume_s2"
+        pre_store = CheckpointStore(tmp_path / "checkpoints")
+        _seed_envelope(pre_store, run_id, "IntakeReport", intake)
+
+        # Build a valid DataRequest, then mark it so we can prove the
+        # loaded copy (not a fresh adapter output) reached the runner.
+        seeded_request = intake_report_to_data_request(intake, run_id)
+        tweaked = seeded_request.model_copy(
+            update={"source_ref": "pre-seeded-for-s2-test"}
+        )
+        _seed_envelope(pre_store, run_id, "DataRequest", tweaked, target="data")
+
+        client = FakeRepoClient()
+        agent = WebsiteAgent(client, ci_platform="gitlab")
+        config = _make_resume_config(tmp_path, run_id=run_id, resume_from="data")
+
+        intake_calls = {"n": 0}
+        observed: dict[str, DataRequest | None] = {"req": None}
+
+        def intake_runner() -> IntakeReport:
+            intake_calls["n"] += 1
+            return intake
+
+        def data_runner(req: DataRequest) -> DataReport:
+            observed["req"] = req
+            return data
+
+        result = run_pipeline(
+            config,
+            intake_runner=intake_runner,
+            data_runner=data_runner,
+            website_runner=agent.run,
+        )
+
+        assert intake_calls["n"] == 0
+        assert observed["req"] is not None
+        assert observed["req"].source_ref == "pre-seeded-for-s2-test"
+        assert result.status == "COMPLETE"
+        assert result.resume_point == "data"
+
+    def test_s3_resume_website_skips_intake_and_data_runners(
+        self, tmp_path: Path
+    ) -> None:
+        """S3 — intake + request + report on disk; resume at
+        ``website``. Only the website runner executes."""
+
+        intake = _load_intake()
+        data = _load_data()
+        run_id = "run_resume_s3"
+        pre_store = CheckpointStore(tmp_path / "checkpoints")
+        _seed_envelope(pre_store, run_id, "IntakeReport", intake)
+        request = intake_report_to_data_request(intake, run_id)
+        _seed_envelope(pre_store, run_id, "DataRequest", request, target="data")
+        _seed_envelope(pre_store, run_id, "DataReport", data, target="website")
+
+        client = FakeRepoClient()
+        agent = WebsiteAgent(client, ci_platform="gitlab")
+        config = _make_resume_config(tmp_path, run_id=run_id, resume_from="website")
+
+        intake_calls = {"n": 0}
+        data_calls = {"n": 0}
+
+        def intake_runner() -> IntakeReport:
+            intake_calls["n"] += 1
+            return intake
+
+        def data_runner(_req: DataRequest) -> DataReport:
+            data_calls["n"] += 1
+            return data
+
+        result = run_pipeline(
+            config,
+            intake_runner=intake_runner,
+            data_runner=data_runner,
+            website_runner=agent.run,
+        )
+
+        assert intake_calls["n"] == 0
+        assert data_calls["n"] == 0
+        assert result.status == "COMPLETE"
+        assert result.resume_point == "website"
+        assert result.project_result is not None
+
+    def test_halt_under_resume_records_resume_point_on_failure(
+        self, tmp_path: Path
+    ) -> None:
+        """Plan §11 risk #5 regression: a resumed run whose re-executed
+        stage fails returns ``FAILED_AT_*`` AND populates
+        ``resume_point`` so the operator sees the failure occurred
+        inside a resumed invocation."""
+
+        intake = _load_intake()
+        run_id = "run_resume_halt_data"
+        pre_store = CheckpointStore(tmp_path / "checkpoints")
+        _seed_envelope(pre_store, run_id, "IntakeReport", intake)
+        request = intake_report_to_data_request(intake, run_id)
+        _seed_envelope(pre_store, run_id, "DataRequest", request, target="data")
+
+        config = _make_resume_config(tmp_path, run_id=run_id, resume_from="data")
+
+        website_calls = {"n": 0}
+
+        def website_runner(
+            _i: IntakeReport, _d: DataReport, _t: RepoTarget
+        ) -> RepoProjectResult:
+            website_calls["n"] += 1
+            return _failed_repo_project_result("should not be called")
+
+        result = run_pipeline(
+            config,
+            intake_runner=lambda: intake,
+            data_runner=lambda req: _incomplete_data_report(req),
+            website_runner=website_runner,
+        )
+
+        assert result.status == "FAILED_AT_DATA"
+        assert result.resume_point == "data"
+        assert result.data_report is not None
+        assert result.data_report.status == "EXECUTION_FAILED"
+        assert website_calls["n"] == 0
+
+    def test_already_complete_raises_value_error(self, tmp_path: Path) -> None:
+        """``resume_from="already_complete"`` is a CLI-layer signal, not
+        an executable state. ``run_pipeline`` refuses before touching
+        any stage; Phase 3 will translate this to an operator-facing
+        exit code + message."""
+
+        config = _make_resume_config(
+            tmp_path, run_id="run_already_complete", resume_from="already_complete"
+        )
+
+        with pytest.raises(ValueError, match="already_complete"):
+            run_pipeline(
+                config,
+                intake_runner=_load_intake,
+                data_runner=lambda _req: _load_data(),
+                website_runner=lambda _i, _d, _t: _failed_repo_project_result("n/a"),
+            )
