@@ -33,15 +33,18 @@ from model_project_constructor_data_agent.anthropic_client import (
     AnthropicLLMClient,
 )
 from model_project_constructor_data_agent.db import ReadOnlyDB
+from model_project_constructor_data_agent.discovery import probe_information_schema
 from model_project_constructor_data_agent.llm import (
     LLMClient,
     PrimaryQuerySpec,
     QualityCheckSpec,
     SummaryResult,
+    TableRanking,
 )
 from model_project_constructor_data_agent.schemas import (
     DataRequest,
     Datasheet,
+    DataSourceEntry,
     QualityCheck,
 )
 
@@ -110,6 +113,73 @@ def run(
 
     output.write_text(json.dumps(report.model_dump(mode="json"), indent=2))
     typer.echo(f"wrote {output} ({report.status})")
+
+
+@app.command()
+def discover(
+    db_url: str = typer.Option(
+        ...,
+        "--db-url",
+        help="SQLAlchemy URL for the database to probe (read-only role recommended).",
+    ),
+    output: Path = typer.Option(
+        ...,
+        "--output",
+        "-o",
+        dir_okay=False,
+        writable=True,
+        help="Path to write the DataSourceInventory JSON.",
+    ),
+    include_schemas: list[str] = typer.Option(
+        [],
+        "--include-schemas",
+        help=(
+            "Repeatable: limit discovery to these schemas. Default: every "
+            "accessible schema except information_schema / pg_catalog."
+        ),
+    ),
+    rank_with_llm: bool = typer.Option(
+        False,
+        "--rank-with-llm",
+        help="Ask the LLM to rank each table's relevance to --request-context.",
+    ),
+    request_context: str | None = typer.Option(
+        None,
+        "--request-context",
+        help=(
+            "Free-text description of the downstream request; fed to the "
+            "LLM when --rank-with-llm is set."
+        ),
+    ),
+    model: str = typer.Option(
+        DEFAULT_MODEL,
+        "--model",
+        help="Claude model for --rank-with-llm.",
+    ),
+    fake_llm: bool = typer.Option(
+        False,
+        "--fake-llm",
+        help="Use a deterministic fake LLM client (CI / smoke-test only).",
+    ),
+) -> None:
+    """Probe a database's information_schema and write a DataSourceInventory JSON file."""
+    db = ReadOnlyDB(db_url)
+    db.connect()
+    try:
+        llm = (
+            _build_llm(fake_llm=fake_llm, model=model) if rank_with_llm else None
+        )
+        inventory = probe_information_schema(
+            db,
+            include_schemas=list(include_schemas) if include_schemas else None,
+            llm=llm,
+            request_context=request_context,
+        )
+    finally:
+        db.close()
+
+    output.write_text(json.dumps(inventory.model_dump(mode="json"), indent=2))
+    typer.echo(f"wrote {output} ({len(inventory.entries)} entries)")
 
 
 def _load_request(path: Path) -> DataRequest:
@@ -187,6 +257,24 @@ class _FakeCLIClient:
             known_biases=["placeholder values are not representative"],
             maintenance="Not applicable.",
         )
+
+    def rank_candidate_tables(
+        self,
+        entries: list[DataSourceEntry],
+        request_context: str | None,
+    ) -> list[TableRanking]:
+        """Deterministic fake ranking: first entry 0.9, each next 0.1 less (floor 0.0)."""
+        rankings: list[TableRanking] = []
+        for i, entry in enumerate(entries):
+            score = max(0.0, 0.9 - 0.1 * i)
+            rankings.append(
+                TableRanking(
+                    fully_qualified_name=entry.fully_qualified_name,
+                    relevance_score=score,
+                    relevance_reason=f"fake-llm deterministic rank #{i + 1}",
+                )
+            )
+        return rankings
 
 
 def main() -> Any:

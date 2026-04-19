@@ -38,10 +38,12 @@ from model_project_constructor_data_agent.llm import (
     PrimaryQuerySpec,
     QualityCheckSpec,
     SummaryResult,
+    TableRanking,
 )
 from model_project_constructor_data_agent.schemas import (
     DataRequest,
     Datasheet,
+    DataSourceEntry,
     QualityCheck,
 )
 
@@ -212,6 +214,54 @@ class AnthropicLLMClient:
             known_biases=[str(x) for x in parsed["known_biases"]],
             maintenance=str(parsed["maintenance"]),
         )
+
+    def rank_candidate_tables(
+        self,
+        entries: list[DataSourceEntry],
+        request_context: str | None,
+    ) -> list[TableRanking]:
+        """Rank candidate tables against a request context.
+
+        Called by ``discovery.probe_information_schema`` when
+        ``--rank-with-llm`` is set. Returns one :class:`TableRanking` per
+        input entry (in any order). Entries not returned by Claude are
+        assigned no ranking by the caller — ``relevance_score`` stays
+        ``None`` on the corresponding :class:`DataSourceEntry`.
+        """
+        system = (
+            "You are a senior P&C insurance data analyst. Given a candidate "
+            "list of database tables and a request context, rank each table "
+            "by its relevance to the request on a 0.0-1.0 scale."
+        )
+        table_summaries = "\n".join(
+            f"- {e.fully_qualified_name} "
+            f"({e.entity_kind}, {len(e.columns)} cols): "
+            f"{', '.join(c.name for c in e.columns[:8])}"
+            for e in entries
+        )
+        context = request_context or "(no explicit request context; rank by generality)"
+        user = (
+            f"Request context: {context}\n\n"
+            f"Candidate tables:\n{table_summaries}\n\n"
+            "Return a JSON array. Each element is an object with keys: "
+            '"fully_qualified_name" (verbatim from the input), '
+            '"relevance_score" (float 0.0-1.0), "relevance_reason" (one '
+            "sentence). Return ONLY the JSON array, no prose."
+        )
+        raw = self._call_claude(system, user)
+        parsed = _extract_json(raw)
+        if not isinstance(parsed, list):
+            raise LLMParseError(
+                f"rank_candidate_tables: expected JSON array, got {type(parsed).__name__}"
+            )
+        return [
+            TableRanking(
+                fully_qualified_name=str(item["fully_qualified_name"]),
+                relevance_score=float(item["relevance_score"]),
+                relevance_reason=str(item["relevance_reason"]),
+            )
+            for item in parsed
+        ]
 
     def _call_claude(self, system: str, user: str) -> str:
         response = self._client.messages.create(

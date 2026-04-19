@@ -24,8 +24,10 @@ from model_project_constructor_data_agent.llm import (
     PrimaryQuerySpec,
 )
 from model_project_constructor_data_agent.schemas import (
+    ColumnMetadata,
     DataGranularity,
     DataRequest,
+    DataSourceEntry,
 )
 
 
@@ -307,3 +309,90 @@ def test_default_construction_uses_anthropic_sdk(
     monkeypatch.setattr(anthropic, "Anthropic", fake_anthropic_ctor)
     client = AnthropicLLMClient()
     assert client._client is sentinel
+
+
+def _sample_entries() -> list[DataSourceEntry]:
+    return [
+        DataSourceEntry(
+            name="claims",
+            namespace="public",
+            fully_qualified_name="public.claims",
+            entity_kind="table",
+            columns=[
+                ColumnMetadata(
+                    name="claim_id", data_type="INTEGER", is_primary_key=True
+                ),
+                ColumnMetadata(name="loss_amount", data_type="NUMERIC(12,2)"),
+            ],
+            producer_id="information_schema_probe_v1",
+        ),
+        DataSourceEntry(
+            name="policies",
+            namespace="public",
+            fully_qualified_name="public.policies",
+            entity_kind="table",
+            columns=[
+                ColumnMetadata(
+                    name="policy_id", data_type="INTEGER", is_primary_key=True
+                ),
+            ],
+            producer_id="information_schema_probe_v1",
+        ),
+    ]
+
+
+def test_rank_candidate_tables_parses_json_array() -> None:
+    canned = """[
+        {
+            "fully_qualified_name": "public.claims",
+            "relevance_score": 0.92,
+            "relevance_reason": "target entity"
+        },
+        {
+            "fully_qualified_name": "public.policies",
+            "relevance_score": 0.41,
+            "relevance_reason": "join key source"
+        }
+    ]"""
+    fake, msgs = _fake_client([canned])
+    client = AnthropicLLMClient(client=fake, model="fake-model")
+
+    rankings = client.rank_candidate_tables(
+        entries=_sample_entries(),
+        request_context="subrogation recovery model",
+    )
+
+    assert len(rankings) == 2
+    assert rankings[0].fully_qualified_name == "public.claims"
+    assert rankings[0].relevance_score == pytest.approx(0.92)
+    assert rankings[1].relevance_reason == "join key source"
+    user_msg = msgs.calls[0]["messages"][0]["content"]
+    assert "subrogation recovery model" in user_msg
+    assert "public.claims" in user_msg
+
+
+def test_rank_candidate_tables_accepts_missing_request_context() -> None:
+    canned = (
+        '[{"fully_qualified_name": "public.claims", '
+        '"relevance_score": 0.5, "relevance_reason": "generic"}]'
+    )
+    fake, msgs = _fake_client([canned])
+    client = AnthropicLLMClient(client=fake, model="fake-model")
+
+    rankings = client.rank_candidate_tables(
+        entries=_sample_entries()[:1],
+        request_context=None,
+    )
+
+    assert len(rankings) == 1
+    user_msg = msgs.calls[0]["messages"][0]["content"]
+    assert "no explicit request context" in user_msg
+
+
+def test_rank_candidate_tables_non_array_raises() -> None:
+    fake, _ = _fake_client(['{"not": "an array"}'])
+    client = AnthropicLLMClient(client=fake, model="fake-model")
+    with pytest.raises(LLMParseError, match="expected JSON array"):
+        client.rank_candidate_tables(
+            entries=_sample_entries(), request_context="x"
+        )

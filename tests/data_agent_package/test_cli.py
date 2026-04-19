@@ -12,8 +12,9 @@ import json
 from pathlib import Path
 
 import pytest
+import sqlalchemy as sa
 from model_project_constructor_data_agent.cli import app
-from model_project_constructor_data_agent.schemas import DataReport
+from model_project_constructor_data_agent.schemas import DataReport, DataSourceInventory
 from typer.testing import CliRunner
 
 FIXTURE_REQUEST = (
@@ -125,3 +126,133 @@ def test_python_dash_m_entrypoint_works() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert "run" in result.stdout.lower()
+    assert "discover" in result.stdout.lower()
+
+
+def _seed_discover_db(db_path: Path, *, with_policies: bool = True) -> str:
+    engine = sa.create_engine(f"sqlite:///{db_path}")
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                sa.text("CREATE TABLE claims (claim_id INTEGER PRIMARY KEY, amount REAL)")
+            )
+            if with_policies:
+                conn.execute(
+                    sa.text(
+                        "CREATE TABLE policies (policy_id INTEGER PRIMARY KEY, state TEXT)"
+                    )
+                )
+    finally:
+        engine.dispose()
+    return f"sqlite:///{db_path}"
+
+
+def test_cli_discover_smoke(runner: CliRunner, tmp_path: Path) -> None:
+    """``discover`` writes a valid DataSourceInventory JSON."""
+    db_url = _seed_discover_db(tmp_path / "discover.db")
+
+    out = tmp_path / "inv.json"
+    result = runner.invoke(
+        app,
+        [
+            "discover",
+            "--db-url",
+            db_url,
+            "--output",
+            str(out),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "2 entries" in result.output
+
+    inv = DataSourceInventory.model_validate(json.loads(out.read_text()))
+    fqns = {e.fully_qualified_name for e in inv.entries}
+    assert fqns == {"main.claims", "main.policies"}
+    assert inv.producers[0].producer_type == "automated"
+
+
+def test_cli_discover_rank_with_fake_llm(runner: CliRunner, tmp_path: Path) -> None:
+    """``discover --rank-with-llm --fake-llm`` populates relevance_score deterministically."""
+    db_url = _seed_discover_db(tmp_path / "discover.db", with_policies=False)
+
+    out = tmp_path / "inv.json"
+    result = runner.invoke(
+        app,
+        [
+            "discover",
+            "--db-url",
+            db_url,
+            "--output",
+            str(out),
+            "--rank-with-llm",
+            "--fake-llm",
+            "--request-context",
+            "subrogation recovery",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+    inv = DataSourceInventory.model_validate(json.loads(out.read_text()))
+    assert len(inv.entries) == 1
+    entry = inv.entries[0]
+    assert entry.relevance_score == pytest.approx(0.9)
+    assert "fake-llm" in (entry.relevance_reason or "")
+
+
+def test_cli_discover_include_schemas_filter(
+    runner: CliRunner, tmp_path: Path
+) -> None:
+    """``--include-schemas`` filters discovery to the named schemas."""
+    db_url = _seed_discover_db(tmp_path / "discover.db")
+
+    out_main = tmp_path / "inv_main.json"
+    result_main = runner.invoke(
+        app,
+        [
+            "discover",
+            "--db-url",
+            db_url,
+            "--output",
+            str(out_main),
+            "--include-schemas",
+            "main",
+        ],
+    )
+    assert result_main.exit_code == 0, result_main.output
+    inv_main = DataSourceInventory.model_validate(json.loads(out_main.read_text()))
+    assert len(inv_main.entries) == 2
+
+    out_empty = tmp_path / "inv_empty.json"
+    result_empty = runner.invoke(
+        app,
+        [
+            "discover",
+            "--db-url",
+            db_url,
+            "--output",
+            str(out_empty),
+            "--include-schemas",
+            "nonexistent",
+        ],
+    )
+    assert result_empty.exit_code == 0, result_empty.output
+    inv_empty = DataSourceInventory.model_validate(json.loads(out_empty.read_text()))
+    assert inv_empty.entries == []
+    assert len(inv_empty.producers) == 1
+
+
+def test_cli_discover_unreachable_db_errors(runner: CliRunner, tmp_path: Path) -> None:
+    """discover against an unreachable DB exits non-zero (connect failure)."""
+    out = tmp_path / "inv.json"
+    result = runner.invoke(
+        app,
+        [
+            "discover",
+            "--db-url",
+            "postgresql://nobody:nobody@127.0.0.1:1/none",
+            "--output",
+            str(out),
+        ],
+    )
+    assert result.exit_code != 0
+    assert not out.exists()

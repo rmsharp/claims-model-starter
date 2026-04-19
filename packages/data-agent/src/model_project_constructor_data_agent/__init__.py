@@ -15,11 +15,13 @@ the data schemas from this package so existing pipeline code can still write
 
 from model_project_constructor_data_agent.agent import DataAgent
 from model_project_constructor_data_agent.db import DBConnectionError, ReadOnlyDB
+from model_project_constructor_data_agent.discovery import probe_information_schema
 from model_project_constructor_data_agent.llm import (
     LLMClient,
     PrimaryQuerySpec,
     QualityCheckSpec,
     SummaryResult,
+    TableRanking,
 )
 from model_project_constructor_data_agent.schemas import (
     ColumnMetadata,
@@ -52,4 +54,6 @@ __all__ = [
     "QualityCheckSpec",
     "ReadOnlyDB",
     "SummaryResult",
+    "TableRanking",
+    "probe_information_schema",
 ]

@@ -56,6 +56,22 @@ class SummaryResult:
     data_quality_concerns: list[str]
 
 
+@dataclass(frozen=True)
+class TableRanking:
+    """LLM output shape for one ranked entry from ``rank_candidate_tables``.
+
+    Emitted by LLM clients that implement the optional
+    ``rank_candidate_tables`` method (hasattr-dispatched by
+    ``discovery.probe_information_schema``). Not every ``LLMClient`` is
+    required to support ranking — query-generation-only clients can omit
+    the method.
+    """
+
+    fully_qualified_name: str
+    relevance_score: float
+    relevance_reason: str
+
+
 @runtime_checkable
 class LLMClient(Protocol):
     """Protocol every concrete LLM integration must satisfy.

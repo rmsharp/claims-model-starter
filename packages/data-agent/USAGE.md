@@ -181,6 +181,62 @@ rows = [
 pd.DataFrame(rows)
 ```
 
+## Example 4 — Data-source discovery (`discover` CLI)
+
+The package ships a reference producer for the data-source-inventory contract
+that probes a live database's `information_schema` and emits a valid
+`DataSourceInventory` JSON file. Useful as a standalone analyst tool (Phase 2
+of the inventory plan) and as a building block for automated pipeline flows.
+
+```bash
+# Discover every accessible schema except information_schema / pg_catalog:
+model-data-agent discover \
+    --db-url "postgresql+psycopg://readonly_user@db.internal/claims" \
+    --output inventory.json
+
+# Limit to specific schemas (repeatable flag):
+model-data-agent discover \
+    --db-url "postgresql+psycopg://readonly_user@db.internal/claims" \
+    --output inventory.json \
+    --include-schemas public \
+    --include-schemas claims_domain
+
+# Ask the LLM to rank each discovered table's relevance to a request context:
+model-data-agent discover \
+    --db-url "postgresql+psycopg://readonly_user@db.internal/claims" \
+    --output inventory.json \
+    --rank-with-llm \
+    --request-context "subrogation recovery classifier"
+```
+
+The command writes a JSON file conforming to `DataSourceInventory` and
+exits 0 with a one-line confirmation (`wrote inventory.json (N entries)`).
+When reflection fails (permission denied, unsupported dialect), the output
+still conforms to the contract — `entries` is empty and the single
+`ProducerMetadata` carries a `notes` field naming the cause.
+
+The same behavior is available in Python via `probe_information_schema`:
+
+```python
+from model_project_constructor_data_agent import (
+    ReadOnlyDB,
+    probe_information_schema,
+)
+
+db = ReadOnlyDB("postgresql+psycopg://readonly_user@db.internal/claims")
+db.connect()
+try:
+    inventory = probe_information_schema(
+        db,
+        include_schemas=["public"],
+        request_context="subrogation recovery model",
+    )
+finally:
+    db.close()
+
+print(f"{len(inventory.entries)} tables/views discovered")
+```
+
 ## Public API
 
 All names below are importable from the top-level package:
@@ -199,11 +255,13 @@ from model_project_constructor_data_agent import (
     DataSourceEntry,     # schema: one table/view/dataset entry
     DataSourceInventory, # schema: collection of entries + producer metadata
     ProducerMetadata,    # schema: which tool produced which entries
-    ReadOnlyDB,          # SQLAlchemy wrapper
+    probe_information_schema,  # automated producer (information_schema probe)
+    ReadOnlyDB,          # SQLAlchemy wrapper (.get_information_schema() for discovery)
     LLMClient,           # Protocol — implement this for alternate LLM vendors
     PrimaryQuerySpec,    # intermediate dataclass returned by LLMClient
     QualityCheckSpec,    # intermediate dataclass returned by LLMClient
     SummaryResult,       # intermediate dataclass returned by LLMClient
+    TableRanking,        # intermediate dataclass for LLM-ranked discovery results
     DBConnectionError,   # exception
 )
 from model_project_constructor_data_agent.anthropic_client import (
@@ -228,9 +286,12 @@ and multiple producer classes populate the same consumer shape:
 - **External catalog** — DataHub, Amundsen, Collibra, and similar metadata
   catalogs (future).
 
-Phase 1 ships the schema only. `DataRequest.data_source_inventory` and the
-downstream prompt integration land in a later phase; today's callers continue
-to work unchanged. See
+Phase 1 shipped the schema. Phase 2 ships the `information_schema` reference
+producer (Example 4 above): `probe_information_schema` + `model-data-agent
+discover` + `ReadOnlyDB.get_information_schema`. The downstream consumer
+integration (plumbing `DataRequest.data_source_inventory` through to the
+query-generation prompt) lands in a later phase; today's callers continue to
+work unchanged. See
 `docs/planning/data-source-inventory-contract-plan.md` for the full plan and
 `tests/fixtures/sample_curated_inventory.json` for a valid curated-producer
 example.
