@@ -24,9 +24,21 @@ The orchestrator (`run_pipeline`) drives the three agents in sequence, persistin
 
 ### Install the project
 
+Clone the repository (substitute your clone URL):
+
 ```bash
 git clone <repo-url> model_project_constructor
+```
+
+Enter the project directory:
+
+```bash
 cd model_project_constructor
+```
+
+Install dependencies:
+
+```bash
 uv sync --extra agents --extra ui --extra dev
 ```
 
@@ -332,14 +344,21 @@ GITLAB_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx
 
 Load the environment (choose one method):
 
+**Option A — direnv** (if you use it):
+
 ```bash
-# Option A: direnv (if you use it)
 echo "dotenv" > .envrc && direnv allow
+```
 
-# Option B: manual export
+**Option B — manual export:**
+
+```bash
 export $(grep -v '^#' .env | xargs)
+```
 
-# Option C: source a wrapper
+**Option C — source a wrapper:**
+
+```bash
 source <(grep -v '^#' .env | sed 's/^/export /')
 ```
 
@@ -359,16 +378,23 @@ uv run python scripts/run_pipeline.py --live --host github
 
 ### 5c: Customize the target
 
-Set the `MPC_NAMESPACE` environment variable to control where the project is created. **`MPC_NAMESPACE` must be a path, not a URL** — the GitLab and GitHub adapters look up the group/org by path, so pasting the full URL surfaces as an unhelpful `404`. The orchestrator rejects URL-prefixed values at config-load time:
+Set the `MPC_NAMESPACE` environment variable to control where the project is created. **`MPC_NAMESPACE` must be a path, not a URL** — the GitLab and GitHub adapters look up the group/org by path, so pasting the full URL surfaces as an unhelpful `404`. The orchestrator rejects URL-prefixed values at config-load time. Pick the form that matches your host:
+
+GitLab top-level group path:
 
 ```bash
-# GitLab: top-level group path
 export MPC_NAMESPACE="rmsharp-modelpilot"
+```
 
-# GitLab: nested group path
+GitLab nested group path:
+
+```bash
 export MPC_NAMESPACE="data-science/model-drafts"
+```
 
-# GitHub: org or personal account
+GitHub org or personal account:
+
+```bash
 export MPC_NAMESPACE="my-github-org"
 ```
 
@@ -380,11 +406,17 @@ ConfigError: MPC_NAMESPACE must be a group path, not a URL; got 'https://gitlab.
 Use the path only, e.g. 'rmsharp-modelpilot' instead of 'https://gitlab.com/rmsharp-modelpilot'.
 ```
 
-For self-hosted GitLab or GitHub Enterprise, set the host URL:
+For self-hosted GitLab or GitHub Enterprise, set the host URL for your platform:
+
+Self-hosted GitLab:
 
 ```bash
 export MPC_HOST_URL="https://gitlab.internal.company.com"
-# or
+```
+
+GitHub Enterprise:
+
+```bash
 export MPC_HOST_URL="https://github.mycompany.com/api/v3"
 ```
 
