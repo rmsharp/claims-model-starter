@@ -165,6 +165,30 @@
 - CHANGELOG.md: Session 51 entry at top of [Unreleased] (19th consecutive structure match)
 - 7 files modified for the Session 51 commit: `scripts/run_pipeline.py` (+118 approx; docstring + imports + helpers + argparse flag + main() resume block), `tests/scripts/test_run_pipeline_resume.py` (NEW, 252 LOC), `OPERATIONS.md` (§5 rewrite, +30/-10 approx), `docs/tutorial.md` (new Step 7, +30; renumber), `README.md` (+1/-1 line), `CHANGELOG.md` (+15), `BACKLOG.md` (-2), `SESSION_NOTES.md` (close-out)
 
+### Live-LLM round-trip addendum (post-commit, 2026-04-19)
+
+After the `feat(resume-phase3)` commit (`8671681`) was pushed (`ca827a2..8671681 master -> master`), operator authorized the deferred live-LLM round-trip. Session 51 stayed open to backfill the captured `run_id` into CHANGELOG (plan §16 sign-off requirement). Two findings were filed as new BACKLOG items rather than chased down inside Session 51's scope.
+
+**Run #1 — halt achieved.** `uv run python scripts/run_pipeline.py --live --host gitlab --llm data --model claude-sonnet-4-6 --db-url sqlite:///does-not-exist.db --run-id run_b1_resume_live_1776570556` halted at `FAILED_AT_DATA` after ~58 s of data-agent runtime against `claude-sonnet-4-6`. Saved 3 envelopes including `DataReport.json` with `status=EXECUTION_FAILED`. Cost ~$0.05–$0.10. Plan §13's predicted halt-on-bad-db behavior confirmed.
+
+**Run #2 — NOT executed.** Pre-resume inspection of `DataReport.json` showed `summary` field beginning `Data Agent run failed: graph crashed: Claude returned non-JSON: Expecting value: line 1 column 1 (char 0): '```json\n[...'`. Two bugs identified, both filed as BACKLOG items:
+
+1. **Resume-of-FAILED-data skips data-stage re-execution.** `determine_resume_point` returns `"website"` whenever `DataReport.json` exists, regardless of `status`. A run halted at `FAILED_AT_DATA` therefore resumes by skipping data + handing the FAILED report to website. Mirror image of plan §11 risk #5 (named the "loaded-data wrongly triggers halt" risk; missed this inverse). Symmetric fix candidates: (a) `determine_resume_point` reads payload status before deciding; (b) `run_pipeline` re-checks halt invariant on loaded payloads; (c) document operator-must-`rm DataReport.json` recipe in OPERATIONS §5. Decision deferred to a future plan-revision session.
+
+2. **Sonnet-4-6 markdown-fence wrapping breaks data-agent JSON parser.** Sonnet returned the quality-check list inside ` ```json … ``` ` fences; the data-agent's `json.loads` choked on the leading backticks. Either the prompt forbids fences explicitly or the parser strips a fence first. Reproducible. Was NOT triggered by the original Phase-3 work; surfaced because Session 51 used sonnet-4-6 instead of opus-4-7 for cost control on the round-trip.
+
+**Decision: option 3 (file findings, do NOT chase down in this session).** Rationale: Phase 3's deliverable is the CLI + tests + docs, not the upstream data-agent JSON robustness or the resume-of-FAILED-data design choice. Both are real bugs but each deserves its own session. Burning more LLM cost to "complete" a round-trip whose design gap is now known would be FM #2 ("keep going") + FM #8 ("redesign during implementation") wearing the disguise of "finish what you started." The captured halted `run_id` already satisfies plan §16's "captured live run_id documented in CHANGELOG" requirement.
+
+**Files modified in the addendum commit:** `CHANGELOG.md` (Session 51 entry: replaced "Live-LLM round-trip status: deferred" bullet with captured-evidence + findings bullets), `BACKLOG.md` (+2 lines: the two findings above), `SESSION_NOTES.md` (this addendum).
+
+**Pre-commit verification (addendum commit):** `uv run pytest -q` → **468/468 passing** @ **97.33% coverage** (no code changed; sanity check only). `uv run ruff check src/ tests/ packages/` → `All checks passed!`. `uv run mypy src/` → `Success: no issues found in 48 source files`.
+
+**BACKLOG net after addendum:** 5 `[ ]` (post-Session-51) + 2 `[ ]` (this addendum) = 7 `[ ]`, 0 `[x]`. Same line count as Phase 0; different items (resume-from-checkpoint + B-3 removed; two new findings added).
+
+**Self-assessment delta:** Session 51 self-score stays 9/10. The addendum's value is in surfacing two real bugs as BACKLOG items rather than as in-session scope creep. Captured `run_id=run_b1_resume_live_1776570556` is a concrete artifact future sessions can reproduce against.
+
+**Live-LLM checkpoint dir:** `.orchestrator/checkpoints/run_b1_resume_live_1776570556/` left in place for future debugging. ~6.6 KB, 3 files. Operator may `rm -rf` if the dev box's checkpoint dir is cluttered.
+
 ---
 
 ### Session 49 Handoff Evaluation (by Session 50)
