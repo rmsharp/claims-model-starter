@@ -15,6 +15,17 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-04-18 — Phase 3 of Evolution plan: `wiki/Evolution.md` initial write (Session 46)
+
+Closes the Evolution page + documentation convention plan per plan §7. Full-rewrite `docs/wiki/claims-model-starter/Evolution.md` (305 lines) organized thematically — concept origins / foundational architecture / intake-agent arc / data-agent arc / website-agent arc / platform-abstraction arc / methodology arc / current state — plus §9 chronological index (41 session rows) and a deliberately-omitted appendix. Explicit review gate per plan §4.6 / PROJECT_CONVENTIONS.md §4.7 engaged; operator approved after two rounds of revision (reclassification of Sessions 21/36 into Methodology arc, Sessions 40/41/42 into documentation-reorganization thread; expansion from 195 → 305 lines; addition of timeline table). Closes the full 3-phase Evolution plan (Phase 1 Session 44, Phase 2 Session 45, Phase 3 this session).
+
+- **Added:** `docs/wiki/claims-model-starter/Evolution.md` — 305-line decision-arc narrative with PROJECT_CONVENTIONS.md §4.4 banner (commit `f09ea57`, after Session 45), per-file opener, 8 thematic sections, 41-row chronological index, deliberately-omitted appendix.
+- **Added:** Evolution entries in `_Sidebar.md` (Reference section), `Home.md` (wiki-contents list), `Content-Recommendations.md` (Current wiki pages table).
+- **Found:** Session 23 (`docs/planning/scope-b-plan.md`, 822 lines) exists in SESSION_NOTES.md but has no CHANGELOG entry — surfaced during timeline construction and documented in Evolution.md §9. Pre-Session-33 drift example; the kind of gap Learning #26's Phase-0 BACKLOG/CHANGELOG/ROADMAP check now prevents.
+- **Verified:** plan §7.4 commands all pass — Evolution.md present, banner visible, `Deliberately omitted` grep → 2, wc -l → 305 (within plan's ~300-600 range), Sidebar/Home Evolution counts → 1 each. `uv run pytest -q` → **446/446 @ 97.27% coverage** (unchanged — wiki-only).
+- **Unchanged intentionally:** no code changes; no upstream-methodology edits; no append-only-history edits; `docs/planning/evolution-page-plan.md` preserved (plan-doc stays for future reference).
+- **Next:** Evolution plan fully shipped; BACKLOG line removed. Future Evolution rewrites follow PROJECT_CONVENTIONS.md §4 discipline.
+
 ### 2026-04-18 — Phase 2 of Evolution plan: archive directory + planning-doc move + banner + link updates (Session 45)
 
 Executes Phase 2 of `docs/planning/evolution-page-plan.md` per plan §6. Creates `docs/architecture-history/` and `git mv`s 5 completed plans + `architecture-approaches.pdf` + `initial_purpose.txt` out of the repo root and `docs/planning/`, prepends the PROJECT_CONVENTIONS.md §3 archive banner (dated 2026-04-18) to each moved `.md` + `.txt` file, and updates 16 link references across 8 inward files + 3 outward wiki files. `scope-b-plan.md` (B3 pending) and `evolution-page-plan.md` (Phases 2-3 active) stay in `docs/planning/` per plan §4.2 Framing B tiebreaker. Phase 3 remains — separate session per plan §9.

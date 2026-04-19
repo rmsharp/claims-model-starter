@@ -7,7 +7,115 @@
 ## ACTIVE TASK
 **Task:** Session 46 — **Execute Phase 3 of `docs/planning/evolution-page-plan.md`** (plan §7). Full-rewrite `docs/wiki/claims-model-starter/Evolution.md`: pre-work research (CHANGELOG classification table + SESSION_NOTES rationale extraction + thematic outline), narrative draft per §7.1 outline, "Deliberately omitted" appendix, Last-updated banner per PROJECT_CONVENTIONS.md §4.4, updates to `_Sidebar.md` and `Home.md`, optional Content-Recommendations.md Known-Gap removal. **Explicit review gate per plan §4.6:** present draft, stop for user review, commit only after explicit approval.
 
-**Status:** Session 45 complete. Phase 2 shipped — `docs/architecture-history/` created, 6 files moved with banners, 16 link updates across 11 files (8 inward + 3 outward).
+**Status:** Session 46 COMPLETE. Phase 3 shipped — `docs/wiki/claims-model-starter/Evolution.md` (305 lines) + sidebar/home/content-recommendations updates. The full 3-phase Evolution plan is now shipped. Review gate per plan §4.6 / PROJECT_CONVENTIONS.md §4.7 engaged; operator approved after two rounds of revision. Next session has no pre-assigned deliverable — pick from `BACKLOG.md` (7 `[ ]` items; Evolution-plan line removed).
+
+### Session 45 Handoff Evaluation (by Session 46)
+
+**Score: 9/10.** Session 45's handoff carried 15 gotchas, a clear critical path (plan §7 + PROJECT_CONVENTIONS.md §4), and explicit review-gate framing. Most gotchas fired usefully: gotcha #4 (review gate) applied mechanically; gotcha #5 (Learning #29 grep-before-insert) — 10th consecutive mechanical validation, zero stub fumble; gotcha #6 (Learning #26 BACKLOG check) applied at Phase 0 and close-out; gotcha #8 (probability vs likelihood) informed Evolution narrative language; gotcha #13 (`docs/architecture-history/` as reference target) shaped the §References section.
+
+- **What helped:** (a) Gotcha #14 — pre-forecast of 2-sub-commit split for time-box safety. Not used (session fit in one commit) but the option was reassuring during pre-work research. (b) Gotcha #4 — review gate framing was load-bearing; I stopped at the draft before committing exactly as specified, which enabled two productive rounds of operator revision. (c) Gotcha #15 — "pre-run verification commands in Phase 0" was applied (§7.4 verification baseline captured in orientation report), preventing reactive classification during close-out.
+- **What was missing:** (a) No pre-forecast of Session 23's CHANGELOG gap. Plan §7.1's CHANGELOG-classification step assumes CHANGELOG is complete; it isn't (Session 23 missing). Timeline construction surfaced the gap. -0.5. (b) Handoff said "one session, 2-3 hours focused work" but did not calibrate the line-count target — first draft came in at 195 lines vs plan's soft "~300-600" range, requiring an operator round-trip to expand. Pre-work research time was spent on classification when some should have been spent on length calibration. -0.5.
+- **What was wrong:** Nothing factually wrong. Plan §7 spec and handoff gotchas were accurate.
+- **ROI:** ~6× on the plan + handoff package. Plan §7 + 15 gotchas saved ~1-2 hours of discovery; the review-gate framing specifically saved an entire re-do cycle (without it, Session 46 might have committed the first 195-line draft and then rewritten it anyway).
+
+### What Session 46 Did
+
+**Deliverable:** Phase 3 of `docs/planning/evolution-page-plan.md` — `docs/wiki/claims-model-starter/Evolution.md` (305 lines, full-rewrite decision-arc narrative) + updates to `_Sidebar.md`, `Home.md`, `Content-Recommendations.md`. **COMPLETE.**
+**Started:** 2026-04-18
+**Completed:** 2026-04-18
+
+**What was done:**
+
+1. **Phase 0 orientation** — `SAFEGUARDS.md` + `SESSION_RUNNER.md` read in full; `SESSION_NOTES.md` ACTIVE TASK + Session 45 handoff + 15 gotchas read; `git status` (clean, 0 ahead) + `git log -10`; `BACKLOG.md` full-read (8 `[ ]`, 0 `[x]`); methodology dashboard (91/100 medium-risk active); ghost-session check clean. Plan §7.4 verification commands pre-run for baseline — Evolution.md absent, Sidebar/Home Evolution counts 0, Content-Recommendations no project-history/design-arc/evolution hit (so the Known-Gap spot-check was a no-op). Reported with tabulated Phase 3 deliverables table.
+
+2. **Phase 1B stub** — Grep-before-insert (Learning #29, 10th consecutive validation): 10 hits for "Session 46" heading patterns, all pre-existing forward refs in Session 45's handoff. Safe to insert. Wrote IN-PROGRESS stub to SESSION_NOTES.md ACTIVE TASK before technical work.
+
+3. **Pre-work research (plan §7.1)** — Full `CHANGELOG.md` read (380 lines, ~42 entries through Session 45). Classification pass: ~30 Include + 3 Subsume (originally Sessions 40/41/42 into intake MAX_QUESTIONS arc) + 3 Omit-as-operational (Sessions 21, 36, 39). Thematic outline drafted per plan §7.1 step 4. SESSION_NOTES rationale extraction handled in-line via the detailed CHANGELOG narrative (each entry already carries its WHY) plus orientation-phase reading of Session 45's handoff.
+
+4. **Draft v1 (195 lines)** — 8 themes + Deliberately-omitted appendix + reference list. Wrote Evolution.md; updated `_Sidebar.md` (Reference section between Architecture-Decisions and Glossary), `Home.md` (wiki-contents list), `Content-Recommendations.md` (Current wiki pages table row). Plan §7.4 verification: all pass. pytest 446/446 @ 97.27% unchanged.
+
+5. **Review gate round 1** — Presented draft to operator with 5 questions (line count vs plan's 300-600, sidebar placement, banner short-sha, classification of Sessions 21/36/39, tone). Operator directed: expand; keep Reference placement; leave banner at `f09ea57`; describe Sessions 21/36/39 before reclassifying. I described each and recommended Sessions 21+36 move to Methodology arc, Session 39 stay in appendix. Operator confirmed + additionally directed Sessions 40/41/42 → Methodology/documentation thread (not MAX_QUESTIONS arc).
+
+6. **Draft v2 (249 lines)** — Reclassified Sessions 21, 36, 40, 41, 42, 39 per operator direction. Added "Documentation-reorganization thread" subsection within §7 Methodology arc grouping Sessions 38, 40–45. Expanded rationale depth: `nodes.py:142` status-decision code shown literally; subrogation-brief architectural constraints enumerated; observability-via-composition choice articulated; zero-new-deps decision detailed; scaffold-bias choices explicit (TODO(data-science-team) comments, .qmd vs .ipynb, NotImplementedError stubs). Re-presented to operator with 3 options (approve / more expansion / revisions).
+
+7. **Review gate round 2** — Operator directed "add a timeline table." Added §9 Chronological index (41-row table: # / date / theme / summary). During construction I initially footnoted "Session 23 is absent from the numbering"; verification against SESSION_NOTES proved Session 23 DID happen (wrote `docs/planning/scope-b-plan.md`, 822 lines) but never wrote a CHANGELOG entry. Removed the incorrect footnote and added a timeline row for Session 23 with explicit gap note. Draft v3 = 305 lines, within plan's ~300-600 sanity range.
+
+8. **Review gate round 3** — Re-presented v3 with correction note. Operator approved "as-is."
+
+9. **Close-out** — CHANGELOG Session 46 entry at top of [Unreleased]. BACKLOG.md Evolution-plan line REMOVED (not flipped — the whole 3-phase plan is shipped). Net BACKLOG: 8 → 7 `[ ]`, still 0 `[x]` (Learning #26 discipline).
+
+### Phase 3B: Self-assess — 9/10
+
+- **Research before creative work:** Yes. Full CHANGELOG read before draft; plan §7 + PROJECT_CONVENTIONS.md §4 read in full; Session 45 handoff + 15 gotchas applied. Session 23 correction caught via direct SESSION_NOTES grep rather than trusting my initial memory claim.
+- **Stakeholder corrections needed:** 3 (line count, 21/36/39 classification, 40/41/42 classification). All absorbed cleanly; review-gate framing made the corrections productive rather than re-work. -0.5.
+- **What I got right:** (a) Review gate engaged correctly — 3 draft rounds, no unilateral commit. (b) Session 23 gap caught + honestly documented rather than hidden. (c) Learning #29 grep-before-insert applied mechanically — 10th consecutive. (d) Learning #26 BACKLOG remove-don't-flip applied at close-out (line removed since whole plan ships). (e) Timeline table added useful chronological-pivot capability. (f) Handoff-prescribed classification (Subsume/Omit) adjusted based on operator framing rather than defended. (g) CHANGELOG entry concise after initial attempt was felt too verbose — calibrated to operator preference on second try.
+- **What I got wrong:** (a) **First draft at 195 lines vs plan's 300-600 sanity range.** Should have calibrated for middle (~400) up front rather than shipping terse. -0.5. (b) **Initial Session 23 claim ("absent from numbering") was wrong.** Caught in verification but would have been better not made. Pattern: do not make "session N doesn't exist" claims without a grep first. -0.25 (absorbed into v3 catch). (c) **First CHANGELOG entry draft was too verbose** — user rejected it mid-edit. Should have calibrated length to match Session 45's CHANGELOG shape (~6-8 bullets, not 9) from the start.
+- **Quality bar:** Comparable to Session 20A/20B (wiki expansion) on creative-content discipline. Above Session 43 (planning session) on execution — planning was the full 650 lines of plan; Session 46 delivered 305 lines of synthesis plus iterative revision.
+
+### Phase 3C: Learnings
+
+No new Learning coined this session. Session 46's patterns are covered by existing Learnings:
+- **Learning #6** (plan-as-deliverable → phase-per-session): Applied. Phase 3 shipped; the full 3-phase Evolution plan now closes.
+- **Learning #20** (first-impression model choice): Not applicable (no LLM runs).
+- **Learning #26** (BACKLOG Phase-0 + close-out check): Session #14 of application. At close-out, Evolution-plan line REMOVED (not flipped, not narrowed) because the whole plan is now shipped.
+- **Learning #27** (paste-and-verify on ready handoff artifacts): Partially applied — plan §7's banner template + reference-list shape came directly from PROJECT_CONVENTIONS.md §4.4 verbatim.
+- **Learning #29** (grep-before-insert): 10th consecutive mechanical validation. Zero fumble.
+- **Learning #32** (plan criteria vs historical-prose): Applicable going forward — future rewrites of Evolution.md will contain extensive historical-description prose. A future planning session that writes a grep criterion against Evolution.md must account for historical entries that describe past state using the old term.
+
+**Candidate learning (NOT coined, pending 2nd instance):** *"When a plan specifies a soft range for deliverable size (e.g. '~300-600 lines'), calibrate first drafts to the middle of the range, not the floor. Shipping at or below the floor guarantees an operator round-trip for expansion."* This session's 195-line first draft is the 1st instance. If a future session hits the same pattern on a different deliverable (plan §N line budget, wiki page word count), coin as Learning #33.
+
+### Phase 3D: Handoff to Session 47
+
+**Critical path:** No pre-assigned deliverable. Session 47 reads `BACKLOG.md` (7 `[ ]` items) and picks one. Priorities (operator preference will dictate):
+
+1. **B-3 Web UI bridge** (optional; may be superseded by automated resume-from-checkpoint).
+2. **Automated resume-from-checkpoint** — CLI or orchestrator logic to resume a failed pipeline run from the last successful checkpoint. Scaffolding exists in `CheckpointStore`.
+3. **Session 23 CHANGELOG retro-entry** — NEW: Session 46 surfaced that Session 23 wrote a significant planning document (`scope-b-plan.md`, 822 lines) but never wrote a CHANGELOG entry. Evolution.md §9 timeline documents the gap. A retro-entry in CHANGELOG's `## [Unreleased]` for Session 23 would close this gap, following the "append-only" convention with an explicit "retro entry — missed at the time" note. Small scope; good candidate for a micro session.
+4. Tutorial UX improvements (render_tutorial.sh, split-code-blocks).
+5. Agent enhancements (intake data-source-discovery, data-agent metadata-discovery, statistical-terminology glossary).
+
+**Commits ahead of origin: 1 at Session 46 close-out** (Session 46's own commit, unpushed at Phase 3E time; push in Phase 3F per operator instruction).
+
+### Gotchas for Session 47
+
+1. **Post-Session-46 pre-commit state:** pytest **446/446** @ **97.27% coverage**, 0 warnings. ruff / mypy / `-W default` not re-run (no code touched); Session 41 baseline stands. Evolution.md is wiki-only; pytest smoke-check sufficient at any close-out unless Session 47's deliverable touches code.
+
+2. **BACKLOG at Phase 0:** 7 `[ ]`, 0 `[x]`. Learning #26 Session #15 of application — verify at Phase 0 + apply remove-don't-flip discipline at close-out.
+
+3. **Learning #29 mechanical — 10th consecutive validation in Session 46.** Continue: grep-before-insert for stub pattern `Session 47|### Session 47 Did|### Session 46 Handoff Evaluation|Post-Session-47`.
+
+4. **Session 23 CHANGELOG gap** — Surfaced during Session 46's timeline construction. If Session 47 picks the retro-entry as its deliverable, reference Evolution.md §9 (timeline row for Session 23 has the explicit gap note) and SESSION_NOTES.md line 2992+ (`What Session 23 Did` block — details the `scope-b-plan.md` 822-line 18-section planning artifact). Retro-entry discipline: in `## [Unreleased]` section, use a dated header at the same date as the original session (2026-04-16) with an explicit "retro entry — missed at the time" note. Order inside Unreleased by date; retro-entries may be inserted out of chronological-of-writing order.
+
+5. **Evolution.md is freshness-tracked but full-rewrite-only** per PROJECT_CONVENTIONS.md §4. Do NOT edit Evolution.md incrementally — the next change is a full rewrite triggered by operator request (typical triggers: sharing the codebase, preparing a current-state assessment, reaching a milestone worth narrating). When the user next requests a rewrite, Session N reads PROJECT_CONVENTIONS.md §4 discipline + §4.6 diff-against-prior + refreshes banner with new YYYY-MM-DD + short-sha + Session N number.
+
+6. **`probability` vs `likelihood`** — Durable user correction. Any LLM-adjacent prose should use `probability` for P(event).
+
+7. **Upstream-methodology risk unchanged.** Do NOT edit `docs/methodology/{README,HOW_TO_USE,ITERATIVE_METHODOLOGY,workstreams/*}.md` — imported framework material per `docs/methodology/README.md:253-255`. `PROJECT_CONVENTIONS.md` is project-local; fine to extend.
+
+8. **CHANGELOG structure convention (Sessions 33-46):** context paragraph / Added + Changed + Fixed + Found bullets / Verified bullet / Unchanged intentionally bullet / Next bullet. 14 consecutive sessions match. Session 46's entry is short (~6 bullets) per operator preference; keep entries concise unless the work warrants detail.
+
+9. **Review-gate sessions are exceptional** — only Evolution.md rewrites have a review gate per PROJECT_CONVENTIONS.md §4.7. Session 47's default is the autonomous-commit pattern; review gate engages only on explicit Evolution rewrites.
+
+10. **Candidate Learning #33 (not yet coined):** *Calibrate first-draft length to middle of plan's soft range, not floor.* 1st instance was Session 46's 195-line draft against plan's "~300-600" range. If Session 47 or a future session hits the same pattern on a different deliverable, coin formally.
+
+### Session 46 close-out checklist
+
+- [x] Phase 0 orientation (SAFEGUARDS + SESSION_RUNNER read in full; SESSION_NOTES + BACKLOG read; dashboard run; ghost-session check clean; report delivered; waited for operator direction)
+- [x] Phase 1B stub written to SESSION_NOTES.md before technical work (Learning #29 grep-first; 10th consecutive validation)
+- [x] Plan §7 + PROJECT_CONVENTIONS.md §4 read in full before any draft
+- [x] CHANGELOG full-read + classification pass (~30 Include + adjusted to 3 Subsume + 1 Omit-as-operational after operator reclassification)
+- [x] Draft v1 (195 lines) presented at review gate; operator directed expansion + classification changes
+- [x] Draft v2 (249 lines) re-presented; operator directed timeline table
+- [x] Draft v3 (305 lines) re-presented; operator approved "as-is"
+- [x] Session 23 CHANGELOG gap discovered and documented in Evolution.md §9 + handoff
+- [x] CHANGELOG.md Session 46 entry at top of [Unreleased]
+- [x] BACKLOG.md Evolution-plan line REMOVED (not flipped — whole plan shipped; Learning #26 discipline)
+- [x] Phase 3A: Session 45 handoff evaluated (9/10)
+- [x] Phase 3B: Self-assessment scored and written (9/10)
+- [x] Phase 3C: Learnings reviewed; candidate #33 noted but not coined (pending 2nd instance)
+- [x] Phase 3D: Handoff to Session 47 above (no pre-assigned deliverable; 10 gotchas)
+- [ ] Phase 3E: Commit — pending this turn
+- [ ] Phase 3F: Push + verbal report — pending this turn
 
 ### Post-Session-45 pre-commit state
 - `uv run pytest -q` → **446/446 passing**, coverage **97.27%** (unchanged — doc/fs-only, no code touched)

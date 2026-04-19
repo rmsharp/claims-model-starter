@@ -22,6 +22,7 @@ This page lists the wiki's current pages (with audiences) and known gaps where a
 | [Security Considerations](Security-Considerations) | Security reviewers, compliance | Credentials, network boundaries, LLM data exposure, read-only DB |
 | [Software Bill of Materials](Software-Bill-of-Materials) | Security, compliance, operators | All dependencies and versions |
 | [Architecture Decisions](Architecture-Decisions) | Developers, architects | Key design choices and rationale |
+| [Evolution](Evolution) | Onboarding readers, code-sharing context | Design-decision arc from concept to current state |
 | [Changelog](Changelog) | Operators, developers | Phase-by-phase history of notable changes |
 | [Contributing](Contributing) | Developers | Dev env, code-quality gates, tests, commit convention, session discipline |
 | [Glossary](Glossary) | All | Domain, pipeline, governance, and technical terms |

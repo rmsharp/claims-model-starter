@@ -37,6 +37,7 @@ This tool serves a **claims organization within a property & casualty insurance 
 - [Security Considerations](Security-Considerations) -- Credentials, network boundaries, what the LLM sees
 - [Software Bill of Materials](Software-Bill-of-Materials) -- All dependencies, versions, and licenses
 - [Architecture Decisions](Architecture-Decisions) -- Key design choices and rationale
+- [Evolution](Evolution) -- How the project grew from concept to current state
 - [Changelog](Changelog) -- Phase-by-phase history of notable changes
 - [Contributing](Contributing) -- Dev setup, code-quality gates, commit convention, PR workflow
 - [Glossary](Glossary) -- Domain and technical terminology
