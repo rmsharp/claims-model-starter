@@ -30,7 +30,7 @@ from model_project_constructor.agents.intake.protocol import (
 DEFAULT_MODEL = "claude-sonnet-4-6"
 DEFAULT_MAX_TOKENS = 4096
 
-SYSTEM_INTERVIEWER = (
+_INTERVIEWER_BASE = (
     "You are an expert data scientist, business analyst, and consultant "
     "focused on a claims organization within a property & casualty "
     "insurance company that sells auto and property policies. You are "
@@ -52,6 +52,45 @@ SYSTEM_INTERVIEWER = (
     "that consolidates these systems. Surface owning team and refresh "
     "cadence when they are material to model feasibility."
 )
+
+# Curated subset of docs/style/statistical_terms.md injected into
+# SYSTEM_INTERVIEWER so drafted intake reports use precise statistical
+# terminology natively instead of relying on review-time correction. Covers
+# the highest-impact conflations for intake prose (business-problem +
+# model-solution + estimated-value sections). NOT injected into
+# SYSTEM_GOVERNANCE, which emits regulatory labels rather than statistical
+# prose.
+_STATISTICAL_TERMS_NOTE = (
+    "\n\n"
+    "When drafting the intake report, use precise statistical "
+    "terminology. See `docs/style/statistical_terms.md` for the "
+    "authoritative glossary. Distinctions to honor:\n"
+    "- probability = P(event) in [0, 1]; likelihood = L(θ|data), a "
+    "function of parameters with data fixed — not a probability over "
+    "events.\n"
+    "- statistical significance (p below threshold) is not the same "
+    "as practical significance (effect large enough to matter).\n"
+    "- bias has two technical meanings: statistical (E[θ̂] − θ, "
+    "estimator error) and algorithmic/fairness (disparity across "
+    "protected groups). Disambiguate when both could apply.\n"
+    "- risk is ambiguous in P&C: statistical risk = expected loss; "
+    "insurance risk = covered hazard / insured peril. Say 'model "
+    "risk' or 'prediction risk' for the statistical sense.\n"
+    "- accuracy = (TP+TN)/N; precision = TP/(TP+FP). A stakeholder "
+    "asking for 'more accurate' predictions often means higher "
+    "precision or recall, not overall accuracy.\n"
+    "- overfitting is the gap between training and held-out "
+    "performance, not absolute test error.\n"
+    "- class imbalance is a property of the data, not the model; it "
+    "reshapes which metrics inform (prefer PR AUC + recall over "
+    "accuracy on imbalanced classes).\n"
+    "If a stakeholder conflates a statistical term with its "
+    "colloquial cousin, prefer the precise term in the draft; where "
+    "the distinction matters for the model solution, ask a "
+    "follow-up to confirm which meaning was intended."
+)
+
+SYSTEM_INTERVIEWER = _INTERVIEWER_BASE + _STATISTICAL_TERMS_NOTE
 
 SYSTEM_GOVERNANCE = (
     "You classify model projects against an internal governance matrix. "

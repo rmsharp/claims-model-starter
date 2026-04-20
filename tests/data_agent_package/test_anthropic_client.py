@@ -718,3 +718,123 @@ class TestGeneratePrimaryQueriesInventoryPrompt:
 
         user_msg = msgs.calls[0]["messages"][0]["content"]
         assert "and 7 more sources truncated" in user_msg
+
+
+class TestStatisticalTermsNoteInjection:
+    """The statistical-terms note from docs/style/statistical_terms.md is
+    injected only into prose-generating surfaces (summarize, datasheet) —
+    not into SQL/ranking surfaces where statistical-terminology
+    conflations are rare. Pin both the positive and negative cases so
+    future prompt-edits can't silently drop or over-spread the note.
+
+    BACKLOG: 'Statistical glossary — agent system prompt injection'
+    (Session 62).
+    """
+
+    _GLOSSARY_PATH = "docs/style/statistical_terms.md"
+    _TOKENS = (
+        "class imbalance",
+        "data leakage",
+        "calibration",
+        "discrimination",
+        "bias",
+        "algorithmic",
+        "frequency",
+        "severity",
+        "pure premium",
+    )
+
+    def test_summarize_system_includes_statistical_terms_note(
+        self, request_obj: DataRequest
+    ) -> None:
+        canned = (
+            '{"summary": "s", "confirmed_expectations": [], '
+            '"unconfirmed_expectations": [], "data_quality_concerns": []}'
+        )
+        fake, msgs = _fake_client([canned])
+        client = AnthropicLLMClient(client=fake, model="fake-model")
+
+        client.summarize(request_obj, [], [], db_executed=True)
+
+        system = msgs.calls[0]["system"]
+        assert self._GLOSSARY_PATH in system
+        for token in self._TOKENS:
+            assert token in system, f"summarize missing token: {token!r}"
+
+    def test_generate_datasheet_system_includes_statistical_terms_note(
+        self, request_obj: DataRequest
+    ) -> None:
+        canned = (
+            '{"motivation": "m", "composition": "c", '
+            '"collection_process": "cp", "preprocessing": "pp", '
+            '"uses": "u", "known_biases": [], "maintenance": "mt"}'
+        )
+        fake, msgs = _fake_client([canned])
+        client = AnthropicLLMClient(client=fake, model="fake-model")
+        spec = PrimaryQuerySpec(
+            name="q",
+            sql="SELECT 1",
+            purpose="x",
+            expected_row_count_order="tens",
+        )
+
+        client.generate_datasheet(request_obj, spec)
+
+        system = msgs.calls[0]["system"]
+        assert self._GLOSSARY_PATH in system
+        for token in self._TOKENS:
+            assert token in system, f"datasheet missing token: {token!r}"
+
+    def test_generate_primary_queries_system_excludes_statistical_terms_note(
+        self, request_obj: DataRequest
+    ) -> None:
+        """SQL-authoring surface: statistical terminology rarely appears
+        in SELECT statements, so the note is deliberately omitted to save
+        tokens.
+        """
+        canned = (
+            '[{"name": "q", "sql": "SELECT 1", "purpose": "x", '
+            '"expected_row_count_order": "tens"}]'
+        )
+        fake, msgs = _fake_client([canned])
+        client = AnthropicLLMClient(client=fake, model="fake-model")
+
+        client.generate_primary_queries(request_obj)
+
+        system = msgs.calls[0]["system"]
+        assert self._GLOSSARY_PATH not in system
+
+    def test_generate_quality_checks_system_excludes_statistical_terms_note(
+        self, request_obj: DataRequest
+    ) -> None:
+        """Quality-check SQL surface: deliberate omission, same rationale
+        as generate_primary_queries.
+        """
+        canned = "[]"
+        fake, msgs = _fake_client([canned])
+        client = AnthropicLLMClient(client=fake, model="fake-model")
+
+        client.generate_quality_checks(request_obj, [])
+
+        system = msgs.calls[0]["system"]
+        assert self._GLOSSARY_PATH not in system
+
+    def test_rank_candidate_tables_system_excludes_statistical_terms_note(
+        self,
+    ) -> None:
+        """Relevance-scoring surface: output is 0.0-1.0 scores + short
+        prose reasons, statistical-terminology conflations are rare.
+        """
+        canned = (
+            '[{"fully_qualified_name": "public.claims", '
+            '"relevance_score": 0.5, "relevance_reason": "x"}]'
+        )
+        fake, msgs = _fake_client([canned])
+        client = AnthropicLLMClient(client=fake, model="fake-model")
+
+        client.rank_candidate_tables(
+            entries=_sample_entries()[:1], request_context="x"
+        )
+
+        system = msgs.calls[0]["system"]
+        assert self._GLOSSARY_PATH not in system

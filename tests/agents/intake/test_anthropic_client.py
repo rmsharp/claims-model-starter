@@ -15,6 +15,7 @@ import pytest
 from model_project_constructor.agents.intake.anthropic_client import (
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODEL,
+    SYSTEM_GOVERNANCE,
     SYSTEM_INTERVIEWER,
     AnthropicLLMClient,
     _extract_json,
@@ -247,6 +248,43 @@ def test_system_interviewer_pins_data_source_discovery_probes() -> None:
         "data lake",
     ):
         assert system in prompt, f"missing P&C-claims probe topic: {system!r}"
+
+
+# --- SYSTEM_INTERVIEWER statistical-terms-note pinning -------------------
+
+
+def test_system_interviewer_pins_statistical_terms_note() -> None:
+    """The intake system prompt must inject a curated subset of
+    docs/style/statistical_terms.md so drafted reports use precise
+    statistical terminology natively. BACKLOG: 'Statistical glossary —
+    agent system prompt injection' (Session 62).
+    """
+
+    prompt = SYSTEM_INTERVIEWER
+
+    assert "docs/style/statistical_terms.md" in prompt
+    for token in (
+        "probability",
+        "likelihood",
+        "statistical significance",
+        "practical significance",
+        "bias",
+        "algorithmic",
+        "precision",
+        "overfitting",
+        "class imbalance",
+    ):
+        assert token in prompt, f"missing statistical-terms token: {token!r}"
+
+
+def test_system_governance_excludes_statistical_terms_note() -> None:
+    """SYSTEM_GOVERNANCE emits regulatory labels (cycle_time, risk_tier),
+    not statistical prose. Injecting the statistical-terms note there
+    would waste tokens without improving classification. This test pins
+    the deliberate omission.
+    """
+
+    assert "docs/style/statistical_terms.md" not in SYSTEM_GOVERNANCE
 
 
 # --- default construction path (monkeypatch on anthropic.Anthropic) ------

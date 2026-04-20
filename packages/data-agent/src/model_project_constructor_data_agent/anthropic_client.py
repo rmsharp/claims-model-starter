@@ -54,6 +54,39 @@ DEFAULT_MAX_TOKENS = 4096
 MAX_INVENTORY_ENTRIES_IN_PROMPT = 20
 MAX_INVENTORY_FIELD_CHARS = 2000
 
+# Curated subset of docs/style/statistical_terms.md injected into the
+# summarize() and generate_datasheet() system strings so prose-generating
+# data-agent surfaces use precise statistical terminology natively instead
+# of relying on review-time correction. NOT injected into
+# generate_primary_queries(), generate_quality_checks(), or
+# rank_candidate_tables() — those methods produce SQL or 0.0-1.0 relevance
+# scores, where statistical-terminology conflations are rare.
+_STATISTICAL_TERMS_NOTE = (
+    "\n\n"
+    "Use precise statistical terminology in prose. See "
+    "`docs/style/statistical_terms.md` for the authoritative glossary. "
+    "Distinctions relevant to data-agent reports:\n"
+    "- class imbalance is a property of the data, not the model; it "
+    "reshapes which metrics inform (prefer PR AUC + recall over "
+    "accuracy on imbalanced classes).\n"
+    "- data leakage = information from outside the training set "
+    "influences the model (future features, target leakage, "
+    "test-set statistics). Time-series and grouped data are "
+    "especially prone; call it out when you see it in the query "
+    "design.\n"
+    "- calibration (predicted probabilities match observed "
+    "frequencies) is distinct from discrimination (ability to rank "
+    "positives above negatives). AUC measures discrimination, not "
+    "calibration.\n"
+    "- bias has two technical meanings: statistical (estimator "
+    "error, E[θ̂] − θ) and algorithmic/fairness (disparity across "
+    "protected groups). A datasheet 'known_biases' entry usually "
+    "means the fairness sense — say so explicitly.\n"
+    "- P&C accounting: frequency = claims per exposure-unit-period; "
+    "severity = expected cost per claim; pure premium = frequency × "
+    "severity."
+)
+
 
 class LLMParseError(ValueError):
     """Raised when Claude's response cannot be parsed into the expected shape."""
@@ -176,6 +209,7 @@ class AnthropicLLMClient:
         system = (
             "You are a senior P&C insurance data scientist writing a concise "
             "summary of a data collection run for the model team."
+            + _STATISTICAL_TERMS_NOTE
         )
         qc_block = _dump_qc_status(quality_checks, db_executed)
         user = (
@@ -206,6 +240,7 @@ class AnthropicLLMClient:
         system = (
             "You are writing a datasheet per Gebru et al. 2021 ('Datasheets "
             "for Datasets') for an insurance claims extract."
+            + _STATISTICAL_TERMS_NOTE
         )
         user = (
             f"DataRequest:\n{_dump_request(request)}\n\n"
