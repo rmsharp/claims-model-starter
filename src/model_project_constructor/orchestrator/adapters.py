@@ -19,6 +19,7 @@ from __future__ import annotations
 from model_project_constructor.schemas.v1.data import (
     DataGranularity,
     DataRequest,
+    DataSourceInventory,
 )
 from model_project_constructor.schemas.v1.intake import IntakeReport
 
@@ -44,6 +45,8 @@ def infer_target_granularity(intake: IntakeReport) -> DataGranularity:
 def intake_report_to_data_request(
     intake: IntakeReport,
     run_id: str,
+    *,
+    data_source_inventory: DataSourceInventory | None = None,
 ) -> DataRequest:
     """Build a ``DataRequest`` from a COMPLETE ``IntakeReport``.
 
@@ -57,6 +60,11 @@ def intake_report_to_data_request(
     :param intake: The upstream ``IntakeReport``.
     :param run_id: The pipeline run id, copied into ``source_ref`` so the
         Data Agent can trace the request back to its originating run.
+    :param data_source_inventory: Optional upstream-produced inventory of
+        data sources relevant to the request. When provided, the Data Agent
+        consults it while generating primary SQL (Phase 3 of the
+        data-source-inventory plan). Default ``None`` preserves pre-Phase-3
+        behaviour for every existing caller.
     """
 
     target_description = intake.model_solution.target_definition
@@ -72,6 +80,7 @@ def intake_report_to_data_request(
         time_range=_DEFAULT_TIME_RANGE,
         database_hint=None,
         data_quality_concerns=[],
+        data_source_inventory=data_source_inventory,
         source="pipeline",
         source_ref=run_id,
     )

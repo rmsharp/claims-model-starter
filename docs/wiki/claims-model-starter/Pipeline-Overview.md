@@ -54,10 +54,10 @@ A schema registry maps `(payload_type, schema_version)` to the Pydantic class fo
 
 ### Data Agent
 
-- **Input:** `DataRequest` (target, granularity, features, population, time range)
+- **Input:** `DataRequest` (target, granularity, features, population, time range; optionally a `DataSourceInventory`)
 - **Output:** `DataReport`
-- **Behavior:** Generates SQL queries, writes quality-check queries, confirms data expectations, produces natural-language summary and Gebru 2021 datasheets per query.
-- **Interfaces:** CLI (`model-data-agent`), Python API, pipeline mode
+- **Behavior:** Generates SQL queries, writes quality-check queries, confirms data expectations, produces natural-language summary and Gebru 2021 datasheets per query. When `DataRequest.data_source_inventory` is set, the query-generation prompt includes a summarized inventory block and each `PrimaryQuery.inventory_entries_used` records which catalogued tables the SQL references.
+- **Interfaces:** CLI (`model-data-agent run`, `model-data-agent discover`), Python API, pipeline mode
 - **Status values:** `COMPLETE`, `INCOMPLETE_REQUEST`, `EXECUTION_FAILED`
 - **Design note:** Intentionally decoupled from `IntakeReport` -- usable as a standalone query tool for analyst teams. A CI test enforces zero imports of intake schemas.
 

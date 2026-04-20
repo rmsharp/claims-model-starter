@@ -45,6 +45,7 @@ from model_project_constructor_data_agent.schemas import (
     DataRequest,
     Datasheet,
     DataSourceEntry,
+    DataSourceInventory,
     QualityCheck,
 )
 
@@ -203,7 +204,11 @@ class _FakeCLIClient:
     """
 
     def generate_primary_queries(
-        self, request: DataRequest, previous_error: str | None = None
+        self,
+        request: DataRequest,
+        previous_error: str | None = None,
+        *,
+        data_source_inventory: DataSourceInventory | None = None,
     ) -> list[PrimaryQuerySpec]:
         return [
             PrimaryQuerySpec(

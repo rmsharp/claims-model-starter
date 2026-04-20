@@ -44,11 +44,15 @@ from model_project_constructor_data_agent.schemas import (
     DataRequest,
     Datasheet,
     DataSourceEntry,
+    DataSourceInventory,
     QualityCheck,
 )
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
 DEFAULT_MAX_TOKENS = 4096
+
+MAX_INVENTORY_ENTRIES_IN_PROMPT = 20
+MAX_INVENTORY_FIELD_CHARS = 2000
 
 
 class LLMParseError(ValueError):
@@ -73,7 +77,11 @@ class AnthropicLLMClient:
         self._max_tokens = max_tokens
 
     def generate_primary_queries(
-        self, request: DataRequest, previous_error: str | None = None
+        self,
+        request: DataRequest,
+        previous_error: str | None = None,
+        *,
+        data_source_inventory: DataSourceInventory | None = None,
     ) -> list[PrimaryQuerySpec]:
         retry_hint = ""
         if previous_error:
@@ -82,17 +90,23 @@ class AnthropicLLMClient:
                 f"{previous_error}\nReturn corrected SQL this time."
             )
 
+        inventory_block = _build_inventory_block(data_source_inventory)
+        inventory_hint = f"\n\n{inventory_block}" if inventory_block else ""
+
         system = (
             "You are a senior P&C insurance data analyst. Given a data "
             "collection request, return one or more primary SQL queries that "
             "extract the target population. Always return valid SELECT SQL."
         )
         user = (
-            f"DataRequest:\n{_dump_request(request)}\n{retry_hint}\n\n"
+            f"DataRequest:\n{_dump_request(request)}{retry_hint}{inventory_hint}\n\n"
             'Return a JSON array. Each element is an object with keys: '
             '"name" (snake_case identifier), "sql" (a SELECT statement), '
             '"purpose" (one sentence on why), "expected_row_count_order" '
-            '(one of "tens", "hundreds", "thousands", "millions"). '
+            '(one of "tens", "hundreds", "thousands", "millions"), and '
+            '"inventory_entries_used" (list of fully_qualified_name strings '
+            "from the Available data sources block that your SQL references; "
+            "empty list if no inventory was provided or none were used). "
             "Return ONLY the JSON array, no prose."
         )
         raw = self._call_claude(system, user)
@@ -107,6 +121,9 @@ class AnthropicLLMClient:
                 sql=str(item["sql"]),
                 purpose=str(item["purpose"]),
                 expected_row_count_order=str(item["expected_row_count_order"]),
+                inventory_entries_used=[
+                    str(x) for x in item.get("inventory_entries_used", [])
+                ],
             )
             for item in parsed
         ]
@@ -279,7 +296,79 @@ class AnthropicLLMClient:
 
 
 def _dump_request(request: DataRequest) -> str:
-    return json.dumps(request.model_dump(mode="json"), indent=2)
+    """Serialize a request for prompt insertion, hiding the inventory.
+
+    The inventory is rendered by :func:`_build_inventory_block` in a more
+    prompt-friendly shape; duplicating it in the raw JSON dump would waste
+    tokens and risk the LLM parsing two inconsistent copies on large
+    inventories.
+    """
+    payload = request.model_dump(mode="json")
+    payload.pop("data_source_inventory", None)
+    return json.dumps(payload, indent=2)
+
+
+def _sanitize_prompt_field(
+    value: str | None, max_chars: int = MAX_INVENTORY_FIELD_CHARS
+) -> str:
+    """Strip control characters (keeping newline/tab) and bound length.
+
+    Producer-supplied content (``description``, ``relevance_reason``) is fed
+    to Claude. Adversarial or malformed content could distort the prompt or
+    blow the token budget; this helper removes control characters below
+    ASCII 32 (except ``\\n`` and ``\\t``) and truncates at ``max_chars`` with
+    an ellipsis. Plan §9 Phase 3 gotcha #2 + §12 Q5 (default 2000).
+    """
+    if value is None:
+        return ""
+    cleaned = "".join(
+        ch for ch in value if ch in ("\n", "\t") or ord(ch) >= 32
+    )
+    if len(cleaned) > max_chars:
+        cleaned = cleaned[:max_chars] + "..."
+    return cleaned
+
+
+def _build_inventory_block(
+    inventory: DataSourceInventory | None,
+) -> str:
+    """Render a :class:`DataSourceInventory` as a prompt-ready summary block.
+
+    ``None`` or empty-entries inventories yield an empty string (pre-Phase-3
+    behaviour preserved). Non-empty inventories are sorted by
+    ``relevance_score`` descending (None → 0.0) and truncated to
+    :data:`MAX_INVENTORY_ENTRIES_IN_PROMPT`; a trailing note reports the
+    truncation count when applicable.
+    """
+    if inventory is None or not inventory.entries:
+        return ""
+    ranked = sorted(
+        inventory.entries,
+        key=lambda e: e.relevance_score if e.relevance_score is not None else 0.0,
+        reverse=True,
+    )
+    top = ranked[:MAX_INVENTORY_ENTRIES_IN_PROMPT]
+    remainder = len(ranked) - len(top)
+    lines: list[str] = [
+        "Available data sources (prefer these tables when writing SQL):"
+    ]
+    for entry in top:
+        col_preview = ", ".join(c.name for c in entry.columns[:8])
+        if len(entry.columns) > 8:
+            col_preview += f", ... (+{len(entry.columns) - 8} more)"
+        parts = [f"- {entry.fully_qualified_name} ({entry.entity_kind})"]
+        if col_preview:
+            parts.append(f"  columns: {col_preview}")
+        desc = _sanitize_prompt_field(entry.description)
+        if desc:
+            parts.append(f"  description: {desc}")
+        reason = _sanitize_prompt_field(entry.relevance_reason)
+        if reason:
+            parts.append(f"  relevance: {reason}")
+        lines.append("\n".join(parts))
+    if remainder > 0:
+        lines.append(f"... and {remainder} more sources truncated.")
+    return "\n".join(lines)
 
 
 def _dump_qc_status(

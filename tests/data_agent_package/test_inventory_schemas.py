@@ -285,6 +285,138 @@ class TestDataSourceInventory:
         assert DSI_v1_data is DataSourceInventory
 
 
+class TestDataRequestWithInventory:
+    """Phase 3: ``DataRequest.data_source_inventory`` is optional + round-trips."""
+
+    def test_default_is_none(self) -> None:
+        from model_project_constructor_data_agent import (
+            DataGranularity,
+            DataRequest,
+        )
+
+        req = DataRequest(
+            target_description="tx auto subrogation",
+            target_granularity=DataGranularity(unit="claim", time_grain="event"),
+            required_features=["paid_amount"],
+            population_filter="TX",
+            time_range="2024",
+            source="standalone",
+            source_ref="test",
+        )
+        assert req.data_source_inventory is None
+
+    def test_inventory_field_roundtrips_through_json(self) -> None:
+        from model_project_constructor_data_agent import (
+            DataGranularity,
+            DataRequest,
+        )
+
+        inventory = _make_inventory()
+        req = DataRequest(
+            target_description="tx auto subrogation",
+            target_granularity=DataGranularity(unit="claim", time_grain="event"),
+            required_features=["paid_amount"],
+            population_filter="TX",
+            time_range="2024",
+            source="standalone",
+            source_ref="test",
+            data_source_inventory=inventory,
+        )
+
+        blob = req.model_dump_json()
+        restored = DataRequest.model_validate_json(blob)
+        assert restored.data_source_inventory == inventory
+        assert (
+            restored.data_source_inventory.entries[0].fully_qualified_name  # type: ignore[union-attr]
+            == "public.claim_events"
+        )
+
+    def test_preexisting_json_without_field_still_parses(self) -> None:
+        """Pre-Phase-3 serialised DataRequests (no inventory key) must validate."""
+        from model_project_constructor_data_agent import DataRequest
+
+        legacy_blob = {
+            "schema_version": "1.0.0",
+            "target_description": "tx auto subrogation",
+            "target_granularity": {"unit": "claim", "time_grain": "event"},
+            "required_features": ["paid_amount"],
+            "population_filter": "TX",
+            "time_range": "2024",
+            "source": "standalone",
+            "source_ref": "test",
+        }
+        req = DataRequest.model_validate(legacy_blob)
+        assert req.data_source_inventory is None
+
+
+class TestPrimaryQueryInventoryProvenance:
+    """Phase 3: ``PrimaryQuery.inventory_entries_used`` default + round-trip."""
+
+    def _make_primary(self, **overrides: Any) -> Any:
+        from model_project_constructor_data_agent import (
+            Datasheet,
+            PrimaryQuery,
+        )
+
+        defaults: dict[str, Any] = dict(
+            name="q",
+            sql="SELECT 1",
+            purpose="x",
+            expected_row_count_order="tens",
+            quality_checks=[],
+            datasheet=Datasheet(
+                motivation="m",
+                composition="c",
+                collection_process="cp",
+                preprocessing="pp",
+                uses="u",
+                known_biases=[],
+                maintenance="mt",
+            ),
+        )
+        defaults.update(overrides)
+        return PrimaryQuery(**defaults)
+
+    def test_default_is_empty_list(self) -> None:
+        pq = self._make_primary()
+        assert pq.inventory_entries_used == []
+
+    def test_round_trip(self) -> None:
+        from model_project_constructor_data_agent import PrimaryQuery
+
+        pq = self._make_primary(
+            inventory_entries_used=["public.claims", "public.policies"]
+        )
+        blob = pq.model_dump_json()
+        restored = PrimaryQuery.model_validate_json(blob)
+        assert restored.inventory_entries_used == [
+            "public.claims",
+            "public.policies",
+        ]
+
+    def test_legacy_primary_query_without_field_still_parses(self) -> None:
+        from model_project_constructor_data_agent import PrimaryQuery
+
+        legacy_blob = {
+            "name": "q",
+            "sql": "SELECT 1",
+            "purpose": "x",
+            "expected_row_count_order": "tens",
+            "quality_checks": [],
+            "datasheet": {
+                "motivation": "m",
+                "composition": "c",
+                "collection_process": "cp",
+                "preprocessing": "pp",
+                "uses": "u",
+                "known_biases": [],
+                "maintenance": "mt",
+            },
+        }
+        pq = PrimaryQuery.model_validate(legacy_blob)
+        assert pq.inventory_entries_used == []
+
+
 class TestSampleCuratedFixture:
     """Pin tests/fixtures/sample_curated_inventory.json against the schema.
 

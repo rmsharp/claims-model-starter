@@ -76,6 +76,25 @@ The orchestrator converts the `IntakeReport` into a `DataRequest` and hands it t
 
 (The sample fixture uses a narrower TX-2024 scope than the intake; it illustrates the `DataRequest` shape rather than being the literal output of the full subrogation intake.)
 
+#### Optional: attaching a data source inventory
+
+A team that already has a curated catalog of relevant tables can hand the Data Agent a `DataSourceInventory` via the optional `data_source_inventory` field on `DataRequest`. The agent renders a summarized block into the query-generation prompt so the LLM prefers inventory-named tables, and each returned `PrimaryQuery` records its inventory provenance under `inventory_entries_used`.
+
+Using the shipped `tests/fixtures/sample_curated_inventory.json` (two tables: `public.claim_events` and `public.subrogation_outcomes`):
+
+```python
+import json
+from pathlib import Path
+from model_project_constructor_data_agent import DataRequest, DataSourceInventory
+
+inventory = DataSourceInventory.model_validate(
+    json.loads(Path("tests/fixtures/sample_curated_inventory.json").read_text())
+)
+request = DataRequest(..., data_source_inventory=inventory)
+```
+
+With the inventory attached, a run against a real Claude model would produce a `PrimaryQuery.inventory_entries_used` pointing back at `public.claim_events` / `public.subrogation_outcomes`. Callers who omit the field get the pre-Phase-3 behaviour unchanged.
+
 ### Step 4 — DataReport output
 
 The Data Agent produces `tests/fixtures/sample_datareport.json`:

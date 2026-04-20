@@ -97,3 +97,26 @@ report = DataAgent().run(data_request)
 ```
 
 The Data Agent accepts a `DataRequest` (target, granularity, features, population, time range) and produces a `DataReport` without any dependency on the Intake Agent or its schemas. This decoupling is enforced by an AST-based CI test.
+
+## Providing a data source inventory
+
+`DataRequest` accepts an optional `data_source_inventory: DataSourceInventory | None` field. When populated, the Data Agent renders a summarized block into the query-generation prompt, nudging the LLM to prefer inventory-named tables over inventing ones. Each generated `PrimaryQuery` records the inventory entries it referenced under `inventory_entries_used`, giving auditors a provenance trail.
+
+Three producer classes can populate an inventory today:
+
+- **Curated** — a team-maintained JSON file following `DataSourceInventory`. See `tests/fixtures/sample_curated_inventory.json`.
+- **Automated** — probe a live database's `information_schema` via `probe_information_schema` or the `model-data-agent discover` CLI.
+- **Interview** — convert stakeholder-named systems from an `IntakeReport`'s `qa_pairs` (reference implementation deferred until pilot demand).
+
+```python
+import json
+from pathlib import Path
+from model_project_constructor_data_agent import DataSourceInventory
+
+inventory = DataSourceInventory.model_validate(
+    json.loads(Path("curated_inventory.json").read_text())
+)
+request = DataRequest(..., data_source_inventory=inventory)
+```
+
+When both `database_hint` and `data_source_inventory` are set, the inventory wins (richer signal); the hint is still passed as context. An empty inventory (`entries=[]`) is treated identically to `None`. Large inventories are truncated in the prompt to the top 20 entries by `relevance_score`, with a trailing note naming the dropped count.

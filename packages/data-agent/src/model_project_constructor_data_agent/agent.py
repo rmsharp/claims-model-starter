@@ -126,6 +126,7 @@ def _assemble_complete_report(
             expected_row_count_order=spec.expected_row_count_order,  # type: ignore[arg-type]
             quality_checks=checks,
             datasheet=sheet,
+            inventory_entries_used=list(spec.inventory_entries_used),
         )
         for spec, checks, sheet in zip(
             specs, checks_per_primary, datasheets, strict=True

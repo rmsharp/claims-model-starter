@@ -9,12 +9,13 @@ substitute a ``FakeLLMClient`` that returns deterministic responses.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from model_project_constructor_data_agent.schemas import (
     DataRequest,
     Datasheet,
+    DataSourceInventory,
     QualityCheck,
 )
 
@@ -29,12 +30,18 @@ class PrimaryQuerySpec:
     (``"tens"``, ``"hundreds"``, ``"thousands"``, ``"millions"``). It is typed
     as ``str`` here to keep the intermediate shape simple; the downstream
     pydantic model is the enforcer.
+
+    ``inventory_entries_used`` is the LLM's self-reported list of inventory
+    entry fully-qualified names referenced by the SQL. Empty list when no
+    inventory was passed, when the inventory had no entries, or when the
+    LLM reported no inventory tables used.
     """
 
     name: str
     sql: str
     purpose: str
     expected_row_count_order: str
+    inventory_entries_used: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -81,12 +88,22 @@ class LLMClient(Protocol):
     """
 
     def generate_primary_queries(
-        self, request: DataRequest, previous_error: str | None = None
+        self,
+        request: DataRequest,
+        previous_error: str | None = None,
+        *,
+        data_source_inventory: DataSourceInventory | None = None,
     ) -> list[PrimaryQuerySpec]:
         """Return candidate primary queries for the request.
 
         ``previous_error`` is populated on the RETRY_ONCE branch so the
         implementation can ask the LLM to correct an earlier parse failure.
+
+        ``data_source_inventory`` is an optional consumer-side
+        :class:`DataSourceInventory`; when non-empty, implementations should
+        render a summarized inventory block into the prompt so the LLM
+        prefers inventory-named tables. ``None`` and empty-entries inventories
+        preserve the pre-Phase-3 behaviour.
         """
 
     def generate_quality_checks(

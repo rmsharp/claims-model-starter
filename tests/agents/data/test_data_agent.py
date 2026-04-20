@@ -23,6 +23,7 @@ from model_project_constructor.agents.data.llm import (
 from model_project_constructor.schemas.v1.data import (
     DataRequest,
     Datasheet,
+    DataSourceInventory,
     QualityCheck,
 )
 
@@ -40,7 +41,11 @@ class FakeLLMClient:
     last_summarize_db_executed: bool | None = field(default=None, init=False)
 
     def generate_primary_queries(
-        self, request: DataRequest, previous_error: str | None = None
+        self,
+        request: DataRequest,
+        previous_error: str | None = None,
+        *,
+        data_source_inventory: DataSourceInventory | None = None,
     ) -> list[PrimaryQuerySpec]:
         idx = min(
             self.generate_primary_calls,
@@ -337,7 +342,11 @@ def test_unexpected_exception_surfaces_as_execution_failed(
 ) -> None:
     class ExplodingLLM(FakeLLMClient):
         def generate_primary_queries(
-            self, request: DataRequest, previous_error: str | None = None
+            self,
+            request: DataRequest,
+            previous_error: str | None = None,
+            *,
+            data_source_inventory: DataSourceInventory | None = None,
         ) -> list[PrimaryQuerySpec]:
             raise RuntimeError("simulated internal crash")
 
@@ -353,3 +362,118 @@ def test_unexpected_exception_surfaces_as_execution_failed(
 
     assert report.status == "EXECUTION_FAILED"
     assert "simulated internal crash" in report.summary
+
+
+def test_inventory_entries_used_plumbed_end_to_end(
+    seeded_db: ReadOnlyDB,
+    sample_request: DataRequest,
+    qc_specs_valid: list[QualityCheckSpec],
+    summary_response: SummaryResult,
+    datasheet_response: Datasheet,
+) -> None:
+    """End-to-end Phase 3 plumbing: inventory → prompt → report provenance.
+
+    An inventory-aware FakeLLMClient seeds ``inventory_entries_used`` on the
+    PrimaryQuerySpec it returns; the Data Agent assembles the final report
+    with the list carried through to :class:`PrimaryQuery`. Pins the
+    consumer-integration invariant in plan §11 without requiring a live LLM.
+    """
+    from datetime import UTC, datetime
+
+    from model_project_constructor.schemas.v1.data import (
+        DataSourceEntry,
+        DataSourceInventory,
+        ProducerMetadata,
+    )
+
+    produced_at = datetime.now(UTC)
+    inventory = DataSourceInventory(
+        entries=[
+            DataSourceEntry(
+                name="claims",
+                namespace="public",
+                fully_qualified_name="public.claims",
+                entity_kind="table",
+                producer_id="test_producer_v1",
+            )
+        ],
+        producers=[
+            ProducerMetadata(
+                producer_id="test_producer_v1",
+                producer_type="curated",
+                produced_at=produced_at,
+            )
+        ],
+        created_at=produced_at,
+    )
+    request_with_inventory = sample_request.model_copy(
+        update={"data_source_inventory": inventory}
+    )
+    inventory_aware_spec = PrimaryQuerySpec(
+        name="tx_claims_2024",
+        sql=(
+            "SELECT claim_id, paid_amount, subro_recovered FROM claims "
+            "WHERE state = 'TX'"
+        ),
+        purpose="Training set for TX subrogation recovery classifier",
+        expected_row_count_order="thousands",
+        inventory_entries_used=["public.claims"],
+    )
+
+    captured: dict[str, DataSourceInventory | None] = {"inv": None}
+
+    class InventoryAwareFake(FakeLLMClient):
+        def generate_primary_queries(
+            self,
+            request: DataRequest,
+            previous_error: str | None = None,
+            *,
+            data_source_inventory: DataSourceInventory | None = None,
+        ) -> list[PrimaryQuerySpec]:
+            captured["inv"] = data_source_inventory
+            self.generate_primary_calls += 1
+            return [inventory_aware_spec]
+
+    fake = InventoryAwareFake(
+        primary_queries_sequence=[[inventory_aware_spec]],
+        qc_response=[qc_specs_valid],
+        summary_response=summary_response,
+        datasheet_response=datasheet_response,
+    )
+    agent = DataAgent(llm=fake, db=seeded_db)
+
+    report = agent.run(request_with_inventory)
+
+    assert report.status == "COMPLETE"
+    assert captured["inv"] is inventory
+    assert report.primary_queries[0].inventory_entries_used == ["public.claims"]
+    assert report.request.data_source_inventory is inventory
+
+
+def test_inventory_entries_used_defaults_empty_when_inventory_absent(
+    seeded_db: ReadOnlyDB,
+    sample_request: DataRequest,
+    primary_query_spec_valid: PrimaryQuerySpec,
+    qc_specs_valid: list[QualityCheckSpec],
+    summary_response: SummaryResult,
+    datasheet_response: Datasheet,
+) -> None:
+    """Pre-Phase-3 callers that never set inventory see ``[]`` on the output.
+
+    Backward-compat: the baseline ``primary_query_spec_valid`` fixture does
+    not set ``inventory_entries_used``; the field must default to ``[]`` on
+    the assembled :class:`PrimaryQuery` without any caller-side opt-in.
+    """
+    fake = FakeLLMClient(
+        primary_queries_sequence=[[primary_query_spec_valid]],
+        qc_response=[qc_specs_valid],
+        summary_response=summary_response,
+        datasheet_response=datasheet_response,
+    )
+    agent = DataAgent(llm=fake, db=seeded_db)
+
+    report = agent.run(sample_request)
+
+    assert report.status == "COMPLETE"
+    assert report.primary_queries[0].inventory_entries_used == []
+    assert report.request.data_source_inventory is None

@@ -55,6 +55,8 @@ class DataRequest(StrictBase):
     database_hint: str | None = None
     data_quality_concerns: list[str] = Field(default_factory=list)
 
+    data_source_inventory: DataSourceInventory | None = None
+
     source: Literal["pipeline", "standalone"]
     source_ref: str
 
@@ -87,6 +89,7 @@ class PrimaryQuery(StrictBase):
     expected_row_count_order: Literal["tens", "hundreds", "thousands", "millions"]
     quality_checks: list[QualityCheck]
     datasheet: Datasheet
+    inventory_entries_used: list[str] = Field(default_factory=list)
 
 
 class DataReport(StrictBase):

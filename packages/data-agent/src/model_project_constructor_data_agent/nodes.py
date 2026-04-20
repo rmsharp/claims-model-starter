@@ -39,7 +39,11 @@ def make_generate_queries(
     def generate_queries(state: DataAgentState) -> dict[str, Any]:
         request = state["request"]
         previous_error = state.get("invalid_sql_error")
-        specs = llm.generate_primary_queries(request, previous_error=previous_error)
+        specs = llm.generate_primary_queries(
+            request,
+            previous_error=previous_error,
+            data_source_inventory=request.data_source_inventory,
+        )
         for spec in specs:
             ok, err = validate_sql(spec.sql)
             if not ok:

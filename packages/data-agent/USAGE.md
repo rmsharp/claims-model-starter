@@ -237,6 +237,64 @@ finally:
 print(f"{len(inventory.entries)} tables/views discovered")
 ```
 
+## Example 5 — Inventory-aware run (consumer integration)
+
+A `DataRequest` accepts an optional `data_source_inventory: DataSourceInventory`
+field. When set, the agent renders a summarized inventory block into the
+query-generation prompt so the LLM prefers inventory-named tables over
+inventing ones, and records which entries were referenced per query under
+`PrimaryQuery.inventory_entries_used`.
+
+```python
+import json
+from pathlib import Path
+
+from model_project_constructor_data_agent import (
+    DataAgent,
+    DataGranularity,
+    DataRequest,
+    DataSourceInventory,
+    ReadOnlyDB,
+)
+from model_project_constructor_data_agent.anthropic_client import AnthropicLLMClient
+
+inventory = DataSourceInventory.model_validate(
+    json.loads(Path("curated_inventory.json").read_text())
+)
+
+request = DataRequest(
+    target_description="subrogation recovery amount on TX auto claims",
+    target_granularity=DataGranularity(unit="claim", time_grain="event"),
+    required_features=["paid_amount", "state", "loss_date"],
+    population_filter="TX auto claims with loss in 2024",
+    time_range="2024-01-01 to 2024-12-31",
+    source="standalone",
+    source_ref="analyst-2026-04-19",
+    data_source_inventory=inventory,
+)
+
+report = DataAgent(
+    llm=AnthropicLLMClient(),
+    db=ReadOnlyDB("postgresql+psycopg://readonly_user@db.internal/claims"),
+).run(request)
+
+for pq in report.primary_queries:
+    print(f"{pq.name} referenced: {pq.inventory_entries_used}")
+```
+
+Precedence rules when both `database_hint` and `data_source_inventory` are
+set: the inventory wins (richer signal subsumes the hint); the hint is still
+passed as context. An inventory with `entries=[]` is treated identically to
+`data_source_inventory=None`. See
+`docs/planning/data-source-inventory-contract-plan.md` §6.3 for the full
+table.
+
+Large inventories are truncated in the prompt: entries are sorted by
+`relevance_score` (unset → 0.0) and the top 20 are emitted; a trailing
+`... and M more sources truncated` note accounts for the remainder. Per-field
+content (`description`, `relevance_reason`) has control characters stripped
+and is bounded to 2000 characters.
+
 ## Public API
 
 All names below are importable from the top-level package:
@@ -246,9 +304,9 @@ from model_project_constructor_data_agent import (
     DataAgent,           # the agent class
     DataGranularity,     # schema: unit + time_grain
     DataReport,          # schema: complete output
-    DataRequest,         # schema: input
+    DataRequest,         # schema: input (optional data_source_inventory field)
     Datasheet,           # schema: Gebru 2021 datasheet
-    PrimaryQuery,        # schema: generated SQL + QC + datasheet
+    PrimaryQuery,        # schema: generated SQL + QC + datasheet + inventory_entries_used
     QualityCheck,        # schema: single QC result
     # Data-source-inventory contract (see "Data source inventory" below)
     ColumnMetadata,      # schema: per-column metadata
@@ -280,21 +338,20 @@ and multiple producer classes populate the same consumer shape:
 - **Curated** — hand-maintained JSON/YAML files from teams that already know
   their canonical tables and factors. No code required.
 - **Automated** — probes like `information_schema` against a live DB
-  (reference implementation is planned for a future release).
+  (reference implementation shipped; see Example 4).
 - **Interview** — converter from stakeholder-named systems captured by the
   intake agent (Guidewire, Duck Creek, etc.) into inventory entries.
 - **External catalog** — DataHub, Amundsen, Collibra, and similar metadata
   catalogs (future).
 
-Phase 1 shipped the schema. Phase 2 ships the `information_schema` reference
-producer (Example 4 above): `probe_information_schema` + `model-data-agent
-discover` + `ReadOnlyDB.get_information_schema`. The downstream consumer
-integration (plumbing `DataRequest.data_source_inventory` through to the
-query-generation prompt) lands in a later phase; today's callers continue to
-work unchanged. See
-`docs/planning/data-source-inventory-contract-plan.md` for the full plan and
-`tests/fixtures/sample_curated_inventory.json` for a valid curated-producer
-example.
+Phase 1 shipped the schema. Phase 2 shipped the `information_schema` reference
+producer (Example 4): `probe_information_schema` + `model-data-agent discover`
++ `ReadOnlyDB.get_information_schema`. Phase 3 (shipped) plumbs
+`DataRequest.data_source_inventory` through to the query-generation prompt —
+see Example 5. Callers who do not set the field continue to work unchanged.
+See `docs/planning/data-source-inventory-contract-plan.md` for the full plan
+and `tests/fixtures/sample_curated_inventory.json` for a valid
+curated-producer example.
 
 ## Error contract
 

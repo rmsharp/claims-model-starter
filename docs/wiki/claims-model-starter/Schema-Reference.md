@@ -201,7 +201,7 @@ class DataGranularity(StrictBase):
 
 `unit` is free-form because the set of meaningful grains is domain-dependent.
 
-### `DataRequest` (lines 46-60)
+### `DataRequest`
 
 ```python
 class DataRequest(StrictBase):
@@ -213,12 +213,14 @@ class DataRequest(StrictBase):
     time_range: str                              # free-form, e.g. "last 5 calendar years"
     database_hint: str | None = None
     data_quality_concerns: list[str] = Field(default_factory=list)
+    data_source_inventory: DataSourceInventory | None = None
     source: Literal["pipeline", "standalone"]
     source_ref: str                              # run_id if pipeline; user_id if standalone
 ```
 
 - `source` distinguishes the two usage modes. In pipeline mode the orchestrator constructs it from the `IntakeReport`; in standalone mode the analyst hand-writes it.
 - `database_hint` is an optional steer — `None` means "no preference."
+- `data_source_inventory` is an optional structured catalog of candidate tables / views / datasets (see `DataSourceInventory` below). When set, the Data Agent renders a summarized block into the query-generation prompt so the LLM prefers inventory-named tables. When both `database_hint` and `data_source_inventory` are set, the inventory wins (richer signal). An inventory with `entries=[]` is treated identically to `None`.
 
 **Example fixture:** `tests/fixtures/sample_request.json`.
 
@@ -251,7 +253,7 @@ class Datasheet(StrictBase):
 
 The seven fields follow Gebru et al. 2021, *Datasheets for Datasets*. The Data Agent writes one per primary query.
 
-### `PrimaryQuery` (lines 83-89)
+### `PrimaryQuery`
 
 ```python
 class PrimaryQuery(StrictBase):
@@ -262,9 +264,12 @@ class PrimaryQuery(StrictBase):
                                       "thousands", "millions"]
     quality_checks: list[QualityCheck]
     datasheet: Datasheet
+    inventory_entries_used: list[str] = []                          # fully-qualified names from the inventory that the SQL references
 ```
 
 `expected_row_count_order` is a sanity check — if a query that should return `"thousands"` returns 3 rows, operators have a cheap signal that something is wrong.
+
+`inventory_entries_used` records the inventory provenance for each query. When a `DataSourceInventory` was passed into the `DataRequest`, the LLM reports which `fully_qualified_name` values its SQL references here. Empty list when no inventory was provided, or when the LLM reported using none of the inventory entries.
 
 ### `DataReport` (lines 92-102)
 

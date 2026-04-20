@@ -17,6 +17,11 @@ from model_project_constructor.orchestrator.adapters import (
     intake_report_to_data_request,
 )
 from model_project_constructor.schemas.v1.common import ModelType
+from model_project_constructor.schemas.v1.data import (
+    DataSourceEntry,
+    DataSourceInventory,
+    ProducerMetadata,
+)
 from model_project_constructor.schemas.v1.intake import (
     EstimatedValue,
     GovernanceMetadata,
@@ -153,3 +158,56 @@ class TestIntakeReportToDataRequest:
         intake = _make_intake(status=status)
         request = intake_report_to_data_request(intake, run_id="run_001")
         assert request.source == "pipeline"
+
+
+class TestIntakeReportToDataRequestInventory:
+    """Phase 3 adapter extension: optional ``data_source_inventory`` kwarg."""
+
+    def _inventory(self) -> DataSourceInventory:
+        produced_at = datetime.now(UTC)
+        return DataSourceInventory(
+            entries=[
+                DataSourceEntry(
+                    name="claim_events",
+                    namespace="public",
+                    fully_qualified_name="public.claim_events",
+                    entity_kind="table",
+                    producer_id="curated:team",
+                )
+            ],
+            producers=[
+                ProducerMetadata(
+                    producer_id="curated:team",
+                    producer_type="curated",
+                    produced_at=produced_at,
+                )
+            ],
+            created_at=produced_at,
+        )
+
+    def test_default_none_preserves_pre_phase_3_behaviour(self) -> None:
+        intake = _make_intake()
+        request = intake_report_to_data_request(intake, run_id="run_001")
+        assert request.data_source_inventory is None
+
+    def test_inventory_passed_through(self) -> None:
+        intake = _make_intake()
+        inventory = self._inventory()
+        request = intake_report_to_data_request(
+            intake, run_id="run_001", data_source_inventory=inventory
+        )
+        assert request.data_source_inventory is inventory
+        assert request.data_source_inventory.entries[0].fully_qualified_name == (
+            "public.claim_events"
+        )
+
+    def test_empty_inventory_roundtrips(self) -> None:
+        empty = DataSourceInventory(
+            entries=[], producers=[], created_at=datetime.now(UTC)
+        )
+        intake = _make_intake()
+        request = intake_report_to_data_request(
+            intake, run_id="run_001", data_source_inventory=empty
+        )
+        assert request.data_source_inventory is not None
+        assert request.data_source_inventory.entries == []
