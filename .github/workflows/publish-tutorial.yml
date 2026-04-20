@@ -4,7 +4,7 @@ on:
   push:
     branches: [master]
     paths:
-      - docs/tutorial.md
+      - docs/*.md
       - mkdocs.yml
       - .github/workflows/publish-tutorial.yml
       - pyproject.toml

@@ -16,6 +16,12 @@ exclude_docs: |
   /style/
   /wiki/
 
+# index.md is a meta-refresh redirect from / to /tutorial/; keep it
+# built (so HTTP 200 at root) but out of the nav bar so the nav shows
+# only "Tutorial". not_in_nav: added in MkDocs 1.6.
+not_in_nav: |
+  /index.md
+
 nav:
   - Tutorial: tutorial.md
 
