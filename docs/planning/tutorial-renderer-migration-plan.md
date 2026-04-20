@@ -147,8 +147,10 @@ theme:
    Rationale for explicit version floors: MkDocs 1.5 for `exclude_docs:`; Material 9.0 for `content.code.copy`.
 3. **Write `mkdocs.yml`** per §7 at repo root.
 4. **Local verification:**
-   - `uv sync --extra docs` to install.
+   - `uv sync --all-extras` to install (see note below).
    - `uv run mkdocs build --strict` — must exit 0 with no warnings. `--strict` catches missing cross-references, orphaned excluded files, etc.
+
+   **`uv sync` note (Session 66 erratum):** `uv sync --extra docs` is *replacing*, not *additive* — running it on a dev environment that already has `agents` / `ui` / `dev` extras installed will **remove** those extras. Use `uv sync --all-extras` locally (or enumerate: `uv sync --extra docs --extra agents --extra ui --extra dev`). The Phase 2 CI workflow (§9) intentionally keeps `uv sync --extra docs` because CI runs in a fresh container where there are no pre-installed extras to remove.
    - Inspect `site/index.html` or `site/tutorial/index.html` (whichever MkDocs generates for a single-page nav) in a browser. Confirm copy buttons appear on code blocks.
    - `uv run mkdocs serve` — confirm live-reload serves at `http://127.0.0.1:8000`.
 5. **Update contributor guidance (if any found).**
@@ -177,7 +179,7 @@ ls scripts/render_tutorial.sh      # expect "No such file"
 
 # Config + build
 grep -c "content.code.copy" mkdocs.yml              # expect 1
-uv sync --extra docs
+uv sync --all-extras                                 # see §8.4 note — NOT --extra docs (that removes other extras)
 uv run mkdocs build --strict                        # expect exit 0, no warnings
 test -f site/tutorial/index.html || test -f site/index.html  # expect 0
 

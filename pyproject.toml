@@ -38,6 +38,10 @@ dev = [
     "mypy>=1.10",
     "ruff>=0.5",
 ]
+docs = [
+    "mkdocs>=1.5",
+    "mkdocs-material>=9.0",
+]
 
 [project.scripts]
 model-intake-agent = "model_project_constructor.agents.intake.cli:app"
