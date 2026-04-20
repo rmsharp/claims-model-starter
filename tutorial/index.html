@@ -1,0 +1,1612 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Walkthrough of the multi-agent pipeline from intake interview to initial model website">
+      
+      
+      
+        <link rel="canonical" href="https://rmsharp.github.io/claims-model-starter/tutorial/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Tutorial - Model Project Constructor — Tutorial</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#tutorial-running-the-model-project-constructor-pipeline" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Model Project Constructor — Tutorial" class="md-header__button md-logo" aria-label="Model Project Constructor — Tutorial" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Model Project Constructor — Tutorial
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tutorial
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/rmsharp/claims-model-starter" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    rmsharp/claims-model-starter
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Model Project Constructor — Tutorial" class="md-nav__button md-logo" aria-label="Model Project Constructor — Tutorial" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Model Project Constructor — Tutorial
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/rmsharp/claims-model-starter" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    rmsharp/claims-model-starter
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-tool-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this tool does
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-the-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install the project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-the-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify the install
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-create-the-intake-fixture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Create the intake fixture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-generate-the-intakereport-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Generate the IntakeReport JSON
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-run-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Run the pipeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3: Run the pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-you-should-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you should see
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-line-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command-line options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#try-github-ci-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Try GitHub CI output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-inspect-the-checkpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Inspect the checkpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-live-run-against-a-real-repo-host" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Live run against a real repo host
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 5: Live run against a real repo host">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5a-set-up-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5a: Set up environment variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5b-run-with-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5b: Run with --live
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5c-customize-the-target" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5c: Customize the target
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-real-llm-backed-run-scope-b-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Real LLM-backed run (Scope B-1)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 6: Real LLM-backed run (Scope B-1)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#6a-run-with-llm-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6a: Run with --llm data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6b-verify-the-data-side-actually-ran-against-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6b: Verify the data side actually ran against the API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6c-model-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6c: Model selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6d-optional-connect-a-read-only-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6d: Optional: connect a read-only database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6e-scripted-answers-intake-llm-both-scope-b-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6e: Scripted-answers intake (--llm both, Scope B-2)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-resuming-a-partial-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Resuming a partial run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-using-the-orchestrator-programmatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Using the orchestrator programmatically
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-generated-project-contains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the generated project contains
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-tool-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this tool does
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Prerequisites">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-the-project" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install the project
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-the-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verify the install
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-create-the-intake-fixture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Create the intake fixture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-generate-the-intakereport-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Generate the IntakeReport JSON
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-run-the-pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Run the pipeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3: Run the pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-you-should-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you should see
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#command-line-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command-line options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#try-github-ci-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Try GitHub CI output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-inspect-the-checkpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Inspect the checkpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-live-run-against-a-real-repo-host" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Live run against a real repo host
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 5: Live run against a real repo host">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#5a-set-up-environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5a: Set up environment variables
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5b-run-with-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5b: Run with --live
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5c-customize-the-target" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5c: Customize the target
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-real-llm-backed-run-scope-b-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Real LLM-backed run (Scope B-1)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 6: Real LLM-backed run (Scope B-1)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#6a-run-with-llm-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6a: Run with --llm data
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6b-verify-the-data-side-actually-ran-against-the-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6b: Verify the data side actually ran against the API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6c-model-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6c: Model selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6d-optional-connect-a-read-only-database" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6d: Optional: connect a read-only database
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6e-scripted-answers-intake-llm-both-scope-b-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6e: Scripted-answers intake (--llm both, Scope B-2)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-resuming-a-partial-run" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Resuming a partial run
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-using-the-orchestrator-programmatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Using the orchestrator programmatically
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-generated-project-contains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the generated project contains
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="tutorial-running-the-model-project-constructor-pipeline">Tutorial: Running the Model Project Constructor Pipeline</h1>
+<p>This tutorial walks you through your first end-to-end pipeline run, from generating an intake report to inspecting the scaffolded project. No API keys or credentials are needed -- everything runs locally with fixture data and an in-memory fake repository.</p>
+<p>A second tutorial (forthcoming) covers live LLM-backed interviews and real GitLab/GitHub deployments.</p>
+<hr />
+<h2 id="what-this-tool-does">What this tool does</h2>
+<p>The Model Project Constructor is a multi-agent pipeline that takes a business model idea and turns it into a governance-scaffolded repository project. The pipeline has three stages:</p>
+<ol>
+<li>
+<p><strong>Intake Agent</strong> -- Conducts a guided interview with a business stakeholder to capture the business problem, proposed solution, model solution, and estimated value. Produces an <code>IntakeReport</code>.</p>
+</li>
+<li>
+<p><strong>Data Agent</strong> -- Takes the intake report and generates SQL queries to collect relevant data, writes quality-check queries, and confirms expectations about the data. Produces a <code>DataReport</code>.</p>
+</li>
+<li>
+<p><strong>Website Agent</strong> -- Takes both reports and scaffolds a repository project (GitLab or GitHub) containing a draft model website with business understanding, implementation plans, data documentation, and initial model build sections. Produces a <code>RepoProjectResult</code>.</p>
+</li>
+</ol>
+<p>The orchestrator (<code>run_pipeline</code>) drives the three agents in sequence, persisting inter-agent handoffs as checkpoint envelopes so a failed run can be inspected and recovered.</p>
+<hr />
+<h2 id="prerequisites">Prerequisites</h2>
+<h3 id="install-the-project">Install the project</h3>
+<p>Clone the repository (substitute your clone URL):</p>
+<pre><code class="language-bash">git clone &lt;repo-url&gt; model_project_constructor
+</code></pre>
+<p>Enter the project directory:</p>
+<pre><code class="language-bash">cd model_project_constructor
+</code></pre>
+<p>Install dependencies:</p>
+<pre><code class="language-bash">uv sync --extra agents --extra ui --extra dev
+</code></pre>
+<p>The <code>agents</code> extra installs LangGraph, Anthropic SDK, GitLab/GitHub client libraries, and Typer (CLI). The <code>ui</code> extra installs FastAPI and related dependencies for the intake web UI. The <code>dev</code> extra adds pytest, mypy, and ruff.</p>
+<h3 id="verify-the-install">Verify the install</h3>
+<pre><code class="language-bash">uv run pytest -q
+</code></pre>
+<p>You should see 422+ tests pass with 97%+ coverage.</p>
+<hr />
+<h2 id="step-1-create-the-intake-fixture">Step 1: Create the intake fixture</h2>
+<p>The intake agent's input is a YAML file containing a scripted interview -- questions and answers that describe the business problem a model should solve. In production, these answers come from a live conversation with a business stakeholder (via the web UI or CLI). For this tutorial, we provide them as a fixture.</p>
+<p>Create a file called <code>my_intake.yaml</code> in the project root with the following content:</p>
+<pre><code class="language-yaml">schema: intake_fixture/v1
+stakeholder_id: stakeholder_claims_001
+session_id: intake_subrogation_001
+domain: pc_claims
+initial_problem: &gt;-
+  Subrogation recovery rates have dropped since rolling out a new claims system;
+  we want a model that helps adjusters flag recoverable claims and prompts them
+  to capture required evidence during intake.
+
+qa_pairs:
+  - question: &quot;Can you describe the business problem in your own words?&quot;
+    answer: &gt;-
+      Since we deployed the new claims system ~14 months ago our subrogation
+      recovery rate dropped roughly 20%. That's millions of dollars a year
+      we're not recovering from at-fault parties.
+  - question: &quot;What do you believe is causing the drop in recovery?&quot;
+    answer: &gt;-
+      Adjusters aren't capturing the information we need to pursue subrogation:
+      police reports, the other party's insurer, clear fault evidence. The new
+      UI makes those fields easy to skip and there's no KPI tying adjuster
+      performance to subrogation outcomes.
+  - question: &quot;What solution have you been considering?&quot;
+    answer: &gt;-
+      A prompt-based system embedded in the claims workflow that reminds
+      adjusters to collect the required evidence, and a scoring model that
+      flags claims likely to succeed in subrogation so we can prioritize them.
+  - question: &quot;If a model were to help, what would it predict and on what features?&quot;
+    answer: &gt;-
+      A binary classification: 1 = subrogation succeeded, 0 = did not. Features
+      would include completeness of captured info, adjuster experience, claim
+      type, time from incident to filing, damage amount, and evidence of fault.
+  - question: &quot;What data do we have available for training?&quot;
+    answer: &gt;-
+      Our claims datawarehouse has records back to 2020 including outcomes.
+      We also have adjuster metadata and the structured intake fields from the
+      old and new systems.
+  - question: &quot;How would you estimate the annual value of success?&quot;
+    answer: &gt;-
+      Subrogation recovery is roughly $30M/yr. A 10% lift is ~$3M annually
+      and I'd guess we could get somewhere between $2M and $4M.
+  - question: &quot;Do any adjuster or claimant attributes we'd use count as protected?&quot;
+    answer: &gt;-
+      No — we deliberately exclude protected attributes. The model uses claim
+      features and adjuster tenure only.
+
+draft_after: 7
+
+draft:
+  business_problem: &gt;-
+    Subrogation recovery dropped ~20% since deployment of a new claims
+    system, primarily because adjusters no longer capture evidence required
+    to pursue recovery (police reports, third-party insurer, fault evidence).
+    There is no adjuster KPI tying performance to subrogation outcomes and
+    the new UI deprioritizes the relevant intake fields.
+  proposed_solution: &gt;-
+    Embed structured prompts in the claims workflow so adjusters capture the
+    required evidence during intake, and surface a per-claim subrogation
+    probability score so claims likely to recover are prioritized. Success is
+    measured on subrogation recovery rate over a 12-month rolling window.
+  model_solution:
+    target_variable: successful_subrogation
+    target_definition: &gt;-
+      Binary outcome: 1 if a claim resulted in a non-zero subrogation recovery
+      within 18 months of first notice of loss, 0 otherwise.
+    candidate_features:
+      - information_completeness_score
+      - adjuster_tenure_years
+      - claim_type
+      - time_from_incident_to_filing_days
+      - damage_amount_usd
+      - fault_evidence_level
+    model_type: supervised_classification
+    evaluation_metrics:
+      - AUC
+      - precision_at_top_decile
+      - recall
+    is_supervised: true
+  estimated_value:
+    narrative: &gt;-
+      A 10% lift on the current ~$30M/year subrogation recovery yields
+      approximately $3M annually. The range below brackets conservative and
+      optimistic scenarios.
+    annual_impact_usd_low: 2000000
+    annual_impact_usd_high: 4000000
+    confidence: medium
+    assumptions:
+      - &quot;Current annual subrogation recovery is approximately $30M.&quot;
+      - &quot;10% recovery lift is conservative given the proposed levers.&quot;
+      - &quot;Adjuster compliance with prompts reaches 60%+ within 6 months.&quot;
+
+governance:
+  cycle_time: tactical
+  cycle_time_rationale: &gt;-
+    Scores are consumed during claim intake (minutes-to-hours) and adjuster
+    workflows change on weekly cadence. Operational would imply streaming
+    auto-decisioning, which this system is not.
+  risk_tier: tier_3_moderate
+  risk_tier_rationale: &gt;-
+    Advisory recommendation system only; humans make the subrogation
+    decision. No direct consumer-facing impact. Moderate financial exposure.
+  regulatory_frameworks:
+    - SR_11_7
+    - NAIC_AIS
+  affects_consumers: true
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT
+</code></pre>
+<p>The fixture has three sections:</p>
+<ul>
+<li><strong><code>qa_pairs</code></strong> -- The interview itself: seven question-answer pairs capturing the business problem, proposed solution, available data, estimated value, and governance considerations. This is what a business stakeholder provides.</li>
+<li><strong><code>draft</code></strong> -- The structured report the intake agent assembles from the answers. In a live run the LLM writes this; in a fixture run it is provided directly.</li>
+<li><strong><code>governance</code></strong> and <strong><code>review_sequence</code></strong> -- Risk classification and whether the stakeholder accepts the draft on first review.</li>
+</ul>
+<hr />
+<h2 id="step-2-generate-the-intakereport-json">Step 2: Generate the IntakeReport JSON</h2>
+<p>Run the intake agent against the fixture to produce the structured JSON report:</p>
+<pre><code class="language-bash">uv run model-intake-agent --fixture my_intake.yaml --output my_intake_report.json
+</code></pre>
+<p>This drives the intake agent through the scripted interview and writes the <code>IntakeReport</code> to <code>my_intake_report.json</code>. You can inspect it:</p>
+<pre><code class="language-bash">cat my_intake_report.json | python -m json.tool | head -20
+</code></pre>
+<p>You should see a JSON object with <code>"status": "COMPLETE"</code> and structured fields for the business problem, model solution, estimated value, and governance metadata.</p>
+<hr />
+<h2 id="step-3-run-the-pipeline">Step 3: Run the pipeline</h2>
+<p>Now run the full pipeline using the intake report you just generated. The script uses a pre-built <code>DataReport</code> fixture (since the data agent needs a database connection for a real run) and an in-memory fake repository client.</p>
+<pre><code class="language-bash">uv run python scripts/run_pipeline.py
+</code></pre>
+<p>This will:</p>
+<ol>
+<li>Load the pre-built <code>IntakeReport</code> from <code>tests/fixtures/subrogation_intake.json</code> (matching what you generated in Step 2)</li>
+<li>Load a pre-built <code>DataReport</code> (1.28M-row training set with quality checks) from <code>tests/fixtures/sample_datareport.json</code></li>
+<li>Wire up a <code>WebsiteAgent</code> backed by an in-memory <code>FakeRepoClient</code></li>
+<li>Run the full Intake -&gt; Data -&gt; Website pipeline through the orchestrator</li>
+<li>Print the result, metrics, checkpoint files, and generated project files</li>
+</ol>
+<h3 id="what-you-should-see">What you should see</h3>
+<pre><code>============================================================
+  Model Project Constructor -- End-to-End Pipeline Run
+  Mode: FAKE (dry run)  |  Host: gitlab  |  Run ID: run_a1b2c3d4
+============================================================
+
+[1/5] Loading fixture data...
+      Intake: successful_subrogation (supervised_classification)
+      Data:   1 queries, 2 confirmed expectations
+[2/5] Building pipeline config...
+      Target: data-science/model-drafts on https://gitlab.com
+      Checkpoints: .orchestrator/checkpoints
+[3/5] Wiring runners...
+      Runners ready.
+[4/5] Running pipeline...
+
+[5/5] Pipeline complete.
+
+============================================================
+  RESULT
+============================================================
+  Status:  COMPLETE
+  Project: https://fake.host.test/data-science/model-drafts/subrogation-pilot
+
+  Metrics:
+    Total runs:  1
+    Status dist: {'COMPLETE': 1}
+    intake: 0ms avg (1 call(s))
+    data: 0ms avg (1 call(s))
+    website: 4ms avg (1 call(s))
+
+  Checkpoints (.orchestrator/checkpoints/run_a1b2c3d4):
+    DataReport.json (5,507 bytes)
+    DataRequest.json (1,183 bytes)
+    IntakeReport.json (3,123 bytes)
+    RepoProjectResult.result.json (3,153 bytes)
+    RepoTarget.json (485 bytes)
+
+  Generated project: https://fake.host.test/data-science/model-drafts/subrogation-pilot
+  Files (38):
+    .gitignore
+    .gitlab-ci.yml
+    README.md
+    analysis/01_business_understanding.qmd
+    ...
+    src/subrogation_pilot/models.py
+    tests/test_models.py
+</code></pre>
+<h3 id="command-line-options">Command-line options</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--run-id ID</code></td>
+<td>Auto-generated</td>
+<td>Unique identifier for this run</td>
+</tr>
+<tr>
+<td><code>--host gitlab\|github</code></td>
+<td><code>gitlab</code></td>
+<td>Target host platform</td>
+</tr>
+<tr>
+<td><code>--checkpoint-dir PATH</code></td>
+<td><code>.orchestrator/checkpoints</code></td>
+<td>Where checkpoint envelopes are written</td>
+</tr>
+<tr>
+<td><code>--live</code></td>
+<td>off</td>
+<td>Use a real repo host (see Step 5)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="try-github-ci-output">Try GitHub CI output</h3>
+<pre><code class="language-bash">uv run python scripts/run_pipeline.py --host github
+</code></pre>
+<p>The generated project will contain <code>.github/workflows/ci.yml</code> instead of <code>.gitlab-ci.yml</code>.</p>
+<p><strong>Decoupling CI from host.</strong> <code>scripts/run_pipeline.py</code> always ties the CI manifest to <code>--host</code>. To emit a CI manifest that differs from the repo host (e.g. a GitHub Actions workflow into a GitLab project for fake-mode cross-platform testing), use the standalone website CLI with <code>--ci-platform {gitlab,github}</code>; see <code>OPERATIONS.md</code> §4.1 for the recipe.</p>
+<hr />
+<h2 id="step-4-inspect-the-checkpoints">Step 4: Inspect the checkpoints</h2>
+<p>Every inter-agent handoff is persisted as a JSON envelope in the checkpoint directory. After a run, you can inspect what each agent produced:</p>
+<pre><code class="language-bash">ls .orchestrator/checkpoints/run_*/
+</code></pre>
+<p>View the intake report that was passed to the data stage:</p>
+<pre><code class="language-bash">cat .orchestrator/checkpoints/run_*/IntakeReport.json | python -m json.tool | head -30
+</code></pre>
+<p>View the final project result:</p>
+<pre><code class="language-bash">cat .orchestrator/checkpoints/run_*/RepoProjectResult.result.json | python -m json.tool
+</code></pre>
+<p>The checkpoint layout tells you exactly how far a run got:</p>
+<table>
+<thead>
+<tr>
+<th>Files present</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>IntakeReport.json</code> only</td>
+<td>Failed at intake</td>
+</tr>
+<tr>
+<td><code>+ DataRequest.json + DataReport.json</code></td>
+<td>Failed at data</td>
+</tr>
+<tr>
+<td><code>+ RepoTarget.json + RepoProjectResult.result.json</code></td>
+<td>Reached website (check <code>status</code> for COMPLETE vs FAILED)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="step-5-live-run-against-a-real-repo-host">Step 5: Live run against a real repo host</h2>
+<p>When you are ready to create an actual repository project, set up credentials and use the <code>--live</code> flag.</p>
+<h3 id="5a-set-up-environment-variables">5a: Set up environment variables</h3>
+<p>Copy the template and fill in your credentials:</p>
+<pre><code class="language-bash">cp .env.example .env
+</code></pre>
+<p>Edit <code>.env</code>:</p>
+<pre><code class="language-bash"># For GitLab:
+MPC_HOST=gitlab
+GITLAB_TOKEN=glpat-xxxxxxxxxxxxxxxxxxxx
+
+# Or for GitHub:
+# MPC_HOST=github
+# GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# For real LLM-backed agents (not needed for fixture-based runs):
+# ANTHROPIC_API_KEY=sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+</code></pre>
+<p>Load the environment (choose one method):</p>
+<p><strong>Option A — direnv</strong> (if you use it):</p>
+<pre><code class="language-bash">echo &quot;dotenv&quot; &gt; .envrc &amp;&amp; direnv allow
+</code></pre>
+<p><strong>Option B — manual export:</strong></p>
+<pre><code class="language-bash">export $(grep -v '^#' .env | xargs)
+</code></pre>
+<p><strong>Option C — source a wrapper:</strong></p>
+<pre><code class="language-bash">source &lt;(grep -v '^#' .env | sed 's/^/export /')
+</code></pre>
+<h3 id="5b-run-with-live">5b: Run with --live</h3>
+<pre><code class="language-bash">uv run python scripts/run_pipeline.py --live --host gitlab
+</code></pre>
+<p>This will create a real GitLab project at <code>https://gitlab.com/&lt;namespace&gt;/subrogation_pilot</code> (or a suffixed name if the project already exists) containing the full model website scaffold.</p>
+<p>For GitHub:</p>
+<pre><code class="language-bash">uv run python scripts/run_pipeline.py --live --host github
+</code></pre>
+<h3 id="5c-customize-the-target">5c: Customize the target</h3>
+<p>Set the <code>MPC_NAMESPACE</code> environment variable to control where the project is created. <strong><code>MPC_NAMESPACE</code> must be a path, not a URL</strong> — the GitLab and GitHub adapters look up the group/org by path, so pasting the full URL surfaces as an unhelpful <code>404</code>. The orchestrator rejects URL-prefixed values at config-load time. Pick the form that matches your host:</p>
+<p>GitLab top-level group path:</p>
+<pre><code class="language-bash">export MPC_NAMESPACE=&quot;rmsharp-modelpilot&quot;
+</code></pre>
+<p>GitLab nested group path:</p>
+<pre><code class="language-bash">export MPC_NAMESPACE=&quot;data-science/model-drafts&quot;
+</code></pre>
+<p>GitHub org or personal account:</p>
+<pre><code class="language-bash">export MPC_NAMESPACE=&quot;my-github-org&quot;
+</code></pre>
+<p>If you accidentally paste the URL form, the script fails fast before any agent runs:</p>
+<pre><code>$ MPC_NAMESPACE=https://gitlab.com/rmsharp-modelpilot uv run python scripts/run_pipeline.py --live --host gitlab
+ConfigError: MPC_NAMESPACE must be a group path, not a URL; got 'https://gitlab.com/rmsharp-modelpilot'.
+Use the path only, e.g. 'rmsharp-modelpilot' instead of 'https://gitlab.com/rmsharp-modelpilot'.
+</code></pre>
+<p>For self-hosted GitLab or GitHub Enterprise, set the host URL for your platform:</p>
+<p>Self-hosted GitLab:</p>
+<pre><code class="language-bash">export MPC_HOST_URL=&quot;https://gitlab.internal.company.com&quot;
+</code></pre>
+<p>GitHub Enterprise:</p>
+<pre><code class="language-bash">export MPC_HOST_URL=&quot;https://github.mycompany.com/api/v3&quot;
+</code></pre>
+<hr />
+<h2 id="step-6-real-llm-backed-run-scope-b-1">Step 6: Real LLM-backed run (Scope B-1)</h2>
+<p>Steps 1–5 run the full pipeline but use fixture data for the intake and data stages — no Claude calls are made. Step 6 graduates the <strong>data stage</strong> to a real Anthropic-backed data agent while keeping the intake on the fixture. This proves that Claude can actually write SQL for your subrogation request and feed a <code>DataReport</code> the website stage can consume.</p>
+<blockquote>
+<p><strong>Prerequisite:</strong> <code>ANTHROPIC_API_KEY</code> must be set (see §5a). The fixture intake <code>tests/fixtures/subrogation_intake.json</code> is still used, so no intake interview is required.</p>
+</blockquote>
+<h3 id="6a-run-with-llm-data">6a: Run with <code>--llm data</code></h3>
+<pre><code class="language-bash">uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm data \
+    --model claude-opus-4-7 \
+    --run-id run_b1_$(date +%Y%m%d_%H%M%S)
+</code></pre>
+<p>What changes vs. <code>--live</code> alone:</p>
+<ul>
+<li>The data runner is now <code>DataAgent(AnthropicLLMClient(model=...)).run</code>, not a lambda serving the fixture <code>sample_datareport.json</code>.</li>
+<li>Claude generates primary queries, quality checks, a summary, and one datasheet per primary query.</li>
+<li>Cost: ~$0.10–$0.50 per run depending on model (see §6c).</li>
+<li>Runtime: adds 30–90 s vs. the fake run.</li>
+</ul>
+<p>The intake stage is unchanged from Step 5 — fixture-driven. To graduate the intake to a real LLM as well, see §6e (<code>--llm both</code>).</p>
+<h3 id="6b-verify-the-data-side-actually-ran-against-the-api">6b: Verify the data side actually ran against the API</h3>
+<p>Read the <code>DataReport.json</code> envelope and confirm the SQL differs from the fixture:</p>
+<pre><code class="language-bash">python -c &quot;
+from pathlib import Path
+import json
+env = json.loads(
+    Path('.orchestrator/checkpoints/&lt;run_id&gt;/DataReport.json').read_text()
+)
+report = env['payload']
+print('status:', report['status'])
+print('queries:', len(report['primary_queries']))
+print('sql_preview:', report['primary_queries'][0]['sql'][:120])
+&quot;
+</code></pre>
+<p>The fixture's first query opens with <code>SELECT claim_id, ...</code>; a live Claude run produces model-generated SQL that varies by prompt and model. If your preview looks identical to the fixture, something is wrong — rerun with a fresh <code>--run-id</code> to rule out checkpoint staleness.</p>
+<h3 id="6c-model-selection">6c: Model selection</h3>
+<p>Override the default with <code>--model</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Model ID</th>
+<th>Strength</th>
+<th>Cost (relative)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claude-opus-4-7</code> (default)</td>
+<td>highest quality; best for first-impression pilot runs</td>
+<td>5×</td>
+</tr>
+<tr>
+<td><code>claude-sonnet-4-6</code></td>
+<td>fast, cost-effective; fine for iterating</td>
+<td>1×</td>
+</tr>
+<tr>
+<td><code>claude-haiku-4-5-20251001</code></td>
+<td>cheapest, fastest; may miss subtle semantics</td>
+<td>0.2×</td>
+</tr>
+</tbody>
+</table>
+<p>For production, tune by running each model on a representative request and inspecting the generated SQL. For the first pilot run, <code>claude-opus-4-7</code> removes "was it the model?" as a confounding variable when judging output quality.</p>
+<h3 id="6d-optional-connect-a-read-only-database">6d: Optional: connect a read-only database</h3>
+<p>By default <code>--db-url</code> is omitted and the data agent <strong>generates</strong> quality checks but does not <strong>execute</strong> them. To execute:</p>
+<pre><code class="language-bash">uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm data \
+    --db-url sqlite:///path/to/readonly.db \
+    --run-id run_b1_db_$(date +%s)
+</code></pre>
+<p>The URL follows SQLAlchemy syntax (<code>postgresql://user:pass@host/db</code>, <code>sqlite:///path</code>, etc.). When connected, the <code>DataReport.confirmed_expectations</code> field will be populated based on real query results instead of the standard "database unreachable" line. Scope B-1 deliberately defaults to disconnected — the pilot's goal is to prove Claude's query generation, not debug SQL connectivity at the same time.</p>
+<h3 id="6e-scripted-answers-intake-llm-both-scope-b-2">6e: Scripted-answers intake (<code>--llm both</code>, Scope B-2)</h3>
+<p><code>--llm both</code> drives a real Claude-backed intake interview with answers pulled from a YAML fixture. Claude generates the questions and decides when it has enough information to draft; the fixture supplies the stakeholder's answers verbatim.</p>
+<pre><code class="language-bash">uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm both \
+    --model claude-opus-4-7 \
+    --intake-fixture tests/fixtures/subrogation_b2.yaml \
+    --run-id run_b2_$(date +%Y%m%d_%H%M%S)
+</code></pre>
+<p>How it differs from <code>--llm data</code>:</p>
+<ul>
+<li>The intake runner is <code>IntakeAgent(AnthropicLLMClient(model=...)).run_scripted(...)</code>. Claude asks its own questions, decides when to flip <code>believe_enough_info</code>, drafts the four required sections, and classifies governance.</li>
+<li>The fixture's <code>draft_after</code> field is a <strong>no-op</strong> in this mode — only the LLM decides when to stop interviewing. The fixture just supplies answers. Provide at least as many <code>qa_pairs</code> as <code>MAX_QUESTIONS</code> (see <code>src/model_project_constructor/agents/intake/state.py:57</code>) to guarantee the graph terminates.</li>
+<li><code>--model</code> applies to <strong>both</strong> stages. Mixed-model runs (e.g. haiku for intake, opus for data) are not supported.</li>
+<li>Cost: ~$0.15–$0.75 per run (intake ~5–12 Claude calls + data as before).</li>
+<li>Runtime: 60–90 s for intake + 2–5 min for data.</li>
+</ul>
+<p><strong>Failure behavior.</strong> If the fixture runs out of answers before Claude is satisfied, or if Claude raises (rate limit, bad JSON, network), the inline <code>_draft_incomplete_from_exception</code> adapter converts the error into a <code>DRAFT_INCOMPLETE</code> <code>IntakeReport</code> so the pipeline halts with <code>PipelineResult.status == "FAILED_AT_INTAKE"</code> rather than crashing. Inspect <code>.orchestrator/checkpoints/&lt;run_id&gt;/IntakeReport.json</code> to see the error code in <code>missing_fields[0]</code>.</p>
+<p><strong>Verify the intake side ran.</strong> The intake envelope's <code>business_problem</code> + <code>proposed_solution</code> prose will differ from <code>tests/fixtures/subrogation_intake.json</code>, and <code>questions_asked</code> will be between 1 and <code>MAX_QUESTIONS</code> for a real interview (the DRAFT_INCOMPLETE stub emitted by the adapter reports <code>questions_asked: 0</code>).</p>
+<hr />
+<h2 id="step-7-resuming-a-partial-run">Step 7: Resuming a partial run</h2>
+<p>Pipelines fail. A rate-limited Claude call, a transient GitLab 5xx, a
+network hiccup mid-website-push — any of these can halt a run partway
+through. Because every inter-agent handoff is persisted as a checkpoint
+envelope (see Step 4), you can pick up where the run halted instead of
+starting over:</p>
+<pre><code class="language-bash">uv run python scripts/run_pipeline.py \
+    --live --host gitlab --llm data \
+    --resume run_b1_20260418_142307
+</code></pre>
+<p>The orchestrator inspects <code>&lt;checkpoint_dir&gt;/&lt;run_id&gt;/</code>, loads every
+envelope already on disk, and re-executes from the first missing stage.
+The banner names the resume point and the stages it is skipping:</p>
+<pre><code>  Run ID: run_b1_20260418_142307  (RESUMED from: data)
+  Skipping: intake, intake_to_data_adapter
+</code></pre>
+<p><code>--resume</code> overrides <code>--run-id</code> — pass only the resumed run's id. If
+the checkpoint directory is missing, the run is already complete, or
+the envelopes on disk are inconsistent (a successor without its
+predecessor), the script exits with a friendly message and a non-zero
+exit code instead of silently starting fresh.</p>
+<p>For the full case-by-case behavior (what counts as "already complete",
+how to retry a <code>FAILED</code> website stage, how to recover from manual
+checkpoint-dir mutation) see <code>OPERATIONS.md</code> §5. The truth table that
+drives the resume-point decision lives in
+<code>docs/planning/resume-from-checkpoint-plan.md</code> §5.</p>
+<hr />
+<h2 id="step-8-using-the-orchestrator-programmatically">Step 8: Using the orchestrator programmatically</h2>
+<p>For integration into larger systems, use the <code>run_pipeline</code> function directly:</p>
+<pre><code class="language-python">from pathlib import Path
+
+from model_project_constructor.agents.website.agent import WebsiteAgent
+from model_project_constructor.agents.website.fake_client import FakeRepoClient
+from model_project_constructor.orchestrator import (
+    MetricsRegistry,
+    PipelineConfig,
+    make_logged_runner,
+    make_measured_runner,
+    run_pipeline,
+)
+from model_project_constructor.schemas.v1.data import DataReport
+from model_project_constructor.schemas.v1.intake import IntakeReport
+from model_project_constructor.schemas.v1.repo import RepoTarget
+
+# Load your reports (from files, LLM agents, or any other source)
+intake = IntakeReport.model_validate_json(Path(&quot;intake.json&quot;).read_text())
+data = DataReport.model_validate_json(Path(&quot;data.json&quot;).read_text())
+
+# Configure the run
+config = PipelineConfig(
+    run_id=&quot;my_run_001&quot;,
+    repo_target=RepoTarget(
+        host_url=&quot;https://gitlab.com&quot;,
+        namespace=&quot;data-science/model-drafts&quot;,
+        project_name_hint=&quot;my_model_project&quot;,
+        visibility=&quot;private&quot;,
+    ),
+    checkpoint_dir=Path(&quot;.orchestrator/checkpoints&quot;),
+)
+
+# Build a website runner (fake or real)
+client = FakeRepoClient()
+agent = WebsiteAgent(client, ci_platform=&quot;gitlab&quot;)
+
+# Optional: add observability
+metrics = MetricsRegistry()
+
+result = run_pipeline(
+    config,
+    intake_runner=lambda: intake,
+    data_runner=lambda _req: data,
+    website_runner=make_logged_runner(
+        make_measured_runner(agent.run, agent_name=&quot;website&quot;, registry=metrics),
+        agent_name=&quot;website&quot;,
+        run_id=config.run_id,
+        correlation_id=config.correlation_id,
+    ),
+)
+
+print(f&quot;Status: {result.status}&quot;)
+if result.project_url:
+    print(f&quot;Project: {result.project_url}&quot;)
+</code></pre>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Problem</th>
+<th>Cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ConfigError: GITLAB_TOKEN is required</code></td>
+<td>Missing credentials in <code>--live</code> mode</td>
+<td>Set <code>GITLAB_TOKEN</code> or <code>GITHUB_TOKEN</code> in your environment</td>
+</tr>
+<tr>
+<td><code>ConfigError: ANTHROPIC_API_KEY is required</code></td>
+<td>Agent runner needs LLM access</td>
+<td>Set <code>ANTHROPIC_API_KEY</code> for real LLM-backed runs</td>
+</tr>
+<tr>
+<td><code>ModuleNotFoundError: langgraph</code></td>
+<td>Missing <code>agents</code> extra</td>
+<td>Run <code>uv sync --extra agents</code></td>
+</tr>
+<tr>
+<td>Pipeline halts at <code>FAILED_AT_INTAKE</code></td>
+<td>Intake report has <code>DRAFT_INCOMPLETE</code> status</td>
+<td>Check the intake fixture or re-run the intake interview</td>
+</tr>
+<tr>
+<td>Pipeline halts at <code>FAILED_AT_DATA</code></td>
+<td>Data report has non-COMPLETE status</td>
+<td>Check data agent logs or the <code>DataReport.status</code> field</td>
+</tr>
+<tr>
+<td>Project name conflict on live host</td>
+<td>Project already exists in namespace</td>
+<td>The website agent auto-suffixes; check the <code>project_url</code> in the result</td>
+</tr>
+</tbody>
+</table>
+<p>For detailed failure-mode diagnostics, see <code>TROUBLESHOOTING.md</code>.</p>
+<hr />
+<h2 id="what-the-generated-project-contains">What the generated project contains</h2>
+<p>A successful run creates a repository project with:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>README.md</code></td>
+<td>Project overview with business context</td>
+</tr>
+<tr>
+<td><code>.gitlab-ci.yml</code> or <code>.github/workflows/ci.yml</code></td>
+<td>CI pipeline for the model project</td>
+</tr>
+<tr>
+<td><code>analysis/</code></td>
+<td>Quarto notebooks: business understanding, data, EDA, feature engineering, initial models, implementation plan, extensions</td>
+</tr>
+<tr>
+<td><code>data/</code></td>
+<td>Data documentation and datasheets</td>
+</tr>
+<tr>
+<td><code>queries/</code></td>
+<td>SQL queries (primary + quality checks)</td>
+</tr>
+<tr>
+<td><code>reports/</code></td>
+<td>Intake and data reports in JSON and Markdown</td>
+</tr>
+<tr>
+<td><code>src/</code></td>
+<td>Initial model build scaffolding (data loading, features, models, evaluation)</td>
+</tr>
+<tr>
+<td><code>tests/</code></td>
+<td>Test stubs for each source module</td>
+</tr>
+<tr>
+<td><code>governance/</code></td>
+<td>Governance artifacts (proportional to risk tier): model card, deployment gates, monitoring plan, regulatory compliance</td>
+</tr>
+</tbody>
+</table>
+<p>The project is a <strong>draft scaffold</strong> for a data science team to refine -- it contains reasonable defaults and marks areas that need human judgment.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
