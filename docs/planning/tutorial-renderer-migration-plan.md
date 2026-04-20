@@ -253,7 +253,7 @@ test -f .github/workflows/publish-tutorial.yml
 # is NOT in the static HTML `curl` retrieves. The static-visible marker for copy-button
 # wiring is the `content.code.copy` feature flag in the `__config` script tag. If that
 # string is present and the Material JS bundle loads, the button renders in the browser.)
-curl -sf https://rmsharp.github.io/claims-model-starter/ | grep -q 'content.code.copy'
+curl -sf https://rmsharp.github.io/claims-model-starter/tutorial/ | grep -q 'content.code.copy'
 
 # Workflow run succeeded
 gh run list --workflow publish-tutorial.yml --limit 1 --json conclusion --jq '.[0].conclusion'
