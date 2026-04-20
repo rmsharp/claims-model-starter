@@ -4,6 +4,8 @@ Multi-agent pipeline that turns a business model idea into a governance-scaffold
 
 The repository is published as `claims-model-starter` on GitHub; the internal package name remains `model-project-constructor`.
 
+**Tutorial (published):** https://rmsharp.github.io/claims-model-starter/
+
 ## Status
 
 Early implementation. Phases and session boundaries are tracked in `SESSION_NOTES.md`; the authoritative design document is `docs/architecture-history/architecture-plan.md` (archived concept-era plan — see `docs/methodology/PROJECT_CONVENTIONS.md` §3).

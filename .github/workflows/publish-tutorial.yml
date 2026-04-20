@@ -1,0 +1,26 @@
+name: Publish Tutorial
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - docs/tutorial.md
+      - mkdocs.yml
+      - .github/workflows/publish-tutorial.yml
+      - pyproject.toml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build + gh-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      - run: uv sync --extra docs
+      - run: uv run mkdocs gh-deploy --force --clean
