@@ -52,6 +52,8 @@
 
 ## Statistical terms
 
+> **Curated subset.** See [`docs/style/statistical_terms.md`](../../style/statistical_terms.md) for the full glossary, authoritative sources, and amendment process.
+
 | Term | Definition | Common confusion |
 |------|-----------|-----------------|
 | **Probability** | The chance of an event occurring, expressed as a number between 0 and 1. | Often conflated with "likelihood" in casual usage. In this project, use "probability" when referring to P(event). |
