@@ -1,5 +1,7 @@
 # Model Project Constructor
 
+**Version:** 0.01
+
 Multi-agent pipeline that turns a business model idea into a governance-scaffolded GitLab or GitHub project. Given a stakeholder interview, it produces (1) a structured intake report, (2) a data collection plan with validated SQL and a datasheet, and (3) a draft model-build repository with proportional governance artifacts for the claims domain of a property-and-casualty insurer.
 
 The repository is published as `claims-model-starter` on GitHub; the internal package name remains `model-project-constructor`.
