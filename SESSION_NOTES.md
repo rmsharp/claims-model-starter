@@ -5,9 +5,142 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 68 — operator direction (not from BACKLOG): **Add `Version: 0.01` to existing `README.md`.** Trivial one-line characterization-metadata addition. User clarified scope at pre-claim alignment (existing README is comprehensive and stays intact). No source code, schema, or doc-structure changes. Gates expected unchanged.
+**Task:** Session 69 — operator direction (off-BACKLOG, methodology housekeeping). Promote Candidate Learning #52 (grep-before-insert for non-stub structured-file edits) to permanent row #34 in `SESSION_RUNNER.md` Learnings table. Use Session 68's pre-drafted phrasing verbatim; fold a one-line "See also" note pointing at Candidate Learning #56 (archive-heading pre-grep specialization, still 1st instance) without promoting #56. User selected scope + phrasing at pre-claim alignment via AskUserQuestion. 3-instance candidate-promotion discipline preserved (#52 reached 4 instances; #55 and #56 remain candidates). Single-row table edit + standard close-out. Gates expected unchanged.
 
-**Status:** Session 68 COMPLETE. Added `**Version:** 0.01` line to `README.md` at line 3 (between title and description paragraph). Operator scope confirmed at pre-claim alignment as minimal-change (existing 213-line README otherwise untouched; no `__version__` constant, `pyproject.toml` bump, git tag, or release artifact). Gates green: pytest 576/576 @ 97.28%; ruff clean; mypy 0 issues in 61 files (all unchanged from Session 67 baseline as expected — README is not on any tooling's input path). CHANGELOG Session 68 entry at top of Unreleased (36th consecutive structure match). BACKLOG unchanged (work was operator-directed, not BACKLOG-driven). Commit: `docs(readme): add Version 0.01 marker` (pending).
+**Status:** Session 69 claimed. Work beginning.
+
+### Session 68 Handoff Evaluation (by Session 69)
+
+**Score: 9.5/10.** Session 68's handoff was load-bearing for this micro-deliverable in a textbook way: Phase 3C had pre-drafted the promotion phrasing verbatim, gotcha #4 named Candidate Learning #52 as promotion-ready with the exact 4-instance running count, gotcha #5 flagged Candidate Learning #55 at 2nd instance for non-promotion, and gotcha #6 filed NEW Candidate Learning #56 (archive-heading pre-grep specialization) at 1st instance — three distinct candidate-namespace statuses, each correctly labelled. The user's "Promote Candidate Learning #52 to permanent" instruction collapsed directly onto these notes; my only judgment calls were (a) whether to fold #56 into row #34 (offered as an AskUserQuestion option; operator chose "fold as See-also note") and (b) phrasing fidelity (offered as a second AskUserQuestion option; operator chose "match Session 68 draft verbatim"). Both decisions were operator-resolved in one pre-claim round-trip. Zero re-derivation; ROI ~6× on the handoff package.
+
+- **What helped:** (a) Gotcha #1 pre-commit state (576/576 @ 97.28%; ruff clean; mypy 0/61) matched exactly at Phase 0. (b) Gotcha #2 BACKLOG (1 `[ ]`, 0 `[x]`) matched. (c) Gotcha #3 Learning #29 stub-grep recipe applied cleanly — 13 pre-existing prose-reference hits (Session 68 handoff-body forward references), zero heading collisions. **33rd consecutive clean.** (d) Gotcha #4 Candidate Learning #52 status with the exact 4-instance running count (Sessions 65 filed / 66 applied / 67 applied / 68 validated) — let me write the Source column of row #34 without re-derivation. The pre-drafted phrasing in Session 68 Phase 3C went into row #34's Learning column verbatim. (e) Gotcha #5 Candidate Learning #55 status (2nd instance; 1 more for promotion) anchored the operator question 1 — I could phrase "do NOT promote #55, the 3-instance discipline says wait." (f) Gotcha #6 NEW Candidate Learning #56 at 1st instance let me offer the operator a "fold #56 into row #34 as See-also" option without inventing the relationship — the relationship was already documented as "specialization of #52 for archive-heading-edits" in Session 68 Phase 3C. (g) Gotcha #7 / #21 archive-at-Phase-1B 8th consecutive validation (62, 63, 64, 65, 66, 67, 68, 69). (h) Gotcha #8 CHANGELOG 36-consecutive-structure target → 37th match achieved. (i) Gotcha #14 line-shift note (README pointer pushed to line 9 post-Session-68) — N/A this session (no README edit) but mechanically internalized for future README work. (j) Gotcha #13 commit-message convention (`docs(...)` for documentation) directly informed this session's `docs(methodology):` prefix.
+- **What was missing:** Nothing load-bearing. Session 68 reasonably could not have predicted the operator's specific choice between #52-only / #52+#56-fold / promote-both — but the handoff named all three candidate statuses precisely enough that I could synthesize the question options without re-deriving any state. **-0.0** on the missing dimension.
+- **What was wrong:** Nothing. Pre-commit numbers, BACKLOG state, candidate-Learning instance counts, archive-convention pointer, gate scope (mypy 48 src + 13 packages), and commit-convention recipe all matched exactly.
+- **ROI:** ~6×. Higher than Session 68's 3× because Session 68's handoff WAS deliverable-content-load-bearing for this session — gotcha #4 was the deliverable (promote #52). Calibration: 9.5 rather than 10 because (a) the Edit-tool quirk I hit (see Phase 3B below) was not foreseeable from any prior handoff, but a hypothetically-perfect handoff would have warned about archive-content-duplication-after-first-edit; (b) the Session 68 phrasing draft was just slightly long for a single table-row cell, requiring me to weigh row-length vs prose-fidelity (operator chose fidelity). Neither -0.25 is a Session 68 defect; both are honest calibration deductions.
+
+### What Session 69 Did
+
+**Deliverable:** Promote Candidate Learning #52 to permanent row #34 in `SESSION_RUNNER.md`'s Learnings table. **COMPLETE.**
+**Started:** 2026-05-12
+**Completed:** 2026-05-12
+**Commit (pending):** `docs(methodology): promote Candidate Learning #52 to permanent (row #34)`
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS.md (full) + SESSION_RUNNER.md (full, including all 33 permanent Learnings) + SESSION_NOTES.md ACTIVE TASK + Session 68's complete handoff + BACKLOG.md + dashboard (96/100, medium risk, active). `git status` clean, in sync with `origin/master` (operator pushed Session 68's commit `0e96526`). `git log -10` matched Session 68's archive entry verbatim; zero ghost commits. BACKLOG: 1 `[ ]`, 0 `[x]` (Phase 4 OPTIONAL). Reported findings, waited for direction.
+2. **Pre-claim alignment via AskUserQuestion (2 questions, 1 round-trip).** Q1 promotion scope — operator chose "#52 + fold #56 as See-also note" (3-instance discipline preserved for #55 and #56 individually). Q2 row #34 phrasing — operator chose "Match Session 68 draft verbatim." Both resolved cleanly; zero re-derivation.
+3. **Phase 1B stub — Learning #29 33rd consecutive clean.** Grep-before-insert pattern `Session 69|### What Session 69 Did|### Session 68 Handoff Evaluation|Post-Session-69` returned 13 pre-existing prose-reference hits (all legitimate Session 68 handoff-body forward references), zero heading collisions. **NEW Candidate Learning #56 1st-instance application:** pre-grepped archive-heading string `### Session 68 ARCHIVED ACTIVE TASK` — 1 prose hit (Session 68 gotcha #7 telling me to create it), 0 existing heading. Insertion was a NEW HEADING add, not an Edit, so collision risk was zero. Inserted archive immediately above `### Session 67 ARCHIVED ACTIVE TASK` per Candidate Learning #55 convention (2nd instance still — promotion gate not yet hit).
+4. **Edit-tool quirk encountered + recovered.** First three attempts at replacing the Session 68 Task/Status block with the Session 69 stub failed with the misleading error message `InputValidationError: The required parameter 'new_string' is missing`. Root cause (diagnosed after the second-Edit success on the archive insertion turned out to duplicate the Task/Status content): the `old_string` matched two locations once the archive copy landed, and the Edit tool surfaced that as "new_string missing" rather than "multiple matches." Recovered by switching the Status-line replace to a Python `text.replace()` after a `text.count() == 1` check. The Edit tool worked again on a smaller anchor afterwards (heading undo). **Filed as NEW Candidate Learning #57 below** — when Edit reports "new_string missing" despite new_string clearly being supplied, suspect a multi-match condition with a misleading error surface. 1st instance Session 69; 2 more for promotion.
+5. **Row #34 insertion via Python.** Pre-grep `| 33 |` anchor unique-match-1 confirmed; inserted Session 68's verbatim phrasing + See-also note for Candidate #56 between row #33 and the `---` separator. Net +1 row; +1244 bytes. Row format matches the 4-column `| N | Learning | Source | When to Apply |` convention.
+6. **Gate verification — Learning #39 15th instance, 8th consecutive preventive-by-default.** Ran `pytest`, `ruff`, and `mypy` (src + packages/data-agent) in parallel BEFORE drafting the Verified bullet. All unchanged from Session 68 baseline: pytest 576/576 @ 97.28%; ruff clean; mypy 0 issues in 48 + 13 = 61 files. SESSION_RUNNER.md is not on any tooling's input path so the unchanged result was expected.
+7. **CHANGELOG Session 69 entry at top of Unreleased.** 37th consecutive structure match: context / Added / Verified / Unchanged intentionally / Next. Context paragraph documents promotion provenance (4 instances) + the Candidate #55/#56 deferrals + the 3-instance discipline.
+8. **Phase 3 close-out** — this block, handoff to Session 70, gotchas, commit. No push (per SAFEGUARDS).
+
+### Phase 3B: Self-assess — 8.5/10
+
+- **Research before creative work:** Yes. Phase 0 + pre-claim alignment via AskUserQuestion before any file operation. Read SESSION_RUNNER.md Learnings table tail (rows #28–#33) and the table boundary (line 305/306) before drafting row #34. Re-read SESSION_NOTES.md at every Edit failure to verify file state rather than acting from memory.
+- **Stakeholder corrections:** 0 direct corrections. 1 pre-claim alignment round-trip (2 questions → operator picked option 1 on both). Zero round-trips during execution.
+- **Planning Session discipline:** N/A — implementation session. No plan was input; Session 68's Phase 3C draft was the execution reference, not a plan.
+- **What I got right:** (a) **Asked the right pre-claim questions** — promotion scope + phrasing fidelity were the two genuine judgment calls, both surfaced as 3-option AskUserQuestion so operator could pick rather than approve-or-reject my guess. Saved a potential redo. (b) **Phase 1B stub-grep clean (33rd consecutive).** (c) **3-instance candidate-promotion discipline preserved** — promoted #52 only (4 instances); left #55 and #56 as candidates per discipline. The temptation to promote #55 too ("2nd instance is close enough") was named in AskUserQuestion option 3 and rejected. (d) **Gates run BEFORE Verified-bullet draft** — Learning #39 institutional, 8th consecutive preventive-by-default. (e) **CHANGELOG 37th-consecutive-structure match.** (f) **Row #34 phrasing matches Session 68 draft verbatim** — operator chose this; honored without editorialization. (g) **See-also note for Candidate #56 keeps the relationship discoverable** without granting #56 unearned promotion status. (h) **Diagnosed the Edit-tool quirk during execution and recovered** rather than abandoning the file or compounding errors — Python `text.replace()` with a `count == 1` check became the clean fallback. Will surface as Candidate Learning #57.
+- **What I got wrong:** (a) **Three failed Edit attempts on the Status-line replace before diagnosing the duplicate-match root cause.** Each failure returned the misleading "new_string missing" error; I retried with progressively-smaller new_strings before realizing the issue was old_string ambiguity, not new_string parsing. Cost: ~3 minutes + 4 wasted tool calls. Root cause: I did not anticipate that the SECOND Edit (which succeeded — the archive insertion) had duplicated the Task/Status content, making subsequent old_string matches non-unique. **-0.5.** Filed as Candidate Learning #57 (Edit-tool "new_string missing" → suspect duplicate-match). (b) **Prematurely renamed the `### Session 67 Handoff Evaluation (by Session 68)` heading to `### Session 68 Handoff Evaluation (by Session 69)` as part of the Python replace** — should have happened only at Phase 3 close-out, not Phase 1B stub. Caught immediately on file re-read; reverted with one Edit. Cost: 2 extra tool calls (the rename + the revert), ~30s. Root cause: bundled too much into one Python replace; the Python replace was load-bearing only for the Status-line fix, not the heading rename. **-0.5.** Candidate Learning #58 (Phase-1B vs Phase-3 boundary discipline — heading renames belong to close-out, not stub). 1st instance. Calibration: 8.5 peer with Session 68 (8.5) and Session 65 (8.75). Below Session 67 (9.0) because of two avoidable retries.
+- **Quality bar vs previous sessions:** On par with Session 68. Pre-claim alignment discipline + 3-instance candidate-discipline preserved + 37th-consecutive CHANGELOG structure match + 33rd-consecutive Learning #29 clean — these are unconscious-competence wins. The Edit-tool quirk and the heading-rename premature edit were the only avoidable costs; both filed as Candidate Learnings to amortize.
+
+### Phase 3C: Learnings
+
+**Learning #29 grep-before-insert (stub pattern) — 33rd consecutive clean.** Mechanical, unconscious-competence territory.
+
+**PROMOTED PERMANENT Learning #52 (now row #34 in SESSION_RUNNER.md Learnings table).** Filed Session 65 (1st), applied Sessions 66/67 (2nd/3rd promotion-triggering), validated Session 68 (4th — archive-heading 9-match collision recovery). Promoted this session. Row #34 cites Sessions 65/66/67/68 as the four instances. See-also note in row #34's body points at Candidate #56 (in flight) as the specialization-for-archive-heading-edits. **Recipe is now mechanical and permanent.**
+
+**Candidate Learning #55 (archive placement convention) — STILL 2nd instance (not advanced this session).** Session 69's archive insertion happened to land in the convention-correct position (above Session 67's archive heading), but that was via the existing handoff gotcha rather than an explicit grep-then-insert recipe application — so I am NOT counting this as a 3rd instance. Conservative count preserves 3-instance discipline. **Needs 1 more explicit instance for promotion.**
+
+**Candidate Learning #56 (archive-heading pre-grep specialization of #52) — 2nd instance Session 69.** 1st instance Session 68 (filed); Session 69 applied (pre-grepped `### Session 68 ARCHIVED ACTIVE TASK` before insertion, found 1 prose hit + 0 existing heading, confirmed no-collision before opening the insertion Edit). **Needs 1 more for promotion.** Will likely promote in Session 70 or 71. Differentiates from row #34 (#52 promoted) as the archive-edit-specific application of the more general rule.
+
+**NEW Candidate Learning #57: When the Edit tool returns "InputValidationError: The required parameter 'new_string' is missing" despite new_string being clearly supplied, suspect a multi-match condition with a misleading error surface — re-grep `old_string` for uniqueness BEFORE retrying with a smaller new_string.** 1st instance Session 69 (4 retry attempts on the Status-line replace before diagnosing duplicate-match as the root cause; the second Edit which succeeded had duplicated the Task/Status content into the archive heading, making subsequent old_string matches non-unique). **Mitigation:** when Edit fails with the "new_string missing" error, run `grep -c '<old_string substring>' <file>` to check match count; if >1, extend the anchor with a multi-line boundary OR use `python3 ... text.replace()` with an explicit `count == 1` check. **Cost of the quirk:** ~3 minutes + 4 wasted tool calls (this session). Mitigation cost: 1 grep call (~5s). **Needs 2 more instances for promotion.** Related but distinct from Learning #52 (which is about pre-grepping BEFORE the Edit); this is about diagnosing AFTER an Edit failure.
+
+**NEW Candidate Learning #58: Phase-1B vs Phase-3 boundary — heading renames and section restructures belong to Phase 3 close-out, not Phase 1B stub.** 1st instance Session 69. Session 69's Python `text.replace()` for the Status-line fix bundled in a premature rename of `### Session 67 Handoff Evaluation (by Session 68)` → `### Session 68 Handoff Evaluation (by Session 69)` — that rename is correct content-wise (Session 69 evaluates Session 68's handoff in Phase 3A) but should have happened during Phase 3 close-out, where the actual evaluation content is also written. Bundling the rename into Phase 1B left the file in a temporarily inconsistent state (renamed heading + Session 68's content below). Caught on file re-read; reverted with one Edit. **Mitigation:** Phase 1B stub touches ONLY the ACTIVE TASK Task/Status block + adds the predecessor's archive heading. Phase 3 close-out adds: handoff eval heading + content, "What Session N Did", 3B, 3C, 3D, gotchas. Boundary is sharp; do not bundle. **Needs 2 more instances for promotion.**
+
+**Learning #11 trust the code, not the plan — applied.** Session 68's draft phrasing for row #34 named "Learning #29 which covers stub-insertion" — verified against SESSION_RUNNER.md row #29 (`Gotchas that name a past execution failure are prescriptive safeguards...`), which is the stub-grep Learning. Cross-reference correct.
+
+**Learning #26 (BACKLOG delete-not-flip) — not applied this session.** Work was operator-directed off-BACKLOG; nothing to remove. BACKLOG unchanged at 1 `[ ]`, 0 `[x]`.
+
+**Learning #34 parallel-Read — 20th consecutive post-promotion clean.** At Phase 0: SAFEGUARDS + SESSION_RUNNER + SESSION_NOTES (head) + git status + git log + dashboard in parallel. During execution: pytest + ruff + mypy(src) in parallel for gate verification.
+
+**Learning #38 filing-session provenance — 16th instance (post-promotion).** Tri-source for row #34's Source column: Session 65 filing + Sessions 66/67/68 applications + Session 68 Phase 3C promotion-recommendation.
+
+**Learning #39 numbers re-verified — 15th instance (post-promotion), 8th consecutive preventive-by-default.** Gates run before Verified-bullet draft. Routine.
+
+**Learning #47 Phase 0 BACKLOG-scope verification — 8th instance.** Work was off-BACKLOG (BACKLOG item 1 = Phase 4 OPTIONAL, untouched this session); verification surface was the candidate-learning queue rather than a BACKLOG entry, but the discipline (verify the named target exists in the claimed state before claiming) applied identically.
+
+**Existing learnings load-bearing this session:** #1 (plan-mode bypass — N/A, no plan); #2 (1 and done — single-row table edit + standard close-out); #10 (skip handoff evaluation — eval done first); #11 (trust the code, not the plan — cross-reference validated); #17 (methodology README authoritative — CHANGELOG/BACKLOG/ROADMAP three-file split honored); #26 (delete-not-flip — N/A, off-BACKLOG); #28 (handoff specifics not contracts — operator's "promote #52" charitably interpreted via AskUserQuestion); #29 (33rd stub-grep clean); #34 (20th parallel-Read); #38 (16th tri-source); #39 (15th, 8th preventive); #47 (8th BACKLOG-scope, surface-adjusted); #52 PROMOTED now permanent row #34; #55 Candidate (still 2nd instance); #56 Candidate (2nd instance); #57 NEW Candidate (1st instance); #58 NEW Candidate (1st instance).
+
+### Phase 3D: Handoff to Session 70
+
+**Next deliverable:** Operator direction at session start. BACKLOG status at Session 69 close-out: **1 `[ ]` item** — Data source inventory Phase 4 OPTIONAL (intake coupling; opt-in flag; default off; defer indefinitely unless pilot demand surfaces). This would be the **7th+ consecutive skip** if Session 70 picks anything else.
+
+**Likely operator directions:**
+
+1. **Data source inventory Phase 4 OPTIONAL** (BACKLOG item 1; 7th consecutive skip if not picked). See Session 60's handoff gotchas + `docs/planning/data-source-inventory-contract-plan.md` §9 Phase 4.
+2. **Version-plumbing follow-up to Session 68.** Align `pyproject.toml` `[project].version`, a `__version__` constant in `src/model_project_constructor/__init__.py`, `packages/data-agent/pyproject.toml`, and/or a git tag with README's `0.01`. Grep inventory: `grep -rn "version\s*=" pyproject.toml packages/data-agent/pyproject.toml`; `grep -rn "__version__" src/ packages/`; `git tag -l`.
+3. **More methodology housekeeping.** Candidate Learning #55 needs 1 more instance for promotion (archive placement convention — promoted when a session explicitly applies grep `^### Session .* ARCHIVED ACTIVE TASK` before inserting). Candidate Learning #56 needs 1 more for promotion (archive-heading pre-grep). Candidate Learning #57 NEW (Edit tool "new_string missing" → multi-match) needs 2 more. Candidate Learning #58 NEW (Phase-1B vs Phase-3 boundary discipline) needs 2 more.
+4. **A new work item not in BACKLOG** (as Sessions 68 and 69 were).
+
+**Important considerations for Session 70:**
+
+1. **Row #34 in SESSION_RUNNER.md is now the permanent reference for grep-before-insert (non-stub).** Future structured-file Edits should pre-grep per row #34. Candidate #56 (archive-heading pre-grep) is the specialization; both apply simultaneously when doing Phase 1B archive inserts.
+
+2. **Candidate Learning #55 — archive placement convention, STILL 2nd instance.** Session 69 did NOT advance the instance count because the archive placement was driven by handoff gotcha #7's prescriptive direction rather than an explicit grep-then-insert recipe application. Session 70 can advance if it explicitly grepss `^### Session .* ARCHIVED ACTIVE TASK` to find the insertion point at Phase 1B.
+
+3. **Candidate Learning #56 — archive-heading pre-grep specialization, 2nd instance Session 69.** Mechanical recipe: at Phase 1B, pre-grep the archive-heading string for the predecessor session (`### Session N-1 ARCHIVED ACTIVE TASK`). If >1 match, plan a multi-line Edit anchor.
+
+4. **NEW Candidate Learning #57 — Edit tool's misleading error.** When Edit reports `InputValidationError: The required parameter 'new_string' is missing` despite new_string being supplied, suspect multi-match in `old_string` (the error surface is misleading). Fallback: Python `text.replace()` with `count() == 1` check.
+
+5. **NEW Candidate Learning #58 — Phase-1B vs Phase-3 boundary.** Phase 1B touches ONLY the ACTIVE TASK Task/Status block + predecessor archive heading insertion. Heading renames, eval-section content, and "What Session N Did" all belong to Phase 3 close-out. Do not bundle.
+
+6. **Session 69 did NOT push.** Per SAFEGUARDS, Session 69 commits locally only. Operator pushes when ready. Commit count ahead of origin at Session 69 close: 1 (this session's commit).
+
+7. **Wiki publish hook does NOT fire.** No `docs/wiki/claims-model-starter/*.md` change. Wiki clone at `~/Development/claims-model-starter.wiki/` unchanged from Session 63's `c13cfc4`.
+
+8. **Operator's durable directive ("numerical order; 1 per session") still active.** Session 69 was an operator-directed off-BACKLOG methodology housekeeping micro that overrode the directive. Session 70 defaults back to numerical order unless overridden — BACKLOG item 1 = Phase 4 OPTIONAL.
+
+9. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both.
+
+10. **Version sources of truth.** `README.md:3` carries `**Version:** 0.01`. `pyproject.toml`, `packages/data-agent/pyproject.toml`, `src/.../__init__.py`, and git tags are NOT aligned with this value (Session 68 deliberately scoped narrowly).
+
+### Gotchas for Session 70
+
+1. **Post-Session-69 pre-commit state:** pytest **576/576 passing** @ **97.28% coverage** (unchanged from Sessions 64/65/66/67/68). ruff clean (scope: `src/ tests/ packages/ scripts/`). mypy 0 issues in 61 files (48 src + 13 packages). Deltas vs Session 68 baseline: `SESSION_RUNNER.md` (+1 table row, +1244 bytes — row #34 in Learnings table); `CHANGELOG.md` (+ Session 69 entry at top of Unreleased); `SESSION_NOTES.md` (Session 69 close-out + Session 68 archive). **No runtime/test code touched.**
+
+2. **BACKLOG at Phase 0:** **1 `[ ]`, 0 `[x]`** — unchanged from Sessions 67/68 close. Numerical order: (1) Data source inventory Phase 4 OPTIONAL — 7th consecutive skip if not picked.
+
+3. **Learning #29 mechanical — 33rd consecutive validation in Session 69.** Continue: grep-before-insert for stub pattern `Session 70|### What Session 70 Did|### Session 69 Handoff Evaluation|Post-Session-70`.
+
+4. **Learning #52 NOW PERMANENT (row #34 in SESSION_RUNNER.md).** Pre-grep any structured-file Edit; multi-line anchor if >1 match. Apply before opening the Edit tool, not after a failure.
+
+5. **Candidate Learning #55 (archive placement convention) — STILL 2nd instance.** Session 70 can advance to 3rd (promotion) by explicitly grepping `^### Session .* ARCHIVED ACTIVE TASK` at Phase 1B and citing the recipe.
+
+6. **Candidate Learning #56 (archive-heading pre-grep) — 2nd instance.** Session 70 can advance to 3rd (promotion) by pre-grepping `### Session 69 ARCHIVED ACTIVE TASK` before the Phase 1B archive insertion and citing the recipe.
+
+7. **NEW Candidate Learning #57 (Edit tool "new_string missing" → multi-match).** 1st instance Session 69. If Session 70 hits the same misleading-error condition, that's a 2nd instance; document and cite. Fallback recipe: Python `text.replace()` with `text.count() == 1` check.
+
+8. **NEW Candidate Learning #58 (Phase-1B vs Phase-3 boundary discipline).** 1st instance Session 69. Phase 1B touches Task/Status block + predecessor archive heading ONLY. No heading renames, no eval content, no "What Session N Did" until Phase 3.
+
+9. **Gotcha #21 / #9 VALIDATED 8th consecutive session** (62, 63, 64, 65, 66, 67, 68, 69 each archived predecessor at Phase 1B). Pattern institutionalized. Session 70: at Phase 1B, demote Session 69's ACTIVE TASK `**Task:**` + `**Status:**` block to `### Session 69 ARCHIVED ACTIVE TASK` placed above the Session 68 archive heading.
+
+10. **CHANGELOG 37-consecutive-structure match in Session 69.** Continue: context / Added / Verified / Unchanged intentionally / Next. Session 70 = 38th match target.
+
+11. **Operator's durable directive still active** ("numerical order; 1 per session"). Sessions 68 and 69 were off-BACKLOG overrides; Session 70 defaults back unless overridden again.
+
+12. **Version-plumbing scope is still open.** If Session 70 wants to align `pyproject.toml`, `__version__`, or git tags with README's `0.01`, that's a deliberate scope expansion. README alone remains the source of truth.
+
+13. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both.
+
+14. **Wiki clone location unchanged:** `~/Development/claims-model-starter.wiki/`, branch master, at `c13cfc4` (Session 63's sync). Session 69 did not touch wiki files; `publish_wiki.sh` hook did not fire.
+
+15. **Commit message for Session 69:** `docs(methodology): promote Candidate Learning #52 to permanent (row #34)`. Matches `docs(...)` convention; scope prefix `methodology` because this touches `SESSION_RUNNER.md` (methodology surface), not application code or wiki.
+
+16. **`SESSION_RUNNER.md` Learnings table now has 34 rows.** Row #34 ends with "Any Edit to a structured file ... where `old_string` could legitimately match more than one line. Skip only if you've already grepped and confirmed uniqueness." The `---` separator and "## Launch Prompt Templates" section follow immediately.
+
+17. **Edit-tool quirk caveat.** If Session 70 sees `InputValidationError: The required parameter 'new_string' is missing` from the Edit tool while attempting a multi-line replacement, immediately suspect that `old_string` matches more than once (e.g. an archive copy was created earlier in the session). Candidate Learning #57 recipe applies.
 
 ### Session 67 Handoff Evaluation (by Session 68)
 
@@ -269,6 +402,12 @@
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 68 ARCHIVED ACTIVE TASK
+
+**Task:** Session 68 — operator direction (not from BACKLOG): **Add `Version: 0.01` to existing `README.md`.** Trivial one-line characterization-metadata addition. User clarified scope at pre-claim alignment (existing README is comprehensive and stays intact). No source code, schema, or doc-structure changes. Gates expected unchanged.
+
+**Status:** Session 68 COMPLETE. Added `**Version:** 0.01` line to `README.md` at line 3 (between title and description paragraph). Operator scope confirmed at pre-claim alignment as minimal-change (existing 213-line README otherwise untouched; no `__version__` constant, `pyproject.toml` bump, git tag, or release artifact). Gates green: pytest 576/576 @ 97.28%; ruff clean; mypy 0 issues in 61 files (all unchanged from Session 67 baseline as expected — README is not on any tooling's input path). CHANGELOG Session 68 entry at top of Unreleased (36th consecutive structure match). BACKLOG unchanged (work was operator-directed, not BACKLOG-driven). Commit landed: `0e96526 docs(readme): add Version 0.01 marker`.
 
 ### Session 67 ARCHIVED ACTIVE TASK
 
