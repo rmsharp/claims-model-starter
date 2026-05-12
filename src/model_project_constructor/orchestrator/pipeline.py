@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from model_project_constructor.orchestrator.adapters import (
+    intake_qa_pairs_to_inventory,
     intake_report_to_data_request,
 )
 from model_project_constructor.orchestrator.checkpoints import CheckpointStore
@@ -181,6 +182,7 @@ class PipelineConfig:
     checkpoint_dir: Path
     correlation_id: str = field(default="")
     resume_from: ResumePoint | None = None
+    inventory_from_intake: bool = False
 
     def __post_init__(self) -> None:
         if not self.correlation_id:
@@ -274,7 +276,14 @@ def run_pipeline(
     # later, load the saved DataRequest instead of re-deriving (§6.3:
     # the envelope on disk is ground truth for what the data agent saw).
     if resume in (None, "intake", "intake_to_data_adapter"):
-        data_request = intake_report_to_data_request(intake_report, config.run_id)
+        inventory = (
+            intake_qa_pairs_to_inventory(intake_report)
+            if config.inventory_from_intake
+            else None
+        )
+        data_request = intake_report_to_data_request(
+            intake_report, config.run_id, data_source_inventory=inventory
+        )
         checkpoint_store.save(
             _envelope(
                 run_id=config.run_id,

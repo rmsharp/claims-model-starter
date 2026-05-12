@@ -16,15 +16,39 @@ try to be clever about fields the downstream agent can diagnose better.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from model_project_constructor.schemas.v1.data import (
     DataGranularity,
     DataRequest,
+    DataSourceEntry,
     DataSourceInventory,
+    ProducerMetadata,
 )
 from model_project_constructor.schemas.v1.intake import IntakeReport
 
 _DEFAULT_TIME_RANGE = "last 5 calendar years of historical records"
 _DEFAULT_UNIT = "claim"
+
+# Canonical P&C claims systems probed by the intake interviewer
+# (see ``agents/intake/anthropic_client.py:47-53`` SYSTEM_INTERVIEWER prose).
+# Each key is the canonical system name; values are case-insensitive
+# substrings that count as a mention. Order: most-specific aliases first
+# so a "Guidewire ClaimCenter" mention matches as "Guidewire ClaimCenter"
+# rather than the more generic "claims admin" entry.
+_CANONICAL_PC_SYSTEMS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Guidewire ClaimCenter", ("guidewire claimcenter", "claimcenter", "guidewire")),
+    ("Duck Creek Claims", ("duck creek claims", "duck creek")),
+    ("Policy Admin", ("policy admin", "policy administration")),
+    ("Billing and Collections", ("billing and collections", "billing", "collections")),
+    ("Subrogation Recovery", ("subrogation recovery", "subrogation")),
+    ("Fraud / SIU", ("fraud / siu", "fraud and siu", "fraud", "siu")),
+    ("Customer CRM", ("customer crm", "agent crm", "crm")),
+    ("Enterprise Data Warehouse", ("enterprise data warehouse", "data warehouse", "edw")),
+    ("Data Lake", ("data lake",)),
+)
+
+_INVENTORY_PRODUCER_ID = "intake-interview"
 
 
 def infer_target_granularity(intake: IntakeReport) -> DataGranularity:
@@ -86,7 +110,72 @@ def intake_report_to_data_request(
     )
 
 
+def intake_qa_pairs_to_inventory(intake: IntakeReport) -> DataSourceInventory:
+    """Convert interview transcript to a ``DataSourceInventory``.
+
+    Scans ``intake.qa_pairs`` (question + answer text, case-insensitive)
+    against the canonical P&C claims systems probed by SYSTEM_INTERVIEWER.
+    Emits one :class:`DataSourceEntry` per system mentioned, with
+    ``producer_type="interview"`` provenance per plan §5.3.
+
+    The conversion is deliberately heuristic: stakeholder answers do not
+    name fully-qualified tables, only systems. Each emitted entry carries
+    ``entity_kind="other"`` (system-level, coarser than "table") and the
+    concatenated answer text of the qa_pairs that triggered the match as
+    its description. Downstream consumers can use these entries to remind
+    the data agent of likely upstream systems even though the entry does
+    not yet name concrete tables.
+
+    Returns an inventory with ``entries=[]`` if no canonical system is
+    mentioned anywhere in the transcript; the inventory is still a valid
+    :class:`DataSourceInventory` with the interview producer recorded.
+    """
+
+    now = datetime.now(UTC)
+    producer = ProducerMetadata(
+        producer_id=_INVENTORY_PRODUCER_ID,
+        producer_type="interview",
+        produced_at=now,
+        notes="Heuristic substring scan of IntakeReport.qa_pairs",
+    )
+
+    mentions: dict[str, list[str]] = {}
+    for qa in intake.qa_pairs:
+        text = f"{qa.question}\n{qa.answer}".lower()
+        for canonical_name, aliases in _CANONICAL_PC_SYSTEMS:
+            if canonical_name in mentions:
+                # Already matched on this system; just append the next snippet.
+                if any(alias in text for alias in aliases):
+                    mentions[canonical_name].append(qa.answer)
+                continue
+            if any(alias in text for alias in aliases):
+                mentions[canonical_name] = [qa.answer]
+
+    entries = [
+        DataSourceEntry(
+            name=canonical_name,
+            fully_qualified_name=canonical_name,
+            entity_kind="other",
+            source_system=canonical_name,
+            description=" | ".join(snippets),
+            producer_id=_INVENTORY_PRODUCER_ID,
+        )
+        for canonical_name, snippets in mentions.items()
+    ]
+
+    return DataSourceInventory(
+        entries=entries,
+        producers=[producer],
+        created_at=now,
+        request_context=(
+            "Interview-sourced systems extracted from IntakeReport.qa_pairs "
+            f"(stakeholder={intake.stakeholder_id}, session={intake.session_id})"
+        ),
+    )
+
+
 __all__ = [
     "infer_target_granularity",
+    "intake_qa_pairs_to_inventory",
     "intake_report_to_data_request",
 ]

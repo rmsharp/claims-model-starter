@@ -473,6 +473,15 @@ def main() -> None:
             "checkpoint directory is missing or the run is already complete."
         ),
     )
+    parser.add_argument(
+        "--inventory-from-intake",
+        action="store_true",
+        help=(
+            "Derive a DataSourceInventory from the intake interview "
+            "transcript (IntakeReport.qa_pairs) and pass it to the data "
+            "agent. Default off preserves pre-Phase-4 behavior."
+        ),
+    )
     args = parser.parse_args()
 
     # Fail fast: --llm both requires --intake-fixture.
@@ -535,6 +544,7 @@ def main() -> None:
         repo_target=repo_target,
         checkpoint_dir=args.checkpoint_dir,
         resume_from=resume_point,
+        inventory_from_intake=args.inventory_from_intake,
     )
     print(f"      Target: {repo_target.namespace} on {repo_target.host_url}")
     print(f"      Checkpoints: {config.checkpoint_dir}")

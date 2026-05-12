@@ -28,6 +28,7 @@ from model_project_constructor.schemas.v1.intake import (
     GovernanceMetadata,
     IntakeReport,
     ModelSolution,
+    QAPair,
 )
 from model_project_constructor.schemas.v1.repo import (
     GovernanceManifest,
@@ -45,6 +46,7 @@ __all__ = [
     "GovernanceMetadata",
     "IntakeReport",
     "ModelSolution",
+    "QAPair",
     # data
     "ColumnMetadata",
     "DataGranularity",

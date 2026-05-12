@@ -42,6 +42,15 @@ class GovernanceMetadata(StrictBase):
     uses_protected_attributes: bool
 
 
+class QAPair(StrictBase):
+    """A single interview exchange. Published in :class:`IntakeReport.qa_pairs`
+    so downstream consumers (e.g. the inventory converter) can scan the raw
+    transcript rather than relying on the synthesized report prose."""
+
+    question: str
+    answer: str
+
+
 class IntakeReport(StrictBase):
     schema_version: Literal["1.0.0"] = "1.0.0"
     status: Literal["COMPLETE", "DRAFT_INCOMPLETE"]
@@ -59,3 +68,5 @@ class IntakeReport(StrictBase):
     created_at: datetime
     questions_asked: int
     revision_cycles: int = 0
+
+    qa_pairs: list[QAPair] = Field(default_factory=list)

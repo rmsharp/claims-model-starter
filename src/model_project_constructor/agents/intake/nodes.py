@@ -30,6 +30,7 @@ from model_project_constructor.schemas.v1.intake import (
     GovernanceMetadata,
     IntakeReport,
     ModelSolution,
+    QAPair,
 )
 
 REVIEW_ACCEPT_TOKENS = {"accept", "yes", "approve", "approved", "ok", "looks good"}
@@ -241,6 +242,10 @@ def build_intake_report(
             created_at=datetime.now(UTC),
             questions_asked=state.get("questions_asked", 0),
             revision_cycles=state.get("revision_cycles", 0),
+            qa_pairs=[
+                QAPair(question=qa["question"], answer=qa["answer"])
+                for qa in (state.get("qa_pairs") or [])
+            ],
         )
     except Exception as exc:  # pragma: no cover - exercised via tests
         raise IntakeLLMError(

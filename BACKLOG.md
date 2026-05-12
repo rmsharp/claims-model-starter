@@ -4,4 +4,4 @@
 
 ## Open Items
 
-- [ ] **Data source inventory — Phase 4 (optional): Intake coupling** — Add a converter in the orchestrator that reads `IntakeReport.qa_pairs` and emits interview-sourced `DataSourceEntry` items (`producer_type="interview"`, provenance cites Session 56's SYSTEM_INTERVIEWER-probed systems). Opt-in flag (e.g. `--inventory-from-intake`). Default off. Defer indefinitely unless pilot demand surfaces — the contract supports it without Phase 4 landing. See plan §9 Phase 4.
+*(empty — Session 70 closed the last `[ ]` item; see CHANGELOG.md Unreleased entry "Data source inventory Phase 4: intake coupling (Session 70)" for completion details.)*

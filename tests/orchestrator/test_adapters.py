@@ -14,6 +14,7 @@ import pytest
 
 from model_project_constructor.orchestrator.adapters import (
     infer_target_granularity,
+    intake_qa_pairs_to_inventory,
     intake_report_to_data_request,
 )
 from model_project_constructor.schemas.v1.common import ModelType
@@ -27,6 +28,7 @@ from model_project_constructor.schemas.v1.intake import (
     GovernanceMetadata,
     IntakeReport,
     ModelSolution,
+    QAPair,
 )
 
 
@@ -36,6 +38,7 @@ def _make_intake(
     candidate_features: list[str] | None = None,
     target_definition: str = "Binary outcome: did the claim recover?",
     status: str = "COMPLETE",
+    qa_pairs: list[QAPair] | None = None,
 ) -> IntakeReport:
     return IntakeReport(
         status=status,  # type: ignore[arg-type]
@@ -72,6 +75,7 @@ def _make_intake(
         created_at=datetime.now(UTC),
         questions_asked=7,
         revision_cycles=0,
+        qa_pairs=qa_pairs or [],
     )
 
 
@@ -211,3 +215,143 @@ class TestIntakeReportToDataRequestInventory:
         )
         assert request.data_source_inventory is not None
         assert request.data_source_inventory.entries == []
+
+
+class TestIntakeQAPairsToInventory:
+    """Phase 4: heuristic converter from interview transcript to inventory."""
+
+    def test_no_mentions_returns_empty_entries_with_producer_recorded(self) -> None:
+        intake = _make_intake(
+            qa_pairs=[
+                QAPair(
+                    question="What's the business problem?",
+                    answer="We need to score outcomes better.",
+                ),
+            ],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        assert inv.entries == []
+        assert len(inv.producers) == 1
+        assert inv.producers[0].producer_type == "interview"
+        assert inv.producers[0].producer_id == "intake-interview"
+
+    def test_empty_qa_pairs_returns_empty_entries(self) -> None:
+        intake = _make_intake(qa_pairs=[])
+        inv = intake_qa_pairs_to_inventory(intake)
+        assert inv.entries == []
+        assert inv.producers[0].producer_type == "interview"
+
+    def test_single_system_mention_emits_one_entry(self) -> None:
+        intake = _make_intake(
+            qa_pairs=[
+                QAPair(
+                    question="Which claims system do you use?",
+                    answer="We're on Guidewire ClaimCenter for all auto claims.",
+                ),
+            ],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        assert len(inv.entries) == 1
+        entry = inv.entries[0]
+        assert entry.name == "Guidewire ClaimCenter"
+        assert entry.fully_qualified_name == "Guidewire ClaimCenter"
+        assert entry.entity_kind == "other"
+        assert entry.source_system == "Guidewire ClaimCenter"
+        assert entry.producer_id == "intake-interview"
+        assert "auto claims" in (entry.description or "")
+
+    def test_multiple_systems_across_qa_pairs(self) -> None:
+        intake = _make_intake(
+            qa_pairs=[
+                QAPair(
+                    question="Where does claims data live?",
+                    answer="Guidewire ClaimCenter is the claims admin.",
+                ),
+                QAPair(
+                    question="What about fraud signals?",
+                    answer="SIU scores come from the fraud platform.",
+                ),
+                QAPair(
+                    question="Any warehousing?",
+                    answer="We ship into the enterprise data warehouse nightly.",
+                ),
+            ],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        names = {e.name for e in inv.entries}
+        assert "Guidewire ClaimCenter" in names
+        assert "Fraud / SIU" in names
+        assert "Enterprise Data Warehouse" in names
+
+    def test_case_insensitive_substring_match(self) -> None:
+        intake = _make_intake(
+            qa_pairs=[
+                QAPair(
+                    question="Q",
+                    answer="we use DUCK CREEK for some legacy lines.",
+                ),
+            ],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        assert [e.name for e in inv.entries] == ["Duck Creek Claims"]
+
+    def test_repeated_mentions_concatenate_into_description(self) -> None:
+        intake = _make_intake(
+            qa_pairs=[
+                QAPair(question="Q1", answer="Subrogation pipeline broke last quarter."),
+                QAPair(question="Q2", answer="The subrogation team is rebuilding it."),
+            ],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        assert len(inv.entries) == 1
+        assert inv.entries[0].name == "Subrogation Recovery"
+        assert " | " in (inv.entries[0].description or "")
+
+    def test_producer_id_consistency(self) -> None:
+        """Validator at DataSourceInventory:_producer_ids_resolve must accept."""
+        intake = _make_intake(
+            qa_pairs=[QAPair(question="Q", answer="Guidewire ClaimCenter")],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        producer_ids = {p.producer_id for p in inv.producers}
+        for entry in inv.entries:
+            assert entry.producer_id in producer_ids
+
+    def test_request_context_cites_stakeholder_and_session(self) -> None:
+        intake = _make_intake(
+            qa_pairs=[QAPair(question="Q", answer="data lake")],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        assert inv.request_context is not None
+        assert intake.stakeholder_id in inv.request_context
+        assert intake.session_id in inv.request_context
+
+    def test_round_trips_via_model_dump(self) -> None:
+        intake = _make_intake(
+            qa_pairs=[
+                QAPair(question="Q", answer="Guidewire ClaimCenter + data lake"),
+            ],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        round_tripped = DataSourceInventory.model_validate(
+            inv.model_dump(mode="json")
+        )
+        assert round_tripped == inv
+
+    def test_more_specific_alias_wins_over_generic(self) -> None:
+        """'guidewire claimcenter' must match the ClaimCenter entry,
+        not be diluted by the generic 'claims admin' wording. Order in
+        ``_CANONICAL_PC_SYSTEMS`` places specific aliases before generic
+        ones; this test pins that contract."""
+
+        intake = _make_intake(
+            qa_pairs=[
+                QAPair(
+                    question="Q",
+                    answer="Guidewire ClaimCenter is our claims admin system.",
+                ),
+            ],
+        )
+        inv = intake_qa_pairs_to_inventory(intake)
+        names = [e.name for e in inv.entries]
+        assert "Guidewire ClaimCenter" in names

@@ -425,6 +425,81 @@ class TestPipelineConfig:
         )
         assert result.project_url is None
 
+    def test_inventory_from_intake_default_off_preserves_behavior(
+        self, tmp_path: Path
+    ) -> None:
+        """When the flag is unset (default), the persisted DataRequest must
+        not carry an inventory — preserves pre-Phase-4 behavior."""
+
+        intake = _load_intake()
+        data = _load_data()
+        client = FakeRepoClient()
+        agent = WebsiteAgent(client, ci_platform="gitlab")
+        config = _make_config(tmp_path, run_id="run_inv_off")
+        run_pipeline(
+            config,
+            intake_runner=lambda: intake,
+            data_runner=lambda _req: data,
+            website_runner=agent.run,
+        )
+        store = CheckpointStore(config.checkpoint_dir)
+        request = store.load_payload("run_inv_off", "DataRequest")
+        assert isinstance(request, DataRequest)
+        assert request.data_source_inventory is None
+
+    def test_inventory_from_intake_flag_populates_request(
+        self, tmp_path: Path
+    ) -> None:
+        """When ``inventory_from_intake=True`` and the intake transcript
+        mentions canonical P&C systems, the DataRequest forwarded to the
+        data agent carries the converted inventory."""
+
+        from model_project_constructor.schemas.v1.intake import QAPair
+
+        base = _load_intake()
+        intake_with_transcript = base.model_copy(
+            update={
+                "qa_pairs": [
+                    QAPair(
+                        question="Which claims system?",
+                        answer="Guidewire ClaimCenter for auto.",
+                    ),
+                    QAPair(
+                        question="Any data lake?",
+                        answer="Yes, enterprise data warehouse → data lake.",
+                    ),
+                ]
+            }
+        )
+        data = _load_data()
+        client = FakeRepoClient()
+        agent = WebsiteAgent(client, ci_platform="gitlab")
+        target = RepoTarget(
+            host_url="https://fake.host.test",
+            namespace="data-science/model-drafts",
+            project_name_hint="subrogation_pilot",
+            visibility="private",
+        )
+        config = PipelineConfig(
+            run_id="run_inv_on",
+            repo_target=target,
+            checkpoint_dir=tmp_path / "checkpoints",
+            inventory_from_intake=True,
+        )
+        run_pipeline(
+            config,
+            intake_runner=lambda: intake_with_transcript,
+            data_runner=lambda _req: data,
+            website_runner=agent.run,
+        )
+        store = CheckpointStore(config.checkpoint_dir)
+        request = store.load_payload("run_inv_on", "DataRequest")
+        assert isinstance(request, DataRequest)
+        assert request.data_source_inventory is not None
+        names = {e.name for e in request.data_source_inventory.entries}
+        assert "Guidewire ClaimCenter" in names
+        assert "Enterprise Data Warehouse" in names or "Data Lake" in names
+
 
 # --- Resume-point determination (resume-from-checkpoint-plan §5 truth table)
 
