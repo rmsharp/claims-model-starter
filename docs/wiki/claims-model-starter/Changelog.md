@@ -10,7 +10,15 @@ The repository is currently at version `0.1.0` (pre-1.0, pilot-ready). No extern
 
 ## [Unreleased]
 
-Current scope: wiki expansion and pilot hardening.
+*No unreleased changes. Previous wiki-side entries (Sessions 18, 19, 20A, 20B) have been folded into the v0.1.0 release section below in Session 80 to mirror the root `CHANGELOG.md` transition formalized in Session 78.*
+
+---
+
+## [0.1.0] - 2026-05-12
+
+First versioned release. The `v0.1.0` git tag was created in Session 74 on commit `b4c0dbb`; this audience-facing wiki section was re-dated to the tag-creation date in Session 80 to mirror the root `CHANGELOG.md` transition formalized in Session 78. The release was previously framed as "Pilot Ready" on 2026-04-15 (the date Phases 1-6 reached test-green + CI-green status); the 2026-05-12 date now reflects when the formal release tag was cut. All entries below — from Phase 1 schemas through the post-Phase-6 wiki expansion — constitute the v0.1.0 release content.
+
+Phases 1 through 6 complete. 422 tests at 97.18% coverage. Both GitLab and GitHub adapters pass structural + integration tests. CI green across lint, typecheck, test, and decoupling jobs.
 
 ### Wiki expansion — Sessions 19, 20A, 20B (2026-04-16)
 
@@ -25,12 +33,6 @@ Current scope: wiki expansion and pilot hardening.
 - **Added:** `docs/tutorial.md` — six-step tutorial covering intake YAML authoring, `IntakeReport` generation, pipeline invocation, checkpoint inspection, live-host configuration, and the programmatic API (`4dc2f5d`, `1613d60`).
 - **Fixed:** install command was missing `--extra ui` (`883935a`).
 - **Changed:** project terminology — replaced conflated "likelihood" with "probability" in fixtures, tests, and `initial_purpose.txt` where referring to `P(event)` (`1613d60`).
-
----
-
-## [0.1.0 — Pilot Ready] — 2026-04-15
-
-Phases 1 through 6 complete. 422 tests at 97.18% coverage. Both GitLab and GitHub adapters pass structural + integration tests. CI green across lint, typecheck, test, and decoupling jobs.
 
 ### Phase 6 — Production hardening (Session 16)
 
