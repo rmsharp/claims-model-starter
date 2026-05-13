@@ -5,9 +5,156 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 72 — operator direction (off-BACKLOG, methodology housekeeping; BACKLOG remains empty). Promote Candidate Learning #58 (Phase-1B vs Phase-3 boundary discipline) to permanent row #36 in `SESSION_RUNNER.md` Learnings table. Phrasing pre-drafted in Session 71 Phase 3C — paste verbatim. Source column: Sessions 69 (filed), 70 (applied), 71 (applied — promotion-triggering). Mirrors Session 71's promotion of Candidate #56 → row #35 and Session 69's promotion of #52 → row #34. Single-row table edit + standard close-out; gates expected unchanged (`SESSION_RUNNER.md` not on tooling input paths). Operator selected the promotion direction at session start.
+**Task:** Session 73 — operator direction (off-BACKLOG, methodology housekeeping; BACKLOG remains empty). Promote Candidate Learning #60 (Edit-tool boundary-heading consume-and-replace) to permanent row #37 in `SESSION_RUNNER.md` Learnings table. Phrasing pre-drafted in Session 72 Phase 3C — paste verbatim (per Session 72's self-flag, defaulting to paste-verbatim rather than augmenting). Source column: Sessions 70 (filed), 71 (applied), 72 (applied — promotion-triggering). Mirrors Sessions 69/71/72's promotion micros (rows #34/#35/#36). Single-row table edit + standard close-out; gates expected unchanged (`SESSION_RUNNER.md` not on tooling input paths). Operator selected the promotion direction at session start.
 
-**Status:** Session 72 COMPLETE. Promoted Candidate Learning #58 → permanent row #36 in `SESSION_RUNNER.md` Learnings table (rule statement + boundary-discipline elaboration verbatim from Session 71 Phase 3C draft; one rationale-augmentation sentence added on stub-vs-record distinction per Learning #27; Source column cites Sessions 69/70/71/72). Phase 1B applied Candidate Learning #36 (newly permanent post-this-session) boundary discipline as 4th-instance post-promotion validation — touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading. Candidate Learning #60 (Edit-tool boundary-heading consume-and-replace) reached **3rd-instance PROMOTION-TRIGGERING** this session — recommended for promotion in Session 73; phrasing pre-drafted in Phase 3C below. Gates green: pytest 588/588 @ 97.32%; ruff clean; mypy 0/61 (all unchanged — `SESSION_RUNNER.md` not on tooling input paths). CHANGELOG Session 72 entry at top of Unreleased (40th consecutive structure match). BACKLOG unchanged (off-BACKLOG; remains empty). Self-assess 9.0/10. Commit pending: `docs(methodology): promote Candidate Learning #58 to permanent (row #36)`.
+**Status:** Session 73 COMPLETE. Promoted Candidate Learning #60 → permanent row #37 in `SESSION_RUNNER.md` Learnings table (paste-verbatim of Session 72 Phase 3C draft per Session 72's self-flag on rationale-augmentation; no augmentation this session). Source column cites Sessions 70 (filed) / 71 (applied) / 72 (applied — promotion-triggering) / 73 (validated 4th instance + promoted). Phase 1B applied Learning #36 (PERMANENT row #36) boundary discipline as 5th-instance post-promotion validation — touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading. Candidate Learning #60 itself validated as 4th-instance at Phase 1B (post-promotion) on the Session 72 archive-heading consume-and-replace. Gates green: pytest 588/588 @ 97.32%; ruff clean; mypy 0/61 (all unchanged — `SESSION_RUNNER.md` not on tooling input paths). CHANGELOG Session 73 entry at top of Unreleased (41st consecutive structure match). BACKLOG unchanged (off-BACKLOG; remains empty). Self-assess 9.5/10 (Session 72's two -0.25 disciplines applied cleanly this session: explicit Phase 0 narration + paste-verbatim default). Commit pending: `docs(methodology): promote Candidate Learning #60 to permanent (row #37)`.
+
+### Session 72 Handoff Evaluation (by Session 73)
+
+**Score: 9.5/10.** Session 72's handoff was load-bearing in nearly every procedural dimension AND deliverable-content-bearing for this micro: gotcha #10 named Candidate Learning #60 as PROMOTION-READY with the exact 3-instance running count AND pre-drafted phrasing verbatim, which I pasted into row #37 with zero modification (per Session 72's self-flag on rationale-augmentation, defaulting to paste-verbatim this session). Gotcha #18 named the row-position (between row #36 and the `---` separator) so I didn't re-derive. Gotcha #11 archive-at-Phase-1B 12th consecutive validation. Gotcha #12 CHANGELOG 41st-consecutive-structure target → achieved. Gotcha #17 commit-message convention directly informs this session's commit. Gotcha #20 (Phase 0 narration discipline) explicitly applied this session — I narrated the parallel-Read at Phase 0 *and* announced the parallel pre-greps before they fired.
+
+- **What helped:** (a) Gotcha #1 pre-commit baseline (588/588 @ 97.32%, ruff clean, mypy 0/61) matched exactly at Phase 0. (b) Gotcha #2 BACKLOG state (EMPTY) matched. (c) Gotcha #3 Learning #29 stub-grep recipe — 17 pre-existing prose-reference hits (Session 72 handoff body forward references), zero heading collisions (**37th consecutive clean**). (d) Gotcha #4 Learning #34 (PERMANENT row #34) — applied 3× this session on ACTIVE TASK block replace, Session 72 archive-heading consume-and-replace, and SESSION_RUNNER.md row #37 append. All three landed first-attempt. (e) Gotcha #5 Learning #35 (PERMANENT row #35) — pre-grepped `^### Session 72 ARCHIVED ACTIVE TASK` (0 hits, safe to add). **6th consecutive instance post-promotion.** (f) Gotcha #6 Learning #36 (newly permanent row #36) — applied as 5th-instance post-promotion: Phase 1B touched ONLY Task/Status block + predecessor archive heading. (g) Gotcha #10 Candidate #60 PROMOTION-READY with pre-drafted phrasing — paste-verbatim into row #37 (no augmentation). (h) Gotcha #11 archive-at-Phase-1B 12th consecutive validation. (i) Gotcha #12 CHANGELOG 40-consecutive-structure target → **41st match** achieved. (j) Gotcha #17 commit-message convention applied verbatim. (k) Gotcha #18 SESSION_RUNNER.md Learnings table position spec — exact row-position pre-named. (l) Gotcha #20 Phase 0 narration discipline (informal note from Sessions 71/72) — applied mechanically this session, no operator query. (m) Gotcha #21 rationale-augmentation discipline (informal note from Session 72) — applied as paste-verbatim default, no operator alignment round-trip needed.
+- **What was missing:** Nothing load-bearing. Session 72's handoff was complete at all relevant dimensions.
+- **What was wrong:** Nothing. All Session 72 numbers, BACKLOG state, candidate-Learning instance counts, archive convention, and commit-message convention matched the actual state.
+- **ROI:** ~7×. Highest of the recent micro-promotion sequence (Sessions 69/71/72/73). Calibration: 9.5 because (a) the deliverable IS the promotion the handoff was structured around, (b) two informal-note disciplines from Session 72 (Phase 0 narration + paste-verbatim default) were applied cleanly without operator round-trips, (c) zero re-derivation on content side. 9.5 rather than 10 because no handoff can fully foresee every micro detail (e.g., the exact wording of the close-out Status line).
+
+### What Session 73 Did
+
+**Deliverable:** Promote Candidate Learning #60 (Edit-tool boundary-heading consume-and-replace) to permanent row #37 in `SESSION_RUNNER.md` Learnings table. **COMPLETE.**
+**Started:** 2026-05-12
+**Completed:** 2026-05-12
+**Commit (pending):** `docs(methodology): promote Candidate Learning #60 to permanent (row #37)`
+
+**What was done:**
+
+1. **Phase 0 orientation — Gotcha #20 narration applied.** Announced parallel-Read tool block before it fired ("Phase 0 starting — reading SAFEGUARDS, SESSION_NOTES, BACKLOG, git state, dashboard in parallel"). SAFEGUARDS.md (full) + SESSION_RUNNER.md head (including all 36 permanent Learnings — row #36 fresh from Session 72) + SESSION_NOTES.md head (Session 72's full handoff + 21 gotchas) + BACKLOG.md (empty) + dashboard (96/100 medium-risk active). `git status` clean, in sync with `origin/master` at Session 72's `69f05d1` (operator pushed mid-Session-72 close). `git log -8` matched Session 72's archive entry verbatim; zero ghost commits. Reported findings concisely with Candidate #60 as direction #1 (PROMOTION-READY).
+2. **Operator direction.** "promote candidate learning #60" — direction #1 verbatim. Zero pre-claim alignment round-trips required. Mid-session "commit" message acknowledged + treated as confirmation-of-standard-flow.
+3. **Phase 1B pre-greps — Learning #29 37th consecutive clean.** Announced parallel pre-greps before they fired (Gotcha #20 narration). Grep-before-insert pattern `Session 73|### What Session 73 Did|### Session 72 Handoff Evaluation|Post-Session-73` returned 17 pre-existing prose-reference hits (legitimate Session 72 forward references), zero heading collisions. **Learning #35 6th-instance post-promotion:** pre-grepped `^### Session 72 ARCHIVED ACTIVE TASK` (0 hits). Located Session 71 archive at line 839 (boundary for consume-and-replace) and row #36 at line 308 in SESSION_RUNNER.md.
+4. **Phase 1B Edits (both first-attempt).** Edit #1: ACTIVE TASK block replaced (Session 72's Task/Status → Session 73's stub). Edit #2: **Candidate #60 4th-instance post-promotion validation** — multi-line anchor `### Session 71 ARCHIVED ACTIVE TASK\n\n**Task:** Session 71 — operator direction (off-BACKLOG, methodology housekeeping; BACKLOG is empty post-Session-70).` (uniqueness verified by `grep -c` returning 1) consumed by old_string; new_string included the Session 72 archive content AND the Session 71 boundary heading + Task line replicated at its tail. **Learning #36 (PERMANENT row #36) 5th-instance post-promotion validation:** Phase 1B touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading. No heading renames, no eval-section content, no `What Session 73 Did` body drafted at Phase 1B.
+5. **Phase 2 — row #37 insertion in `SESSION_RUNNER.md`.** Anchored on row #36's final cell text + `---` separator pattern (same anchor shape as Session 72's row #36 insertion). Inserted row #37 with phrasing **verbatim** from Session 72's Phase 3C draft (rule statement + "Distinct from Learning #34..." elaboration + "Useful for..." examples list). No augmentation this session — per Session 72's self-flag (-0.25 deduction on the unaligned rationale-augmentation precedent), defaulted to paste-verbatim. Source column cites Sessions 70/71/72/73 with explicit instance progression. When-to-Apply column composes with Learning #34 (pre-verify multi-line anchor uniqueness with `grep -c` before opening Edit tool).
+6. **Gate verification — Learning #39 institutional, 12th consecutive preventive-by-default.** Ran pytest + ruff + mypy(src) + mypy(packages) in parallel BEFORE drafting Verified bullet. All unchanged from Session 72 baseline: pytest 588/588 @ 97.32%; ruff clean; mypy 0 issues in 61 files.
+7. **CHANGELOG Session 73 entry — 41st-consecutive-structure match.** Context paragraph documents promotion provenance + paste-verbatim discipline (no augmentation). Sections: Added (row #37) / Verified (gates) / Unchanged intentionally (candidates #55/#57/#59 still candidates; promotion queue cleared) / Next (no candidate currently PROMOTION-READY; operator direction at Session 74 start).
+8. **Phase 3 close-out** — this block (Session 72 eval, Session 73 self-assess, learnings, handoff to Session 74, gotchas), commit. Push deferred (operator authorization required per SAFEGUARDS).
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Phase 0 read SAFEGUARDS + SESSION_RUNNER (full Learnings table including row #36 fresh from Session 72) + SESSION_NOTES + BACKLOG + dashboard BEFORE any edit. SESSION_RUNNER.md row #36 + table-end separator read before drafting row #37. SESSION_NOTES.md archive boundary region read before constructing the consume-and-replace anchor.
+- **Stakeholder corrections:** 0 direct corrections. 0 pre-claim alignment round-trips. 1 mid-session "commit" message from operator (interpreted as confirmation of standard end-in-commit flow; acknowledged inline + continued).
+- **Planning Session discipline:** N/A — methodology micro, no plan input.
+- **What I got right:** (a) **Learning #29 37th consecutive clean** + **Learning #35 6th-instance post-promotion** + **Learning #36 5th-instance post-promotion** + **Candidate #60 4th-instance post-promotion** (now PERMANENT post-this-session as row #37) all clean. (b) **Learning #34 (PERMANENT row #34) applied 3× this session, all first-attempt.** (c) **Candidate #60 promotion paste-verbatim — Session 72 self-flag respected.** Zero rationale-augmentation; pre-drafted phrasing pasted unmodified. Sets clean precedent for "paste-verbatim is the default unless operator pre-aligns on augmentation." (d) **Phase 0 narration applied** — Gotcha #20 informal-note discipline mechanically applied (announced both the Phase 0 parallel-Read AND the Phase 1B parallel pre-greps before they fired). (e) **Mid-session "commit" message handled cleanly** — acknowledged as confirmation of standard flow, didn't ignore (per system-reminder), didn't pivot scope. (f) **Gates ran BEFORE Verified-bullet draft** (Learning #39 12th consecutive preventive-by-default). (g) **CHANGELOG 41st-consecutive-structure match.** (h) **Source column shape mirrors rows #34/#35/#36** (cite-by-instance-progression + "Promoted Session N." footer).
+- **What I got wrong:** Nothing material. The mid-session "commit" message was ambiguous (operator could have meant "commit now" with nothing staged, or "continue and commit at end"); I chose the second reading because it was the only one with positive content. If the operator had meant something else, the brief acknowledgment ("nothing to commit yet; proceeding") would have invited correction. No round-trip cost. Calibration: 9.5 — above Session 72 (9.0) because the two informal-note disciplines from Session 72 (Phase 0 narration + paste-verbatim default) were applied cleanly without slip; no -0.25 deductions this session.
+- **Quality bar vs previous sessions:** Above Sessions 71/72 (9.0 each). Three structural wins: (1) Session 72's self-flagged disciplines (Phase 0 narration, paste-verbatim default) both landed cleanly this session — informal notes proved load-bearing across the session boundary; (2) The promotion queue is now **cleared** (no candidate-learning currently PROMOTION-READY at 3+ instances) — sets up Session 74 for non-housekeeping work without a pending obligation; (3) Four consecutive methodology micros (Sessions 69/71/72/73) with declining-then-stable error rates (Session 70 = 8.5; Session 71 = 9.0; Session 72 = 9.0; Session 73 = 9.5) — the recipe is institutional.
+
+### Phase 3C: Learnings
+
+**Learning #29 grep-before-insert (stub pattern) — 37th consecutive clean.** Unconscious-competence territory.
+
+**Learning #34 (PERMANENT row #34) — applied 3× this session, all first-attempt.** ACTIVE TASK block replace; Session 72 archive consume-and-replace; SESSION_RUNNER.md row #37 insertion. Recipe is institutional.
+
+**Learning #35 (PERMANENT row #35) — 6th consecutive post-promotion clean.** Phase 1B pre-grep `^### Session 72 ARCHIVED ACTIVE TASK` returned 0 hits. Recipe is permanent and institutional.
+
+**Learning #36 (PERMANENT row #36) — 5th-instance post-promotion validation.** Phase 1B touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading insert. No heading renames, no eval content, no `What Session N Did` body until Phase 3.
+
+**NEW PERMANENT Learning #37 (formerly Candidate #60, promoted this session) — 4th-instance post-promotion validation.** Multi-line anchor `### Session 71 ARCHIVED ACTIVE TASK\n\n**Task:** Session 71 — operator direction (off-BACKLOG, methodology housekeeping; BACKLOG is empty post-Session-70).` (uniqueness verified by `grep -c` returning 1) consumed by old_string; new_string replicated boundary heading + Task line at its tail. Recipe is permanent.
+
+**Candidate Learning #55 (archive placement convention) — STILL 2nd instance.** Session 73's archive placement above the Session 71 archive heading was driven by Session 72 gotcha #11 (prescriptive direction). Four consecutive sessions (70/71/72/73) have declined to count gotcha-driven placement as an explicit decision-time application. Candidate may stall indefinitely if gotcha-prescription continues to drive placement — that's fine; the gotcha *is* the recipe carried session-to-session, and the candidate-learning would just formalize what's already mechanical.
+
+**Candidate Learning #57 (Edit-tool "new_string missing" → multi-match diagnosis) — STILL 1st instance.** Did NOT fire this session — Learning #34 pre-grep prevented all multi-match conditions. May never reach 3rd instance if pre-grep discipline holds. Healthy outcome.
+
+**Candidate Learning #59 (checkpoint-commit at 5-files boundary) — STILL 1st instance.** Session 73 touched only 3 files; recipe didn't fire.
+
+**Learning #11 (trust the code, not the plan) — N/A this session.** No plan input.
+
+**Learning #13 + #28 (literal minimum / handoff specifics not contracts) — clean application Session 73.** No rationale-augmentation this session (paste-verbatim default per Session 72 self-flag). Learning #27 (paste-and-verify) respected without stretch.
+
+**Learning #26 (BACKLOG delete-not-flip) — N/A this session.** BACKLOG already empty.
+
+**Learning #27 (paste-and-verify predecessor work product) — clean application this session.** Row #37 phrasing pasted verbatim from Session 72 Phase 3C draft. No augmentation. Session 72's informal-note recommendation (pre-align via AskUserQuestion if augmenting) honored as "default to paste-verbatim" — same intent, lower process cost when augmentation isn't actually wanted.
+
+**Learning #30 (declarative interim status updates) — clean application this session.** Phase 0 parallel-Read tool block and Phase 1B parallel pre-greps both announced before firing. Session 71/72 informal-note discipline applied mechanically. Operator did not query.
+
+**Learning #33 (Phase 0 BACKLOG-scope verification) — N/A this session.** BACKLOG was empty.
+
+**Learning #34 parallel-Read (PERMANENT row #34) — 24th consecutive post-promotion clean.** At Phase 0: SAFEGUARDS + SESSION_NOTES + git status + git log + BACKLOG + dashboard in parallel, with announcement.
+
+**Learning #38 filing-session provenance — 20th instance (post-promotion).** Row #37 Source cites Sessions 70/71/72/73 with explicit instance progression.
+
+**Learning #39 numbers re-verified — 19th instance (post-promotion), 12th consecutive preventive-by-default.** Gates run before Verified-bullet draft. Routine.
+
+**Existing learnings load-bearing this session:** #1 (N/A); #2 (single deliverable); #10 (eval done first); #13 + #28 (clean — no augmentation stretch); #17 (N/A); #18 (N/A); #19 (N/A); #26 (N/A); #27 (clean paste-verbatim); #29 (37th clean); #30 (declarative narration applied at Phase 0 + Phase 1B pre-greps); #33 (N/A); #34 (PERMANENT row #34, 3× first-attempt); #35 (PERMANENT row #35, 6th consecutive post-promotion); #36 (PERMANENT row #36, 5th-instance post-promotion); **#37 (NEW PERMANENT)** (4th-instance post-promotion); #38 (20th); #39 (19th, 12th preventive); #55 Candidate (still 2nd); #57 Candidate (still 1st — did not fire); #59 Candidate (still 1st).
+
+### Phase 3D: Handoff to Session 74
+
+**Next deliverable:** Operator direction at session start. BACKLOG.md remains **EMPTY**. **No candidate-learning is currently PROMOTION-READY** — the trio of methodology micros across Sessions 71/72/73 has cleared the standing promotion queue. Candidates #55 (still 2nd instance, may stall indefinitely), #57 (still 1st, may never fire), #59 (still 1st, fires only on >5-file deliverables) are not ready.
+
+**Likely operator directions:**
+
+1. **Version-plumbing follow-up.** Align `pyproject.toml` `[project].version` + `__version__` constant in `src/model_project_constructor/__init__.py` + `packages/data-agent/pyproject.toml` + git tag with README's `0.01`. Carried forward across Sessions 68→73 (6 consecutive skips).
+2. **Wiki updates for Phase 3/4 data-source-inventory.** Documentation debt: `Schema-Reference.md`, `Data-Guide.md`, `Worked-Examples.md`, `Pipeline-Overview.md`, `USAGE.md`, `architecture-plan.md` (~6 files per plan §8.6). Sessions 60 (Phase 3) and 70 (Phase 4) both skipped wiki updates.
+3. **`--curated-inventory` CLI flag follow-up.** Adds the producer side of plan §9.3's merge logic.
+4. **New off-BACKLOG work item.** Operator direction.
+
+**Important considerations for Session 74:**
+
+1. **BACKLOG.md is empty** (placeholder paragraph only).
+2. **No candidate-learning is PROMOTION-READY.** First session without a queued promotion since Session 68. Session 74 is free to take on substantive (non-housekeeping) work.
+3. **Candidate Learning #55 (archive placement) STILL 2nd instance, may stall indefinitely.** Four consecutive sessions have declined the gotcha-driven placement as explicit decision-time application. The candidate can be retired or left dormant.
+4. **Candidate Learning #57 STILL 1st instance.** Did not fire in Session 73. May never reach 3rd if Learning #34 pre-grep discipline holds. Healthy outcome.
+5. **Candidate Learning #59 STILL 1st instance.** Fires only on cohesive >5-file deliverables; Session 73 touched only 3.
+6. **Session 73 did NOT push.** Per SAFEGUARDS. 1 commit ahead of origin at close.
+7. **Wiki publish hook does NOT fire.** No `docs/wiki/claims-model-starter/*.md` change.
+8. **Operator's durable directive ("numerical order; 1 per session") active.** With BACKLOG empty + no PROMOTION-READY candidate, defaults to operator-directed scope.
+9. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honored this session.
+10. **`_CANONICAL_PC_SYSTEMS` constant divergence note (carried forward from Session 70).** `agents/intake/anthropic_client.py:47-53` vs `orchestrator/adapters.py`. Operator declined extraction at Session 70 pre-claim alignment.
+11. **Phase 0 narration discipline (formerly informal, now consistent practice).** Sessions 72 had a mild slip; Session 73 applied mechanically. Pattern: announce parallel-Read tool blocks before they fire. Promote to candidate-learning if a 3rd session applies it explicitly.
+12. **Paste-verbatim default on promotion micros (formerly informal, now applied).** Session 73 defaulted to paste-verbatim per Session 72's self-flag; no augmentation. If a future operator wants augmentation, they pre-align via AskUserQuestion. Promote to candidate-learning if a 3rd session faces the augment-vs-paste tension explicitly.
+13. **Mid-session terse-message handling (one-off).** Session 73 received "commit" mid-Phase-1B with nothing staged; interpreted as confirmation of standard flow and continued. Not a recurring pattern yet; no candidate-learning needed.
+
+### Gotchas for Session 74
+
+1. **Post-Session-73 pre-commit state:** pytest **588/588 passing** @ **97.32% coverage** (unchanged from Session 72 baseline); ruff clean (scope: `src/ tests/ packages/ scripts/`); mypy 0 issues in 61 files (48 src + 13 packages). **No deltas** vs Session 72.
+
+2. **BACKLOG state:** **EMPTY** (carried forward from Session 70).
+
+3. **No PROMOTION-READY candidate.** First session without a queued candidate-promotion since Session 68. Session 74 is free for substantive (non-housekeeping) work.
+
+4. **Learning #29 mechanical — 37th consecutive validation.** Continue: grep-before-insert for stub pattern `Session 74|### What Session 74 Did|### Session 73 Handoff Evaluation|Post-Session-74`.
+
+5. **Learning #34 (PERMANENT row #34) — applied 3× in Session 73 first-attempt.** Pre-grep any structured-file Edit; multi-line anchor if >1 match.
+
+6. **Learning #35 (PERMANENT row #35) — 6th consecutive post-promotion clean.** Mechanical: at Phase 1B, `grep -n "^### Session N-1 ARCHIVED ACTIVE TASK" SESSION_NOTES.md` before opening the Edit tool.
+
+7. **Learning #36 (PERMANENT row #36) — 5th-instance post-promotion validation.** Phase 1B touches ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading insertion. Heading renames, eval content, `What Session N Did` body all belong to Phase 3 close-out.
+
+8. **NEW PERMANENT Learning #37 (formerly Candidate #60, promoted Session 73) — 4th-instance post-promotion validation.** When inserting new content immediately above an existing structured heading via the Edit tool, consume the boundary heading + uniqueness-conferring follow-on line in `old_string`, replicate both at tail of `new_string`. Pre-verify multi-line anchor's uniqueness with `grep -c` (composes with Learning #34).
+
+9. **Candidate Learning #55 (archive placement) — STILL 2nd instance, may stall indefinitely.** Session 74 can advance to 3rd by explicit decision-time grep; otherwise retire or leave dormant.
+
+10. **Candidate Learning #57 — STILL 1st instance.** Did not fire in Session 73.
+
+11. **Candidate Learning #59 — STILL 1st instance.** Fires only on cohesive >5-file deliverables.
+
+12. **Archive-at-Phase-1B 12th consecutive validation** (62-73). Pattern institutionalized. Session 74: at Phase 1B, demote Session 73's `**Task:**` + `**Status:**` block to `### Session 73 ARCHIVED ACTIVE TASK` placed above the Session 72 archive heading (offsets shift after Session 73 close).
+
+13. **CHANGELOG 41-consecutive-structure match in Session 73.** Continue: context / Added / Verified / Unchanged intentionally / Next. Session 74 = 42nd match target.
+
+14. **Operator's durable directive still active** ("numerical order; 1 per session"). Defaults to operator-directed scope.
+
+15. **Documentation debt — Phase 3/4 wiki updates still skipped.** Plan §8.6 lists ~6 wiki/doc files.
+
+16. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both.
+
+17. **Wiki clone location unchanged:** `~/Development/claims-model-starter.wiki/`, branch master, at `c13cfc4` (Session 63's sync). Session 73 did not touch wiki files.
+
+18. **Commit message for Session 73:** `docs(methodology): promote Candidate Learning #60 to permanent (row #37)`. Last of the three-session methodology-housekeeping run.
+
+19. **`SESSION_RUNNER.md` Learnings table currently at 37 rows post-Session-73.** No insertion expected next session unless a new candidate emerges or a stalled candidate reaches 3rd instance.
+
+20. **Push state.** 1 commit ahead of origin at Session 73 close. Session 72's `69f05d1` was pushed in Session 72's close-out by operator authorization.
+
+21. **Phase 0 narration discipline (now consistent practice).** Sessions 72 mild slip → Session 73 mechanical application. Pattern: announce parallel-Read tool blocks before they fire. Promote to candidate-learning if Session 74 applies explicitly (3rd-instance threshold).
+
+22. **Paste-verbatim default on promotion micros (now applied).** Session 73 defaulted to paste-verbatim per Session 72's self-flag. If a future operator wants augmentation, they pre-align via AskUserQuestion. Promote to candidate-learning if a 3rd session faces the augment-vs-paste tension explicitly.
 
 ### Session 71 Handoff Evaluation (by Session 72)
 
@@ -835,6 +982,12 @@
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 72 ARCHIVED ACTIVE TASK
+
+**Task:** Session 72 — operator direction (off-BACKLOG, methodology housekeeping; BACKLOG remains empty). Promote Candidate Learning #58 (Phase-1B vs Phase-3 boundary discipline) to permanent row #36 in `SESSION_RUNNER.md` Learnings table. Phrasing pre-drafted in Session 71 Phase 3C — paste verbatim. Source column: Sessions 69 (filed), 70 (applied), 71 (applied — promotion-triggering). Mirrors Session 71's promotion of Candidate #56 → row #35 and Session 69's promotion of #52 → row #34. Single-row table edit + standard close-out; gates expected unchanged (`SESSION_RUNNER.md` not on tooling input paths). Operator selected the promotion direction at session start.
+
+**Status:** Session 72 COMPLETE. Promoted Candidate Learning #58 → permanent row #36 in `SESSION_RUNNER.md` Learnings table (rule statement + boundary-discipline elaboration verbatim from Session 71 Phase 3C draft; one rationale-augmentation sentence added on stub-vs-record distinction per Learning #27; Source column cites Sessions 69/70/71/72). Phase 1B applied Learning #36 (newly permanent post-Session-72) boundary discipline as 4th-instance post-promotion validation — touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading. Candidate Learning #60 (Edit-tool boundary-heading consume-and-replace) reached **3rd-instance PROMOTION-TRIGGERING** this session — recommended for promotion in Session 73; phrasing pre-drafted in Phase 3C. Gates green: pytest 588/588 @ 97.32%; ruff clean; mypy 0/61 (all unchanged). CHANGELOG Session 72 entry at top of Unreleased (40th consecutive structure match). BACKLOG unchanged (off-BACKLOG; remains empty). Self-assess 9.0/10. Commit landed: `69f05d1 docs(methodology): promote Candidate Learning #58 to permanent (row #36)`. Pushed to origin in Session 72 close by operator authorization (`615e542..69f05d1 master -> master`).
 
 ### Session 71 ARCHIVED ACTIVE TASK
 
