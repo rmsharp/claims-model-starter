@@ -95,6 +95,18 @@ request = DataRequest(..., data_source_inventory=inventory)
 
 With the inventory attached, a run against a real Claude model would produce a `PrimaryQuery.inventory_entries_used` pointing back at `public.claim_events` / `public.subrogation_outcomes`. Callers who omit the field get the pre-Phase-3 behaviour unchanged.
 
+#### Optional: deriving an inventory from the intake interview
+
+Phase 4 added an alternative producer that derives a `DataSourceInventory` directly from the `IntakeReport.qa_pairs` collected by the Intake Agent. Stakeholder-named systems (Guidewire, Duck Creek, ClaimsCenter, etc.) become `DataSourceEntry` records with `producer_type="interview"`. This is the only producer class that crosses the agent boundary — it lives in `orchestrator/adapters.py` rather than the data-agent package (the decoupling guarantee).
+
+Pipeline-mode invocation:
+
+```bash
+uv run python scripts/run_pipeline.py --host gitlab --inventory-from-intake
+```
+
+The converter is `intake_qa_pairs_to_inventory` at `src/model_project_constructor/orchestrator/adapters.py:113`; the flag is wired in `scripts/run_pipeline.py:477`. When `--inventory-from-intake` is combined with `--curated-inventory <path>`, the curated entries win on duplicate `fully_qualified_name` (richer, hand-maintained signal) and interview-derived entries enrich the remainder.
+
 ### Step 4 — DataReport output
 
 The Data Agent produces `tests/fixtures/sample_datareport.json`:

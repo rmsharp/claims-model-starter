@@ -224,6 +224,83 @@ class DataRequest(StrictBase):
 
 **Example fixture:** `tests/fixtures/sample_request.json`.
 
+### `DataSourceInventory` and nested types
+
+The four types below live in the same data-agent module as `DataRequest` / `DataReport` (`packages/data-agent/src/model_project_constructor_data_agent/schemas.py`) and are re-exported from `src/model_project_constructor/schemas/v1/data.py` for orchestrator code. They define the structured catalog of candidate tables / views / datasets carried on `DataRequest.data_source_inventory` and referenced by `PrimaryQuery.inventory_entries_used`.
+
+#### `ColumnMetadata`
+
+```python
+class ColumnMetadata(StrictBase):
+    name: str
+    data_type: str                                # source-system type, free-form
+    nullable: bool | None = None
+    description: str | None = None
+    is_primary_key: bool = False
+    is_foreign_key: bool = False
+    foreign_key_target: str | None = None         # fully-qualified target if FK
+```
+
+Describes one column of a `DataSourceEntry`. All optional metadata fields default to `None` / `False` so producers may emit minimal entries without filling unknown details.
+
+#### `ProducerMetadata`
+
+```python
+class ProducerMetadata(StrictBase):
+    producer_id: str                              # referenced by DataSourceEntry.producer_id
+    producer_type: Literal["curated", "automated",
+                           "interview", "external_catalog"]
+    produced_at: datetime
+    producer_version: str | None = None
+    notes: str | None = None
+```
+
+Identifies one producer of inventory entries. `producer_type` is the closed set of four producer classes — see the wiki `Data-Guide.md` §"Providing a data source inventory" for what each class is. The `producer_id` is the join key that `DataSourceEntry.producer_id` references.
+
+#### `DataSourceEntry`
+
+```python
+class DataSourceEntry(StrictBase):
+    schema_version: Literal["1.0.0"] = "1.0.0"
+    name: str
+    namespace: str | None = None
+    source_system: str | None = None
+    fully_qualified_name: str                     # used as the entry's logical key
+    entity_kind: Literal["table", "view", "materialized_view",
+                         "file_dataset", "feature_view", "other"]
+    columns: list[ColumnMetadata] = []
+    primary_key_columns: list[str] = []
+    row_count_estimate: int | None = None
+    description: str | None = None
+    business_domain: str | None = None
+    entity_types: list[str] = []
+    relevance_score: float | None = None          # 0.0-1.0 if populated; used for truncation
+    relevance_reason: str | None = None
+    last_updated_at: datetime | None = None
+    refresh_cadence: str | None = None
+    access_notes: str | None = None
+    owning_team: str | None = None
+    producer_id: str                              # must resolve in DataSourceInventory.producers
+    extra: dict[str, Any] = {}                    # producer-specific overflow
+```
+
+One catalogued data source (table, view, dataset, etc.). `fully_qualified_name` is the de-duplication / merge key when combining inventories from multiple producers. `relevance_score` (when present) drives the prompt-time top-N truncation. `producer_id` is validated at construction time by `DataSourceInventory` (see cross-field validator below).
+
+#### `DataSourceInventory`
+
+```python
+class DataSourceInventory(StrictBase):
+    schema_version: Literal["1.0.0"] = "1.0.0"
+    entries: list[DataSourceEntry] = []
+    producers: list[ProducerMetadata] = []
+    created_at: datetime
+    request_context: str | None = None
+```
+
+Top-level container. A cross-field validator (`_producer_ids_resolve`) runs at construction time and raises `ValueError` if any `DataSourceEntry.producer_id` does not appear in `producers[*].producer_id` — dangling producer references are a configuration error, not a silent skip. The `extra="forbid"` invariant from `StrictBase` applies to all four types: unknown fields fail validation, so producer code can't silently drop data.
+
+**Example fixture:** `tests/fixtures/sample_curated_inventory.json`.
+
 ### `QualityCheck` (lines 62-68)
 
 ```python

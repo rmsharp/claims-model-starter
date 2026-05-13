@@ -340,7 +340,11 @@ and multiple producer classes populate the same consumer shape:
 - **Automated** — probes like `information_schema` against a live DB
   (reference implementation shipped; see Example 4).
 - **Interview** — converter from stakeholder-named systems captured by the
-  intake agent (Guidewire, Duck Creek, etc.) into inventory entries.
+  intake agent (Guidewire, Duck Creek, etc.) into inventory entries with
+  `producer_type="interview"`. Shipped Phase 4 as
+  `intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`; lives in the
+  orchestrator package, not data-agent (see the Decoupling guarantee below) —
+  the wiki Pipeline-Overview describes how the orchestrator wires it in.
 - **External catalog** — DataHub, Amundsen, Collibra, and similar metadata
   catalogs (future).
 
@@ -348,8 +352,13 @@ Phase 1 shipped the schema. Phase 2 shipped the `information_schema` reference
 producer (Example 4): `probe_information_schema` + `model-data-agent discover`
 + `ReadOnlyDB.get_information_schema`. Phase 3 (shipped) plumbs
 `DataRequest.data_source_inventory` through to the query-generation prompt —
-see Example 5. Callers who do not set the field continue to work unchanged.
-See `docs/planning/data-source-inventory-contract-plan.md` for the full plan
+see Example 5. Phase 4 (shipped) wires the orchestrator's
+`--inventory-from-intake` flag in `scripts/run_pipeline.py` to the
+`intake_qa_pairs_to_inventory` converter, deriving an interview-producer
+inventory from `IntakeReport.qa_pairs` (orchestrator-side; see the wiki
+Pipeline-Overview for the pipeline-mode flow). Callers who do not set the
+field continue to work unchanged. See
+`docs/planning/data-source-inventory-contract-plan.md` for the full plan
 and `tests/fixtures/sample_curated_inventory.json` for a valid
 curated-producer example.
 

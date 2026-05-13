@@ -106,7 +106,7 @@ Three producer classes can populate an inventory today:
 
 - **Curated** — a team-maintained JSON file following `DataSourceInventory`. See `tests/fixtures/sample_curated_inventory.json`.
 - **Automated** — probe a live database's `information_schema` via `probe_information_schema` or the `model-data-agent discover` CLI.
-- **Interview** — convert stakeholder-named systems from an `IntakeReport`'s `qa_pairs` (reference implementation deferred until pilot demand).
+- **Interview** — convert stakeholder-named systems from an `IntakeReport`'s `qa_pairs` (shipped Phase 4 as `intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`; engaged via `scripts/run_pipeline.py --inventory-from-intake`).
 
 ```python
 import json

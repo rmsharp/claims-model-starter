@@ -73,7 +73,7 @@ A schema registry maps `(payload_type, schema_version)` to the Pydantic class fo
 The orchestrator (`orchestrator/pipeline.py`) calls each agent's runner function in sequence:
 
 1. **INTAKE** -- produces `IntakeReport` (or loads from checkpoint)
-2. **DATA** -- adapts `IntakeReport` to `DataRequest`, produces `DataReport`
+2. **DATA** -- adapts `IntakeReport` to `DataRequest` (optionally deriving a `DataSourceInventory` from `IntakeReport.qa_pairs` when `--inventory-from-intake` is set, via `intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`), produces `DataReport`
 3. **WEBSITE** -- combines both reports with `RepoTarget`, produces `RepoProjectResult`
 
 If any agent returns a non-`COMPLETE` status, the pipeline halts. Checkpoints are persisted after each successful step, so a failed run can be inspected and (in future) resumed.
