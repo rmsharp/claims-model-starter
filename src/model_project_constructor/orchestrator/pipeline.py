@@ -29,10 +29,16 @@ from typing import Any, Literal, cast
 from model_project_constructor.orchestrator.adapters import (
     intake_qa_pairs_to_inventory,
     intake_report_to_data_request,
+    load_curated_inventory,
+    merge_inventories,
 )
 from model_project_constructor.orchestrator.checkpoints import CheckpointStore
 from model_project_constructor.schemas.envelope import HandoffEnvelope
-from model_project_constructor.schemas.v1.data import DataReport, DataRequest
+from model_project_constructor.schemas.v1.data import (
+    DataReport,
+    DataRequest,
+    DataSourceInventory,
+)
 from model_project_constructor.schemas.v1.intake import IntakeReport
 from model_project_constructor.schemas.v1.repo import (
     RepoProjectResult,
@@ -183,6 +189,7 @@ class PipelineConfig:
     correlation_id: str = field(default="")
     resume_from: ResumePoint | None = None
     inventory_from_intake: bool = False
+    curated_inventory_path: Path | None = None
 
     def __post_init__(self) -> None:
         if not self.correlation_id:
@@ -276,11 +283,21 @@ def run_pipeline(
     # later, load the saved DataRequest instead of re-deriving (§6.3:
     # the envelope on disk is ground truth for what the data agent saw).
     if resume in (None, "intake", "intake_to_data_adapter"):
-        inventory = (
+        curated = (
+            load_curated_inventory(config.curated_inventory_path)
+            if config.curated_inventory_path is not None
+            else None
+        )
+        interview = (
             intake_qa_pairs_to_inventory(intake_report)
             if config.inventory_from_intake
             else None
         )
+        inventory: DataSourceInventory | None
+        if curated is not None and interview is not None:
+            inventory = merge_inventories(curated, interview)
+        else:
+            inventory = curated or interview
         data_request = intake_report_to_data_request(
             intake_report, config.run_id, data_source_inventory=inventory
         )

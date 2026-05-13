@@ -17,6 +17,7 @@ try to be clever about fields the downstream agent can diagnose better.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 from model_project_constructor.schemas.v1.data import (
     DataGranularity,
@@ -174,8 +175,76 @@ def intake_qa_pairs_to_inventory(intake: IntakeReport) -> DataSourceInventory:
     )
 
 
+def load_curated_inventory(path: Path) -> DataSourceInventory:
+    """Load a curated ``DataSourceInventory`` from a JSON file.
+
+    Producer-side counterpart to :func:`intake_qa_pairs_to_inventory`. The
+    file format is the canonical Pydantic JSON shape emitted by the
+    data-agent ``discover`` subcommand (see
+    ``packages/data-agent/src/model_project_constructor_data_agent/cli.py``)
+    and pinned by ``tests/fixtures/sample_curated_inventory.json``.
+
+    Validation errors (malformed JSON, missing required fields, dangling
+    ``producer_id``) propagate as ``pydantic.ValidationError`` /
+    ``json.JSONDecodeError``; ``FileNotFoundError`` propagates from
+    :meth:`pathlib.Path.read_text` when the path does not exist. Callers
+    decide whether to surface these to the operator or halt the pipeline.
+    """
+
+    return DataSourceInventory.model_validate_json(path.read_text())
+
+
+def merge_inventories(
+    curated: DataSourceInventory,
+    interview: DataSourceInventory,
+) -> DataSourceInventory:
+    """Merge a curated inventory with an interview-derived inventory.
+
+    Per ``docs/planning/data-source-inventory-contract-plan.md`` §9 Phase 4
+    bullet 3: **curated entries win on duplicate ``fully_qualified_name``;
+    interview entries enrich (not override)**. Interview entries whose FQN
+    already appears in ``curated`` are dropped; remaining interview entries
+    are appended to the curated entry list.
+
+    The result's ``producers`` list is the union of both inventories'
+    producers (deduplicated by ``producer_id``, curated-first ordering).
+    The interview producer is always carried even if all its entries were
+    deduped out — provenance is preserved for traceability.
+
+    ``created_at`` is set to the merge timestamp; ``request_context`` is
+    descriptive of the merge composition so downstream audit
+    (``DataReport`` provenance) can see what was combined.
+    """
+
+    curated_fqns = {e.fully_qualified_name for e in curated.entries}
+    enriching = [
+        e for e in interview.entries if e.fully_qualified_name not in curated_fqns
+    ]
+
+    seen_producer_ids: set[str] = set()
+    merged_producers: list[ProducerMetadata] = []
+    for producer in [*curated.producers, *interview.producers]:
+        if producer.producer_id in seen_producer_ids:
+            continue
+        merged_producers.append(producer)
+        seen_producer_ids.add(producer.producer_id)
+
+    return DataSourceInventory(
+        entries=[*curated.entries, *enriching],
+        producers=merged_producers,
+        created_at=datetime.now(UTC),
+        request_context=(
+            f"Merged inventory: curated ({len(curated.entries)} entries) + "
+            f"interview ({len(enriching)} of {len(interview.entries)} "
+            f"entries enriching after fully_qualified_name dedup)"
+        ),
+    )
+
+
 __all__ = [
     "infer_target_granularity",
     "intake_qa_pairs_to_inventory",
     "intake_report_to_data_request",
+    "load_curated_inventory",
+    "merge_inventories",
 ]

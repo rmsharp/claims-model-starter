@@ -500,6 +500,188 @@ class TestPipelineConfig:
         assert "Guidewire ClaimCenter" in names
         assert "Enterprise Data Warehouse" in names or "Data Lake" in names
 
+    def test_curated_inventory_alone_populates_request(
+        self, tmp_path: Path
+    ) -> None:
+        """When ``curated_inventory_path`` is set and ``inventory_from_intake``
+        is unset, the persisted DataRequest carries the curated inventory
+        verbatim (no interview merge). Pins independent-flag semantics
+        per data-source-inventory-contract-plan.md §9 Phase 4 bullet 3."""
+
+        curated_src = (
+            Path(__file__).resolve().parents[1]
+            / "fixtures"
+            / "sample_curated_inventory.json"
+        )
+        intake = _load_intake()
+        data = _load_data()
+        client = FakeRepoClient()
+        agent = WebsiteAgent(client, ci_platform="gitlab")
+        target = RepoTarget(
+            host_url="https://fake.host.test",
+            namespace="data-science/model-drafts",
+            project_name_hint="subrogation_pilot",
+            visibility="private",
+        )
+        config = PipelineConfig(
+            run_id="run_curated_only",
+            repo_target=target,
+            checkpoint_dir=tmp_path / "checkpoints",
+            curated_inventory_path=curated_src,
+        )
+        run_pipeline(
+            config,
+            intake_runner=lambda: intake,
+            data_runner=lambda _req: data,
+            website_runner=agent.run,
+        )
+        store = CheckpointStore(config.checkpoint_dir)
+        request = store.load_payload("run_curated_only", "DataRequest")
+        assert isinstance(request, DataRequest)
+        assert request.data_source_inventory is not None
+        producer_types = {
+            p.producer_type for p in request.data_source_inventory.producers
+        }
+        assert producer_types == {"curated"}
+        assert all(
+            e.producer_id.startswith("curated:")
+            for e in request.data_source_inventory.entries
+        )
+
+    def test_curated_plus_intake_merges_with_curated_winning_on_duplicate_fqn(
+        self, tmp_path: Path
+    ) -> None:
+        """When both flags are set, curated entries win on duplicate
+        ``fully_qualified_name``; interview entries with new FQNs enrich.
+        Pins the merge contract per plan §9 Phase 4 bullet 3."""
+
+        from model_project_constructor.schemas.v1.intake import QAPair
+
+        curated_src = (
+            Path(__file__).resolve().parents[1]
+            / "fixtures"
+            / "sample_curated_inventory.json"
+        )
+        base = _load_intake()
+        intake_with_transcript = base.model_copy(
+            update={
+                "qa_pairs": [
+                    QAPair(
+                        question="Which claims system?",
+                        answer="Guidewire ClaimCenter for auto.",
+                    ),
+                ]
+            }
+        )
+        data = _load_data()
+        client = FakeRepoClient()
+        agent = WebsiteAgent(client, ci_platform="gitlab")
+        target = RepoTarget(
+            host_url="https://fake.host.test",
+            namespace="data-science/model-drafts",
+            project_name_hint="subrogation_pilot",
+            visibility="private",
+        )
+        config = PipelineConfig(
+            run_id="run_curated_plus_intake",
+            repo_target=target,
+            checkpoint_dir=tmp_path / "checkpoints",
+            inventory_from_intake=True,
+            curated_inventory_path=curated_src,
+        )
+        run_pipeline(
+            config,
+            intake_runner=lambda: intake_with_transcript,
+            data_runner=lambda _req: data,
+            website_runner=agent.run,
+        )
+        store = CheckpointStore(config.checkpoint_dir)
+        request = store.load_payload("run_curated_plus_intake", "DataRequest")
+        assert isinstance(request, DataRequest)
+        inventory = request.data_source_inventory
+        assert inventory is not None
+        producer_types = {p.producer_type for p in inventory.producers}
+        assert producer_types == {"curated", "interview"}
+        fqns = {e.fully_qualified_name for e in inventory.entries}
+        assert "Guidewire ClaimCenter" in fqns
+
+    def test_curated_wins_on_duplicate_fqn(self, tmp_path: Path) -> None:
+        """When curated and interview produce entries with the same
+        ``fully_qualified_name``, curated's entry is preserved and the
+        interview duplicate is dropped (not appended)."""
+
+        from model_project_constructor.orchestrator.adapters import (
+            merge_inventories,
+        )
+        from model_project_constructor.schemas.v1.data import (
+            DataSourceEntry,
+            DataSourceInventory,
+            ProducerMetadata,
+        )
+
+        now = datetime.now(UTC)
+        curated = DataSourceInventory(
+            entries=[
+                DataSourceEntry(
+                    name="Guidewire ClaimCenter",
+                    fully_qualified_name="Guidewire ClaimCenter",
+                    entity_kind="table",
+                    description="curated description with column-level detail",
+                    producer_id="curated:claims-analytics-team",
+                )
+            ],
+            producers=[
+                ProducerMetadata(
+                    producer_id="curated:claims-analytics-team",
+                    producer_type="curated",
+                    produced_at=now,
+                )
+            ],
+            created_at=now,
+        )
+        interview = DataSourceInventory(
+            entries=[
+                DataSourceEntry(
+                    name="Guidewire ClaimCenter",
+                    fully_qualified_name="Guidewire ClaimCenter",
+                    entity_kind="other",
+                    description="interview snippet — vague",
+                    producer_id="intake-interview",
+                ),
+                DataSourceEntry(
+                    name="Subrogation Recovery",
+                    fully_qualified_name="Subrogation Recovery",
+                    entity_kind="other",
+                    description="enriching entry",
+                    producer_id="intake-interview",
+                ),
+            ],
+            producers=[
+                ProducerMetadata(
+                    producer_id="intake-interview",
+                    producer_type="interview",
+                    produced_at=now,
+                )
+            ],
+            created_at=now,
+        )
+
+        merged = merge_inventories(curated, interview)
+
+        fqn_to_entry = {e.fully_qualified_name: e for e in merged.entries}
+        assert len(merged.entries) == 2
+        assert (
+            fqn_to_entry["Guidewire ClaimCenter"].description
+            == "curated description with column-level detail"
+        )
+        assert (
+            fqn_to_entry["Guidewire ClaimCenter"].producer_id
+            == "curated:claims-analytics-team"
+        )
+        assert fqn_to_entry["Subrogation Recovery"].producer_id == "intake-interview"
+        producer_ids = {p.producer_id for p in merged.producers}
+        assert producer_ids == {"curated:claims-analytics-team", "intake-interview"}
+
 
 # --- Resume-point determination (resume-from-checkpoint-plan §5 truth table)
 

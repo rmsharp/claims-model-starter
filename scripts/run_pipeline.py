@@ -482,6 +482,21 @@ def main() -> None:
             "agent. Default off preserves pre-Phase-4 behavior."
         ),
     )
+    parser.add_argument(
+        "--curated-inventory",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Load a curated DataSourceInventory JSON file (single file; "
+            "format matches the data-agent `discover` subcommand output) "
+            "and pass it to the data agent. When combined with "
+            "--inventory-from-intake, curated entries win on duplicate "
+            "fully_qualified_name; interview entries enrich (do not "
+            "override) per data-source-inventory-contract-plan.md "
+            "§9 Phase 4 bullet 3."
+        ),
+    )
     args = parser.parse_args()
 
     # Fail fast: --llm both requires --intake-fixture.
@@ -545,6 +560,7 @@ def main() -> None:
         checkpoint_dir=args.checkpoint_dir,
         resume_from=resume_point,
         inventory_from_intake=args.inventory_from_intake,
+        curated_inventory_path=args.curated_inventory,
     )
     print(f"      Target: {repo_target.namespace} on {repo_target.host_url}")
     print(f"      Checkpoints: {config.checkpoint_dir}")
