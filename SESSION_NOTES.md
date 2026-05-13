@@ -5,9 +5,178 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 76 — operator direction #1 from Session 75 handoff (BACKLOG.md EMPTY since Session 70; carried 7th consecutive session). Execute **Session A** of `docs/planning/wiki-inventory-delta.md` §3.1-§3.5 + §5 — update 5 documentation surfaces with Phase 3/4 data-source-inventory content: `docs/wiki/claims-model-starter/{Schema-Reference,Data-Guide,Worked-Examples,Pipeline-Overview}.md` + `packages/data-agent/USAGE.md`. Per the plan, each file has its own per-file gap inventory + grep-based completion criteria. Post-commit, run `scripts/publish_wiki.sh` to propagate the 4 wiki file changes to the live GitHub Wiki clone at `~/Development/claims-model-starter.wiki/`. Session B (architecture-plan.md, 1 file, no wiki publish) deferred to a separate session per plan §5 sequencing.
+**Task:** Session 77 — operator direction #1 from Session 76 handoff (BACKLOG.md EMPTY since Session 70; carried 8th consecutive session). Execute **Session B** of `docs/planning/wiki-inventory-delta.md` §3.6 + §5 — add additive forward-pointer notes to `docs/architecture-history/architecture-plan.md` near §5.2 `DataRequest`, §5.3 `DataReport` `PrimaryQuery`, and §7 Data Agent Reuse Interface, citing `docs/planning/data-source-inventory-contract-plan.md` and `docs/wiki/claims-model-starter/Schema-Reference.md` §5. ~6-9 line insert total (2-3 notes, ~3 lines each). Per plan §3.6 + §6 the deliverable is "a note" not a rewrite — no structural changes to §5.2 / §5.3 / §7 bodies. **Does NOT trigger wiki publish hook** (architecture-plan.md not under `docs/wiki/claims-model-starter/`).
 
-**Status:** Session 76 IN PROGRESS. Session claimed at Phase 1B. Learning #29 grep-before-insert returned 9 prose-only hits (zero heading collisions, **40th consecutive**); Learning #35 `^### Session 75 ARCHIVED ACTIVE TASK` = 0 hits, safe to insert (**9th consecutive post-promotion**); Learning #34 single-line anchor `^### Session 74 ARCHIVED ACTIVE TASK` pre-verified unique (`grep -c` returned 1, no multi-line extension needed). Work pending: read plan in full, re-grep §3.1-§3.5 line citations per Learning #11 (line numbers drift), edit 5 files (Schema-Reference / Data-Guide / Worked-Examples / Pipeline-Overview / USAGE.md), run completion-criteria greps, gate verification, CHANGELOG entry, commit, run `scripts/publish_wiki.sh`, close-out.
+**Status:** Session 77 IN PROGRESS. Session claimed at Phase 1B. Learning #29 stub-grep returned 8 prose-only hits (zero heading collisions, **41st consecutive**); Learning #35 raw-string pre-grep `### Session 76 ARCHIVED ACTIVE TASK` = 0 hits, safe to insert (**10th consecutive post-promotion**); NEW Candidate #64 applied (raw-string, no regex anchors); Learning #34 + #37 pre-verification raw-string `grep -c "### Session 75 ARCHIVED ACTIVE TASK"` returned 5 (prose-references in Session 76 handoff), escalated to multi-line anchor with distinguishing phrase `carried 6th consecutive session` (uniqueness verified by `grep -c` returning 1). Plan §3.6 line citations re-verified per Learning #11 — §5.2 at line 285 ✓, §5.3 PrimaryQuery at 321 ✓, §7 at 435 ✓ (zero drift). Work pending: 3 additive Edits to architecture-plan.md, §3.6 completion-criteria greps, gate verification, CHANGELOG entry, commit, close-out (NO wiki publish).
+
+### Session 76 Handoff Evaluation (by Session 77)
+
+**Score: 9.5/10.** Session 76's handoff was load-bearing on every procedural dimension and substantively for Session B execution. Likely-directions #1 named Session B verbatim with file path (`architecture-plan.md`), insert size (~6-9 lines), the §3.6 scope, and the **does-NOT-trigger-wiki-publish** invariant — all four matched exactly. Gotcha #4 (Session A COMPLETE; Session B remaining) framed the scope-decision cleanly. Gotcha #6 (additive forward-pointer notes, not §5.2/§5.3/§7 rewrites) prevented overscope. Gotcha #14 (NEW Candidate #64) named the regex-anchor pitfall with the explicit raw-string recipe — applied preemptively this session, no Edit-tool "Found N matches" error encountered. Gotcha #30 (Edit-tool multi-match recovery sequence) gave the exact diagnosis pathway. Pre-commit baseline gotcha #1 matched exactly (588/588 @ 97.32%, ruff clean, mypy 0/61). Tooling-PATH gotcha #2 + BACKLOG-empty gotcha #3 + Learning-#29/#34/#35/#36/#37 gotchas (#7-#11) all matched. CHANGELOG 45th-consecutive-structure target named in gotcha #20 — achieved this session. Wiki-publish negative case (gotcha #24) — confirmed correct (architecture-plan.md not under `docs/wiki/`).
+
+- **What helped:** (a) Likely-directions #1 named Session B literally with file path + line citations + insert size — zero scope ambiguity at claim time. (b) Gotcha #5 (Session B scope: 1 file, ~6-9 lines, no wiki publish) + Gotcha #6 (additive only, no §5.2/§5.3/§7 rewrites) matched verbatim. (c) Gotcha #14 (NEW Candidate #64: raw-string pre-grep, no `^`/`$` regex anchors) — applied preemptively at Phase 1B archive-heading insertion. Raw-string `grep -c "### Session 75 ARCHIVED ACTIVE TASK"` returned 5; escalated upfront to multi-line anchor with `carried 6th consecutive session` distinguishing phrase. Both Phase 1B Edits landed first-attempt. **NEW Candidate #64 advances to 2nd instance** — one more from promotion. (d) Gotcha #11 Learning #36 — Phase 1B touched ONLY ACTIVE TASK Task/Status block + predecessor archive heading; no heading renames, no eval body until Phase 3. **9th consecutive post-promotion validation.** (e) Gotcha #12 Learning #37 — multi-line anchor consume-and-replace applied on Edit #2 (Session 76 archive insertion). **4th-instance post-promotion validation.** (f) Plan §3.6 line citations re-verified per Learning #11 / gotcha #4 — zero drift this time (lines 285, 321, 435 all unchanged since Session 75 plan-write). (g) Gotcha #20 CHANGELOG 45-consecutive-structure target → match achieved.
+- **What was missing:** Nothing material. The handoff was substantively complete. One micro: gotcha #14 named NEW #64 at "1st instance" — by handoff completeness convention, the fact that gotcha #14 listed it AS-fresh-1st-instance was the right state; Session 77's 2nd-instance advancement is the natural consequence. No structural defect.
+- **What was wrong:** Nothing. Pre-commit baseline, Phase-4 code-citation line numbers, plan §3.6 anchors, and BACKLOG state all matched the handoff verbatim.
+- **ROI:** ~10×. Direction #1 named the deliverable, scope was exact, plan was the implementation spec, Edit-tool pitfall was named with explicit recipe and applied preemptively (zero retries). Cleanest handoff-to-execution arc since Session 73→74.
+
+### What Session 77 Did
+
+**Deliverable:** Execute Session B of `docs/planning/wiki-inventory-delta.md` §3.6 + §5 — add three additive forward-pointer notes to `docs/architecture-history/architecture-plan.md`: (a) Phase 3 note near §5.2 `DataRequest` for `data_source_inventory` field; (b) Phase 3 note near §5.3 `DataReport` `PrimaryQuery` for `inventory_entries_used` field; (c) Phase 4 note in §7 Data Agent Reuse Interface for `intake_qa_pairs_to_inventory` + `--inventory-from-intake`. All §3.6 completion criteria PASS; gates green; +6 / -0 additive. **COMPLETE.**
+**Started:** 2026-05-13
+**Completed:** 2026-05-13
+**Commit (pending):** `docs(architecture-history): execute wiki-inventory-delta Session B — 3 forward-pointer notes for Phase 3/4 data-source-inventory contract (Session 77)`
+
+**What was done:**
+
+1. **Phase 0 orientation — Learning #30 declarative narration applied.** Announced parallel-Read block before firing (SAFEGUARDS.md + SESSION_RUNNER.md + SESSION_NOTES.md head + git status/log/diff + BACKLOG + dashboard). All four prerequisite reads completed. BACKLOG.md empty (8th consecutive carry). Dashboard 96/100 medium-risk active. `git status` clean; `git log -5` matched Session 76's commit hash `931cd23`. Reported findings concisely with Session B as direction #1.
+2. **Operator direction.** "Session B of the wiki-inventory-delta plan" — direction #1 from Session 76 handoff (path-of-least-friction).
+3. **Phase 1B stub claim — Learning #29 41st consecutive + Learning #35 10th + NEW Candidate #64 2nd-instance preemptive + Learning #37 4th-instance.** Learning #29 stub-grep `Session 77|### What Session 77 Did|### Session 76 Handoff Evaluation|Post-Session-77` returned 8 prose-only hits (forward-references in Session 76's handoff); zero heading collisions (**41st consecutive clean**). Learning #35 raw-string pre-grep `### Session 76 ARCHIVED ACTIVE TASK` → 0 hits (**10th consecutive**). NEW Candidate #64 applied preemptively: raw-string `grep -c "### Session 75 ARCHIVED ACTIVE TASK"` returned 5 (4 prose-references in Session 76 handoff + 1 actual heading at line 1320); escalated upfront to multi-line anchor `### Session 75 ARCHIVED ACTIVE TASK\n\n**Task:** Session 75 — operator direction #1 from Session 74 handoff (BACKLOG.md EMPTY since Session 70; carried 6th consecutive session).` (uniqueness verified `grep -c` of distinguishing phrase = 1). Edit #1 (ACTIVE TASK block replace) + Edit #2 (Session 76 archive heading insert via Learning #37 consume-and-replace) **both landed first-attempt**. **Candidate Learning #64 advances to 2nd instance** — 1 more from promotion.
+4. **Phase 2 — Plan §3.6 line citations re-verified per Learning #11 (zero drift).** `grep -n "DataRequest\|PrimaryQuery\|Data Agent Reuse" architecture-plan.md` confirmed §5.2 at line 285, §5.3 PrimaryQuery at 321, §7 at 435 (all matched plan §3.6 verbatim — first zero-drift session since Session 74). Parallel-Read of three 15-50 line target regions to confirm exact insertion points (after line 308 "Critical:..." paragraph; after line 349 closing ``` of DataReport code block; after line 462 "The inference helpers..." paragraph).
+5. **Phase 2 — anchor uniqueness pre-grep per NEW Candidate #64 (3 anchors checked raw-string).** `decouples the Data Agent for reuse (constraint C4)` → 1 hit ✓. `data_quality_concerns: list[str]` → 2 hits → extended Edit B anchor to consume `    created_at: datetime\n\`\`\`\n\n### 5.4` (post-§5.4 heading verified unique with `grep -c` = 1). `The inference helpers` → 1 hit ✓.
+6. **Phase 2 — 3 content Edits in parallel batch.** All landed first-attempt. (a) Edit A: §5.2 Phase 3 note inserted as blockquote after the "Critical:..." paragraph, before §5.3. (b) Edit B: §5.3 Phase 3 note inserted as blockquote after the DataReport closing ``` line, before §5.4. (c) Edit C: §7 Phase 4 note inserted as blockquote after "The inference helpers..." paragraph, before "Three Entry Points" sub-section. Total: **+6 / -0** for `docs/architecture-history/architecture-plan.md`.
+7. **Gate verification — Learning #39 institutional, 16th consecutive preventive-by-default.** Parallel: `.venv/bin/pytest -q` + `.venv/bin/ruff check src/ tests/ packages/ scripts/` + `.venv/bin/mypy src/` + `.venv/bin/mypy packages/data-agent/src/`. Candidate Learning #62 institutional safeguard applied (3rd application of `.venv/bin/` preemptive prefix). pytest 588/588 @ 97.32%; ruff clean; mypy 48 src + 13 packages = 61 source files clean. All unchanged from Session 76 baseline (docs not on tooling input paths).
+8. **Plan §3.6 + §8 completion-criteria verification — all PASS.** §3.6 grep `grep -cE "data_source_inventory|inventory_entries_used|data-source-inventory-contract-plan" docs/architecture-history/architecture-plan.md` → **3** (≥2 ✓). §3.6 additive-only check `git diff --numstat docs/architecture-history/architecture-plan.md` → `6 0` (additions only, zero deletions ✓). §8 forecast `architecture-plan.md` Pre=0, Post≥2 → actual 3 (forecast met).
+9. **CHANGELOG Session 77 entry — 45th-consecutive-structure match.** Sections: context paragraph (Session B scope + #64 preemptive application + 3-note breakdown) / Added (3 forward-pointer notes detailed) / Verified (gates + §3.6 criteria + §8 forecast) / Unchanged intentionally (no wiki, no src/tests, candidate-learning status updates) / Next.
+10. **Phase 3 close-out** — this block. Commit pending (NO wiki publish — architecture-plan.md not under `docs/wiki/`).
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Phase 0 full read of SAFEGUARDS + SESSION_NOTES head + BACKLOG + dashboard + git state BEFORE operator direction. Plan §3.6 line citations re-verified via Learning #11 before any content edit (zero drift this time). Anchor uniqueness pre-greped for all 3 content Edits via NEW Candidate #64 raw-string recipe.
+- **Stakeholder corrections:** 0. No retries on any Edit (Phase 1B or content). Plan-vs-reality drift was zero.
+- **What I got right:** (a) **NEW Candidate #64 applied preemptively at Phase 1B** — raw-string pre-grep returned 5, escalated to multi-line anchor upfront, no Edit-tool "Found N matches" failure. **2nd-instance promotion-advancing.** (b) **All 3 content Edits landed first-attempt** (parallel batch, no anchor collisions). (c) **Edit B anchor extended preemptively** when `data_quality_concerns` returned 2 hits — used a longer multi-line anchor consuming the §5.4 heading to guarantee uniqueness. Recipe composition: NEW #64 + Learning #34. (d) **Plan §3.6 line citations zero drift** (lines 285, 321, 435 unchanged) — first time since Session 74 that Learning #11 re-verification found zero drift; this is the planning-document baseline maintaining stability under the Session 76 5-file edit. (e) **Tooling-PATH preemptive use** (Candidate #62 3rd institutional application). (f) **CHANGELOG 45th-consecutive-structure match.** (g) **Gates green + ran BEFORE Verified-bullet draft** (Learning #39 16th consecutive preventive-by-default). (h) **+6 / -0 additive** confirmed with `git diff --numstat` — plan §3.6 + §6 "additive only, no structural changes" invariant met. (i) **Task tracking used throughout** — 7 tasks created, marked in_progress + completed in real time. (j) **Wiki publish hook deliberately NOT triggered** — architecture-plan.md is outside `docs/wiki/`, gotcha #24 verified, no spurious hook invocation.
+- **What I got wrong:** Nothing material this session. The deliverable was small (1 file, 3 notes) but the procedural discipline was clean across all gates. **Combined deduction: -0.5** for the small-deliverable simplicity (limited opportunity to demonstrate harder discipline) — not a defect, a calibration adjustment.
+- **Quality bar vs previous sessions:** Above Session 76 (8.5/10, had Edit-tool multi-match recovery); on par with Session 74 (9.5/10) and Session 75 (9.25/10). The cleanest run since Session 73 in terms of zero-retry execution. The institutional contribution is moderate (Candidate #64 advancement) since the recipe was already documented at 1st instance — this session validates that the recipe works preemptively.
+
+### Phase 3C: Learnings
+
+**Learning #11 trust-the-code (PERMANENT) — applied at Phase 0 + Phase 2.** Re-greped plan §3.6 line citations against current `architecture-plan.md` state; zero drift this session.
+
+**Learning #29 grep-before-insert (PERMANENT) — 41st consecutive clean.** Stub-grep returned 8 prose-only hits, zero heading collisions.
+
+**Learning #34 anchor uniqueness (PERMANENT) — applied 4× this session.** Phase 1B Edit #1 (single-line) + Edit #2 (multi-line escalation with #64 raw-string) + content Edit A (single-line) + content Edit B (multi-line consume of §5.4 heading) + content Edit C (single-line). All landed first-attempt.
+
+**Learning #35 archive-heading raw-string pre-grep (PERMANENT row #35) — 10th consecutive post-promotion clean.** `### Session 76 ARCHIVED ACTIVE TASK` → 0 hits.
+
+**Learning #36 Phase-1B vs Phase-3 boundary (PERMANENT row #36) — 9th consecutive post-promotion validation.** Phase 1B touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading; close-out content drafted at Phase 3.
+
+**Learning #37 consume-and-replace (PERMANENT row #37) — 4th-instance post-promotion validation.** Edit #2 consumed Session 75 archive heading + Task-line + distinguishing phrase (`carried 6th consecutive session`) in `old_string`; replicated heading + Task-line in `new_string` after inserting Session 76 archive block.
+
+**Learning #39 numbers re-verified (PERMANENT) — 23rd instance, 16th consecutive preventive-by-default.** Gates ran BEFORE Verified-bullet draft (parallel pytest + ruff + mypy).
+
+**Candidate Learning #55 (archive placement convention) — STILL 2nd instance.** Session 77's Phase 1B archive placement was again driven by Session 76 gotcha #19 prescriptive direction. **Eight consecutive sessions (70-77)** of declining gotcha-driven counts. May stall indefinitely.
+
+**Candidate Learning #57 (Edit-tool multi-match diagnosis) — STILL 2nd instance.** Did not fire this session — NEW #64 preemptive raw-string recipe prevented the Edit-tool "Found N matches" condition. Healthy outcome; #57 advances only when the failure-mode itself fires.
+
+**Candidate Learning #59 (5-file checkpoint) — STILL 1st instance.** Session 77 touched 3 files total. Did not fire.
+
+**Candidate Learning #61 (audit BOTH sides before "align X to Y") — STILL 2nd instance.** Session 76's handoff did not contain an "align X to Y" inversion; #61 did not fire.
+
+**Candidate Learning #62 (verify tool-PATH at Phase 0) — STILL 1st instance, 3rd institutional application.** `.venv/bin/` prefix preemptive use; no fresh-discovery instance.
+
+**Candidate Learning #63 (planning per-file completion criteria are weaker-form vs region-scoped) — STILL 1st instance.** No planning session this session.
+
+**Candidate Learning #64 (raw-string pre-grep for Edit-tool uniqueness; no `^`/`$` regex anchors) — ADVANCED to 2nd instance.** Filed Session 76 1st instance. Session 77 (2nd instance): applied preemptively at Phase 1B (returned 5 hits, escalated upfront to multi-line anchor — no Edit-tool failure). **Promotion-trigger pending one more validated instance** (3rd instance). Recipe holds: raw-string `grep -c "literal heading text" FILE` returns Edit's view; `grep -c "^literal heading text" FILE` returns line-anchored view (different counts). High-frequency; expect 3rd instance within 1-2 sessions of Edit-heavy work.
+
+**Learning #13 + #28 (literal minimum / handoff specifics not contracts) — clean application.** Handoff direction #1 named Session B (1 file, ~6-9 lines). Scope held at exactly 3 notes / +6 lines.
+
+**Learning #26 (BACKLOG delete-not-flip) — N/A this session.** BACKLOG empty (8th consecutive).
+
+**Learning #27 (paste-and-verify predecessor work product) — N/A.** No verbatim work product in the handoff this session (plan §3.6 was the spec, not a paste artifact).
+
+**Learning #30 (declarative interim status updates) — clean application.** Phase 0 parallel-Read block announced declaratively. Phase 1B pre-greps announced. NEW #64 preemptive recipe announced as "raw-string pre-grep per #64" before firing.
+
+**Learning #33 (Phase 0 BACKLOG-scope verification) — applied as 7th instance post-promotion.** BACKLOG empty (matched). Session 76 archive heading verified present in SESSION_NOTES.md. Plan file present. All confirmed before claim.
+
+**Learning #38 filing-session provenance — 24th instance (post-promotion).** Candidate #64 cites Session 76 1st-instance + Session 77 2nd-instance.
+
+### Phase 3D: Handoff to Session 78
+
+**Next deliverable:** Most likely operator direction at session start — wiki-inventory-delta plan is now **fully executed** (Session A landed Session 76 + Session B landed Session 77). Likely paths: (1) `--curated-inventory` CLI flag follow-up (producer side of plan §9.3 merge logic); (2) `[Unreleased]` → `[0.1.0]` CHANGELOG section transition now that `v0.1.0` tag exists; (3) Candidate Learning #64 may reach 3rd-instance promotion within 1-2 sessions of Edit-heavy work; (4) new off-BACKLOG operator direction.
+
+**Likely operator directions:**
+
+1. **`--curated-inventory` CLI follow-up** — Phase 4 plan §9.3 merge logic; producer side of the inventory contract.
+2. **`[Unreleased]` → `[0.1.0]` CHANGELOG section transition** — `v0.1.0` tag exists locally + on origin since Session 74. Operator may choose to formalize the release section now that Session A + B are both complete.
+3. **Promotion of Candidate Learning #64** if a 3rd instance arises during Edit-heavy work (likely under any close-out involving archive-heading insertion).
+4. **Promotion of Candidate Learning #57** if an Edit-tool "Found N matches" condition fires.
+5. **New off-BACKLOG work item.**
+
+**Important considerations for Session 78:**
+
+1. **BACKLOG.md is empty** (9th consecutive session carry will be reached at Session 78 Phase 0).
+2. **`v0.1.0` tag exists locally + on origin** (since Session 74).
+3. **`docs/planning/wiki-inventory-delta.md` is FULLY EXECUTED.** Both Session A (Session 76) + Session B (Session 77) are complete. The plan file remains as a historical record; no further executions pending.
+4. **Candidate Learning #64 ADVANCED to 2nd instance Session 77.** 1 more validated instance from promotion. Recipe: **raw-string `grep -c "literal"` (no `^`/`$` regex anchors) for Edit-tool uniqueness pre-greps; if >1, escalate to multi-line anchor per Learning #34.** Composes with Learning #34.
+5. **Candidate Learning #57 STILL 2nd instance.** Did not fire Session 77 (#64 prevention worked). Will only advance when an Edit-tool "Found N matches" failure occurs.
+6. **Candidate Learning #55 STILL 2nd instance.** 8 consecutive sessions (70-77) of gotcha-driven archive-placement; may stall.
+7. **Candidate Learning #59 STILL 1st instance.** Fires only on >5-file deliverables with cross-file dependencies.
+8. **Candidate Learning #61 STILL 2nd instance.** Did not fire Session 77 (no inversion-framed handoff).
+9. **Candidate Learning #62 STILL 1st instance, 3rd institutional application.** `.venv/bin/` preemptive prefix is habit.
+10. **Candidate Learning #63 STILL 1st instance.** Planning-session-only.
+11. **Session 77 push state:** Session 77 close-out commit will be pushed at session end per operator authorization (verify with `git rev-list --count @{u}..HEAD`).
+12. **Wiki publish hook did NOT fire for Session 77 commit** (architecture-plan.md is outside `docs/wiki/claims-model-starter/`). Wiki clone unchanged from Session 76 publish.
+13. **Operator's durable directive ("numerical order; 1 per session") active.**
+14. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honored this session.
+15. **`_CANONICAL_PC_SYSTEMS` constant divergence note (carried forward Session 70 → 77).** `agents/intake/anthropic_client.py:47-53` vs `orchestrator/adapters.py`. Operator declined extraction at Session 70.
+16. **Phase 0 narration discipline (consistent practice across Sessions 73-77).** Pattern: announce parallel-Read tool blocks before they fire.
+17. **NEW Edit-tool multi-match prevention pattern (validated Session 77):** raw-string `grep -c` (no regex anchors) + preemptive multi-line escalation when >1 hit. Worked first-attempt this session — recipe ready for 3rd-instance promotion.
+
+### Gotchas for Session 78
+
+1. **Post-Session-77 pre-commit state:** pytest **588/588 passing** @ **97.32% coverage** (unchanged from Session 76 baseline); ruff clean (scope: `src/ tests/ packages/ scripts/`); mypy 0 issues in 61 files (48 src + 13 packages). **No deltas** vs Session 76.
+
+2. **Tooling PATH unchanged:** `pytest`, `ruff`, `mypy` at `.venv/bin/`. Use explicit `.venv/bin/pytest` etc. for gate runs. **Candidate Learning #62 institutional, 3rd application.**
+
+3. **BACKLOG state:** **EMPTY** (8th consecutive carry from Session 70; 9th at Session 78 Phase 0).
+
+4. **`docs/planning/wiki-inventory-delta.md` is FULLY EXECUTED.** Both Session A + B complete. Plan file is now historical-record; no further executions pending.
+
+5. **Learning #29 mechanical — 41st consecutive validation.** Continue: stub-grep `Session 78|### What Session 78 Did|### Session 77 Handoff Evaluation|Post-Session-78`.
+
+6. **Learning #34 (PERMANENT row #34) — 4× this session.** Pre-grep with raw string (no `^`/`$`) per Candidate #64; multi-line anchor if >1 match.
+
+7. **Learning #35 (PERMANENT row #35) — 10th consecutive post-promotion clean.** At Phase 1B, raw-string grep `grep -n "### Session N-1 ARCHIVED ACTIVE TASK" SESSION_NOTES.md` (no `^`) before Edit.
+
+8. **Learning #36 (PERMANENT row #36) — 9th-instance post-promotion validation.** Phase 1B touches ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading insertion.
+
+9. **Learning #37 (PERMANENT row #37) — 4th-instance post-promotion validation.** Recipe: consume boundary heading + uniqueness-conferring follow-on line in `old_string`; replicate at tail of `new_string`. Pre-verify multi-line anchor uniqueness with raw-string `grep -c` per Candidate #64.
+
+10. **Candidate Learning #55 (archive placement) — STILL 2nd instance, may stall indefinitely.** 8 consecutive sessions (70-77) of gotcha-driven placement.
+
+11. **Candidate Learning #57 — STILL 2nd instance.** Did not fire Session 77 (#64 prevented Edit-tool failure). Advances only when Edit-tool "Found N matches" condition fires.
+
+12. **Candidate Learning #64 — ADVANCED to 2nd instance Session 77.** 1 more validated instance from promotion. Recipe: raw-string `grep -c "literal"` for Edit-tool uniqueness pre-greps; multi-line escalation per Learning #34 if >1. High-frequency — expect 3rd instance within 1-2 sessions of Edit-heavy work.
+
+13. **Candidate Learning #59 — STILL 1st instance.** Fires on >5-file deliverables with cross-file dependencies.
+
+14. **Candidate Learning #61 (audit BOTH sides before "align X to Y") — STILL 2nd instance.** Did not fire Session 77 (no inversion). Dormant.
+
+15. **Candidate Learning #62 — STILL 1st instance, 3rd institutional application.** `.venv/bin/` prefix preemptive use.
+
+16. **Candidate Learning #63 — STILL 1st instance.** Planning-session-only.
+
+17. **Archive-at-Phase-1B 16th consecutive validation** (62-77). Pattern institutionalized. Session 78: at Phase 1B, demote Session 77's `**Task:**` + `**Status:**` block to `### Session 77 ARCHIVED ACTIVE TASK` placed above the Session 76 archive heading.
+
+18. **CHANGELOG 45-consecutive-structure match in Session 77.** Continue: context / Added / Verified / Unchanged intentionally / Next. Session 78 = 46th match target.
+
+19. **Operator's durable directive still active** ("numerical order; 1 per session").
+
+20. **Documentation debt — wiki-inventory-delta plan COMPLETE.** Both Session A (5 files, Session 76) + Session B (1 file, Session 77) executed. The 6-surface documentation debt named in plan §8.6 of `data-source-inventory-contract-plan.md` is now closed.
+
+21. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both.
+
+22. **Wiki clone location:** `~/Development/claims-model-starter.wiki/`. Session 77 commit does NOT trigger publish hook (architecture-plan.md not under `docs/wiki/`). Wiki clone unchanged since Session 76 publish.
+
+23. **Commit message for Session 77:** `docs(architecture-history): execute wiki-inventory-delta Session B — 3 forward-pointer notes for Phase 3/4 data-source-inventory contract (Session 77)`.
+
+24. **`SESSION_RUNNER.md` Learnings table currently at 37 rows post-Session-73 — unchanged this session.** No insertion expected next session unless Candidate #64 reaches 3rd instance (closest to promotion).
+
+25. **Push state.** Session 77 close-out commit pending push at session end per operator authorization. **Verify push state with `git rev-list --count @{u}..HEAD` rather than trusting narrative claims.**
+
+26. **Phase 0 narration discipline (consistent practice).** Sessions 73-77 mechanical. Pattern: announce parallel-Read tool blocks before they fire.
+
+27. **NEW Edit-tool multi-match prevention validated Session 77:** raw-string `grep -c` + preemptive multi-line escalation when >1 hit. Worked first-attempt; recipe ready for 3rd-instance promotion.
+
+28. **Plan §3.6 line citations zero drift Session 77.** First zero-drift Learning #11 re-verification since Session 74. Indicates planning-document stability under recent edits.
 
 ### Session 75 Handoff Evaluation (by Session 76)
 
@@ -1316,6 +1485,10 @@
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 76 ARCHIVED ACTIVE TASK
+
+**Task:** Session 76 — operator direction #1 from Session 75 handoff (BACKLOG.md EMPTY since Session 70; carried 7th consecutive session). Execute **Session A** of `docs/planning/wiki-inventory-delta.md` §3.1-§3.5 + §5 — update 5 documentation surfaces with Phase 3/4 data-source-inventory content: `docs/wiki/claims-model-starter/{Schema-Reference,Data-Guide,Worked-Examples,Pipeline-Overview}.md` + `packages/data-agent/USAGE.md`. **COMPLETE.**
 
 ### Session 75 ARCHIVED ACTIVE TASK
 

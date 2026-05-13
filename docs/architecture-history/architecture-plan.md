@@ -307,6 +307,8 @@ class DataRequest(BaseModel):
 
 **Critical:** `DataRequest` does not import from `IntakeReport`. This is what decouples the Data Agent for reuse (constraint C4).
 
+> **Note (Phase 3, Session 60):** `DataRequest` accepts an optional `data_source_inventory: DataSourceInventory | None` field not shown above. See `docs/planning/data-source-inventory-contract-plan.md` for the contract design and `docs/wiki/claims-model-starter/Schema-Reference.md` §5 for the current types.
+
 ### 5.3 `DataReport`
 
 ```python
@@ -347,6 +349,8 @@ class DataReport(BaseModel):
     data_quality_concerns: list[str]
     created_at: datetime
 ```
+
+> **Note (Phase 3, Session 60):** `PrimaryQuery` carries an additional `inventory_entries_used: list[str]` field not shown above, recording which inventory entries the agent consulted. See `docs/planning/data-source-inventory-contract-plan.md` for the contract design and `docs/wiki/claims-model-starter/Schema-Reference.md` §5 for the current types.
 
 ### 5.4 `RepoTarget` and `RepoProjectResult`
 
@@ -460,6 +464,8 @@ def intake_report_to_data_request(report: IntakeReport, run_id: str) -> DataRequ
 ```
 
 The inference helpers (`_infer_unit`, `_infer_time_grain`, etc.) may themselves call an LLM. They are **not** part of the Data Agent's code — they are part of the orchestrator.
+
+> **Note (Phase 4, Session 70):** A second orchestrator-owned adapter, `intake_qa_pairs_to_inventory(intake: IntakeReport) -> DataSourceInventory` in `src/model_project_constructor/orchestrator/adapters.py`, implements the "interview" producer class from the inventory contract — converting stakeholder-named systems captured in `IntakeReport.qa_pairs` into inventory entries with `producer_type="interview"`. It is engaged via `scripts/run_pipeline.py --inventory-from-intake`. See `docs/planning/data-source-inventory-contract-plan.md` §5.3.
 
 ### Three Entry Points for the Data Agent
 
