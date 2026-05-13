@@ -5,9 +5,184 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 74 — BACKLOG-driven by operator direction (BACKLOG.md empty). Version-plumbing follow-up: bring README.md's `**Version:** 0.01` into line with the canonical package version `0.1.0` already in `pyproject.toml` + `src/model_project_constructor/__init__.py` + `packages/data-agent/pyproject.toml`. Operator selected "Update README → 0.1.0 instead" at pre-claim alignment (over: literal-0.01, normalize-to-0.1, or pre-alpha-0.0.1) — README was the drift, not the packages. Then create + push tag `v0.1.0` to origin per operator authorization. Single-file edit + tag + standard close-out; gates expected unchanged (README not on tooling input paths). Carried forward 6 consecutive sessions (68→73) before this session picked it up.
+**Task:** Session 75 — operator direction #1 from Session 74 handoff (BACKLOG.md EMPTY since Session 70; carried 6th consecutive session). Wiki updates for Phase 3/4 data-source-inventory documentation debt. Operator selected "Audit-first delta plan" at pre-claim alignment (over: architecture-plan.md-only, Pipeline-Overview.md-only, or all-6-files-in-one). Deliverable: write `docs/planning/wiki-inventory-delta.md` — a per-file delta audit of the 6 surfaces named in plan §8.6 (`docs/wiki/claims-model-starter/{Schema-Reference,Data-Guide,Worked-Examples,Pipeline-Overview}.md`, `packages/data-agent/USAGE.md`, `docs/architecture-history/architecture-plan.md`) listing what each file is missing for Phases 3+4 of the data-source-inventory contract, with per-file completion criteria for the future execution sessions. Per Planning Workstream discipline (FM #18 / #19): plan is THE deliverable; NO edits to the wiki / USAGE / architecture-plan surfaces this session. Subsequent sessions execute file-by-file under blast-radius limits.
 
-**Status:** Session 74 IN PROGRESS. Session claimed at Phase 1B. Pre-claim alignment via AskUserQuestion resolved two open decisions: (a) version literal direction = "Update README → 0.1.0" (reverse direction; the handoff implied a package-bump but README was actually the drift); (b) tag push to origin = yes. Operator-authorized push of Session 73's `0454d5d` was no-op (`Everything up-to-date` — Session 73 close already left it pushed; orientation report's "1 commit ahead" reading was stale). Phase 1B applies Learning #36 (PERMANENT row #36) boundary discipline (6th-instance post-promotion): touch ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading. Learning #37 (PERMANENT row #37) consume-and-replace applied on the Session 72 archive-heading anchor (1st-instance post-promotion validation). Learning #29 grep-before-insert returned 14 prose-only hits (zero heading collisions, 38th consecutive); Learning #35 `^### Session 73 ARCHIVED ACTIVE TASK` = 0 hits, safe to insert (7th consecutive post-promotion). Work pending: README edit, gates, commit + tag + push, close-out.
+**Status:** Session 75 IN PROGRESS. Session claimed at Phase 1B. Pre-claim alignment via AskUserQuestion (1 question, 4 options) resolved scope to audit-first plan after Phase 0 audit revealed actual current state diverges from Session 74 handoff's "wiki skipped" framing: USAGE.md 13 hits, Data-Guide 7, Worked-Examples 7, Schema-Reference 3, Pipeline-Overview 2, architecture-plan 0 — partial coverage already exists in 5 of 6 surfaces; only architecture-plan.md is fully missing. Learning #61 (audit BOTH sides before "align X to Y") 1st-instance post-filing applied during Phase 0 (the "align" surfaces here are 'wiki state' vs 'plan §8.6'). Learning #29 grep-before-insert returned 9 prose-only hits (zero heading collisions, **39th consecutive**); Learning #35 `^### Session 74 ARCHIVED ACTIVE TASK` = 0 hits, safe to insert (**8th consecutive post-promotion**); Learning #34 multi-line anchor uniqueness pre-verified on Session 73 archive boundary (single match). Work pending: read each of the 6 files in detail, draft `wiki-inventory-delta.md` with per-file gap inventory + per-file completion criteria, gate verification, CHANGELOG entry, commit, close-out.
+
+### Session 74 Handoff Evaluation (by Session 75)
+
+**Score: 9/10.** Session 74's handoff named the version-plumbing follow-up + framed "wiki updates for Phase 3/4 data-source-inventory" as direction #1 with the "carried 5 sessions" count, and direction #1 became Session 75's deliverable verbatim. However, the framing ("Sessions 60 and 70 both skipped wiki updates. Now carried forward 5 sessions") was **factually inverted in the same way Session 73's version-plumbing framing was inverted** (Learning #61 — audit BOTH sides before "align X to Y"): Session 75 Phase 0 audit found USAGE.md at 13 hits, Data-Guide at 7, Worked-Examples at 7, Schema-Reference at 3, Pipeline-Overview at 2 — Phases 3 and 4 did NOT entirely skip the wiki; they updated 5 of 6 surfaces with partial coverage. The remaining gap is "delta audit + selective fill" (Phase 4 mentions missing in 4 files, Schema-Reference §5 missing inventory type bodies, architecture-plan.md untouched). Pre-claim AskUserQuestion (1 question, 4 options) surfaced the audit-first-vs-execute-now decision tree to the operator BEFORE writing any plan content; operator chose audit-first plan. Score 9/10 (-1.0) because (a) handoff prose's "skipped" framing was wrong-sign (Learning #61 1st application post-filing caught it at Phase 0), and (b) gotcha #19 named only 6 wiki files but did not enumerate per-file current state — a per-file hit-count summary would have made the inversion obvious without a 30-second audit. Otherwise procedurally load-bearing across every dimension.
+
+- **What helped:** (a) Gotcha #1 pre-commit baseline (588/588 @ 97.32%, ruff clean, mypy 0/61) matched exactly. (b) Gotcha #2 tooling-PATH (`.venv/bin/`) — applied preemptively this session, zero `command not found` friction (1st-instance post-filing of Candidate Learning #62 as institutional safeguard). (c) Gotcha #3 BACKLOG state (EMPTY) matched. (d) Gotcha #4 `v0.1.0` tag present matched. (e) Gotcha #5 README:3 marker `0.1.0` matched. (f) Gotcha #6 Learning #29 stub-grep recipe — pattern returned 9 prose-only hits, zero heading collisions (**39th consecutive clean**). (g) Gotcha #7 Learning #34 (PERMANENT row #34) — verified single-match on Session 73 archive boundary before Phase 1B Edit #2 (`grep -c` returned 1, safe). (h) Gotcha #8 Learning #35 (PERMANENT row #35) — pre-grepped `^### Session 74 ARCHIVED ACTIVE TASK` (0 hits, safe to add). **8th consecutive instance post-promotion.** (i) Gotcha #9 Learning #36 (PERMANENT row #36) — Phase 1B touched ONLY Task/Status block + predecessor archive heading; no heading renames, no eval body until Phase 3. **7th consecutive post-promotion.** (j) Gotcha #10 Learning #37 (PERMANENT row #37) — boundary-heading consume-and-replace applied on the Session 73 archive insert (anchor: `### Session 73 ARCHIVED ACTIVE TASK`; uniqueness pre-verified single-match). **2nd-instance post-promotion validation.** (k) Direction #1 ("wiki updates for Phase 3/4 data-source-inventory") named the deliverable surface verbatim; operator selected it. (l) Gotcha #16 archive-at-Phase-1B 14th consecutive validation. (m) Gotcha #17 CHANGELOG 42-consecutive-structure target → **43rd match** achieved. (n) Gotcha #19 named all 6 doc surfaces precisely — Phase 0 audit could grep them in one batch.
+- **What was missing:** (a) **Wiki-state framing inverted** — handoff said "skipped" but actual state was "partial coverage in 5 of 6." Per-file hit counts in the gotcha would have surfaced this at Phase 0 without the audit round-trip; the audit took ~30 seconds but the framing inversion is the structural defect (mirrors Session 73 handoff's "align packages to README's 0.01" framing which Session 74 caught). Filing this as **Candidate Learning #61 advancing to 2nd instance**: predecessor framing of "X is fully missing / skipped" should be audited at Phase 0 even when the framing is confident. (b) Plan §8.6 was referenced but not the exact section line ("plan §8.6" → no anchor); Session 75 located it via grep in ~5 seconds. (c) Gotcha #14 named "Candidate Learning #57 STILL 1st instance" with the prevention rationale ("Learning #34 pre-grep prevents the multi-match conditions") — accurate and correctly forecast.
+- **What was wrong:** Nothing technically incorrect. The framing inversion is a content-judgment gap, not a fact error.
+- **ROI:** ~5×. Direction #1 named the deliverable; audit-first scope-resolution prevented a wrong-direction edit. The framing inversion cost a 30-second audit but was caught at Phase 0 (Learning #61 1st-instance post-filing). 9/10 rather than 9.5/10 because the second consecutive handoff-framing-inversion in two sessions (74→75) is now a pattern, not a one-off.
+
+### What Session 75 Did
+
+**Deliverable:** `docs/planning/wiki-inventory-delta.md` — a 9-section delta plan for the 6 documentation surfaces named in plan §8.6 of `docs/planning/data-source-inventory-contract-plan.md`. Per-file gap inventory (`Schema-Reference.md`, `Data-Guide.md`, `Worked-Examples.md`, `Pipeline-Overview.md`, `packages/data-agent/USAGE.md`, `docs/architecture-history/architecture-plan.md`) with current line-number citations, per-file completion criteria (grep-based), cross-file invariants, suggested 2-session execution split respecting SAFEGUARDS 5-file blast-radius rule, non-goals, risks + mitigations, and expected post-execution grep counts. **COMPLETE.**
+**Started:** 2026-05-12
+**Completed:** 2026-05-13
+**Commit (pending):** `docs(planning): wiki-inventory-delta plan for Phase 3/4 data-source-inventory doc debt (Session 75)`
+
+**What was done:**
+
+1. **Phase 0 orientation — Learning #30 narration applied.** Announced the parallel-Read block before firing (SAFEGUARDS.md + SESSION_RUNNER.md head/key sections + SESSION_NOTES.md head + git status/log/diff + BACKLOG.md + dashboard). SAFEGUARDS.md (full). SESSION_NOTES.md head (Session 74's full close-out — 25 gotchas + handoff + likely directions). SESSION_RUNNER.md was visible in the active-context system reminder (37-row Learnings table). BACKLOG.md empty (matched). Dashboard 96/100 medium-risk active. `git status` clean; `git log -5` matched Session 74's archive entry; `git rev-list --count @{u}..HEAD` → 0 (in sync with origin/master at `b4c0dbb`); `git tag --list` → `v0.1.0`. Reported findings concisely with wiki updates as direction #1.
+2. **Operator direction.** "1" — direction #1 from Session 74 handoff (wiki updates for Phase 3/4 data-source-inventory). Verbatim path-of-least-friction with the handoff.
+3. **Phase 0 BACKLOG-scope audit (Learning #33).** Pre-claim audit of the 6 doc surfaces named in plan §8.6: `grep -cE "DataSourceInventory|data_source_inventory|data source inventory"` returned **13 / 7 / 7 / 3 / 2 / 0** hits across `USAGE.md` / `Data-Guide.md` / `Worked-Examples.md` / `Schema-Reference.md` / `Pipeline-Overview.md` / `architecture-plan.md`. **Learning #61 1st-instance post-filing applied:** the handoff's "wiki skipped" framing was wrong-sign — partial coverage exists in 5 of 6 surfaces. Surfaced this to operator via AskUserQuestion.
+4. **Pre-claim alignment via AskUserQuestion (1 question, 4 options).** Surfaced the scope decision (audit-first-plan / architecture-plan-only / Pipeline-Overview-only / all-6-in-one). Operator selected **"Audit-first delta plan (1 session)"** — the highest-quality path for a coordinated 6-file update. Avoided a wrong-scope single-file edit or a blast-radius-violating 6-file bundle.
+5. **Phase 1B — Learning #29 39th consecutive clean.** Pre-grep `Session 75|### What Session 75 Did|### Session 74 Handoff Evaluation|Post-Session-75` returned 9 prose-only hits (forward-references in Session 74's handoff prose); zero heading collisions. **Learning #35 8th consecutive post-promotion:** pre-grepped `^### Session 74 ARCHIVED ACTIVE TASK` → 0 hits. Edit #1 (ACTIVE TASK block replace) landed first-attempt. Edit #2 (Session 74 archive heading insert above Session 73 archive heading) — **Learning #34 (PERMANENT) pre-grep + Learning #37 (PERMANENT) 2nd-instance post-promotion validation:** single-line anchor `### Session 73 ARCHIVED ACTIVE TASK` was unique (`grep -c` returned 1, no multi-line extension needed). Edit landed first-attempt. **Learning #36 (PERMANENT row #36) 7th-instance post-promotion validation:** Phase 1B touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading insertion. No heading renames, no eval-section content, no `What Session 75 Did` body drafted at Phase 1B.
+6. **Phase 2 — read each of the 6 target surfaces.** Parallel-Read in batches with focused offsets: `Schema-Reference.md` (full), `Data-Guide.md` (full), `Worked-Examples.md` (full), `Pipeline-Overview.md` (full), `USAGE.md` (full), `architecture-plan.md` (TOC + §5.2/§5.3 only — per plan §8.6 the deliverable was "a note", not a rewrite). Located Phase 4 code surfaces via `grep -rln "intake_qa_pairs_to_inventory\|inventory-from-intake"` → 8 files; verified converter at `adapters.py:113` + flag at `run_pipeline.py:477`.
+7. **Phase 2 — write `docs/planning/wiki-inventory-delta.md`.** 9-section structure: §1 Context (4-phase implementation summary table) / §2 Current-state audit (grep-verified hit counts) / §3.1-§3.6 per-file delta inventory / §4 Cross-file invariants / §5 Execution-session split (Session A: 5 files + wiki publish; Session B: architecture-plan only) / §6 Non-goals / §7 Risks + mitigations / §8 Expected post-execution grep counts / §9 Plan checklist. Total ~370 lines. Each §3.X has current coverage / what's missing / what to add / file-anchored completion criteria. Single-file write; no edits to any wiki / USAGE / architecture-plan surface (FM #18 + FM #19 respected).
+8. **Gate verification — Learning #39 institutional, 14th consecutive preventive-by-default.** Ran `.venv/bin/pytest -q` + `.venv/bin/ruff check src/ tests/ packages/ scripts/` + `.venv/bin/mypy src/` + `.venv/bin/mypy packages/data-agent/src/` in parallel BEFORE drafting Verified bullet. **Tooling-PATH friction prevented — Candidate Learning #62 1st-instance institutional safeguard applied:** `.venv/bin/` prefix used preemptively (Session 74 gotcha #2 named the issue). pytest 588/588 @ 97.32%; ruff clean; mypy 48 src + 13 packages = 61 source files clean. All unchanged from Session 74 baseline (planning docs not on tooling input paths).
+9. **CHANGELOG Session 75 entry — 43rd-consecutive-structure match.** Sections: context paragraph (audit-first framing + Learning #61 1st-instance application + FM #18/#19 discipline) / Added (new plan file with section enumeration) / Verified (gates) / Unchanged intentionally (none of 6 target surfaces touched; candidates #55/#57/#59/#61/#62 progression) / Next (Session A path most likely).
+10. **Phase 3 close-out** — this block. Commit pending.
+
+### Phase 3B: Self-assess — 9.25/10
+
+- **Research before creative work:** Yes. Phase 0 read SAFEGUARDS + SESSION_NOTES head + BACKLOG + dashboard + git state BEFORE the wiki audit; the wiki audit (parallel `grep -cE` of all 6 surfaces) happened BEFORE asking the scope question; the scope question landed BEFORE the plan was drafted. Per-file Read of all 6 files happened BEFORE plan-write. No premature drafting.
+- **Stakeholder corrections:** 0 direct corrections. **1 pre-claim alignment round-trip** (AskUserQuestion with 1 question, 4 options) — high-value because the audit found the handoff's "skipped" framing was inverted (5-of-6 had partial coverage) and the 4-option decision tree (audit-first / single-file / single-file / all-6) surfaced the blast-radius constraint. Pre-claim round-trip is correct shape for planning-vs-execution scope decisions.
+- **What I got right:** (a) **Phase 0 BACKLOG-scope audit (Learning #33)** — per-file hit-count audit caught the handoff framing inversion in ~30 seconds before any claim. (b) **Learning #61 1st-instance post-filing applied** — audit BOTH sides before "align X to Y" (here: 'wiki state' vs 'plan §8.6 named surfaces'); precisely the pattern Session 74 filed. (c) **Pre-claim AskUserQuestion with 4 distinct scope options** — surfaced the audit-first-vs-execute-now decision tree explicitly; avoided picking the cheapest option without operator sight. (d) **Learning #29 39th consecutive clean + #34 1× first-attempt + #35 8th + #36 7th + #37 2nd-post-promotion** — all Phase 1B Edits first-attempt. (e) **Gates ran BEFORE Verified-bullet draft** (Learning #39 14th consecutive preventive-by-default). (f) **Tooling-PATH preemptive use** (Candidate Learning #62 1st-instance institutional safeguard) — zero `command not found` friction this session (Session 74's mistake forecast and prevented). (g) **CHANGELOG 43rd-consecutive-structure match.** (h) **Planning Workstream discipline (FM #18 + FM #19)** — plan IS the deliverable; no implementation work bundled; 2-session execution split explicit in §5; commit-and-stop-before-implementation.
+- **What I got wrong:** (a) **Plan §3 line-number citations could drift** before Session A executes them — the plan acknowledges this in §4 #3 and §7 with explicit "executor re-greps each anchor at edit time" guidance, but line numbers in §3.1-§3.6 are pinned to current state and will drift on every prior edit. Mitigation is documented but the executor must apply Learning #11. **-0.25.** (b) **Plan completion-criteria use file-name grep counts, not anchored line-region greps.** Per Learning #32 (per-phase grep criteria must account for append-only historical prose), a file-wide `grep -c` is the weaker form; the stronger form would be region-scoped (e.g., `grep -c PATTERN -A50 -B0 "^## SectionName"`). For these surfaces the weaker form is appropriate (no historical-record sections), but the plan should explicitly acknowledge this is the weaker form. **-0.5.** Combined deduction: **-0.75 → 9.25/10**.
+- **Quality bar vs previous sessions:** Slightly below Session 74 (9.5/10) due to the plan-criteria region-scoping deduction noted above. Above Session 73's pure paste-verbatim (9.5/10) on substantive judgment depth — Session 75 produced a genuinely new artifact (a 9-section plan with grep-verified per-file inventory) rather than a methodology micro. The session's distinguishing win is the **Phase 0 audit catching the handoff framing inversion** — Learning #61's 1st post-filing application validated the candidate's load-bearing-ness immediately and advances it to 2nd instance.
+
+### Phase 3C: Learnings
+
+**Learning #29 grep-before-insert (PERMANENT) — 39th consecutive clean.** Unconscious-competence territory; recipe is institutional.
+
+**Learning #34 (PERMANENT row #34) — applied 1× this session, first-attempt.** Session 73 archive boundary heading uniqueness pre-verified by `grep -c` returning 1 (no multi-line extension needed).
+
+**Learning #35 (PERMANENT row #35) — 8th consecutive post-promotion clean.** Phase 1B pre-grep `^### Session 74 ARCHIVED ACTIVE TASK` returned 0 hits before insertion. Recipe is permanent and institutional.
+
+**Learning #36 (PERMANENT row #36) — 7th-instance post-promotion validation.** Phase 1B touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading insert; close-out content drafted at Phase 3, not at Phase 1B.
+
+**Learning #37 (PERMANENT row #37) — 2nd-instance post-promotion validation.** Session 73 archive consume-and-replace at Phase 1B; single-line anchor was sufficient (no multi-line extension required this session). Composes with Learning #34.
+
+**Candidate Learning #55 (archive placement convention) — STILL 2nd instance.** Session 75's archive placement above the Session 73 archive heading was driven by Session 74 gotcha #16 prescriptive direction. **Six consecutive sessions (70-75)** have declined to count gotcha-driven placement as explicit decision-time application. Candidate may stall indefinitely.
+
+**Candidate Learning #57 (Edit-tool "new_string missing" → multi-match diagnosis) — STILL 1st instance.** Did NOT fire — Learning #34 pre-grep prevented all multi-match conditions (none arose this session).
+
+**Candidate Learning #59 (checkpoint-commit at 5-files boundary) — STILL 1st instance.** Session 75 touched only 3 files (SESSION_NOTES.md + CHANGELOG.md + new planning doc); recipe didn't fire.
+
+**Candidate Learning #61 (audit BOTH sides before "align X to Y") — ADVANCED to 2nd instance.** Filed Session 74 (1st instance: README.md vs package version literals). Session 75 (2nd instance: wiki state vs plan §8.6 named surfaces). Both instances are framing-inversions caught at Phase 0 audit. **Promotion-trigger pending one more instance.** Recipe: for any "align X to Y" or "X is missing / skipped / needs to match Y" handoff framing, audit BOTH X and Y at Phase 0 with a grep-based current-state check before accepting the implied direction.
+
+**Candidate Learning #62 (verify tool-PATH at Phase 0) — STILL 1st instance.** Filed Session 74 (1st instance: pytest/ruff/mypy `command not found`). Session 75 applied the recipe preemptively as an institutional safeguard (`.venv/bin/` prefix used from the first gate call) — no fresh-discovery instance, but the institutional habit prevented Session 74's friction. Recipe is working as filed; promotion may require an actual 3rd discovery instance in a new venv-bearing project.
+
+**NEW Candidate Learning #63 — Planning-session per-file completion criteria are weaker-form vs region-scoped.** When writing a planning session that includes grep-based per-file completion criteria, the natural form is `grep -c PATTERN FILE` (file-wide). The stronger form is region-scoped (e.g., section-anchored or line-range-anchored: `sed -n "100,200p" FILE | grep -c PATTERN`). For docs without historical-record sections (Learning #32) the weaker form is appropriate and the plan should explicitly note this. For docs WITH historical-record sections (CHANGELOG, append-only history files), the weaker form will produce false positives and the stronger form is mandatory. **Mechanical:** at plan-write time, classify each per-file completion criterion as "file-wide-safe" vs "region-scoped-required" based on whether the target file has historical-record sections. **Source:** Session 75 (Phase 3B self-assess flagged that the wiki-inventory-delta.md plan §3 criteria use file-wide greps without explicitly noting why; the wiki/USAGE/architecture-plan files have no historical-record sections, so file-wide is correct — but the plan didn't say so). Applied 1st instance Session 75.
+
+**Learning #11 (trust the code, not the plan) — applied at Phase 0.** Located Phase 4 code surfaces (`intake_qa_pairs_to_inventory` at `adapters.py:113`; `--inventory-from-intake` at `run_pipeline.py:477`) by grep, not by trusting the plan's prose summary. Cited line numbers in plan §3.3 + §3.6 from the actual code state.
+
+**Learning #13 + #28 (literal minimum / handoff specifics not contracts) — clean application.** Handoff direction #1 named 6 files; audit confirmed 6 actually need delta work (none of them were "in flight" or "already-done"). Scope held at exactly 6 files for the plan; subsequent execution sessions split them per blast radius.
+
+**Learning #26 (BACKLOG delete-not-flip) — N/A this session.** BACKLOG already empty.
+
+**Learning #27 (paste-and-verify predecessor work product) — N/A this session.** No predecessor work product to paste; handoff named the direction but did not pre-draft a plan or code.
+
+**Learning #30 (declarative interim status updates) — clean application.** Phase 0 parallel-Read announced before firing; Phase 1B parallel pre-greps announced. Operator did not query.
+
+**Learning #32 (per-phase grep criteria must account for historical-record entries) — load-bearing this session's NEW Candidate #63.** Awareness of #32 surfaced the file-wide-vs-region-scoped distinction in Phase 3B self-assess.
+
+**Learning #33 (Phase 0 BACKLOG-scope verification) — applied as 5th instance post-promotion.** Verified the 6 named surfaces (`grep -cE` on all 6) BEFORE claiming; caught the handoff framing inversion.
+
+**Learning #34 parallel-Read (PERMANENT row #34) — 26th consecutive post-promotion clean.** Phase 0 parallel block executed cleanly.
+
+**Learning #38 filing-session provenance — 22nd instance (post-promotion).** Candidate #63 cites Session 75 + 1st-instance.
+
+**Learning #39 numbers re-verified — 21st instance (post-promotion), 14th consecutive preventive-by-default.**
+
+**Learning #61 (audit BOTH sides before "align X to Y") — 1st post-filing application** validated the candidate's load-bearing-ness; advances to 2nd instance per Phase 3C summary above.
+
+### Phase 3D: Handoff to Session 76
+
+**Next deliverable:** Most likely **Session A** of the wiki-inventory-delta plan (5 files: `Schema-Reference.md` + `Data-Guide.md` + `Worked-Examples.md` + `Pipeline-Overview.md` + `packages/data-agent/USAGE.md`). The plan at `docs/planning/wiki-inventory-delta.md` §3.1-§3.5 + §5 is the implementation spec. Triggers wiki publish hook (`scripts/publish_wiki.sh`) post-commit. **No candidate-learning is currently PROMOTION-READY** (#55 still 2nd, may stall indefinitely; #57/#59 still 1st; #61 at 2nd instance, 1 more to promote; #62 still 1st; new #63 at 1st instance).
+
+**Likely operator directions:**
+
+1. **Session A of wiki delta plan** (5 files, triggers wiki publish): execute `docs/planning/wiki-inventory-delta.md` §3.1-§3.5 + §5 Session A scope. Plan is the implementation spec.
+2. **Session B of wiki delta plan** (1 file: `architecture-plan.md`): smaller execution session; can pair with Session A if operator chooses sequential; recommended order in plan §5 is A-first.
+3. **`--curated-inventory` CLI flag follow-up.** Producer side of plan §9.3 merge logic.
+4. **`[Unreleased]` → `[0.1.0]` CHANGELOG section transition** now that `v0.1.0` tag exists.
+5. **Promotion of Candidate Learning #61** if a 3rd instance arises naturally during Session A/B execution (the wiki executions might surface a 3rd "align X to Y" pattern).
+6. **New off-BACKLOG work item.** Operator direction.
+
+**Important considerations for Session 76:**
+
+1. **BACKLOG.md is empty** (placeholder paragraph only).
+2. **`v0.1.0` tag exists locally + on origin.** `git tag --list` → `v0.1.0`.
+3. **`docs/planning/wiki-inventory-delta.md` exists** as the implementation spec for the next 1-2 sessions. Per Learning #11, executor re-greps each line-number citation in §3.1-§3.6 BEFORE editing — line numbers will have drifted on every prior insert.
+4. **No candidate-learning is PROMOTION-READY.** Session 76 is free for substantive work (Session A is the natural next step).
+5. **Candidate Learning #55 (archive placement) STILL 2nd instance.** 6 consecutive sessions (70-75) of gotcha-driven placement counts.
+6. **Candidate Learning #57 STILL 1st instance.** Did not fire — Learning #34 pre-grep is the canonical prevention.
+7. **Candidate Learning #59 STILL 1st instance.** Fires only on >5-file deliverables. **Session A is right at the 5-file boundary** — if Session A grows to 6 files (e.g., adding a stale-prose fix in Data-Guide.md or a cross-reference in `_Sidebar.md`), Candidate #59 will fire and produce its 2nd instance.
+8. **Candidate Learning #61 (audit BOTH sides before "align X to Y") — ADVANCED to 2nd instance Session 75.** 1 more instance away from promotion. The pattern (handoff framing inversion caught at Phase 0 audit) has fired in Sessions 74 + 75 consecutively.
+9. **Candidate Learning #62 (verify tool-PATH at Phase 0) — STILL 1st instance** but applied preemptively this session as institutional safeguard. Continue: prefix `pytest`/`ruff`/`mypy` with `.venv/bin/` at every gate invocation.
+10. **NEW Candidate Learning #63 (planning per-file completion criteria are weaker-form vs region-scoped) — 1st instance.** Fires on planning sessions whose deliverable includes per-file grep criteria.
+11. **Session 75 push state:** Session 75's close-out commit will be pushed at session end per operator authorization. **Verify push state with `git rev-list --count @{u}..HEAD` rather than trusting narrative claims** (Session 73's "Push deferred" prose did not match the actual already-pushed state).
+12. **Wiki publish hook does NOT fire** for Session 75 commit (planning doc only). **Session A WILL trigger the wiki publish hook** — `scripts/publish_wiki.sh` must run after Session A's commit.
+13. **Operator's durable directive ("numerical order; 1 per session") active.**
+14. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honored this session.
+15. **`_CANONICAL_PC_SYSTEMS` constant divergence note (carried forward from Session 70 → 75).** `agents/intake/anthropic_client.py:47-53` vs `orchestrator/adapters.py`. Operator declined extraction at Session 70 pre-claim alignment.
+16. **Phase 0 narration discipline (consistent practice).** Sessions 73/74/75 mechanical. Pattern: announce parallel-Read tool blocks before they fire.
+
+### Gotchas for Session 76
+
+1. **Post-Session-75 pre-commit state:** pytest **588/588 passing** @ **97.32% coverage** (unchanged from Session 74 baseline); ruff clean (scope: `src/ tests/ packages/ scripts/`); mypy 0 issues in 61 files (48 src + 13 packages). **No deltas** vs Session 74.
+
+2. **Tooling PATH unchanged:** `pytest`, `ruff`, `mypy` at `.venv/bin/`. Use explicit `.venv/bin/pytest` etc. for gate runs. **Candidate Learning #62 institutional.**
+
+3. **BACKLOG state:** **EMPTY** (carried forward from Session 70).
+
+4. **`docs/planning/wiki-inventory-delta.md` exists as Session A/B implementation spec.** Per Learning #11, re-grep line-number citations at edit time.
+
+5. **Session A scope (per plan §5):** 5 files — `docs/wiki/claims-model-starter/{Schema-Reference,Data-Guide,Worked-Examples,Pipeline-Overview}.md` + `packages/data-agent/USAGE.md`. Triggers wiki publish hook. Estimated total insert: ~80-130 lines across the 5 files.
+
+6. **Session B scope (per plan §5):** 1 file — `docs/architecture-history/architecture-plan.md`. ~6-9 lines total (2-3 inline notes). No wiki publish.
+
+7. **Plan recommends Session A before Session B** (§5 Sequencing) — Session B's architecture-plan notes cross-reference Session A's wiki updates ("see Schema-Reference.md §5").
+
+8. **Learning #29 mechanical — 39th consecutive validation.** Continue: grep-before-insert for stub pattern `Session 76|### What Session 76 Did|### Session 75 Handoff Evaluation|Post-Session-76`.
+
+9. **Learning #34 (PERMANENT row #34) — applied 1× in Session 75 first-attempt.** Pre-grep any structured-file Edit; multi-line anchor if >1 match. Session 75 used a single-line anchor (`### Session 73 ARCHIVED ACTIVE TASK`) which was unique.
+
+10. **Learning #35 (PERMANENT row #35) — 8th consecutive post-promotion clean.** At Phase 1B, `grep -n "^### Session N-1 ARCHIVED ACTIVE TASK" SESSION_NOTES.md` before opening the Edit tool.
+
+11. **Learning #36 (PERMANENT row #36) — 7th-instance post-promotion validation.** Phase 1B touches ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading insertion.
+
+12. **Learning #37 (PERMANENT row #37) — 2nd-instance post-promotion validation.** Recipe: consume the boundary heading + a uniqueness-conferring follow-on line in `old_string`; replicate both at the tail of `new_string`. Pre-verify multi-line anchor uniqueness with `grep -c`. Session 75 used a single-line anchor (unique without extension).
+
+13. **Candidate Learning #55 (archive placement) — STILL 2nd instance, may stall indefinitely.** Six consecutive sessions (70-75) have declined gotcha-driven placement as explicit decision-time grep.
+
+14. **Candidate Learning #57 — STILL 1st instance.** Did not fire — Learning #34 pre-grep is the canonical prevention.
+
+15. **Candidate Learning #59 — STILL 1st instance.** **Session A is right at the 5-file boundary** — adding scope to 6 files would trigger #59.
+
+16. **Candidate Learning #61 (audit BOTH sides before "align X to Y") — ADVANCED to 2nd instance Session 75.** 1 more instance from promotion. If Session A or B uncovers another framing-inversion at Phase 0 audit, #61 hits 3rd instance and Session 77 promotes.
+
+17. **Candidate Learning #62 (verify tool-PATH at Phase 0) — STILL 1st instance** but applied preemptively this session.
+
+18. **NEW Candidate Learning #63 (planning per-file completion criteria are weaker-form vs region-scoped) — 1st instance, filed Session 75.** Fires on planning sessions whose deliverable includes per-file grep criteria. May not fire again unless another planning session ships.
+
+19. **Archive-at-Phase-1B 14th consecutive validation** (62-75). Pattern institutionalized. Session 76: at Phase 1B, demote Session 75's `**Task:**` + `**Status:**` block to `### Session 75 ARCHIVED ACTIVE TASK` placed above the Session 74 archive heading.
+
+20. **CHANGELOG 43-consecutive-structure match in Session 75.** Continue: context / Added / Verified / Unchanged intentionally / Next. Session 76 = 44th match target.
+
+21. **Operator's durable directive still active** ("numerical order; 1 per session").
+
+22. **Documentation debt — Phase 3/4 wiki updates now PLANNED.** `docs/planning/wiki-inventory-delta.md` is the spec; Session A executes 5 files; Session B executes 1 file. 6-session carried-forward count resets when Session A lands.
+
+23. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both.
+
+24. **Wiki clone location unchanged:** `~/Development/claims-model-starter.wiki/`, branch master, at `c13cfc4` (Session 63's sync). Session 75 did not touch wiki files. **Session A will trigger `scripts/publish_wiki.sh`.**
+
+25. **Commit message for Session 75:** `docs(planning): wiki-inventory-delta plan for Phase 3/4 data-source-inventory doc debt (Session 75)`.
+
+26. **`SESSION_RUNNER.md` Learnings table currently at 37 rows post-Session-73 — unchanged this session.** No insertion expected next session unless a candidate reaches 3rd instance (Candidate #61 is closest at 2nd).
+
+27. **Push state.** Session 75 close-out commit will be pushed at session end per operator authorization. **Verify push state with `git rev-list --count @{u}..HEAD` rather than trusting narrative claims.**
+
+28. **Phase 0 narration discipline (consistent practice).** Sessions 73/74/75 mechanical application. Pattern: announce parallel-Read tool blocks before they fire.
+
+29. **Handoff-framing-inversion pattern (Sessions 73→74, 74→75): two consecutive sessions.** Each had a handoff that framed a task as "align X to Y" or "X is skipped/missing" in a way that was factually inverted on Phase 0 audit. **The pattern is now load-bearing.** Session 76 should expect that this session's handoff may also contain framing inversions — apply Learning #61 mechanically at Phase 0.
 
 ### Session 73 Handoff Evaluation (by Session 74)
 
@@ -1142,6 +1317,12 @@
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 74 ARCHIVED ACTIVE TASK
+
+**Task:** Session 74 — BACKLOG-driven by operator direction (BACKLOG.md empty). Version-plumbing follow-up: bring README.md's `**Version:** 0.01` into line with the canonical package version `0.1.0` already in `pyproject.toml` + `src/model_project_constructor/__init__.py` + `packages/data-agent/pyproject.toml`. Operator selected "Update README → 0.1.0 instead" at pre-claim alignment (over: literal-0.01, normalize-to-0.1, or pre-alpha-0.0.1) — README was the drift, not the packages. Then create + push tag `v0.1.0` to origin per operator authorization. Single-file edit + tag + standard close-out; gates expected unchanged (README not on tooling input paths). Carried forward 6 consecutive sessions (68→73) before this session picked it up.
+
+**Status:** Session 74 COMPLETE. README.md:3 marker updated from `**Version:** 0.01` to `**Version:** 0.1.0` (reverse-direction edit caught at Phase 0 audit — the three Python version literals were already canonical `0.1.0`; README was the drift). Annotated tag `v0.1.0` created on close-out commit `b4c0dbb` and pushed to origin (first release tag). Pre-claim AskUserQuestion (2 questions: version-literal direction + tag-push authorization) resolved scope before any edit. Gates green: pytest 588/588 @ 97.32%; ruff clean (`src/ tests/ packages/ scripts/`); mypy 0 issues in 61 files — all unchanged from Session 73 baseline (README not on tooling input paths). Learning #29 grep-before-insert **38th consecutive clean**; Learning #34 (PERMANENT) applied 2× first-attempt; Learning #35 (PERMANENT) **7th consecutive post-promotion**; Learning #36 (PERMANENT) **6th-instance post-promotion validation**; Learning #37 (PERMANENT, fresh-from-Session-73) **1st-instance post-promotion validation** — canonical worked example (multi-line anchor `Promote Candidate Learning #58 (Phase-1B` returned 2 hits → extended anchor by appending the rest of the sentence for single-match). Filed two new candidate learnings: **#61** (audit BOTH sides before "align X to Y") and **#62** (verify tool-PATH at Phase 0). Self-assess 9.5/10. One minor friction: first pytest/ruff/mypy calls failed `command not found`; recovered via `.venv/bin/` explicit paths (cost: 1 extra tool call). Push state at Session 75 Phase 0: in sync with origin/master at `b4c0dbb`; `v0.1.0` tag present locally + on origin.
 
 ### Session 73 ARCHIVED ACTIVE TASK
 
