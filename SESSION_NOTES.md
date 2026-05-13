@@ -5,9 +5,180 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 77 — operator direction #1 from Session 76 handoff (BACKLOG.md EMPTY since Session 70; carried 8th consecutive session). Execute **Session B** of `docs/planning/wiki-inventory-delta.md` §3.6 + §5 — add additive forward-pointer notes to `docs/architecture-history/architecture-plan.md` near §5.2 `DataRequest`, §5.3 `DataReport` `PrimaryQuery`, and §7 Data Agent Reuse Interface, citing `docs/planning/data-source-inventory-contract-plan.md` and `docs/wiki/claims-model-starter/Schema-Reference.md` §5. ~6-9 line insert total (2-3 notes, ~3 lines each). Per plan §3.6 + §6 the deliverable is "a note" not a rewrite — no structural changes to §5.2 / §5.3 / §7 bodies. **Does NOT trigger wiki publish hook** (architecture-plan.md not under `docs/wiki/claims-model-starter/`).
+**Task:** Session 78 — operator direction #2 from Session 77 handoff (BACKLOG.md EMPTY since Session 70; carried 9th consecutive session). Transition `[Unreleased]` → `[0.1.0] - 2026-05-13` in `CHANGELOG.md` now that `v0.1.0` tag exists locally + on origin (since Session 74). Per methodology v2.1 three-file split (`docs/methodology/README.md` §templates): rename the current `## [Unreleased]` heading to a dated release heading `## [0.1.0] - 2026-05-13`, and add a fresh empty `## [Unreleased]` section above it for the next release cycle. The release section's existing body (Session 70-77 entries) becomes the v0.1.0 release notes verbatim. Single-file edit + standard close-out; gates expected unchanged (CHANGELOG not on tooling input paths). **Does NOT trigger wiki publish hook** (CHANGELOG.md not under `docs/wiki/claims-model-starter/`).
 
-**Status:** Session 77 IN PROGRESS. Session claimed at Phase 1B. Learning #29 stub-grep returned 8 prose-only hits (zero heading collisions, **41st consecutive**); Learning #35 raw-string pre-grep `### Session 76 ARCHIVED ACTIVE TASK` = 0 hits, safe to insert (**10th consecutive post-promotion**); NEW Candidate #64 applied (raw-string, no regex anchors); Learning #34 + #37 pre-verification raw-string `grep -c "### Session 75 ARCHIVED ACTIVE TASK"` returned 5 (prose-references in Session 76 handoff), escalated to multi-line anchor with distinguishing phrase `carried 6th consecutive session` (uniqueness verified by `grep -c` returning 1). Plan §3.6 line citations re-verified per Learning #11 — §5.2 at line 285 ✓, §5.3 PrimaryQuery at 321 ✓, §7 at 435 ✓ (zero drift). Work pending: 3 additive Edits to architecture-plan.md, §3.6 completion-criteria greps, gate verification, CHANGELOG entry, commit, close-out (NO wiki publish).
+**Status:** Session 78 COMPLETE. `CHANGELOG.md` `[Unreleased]` section formalized as `## [0.1.0] - 2026-05-12` (tag-creation date per pre-edit AskUserQuestion; alternatives 05-13 formalization-date and post-tag-entry-split declined); fresh empty `## [Unreleased]` inserted above for next cycle; one-paragraph release preamble added under `## [0.1.0]` noting the post-tag-entry preservation. Existing Session 70-77 entries flow under [0.1.0] verbatim (no rewording). Gates green: pytest 588/588 @ 97.32%; ruff clean (4 surfaces); mypy 0/61 (48 src + 13 packages). NEW Candidate #64 applied **3rd-instance PROMOTION-TRIGGERING** at Phase 1B (raw-string `grep -c "### Session 76 ARCHIVED ACTIVE TASK"` returned 5 → escalated upfront to multi-line anchor with `carried 7th consecutive session`; both Phase 1B Edits + CHANGELOG Edit landed first-attempt). Self-assess 9.5/10. Commit pending. Wiki publish hook does NOT fire (CHANGELOG.md outside `docs/wiki/`).
+
+### Session 77 Handoff Evaluation (by Session 78)
+
+**Score: 9.75/10.** Session 77's handoff was load-bearing on every procedural dimension and substantively predictive on the deliverable. Likely-directions #2 named THIS session's deliverable verbatim ("`[Unreleased]` → `[0.1.0]` CHANGELOG section transition") with the supporting rationale ("v0.1.0 tag exists locally + on origin since Session 74") — operator selected it as direction #2 at session start. Gotcha #1 pre-commit baseline (588/588 @ 97.32%, ruff clean, mypy 0/61) matched verbatim. Gotcha #2 tooling-PATH `.venv/bin/` matched — applied preemptively as 4th institutional application of Candidate #62. Gotcha #3 BACKLOG state (EMPTY, 9th carry forecast) matched exactly. Gotcha #5 (Learning #29 stub-grep recipe with literal Session 78 pattern) returned 8 prose-only hits — 42nd consecutive clean. Gotcha #6 Learning #34 raw-string pre-grep applied 3× this session (Phase 1B Edit #1 anchor + Edit #2 anchor + CHANGELOG `## [Unreleased]` anchor). Gotcha #7 Learning #35 raw-string archive pre-grep — `### Session 77 ARCHIVED ACTIVE TASK` returned 1 hit (prose-only forward-reference in Session 77 gotcha #17), safe to insert (11th consecutive post-promotion). Gotcha #8 Learning #36 boundary discipline — Phase 1B touched ONLY ACTIVE TASK Task/Status block + predecessor archive heading (10th consecutive post-promotion). Gotcha #9 Learning #37 consume-and-replace — applied on Edit #2 (Session 76 archive boundary consumed + replicated) (**5th-instance post-promotion validation**). Gotcha #12 Candidate #64 named explicitly with the recipe — applied preemptively at Phase 1B Edit #2, escalated upfront to multi-line anchor when raw-string returned 5; Edit landed first-attempt. **Candidate #64 advances to 3rd-instance PROMOTION-TRIGGERING this session.** Gotcha #17 Phase 1B archive-placement prescription matched. Gotcha #18 CHANGELOG 45-consecutive-structure → **46th consecutive** achieved this session. Gotcha #24 wiki-publish-hook negative case (CHANGELOG not under `docs/wiki/`) confirmed.
+
+- **What helped:** (a) Likely-directions #2 named the deliverable verbatim with rationale; zero scope ambiguity. (b) Gotcha #12 Candidate #64 named the recipe + ETA ("expect 3rd instance within 1-2 sessions of Edit-heavy work") — exactly what happened; the recipe held perfectly. (c) Gotchas #5-#9 (Learning #29/#34/#35/#36/#37 mechanical reminders) directly drove Phase 1B both Edits first-attempt. (d) Pre-commit baseline gotcha matched exactly (no pre-flight surprise). (e) Tooling-PATH gotcha #2 (4th institutional application of Candidate #62). (f) CHANGELOG 45-consecutive-structure target gotcha #20 → 46th achieved.
+- **What was missing:** **One real ambiguity surfaced mid-execution: the release date for `[0.1.0]`** (2026-05-12 tag-creation date vs. 2026-05-13 formalization date vs. moving post-tag Sessions 76+77 to a fresh [Unreleased]). Session 77's handoff named the deliverable but did not pre-discuss the date-choice, forcing one AskUserQuestion round-trip mid-session. **-0.25 deduction** — minor because the question was well-bounded and the AskUserQuestion took ~30 seconds, but a more thorough handoff would have surfaced "if/when the transition happens, the date convention is Keep-a-Changelog tag-creation-date per the existing `CHANGELOG.md:6` framing" or named the three options explicitly. This is a fresh handoff-completeness candidate observation (**potential Candidate Learning #65**: when handoff predicts a "transition X to Y" task, name the convention/date/boundary choice explicitly so the executing session can avoid mid-stream AskUserQuestion). Filing as 1st instance — needs validation before promotion.
+- **What was wrong:** Nothing. Pre-commit baseline, Phase 0 reads, and gotcha specifics all matched verbatim.
+- **ROI:** ~9×. Direction #2 named the deliverable, scope was exact, Phase 1B gotchas were load-bearing on every Edit, NEW Candidate #64 reached promotion-triggering. One small ambiguity (release-date convention) was the only friction.
+
+### What Session 78 Did
+
+**Deliverable:** Transition `[Unreleased]` → `[0.1.0] - 2026-05-12` in `CHANGELOG.md`. Renamed `## [Unreleased]` heading to `## [0.1.0] - 2026-05-12` (tag-creation date per AskUserQuestion); inserted fresh empty `## [Unreleased]` heading above; added one-paragraph release preamble under [0.1.0] explaining the date-choice + post-tag-entry preservation. Existing Session 70-77 entries flow under [0.1.0] verbatim. **COMPLETE.**
+**Started:** 2026-05-13
+**Completed:** 2026-05-13
+**Commit (pending):** `docs(changelog): transition [Unreleased] → [0.1.0] - 2026-05-12 release section (Session 78)`
+
+**What was done:**
+
+1. **Phase 0 orientation — Learning #30 declarative narration applied.** Announced parallel-Read block before firing (SAFEGUARDS.md + SESSION_RUNNER.md + SESSION_NOTES.md head + git status/log/diff + push state + tag list + BACKLOG.md + dashboard). All prerequisite reads completed. BACKLOG.md empty (9th consecutive carry forecast met). Dashboard 96/100 medium-risk active. `git status` clean; `git log -5` matched Session 77's commit hash `13e3e3a`; `git rev-list --count @{u}..HEAD` → 0 (in sync with origin); `git tag --list` → `v0.1.0` present. Reported findings concisely with three likely directions surfaced from Session 77's handoff.
+2. **Operator direction.** "transition Unreleased to 0.1.0 in CHANGELOG" — direction #2 from Session 77 handoff. Verbatim path-of-least-friction.
+3. **Pre-claim AskUserQuestion (release-date ambiguity).** Three options surfaced: (a) 2026-05-12 (tag-creation date, Keep a Changelog convention), (b) 2026-05-13 (formalization date), (c) split (date 05-12 + move Sessions 76+77 to fresh [Unreleased]). Operator selected **(a) 2026-05-12 (tag-creation date)**. **NEW Candidate Learning #65** filed at Phase 3A: when a handoff predicts a "transition X to Y" task, pre-name the convention/date/boundary choice in the handoff to avoid mid-stream AskUserQuestion round-trip.
+4. **Phase 1B stub claim — Learning #29 42nd consecutive + Learning #35 11th + NEW Candidate #64 3rd-instance PROMOTION-TRIGGERING preemptive + Learning #37 5th-instance.** Learning #29 stub-grep `Session 78|### What Session 78 Did|### Session 77 Handoff Evaluation|Post-Session-78` returned 8 prose-only hits (forward-references in Session 77's handoff); zero heading collisions (**42nd consecutive clean**). Learning #35 raw-string pre-grep `### Session 77 ARCHIVED ACTIVE TASK` → 1 prose-only hit (no actual heading yet) (**11th consecutive post-promotion**). NEW Candidate #64 applied preemptively at Edit #2: raw-string `grep -c "### Session 76 ARCHIVED ACTIVE TASK"` returned 5 (4 prose-references in Session 77 handoff + 1 actual heading at line 1489); escalated upfront to multi-line anchor consuming `### Session 76 ARCHIVED ACTIVE TASK\n\n**Task:** Session 76 — operator direction #1 from Session 75 handoff (BACKLOG.md EMPTY since Session 70; carried 7th consecutive session).` (uniqueness verified raw-string `grep -c "carried 7th consecutive session"` = 1). Edit #1 (ACTIVE TASK Task/Status block replace) + Edit #2 (Session 77 archive heading insert via Learning #37 consume-and-replace) **both landed first-attempt**. **Candidate Learning #64 advances to 3rd-instance PROMOTION-TRIGGERING** — recommended for promotion to permanent row #38 in Session 79 (phrasing pre-drafted in Phase 3C below).
+5. **Phase 2 — CHANGELOG.md transition Edit.** Raw-string pre-grep `grep -c "^## \[Unreleased\]" CHANGELOG.md` returned 1; `grep -c "## \[Unreleased\]" CHANGELOG.md` (raw, no anchor) also returned 1 (no prose collisions). Single Edit anchored on `## [Unreleased]\n\n### 2026-05-13 — Wiki delta Session B...` replaced with fresh `## [Unreleased]\n\n## [0.1.0] - 2026-05-12\n\n<preamble>\n\n### 2026-05-13 — Wiki delta Session B...`. **Landed first-attempt.** `git diff --numstat CHANGELOG.md` after this Edit → `4 0` (additive only).
+6. **Gate verification — Learning #39 institutional, 17th consecutive preventive-by-default.** Parallel: `.venv/bin/pytest -q` (588/588 @ 97.32%) + `.venv/bin/ruff check src/ tests/ packages/ scripts/` (clean) + `.venv/bin/mypy src/` (0/48) + `.venv/bin/mypy packages/data-agent/src/` (0/13) = 61 source files clean. Candidate Learning #62 institutional **4th application** (`.venv/bin/` preemptive prefix). All unchanged from Session 77 baseline (CHANGELOG not on tooling input paths).
+7. **CHANGELOG Session 78 entry — 46th-consecutive-structure match.** Sections: context paragraph (transition scope + AskUserQuestion option-selection + Candidate #64 3rd-instance application) / Changed (single-file CHANGELOG.md change) / Verified (gates + structural grep checks + additive-only numstat) / Unchanged intentionally (no other files; candidate-learning status updates explicitly listed) / Next.
+8. **Phase 3 close-out** — this block. Commit pending (NO wiki publish — CHANGELOG.md not under `docs/wiki/`).
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Phase 0 full read of SAFEGUARDS + SESSION_NOTES head + BACKLOG + dashboard + git state + tag list BEFORE operator direction. Pre-edit AskUserQuestion on the release-date ambiguity instead of silently choosing.
+- **Stakeholder corrections:** 0. No retries on any Edit (Phase 1B both + CHANGELOG content). One AskUserQuestion round-trip (1 question, 3 options) — bounded and predictable.
+- **What I got right:** (a) **NEW Candidate #64 applied PREEMPTIVELY at Phase 1B as 3rd-instance PROMOTION-TRIGGERING** — raw-string pre-grep returned 5, escalated to multi-line anchor upfront, no Edit-tool "Found N matches" failure. Candidate #64 ready for promotion in Session 79. (b) **All Phase 1B + CHANGELOG content Edits landed first-attempt** (3 Edits total, 100% first-attempt rate). (c) **Date-ambiguity surfaced via AskUserQuestion** instead of silently chosen — operator preference now durable in CHANGELOG preamble + Session 78 record. (d) **Filed NEW Candidate Learning #65** (handoff convention/date/boundary pre-naming) — directly responsive to the AskUserQuestion friction. (e) **Tooling-PATH preemptive use** (Candidate #62 4th institutional application — habit cemented). (f) **CHANGELOG 46th-consecutive-structure match.** (g) **Gates green + ran BEFORE Verified-bullet draft** (Learning #39 17th consecutive preventive-by-default). (h) **Additive-only CHANGELOG.md** — zero Session 70-77 entry text modified or removed (`git diff --numstat` pre-Session-78-entry = `4 0`). (i) **Task tracking used throughout** — 5 tasks created, marked in_progress + completed in real time. (j) **Wiki publish hook deliberately NOT triggered** — gotcha #24 verified, CHANGELOG.md outside `docs/wiki/`.
+- **What I got wrong:** (a) **-0.25**: Should have spotted the release-date ambiguity at Phase 1A (when stating task understanding) rather than Phase 2 (just before the Edit) — that would have folded the AskUserQuestion into the orientation report instead of as a mid-execution interrupt. **NEW Candidate Learning #65 captures this asymmetry**: handoff predictions of "transition X to Y" tasks should name conventions; symmetric executor-side learning: when picking up such a task, surface the convention question at Phase 1A. (b) **-0.25**: The Session 78 CHANGELOG entry's "numstat" claim is slightly imprecise — the entry says `4 0` pre-Session-78-entry, but `git diff --numstat` at that exact moment was `4 0`. The post-Session-78-entry numstat will be larger when the close-out commits. The phrasing is correct but the reader has to parse "pre-Session-78-entry" qualifier; could have been cleaner. **Combined deduction: -0.5**.
+- **Quality bar vs previous sessions:** Above Session 76 (8.5/10 — Edit-tool multi-match recovery); on par with Session 77 (9.5/10 — same first-attempt zero-retry standard but no major institutional contribution); cleaner than Session 75 (9.25/10) on the Edit-tool discipline. The institutional contribution is significant: **Candidate #64 promotion-triggering** + **NEW Candidate #65 filed**.
+
+### Phase 3C: Learnings
+
+**Learning #11 trust-the-code (PERMANENT) — N/A this session.** No plan citations to re-verify (CHANGELOG transition is convention-driven, not plan-driven).
+
+**Learning #29 grep-before-insert (PERMANENT) — 42nd consecutive clean.** Stub-grep returned 8 prose-only hits, zero heading collisions.
+
+**Learning #34 anchor uniqueness (PERMANENT) — applied 3× this session.** Phase 1B Edit #1 (single-line `## ACTIVE TASK` + Task line — unique) + Edit #2 (multi-line escalation with #64 raw-string when count returned 5) + CHANGELOG Edit (single-line anchor since `## [Unreleased]` raw-string grep returned 1). All landed first-attempt.
+
+**Learning #35 archive-heading raw-string pre-grep (PERMANENT row #35) — 11th consecutive post-promotion clean.** `### Session 77 ARCHIVED ACTIVE TASK` → 1 prose-only hit (no actual heading yet), safe to insert.
+
+**Learning #36 Phase-1B vs Phase-3 boundary (PERMANENT row #36) — 10th consecutive post-promotion validation.** Phase 1B touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading; close-out content drafted at Phase 3.
+
+**Learning #37 consume-and-replace (PERMANENT row #37) — 5th-instance post-promotion validation.** Edit #2 consumed Session 76 archive heading + Task-line + distinguishing phrase (`carried 7th consecutive session`) in `old_string`; replicated heading + Task-line in `new_string` after inserting Session 77 archive block.
+
+**Learning #39 numbers re-verified (PERMANENT) — 24th instance, 17th consecutive preventive-by-default.** Gates ran BEFORE Verified-bullet draft (parallel pytest + ruff + mypy + mypy-packages).
+
+**Candidate Learning #55 (archive placement convention) — STILL 2nd instance.** Session 78's Phase 1B archive placement was driven by Session 77 gotcha #17 prescriptive direction. **Nine consecutive sessions (70-78)** of gotcha-driven counts. May stall indefinitely.
+
+**Candidate Learning #57 (Edit-tool multi-match diagnosis) — STILL 2nd instance.** Did not fire this session — NEW #64 preemptive raw-string recipe prevented the Edit-tool "Found N matches" condition. Healthy outcome; #57 advances only when the failure-mode itself fires.
+
+**Candidate Learning #59 (5-file checkpoint) — STILL 1st instance.** Session 78 touched 2 files total (`CHANGELOG.md` + `SESSION_NOTES.md`). Did not fire.
+
+**Candidate Learning #61 (audit BOTH sides before "align X to Y") — STILL 2nd instance.** Session 77's handoff did not contain an "align X to Y" inversion; #61 did not fire.
+
+**Candidate Learning #62 (verify tool-PATH at Phase 0) — STILL 1st instance, 4th institutional application.** `.venv/bin/` prefix preemptive use; no fresh-discovery instance. The recipe is institutional habit at this point — promotion may require a dedicated Phase-0-verification-step entry rather than "did the habit fire" counting.
+
+**Candidate Learning #63 (planning per-file completion criteria are weaker-form vs region-scoped) — STILL 1st instance.** No planning session this session.
+
+**Candidate Learning #64 (raw-string pre-grep for Edit-tool uniqueness; no `^`/`$` regex anchors) — ADVANCED to 3rd-instance PROMOTION-TRIGGERING.** Filed Session 76 1st instance. Session 77 (2nd instance, applied preemptively at Phase 1B). Session 78 (3rd instance, applied preemptively at Phase 1B Edit #2 — `grep -c "### Session 76 ARCHIVED ACTIVE TASK"` returned 5, escalated upfront to multi-line anchor with `carried 7th consecutive session`; Edit landed first-attempt). **Promotion-triggering — recommended for promotion to permanent row #38 in Session 79.** Phrasing draft for the new row:
+
+> | 38 | **For any Edit-tool uniqueness pre-grep, use raw-string `grep -c "literal text" FILE` (no `^`/`$` regex anchors).** The Edit tool's matching ignores regex line-anchors, so a `grep -c "^literal"` count that returns 1 may correspond to 6+ unanchored prose hits that the Edit tool sees — producing a "Found N matches" failure on what looked like a unique anchor. Raw-string `grep -c` returns Edit's view exactly. If the count is >1, escalate to a multi-line anchor per Learning #34. Composes with Learning #34 (anchor uniqueness) and Learning #37 (consume-and-replace). | Candidate filed Session 76 (1st instance — caught after a `^### Session 74 ARCHIVED ACTIVE TASK` pre-grep returned 1 but Edit failed with "Found 6 matches"); applied Session 77 (2nd instance, preemptive); applied Session 78 (3rd instance, preemptive — promotion-triggering). | Any Edit-tool uniqueness pre-grep. Use raw-string `grep -c "literal"` (no `^` / `$`); multi-line escalation per Learning #34 if >1. |
+
+**NEW Candidate Learning #65 (handoff convention/date/boundary pre-naming) — FILED 1st instance.** **Rule:** When a handoff predicts a "transition X to Y" task that has a convention/date/boundary choice (e.g. release-section date conventions, archive-cutoff dates, file-rename rollover boundaries), pre-name the choice explicitly in the handoff — either as a recommended option with rationale, or as an enumerated AskUserQuestion-shape list. **Why:** Otherwise the executing session must surface the question mid-execution (post-Phase-1B, pre-Edit), turning a one-round-trip session into a two-round-trip session. The handoff predictor has the cognitive load to enumerate options at handoff-write time when the upcoming work is fresh in mind; the executor has higher cognitive cost surfacing the same question from a cold start. **How to apply:** At handoff-write time, when listing a likely-directions item that involves a "transition" / "rename" / "rollover" / "consolidation" verb, append a one-sentence note naming the convention choice (e.g. "release date = tag-creation date per Keep a Changelog convention, alternatives: formalization date or post-tag-entry-split"). **Source:** Session 78 (1st instance — release-date ambiguity surfaced mid-execution as 2026-05-12 vs 2026-05-13 vs split; AskUserQuestion took ~30 seconds but added one round-trip). Needs validation in 2 more "transition X to Y" sessions before promotion. Likely 2nd-instance candidates: future `[Unreleased]` → `[N+1]` transitions, BACKLOG-to-CHANGELOG rollover sweeps, methodology-doc renames.
+
+**Learning #13 + #28 (literal minimum / handoff specifics not contracts) — clean application.** Handoff direction #2 named "CHANGELOG section transition"; scope held at exactly that (1 file content Edit + Session 78 entry).
+
+**Learning #26 (BACKLOG delete-not-flip) — N/A this session.** BACKLOG empty (9th consecutive).
+
+**Learning #27 (paste-and-verify predecessor work product) — N/A.** No verbatim work product in Session 77's handoff for Session 78.
+
+**Learning #30 (declarative interim status updates) — clean application.** Phase 0 parallel-Read block announced declaratively. AskUserQuestion framing was directive ("the release date for `[0.1.0]` is a real ambiguity"), not volitional.
+
+**Learning #33 (Phase 0 BACKLOG-scope verification) — applied as 8th instance post-promotion.** BACKLOG empty (matched). Session 77 archive heading verified absent (only prose forward-reference) before claim.
+
+**Learning #38 filing-session provenance — 25th instance (post-promotion).** Candidate #64 cites Sessions 76/77/78. NEW Candidate #65 cites Session 78.
+
+### Phase 3D: Handoff to Session 79
+
+**Next deliverable:** Most likely operator direction at session start — **promote Candidate Learning #64** to permanent row #38 in `SESSION_RUNNER.md` Learnings table. Phrasing pre-drafted in Phase 3C above. 3rd-instance promotion-triggering reached this session; this matches the recipe of Sessions 71/72/73 (single-row table-edit close-out promoting a candidate to permanent row).
+
+**Likely operator directions:**
+
+1. **Promote Candidate Learning #64 → permanent row #38 in `SESSION_RUNNER.md`** (paste-verbatim of Phase 3C draft per Learning #27; Source column: Sessions 76 (filed), 77 (applied), 78 (applied — promotion-triggering)). Mirrors Sessions 71/72/73 promotion micros. Single-row table edit + standard close-out; gates expected unchanged.
+2. **`--curated-inventory` CLI follow-up** — Phase 4 plan §9.3 merge logic; producer side of the inventory contract. Carried forward 8 consecutive sessions (Session 70 noted it scope-stripped).
+3. **Update `docs/wiki/claims-model-starter/Changelog.md`** to mirror v0.1.0 release section (the audience-facing wiki Changelog has its own release-tracking cadence per `CHANGELOG.md:3`; this is a separate decision). Triggers wiki publish hook.
+4. **New off-BACKLOG operator direction.**
+
+**Important considerations for Session 79:**
+
+1. **BACKLOG.md is empty** (10th consecutive session carry at Session 79 Phase 0).
+2. **`v0.1.0` tag exists locally + on origin** (since Session 74). `CHANGELOG.md` now has formalized `## [0.1.0] - 2026-05-12` release section + fresh empty `## [Unreleased]` above (Session 78).
+3. **Candidate Learning #64 ADVANCED to 3rd-instance PROMOTION-TRIGGERING.** Phrasing pre-drafted in Session 78 Phase 3C. Promotion in Session 79 follows the Sessions 71/72/73 micro-deliverable shape.
+4. **NEW Candidate Learning #65 (handoff convention/date/boundary pre-naming) FILED 1st instance.** Will fire on future "transition X to Y" tasks. Worth name-checking in subsequent handoffs.
+5. **Candidate Learning #57 STILL 2nd instance.** Did not fire Session 78 (#64 prevention worked). Advances only when an Edit-tool "Found N matches" failure occurs.
+6. **Candidate Learning #55 STILL 2nd instance.** 9 consecutive sessions (70-78) of gotcha-driven archive-placement; may stall.
+7. **Candidate Learning #59 STILL 1st instance.** Fires only on >5-file deliverables.
+8. **Candidate Learning #61 STILL 2nd instance.** Did not fire Session 78 (no inversion).
+9. **Candidate Learning #62 STILL 1st instance, 4th institutional application.** `.venv/bin/` preemptive prefix is habit. Re-examine promotion criteria (4 institutional applications without fresh-discovery may itself be the validation).
+10. **Candidate Learning #63 STILL 1st instance.** Planning-session-only.
+11. **Session 78 push state:** close-out commit pending push at session end per operator authorization (verify with `git rev-list --count @{u}..HEAD`).
+12. **Wiki publish hook did NOT fire for Session 78 commit** (CHANGELOG.md outside `docs/wiki/claims-model-starter/`). Wiki clone unchanged from Session 76 publish.
+13. **Operator's durable directive ("numerical order; 1 per session") active.**
+14. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honored this session.
+15. **`_CANONICAL_PC_SYSTEMS` constant divergence note (carried forward Session 70 → 78).** `agents/intake/anthropic_client.py:47-53` vs `orchestrator/adapters.py`. Operator declined extraction at Session 70.
+16. **Phase 0 narration discipline (consistent practice across Sessions 73-78).** Pattern: announce parallel-Read tool blocks before they fire.
+
+### Gotchas for Session 79
+
+1. **Post-Session-78 pre-commit state:** pytest **588/588 passing** @ **97.32% coverage** (unchanged from Session 77 baseline); ruff clean (scope: `src/ tests/ packages/ scripts/`); mypy 0 issues in 61 files (48 src + 13 packages). **No deltas** vs Session 77.
+
+2. **Tooling PATH unchanged:** `pytest`, `ruff`, `mypy` at `.venv/bin/`. Use explicit `.venv/bin/pytest` etc. for gate runs. **Candidate Learning #62 institutional, 4th application.**
+
+3. **BACKLOG state:** **EMPTY** (9th consecutive carry from Session 70; 10th at Session 79 Phase 0).
+
+4. **`CHANGELOG.md` formalized for v0.1.0** (Session 78). `## [Unreleased]` is the fresh empty heading; `## [0.1.0] - 2026-05-12` is the formalized release section with Session 70-77 entries flowing under it verbatim. Any Session 79 CHANGELOG entry goes under fresh `## [Unreleased]`.
+
+5. **Learning #29 mechanical — 42nd consecutive validation.** Continue: stub-grep `Session 79|### What Session 79 Did|### Session 78 Handoff Evaluation|Post-Session-79`.
+
+6. **Learning #34 (PERMANENT) — 3× this session.** Pre-grep with raw string (no `^`/`$`) per Candidate #64; multi-line anchor if >1 match.
+
+7. **Learning #35 (PERMANENT row #35) — 11th consecutive post-promotion clean.** At Phase 1B, raw-string grep `grep -c "### Session 78 ARCHIVED ACTIVE TASK" SESSION_NOTES.md` (no `^`) before Edit.
+
+8. **Learning #36 (PERMANENT row #36) — 10th-instance post-promotion validation.** Phase 1B touches ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading insertion.
+
+9. **Learning #37 (PERMANENT row #37) — 5th-instance post-promotion validation.** Recipe: consume boundary heading + uniqueness-conferring follow-on line in `old_string`; replicate at tail of `new_string`. Pre-verify multi-line anchor uniqueness with raw-string `grep -c` per Candidate #64.
+
+10. **Candidate Learning #55 (archive placement) — STILL 2nd instance, may stall indefinitely.** 9 consecutive sessions (70-78) of gotcha-driven placement.
+
+11. **Candidate Learning #57 — STILL 2nd instance.** Did not fire Session 78 (#64 prevented Edit-tool failure). Advances only when Edit-tool "Found N matches" condition fires.
+
+12. **Candidate Learning #64 — ADVANCED to 3rd-instance PROMOTION-TRIGGERING Session 78.** **Recommended for promotion to permanent row #38 in Session 79.** Phrasing pre-drafted in Session 78 Phase 3C (paste-verbatim per Learning #27). Source column: Sessions 76 (filed) / 77 (applied) / 78 (applied — promotion-triggering).
+
+13. **NEW Candidate Learning #65 (handoff convention/date/boundary pre-naming) — FILED 1st instance Session 78.** Will fire on future "transition X to Y" tasks (release-section dates, archive cutoffs, file-rename rollovers). Worth name-checking in subsequent handoffs.
+
+14. **Candidate Learning #59 — STILL 1st instance.** Fires on >5-file deliverables with cross-file dependencies.
+
+15. **Candidate Learning #61 (audit BOTH sides before "align X to Y") — STILL 2nd instance.** Dormant.
+
+16. **Candidate Learning #62 — STILL 1st instance, 4th institutional application.** `.venv/bin/` prefix preemptive use is habit. May warrant re-examined promotion criteria.
+
+17. **Candidate Learning #63 — STILL 1st instance.** Planning-session-only.
+
+18. **Archive-at-Phase-1B 17th consecutive validation** (62-78). Pattern institutionalized. Session 79: at Phase 1B, demote Session 78's `**Task:**` + `**Status:**` block to `### Session 78 ARCHIVED ACTIVE TASK` placed above the Session 77 archive heading.
+
+19. **CHANGELOG 46-consecutive-structure match in Session 78.** Continue: context / Changed (or Added) / Verified / Unchanged intentionally / Next. Session 79 = 47th match target.
+
+20. **Operator's durable directive still active** ("numerical order; 1 per session").
+
+21. **v0.1.0 release section IS formalized.** No further `[Unreleased]` → `[0.1.0]` work pending. Future release sections will accumulate as new versions are tagged. The maintainer-facing CHANGELOG (this file) is now the authoritative ledger; the wiki-facing `docs/wiki/claims-model-starter/Changelog.md` mirror may or may not be updated separately (operator decision).
+
+22. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both.
+
+23. **Wiki clone location:** `~/Development/claims-model-starter.wiki/`. Session 78 commit does NOT trigger publish hook (CHANGELOG.md not under `docs/wiki/`). Wiki clone unchanged since Session 76 publish.
+
+24. **Commit message for Session 78:** `docs(changelog): transition [Unreleased] → [0.1.0] - 2026-05-12 release section (Session 78)`.
+
+25. **`SESSION_RUNNER.md` Learnings table currently at 37 rows post-Session-73 — unchanged this session.** **Insertion expected next session (row #38) if Candidate #64 is promoted per Session 78's recommendation.**
+
+26. **Push state.** Session 78 close-out commit pending push at session end per operator authorization. **Verify push state with `git rev-list --count @{u}..HEAD` rather than trusting narrative claims.**
+
+27. **Phase 0 narration discipline (consistent practice).** Sessions 73-78 mechanical. Pattern: announce parallel-Read tool blocks before they fire.
+
+28. **NEW Edit-tool multi-match prevention validated Session 78 as 3rd-instance promotion-triggering:** raw-string `grep -c` + preemptive multi-line escalation when >1 hit. Worked first-attempt; **recipe ready for promotion to permanent row #38**.
+
+29. **AskUserQuestion mid-session friction note (Session 78 -0.25 deduction).** Surfaced the release-date ambiguity at Phase 2 instead of Phase 1A. **NEW Candidate Learning #65 captures the asymmetry** — handoff convention/date/boundary pre-naming. Symmetric executor-side: at Phase 1A, when picking up a "transition X to Y" task, surface the convention question in the task-understanding statement.
 
 ### Session 76 Handoff Evaluation (by Session 77)
 
@@ -1485,6 +1656,10 @@
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 77 ARCHIVED ACTIVE TASK
+
+**Task:** Session 77 — operator direction #1 from Session 76 handoff (BACKLOG.md EMPTY since Session 70; carried 8th consecutive session). Execute **Session B** of `docs/planning/wiki-inventory-delta.md` §3.6 + §5 — add 3 additive forward-pointer notes to `docs/architecture-history/architecture-plan.md` near §5.2 `DataRequest`, §5.3 `DataReport` `PrimaryQuery`, and §7 Data Agent Reuse Interface. **COMPLETE.**
 
 ### Session 76 ARCHIVED ACTIVE TASK
 
