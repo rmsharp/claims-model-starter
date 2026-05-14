@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# post-commit: publish to the live GitHub Wiki when the just-made commit
+# touches docs/wiki/claims-model-starter/. Delegates to scripts/publish_wiki.sh
+# which is idempotent — re-running with no source changes is a fast no-op.
+#
+# Install (one-time, per clone):
+#   git config core.hooksPath .githooks
+#
+# Escape hatch (rare — intentional amend without re-publishing):
+#   MPC_SKIP_WIKI_PUBLISH=1 git commit ...
+
+set -eu
+
+if [ "${MPC_SKIP_WIKI_PUBLISH:-0}" = "1" ]; then
+    exit 0
+fi
+
+if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -q '^docs/wiki/claims-model-starter/'; then
+    exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+exec "$REPO_ROOT/scripts/publish_wiki.sh"

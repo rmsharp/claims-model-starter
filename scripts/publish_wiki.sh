@@ -5,7 +5,14 @@
 # source and clone are already in parity.
 #
 # Usage:
-#   scripts/publish_wiki.sh
+#   scripts/publish_wiki.sh                  # manual invocation (always safe)
+#
+# Auto-publish (recommended): the .githooks/post-commit hook invokes this
+# script automatically when a commit touches docs/wiki/claims-model-starter/.
+# Enable it once per clone with:
+#   git config core.hooksPath .githooks
+# Disable for a single commit with:
+#   MPC_SKIP_WIKI_PUBLISH=1 git commit ...
 #
 # Configuration (via environment variable):
 #   WIKI_CLONE  Path to a local clone of the wiki repo.

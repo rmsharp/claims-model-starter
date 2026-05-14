@@ -201,7 +201,7 @@ A handoff that doesn't include ALL of the following is a protocol violation. "Pi
 
 Commit all changes with a descriptive message.
 
-**Wiki sync check.** If any `docs/wiki/claims-model-starter/*.md` file changed in this session's commits (`git diff --name-only <previous-HEAD>..HEAD -- docs/wiki/claims-model-starter/` — where `<previous-HEAD>` is the commit the session started from), run `scripts/publish_wiki.sh` after the repo commit to propagate the changes to the live GitHub Wiki. The script is idempotent: if the repo source and wiki clone are already in parity it exits with "no changes to publish" in seconds, so running it unconditionally is also safe. See the script's header comment for the one-time `WIKI_CLONE` setup and ambient-git-auth prerequisites.
+**Wiki sync.** Wiki publishing is **automatic** via the tracked `.githooks/post-commit` hook (Session 84): when a commit touches `docs/wiki/claims-model-starter/`, the hook invokes `scripts/publish_wiki.sh` to sync the live GitHub Wiki. Enable it once per clone with `git config core.hooksPath .githooks`. The script is idempotent (no-op when source and clone are in parity), so re-runs are safe; manual invocation `scripts/publish_wiki.sh` still works as a backstop. To suppress auto-publish for a single commit (rare): `MPC_SKIP_WIKI_PUBLISH=1 git commit ...`. See the script's header for `WIKI_CLONE` setup and ambient-git-auth prerequisites.
 
 ### 3F: Report and STOP
 
