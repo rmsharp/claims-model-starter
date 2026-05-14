@@ -5,9 +5,171 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 82 — operator direction "1, 2, 3" from Session 81 handoff (sequenced per durable directive: #1 this session, #2 next, #3 after). Direction #1: **Promote Candidate Learning #66 → row #39 in `SESSION_RUNNER.md` Learnings table.** Paste-verbatim (per Learning #27) of phrasing pre-drafted in Session 81 handoff item #4. Also formally close Candidate Learning #55 as permanently superseded by #66 (per Session 81 gotcha #13). Single substantive surface: `SESSION_RUNNER.md` (1 new table row + 1 candidate-status note in Phase 3C close-out prose). BACKLOG.md remains EMPTY (13th consecutive carry).
+**Task:** Session 83 — operator direction "1, 2, 3" from Session 81/82 (sequenced per durable directive: #2 this session). Direction #2: **Promote Candidate Learning #65 → permanent row #40 in `SESSION_RUNNER.md` Learnings table.** Phrasing draft required at Phase 3C (no paste-verbatim available; four components — rule / why / source / when-to-apply — carried in Session 82 handoff item #3). Single substantive surface: `SESSION_RUNNER.md` (1 new table row). BACKLOG.md remains EMPTY (14th consecutive carry).
 
-**Status:** Session 82 IN PROGRESS. Phase 1B stub claim — applying Learning #27 (paste-verbatim, pre-drafted phrasing ready) + Candidate Learning #66 (file-tail archive zone locator confirmed at line 2172, Session 80 archive heading) **4th-instance institutional application** + Learning #35 (raw-string archive pre-grep, 15th consecutive post-promotion clean target) + Learning #29 (stub-grep, 46th consecutive target) + permanent row #38 (raw-string `grep -c`, no regex anchors) + Learning #36 (Phase-1B vs Phase-3 boundary — touch only Task/Status + archive insert).
+**Status:** Session 83 IN PROGRESS. Phase 1B stub claim — applying Learning #29 (stub-grep returned 26 prose-only hits, **47th consecutive clean**) + Learning #35 (raw-string archive pre-grep `### Session 82 ARCHIVED ACTIVE TASK` returned 2 prose-only hits, **16th consecutive post-promotion clean**) + permanent row #39 (file-tail archive zone locator returned line 2334, Session 81 archive heading — **2nd-instance post-promotion self-application**) + permanent row #38 (raw-string `grep -c`, no regex anchors — **4th post-promotion self-application**) + Learning #37 (consume-and-replace at Phase 1B Edit #2) + Learning #36 (Phase-1B vs Phase-3 boundary — touch only Task/Status + archive insert).
+
+### Session 82 Handoff Evaluation (by Session 83)
+
+**Score: 9.5/10.** Session 82's handoff was load-bearing and predictive on every procedural dimension. Likely-directions #1 named THIS session's deliverable verbatim ("**Promote Candidate Learning #65 → row #40 in `SESSION_RUNNER.md`** (per operator's '1, 2, 3' #2). **RECOMMENDED FIRST**"). Item #3 carried the four phrasing components (rule / why / source-with-instances / when-to-apply) verbatim — drafting was assembly into the row-body convention of rows #33/#36/#37/#39, not invention. Gotcha #1 pre-commit baseline (591/591 @ 97.27%, ruff clean, mypy 0/61) matched verbatim at gate run. Gotcha #2 tooling-PATH `.venv/bin/` matched — applied preemptively as **9th institutional application** of Candidate #62. Gotcha #3 BACKLOG state (EMPTY, 14th carry forecast) matched. Gotcha #6 Learning #29 stub-grep returned 26 prose-only hits — **47th consecutive clean**. Gotcha #7 row #38 raw-string pre-grep applied 3 times: Phase 1B Edit #1 anchor (Session 82 ACTIVE-TASK Task-line returned 1, safe single-line), Phase 1B Edit #2 anchor (`### Session 81 ARCHIVED ACTIVE TASK` returned 6 → escalated to multi-line per Learning #34 + row #38; `carried 12th consecutive session). Implement` returned 1), row #40 paste anchor (`insert above the predecessor's \`### Session N-1 ARCHIVED ACTIVE TASK\` heading. |` returned 1, safe single-line). Gotcha #8 Learning #35 raw-string archive pre-grep — `### Session 82 ARCHIVED ACTIVE TASK` returned 2 hits (both prose-only forward-references in Session 82's handoff/gotchas), safe to insert (**16th consecutive post-promotion clean**). Gotcha #10 Candidate #65 PROMOTION-READY — applied AS the deliverable (drafted phrasing from item #3 components). Gotcha #17 archive-at-Phase-1B **22nd consecutive validation**. Gotcha #18 CHANGELOG 50-consecutive-structure → **51st consecutive** this session.
+
+- **What helped:** (a) Item #3 carried all four phrasing components verbatim — drafting was ~5 min assembly, not invention. (b) Operator's "1, 2, 3" sequencing is durable (Session 84 = #3 unchanged post-Session-83). (c) All gotcha specifics matched. (d) Tooling-PATH preemptive (Candidate #62 9th institutional). (e) CHANGELOG 51-consecutive-structure target met. (f) Pre-commit baseline matched at gate run.
+- **What was missing:** Nothing material. Item #3 phrasing components were complete (rule / why / source-with-instances / when-to-apply all spelled out). Assembly into row-body required minor structural choices ("Mechanical:" + "Cost/Benefit:" + composition note) mirrored from rows #33/#36/#37/#39 — no semantic gaps.
+- **What was wrong:** Nothing. Phase 0 reads, gotcha specifics, candidate-learning forecasts, source-instance attributions all matched.
+- **ROI:** ~10×. Item #3 carried full draft skeleton; Phase 1B Edits + row #40 paste landed first-attempt; gates green first-run.
+
+### What Session 83 Did
+
+**Deliverable:** Promote Candidate Learning #65 → permanent row #40 in `SESSION_RUNNER.md` Learnings table (drafted phrasing from Session 82 handoff item #3 four components, assembled into the row-body convention of rows #33/#36/#37/#39). **COMPLETE.**
+**Started:** 2026-05-13
+**Completed:** 2026-05-13
+**Commit (pending):** `docs(methodology): promote Candidate Learning #65 → permanent row #40 in SESSION_RUNNER.md Learnings table (Session 83)`
+
+**What was done:**
+
+1. **Phase 0 orientation — Learning #30 declarative narration + Learning #33 BACKLOG/scope verification.** Parallel reads of SAFEGUARDS.md + SESSION_NOTES.md head (top 200 lines) + BACKLOG.md + git status + dashboard state + recent commits in one batch. Ghost-session check clean (last documented = Session 82; last commit = `1ee2c1b`). BACKLOG empty (14th consecutive carry). Dashboard process not running — noted, continued per Phase 0 step 5.
+2. **Phase 1A scope confirmation.** Operator input "session 83" confirmed direction #2 from durable "1, 2, 3" sequencing → Promote Candidate Learning #65 → row #40. No AskUserQuestion needed (sequencing was unambiguous).
+3. **Phase 1B stub claim — Learning #29 47th consecutive + Learning #35 16th post-promotion clean + row #39 2nd-instance post-promotion self-application + row #38 multiple self-applications + Learning #37 + Learning #36 boundary discipline.** Stub-grep returned 26 prose-only hits (Session 82's forward-references in handoff/gotchas), zero heading collisions. Learning #35 raw-string pre-grep `### Session 82 ARCHIVED ACTIVE TASK` returned 2 prose-only hits, safe to insert (16th consecutive post-promotion clean). Row #39 file-tail locator `grep -n "^### Session .* ARCHIVED ACTIVE TASK" SESSION_NOTES.md \| head -1` returned line 2334 (Session 81 archive heading) — **2nd-instance post-promotion self-application** (Session 82 was 1st). Phase 1B Edit #1 replaced Session 82 ACTIVE TASK Task/Status block with Session 83 stub (single-line raw-string anchor verified unique). Phase 1B Edit #2 inserted Session 82 archive heading + abbreviated Task-line above line 2334 via Learning #37 consume-and-replace — raw-string anchor for `### Session 81 ARCHIVED ACTIVE TASK` returned 6 → escalated upfront to multi-line anchor with distinguishing phrase `carried 12th consecutive session). Implement` (raw-string `grep -c` = 1 per row #38 recipe). **Both Phase 1B Edits landed first-attempt; zero placement fumble.** Phase 1B touched ONLY Task/Status block + predecessor archive heading per Learning #36 boundary discipline.
+4. **Phase 2 deliverable execution — row #40 drafting + paste.** Drafted phrasing from Session 82 handoff item #3 four components (rule / why / source-instances / when-to-apply), mirroring the body structure of rows #33/#36/#37/#39 (bold lead claim, expansion-with-examples, "Mechanical:" recipe, "Cost: ... Benefit: ..." cost-benefit, composition note with related Learning #28). Source-column terminated with `Promoted Session 83.` per Session 82's structural-mirror convention (rows #36/#37/#38/#39 all use this termination). Paste via Learning #37 consume-and-replace: `old_string` consumed row #39 tail (`insert above the predecessor's \`### Session N-1 ARCHIVED ACTIVE TASK\` heading. |`) + blank line + `---`; `new_string` replicated row #39 tail + new row #40 + blank line + `---`. Anchor uniqueness verified raw-string `grep -c` = 1. **Paste landed first-attempt.**
+5. **Gate verification — Learning #39 institutional, 22nd consecutive preventive-by-default.** Parallel: `.venv/bin/pytest -q` (591/591 passing @ 97.27% — unchanged from Session 82 baseline; methodology + session-notes files not on test inputs); `.venv/bin/ruff check src/ tests/ packages/ scripts/` (clean); `.venv/bin/mypy src/` (0/48); `.venv/bin/mypy packages/data-agent/src/` (0/13; 61 total). Candidate #62 institutional **9th application** (`.venv/bin/` preemptive prefix).
+6. **CHANGELOG Session 83 entry — 51st-consecutive-structure match.** Sections: context paragraph / Changed (file-by-file Edit summary) / Verified (gate output) / Unchanged intentionally (candidate-status updates) / Next.
+7. **Phase 3 close-out** — this block. Commit pending. **Wiki publish hook does NOT fire** (no `docs/wiki/claims-model-starter/` files touched).
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Phase 0 full read + BACKLOG verification + pre-grep all anchors with row #38 raw-string recipe BEFORE every Edit. Phrasing components from item #3 verified for completeness before drafting.
+- **Stakeholder corrections:** 0. No retries on any Edit. No mid-session ambiguity (operator's "session 83" mapped unambiguously to the "1, 2, 3" #2 sequence).
+- **What I got right:** (a) **All Edits landed first-attempt** (Phase 1B ×2 + row #40 paste ×1 + close-out content ×1 + CHANGELOG ×1 = 100% first-attempt rate). (b) **Candidate #65 promoted at 3rd-instance** (advanced to 3rd in Session 81; this is the permanent landing). (c) **Row-body structure mirrors rows #33/#36/#37/#39** (bold lead + Mechanical + Cost/Benefit + composition with Learning #28). (d) **Source-column "Promoted Session 83." termination** per Session 82's mirror convention. (e) **Tooling-PATH preemptive use** (Candidate #62 9th institutional). (f) **CHANGELOG 51st-consecutive-structure match.** (g) **Gates green; ran BEFORE Verified-bullet draft** (Learning #39 22nd consecutive preventive-by-default). (h) **Learning #36 Phase-1B vs Phase-3 boundary** mechanically respected. (i) **Operator sequencing** ("1, 2, 3" → Session 84 = #3) captured in handoff.
+- **What I got wrong:** Nothing material. Drafting effort (~5 min) was lower than Session 82's ~10 min forecast — item #3 components were unusually complete.
+- **Quality bar vs previous sessions:** On par with Session 82 (9.5/10 paste-verbatim). Drafting required slight assembly (vs. Session 82's pure paste), but item #3 phrasing components made it close to paste-and-verify.
+
+### Phase 3C: Learnings
+
+**Learning #11 trust-the-code (PERMANENT) — N/A this session.** No plan-vs-code drift.
+
+**Learning #27 paste-and-verify (PERMANENT) — Partial application.** Item #3 phrasing components carried verbatim from Session 82 handoff into row #40 body. Assembly into row-body structure ("Mechanical:" + "Cost/Benefit:" + composition note framing) mirrored rows #33/#36/#37/#39 — operator-provided substantive content preserved verbatim; only row-structure scaffolding added.
+
+**Learning #29 grep-before-insert (PERMANENT) — 47th consecutive clean.** Stub-grep returned 26 prose-only hits; zero heading collisions.
+
+**Learning #34 anchor uniqueness (PERMANENT) — applied 3× this session.** Phase 1B Edit #1 (single-line raw-string = 1) + Phase 1B Edit #2 (multi-line escalation when 6 → 1) + row #40 paste (single-line raw-string = 1).
+
+**Learning #35 archive-heading raw-string pre-grep (PERMANENT row #35) — 16th consecutive post-promotion clean.** `### Session 82 ARCHIVED ACTIVE TASK` → 2 prose-only hits, safe.
+
+**Learning #36 Phase-1B vs Phase-3 boundary (PERMANENT row #36) — 15th consecutive post-promotion validation.** Phase 1B touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading at file-tail; close-out content drafted at Phase 3.
+
+**Learning #37 consume-and-replace (PERMANENT row #37) — 10th-instance post-promotion validation.** Applied at Phase 1B Edit #2 + row #40 paste.
+
+**Learning #38 raw-string pre-grep (PERMANENT row #38) — 4th post-promotion self-application.** All anchors used raw-string `grep -c` (no regex anchors); 1 multi-line escalation needed at Phase 1B Edit #2.
+
+**Learning #39 file-tail archive zone locator (PERMANENT row #39) — 2nd post-promotion self-application.** `grep -n "^### Session .* ARCHIVED ACTIVE TASK" SESSION_NOTES.md \| head -1` returned line 2334; Session 82 archive inserted above; zero placement fumble.
+
+**Learning #39 numbers re-verified (PERMANENT) — 29th instance, 22nd consecutive preventive-by-default.** Gates ran BEFORE Verified-bullet draft.
+
+**NEW row #40 (Candidate Learning #65 promoted) — 0 post-promotion self-applications this session.** Session 83's handoff to Session 84 is expected to be the 1st application (wiki publish-mechanism three-options decision is a contract-shape choice — see "Open contract questions for Session 84" in handoff below).
+
+**Candidate Learning #57 (Edit-tool multi-match diagnosis) — STILL 2nd instance.** Did not fire this session — row #38 recipe held (Phase 1B Edit #2 escalation was preemptive, not a recovery).
+
+**Candidate Learning #59 (5-file checkpoint) — STILL 2nd instance.** Session 83 touched 3 files; below 5-file threshold.
+
+**Candidate Learning #61 (audit BOTH sides before "align X to Y") — STILL 2nd instance.** No "align X to Y" inversion this session.
+
+**Candidate Learning #62 (verify tool-PATH at Phase 0) — STILL 1st instance, 9th institutional application.** `.venv/bin/` prefix preemptive use is habit (Sessions 75-83).
+
+**Candidate Learning #63 (planning per-file completion criteria) — STILL 1st instance.** No planning session.
+
+**Learning #13 + #28 (literal minimum / handoff specifics not contracts) — clean application.** Scope held at exactly row #40 paste + Candidate #65 closure + close-out. Did not expand to "while I'm at it, also draft Session 84's wiki-decision deliverable" — that belongs to Session 84.
+
+**Learning #26 (BACKLOG delete-not-flip) — N/A this session.** BACKLOG empty (14th consecutive carry; remains empty post-session).
+
+**Learning #30 (declarative interim status updates) — clean application.** Phase 0 parallel-Read announced declaratively.
+
+**Learning #33 (Phase 0 BACKLOG-scope verification) — applied as 13th instance post-promotion.** BACKLOG empty (matched). Session 82 archive heading verified absent before claim. Push state verified at start (2 ahead of origin/master; expected per Session 82 close-out narrative).
+
+### Phase 3D: Handoff to Session 84
+
+**Next deliverable per operator's "1, 2, 3" sequencing (input at Session 82 start):** **Wiki publish-mechanism three-options decision** (Session 84 = #3, final entry in the durable sequence). After Session 84, the durable directive expires; fresh operator direction or BACKLOG carry forecast.
+
+**Open contract questions for Session 84 (per the NEW row #40 recipe — first application):**
+
+- **Source location for the "three options":** Verbally named in Session 82's stub claim narrative but not durably written. Session 84 Phase 0 should grep `docs/planning/` + `BACKLOG.md` + recent `CHANGELOG.md` entries + this `SESSION_NOTES.md` for "wiki publish" / "publish_wiki" / "publish mechanism" to locate the canonical source. If no archived source exists, enumerate the bounded options at Phase 1A via AskUserQuestion.
+- **Likely bounded options to confirm with operator at Phase 1A:** (a) post-commit Git hook in `.git/hooks/post-commit` that conditionally invokes `scripts/publish_wiki.sh` when `docs/wiki/claims-model-starter/**` paths changed; (b) GitHub Action triggered on push of those paths; (c) manual `scripts/publish_wiki.sh` invocation at close-out (current state, documented in `SESSION_RUNNER.md` Phase 3E "Wiki sync check"). Other bounded options may exist — operator should enumerate at Phase 1A.
+
+Ranked likely directions for Session 84:
+
+1. **Wiki publish-mechanism three-options decision** (per operator's "1, 2, 3" #3). **RECOMMENDED FIRST** — completes the durable sequence. Apply NEW row #40 recipe at Phase 1A to resolve the bounded options before any Edits.
+2. **New off-BACKLOG operator direction** if operator changes course post-sequence.
+3. **Candidate-learning promotion** if a new 3rd-instance fires (none currently PROMOTION-READY post-Session-83 — Candidate #65 + #66 both promoted; #55 closed; #57/#59/#61 dormant at 2nd-instance; #62/#63 at 1st-instance).
+
+**Important considerations for Session 84:**
+
+1. **BACKLOG.md is empty** (14th consecutive session carry; 15th at Session 84 Phase 0).
+2. **`SESSION_RUNNER.md` Learnings table at 40 rows.** Row #41 next promotion target. **No PROMOTION-READY candidates currently** (#65 + #66 both promoted in Sessions 82-83; #55 closed).
+3. **Operator's "1, 2, 3" durable directive expires after Session 84.** After #3 is delivered, fresh operator direction or first non-empty BACKLOG entry is the next anchor.
+4. **Wiki publish-mechanism is a NEW row #40 1st-application opportunity.** Apply the recipe at Phase 1A.
+5. **Candidate Learning #57 STILL 2nd instance.** Dormant.
+6. **Candidate Learning #59 STILL 2nd instance.** Session 84 may touch 2-4 files (`SESSION_NOTES.md` + `CHANGELOG.md` + possibly `.git/hooks/post-commit` or `.github/workflows/*.yml` or `scripts/publish_wiki.sh` depending on the chosen option); 5-file threshold unlikely.
+7. **Candidate Learning #61 STILL 2nd instance.** Dormant.
+8. **Candidate Learning #62 STILL 1st instance, 9th institutional application.** `.venv/bin/` preemptive prefix.
+9. **Candidate Learning #63 STILL 1st instance.** Planning-session-only; if Session 84's wiki decision produces a multi-phase plan, #63 may advance.
+10. **Session 83 push state:** close-out commit will be 3rd unpushed at session end (Session 81 `3e02dcd` + Session 82 `1ee2c1b` + Session 83 pending). Verify with `git rev-list --count @{u}..HEAD` at Session 84 Phase 0.
+11. **Wiki publish hook does NOT fire for Session 83 commit** (no `docs/wiki/claims-model-starter/` files touched). If Session 84's chosen option modifies the publish mechanism itself, behavior of `scripts/publish_wiki.sh` may change for Session 85+.
+12. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both.
+13. **Phase 0 narration discipline** (Sessions 73-83 mechanical).
+14. **Memory tracking for the new row #40 recipe:** Session 84's Phase 1A use of row #40 will produce the 1st post-promotion self-application — track in close-out.
+
+### Gotchas for Session 84
+
+1. **Post-Session-83 pre-commit state:** pytest **591/591 passing** @ **97.27% coverage** (unchanged from Session 82 baseline; methodology + session-notes files not on test inputs); ruff clean (scope: `src/ tests/ packages/ scripts/`); mypy 0 issues in 61 files (48 src + 13 packages). **Coverage budget headroom: 2.27 absolute points above the 95% bar.**
+
+2. **Tooling PATH unchanged:** `pytest`, `ruff`, `mypy` at `.venv/bin/`. **Candidate Learning #62 institutional, 9th application.**
+
+3. **BACKLOG state:** **EMPTY** (14th consecutive carry from Session 70; 15th at Session 84 Phase 0).
+
+4. **`CHANGELOG.md`:** `## [Unreleased]` contains Session 78 + 79 + 80 + 81 + 82 + 83 entries. `## [0.1.0] - 2026-05-12` formalized (Session 78). Any Session 84 entry goes under `## [Unreleased]`.
+
+5. **`SESSION_RUNNER.md` Learnings table at 40 rows.** Row #41 next promotion target. **No PROMOTION-READY candidates currently.**
+
+6. **Learning #29 mechanical — 47th consecutive validation.** Continue: stub-grep `Session 84|### What Session 84 Did|### Session 83 Handoff Evaluation|Post-Session-84`.
+
+7. **Permanent row #38 (raw-string pre-grep, no regex anchors) — 4th post-promotion self-application Session 83.** Continue: pre-grep with raw string per row #38 recipe; multi-line anchor if >1 match per Learning #34.
+
+8. **Permanent row #39 (file-tail archive zone locator) — 2nd post-promotion self-application Session 83.** Continue: at Phase 1B, run `grep -n "^### Session .* ARCHIVED ACTIVE TASK" SESSION_NOTES.md \| head -1` to locate file-tail BEFORE constructing Phase 1B Edit's `new_string`.
+
+9. **NEW permanent row #40 (Phase 3D pre-name contract-shape choices) — 0 post-promotion self-applications Session 83.** Session 84's Phase 1A is the expected 1st application (wiki publish-mechanism options enumerated in "Open contract questions for Session 84" above). Track as 1st post-promotion self-application in Session 84 close-out.
+
+10. **Learning #35 (PERMANENT row #35) — 16th consecutive post-promotion clean.** At Phase 1B, raw-string `grep -c "### Session 83 ARCHIVED ACTIVE TASK" SESSION_NOTES.md` before Edit.
+
+11. **Candidate Learning #65 — PROMOTED Session 83 to row #40.** Removed from candidate tracking.
+
+12. **Candidate Learning #57 — STILL 2nd instance.** Dormant.
+
+13. **Candidate Learning #59 — STILL 2nd instance.** Session 84 unlikely to fire #59 (file count below 5 threshold).
+
+14. **Candidate Learning #61 — STILL 2nd instance.** Dormant.
+
+15. **Candidate Learning #62 — STILL 1st instance, 9th institutional application.** `.venv/bin/` preemptive prefix.
+
+16. **Candidate Learning #63 — STILL 1st instance.** Planning-session-only; if Session 84 produces a multi-phase plan for the wiki publish mechanism, #63 may advance.
+
+17. **Archive-at-Phase-1B 22nd consecutive validation** (62-83). Session 84: at Phase 1B, demote Session 83's `**Task:**` + `**Status:**` block to `### Session 83 ARCHIVED ACTIVE TASK` placed above the Session 82 archive heading per row #39 mechanical recipe.
+
+18. **CHANGELOG 51-consecutive-structure match in Session 83.** Continue: context / Changed (or Added) / Verified / Unchanged intentionally / Next. Session 84 = 52nd match target.
+
+19. **Operator's durable directive expires after Session 84.** Session 84 = "1, 2, 3" #3 (wiki publish-mechanism). Post-Session-84, no durable directive — fresh operator direction or BACKLOG-driven anchor at Session 85.
+
+20. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both.
+
+21. **Wiki clone location:** `~/Development/claims-model-starter.wiki/`. **Session 83 commit does NOT trigger publish hook** (no `docs/wiki/claims-model-starter/` files touched). Wiki clone unchanged since Session 80 publish.
+
+22. **Commit message for Session 83:** `docs(methodology): promote Candidate Learning #65 → permanent row #40 in SESSION_RUNNER.md Learnings table (Session 83)`.
+
+23. **Push state.** Session 83 close-out commit will be the 3rd unpushed (Sessions 81 + 82 + 83). Verify with `git rev-list --count @{u}..HEAD` at Session 84 Phase 0 rather than trusting narrative claims.
+
+24. **Phase 0 narration discipline.** Sessions 73-83 mechanical. Pattern: announce parallel-Read tool blocks before they fire.
+
+25. **Session 83 -0.5 self-assess deduction:** None. **9.5/10** — drafting + paste execution clean end-to-end. Item #3 components from Session 82 handoff were load-bearing.
+
+26. **Open contract questions for Session 84 (per row #40 first application):** Wiki publish-mechanism options — locate canonical source in `docs/planning/` / archived BACKLOG / `SESSION_NOTES.md` history, OR enumerate bounded options via AskUserQuestion at Phase 1A. Likely options listed in Phase 3D above.
 
 ### Session 81 Handoff Evaluation (by Session 82)
 
@@ -2330,6 +2492,10 @@ Ranked likely directions:
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 82 ARCHIVED ACTIVE TASK
+
+**Task:** Session 82 — operator direction "1, 2, 3" #1 from Session 81 handoff (BACKLOG.md EMPTY since Session 70; carried 13th consecutive session). Promote Candidate Learning #66 → permanent row #39 in `SESSION_RUNNER.md` Learnings table (paste-verbatim per Learning #27; pre-drafted phrasing in Session 81 handoff item #4). Also formally closed Candidate Learning #55 as permanently superseded by row #39 #66. **COMPLETE.**
 
 ### Session 81 ARCHIVED ACTIVE TASK
 
