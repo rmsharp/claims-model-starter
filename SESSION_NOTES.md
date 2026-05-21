@@ -5,9 +5,200 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 84 — operator direction "1, 2, 3" #3 from Session 82 durable directive (final entry; directive expires after this session). Direction #3: **Wiki publish-mechanism three-options decision** — operator selected option (a) at Phase 1A via AskUserQuestion (1st post-promotion self-application of row #40). Deliverable scope: implement option (a) — tracked `.githooks/post-commit` that conditionally invokes `scripts/publish_wiki.sh` when `docs/wiki/claims-model-starter/**` paths are in HEAD commit; one-time `git config core.hooksPath .githooks` documented in `scripts/publish_wiki.sh` header + `SESSION_RUNNER.md` Phase 3E. BACKLOG.md remains EMPTY (15th consecutive carry).
+**Task:** Session 85 — off-BACKLOG operator direction (BACKLOG.md EMPTY since Session 70; 16th consecutive carry). Deliverable: **multi-phase plan in `docs/planning/` that ensures business-value capture at intake/design (pre-construction presentation) AND at production (downstream demonstration).** Operator follow-up clarifies the plan's scope is documentation modifications — both the design documentation in-repo (architecture-plan, wiki design docs, tutorial) and the pipeline-generated documentation templates (intake report, data report, website MDs). Per Phase 1A AskUserQuestion (2nd post-promotion self-application of row #40): **multi-phase plan + full grep-based inventory** per Learnings #1/#19.
 
-**Status:** Session 84 IN PROGRESS. Phase 1B stub claim — applying Learning #29 (stub-grep returned 5 prose-only hits, **48th consecutive clean**) + Learning #35 (raw-string archive pre-grep `### Session 83 ARCHIVED ACTIVE TASK` returned 2 prose-only hits, **17th consecutive post-promotion clean**) + permanent row #39 (file-tail archive zone locator returned line 2496, Session 82 archive heading — **3rd-instance post-promotion self-application**) + permanent row #38 (raw-string `grep -c`, no regex anchors — **5th post-promotion self-application**; Edit #2 anchor `### Session 82 ARCHIVED ACTIVE TASK` returned 7 → escalated to multi-line per Learning #34) + Learning #37 (consume-and-replace at Phase 1B Edit #2) + Learning #36 (Phase-1B vs Phase-3 boundary — touch only Task/Status + archive insert) + permanent row #40 (Phase 3D pre-named "Open contract questions for Session 84" — operator resolved at Phase 1A; **1st post-promotion self-application** of row #40).
+**Status:** Session 85 IN PROGRESS. Phase 1B stub claim — applying Learning #29 (stub-grep returned 19 prose-only hits, **49th consecutive clean**) + Learning #35 (raw-string archive pre-grep `### Session 84 ARCHIVED ACTIVE TASK` returned 2 prose-only hits, **18th consecutive post-promotion clean**) + permanent row #39 (file-tail archive zone locator returned line 2497, Session 83 archive heading — **4th-instance post-promotion self-application**) + permanent row #38 (raw-string `grep -c`, no regex anchors — **6th post-promotion self-application**; Edit #2 anchor `### Session 83 ARCHIVED ACTIVE TASK` returned 5 → escalated to multi-line per Learning #34 with distinguishing phrase `carried 14th consecutive session` = 1) + Learning #37 (consume-and-replace at Phase 1B Edit #2) + Learning #36 (Phase-1B vs Phase-3 boundary — touch only Task/Status + archive insert) + permanent row #40 (Phase 1A AskUserQuestion resolved plan-structure + inventory-depth contract questions before claim; **2nd post-promotion self-application**).
+
+### Session 84 Handoff Evaluation (by Session 85)
+
+**Score: 9.5/10.** Session 84's handoff was load-bearing and predictive on every procedural dimension. Likely-directions correctly forecast "fresh operator direction (most likely — durable directive complete; BACKLOG empty; no carried items)" — operator did indeed bring fresh off-BACKLOG direction (the business-value-capture planning request). Gotcha #1 pre-commit baseline (591/591 @ 97.27%, ruff clean, mypy 0/61) matched verbatim at gate run. Gotcha #2 tooling-PATH `.venv/bin/` matched — applied preemptively as **11th institutional application** of Candidate #62. Gotcha #3 BACKLOG state (EMPTY, 16th carry forecast) matched. Gotcha #5 `SESSION_RUNNER.md` Learnings table at 40 rows matched. Gotcha #6 auto-publish hook ACTIVE — confirmed `git config --get core.hooksPath` returned `.githooks`; this session did NOT touch wiki paths so hook does not fire. Gotcha #7 cross-clone activation requirement — N/A for this session (no new clone). Gotcha #8 Learning #29 stub-grep returned 19 prose-only hits — **49th consecutive clean**. Gotcha #9 row #38 raw-string pre-grep applied: Phase 1B Edit #1 anchor (`Session 84 — operator direction "1, 2, 3" #3 from Session 82 durable directive` returned 1, safe single-line), Phase 1B Edit #2 anchor (`### Session 83 ARCHIVED ACTIVE TASK` returned 5 → escalated to multi-line per Learning #34 with distinguishing phrase `carried 14th consecutive session` = 1). Gotcha #10 row #39 file-tail locator returned line 2497 (Session 83 archive heading) — **4th-instance post-promotion self-application**. Gotcha #11 row #40 Phase 3D pre-naming — N/A as predecessor convention (Session 84 had no specific deliverable to forecast for Session 85), but Session 85 applied row #40 at Phase 1A via AskUserQuestion to bound the plan-structure + inventory-depth contract before claiming — **2nd post-promotion self-application of row #40**. Gotcha #12 Learning #35 raw-string archive pre-grep — `### Session 84 ARCHIVED ACTIVE TASK` returned 2 prose-only hits, safe to insert (**18th consecutive post-promotion clean**). Gotcha #18 archive-at-Phase-1B **24th consecutive validation**. Gotcha #19 CHANGELOG 52-consecutive-structure → **53rd consecutive** target this session.
+
+- **What helped:** (a) The "fresh operator direction" forecast (handoff likely-direction #1) was accurate; no pre-named contract questions needed because the deliverable was unknown — which itself is the correct behavior (do not invent contract questions for unforecastable deliverables). (b) All gotcha specifics matched. (c) Pre-commit baseline matched at gate run. (d) Tooling-PATH preemptive (Candidate #62 11th institutional). (e) Wiki publish hook documentation in gotchas #6/#7 was clear enough that this session immediately knew the hook would not fire (no wiki paths touched). (f) Push state forecast (4 unpushed at start) matched — pushed before planning work began per Session 85 operator interaction #1 ("push the commits").
+- **What was missing:** Nothing material. Could have noted that "fresh operator direction" might include planning work specifically (vs. implementation) and pre-named the planning-vs-implementation contract question — but this is borderline (the predecessor cannot know what the operator will direct).
+- **What was wrong:** Nothing. Phase 0 reads, gotcha specifics, push-state forecast, BACKLOG-state forecast, hook-fire forecast all matched.
+- **ROI:** ~8×. Handoff named the most likely direction (fresh operator direction), enabled clean Phase 0 + immediate operator response, gotcha mechanics were institutional-level mechanical for Phase 1B Edits. Lower than recent 10× sessions only because the deliverable was a planning session that required substantial new content (no paste-verbatim pre-draft), not because of handoff quality.
+
+### What Session 85 Did
+
+**Deliverable:** Authored `docs/planning/business-value-capture-plan.md` — a 625-line, 6-phase plan that ensures the model intake/design phase collects information to present business value PRIOR to model construction AND collects necessary information to demonstrate business value DOWNSTREAM once the model is in production. Operator follow-up "modify documentation to reflect capturing of business value" interpreted as documentation modifications in three senses (generated documentation produced by pipeline, design documentation describing the pipeline, schema-as-documentation). Each phase enumerates the documentation surfaces it touches. **COMPLETE.**
+**Started:** 2026-05-21
+**Completed:** 2026-05-21
+**Commit (pending):** `docs(planning): business-value-capture-plan.md — 6-phase plan for value-capture documentation modifications (Session 85)`
+
+**What was done:**
+
+1. **Phase 0 orientation — Learning #30 declarative narration + Learning #33 BACKLOG/scope verification.** Parallel reads of SAFEGUARDS.md + SESSION_NOTES.md head + SESSION_RUNNER.md + dashboard + git status announced declaratively. Ghost-session check clean (last documented = Session 84; last commit = `f84c4d3`). BACKLOG empty (16th consecutive carry). Dashboard health 92/100. Push state: 4 unpushed commits (Sessions 81-84).
+2. **Operator interaction #1: push the commits.** Operator directive to push the 4 unpushed commits — `git push origin master` → `a242c0a..f84c4d3` delivered. Local now matches remote (0 unpushed).
+3. **Operator interaction #2: business-value capture plan request + follow-up.** Operator issued `/effort=max` + planning task. Follow-up clarified scope as "modify documentation to reflect capturing of business value." Recognized as planning session per FM #18/#19 — plan IS the deliverable; implementation is Session 86+.
+4. **Phase 1A AskUserQuestion — 2nd post-promotion self-application of permanent row #40.** Before claiming, ran reconnaissance (grep + Read of `EstimatedValue`, `templates.py:406-408` TODO, intake design doc, fixtures) to ground the contract questions in reality. Then asked 2 bounded questions: (a) plan structure (multi-phase / single-doc / paired siblings) — operator selected multi-phase (Recommended); (b) evidence inventory depth (full grep / high-blast-radius / reference-only) — operator selected full grep (Recommended). Both answers recorded as Phase 1A contract resolution.
+5. **Phase 1B stub claim — institutional discipline applied.** Stub-grep returned 19 prose-only hits — **Learning #29 49th consecutive clean**. Archive pre-grep `### Session 84 ARCHIVED ACTIVE TASK` returned 2 prose-only hits — **Learning #35 18th consecutive post-promotion clean**. Row #39 file-tail locator returned line 2497 (Session 83 archive heading) — **4th-instance post-promotion self-application**. Phase 1B Edit #1 anchor (`Session 84 — operator direction "1, 2, 3" #3 from Session 82 durable directive` returned 1) — safe single-line. Phase 1B Edit #2 anchor (`### Session 83 ARCHIVED ACTIVE TASK` returned 5) — escalated to multi-line per Learning #34 with distinguishing phrase `carried 14th consecutive session` (raw-string `grep -c` = 1 per row #38 recipe — **6th post-promotion self-application**). Both Phase 1B Edits landed first-attempt. Phase 1B touched ONLY Task/Status block + predecessor archive heading per Learning #36 boundary discipline.
+6. **Phase 2 reconnaissance — TaskCreate-tracked 5-step grep inventory.** Used TaskCreate after the 2nd system-reminder fired (judged: this planning session has discrete steps that benefit from tracking). Five inventory tasks executed sequentially: (a) EstimatedValue schema TYPE/FIELD/DOCSTRING surfaces per Learning #8 — identified 3 class definitions (`intake.py:27-32` canonical + 2 doc mirrors), 24+28+15 = 67 hits across src/tests/docs; (b) intake prompt + interview design — anthropic_client.py:158-198 + Intake-Interview-Design.md:100-124 + 7 fixtures; (c) data agent obligations — DataReport schema at `packages/data-agent/.../schemas.py:95-104` confirmed lacks baseline-measurement field; (d) website templates — `templates.py:386-409` `render_qmd_implementation_plan` confirmed contains the load-bearing TODO at lines 406-408 ("Define the pre/post metric ... intentionally sparse — the Data Science team owns the measurement plan"); (e) docs surfaces — 8 wiki pages + architecture-plan + tutorial.
+7. **Phase 2 plan drafting — TaskCreate-tracked.** Wrote `docs/planning/business-value-capture-plan.md` in one Write call. Final size: 625 lines, 17 top-level sections. Structure modeled on `docs/planning/data-source-inventory-contract-plan.md` (Session 57): §1 Context (problem + operator-follow-up + filing-grounding + current-state-summary grep-verified + what-plan-is-and-is-not); §2 Non-goals; §3 Strategic decisions (6 cross-phase invariants per Learning #9); §4 Proposed schema extensions (concrete fields); §5 Six implementation phases (each with deliverable + files-affected-table + greppable completion criteria + verification commands + documentation surfaces + session boundary marker); §6 Phase ordering rationale; §7 Risk register; §8 Out of scope; §9 Definition of done. Appendix A full grep inventory (10 grep-types per Learning #8). Appendix B open contract questions per implementation phase (per Learning #40).
+8. **Gate verification — Learning #39 institutional, 24th consecutive preventive-by-default.** Parallel: `.venv/bin/pytest -q` (591/591 @ 97.27% — unchanged); `.venv/bin/ruff check src/ tests/ packages/ scripts/` (clean); `.venv/bin/mypy src/` (0/48); `.venv/bin/mypy packages/data-agent/src/` (0/13; 61 total). Candidate #62 institutional **11th application** (`.venv/bin/` preemptive prefix).
+9. **CHANGELOG Session 85 entry — 53rd-consecutive-structure match.** Sections: context paragraph (planning-session framing + operator-follow-up + Phase 1A contract resolution + plan structure summary + 6-phase ordering + FM #18/#19 boundary discipline) / Added (plan file with structural detail) / Verified (gate output + plan size + Learning #32 compliance) / Unchanged intentionally (candidate status updates + planning-session scope discipline) / Next.
+10. **Phase 3 close-out** — this block. Commit pending. **Wiki publish hook does NOT fire** (no `docs/wiki/claims-model-starter/` files touched; plan lives in `docs/planning/`).
+
+### Phase 3B: Self-assess — 9.5/10
+
+- **Research before creative work:** Yes. Phase 0 full read + reconnaissance Globs/Greps + AskUserQuestion BEFORE claiming + per-surface grep inventory across 5 categories BEFORE drafting + read 4 existing plans (sample) for structural style cues + read actual code (intake/state.py, protocol.py, schemas.py, templates.py, governance_templates.py) to ground every claim.
+- **Stakeholder corrections:** 0. The Phase 1A AskUserQuestion was the right call (genuinely bounded choices for a planning session); the operator-confirmed answers were both Recommended options, validating the framing.
+- **What I got right:** (a) **Recognized planning-session boundary** (FM #18/#19) — wrote only the plan + docs, no schema/code edits, no template edits, no wiki edits beyond what the plan describes. (b) **Pre-naming contract questions per row #40** — asked the structural choices (multi-phase vs single-doc, full vs scoped inventory) at Phase 1A rather than mid-execution. **2nd post-promotion self-application** validated. (c) **Reconnaissance before AskUserQuestion** — the questions were grounded in actual file/line evidence (templates.py:406-408 TODO, EstimatedValue schema, 67 grep hits), making them informed choices not blind menus. (d) **Full grep inventory per Learning #8** — TYPE / FIELD / STATE KEY / DOCSTRING surfaces separated in Appendix A; counts captured at planning time per Learning #19 (executor re-runs at Phase 0 to catch drift). (e) **Per-phase completion criteria avoid historical-record entries per Learning #32** — Phase 6 explicitly targets current `## Unreleased` wiki Changelog section only. (f) **Phase 1B Edits landed first-attempt** — Learning #29 + #35 + #34 + #37 + #38 + #39 all applied mechanically; row #38 multi-line escalation on Edit #2's 5-match anchor was preemptive per recipe. (g) **Operator's "modify documentation to reflect capturing of business value" follow-up interpreted with explicit three-sense framing** in §1.2 — generated documentation, design documentation, schema-as-documentation; each phase enumerates which sense it touches. (h) **Gates ran BEFORE Verified-bullet draft** (Learning #39 24th consecutive preventive-by-default). (i) **TaskCreate used judiciously** — judged after the 2nd system-reminder that this planning session benefited from tracking 7 discrete phases; not used for trivial sessions. (j) **Strategic decisions §3 follows Learning #9** — 6 cross-phase invariants in one document, not duplicated. (k) **Plan-mode bypass discipline (FM #19) honored** — operator's "Create a plan" was treated as a plan-write deliverable, not implementation work.
+- **What I got wrong:** Nothing material. One observation: TaskCreate was deferred until the 2nd system-reminder. The 1st reminder noted "consider it"; I judged the work as still in Phase 0/1A reconnaissance (not yet at multi-step execution). The 2nd reminder + my realization that the planning phase had 7 discrete sub-tasks triggered the create. Filing this as appropriate behavior (the 1st reminder was during orientation; the 2nd was during execution) — not a deduction.
+- **Quality bar vs previous sessions:** On par with Session 57 (data-source-inventory-contract-plan.md, the only directly comparable planning session). Above recent methodology-housekeeping sessions (single-row promotions) in substance — this is a 625-line architectural plan with full grep inventory + 6 implementation phases. Substantive deliverable; full procedural discipline maintained.
+
+### Phase 3C: Learnings
+
+**Learning #11 trust-the-code (PERMANENT) — N/A this session.** No plan-vs-code drift detected (this IS the plan being written; no predecessor plan to compare against).
+
+**Learning #27 paste-and-verify (PERMANENT) — N/A.** No paste-verbatim input from predecessor handoff for the deliverable.
+
+**Learning #28 handoff specifics are hints (PERMANENT) — N/A.** Session 84 handoff did not name specific files/symbols for this session's deliverable (deliverable was operator-initiated off-BACKLOG).
+
+**Learning #29 grep-before-insert (PERMANENT) — 49th consecutive clean.** Stub-grep returned 19 prose-only hits.
+
+**Learning #30 declarative interim status updates (PERMANENT) — clean application.** All interim narration declarative: "Running the grep inventory..." / "Drafting the plan document now..." / "Pre-grep results: ..." — no volitional "Let me X" phrasing.
+
+**Learning #32 per-phase grep criteria account for historical-record entries (PERMANENT) — applied as Phase 6 criterion design.** Plan's Phase 6 completion criteria explicitly target current `## Unreleased` section of wiki Changelog.md only; does NOT file-wide grep CHANGELOG.md. Phase 1-5 verification commands also avoid file-wide greps against append-only files.
+
+**Learning #33 (Phase 0 BACKLOG-scope verification) — applied as 15th instance post-promotion.** BACKLOG empty (matched). Session 84 archive heading verified absent before claim. Push-state verified (4 ahead at start; pushed per operator interaction #1).
+
+**Learning #34 anchor uniqueness (PERMANENT) — applied 2× this session.** Phase 1B Edit #1 (single-line raw-string = 1) + Phase 1B Edit #2 (multi-line escalation when 5 → 1) + Phase 3 close-out anchor (single-line `### Session 83 Handoff Evaluation (by Session 84)` = 1).
+
+**Learning #35 archive-heading raw-string pre-grep (PERMANENT row #35) — 18th consecutive post-promotion clean.** `### Session 84 ARCHIVED ACTIVE TASK` → 2 prose-only hits, safe.
+
+**Learning #36 Phase-1B vs Phase-3 boundary (PERMANENT row #36) — 17th consecutive post-promotion validation.** Phase 1B touched ONLY `## ACTIVE TASK` Task/Status block + predecessor archive heading; close-out drafted at Phase 3.
+
+**Learning #37 consume-and-replace (PERMANENT row #37) — 12th-instance post-promotion validation.** Phase 1B Edit #2 + Phase 3 close-out anchor (insert above `### Session 83 Handoff Evaluation (by Session 84)`).
+
+**Learning #38 raw-string pre-grep (PERMANENT row #38) — 6th post-promotion self-application.** All anchors raw-string `grep -c`; 1 multi-line escalation needed at Phase 1B Edit #2.
+
+**Learning #39 file-tail archive zone locator (PERMANENT row #39) — 4th post-promotion self-application.** Returned line 2497; Session 84 archive inserted above; zero placement fumble.
+
+**Learning #40 Phase 3D pre-name contract-shape choices (PERMANENT row #40) — 2nd post-promotion self-application this session.** Phase 1A AskUserQuestion bounded the plan-structure + inventory-depth contract before claiming; operator-confirmed both Recommended options. Pre-named for Session 86 in handoff (see below). Composes with Learning #28 (handoff specifics are hints).
+
+**Learning #39 numbers re-verified — gates ran BEFORE Verified-bullet draft, 24th consecutive preventive-by-default.**
+
+**Learning #8 multiple grep types (PERMANENT row #8) — applied at Plan Appendix A.** TYPE / FIELD / STATE KEY / DOCSTRING surfaces separated; counts per grep + per file, not a single total.
+
+**Learning #9 cross-phase invariants in one doc (PERMANENT row #9) — applied at Plan §3.** Six invariants in one section; not duplicated across phase descriptions.
+
+**Learning #1 (PERMANENT row #1) — plan-mode output IS a draft.** Session 85's plan is a draft until evidence-verified at implementation time; each implementation session re-runs the greps in Appendix A. Plan size (625 lines) supports executor verification without re-derivation cost.
+
+**Learning #19 fill grep-inventory counts AFTER running the greps (PERMANENT row #19) — applied at Plan §1.4 + Appendix A.** All counts in the plan came from greps run during Session 85, not from memory.
+
+**Candidate Learning #57 (Edit-tool multi-match diagnosis) — STILL 2nd instance.** Did not fire (row #38 recipe held; Phase 1B Edit #2 5-match escalation was preemptive, not a recovery from "Found N matches").
+
+**Candidate Learning #59 (5-file checkpoint) — STILL 2nd instance.** Session 85 touched 3 files (`docs/planning/business-value-capture-plan.md` + `SESSION_NOTES.md` + `CHANGELOG.md`); below 5-file threshold.
+
+**Candidate Learning #61 (audit BOTH sides before "align X to Y") — STILL 2nd instance.** No "align X to Y" inversion this session.
+
+**Candidate Learning #62 (verify tool-PATH at Phase 0) — STILL 1st instance, 11th institutional application.** `.venv/bin/` preemptive prefix.
+
+**Candidate Learning #63 (planning per-file completion criteria) — ADVANCES to 2nd instance.** Session 85 IS a planning session and applied per-phase greppable completion criteria + verification commands + documentation surfaces enumeration. This is the 2nd-instance validation; the 1st was Session 57's data-source-inventory-contract-plan.md filing. Promotion path requires a 3rd-instance validation in a future planning session.
+
+**Learning #13 + #28 (literal minimum / handoff specifics) — clean application.** Scope held at exactly the plan document + close-out + commit. Did not bleed into Phase 1 implementation. Did not touch wiki, schemas, templates, fixtures, or any code (which the plan describes will change in Phases 1-6).
+
+**Learning #26 (BACKLOG delete-not-flip) — N/A.** BACKLOG empty.
+
+### Phase 3D: Handoff to Session 86
+
+**No carried directive.** This is the first session post-durable-directive (the operator's "1, 2, 3" expired with Session 84). Session 86's anchor is fresh operator direction or first non-empty BACKLOG entry — or the natural sequel: **implement Phase 1 of `docs/planning/business-value-capture-plan.md`**.
+
+**Open contract questions for Session 86 (per row #40, 3rd post-promotion pre-naming):**
+
+If Session 86 directs implementation of Phase 1 of the business-value-capture plan:
+
+1. **`payback_months` field type** — `int | None` (more flexible) OR `Literal["<3", "3-6", "6-12", "12-24", ">24"] | None` (more honest about precision; mirrors `confidence` Literal pattern). Plan Appendix B Q1 recommends int with rationale "more flexible"; final call is the implementer's.
+2. **`value_drivers: list[str]` vocabulary** — free-form list[str] (implementable now) OR controlled vocabulary (future hardening). Plan recommends free-form for Phase 1.
+3. **`BaselineSnapshot` module placement** — in `packages/data-agent/.../schemas.py` (one place for all data-agent schemas) OR sibling module `packages/data-agent/.../baseline_schemas.py` (follows `governance_templates.py` precedent per Learning #2). Plan recommends schemas.py for cohesion.
+
+If Session 86 directs implementation of a different Phase: open contract questions in Plan Appendix B for that phase apply (Phases 2/3/5 each have 1-2 listed questions).
+
+If Session 86 directs end-to-end test of the auto-publish hook (carried option from Session 84 handoff direction #2): no open contract questions — just deliberate-wiki-edit-then-commit-then-observe.
+
+Ranked likely directions for Session 86:
+
+1. **Implement Phase 1 of `business-value-capture-plan.md`** (Schema extensions — EstimatedValue + ValueMeasurementPlan + BaselineSnapshot + tests + schema-doc mirrors). Most likely if operator confirms; the natural sequel; addresses the 3 open contract questions via row #40 self-application. **RECOMMENDED FIRST** assuming operator confirms direction.
+2. **End-to-end test of the auto-publish hook** (carried from Session 84 handoff direction #2; ~5 min; low cost; validates Session 84's deliverable).
+3. **Fresh operator direction** (operator may bring something off-plan).
+4. **Candidate Learning #63 promotion** — STILL at 2nd instance post-Session-85; needs 3rd-instance validation (future planning session) before promotion eligibility.
+
+**Important considerations for Session 86:**
+
+1. **BACKLOG.md is empty** (16th consecutive carry; 17th at Session 86 Phase 0).
+2. **`SESSION_RUNNER.md` Learnings table at 40 rows.** Row #41 next promotion target. **No PROMOTION-READY candidates** (Candidates #57/#59/#61 at 2nd instance dormant; #62 at 1st instance + 11 institutional applications; #63 advanced to 2nd this session — needs 3rd-instance in future planning session).
+3. **Push state.** Session 85 close-out commit will be 1 unpushed at session end. Verify with `git rev-list --count @{u}..HEAD` at Session 86 Phase 0.
+4. **Auto-publish hook ACTIVE.** Session 85 did NOT touch wiki paths so hook did not fire. If Session 86 implements Phase 1, any modifications to `docs/wiki/claims-model-starter/Schema-Reference.md` (Phase 1 file) WILL trigger the hook on commit. Escape hatch: `MPC_SKIP_WIKI_PUBLISH=1 git commit ...` if you want to defer the publish.
+5. **Plan document available at `docs/planning/business-value-capture-plan.md`** — 625 lines, 17 sections. Phase 1 starts at §5 Phase 1 (after Strategic Decisions and Schema Extensions). Implementation should re-run the Appendix A greps at Phase 0 per Learning #1.
+6. **Candidate Learning #57 STILL 2nd instance.** Dormant.
+7. **Candidate Learning #59 STILL 2nd instance.** Dormant.
+8. **Candidate Learning #61 STILL 2nd instance.** Dormant.
+9. **Candidate Learning #62 STILL 1st instance, 11th institutional application.**
+10. **Candidate Learning #63 ADVANCED to 2nd instance this session.** Promotion path requires a 3rd-instance validation in a future planning session.
+11. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both. Memory `feedback_data_source_discovery.md` is directly relevant if Session 86 implements Phase 3 (data agent baseline collection): the principle that "discovery is upstream, a contract is the plug-in boundary" informs the Phase 3 design (intake defines metric, data agent consumes).
+12. **Phase 0 narration discipline** (Sessions 73-85 mechanical, 13th consecutive declarative-by-default session).
+
+### Gotchas for Session 86
+
+1. **Post-Session-85 pre-commit state:** pytest **591/591 passing** @ **97.27% coverage** (unchanged from Session 84 baseline; plan + session-notes files not on test inputs); ruff clean (scope: `src/ tests/ packages/ scripts/`); mypy 0 issues in 61 files (48 src + 13 packages). **Coverage budget headroom: 2.27 absolute points above the 95% bar.**
+
+2. **Tooling PATH unchanged:** `pytest`, `ruff`, `mypy` at `.venv/bin/`. **Candidate Learning #62 institutional, 11th application.**
+
+3. **BACKLOG state:** **EMPTY** (16th consecutive carry from Session 70; 17th at Session 86 Phase 0).
+
+4. **`CHANGELOG.md`:** `## [Unreleased]` contains Sessions 78-85. `## [0.1.0] - 2026-05-12` formalized (Session 78). Session 86 entries go under `## [Unreleased]`.
+
+5. **`SESSION_RUNNER.md` Learnings table at 40 rows.** Row #41 next promotion target. **No PROMOTION-READY candidates currently.**
+
+6. **Auto-publish hook ACTIVE in this clone.** `git config --get core.hooksPath` returns `.githooks`. If Session 86 implements Phase 1 of the plan, modifications to `docs/wiki/claims-model-starter/Schema-Reference.md` WILL trigger the hook. To defer: `MPC_SKIP_WIKI_PUBLISH=1 git commit ...`.
+
+7. **Learning #29 mechanical — 49th consecutive validation.** Continue: stub-grep `Session 86|### What Session 86 Did|### Session 85 Handoff Evaluation|Post-Session-86`.
+
+8. **Permanent row #38 (raw-string pre-grep) — 6th post-promotion self-application Session 85.** Continue: raw-string anchors only; multi-line escalation per Learning #34 if >1.
+
+9. **Permanent row #39 (file-tail archive zone locator) — 4th post-promotion self-application Session 85.** Continue: locator grep at Phase 1B BEFORE constructing `new_string`.
+
+10. **Permanent row #40 (Phase 3D pre-name contract-shape choices) — 2nd post-promotion self-application Session 85.** Continue: at Phase 3D handoff-write time, pre-name unresolved options under "Open contract questions for Session N+1:". This session pre-named 3 Phase-1 implementation questions above.
+
+11. **Learning #35 (PERMANENT row #35) — 18th consecutive post-promotion clean.** At Phase 1B, raw-string `grep -c "### Session 85 ARCHIVED ACTIVE TASK" SESSION_NOTES.md` before Edit.
+
+12. **Candidate Learning #57 — STILL 2nd instance.** Dormant.
+
+13. **Candidate Learning #59 — STILL 2nd instance.** Dormant.
+
+14. **Candidate Learning #61 — STILL 2nd instance.** Dormant.
+
+15. **Candidate Learning #62 — STILL 1st instance, 11th institutional application.** `.venv/bin/` preemptive prefix.
+
+16. **Candidate Learning #63 — ADVANCED to 2nd instance Session 85.** Planning-session-only. Needs 3rd-instance validation in a future planning session for promotion eligibility.
+
+17. **Archive-at-Phase-1B 24th consecutive validation** (62-85). Session 86: at Phase 1B, demote Session 85's block to `### Session 85 ARCHIVED ACTIVE TASK` placed above Session 84 archive heading per row #39 recipe.
+
+18. **CHANGELOG 53-consecutive-structure match in Session 85.** Continue: context / Added or Changed / Verified / Unchanged intentionally / Next. Session 86 = 54th target.
+
+19. **Operator's durable directive HAS EXPIRED** (since Session 84). No carried sequence post-Session-85. Session 86 anchor = fresh operator direction OR `docs/planning/business-value-capture-plan.md` Phase 1 implementation OR BACKLOG entry.
+
+20. **Plan document is forward-looking.** `docs/planning/business-value-capture-plan.md` describes WHAT will change in Phases 1-6 but did NOT modify any of the surfaces it references. Per Learning #1, Phase-N implementation sessions should re-run Appendix A greps in their Phase 0 to catch drift between plan-write time (2026-05-21) and implementation time.
+
+21. **3 open contract questions pre-named** (handoff item above) — payback_months type, value_drivers vocabulary, BaselineSnapshot module placement. Resolve at Phase 1A via AskUserQuestion if operator directs Phase 1 implementation. Row #40 3rd post-promotion self-application targeted.
+
+22. **Memory `feedback_no_undefined_initialisms.md` + `feedback_data_source_discovery.md` auto-load.** Honor both. **`feedback_data_source_discovery.md` directly relevant to Phase 3 of the plan** (data agent baseline collection — discovery is upstream, contract is plug-in boundary).
+
+23. **Commit message for Session 85:** `docs(planning): business-value-capture-plan.md — 6-phase plan for value-capture documentation modifications (Session 85)`.
+
+24. **Push state.** Session 85 close-out commit will be the 1st unpushed at session end (Session 84's `f84c4d3` was pushed at Session 85 operator-interaction #1). Verify with `git rev-list --count @{u}..HEAD` at Session 86 Phase 0.
+
+25. **Phase 0 narration discipline.** Sessions 73-85 mechanical (13th consecutive declarative-by-default session).
+
+26. **Session 85 -0.5 self-assess deduction:** None. **9.5/10** — planning session executed cleanly: reconnaissance before AskUserQuestion, Phase 1A bounded the contract via 2 operator-confirmed Recommended options, full grep inventory per Learning #8, 6-phase plan with per-phase completion criteria + verification commands + documentation surfaces enumerated, gates green, no scope creep into implementation.
+
+27. **Wiki publish hook did NOT fire for Session 85 commit** (no `docs/wiki/claims-model-starter/` files touched — plan lives in `docs/planning/`).
+
+28. **TaskCreate-tracked planning steps.** Session 85 used TaskCreate after the 2nd system-reminder. The 7 created tasks all completed in sequence. Pattern: TaskCreate is appropriate for planning sessions with 5+ discrete sub-tasks (grep inventory + draft + close-out); skip for single-deliverable methodology-housekeeping sessions where in-doc structure IS the tracking.
+
+29. **The 6-phase plan's phases are independently grabbable.** Per FM #18, Session 86 should implement ONE phase, not bundle multiple. Plan §6 documents phase ordering rationale (1→2→3→{4,5}→6) but each implementation session is bounded to one phase.
+
+30. **`templates.py:406-408` is the load-bearing gap.** The literal TODO ("Define the pre/post metric and the measurement window before shipping. This section is intentionally sparse — the Data Science team owns the measurement plan.") will be replaced in Phase 5 with a structured Production Measurement Plan. If a Phase-5 session is directed, this is the load-bearing edit.
 
 ### Session 83 Handoff Evaluation (by Session 84)
 
@@ -2493,6 +2684,10 @@ Ranked likely directions:
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 84 ARCHIVED ACTIVE TASK
+
+**Task:** Session 84 — operator direction "1, 2, 3" #3 from Session 82 durable directive (final entry; directive expired). Wiki publish-mechanism three-options decision — operator selected option (a) at Phase 1A via AskUserQuestion. Implemented tracked `.githooks/post-commit` that conditionally invokes `scripts/publish_wiki.sh` when `docs/wiki/claims-model-starter/**` paths in HEAD; documented activation (`git config core.hooksPath .githooks`) + escape hatch in `scripts/publish_wiki.sh` header + `SESSION_RUNNER.md` Phase 3E. **COMPLETE.**
 
 ### Session 83 ARCHIVED ACTIVE TASK
 
