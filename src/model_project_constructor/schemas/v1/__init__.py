@@ -12,6 +12,7 @@ from model_project_constructor.schemas.v1.common import (
     RiskTier,
 )
 from model_project_constructor.schemas.v1.data import (
+    BaselineSnapshot,
     ColumnMetadata,
     DataGranularity,
     DataReport,
@@ -29,6 +30,7 @@ from model_project_constructor.schemas.v1.intake import (
     IntakeReport,
     ModelSolution,
     QAPair,
+    ValueMeasurementPlan,
 )
 from model_project_constructor.schemas.v1.repo import (
     GovernanceManifest,
@@ -47,7 +49,9 @@ __all__ = [
     "IntakeReport",
     "ModelSolution",
     "QAPair",
+    "ValueMeasurementPlan",
     # data
+    "BaselineSnapshot",
     "ColumnMetadata",
     "DataGranularity",
     "DataReport",

@@ -92,6 +92,17 @@ class PrimaryQuery(StrictBase):
     inventory_entries_used: list[str] = Field(default_factory=list)
 
 
+class BaselineSnapshot(StrictBase):
+    metric_name: str
+    value: float | None
+    measurement_unit: str
+    measurement_window_start: datetime | None = None
+    measurement_window_end: datetime | None = None
+    query_sql: str
+    query_execution_status: Literal["EXECUTED", "NOT_EXECUTED", "FAILED"]
+    caveats: list[str] = Field(default_factory=list)
+
+
 class DataReport(StrictBase):
     schema_version: Literal["1.0.0"] = "1.0.0"
     status: Literal["COMPLETE", "INCOMPLETE_REQUEST", "EXECUTION_FAILED"]
@@ -102,6 +113,7 @@ class DataReport(StrictBase):
     unconfirmed_expectations: list[str]
     data_quality_concerns: list[str]
     created_at: datetime
+    baseline_snapshot: BaselineSnapshot | None = None
 
 
 class ColumnMetadata(StrictBase):
@@ -182,6 +194,7 @@ __all__ = [
     "QualityCheck",
     "Datasheet",
     "PrimaryQuery",
+    "BaselineSnapshot",
     "DataReport",
     "ColumnMetadata",
     "ProducerMetadata",

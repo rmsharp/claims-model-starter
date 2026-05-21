@@ -10,12 +10,14 @@ from model_project_constructor.schemas.v1 import (
     GovernanceMetadata,
     IntakeReport,
     ModelSolution,
+    ValueMeasurementPlan,
 )
 from tests.schemas.fixtures import (
     make_estimated_value,
     make_governance_metadata,
     make_intake_report,
     make_model_solution,
+    make_value_measurement_plan,
 )
 
 
@@ -79,6 +81,69 @@ class TestEstimatedValue:
                 annual_impact_usd_high=None,
                 confidence="low",
             )
+
+    def test_new_business_case_fields_default_to_none_or_empty(self) -> None:
+        """The pre-construction business-case fields are optional at the schema
+        level — a minimal EstimatedValue still validates without them."""
+        ev = EstimatedValue(
+            narrative="x",
+            annual_impact_usd_low=None,
+            annual_impact_usd_high=None,
+            confidence="low",
+            assumptions=[],
+        )
+        assert ev.cost_of_inaction_narrative is None
+        assert ev.annual_cost_of_inaction_usd_low is None
+        assert ev.annual_cost_of_inaction_usd_high is None
+        assert ev.implementation_cost_band_usd_low is None
+        assert ev.implementation_cost_band_usd_high is None
+        assert ev.payback_months is None
+        assert ev.value_drivers == []
+
+    def test_new_business_case_fields_populated(self) -> None:
+        ev = make_estimated_value()
+        assert ev.cost_of_inaction_narrative is not None
+        assert ev.payback_months == 9
+        assert "improved subrogation recovery rate" in ev.value_drivers
+
+    def test_payback_months_must_be_int(self) -> None:
+        with pytest.raises(ValidationError):
+            make_estimated_value(payback_months="nine")
+
+
+class TestValueMeasurementPlan:
+    def test_happy_path(self) -> None:
+        vmp = make_value_measurement_plan()
+        assert vmp.baseline_metric_name == "subrogation_recovery_rate"
+        assert vmp.counterfactual_design == "champion_challenger"
+        assert vmp.review_cadence == "quarterly"
+        assert vmp.evaluation_horizon_months == 6
+
+    def test_all_fields_optional(self) -> None:
+        """A `ValueMeasurementPlan` may be constructed empty — represents
+        DRAFT_INCOMPLETE state where the LLM has not yet driven toward it."""
+        vmp = ValueMeasurementPlan()
+        assert vmp.baseline_metric_name is None
+        assert vmp.counterfactual_design is None
+        assert vmp.logging_requirements == []
+        assert vmp.success_criteria == []
+
+    def test_invalid_counterfactual_design_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            make_value_measurement_plan(counterfactual_design="vibes_based")
+
+    def test_invalid_review_cadence_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            make_value_measurement_plan(review_cadence="whenever")
+
+    def test_extra_fields_forbidden(self) -> None:
+        with pytest.raises(ValidationError):
+            make_value_measurement_plan(extra_field="should_fail")
+
+    def test_serialization_round_trip(self) -> None:
+        original = make_value_measurement_plan()
+        restored = ValueMeasurementPlan.model_validate_json(original.model_dump_json())
+        assert restored == original
 
 
 class TestGovernanceMetadata:
@@ -164,3 +229,17 @@ class TestIntakeReport:
     def test_extra_top_level_field_forbidden(self) -> None:
         with pytest.raises(ValidationError):
             make_intake_report(unexpected="nope")
+
+    def test_value_measurement_plan_defaults_to_none(self) -> None:
+        """A DRAFT_INCOMPLETE report may omit the measurement plan entirely.
+        The intake `finalize` node is responsible for requiring it for
+        COMPLETE status (see plan §3.3); the schema itself is permissive."""
+        ir = make_intake_report()
+        assert ir.value_measurement_plan is None
+
+    def test_value_measurement_plan_round_trip(self) -> None:
+        ir = make_intake_report(value_measurement_plan=make_value_measurement_plan())
+        assert ir.value_measurement_plan is not None
+        assert ir.value_measurement_plan.baseline_metric_name == "subrogation_recovery_rate"
+        restored = IntakeReport.model_validate_json(ir.model_dump_json())
+        assert restored == ir

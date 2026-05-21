@@ -31,6 +31,38 @@ class EstimatedValue(StrictBase):
     confidence: Literal["low", "medium", "high"]
     assumptions: list[str]
 
+    cost_of_inaction_narrative: str | None = None
+    annual_cost_of_inaction_usd_low: float | None = None
+    annual_cost_of_inaction_usd_high: float | None = None
+    implementation_cost_band_usd_low: float | None = None
+    implementation_cost_band_usd_high: float | None = None
+    payback_months: int | None = None
+    value_drivers: list[str] = Field(default_factory=list)
+
+
+class ValueMeasurementPlan(StrictBase):
+    baseline_metric_name: str | None = None
+    baseline_metric_definition: str | None = None
+    baseline_measurement_window: str | None = None
+
+    counterfactual_design: Literal[
+        "champion_challenger",
+        "ab_test",
+        "geographic_split",
+        "historical_baseline_with_detrending",
+        "synthetic_control",
+        "regression_discontinuity",
+        "none_declared",
+    ] | None = None
+    counterfactual_rationale: str | None = None
+    attribution_method_narrative: str | None = None
+
+    evaluation_horizon_months: int | None = None
+    logging_requirements: list[str] = Field(default_factory=list)
+    review_cadence: Literal["weekly", "monthly", "quarterly", "ad_hoc"] | None = None
+    success_criteria: list[str] = Field(default_factory=list)
+    decision_rights: str | None = None
+
 
 class GovernanceMetadata(StrictBase):
     cycle_time: CycleTime
@@ -60,6 +92,7 @@ class IntakeReport(StrictBase):
     proposed_solution: str
     model_solution: ModelSolution
     estimated_value: EstimatedValue
+    value_measurement_plan: ValueMeasurementPlan | None = None
 
     governance: GovernanceMetadata
 

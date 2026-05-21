@@ -16,11 +16,15 @@ from typing import Any
 
 import pytest
 from model_project_constructor_data_agent import (
+    BaselineSnapshot,
     ColumnMetadata,
+    DataReport,
+    DataRequest,
     DataSourceEntry,
     DataSourceInventory,
     ProducerMetadata,
 )
+from model_project_constructor_data_agent.schemas import DataGranularity
 from pydantic import ValidationError
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -432,3 +436,110 @@ class TestSampleCuratedFixture:
         assert len(inv.entries) >= 1
         assert len(inv.producers) >= 1
         assert all(e.producer_id in {p.producer_id for p in inv.producers} for e in inv.entries)
+
+
+def _make_baseline_snapshot(**overrides: Any) -> BaselineSnapshot:
+    defaults: dict[str, Any] = dict(
+        metric_name="subrogation_recovery_rate",
+        value=0.42,
+        measurement_unit="percent",
+        measurement_window_start=datetime(2025, 1, 1, tzinfo=UTC),
+        measurement_window_end=datetime(2025, 12, 31, tzinfo=UTC),
+        query_sql=(
+            "select sum(recovered_amount) / sum(subrogatable_loss_amount) from claims"
+        ),
+        query_execution_status="EXECUTED",
+        caveats=["excludes claims under $500 loss amount"],
+    )
+    defaults.update(overrides)
+    return BaselineSnapshot(**defaults)
+
+
+class TestBaselineSnapshot:
+    """Schema-level tests for the production-measurement baseline contract
+    (business-value capture plan §4.3)."""
+
+    def test_happy_path(self) -> None:
+        bs = _make_baseline_snapshot()
+        assert bs.metric_name == "subrogation_recovery_rate"
+        assert bs.value == 0.42
+        assert bs.query_execution_status == "EXECUTED"
+
+    def test_value_may_be_none_when_query_failed(self) -> None:
+        bs = _make_baseline_snapshot(value=None, query_execution_status="FAILED")
+        assert bs.value is None
+        assert bs.query_execution_status == "FAILED"
+
+    def test_not_executed_status_supported(self) -> None:
+        bs = _make_baseline_snapshot(query_execution_status="NOT_EXECUTED", value=None)
+        assert bs.query_execution_status == "NOT_EXECUTED"
+
+    def test_invalid_execution_status_rejected(self) -> None:
+        with pytest.raises(ValidationError):
+            _make_baseline_snapshot(query_execution_status="MAYBE")
+
+    def test_caveats_default_empty(self) -> None:
+        bs = BaselineSnapshot(
+            metric_name="x",
+            value=None,
+            measurement_unit="count",
+            query_sql="select 1",
+            query_execution_status="NOT_EXECUTED",
+        )
+        assert bs.caveats == []
+
+    def test_extra_fields_forbidden(self) -> None:
+        with pytest.raises(ValidationError):
+            _make_baseline_snapshot(extra_field="should_fail")
+
+    def test_serialization_round_trip(self) -> None:
+        original = _make_baseline_snapshot()
+        restored = BaselineSnapshot.model_validate_json(original.model_dump_json())
+        assert restored == original
+
+
+class TestDataReportBaselineSnapshotField:
+    """The ``DataReport.baseline_snapshot`` field is optional — a report
+    without a measurement plan from intake must still validate."""
+
+    @staticmethod
+    def _minimal_request() -> DataRequest:
+        return DataRequest(
+            target_description="x",
+            target_granularity=DataGranularity(unit="row", time_grain="event"),
+            required_features=[],
+            population_filter="all",
+            time_range="2025-01-01 to 2025-12-31",
+            source="pipeline",
+            source_ref="run_test",
+        )
+
+    def test_baseline_snapshot_defaults_to_none(self) -> None:
+        dr = DataReport(
+            status="COMPLETE",
+            request=self._minimal_request(),
+            primary_queries=[],
+            summary="x",
+            confirmed_expectations=[],
+            unconfirmed_expectations=[],
+            data_quality_concerns=[],
+            created_at=FIXED_TS,
+        )
+        assert dr.baseline_snapshot is None
+
+    def test_baseline_snapshot_round_trip_when_present(self) -> None:
+        dr = DataReport(
+            status="COMPLETE",
+            request=self._minimal_request(),
+            primary_queries=[],
+            summary="x",
+            confirmed_expectations=[],
+            unconfirmed_expectations=[],
+            data_quality_concerns=[],
+            created_at=FIXED_TS,
+            baseline_snapshot=_make_baseline_snapshot(),
+        )
+        restored = DataReport.model_validate_json(dr.model_dump_json())
+        assert restored == dr
+        assert restored.baseline_snapshot is not None
+        assert restored.baseline_snapshot.metric_name == "subrogation_recovery_rate"

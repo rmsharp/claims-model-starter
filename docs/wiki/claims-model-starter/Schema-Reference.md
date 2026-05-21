@@ -125,7 +125,7 @@ class ModelSolution(StrictBase):
 
 `target_variable` is `str | None` with **no default** — the `None` must be explicit. This forces unsupervised modelers to stop and decide rather than silently omit the field.
 
-### `EstimatedValue` (lines 27-33)
+### `EstimatedValue`
 
 ```python
 class EstimatedValue(StrictBase):
@@ -134,9 +134,46 @@ class EstimatedValue(StrictBase):
     annual_impact_usd_high: float | None
     confidence: Literal["low", "medium", "high"]
     assumptions: list[str]
+
+    # Pre-construction business-case fields
+    # (business-value-capture-plan.md §4.1 — Phase 1, Session 86).
+    cost_of_inaction_narrative: str | None = None
+    annual_cost_of_inaction_usd_low: float | None = None
+    annual_cost_of_inaction_usd_high: float | None = None
+    implementation_cost_band_usd_low: float | None = None
+    implementation_cost_band_usd_high: float | None = None
+    payback_months: int | None = None
+    value_drivers: list[str] = Field(default_factory=list)
 ```
 
 `annual_impact_usd_low` and `_high` are both nullable — when value is genuinely uncertain, both should be `null`, not a zeroed estimate.
+
+The pre-construction business-case fields are optional at the schema level so legacy fixtures continue to validate. They are required for `COMPLETE` status at finalize-time (intake-prompt extensions land in Phase 2). They feed the generated `01_business_understanding.qmd` and `reports/intake_report.md` (Phase 4).
+
+### `ValueMeasurementPlan`
+
+```python
+class ValueMeasurementPlan(StrictBase):
+    baseline_metric_name: str | None = None
+    baseline_metric_definition: str | None = None       # formula or SQL-derivable spec
+    baseline_measurement_window: str | None = None      # e.g. "trailing 12 months"
+
+    counterfactual_design: Literal[
+        "champion_challenger", "ab_test", "geographic_split",
+        "historical_baseline_with_detrending", "synthetic_control",
+        "regression_discontinuity", "none_declared",
+    ] | None = None
+    counterfactual_rationale: str | None = None
+    attribution_method_narrative: str | None = None
+
+    evaluation_horizon_months: int | None = None
+    logging_requirements: list[str] = Field(default_factory=list)
+    review_cadence: Literal["weekly", "monthly", "quarterly", "ad_hoc"] | None = None
+    success_criteria: list[str] = Field(default_factory=list)
+    decision_rights: str | None = None                  # Advisory, no enforcement
+```
+
+Captured at intake (Phase 2 extension); consumed by the data agent (Phase 3 baseline collection) and surfaced on the generated website's `06_implementation_plan.qmd` (Phase 5). All fields are optional at the schema level — required combinations are enforced by the intake `finalize` node (`COMPLETE` status requires at least `baseline_metric_name` and `evaluation_horizon_months`).
 
 ### `GovernanceMetadata` (lines 35-43)
 
@@ -153,7 +190,7 @@ class GovernanceMetadata(StrictBase):
 
 Both `_rationale` strings are required prose — the agent is prompted to produce defensible justifications, not filler. Frameworks are strings (not a Literal) because the acceptable set evolves with regulation.
 
-### `IntakeReport` (lines 45-62)
+### `IntakeReport`
 
 ```python
 class IntakeReport(StrictBase):
@@ -165,6 +202,7 @@ class IntakeReport(StrictBase):
     proposed_solution: str
     model_solution: ModelSolution
     estimated_value: EstimatedValue
+    value_measurement_plan: ValueMeasurementPlan | None = None
 
     governance: GovernanceMetadata
 
@@ -348,7 +386,23 @@ class PrimaryQuery(StrictBase):
 
 `inventory_entries_used` records the inventory provenance for each query. When a `DataSourceInventory` was passed into the `DataRequest`, the LLM reports which `fully_qualified_name` values its SQL references here. Empty list when no inventory was provided, or when the LLM reported using none of the inventory entries.
 
-### `DataReport` (lines 92-102)
+### `BaselineSnapshot`
+
+```python
+class BaselineSnapshot(StrictBase):
+    metric_name: str                           # mirrors ValueMeasurementPlan.baseline_metric_name
+    value: float | None                        # None when execution failed or skipped
+    measurement_unit: str                      # "percent" | "USD" | "count" | ...
+    measurement_window_start: datetime | None = None
+    measurement_window_end: datetime | None = None
+    query_sql: str                             # SQL the data agent generated
+    query_execution_status: Literal["EXECUTED", "NOT_EXECUTED", "FAILED"]
+    caveats: list[str] = Field(default_factory=list)
+```
+
+Captured by the data agent (Phase 3 of `business-value-capture-plan.md`) when the intake report supplied a `ValueMeasurementPlan` with a populated `baseline_metric_definition`. Surfaces on the generated website's `06_implementation_plan.qmd` as the production-measurement baseline (Phase 5). `query_execution_status="FAILED"` is a valid terminal state — the report still ships and the caveats list captures partial-execution context.
+
+### `DataReport`
 
 ```python
 class DataReport(StrictBase):
@@ -361,12 +415,14 @@ class DataReport(StrictBase):
     unconfirmed_expectations: list[str]
     data_quality_concerns: list[str]
     created_at: datetime
+    baseline_snapshot: BaselineSnapshot | None = None
 ```
 
 - `status="COMPLETE"` — queries and checks generated; checks may or may not have been executed against a live DB.
 - `status="INCOMPLETE_REQUEST"` — the input request was too ambiguous (e.g., empty target) to produce a useful answer.
 - `status="EXECUTION_FAILED"` — LLM parse error or other unrecoverable failure.
 - `request` is an echo of the input — lets downstream consumers reconstruct the full context without holding a second reference.
+- `baseline_snapshot` is populated when intake provided a `ValueMeasurementPlan`; `None` when intake did not (e.g. `DRAFT_INCOMPLETE` reports). Phase 3 of `business-value-capture-plan.md` wires the data agent to generate and execute the baseline query.
 
 **Example fixture:** `tests/fixtures/sample_datareport.json`.
 

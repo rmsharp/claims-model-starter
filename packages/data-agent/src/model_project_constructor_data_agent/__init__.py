@@ -24,6 +24,7 @@ from model_project_constructor_data_agent.llm import (
     TableRanking,
 )
 from model_project_constructor_data_agent.schemas import (
+    BaselineSnapshot,
     ColumnMetadata,
     DataGranularity,
     DataReport,
@@ -37,6 +38,7 @@ from model_project_constructor_data_agent.schemas import (
 )
 
 __all__ = [
+    "BaselineSnapshot",
     "ColumnMetadata",
     "DataAgent",
     "DataGranularity",

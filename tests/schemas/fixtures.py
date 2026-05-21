@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from model_project_constructor.schemas.v1 import (
+    BaselineSnapshot,
     DataGranularity,
     DataReport,
     DataRequest,
@@ -23,6 +24,7 @@ from model_project_constructor.schemas.v1 import (
     QualityCheck,
     RepoProjectResult,
     RepoTarget,
+    ValueMeasurementPlan,
 )
 
 FIXED_TS = datetime(2026, 4, 14, 12, 0, 0, tzinfo=UTC)
@@ -48,9 +50,76 @@ def make_estimated_value(**overrides: Any) -> EstimatedValue:
         annual_impact_usd_high=2_000_000.0,
         confidence="medium",
         assumptions=["recovery rate uplift holds under adjuster variation"],
+        cost_of_inaction_narrative=(
+            "Without intervention, declining subrogation recovery continues to "
+            "erode net loss ratio under the new claims system."
+        ),
+        annual_cost_of_inaction_usd_low=400_000.0,
+        annual_cost_of_inaction_usd_high=1_500_000.0,
+        implementation_cost_band_usd_low=150_000.0,
+        implementation_cost_band_usd_high=350_000.0,
+        payback_months=9,
+        value_drivers=[
+            "improved subrogation recovery rate",
+            "reduced adjuster training overhead",
+        ],
     )
     defaults.update(overrides)
     return EstimatedValue(**defaults)
+
+
+def make_value_measurement_plan(**overrides: Any) -> ValueMeasurementPlan:
+    defaults: dict[str, Any] = dict(
+        baseline_metric_name="subrogation_recovery_rate",
+        baseline_metric_definition=(
+            "sum(recovered_amount) / sum(subrogatable_loss_amount) for closed "
+            "auto claims in trailing 12 months."
+        ),
+        baseline_measurement_window="trailing 12 months",
+        counterfactual_design="champion_challenger",
+        counterfactual_rationale=(
+            "Half of adjusters receive the model prompt; matched half do not."
+        ),
+        attribution_method_narrative=(
+            "Difference-in-means with cluster-robust standard errors at the office level."
+        ),
+        evaluation_horizon_months=6,
+        logging_requirements=[
+            "model_input_features",
+            "model_score",
+            "decision_taken",
+            "outcome_at_30_days",
+        ],
+        review_cadence="quarterly",
+        success_criteria=[
+            "recovery rate +5pp at 6 months",
+            "no fairness SLA breach",
+        ],
+        decision_rights=(
+            "Claims VP and Data Science lead jointly approve retire/retrain "
+            "decisions at the quarterly review."
+        ),
+    )
+    defaults.update(overrides)
+    return ValueMeasurementPlan(**defaults)
+
+
+def make_baseline_snapshot(**overrides: Any) -> BaselineSnapshot:
+    defaults: dict[str, Any] = dict(
+        metric_name="subrogation_recovery_rate",
+        value=0.42,
+        measurement_unit="percent",
+        measurement_window_start=datetime(2025, 1, 1, tzinfo=UTC),
+        measurement_window_end=datetime(2025, 12, 31, tzinfo=UTC),
+        query_sql=(
+            "select sum(recovered_amount) / sum(subrogatable_loss_amount) "
+            "from closed_auto_claims where closed_date between :start and :end"
+        ),
+        query_execution_status="EXECUTED",
+        caveats=["excludes claims under $500 loss amount"],
+    )
+    defaults.update(overrides)
+    return BaselineSnapshot(**defaults)
 
 
 def make_governance_metadata(**overrides: Any) -> GovernanceMetadata:
