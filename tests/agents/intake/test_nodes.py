@@ -67,6 +67,46 @@ def _sample_draft() -> DraftReportResult:
             "confidence": "medium",
             "assumptions": ["a1"],
         },
+        value_measurement_plan={
+            "baseline_metric_name": "bm",
+            "baseline_metric_definition": "bm_def",
+            "baseline_measurement_window": "trailing 12 months",
+            "counterfactual_design": "champion_challenger",
+            "counterfactual_rationale": "rationale",
+            "attribution_method_narrative": "attribution",
+            "evaluation_horizon_months": 6,
+            "logging_requirements": ["score"],
+            "review_cadence": "monthly",
+            "success_criteria": ["+5pp at 6mo"],
+            "decision_rights": "VP + DS lead",
+        },
+    )
+
+
+def _sparse_draft() -> DraftReportResult:
+    """A draft with no value_measurement_plan — exercises the finalize
+    structural gate that requires baseline_metric_name + evaluation_horizon
+    for ``COMPLETE`` status per plan §3.3.
+    """
+
+    return DraftReportResult(
+        business_problem="bp",
+        proposed_solution="ps",
+        model_solution={
+            "target_variable": "t",
+            "target_definition": "td",
+            "candidate_features": ["f1"],
+            "model_type": "supervised_classification",
+            "evaluation_metrics": ["AUC"],
+            "is_supervised": True,
+        },
+        estimated_value={
+            "narrative": "n",
+            "annual_impact_usd_low": 100.0,
+            "annual_impact_usd_high": 200.0,
+            "confidence": "medium",
+            "assumptions": ["a1"],
+        },
     )
 
 
@@ -132,6 +172,7 @@ def test_draft_report_stores_dict_shape() -> None:
     delta = nodes["draft_report"](_state())
     assert delta["draft_fields"]["business_problem"] == "bp"
     assert delta["draft_fields"]["model_solution"]["target_variable"] == "t"
+    assert delta["draft_fields"]["value_measurement_plan"]["baseline_metric_name"] == "bm"
 
 
 def test_classify_governance_merges_into_state() -> None:
@@ -213,6 +254,65 @@ def test_finalize_marks_complete_when_accepted() -> None:
     assert delta["missing_fields"] == []
 
 
+def test_finalize_flags_missing_value_measurement_plan() -> None:
+    """Plan §3.3: ``COMPLETE`` requires a populated value_measurement_plan
+    with baseline_metric_name + evaluation_horizon_months. A draft without
+    a plan must finalize as ``DRAFT_INCOMPLETE`` with
+    ``value_measurement_plan_incomplete`` in missing_fields, even when the
+    reviewer accepted the draft.
+    """
+
+    llm = _StaticLLM(
+        NextQuestionResult(question="Q?", believe_enough_info=True),
+        _sparse_draft(),
+        _sample_governance(),
+    )
+    nodes = make_nodes(llm)
+    draft_fields = nodes["draft_report"](_state())["draft_fields"]
+    gov_fields = nodes["classify_governance"](_state(draft_fields=draft_fields))[
+        "governance_fields"
+    ]
+    state = _state(
+        draft_fields=draft_fields,
+        governance_fields=gov_fields,
+        review_accepted=True,
+        questions_asked=3,
+        believe_enough_info=True,
+    )
+    delta = nodes["finalize"](state)
+    assert delta["status"] == "DRAFT_INCOMPLETE"
+    assert "value_measurement_plan_incomplete" in delta["missing_fields"]
+
+
+def test_finalize_flags_partial_value_measurement_plan() -> None:
+    """A plan present but missing evaluation_horizon_months still trips the
+    structural gate — both required sub-fields must be non-null for COMPLETE.
+    """
+
+    partial = _sample_draft()
+    partial.value_measurement_plan["evaluation_horizon_months"] = None
+    llm = _StaticLLM(
+        NextQuestionResult(question="Q?", believe_enough_info=True),
+        partial,
+        _sample_governance(),
+    )
+    nodes = make_nodes(llm)
+    draft_fields = nodes["draft_report"](_state())["draft_fields"]
+    gov_fields = nodes["classify_governance"](_state(draft_fields=draft_fields))[
+        "governance_fields"
+    ]
+    state = _state(
+        draft_fields=draft_fields,
+        governance_fields=gov_fields,
+        review_accepted=True,
+        questions_asked=3,
+        believe_enough_info=True,
+    )
+    delta = nodes["finalize"](state)
+    assert delta["status"] == "DRAFT_INCOMPLETE"
+    assert "value_measurement_plan_incomplete" in delta["missing_fields"]
+
+
 def test_finalize_marks_incomplete_at_caps() -> None:
     llm = _StaticLLM(
         NextQuestionResult(question="Q?", believe_enough_info=False),
@@ -260,3 +360,34 @@ def test_build_intake_report_validates_and_returns_report() -> None:
     assert report.model_solution.is_supervised is True
     assert report.governance.risk_tier == "tier_3_moderate"
     assert report.questions_asked == 4
+    assert report.value_measurement_plan is not None
+    assert report.value_measurement_plan.baseline_metric_name == "bm"
+    assert report.value_measurement_plan.evaluation_horizon_months == 6
+
+
+def test_build_intake_report_omits_plan_when_draft_has_none() -> None:
+    """If the draft has no value_measurement_plan, IntakeReport carries None
+    in that field — DRAFT_INCOMPLETE reports may omit the plan entirely.
+    """
+
+    llm = _StaticLLM(
+        NextQuestionResult(question="Q?", believe_enough_info=True),
+        _sparse_draft(),
+        _sample_governance(),
+    )
+    nodes = make_nodes(llm)
+    draft_fields = nodes["draft_report"](_state())["draft_fields"]
+    gov_fields = nodes["classify_governance"](_state(draft_fields=draft_fields))[
+        "governance_fields"
+    ]
+    state = _state(
+        draft_fields=draft_fields,
+        governance_fields=gov_fields,
+        review_accepted=True,
+        questions_asked=4,
+    )
+    report = build_intake_report(
+        state, status="DRAFT_INCOMPLETE", missing=["value_measurement_plan_incomplete"]
+    )
+    assert report.value_measurement_plan is None
+    assert "value_measurement_plan_incomplete" in report.missing_fields

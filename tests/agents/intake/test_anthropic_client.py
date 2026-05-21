@@ -85,6 +85,19 @@ def _draft_payload() -> dict[str, Any]:
             "confidence": "medium",
             "assumptions": ["a"],
         },
+        "value_measurement_plan": {
+            "baseline_metric_name": "bm",
+            "baseline_metric_definition": "bm_def",
+            "baseline_measurement_window": "trailing 12 months",
+            "counterfactual_design": "champion_challenger",
+            "counterfactual_rationale": "rationale",
+            "attribution_method_narrative": "attribution",
+            "evaluation_horizon_months": 6,
+            "logging_requirements": ["score", "outcome"],
+            "review_cadence": "monthly",
+            "success_criteria": ["+5pp at 6mo"],
+            "decision_rights": "VP + DS lead",
+        },
         "missing_fields": [],
     }
 
@@ -139,6 +152,22 @@ def test_draft_report_parses_ok() -> None:
     draft = client.draft_report(_ctx())
     assert draft.business_problem == "bp"
     assert draft.model_solution["model_type"] == "supervised_classification"
+    assert draft.value_measurement_plan["baseline_metric_name"] == "bm"
+    assert draft.value_measurement_plan["evaluation_horizon_months"] == 6
+
+
+def test_draft_report_value_measurement_plan_optional() -> None:
+    """When the LLM omits value_measurement_plan, the draft parses with an
+    empty plan dict — earlier interview cycles produce drafts that finalize
+    later flags as ``value_measurement_plan_incomplete``.
+    """
+
+    payload = _draft_payload()
+    del payload["value_measurement_plan"]
+    fake = _FakeAnthropic([json.dumps(payload)])
+    client = AnthropicLLMClient(client=fake)
+    draft = client.draft_report(_ctx())
+    assert draft.value_measurement_plan == {}
 
 
 def test_draft_report_missing_key_raises() -> None:
@@ -275,6 +304,28 @@ def test_system_interviewer_pins_statistical_terms_note() -> None:
         "class imbalance",
     ):
         assert token in prompt, f"missing statistical-terms token: {token!r}"
+
+
+def test_system_interviewer_pins_value_measurement_plan_section() -> None:
+    """Plan §3.3 + Phase 2: the intake prompt must drive toward FIVE required
+    sections (the fifth is the value measurement plan), not four. This pins
+    the contract so the prompt cannot regress to the four-section framing.
+    """
+
+    prompt = SYSTEM_INTERVIEWER
+
+    assert "FIVE required sections" in prompt or "five required sections" in prompt
+    assert "value measurement plan" in prompt
+    for token in (
+        "baseline metric",
+        "counterfactual",
+        "evaluation horizon",
+        "logging requirements",
+        "review cadence",
+        "success criteria",
+        "decision rights",
+    ):
+        assert token in prompt, f"missing value-plan token: {token!r}"
 
 
 def test_system_governance_excludes_statistical_terms_note() -> None:

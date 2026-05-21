@@ -150,6 +150,44 @@ draft:
       - "Current annual subrogation recovery is approximately $30M."
       - "10% recovery lift is conservative given the proposed levers."
       - "Adjuster compliance with prompts reaches 60%+ within 6 months."
+    cost_of_inaction_narrative: >-
+      Continuing without prompts and a recovery-likelihood score leaves
+      ~$3M/year on the table indefinitely.
+    annual_cost_of_inaction_usd_low: 2000000
+    annual_cost_of_inaction_usd_high: 4000000
+    implementation_cost_band_usd_low: 250000
+    implementation_cost_band_usd_high: 500000
+    payback_months: 4
+    value_drivers:
+      - improved_subrogation_recovery_rate
+      - adjuster_evidence_capture_compliance
+  value_measurement_plan:
+    baseline_metric_name: subrogation_recovery_rate
+    baseline_metric_definition: >-
+      Trailing-12-month subrogation_dollars_recovered divided by
+      eligible_subrogation_dollars_identified.
+    baseline_measurement_window: trailing 12 months
+    counterfactual_design: champion_challenger
+    counterfactual_rationale: >-
+      Adjusters randomly assigned to model-assisted vs control queues
+      during rollout.
+    attribution_method_narrative: >-
+      Recovery rate compared between treatment and control queues over
+      each rolling 30-day window across the evaluation horizon.
+    evaluation_horizon_months: 6
+    logging_requirements:
+      - claim_id
+      - subrogation_likelihood_score
+      - adjuster_action_taken
+      - assigned_queue
+      - subrogation_outcome_at_18_months
+    review_cadence: monthly
+    success_criteria:
+      - "Recovery rate +5pp vs control at 6 months."
+      - "No degradation in adjuster cycle time."
+    decision_rights: >-
+      Claims VP + Data Science lead jointly review monthly; retire/retrain
+      if treatment-control lift < 2pp for two consecutive monthly reviews.
 
 governance:
   cycle_time: tactical
@@ -174,7 +212,7 @@ review_sequence:
 The fixture has three sections:
 
 - **`qa_pairs`** -- The interview itself: seven question-answer pairs capturing the business problem, proposed solution, available data, estimated value, and governance considerations. This is what a business stakeholder provides.
-- **`draft`** -- The structured report the intake agent assembles from the answers. In a live run the LLM writes this; in a fixture run it is provided directly.
+- **`draft`** -- The structured report the intake agent assembles from the answers. In a live run the LLM writes this; in a fixture run it is provided directly. The draft has **five required sections**: `business_problem`, `proposed_solution`, `model_solution`, `estimated_value` (extended with cost-of-inaction + implementation-cost band + payback + value drivers), and `value_measurement_plan` (baseline metric, counterfactual design, evaluation horizon, success criteria, decision rights — see [Intake Interview Design §4.5](Intake-Interview-Design)). For `status="COMPLETE"`, the plan's `baseline_metric_name` and `evaluation_horizon_months` must both be non-null.
 - **`governance`** and **`review_sequence`** -- Risk classification and whether the stakeholder accepts the draft on first review.
 
 ---

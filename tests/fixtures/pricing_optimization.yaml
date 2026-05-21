@@ -68,6 +68,47 @@ draft:
     assumptions:
       - "Auto book gross written premium is ~$2B/year."
       - "One point of retention maps linearly to ~$20M."
+    cost_of_inaction_narrative: >-
+      Without elasticity-aware pricing, profitable-segment churn continues
+      to erode the $2B auto book at the current rate.
+    annual_cost_of_inaction_usd_low: 15000000
+    annual_cost_of_inaction_usd_high: 25000000
+    implementation_cost_band_usd_low: 1000000
+    implementation_cost_band_usd_high: 2500000
+    payback_months: 8
+    value_drivers:
+      - elasticity_aware_renewal_pricing
+      - improved_retention_in_profitable_segments
+  value_measurement_plan:
+    baseline_metric_name: auto_renewal_retention_rate
+    baseline_metric_definition: >-
+      Renewed_policies divided by eligible_for_renewal at policy
+      expiration, weighted by gross written premium.
+    baseline_measurement_window: trailing 12 months
+    counterfactual_design: geographic_split
+    counterfactual_rationale: >-
+      Treatment states roll out elasticity-driven pricing; control states
+      retain the flat loadings table. Retention compared monthly.
+    attribution_method_narrative: >-
+      Premium-weighted retention compared between treatment-state and
+      control-state cohorts; lift is the difference in retention rate
+      over the evaluation horizon, with rate-filing season controlled by
+      stratification.
+    evaluation_horizon_months: 12
+    logging_requirements:
+      - policy_id
+      - elasticity_estimate
+      - final_renewal_premium
+      - competitor_price_delta_at_renewal
+      - renewal_decision (renewed/lapsed)
+      - state_treatment_assignment
+    review_cadence: quarterly
+    success_criteria:
+      - "Retention +1pp at 12 months on premium-weighted basis."
+      - "No disparate-impact finding by state filing review."
+    decision_rights: >-
+      Pricing Actuarial lead + Compliance + Data Science jointly review
+      quarterly; thresholds set in conjunction with rate-filing schedule.
 
 governance:
   cycle_time: strategic

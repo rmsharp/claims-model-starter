@@ -63,6 +63,48 @@ draft:
     assumptions:
       - "Annual fraud leakage is approximately $80M."
       - "Early routing captures 15% of currently missed fraud."
+    cost_of_inaction_narrative: >-
+      Without an FNOL-time fraud-risk score, SIU continues to investigate
+      after payments have begun; current leakage of ~$80M/year persists.
+    annual_cost_of_inaction_usd_low: 8000000
+    annual_cost_of_inaction_usd_high: 15000000
+    implementation_cost_band_usd_low: 500000
+    implementation_cost_band_usd_high: 1500000
+    payback_months: 3
+    value_drivers:
+      - earlier_siu_routing_at_fnol
+      - reduced_payment_before_investigation
+      - improved_fraud_capture_rate
+  value_measurement_plan:
+    baseline_metric_name: fraud_capture_rate
+    baseline_metric_definition: >-
+      Confirmed_fraud_claims divided by total_fraud_claims, where
+      confirmation is by SIU disposition within 90 days of FNOL.
+    baseline_measurement_window: trailing 12 months
+    counterfactual_design: ab_test
+    counterfactual_rationale: >-
+      A randomized fraction of FNOLs is routed through the model-assisted
+      path; the remainder use the legacy SIU referral process. Comparison
+      isolates the contribution of the score.
+    attribution_method_narrative: >-
+      Fraud capture rate compared between treatment and control arms; lift
+      = treatment - control over each rolling 30-day window across the
+      evaluation horizon.
+    evaluation_horizon_months: 12
+    logging_requirements:
+      - claim_id
+      - fnol_features_snapshot
+      - fraud_risk_score
+      - routing_decision (model_vs_legacy)
+      - siu_disposition_at_90_days
+      - payment_initiation_timestamp
+    review_cadence: monthly
+    success_criteria:
+      - "Fraud capture rate +5pp at 12 months (treatment - control)."
+      - "No FPR increase beyond +0.5pp at the routing threshold."
+    decision_rights: >-
+      SIU lead + Data Science lead + Compliance jointly review monthly;
+      threshold for retire/retrain is two consecutive months below +2pp.
 
 governance:
   cycle_time: continuous

@@ -31,6 +31,7 @@ from model_project_constructor.schemas.v1.intake import (
     IntakeReport,
     ModelSolution,
     QAPair,
+    ValueMeasurementPlan,
 )
 
 REVIEW_ACCEPT_TOKENS = {"accept", "yes", "approve", "approved", "ok", "looks good"}
@@ -139,6 +140,16 @@ def make_nodes(llm: IntakeLLMClient) -> dict[str, Any]:
             and "revision_cap_reached" not in missing
         ):
             missing.append("revision_cap_reached")
+        # Plan §3.3: a COMPLETE IntakeReport must carry a value_measurement_plan
+        # whose baseline_metric_name and evaluation_horizon_months are both
+        # populated. Earlier draft cycles may omit the plan entirely; the
+        # finalize node is the structural gate.
+        vmp = draft_fields.get("value_measurement_plan") or {}
+        if (
+            (not vmp.get("baseline_metric_name") or not vmp.get("evaluation_horizon_months"))
+            and "value_measurement_plan_incomplete" not in missing
+        ):
+            missing.append("value_measurement_plan_incomplete")
 
         status = "COMPLETE" if accepted and not missing else "DRAFT_INCOMPLETE"
 
@@ -184,6 +195,7 @@ def _draft_to_dict(draft: DraftReportResult) -> dict[str, Any]:
         "proposed_solution": draft.proposed_solution,
         "model_solution": dict(draft.model_solution),
         "estimated_value": dict(draft.estimated_value),
+        "value_measurement_plan": dict(draft.value_measurement_plan),
         "missing_fields": list(draft.missing_fields),
     }
 
@@ -195,6 +207,7 @@ def _dict_to_draft(d: dict[str, Any]) -> DraftReportResult:
         model_solution=dict(d["model_solution"]),
         estimated_value=dict(d["estimated_value"]),
         missing_fields=list(d.get("missing_fields") or []),
+        value_measurement_plan=dict(d.get("value_measurement_plan") or {}),
     )
 
 
@@ -229,6 +242,10 @@ def build_intake_report(
         model_solution = ModelSolution(**draft_fields["model_solution"])
         estimated_value = EstimatedValue(**draft_fields["estimated_value"])
         governance = GovernanceMetadata(**governance_fields)
+        vmp_dict = draft_fields.get("value_measurement_plan") or {}
+        value_measurement_plan = (
+            ValueMeasurementPlan(**vmp_dict) if vmp_dict else None
+        )
         return IntakeReport(
             status=status,  # type: ignore[arg-type]
             missing_fields=list(missing),
@@ -236,6 +253,7 @@ def build_intake_report(
             proposed_solution=draft_fields["proposed_solution"],
             model_solution=model_solution,
             estimated_value=estimated_value,
+            value_measurement_plan=value_measurement_plan,
             governance=governance,
             stakeholder_id=state["stakeholder_id"],
             session_id=state["session_id"],

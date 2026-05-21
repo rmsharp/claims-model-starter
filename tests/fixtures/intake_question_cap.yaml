@@ -70,6 +70,25 @@ draft:
     annual_impact_usd_high: null
     confidence: low
     assumptions: []
+    cost_of_inaction_narrative: null
+    annual_cost_of_inaction_usd_low: null
+    annual_cost_of_inaction_usd_high: null
+    implementation_cost_band_usd_low: null
+    implementation_cost_band_usd_high: null
+    payback_months: null
+    value_drivers: []
+  value_measurement_plan:
+    baseline_metric_name: null
+    baseline_metric_definition: null
+    baseline_measurement_window: null
+    counterfactual_design: null
+    counterfactual_rationale: null
+    attribution_method_narrative: null
+    evaluation_horizon_months: null
+    logging_requirements: []
+    review_cadence: null
+    success_criteria: []
+    decision_rights: null
 
 governance:
   cycle_time: tactical

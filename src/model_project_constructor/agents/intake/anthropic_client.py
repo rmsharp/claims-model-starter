@@ -35,10 +35,18 @@ _INTERVIEWER_BASE = (
     "focused on a claims organization within a property & casualty "
     "insurance company that sells auto and property policies. You are "
     "interviewing a business stakeholder to draft an intake document "
-    "covering: business problem, proposed solution, model solution "
-    "(target and inputs), and estimated value. Ask ONE question at a "
-    "time. Drive toward the four required sections and toward a "
-    "defensible governance classification (cycle time + risk tier). "
+    "covering FIVE required sections: business problem, proposed "
+    "solution, model solution (target and inputs), estimated value, "
+    "and value measurement plan (how downstream success will be "
+    "demonstrated). Ask ONE question at a time. Drive toward the "
+    "five required sections and toward a defensible governance "
+    "classification (cycle time + risk tier). Reserve roughly 3-4 of "
+    "your question budget for the value measurement plan: the "
+    "baseline metric the business uses today, its definition and "
+    "measurement window, the counterfactual design that will "
+    "attribute outcomes to the model, the evaluation horizon, the "
+    "logging requirements, the review cadence, success criteria, and "
+    "decision rights for retire/retrain. "
     "When the conversation reaches the model solution's candidate "
     "features, probe for CONCRETE data sources — named systems, "
     "tables, extracts, or feeds — rather than accepting vague answers "
@@ -129,8 +137,9 @@ class AnthropicLLMClient(IntakeLLMClient):
             'Return a JSON object with keys: "question" (the next single '
             'question to ask the stakeholder, empty string if none), '
             '"believe_enough_info" (boolean — true if you now have enough '
-            "information to draft all four required sections AND make a "
-            "governance classification). Return ONLY the JSON object."
+            "information to draft all five required sections (including "
+            "the value measurement plan) AND make a governance "
+            "classification). Return ONLY the JSON object."
         )
         parsed = self._call_json(SYSTEM_INTERVIEWER, user)
         if not isinstance(parsed, dict):
@@ -158,7 +167,26 @@ class AnthropicLLMClient(IntakeLLMClient):
             '"estimated_value" (object with keys narrative, '
             "annual_impact_usd_low [number|null], annual_impact_usd_high "
             "[number|null], confidence [one of low/medium/high], "
-            "assumptions [list of str]), "
+            "assumptions [list of str], cost_of_inaction_narrative "
+            "[str|null], annual_cost_of_inaction_usd_low [number|null], "
+            "annual_cost_of_inaction_usd_high [number|null], "
+            "implementation_cost_band_usd_low [number|null], "
+            "implementation_cost_band_usd_high [number|null], "
+            "payback_months [int|null], value_drivers [list of str]), "
+            '"value_measurement_plan" (object with keys '
+            "baseline_metric_name [str|null], "
+            "baseline_metric_definition [str|null — formula or "
+            "SQL-derivable spec], baseline_measurement_window "
+            '[str|null e.g. "trailing 12 months"], counterfactual_design '
+            "[one of champion_challenger, ab_test, geographic_split, "
+            "historical_baseline_with_detrending, synthetic_control, "
+            "regression_discontinuity, none_declared, or null], "
+            "counterfactual_rationale [str|null], "
+            "attribution_method_narrative [str|null], "
+            "evaluation_horizon_months [int|null], logging_requirements "
+            "[list of str], review_cadence [one of weekly, monthly, "
+            "quarterly, ad_hoc, or null], success_criteria [list of "
+            "str], decision_rights [str|null]), "
             '"missing_fields" (list of str — any required section you '
             "could not draft). Return ONLY the JSON object."
         )
@@ -195,8 +223,8 @@ class AnthropicLLMClient(IntakeLLMClient):
             f"Stakeholder feedback:\n{feedback}\n\n"
             "Return a revised draft as a JSON object with the same keys "
             "as the original draft (business_problem, proposed_solution, "
-            "model_solution, estimated_value, missing_fields). Return "
-            "ONLY the JSON object."
+            "model_solution, estimated_value, value_measurement_plan, "
+            "missing_fields). Return ONLY the JSON object."
         )
         parsed = self._call_json(SYSTEM_INTERVIEWER, user)
         if not isinstance(parsed, dict):
@@ -241,6 +269,7 @@ def _draft_as_dict(draft: DraftReportResult) -> dict[str, Any]:
         "proposed_solution": draft.proposed_solution,
         "model_solution": dict(draft.model_solution),
         "estimated_value": dict(draft.estimated_value),
+        "value_measurement_plan": dict(draft.value_measurement_plan),
         "missing_fields": list(draft.missing_fields),
     }
 
@@ -253,6 +282,7 @@ def _build_draft(parsed: dict[str, Any]) -> DraftReportResult:
             model_solution=dict(parsed["model_solution"]),
             estimated_value=dict(parsed["estimated_value"]),
             missing_fields=[str(x) for x in parsed.get("missing_fields") or []],
+            value_measurement_plan=dict(parsed.get("value_measurement_plan") or {}),
         )
     except KeyError as exc:
         raise IntakeLLMError(f"draft_report: missing key {exc}") from exc

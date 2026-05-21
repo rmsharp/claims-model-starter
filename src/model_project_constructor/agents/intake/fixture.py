@@ -26,6 +26,10 @@ Fixture schema (``intake_fixture/v1``)::
       proposed_solution: "..."
       model_solution: {...}
       estimated_value: {...}
+      value_measurement_plan: {...}  # optional in the draft layer; required
+                                     # for COMPLETE status at finalize-time
+                                     # (must include baseline_metric_name and
+                                     # evaluation_horizon_months per plan §3.3)
 
     governance:                  # canned GovernanceClassification
       cycle_time: tactical
@@ -149,6 +153,7 @@ def _build_draft(d: dict[str, Any]) -> DraftReportResult:
             model_solution=dict(d["model_solution"]),
             estimated_value=dict(d["estimated_value"]),
             missing_fields=list(d.get("missing_fields") or []),
+            value_measurement_plan=dict(d.get("value_measurement_plan") or {}),
         )
     except KeyError as exc:
         raise IntakeLLMError(f"Fixture draft missing field: {exc}") from exc

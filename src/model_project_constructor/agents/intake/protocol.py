@@ -44,8 +44,11 @@ class DraftReportResult:
     """Business-section draft returned by :meth:`IntakeLLMClient.draft_report`.
 
     These are the fields that go into ``IntakeReport`` minus governance,
-    metadata, and identity. ``model_solution`` and ``estimated_value`` are
-    dict-shaped here and validated later when we build the Pydantic model.
+    metadata, and identity. ``model_solution``, ``estimated_value``, and
+    ``value_measurement_plan`` are dict-shaped here and validated later when
+    we build the Pydantic model. ``value_measurement_plan`` is optional at
+    the draft layer (LLM may produce an empty plan during early interviews);
+    the finalize node enforces a populated plan for ``COMPLETE`` status.
     """
 
     business_problem: str
@@ -53,6 +56,7 @@ class DraftReportResult:
     model_solution: dict[str, Any]
     estimated_value: dict[str, Any]
     missing_fields: list[str] = field(default_factory=list)
+    value_measurement_plan: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

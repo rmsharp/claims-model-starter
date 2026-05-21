@@ -13,14 +13,15 @@ For the full agent entry-point reference (CLI, fixture mode, programmatic use) s
 
 The interviewer is prompted as **"an expert data scientist, business analyst, and consultant focused on a claims organization within a property & casualty insurance company that sells auto and property policies."** It is not a transcription bot — it brings domain framing to the conversation and drives toward a defensible draft.
 
-The system prompt (verbatim from `src/model_project_constructor/agents/intake/anthropic_client.py:33-42`):
+The system prompt (verbatim from `src/model_project_constructor/agents/intake/anthropic_client.py:33-49`):
 
-> You are an expert data scientist, business analyst, and consultant focused on a claims organization within a property & casualty insurance company that sells auto and property policies. You are interviewing a business stakeholder to draft an intake document covering: business problem, proposed solution, model solution (target and inputs), and estimated value. Ask ONE question at a time. Drive toward the four required sections and toward a defensible governance classification (cycle time + risk tier).
+> You are an expert data scientist, business analyst, and consultant focused on a claims organization within a property & casualty insurance company that sells auto and property policies. You are interviewing a business stakeholder to draft an intake document covering FIVE required sections: business problem, proposed solution, model solution (target and inputs), estimated value, and value measurement plan (how downstream success will be demonstrated). Ask ONE question at a time. Drive toward the five required sections and toward a defensible governance classification (cycle time + risk tier). Reserve roughly 3-4 of your question budget for the value measurement plan: the baseline metric the business uses today, its definition and measurement window, the counterfactual design that will attribute outcomes to the model, the evaluation horizon, the logging requirements, the review cadence, success criteria, and decision rights for retire/retrain.
 
-Two rules are load-bearing and worth flagging:
+Three rules are load-bearing and worth flagging:
 
 - **One question per turn.** The agent is explicitly forbidden from batching questions. This keeps each turn digestible and avoids the "which half of the compound question did you actually answer?" problem.
-- **Drive toward four sections.** Every question should move the conversation closer to completing `business_problem`, `proposed_solution`, `model_solution`, or `estimated_value` — plus a governance classification. Exploratory small talk is out of scope.
+- **Drive toward five sections.** Every question should move the conversation closer to completing `business_problem`, `proposed_solution`, `model_solution`, `estimated_value`, or `value_measurement_plan` — plus a governance classification. Exploratory small talk is out of scope.
+- **Roughly 3-4 questions for the measurement plan.** Within the hard 20-question cap, the agent reserves about 3-4 questions for measurement-plan probes (baseline metric, counterfactual, evaluation horizon, decision rights). The split is a soft target — the LLM allocates dynamically based on what the stakeholder has already covered.
 
 A second system prompt covers governance classification (`anthropic_client.py:44-50`):
 
@@ -79,7 +80,7 @@ Every turn, the agent calls `next_question(context)` on its LLM client (`nodes.p
 The LLM returns two fields (`NextQuestionResult` in `protocol.py:30-39`):
 
 - `question: str` — the next single question to ask, or `""` if none.
-- `believe_enough_info: bool` — the agent's own judgment that it now has enough to draft all four required sections *and* classify governance.
+- `believe_enough_info: bool` — the agent's own judgment that it now has enough to draft all five required sections (including the value measurement plan) *and* classify governance.
 
 `evaluate_interview` then decides whether to loop or drop through (`nodes.py:78-82`):
 
@@ -97,19 +98,19 @@ The soft and hard stops are independent signals. An agent that reaches question 
 
 ---
 
-## 4. What the four required sections look like
+## 4. What the five required sections look like
 
-After the interview loop exits, `draft_report` asks the LLM to emit a full draft (`nodes.py` draft node + `anthropic_client.py:94-119`). The four sections are:
+After the interview loop exits, `draft_report` asks the LLM to emit a full draft (`nodes.py` draft node + `anthropic_client.py:94-119`). The five sections are:
 
-### `business_problem` (prose)
+### 4.1 `business_problem` (prose)
 
 What is broken today, why it matters, and what success would feel like. One to two paragraphs.
 
-### `proposed_solution` (prose)
+### 4.2 `proposed_solution` (prose)
 
 How a model or system change would address the problem. This is the stakeholder's hypothesis, not the agent's — but the agent drives for specifics (what triggers the model, what it does with the prediction).
 
-### `model_solution` (structured — `ModelSolution` schema)
+### 4.3 `model_solution` (structured — `ModelSolution` schema)
 
 Target variable, target definition, candidate features, evaluation metrics, model type, and whether it is supervised. `model_type` must be one of:
 
@@ -117,9 +118,25 @@ Target variable, target definition, candidate features, evaluation metrics, mode
 - `unsupervised_clustering`, `unsupervised_anomaly`
 - `time_series`, `reinforcement`, `other`
 
-### `estimated_value` (structured — `EstimatedValue` schema)
+### 4.4 `estimated_value` (structured — `EstimatedValue` schema)
 
-Annual impact band (low–high USD, both nullable), confidence (`low | medium | high`), prose narrative, and a list of assumptions. The low/high range is deliberately a band, not a point estimate — stakeholders should resist the temptation to over-precision.
+Annual impact band (low–high USD, both nullable), confidence (`low | medium | high`), prose narrative, and a list of assumptions — plus seven pre-construction business-case fields the agent should probe for: cost-of-inaction narrative + USD band, implementation cost band (low–high USD), `payback_months` (months until cumulative captured value exceeds cumulative build cost), and `value_drivers` (named drivers, e.g. `["improved_subrogation_recovery_rate"]`). The low/high range is deliberately a band, not a point estimate — stakeholders should resist the temptation to over-precision.
+
+### 4.5 `value_measurement_plan` (structured — `ValueMeasurementPlan` schema)
+
+How downstream production success will be demonstrated. New in Phase 2 of the business-value capture work (Session 87). All sub-fields are optional at the schema layer; **the finalize node enforces that `baseline_metric_name` and `evaluation_horizon_months` are both non-null before status can be `COMPLETE`.**
+
+- **`baseline_metric_name`** — the metric the business uses today (e.g. `subrogation_recovery_rate`).
+- **`baseline_metric_definition`** — formula or SQL-derivable spec.
+- **`baseline_measurement_window`** — e.g. `"trailing 12 months"`.
+- **`counterfactual_design`** — one of `champion_challenger`, `ab_test`, `geographic_split`, `historical_baseline_with_detrending`, `synthetic_control`, `regression_discontinuity`, `none_declared`. Plus `counterfactual_rationale` and `attribution_method_narrative`.
+- **`evaluation_horizon_months`** — e.g. `6` or `12`.
+- **`logging_requirements`** — list of fields the production system must log for the post-deployment demonstration (e.g. `model_input_features_snapshot`, `model_score`, `assigned_queue`, `outcome_at_30_days`).
+- **`review_cadence`** — one of `weekly`, `monthly`, `quarterly`, `ad_hoc`.
+- **`success_criteria`** — list of measurable criteria (e.g. `"Recovery rate +5pp at 6 months"`).
+- **`decision_rights`** — free-form prose naming who reviews and what thresholds trigger retire/retrain.
+
+The intake agent captures the *plan*; the data agent collects the baseline downstream (see [Data Guide](Data-Guide)); the generated website's Production Measurement Plan template surfaces the plan + baseline for the data science team.
 
 Full field definitions are in the [Schema Reference](Schema-Reference).
 
@@ -159,16 +176,17 @@ After three revisions without an accept, the loop exits with `status="DRAFT_INCO
 
 ## 7. Terminal status rules
 
-`finalize` computes the final status (`nodes.py:121-151`):
+`finalize` computes the final status (`nodes.py:121-160`):
 
-| Accepted? | At questions cap? | At revisions cap? | Status | `missing_fields` additions |
-|---|---|---|---|---|
-| ✅ | — | — | `COMPLETE` | — |
-| — | ✅ | — | `DRAFT_INCOMPLETE` | `"questions_cap_reached"` |
-| ❌ | — | ✅ | `DRAFT_INCOMPLETE` | `"revision_cap_reached"` |
-| ❌ | — | ❌ | *impossible — loop continues* | — |
+| Accepted? | At questions cap? | At revisions cap? | Plan: `baseline_metric_name` & `evaluation_horizon_months` populated? | Status | `missing_fields` additions |
+|---|---|---|---|---|---|
+| ✅ | — | — | ✅ | `COMPLETE` | — |
+| ✅ | — | — | ❌ | `DRAFT_INCOMPLETE` | `"value_measurement_plan_incomplete"` |
+| — | ✅ | — | — | `DRAFT_INCOMPLETE` | `"questions_cap_reached"` (+ plan flag if also incomplete) |
+| ❌ | — | ✅ | — | `DRAFT_INCOMPLETE` | `"revision_cap_reached"` (+ plan flag if also incomplete) |
+| ❌ | — | ❌ | — | *impossible — loop continues* | — |
 
-`COMPLETE` requires two things simultaneously: the stakeholder accepted, AND no cap was tripped. Anything else is `DRAFT_INCOMPLETE`.
+`COMPLETE` requires three things simultaneously: the stakeholder accepted, AND no cap was tripped, AND the value measurement plan has both `baseline_metric_name` and `evaluation_horizon_months` non-null (plan §3.3). Anything else is `DRAFT_INCOMPLETE`.
 
 The orchestrator halts on `DRAFT_INCOMPLETE` — the pipeline does not proceed to the Data Agent until an intake draft is formally accepted. See [Monitoring and Operations §5](Monitoring-and-Operations) for resume recipes.
 

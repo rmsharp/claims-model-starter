@@ -35,7 +35,13 @@ def test_subrogation_happy_path(subrogation_fixture_path: Path) -> None:
     assert report.governance.risk_tier == "tier_3_moderate"
     assert report.model_solution.target_variable == "successful_subrogation"
     assert report.estimated_value.annual_impact_usd_low == 2_000_000.0
+    assert report.estimated_value.payback_months == 4
+    assert "improved_subrogation_recovery_rate" in report.estimated_value.value_drivers
     assert report.missing_fields == []
+    assert report.value_measurement_plan is not None
+    assert report.value_measurement_plan.baseline_metric_name == "subrogation_recovery_rate"
+    assert report.value_measurement_plan.evaluation_horizon_months == 6
+    assert report.value_measurement_plan.counterfactual_design == "champion_challenger"
 
 
 def test_pricing_strategic_tier_2(pricing_fixture_path: Path) -> None:
@@ -64,6 +70,9 @@ def test_question_cap_produces_draft_incomplete(question_cap_fixture_path: Path)
     assert report.status == "DRAFT_INCOMPLETE"
     assert report.questions_asked == MAX_QUESTIONS
     assert "questions_cap_reached" in report.missing_fields
+    # The cap fixture's plan has all-null fields; finalize must also flag
+    # value_measurement_plan_incomplete per plan §3.3.
+    assert "value_measurement_plan_incomplete" in report.missing_fields
 
 
 def test_revision_cap_produces_draft_incomplete(revision_cap_fixture_path: Path) -> None:
