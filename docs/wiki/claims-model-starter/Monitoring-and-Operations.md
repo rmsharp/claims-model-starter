@@ -103,6 +103,30 @@ The CI pipeline in the generated repository is simpler:
 | **Test** | `pytest` |
 | **Governance** | Schema validation of `model_registry.json` |
 
+## Value Demonstration
+
+The pipeline captures a model's business value across two phases, both surfaced in the generated project:
+
+- **Pre-construction (intake estimate).** The intake interview records an `EstimatedValue` business case — annual impact band, cost of inaction, implementation cost, payback, and value drivers. The Website Agent renders it into `analysis/01_business_understanding.qmd`.
+- **Post-production (measurement methodology).** The intake also records a `ValueMeasurementPlan`, and the Data Agent collects a `BaselineSnapshot` of the current-state metric. The Website Agent renders both into the Production Measurement Plan in `analysis/06_implementation_plan.qmd`.
+
+The Production Measurement Plan threads a single coherent argument:
+
+| Step | Section in `06_implementation_plan.qmd` | Source |
+|------|------------------------------------------|--------|
+| **Baseline** — where the metric stands today | `## Baseline` | `DataReport.baseline_snapshot` (Data Agent) |
+| **Counterfactual** — how lift will be isolated | `## Counterfactual Design` | `ValueMeasurementPlan` (intake) |
+| **Attribution** — how lift maps back to the model | `## Attribution Method` | `ValueMeasurementPlan` (intake) |
+| **Horizon & cadence** — when value is judged | `## Evaluation Horizon`, `## Review Cadence` | `ValueMeasurementPlan` (intake) |
+| **Success criteria** — the bar the model must clear | `## Success Criteria` | `ValueMeasurementPlan` (intake) |
+| **Decision rights** — who acts on the verdict | `## Decision Rights` | `ValueMeasurementPlan` (intake) |
+
+The baseline figure is interpolated directly into the `.qmd` with a citation footnote pointing back to `reports/data_report.json`, so a stakeholder reading the plan sees the number without losing its provenance.
+
+The **value-review cadence** (from `ValueMeasurementPlan.review_cadence`) is tracked separately from the **model-health monitoring cadence** (from the governance `cycle_time`): the first asks "is the model delivering the projected business value?", the second asks "is the model still statistically healthy?". The generated `governance/ongoing_monitoring.md` lists the business-value baseline metric alongside the model-health metrics so both are visible in one place.
+
+These sections are **TODO scaffolding**, not live telemetry — the generated repo's Data Science team wires the actual production logging (the `## Logging Requirements` section enumerates the fields to instrument).
+
 ## Troubleshooting
 
 For diagnostic walkthroughs by failure mode, see `TROUBLESHOOTING.md` in the project root.

@@ -461,14 +461,125 @@ def render_qmd_initial_models(*, intake: dict[str, Any]) -> str:
     )
 
 
-def render_qmd_implementation_plan(*, intake: dict[str, Any]) -> str:
+def _render_production_measurement_plan(
+    *, intake: dict[str, Any], data: dict[str, Any]
+) -> str:
+    """Render the post-deployment measurement methodology for the generated
+    website's ``analysis/06_implementation_plan.qmd``.
+
+    The intake estimate is a forecast; this block records *how the realised
+    value gets measured* once the model ships (Phase 5 of
+    ``docs/planning/business-value-capture-plan.md``). The baseline figure is
+    interpolated from the Data Agent's ``DataReport.baseline_snapshot`` with a
+    citation footnote preserving provenance; the counterfactual / attribution /
+    horizon / logging / cadence / criteria / decision-rights sections come from
+    the intake's ``ValueMeasurementPlan``. Every section is always emitted — a
+    missing field renders a placeholder so the plan stays structurally complete
+    no matter how sparse the inputs are.
+    """
+    vmp = intake.get("value_measurement_plan") or {}
+    snapshot = data.get("baseline_snapshot") or {}
+
+    # --- Baseline: current-state metric from DataReport.baseline_snapshot ---
+    if snapshot:
+        metric_name = snapshot.get("metric_name") or vmp.get("baseline_metric_name")
+        definition = str(vmp.get("baseline_metric_definition") or "").strip()
+        value = snapshot.get("value")
+        unit = str(snapshot.get("measurement_unit") or "").strip()
+        if value is not None:
+            value_md = f"{value:,} {unit}".strip() + " [^baseline-src]"
+        else:
+            value_md = "(not measured) [^baseline-src]"
+        window_start = snapshot.get("measurement_window_start")
+        window_end = snapshot.get("measurement_window_end")
+        window_md = (
+            f"{str(window_start)[:10]} → {str(window_end)[:10]}"
+            if window_start and window_end
+            else "(not recorded)"
+        )
+        status = snapshot.get("query_execution_status") or "UNKNOWN"
+        baseline_lines = [
+            f"- **Metric:** `{metric_name or '(not specified)'}`",
+            f"- **Definition:** {definition or '(not specified)'}",
+            f"- **Current value:** {value_md}",
+            f"- **Measurement window:** {window_md}",
+            f"- **Query execution status:** `{status}`",
+        ]
+        caveats = snapshot.get("caveats") or []
+        if caveats:
+            baseline_lines.append(
+                "- **Caveats:** " + "; ".join(str(c) for c in caveats)
+            )
+        baseline_md = "\n".join(baseline_lines) + (
+            "\n\n[^baseline-src]: Baseline figures are sourced from "
+            "`reports/data_report.json` (`baseline_snapshot`), collected by "
+            "the Data Agent."
+        )
+    else:
+        baseline_md = (
+            "No baseline snapshot was collected by the Data Agent. Establish "
+            "the current-state metric before deployment — see "
+            "`reports/data_report.json` and the intake report's value "
+            "measurement plan."
+        )
+
+    # --- Methodology: from the intake's ValueMeasurementPlan ---
+    counterfactual_rationale = str(vmp.get("counterfactual_rationale") or "").strip()
+    attribution = str(vmp.get("attribution_method_narrative") or "").strip()
+    horizon = vmp.get("evaluation_horizon_months")
+    horizon_md = f"{horizon} months" if horizon is not None else "(not specified)"
+    logging_reqs = vmp.get("logging_requirements") or []
+    logging_md = (
+        "\n".join(f"- {r}" for r in logging_reqs)
+        if logging_reqs
+        else "- (none declared)"
+    )
+    success_criteria = vmp.get("success_criteria") or []
+    success_md = (
+        "\n".join(f"- {c}" for c in success_criteria)
+        if success_criteria
+        else "- (none declared)"
+    )
+    decision_rights = str(vmp.get("decision_rights") or "").strip()
+
+    return (
+        "## Production Measurement Plan\n\n"
+        "The figures above are estimates captured at intake. This section\n"
+        "records the *methodology* for measuring the model's realised value\n"
+        "after deployment — actual outcomes flow into the sections below\n"
+        "post-launch. The Data Science team owns wiring the production\n"
+        "logging.\n\n"
+        "## Baseline\n\n"
+        f"{baseline_md}\n\n"
+        "## Counterfactual Design\n\n"
+        f"**Design:** `{vmp.get('counterfactual_design') or 'none_declared'}`\n\n"
+        f"{counterfactual_rationale or '(rationale not specified)'}\n\n"
+        "## Attribution Method\n\n"
+        f"{attribution or '(not specified)'}\n\n"
+        "## Evaluation Horizon\n\n"
+        f"{horizon_md}\n\n"
+        "## Logging Requirements\n\n"
+        "The Data Science team must instrument production logging for:\n\n"
+        f"{logging_md}\n\n"
+        "## Review Cadence\n\n"
+        f"`{vmp.get('review_cadence') or 'ad_hoc'}`\n\n"
+        "## Success Criteria\n\n"
+        f"{success_md}\n\n"
+        "## Decision Rights\n\n"
+        f"{decision_rights or '(not specified)'}\n"
+    )
+
+
+def render_qmd_implementation_plan(
+    *, intake: dict[str, Any], data: dict[str, Any]
+) -> str:
     estimated_value = intake.get("estimated_value") or {}
-    low = estimated_value.get("annual_impact_usd_low")
-    high = estimated_value.get("annual_impact_usd_high")
+    impact = _format_usd_band(
+        estimated_value.get("annual_impact_usd_low"),
+        estimated_value.get("annual_impact_usd_high"),
+        suffix=" per year",
+    )
     confidence = estimated_value.get("confidence", "unknown")
-    impact = "not estimated"
-    if low is not None and high is not None:
-        impact = f"${low:,.0f} – ${high:,.0f} per year"
     assumptions = estimated_value.get("assumptions") or []
     assumptions_md = (
         "\n".join(f"- {a}" for a in assumptions) if assumptions else "- (none declared)"
@@ -480,10 +591,7 @@ def render_qmd_implementation_plan(*, intake: dict[str, Any]) -> str:
         + "## Assumptions\n\n"
         + assumptions_md
         + "\n\n"
-        + "## Measurement\n\n"
-        + "Define the pre/post metric and the measurement window before\n"
-        + "shipping. This section is intentionally sparse — the Data\n"
-        + "Science team owns the measurement plan.\n"
+        + _render_production_measurement_plan(intake=intake, data=data)
     )
 
 
@@ -681,7 +789,7 @@ def build_base_files(
         "analysis/04_feature_engineering.qmd": render_qmd_feature_engineering(),
         "analysis/05_initial_models.qmd": render_qmd_initial_models(intake=intake),
         "analysis/06_implementation_plan.qmd": render_qmd_implementation_plan(
-            intake=intake
+            intake=intake, data=data
         ),
         "analysis/99_extensions.qmd": render_qmd_extensions(),
         "tests/__init__.py": render_tests_init(),

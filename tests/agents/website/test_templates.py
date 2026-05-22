@@ -163,17 +163,94 @@ class TestIndividualRenderers:
         assert "supervised_classification" in out
 
     def test_qmd_implementation_plan_formats_dollar_range(
-        self, intake_report: IntakeReport
+        self, intake_report: IntakeReport, data_report: DataReport
     ) -> None:
         intake = intake_report.model_dump(mode="json")
-        out = render_qmd_implementation_plan(intake=intake)
+        data = data_report.model_dump(mode="json")
+        out = render_qmd_implementation_plan(intake=intake, data=data)
         assert "$2,000,000" in out
         assert "$4,000,000" in out
 
     def test_qmd_implementation_plan_handles_missing_estimate(self) -> None:
-        out = render_qmd_implementation_plan(intake={"estimated_value": {}})
+        out = render_qmd_implementation_plan(
+            intake={"estimated_value": {}}, data={}
+        )
         assert "not estimated" in out
         assert "(none declared)" in out
+
+    def test_qmd_implementation_plan_renders_production_measurement_plan(
+        self, intake_report: IntakeReport, data_report: DataReport
+    ) -> None:
+        intake = intake_report.model_dump(mode="json")
+        data = data_report.model_dump(mode="json")
+        out = render_qmd_implementation_plan(intake=intake, data=data)
+
+        # Every Production Measurement Plan section is present.
+        for heading in (
+            "## Production Measurement Plan",
+            "## Baseline",
+            "## Counterfactual Design",
+            "## Attribution Method",
+            "## Evaluation Horizon",
+            "## Logging Requirements",
+            "## Review Cadence",
+            "## Success Criteria",
+            "## Decision Rights",
+        ):
+            assert heading in out
+
+        # Baseline value is interpolated from DataReport.baseline_snapshot
+        # with a citation footnote (operator-selected rendering).
+        assert "subrogation_recovery_rate" in out
+        assert "0.41 ratio" in out
+        assert "[^baseline-src]: Baseline figures are sourced from" in out
+        assert "`EXECUTED`" in out
+        assert "2024-01-01 → 2024-12-31" in out
+        # Methodology fields from the intake's ValueMeasurementPlan.
+        assert "champion_challenger" in out
+        assert "6 months" in out
+        assert "claim_id" in out
+        # The Phase-5 structured plan replaces the old TODO scaffold.
+        assert "intentionally sparse" not in out
+
+    def test_qmd_implementation_plan_missing_plan_renders_placeholders(
+        self,
+    ) -> None:
+        out = render_qmd_implementation_plan(intake={}, data={})
+
+        # Sections still render even with no value_measurement_plan / snapshot.
+        assert "## Production Measurement Plan" in out
+        assert "## Baseline" in out
+        assert "## Decision Rights" in out
+        assert "No baseline snapshot was collected by the Data Agent" in out
+        assert "none_declared" in out
+        assert "(not specified)" in out
+        # No baseline value → no interpolated figure and no footnote.
+        assert "[^baseline-src]" not in out
+        assert "intentionally sparse" not in out
+
+    def test_qmd_implementation_plan_baseline_collected_but_not_measured(
+        self,
+    ) -> None:
+        # A baseline snapshot exists but the SQL did not yield a value
+        # (Phase-3 FAILED / NOT_EXECUTED path) — the section still renders.
+        data = {
+            "baseline_snapshot": {
+                "metric_name": "subrogation_recovery_rate",
+                "value": None,
+                "measurement_unit": "ratio",
+                "query_execution_status": "FAILED",
+                "caveats": [],
+            }
+        }
+        out = render_qmd_implementation_plan(intake={}, data=data)
+        assert "## Baseline" in out
+        assert "(not measured) [^baseline-src]" in out
+        assert "`FAILED`" in out
+        # No measurement window recorded → placeholder, not a date range.
+        assert "(not recorded)" in out
+        # The provenance footnote is still emitted for a present snapshot.
+        assert "[^baseline-src]: Baseline figures are sourced from" in out
 
     def test_intake_report_md_renders_governance(
         self, intake_report: IntakeReport

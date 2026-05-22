@@ -78,6 +78,8 @@ The `cycle_time` field determines how often the model is reviewed:
 
 This cadence is written into `governance/ongoing_monitoring.md` with specific metrics to track and trigger conditions for re-review.
 
+This **model-health cadence** governs technical monitoring — drift, population stability, performance decay. It runs alongside a separate **value-review cadence** drawn from the intake's `ValueMeasurementPlan.review_cadence` (`weekly`, `monthly`, `quarterly`, or `ad_hoc`), which governs the business-value review: is the model delivering the projected lift against its baseline? `governance/ongoing_monitoring.md` surfaces the business-value baseline metric alongside the model-health metrics, and the full measurement methodology lives in the generated `analysis/06_implementation_plan.qmd`. The two cadences are independent — a model can be statistically healthy yet under-delivering on value, or vice versa.
+
 ## Regulatory framework mapping
 
 When `regulatory_frameworks` are declared in the intake report, the website agent generates a `governance/regulatory_mapping.md` that maps each framework to the specific artifacts satisfying its requirements.

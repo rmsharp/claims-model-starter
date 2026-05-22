@@ -478,3 +478,52 @@ class TestBuildGovernanceFilesUnit:
         )
         assert "Estimated annual cost of inaction:** (not estimated)" in out
         assert "Estimated implementation cost:** (not estimated)" in out
+
+    def test_ongoing_monitoring_threads_baseline_metric(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            render_ongoing_monitoring,
+        )
+
+        intake = {
+            "governance": {"cycle_time": "tactical"},
+            "value_measurement_plan": {
+                "baseline_metric_name": "subrogation_recovery_rate",
+                "review_cadence": "monthly",
+            },
+        }
+        out = render_ongoing_monitoring(intake=intake)
+        # The cycle-time cadence rendering is unchanged.
+        assert "Quarterly review" in out
+        # The intake's value-measurement baseline metric is threaded in.
+        assert "Business-value baseline metric:** `subrogation_recovery_rate`" in out
+        assert "`monthly` cadence" in out
+        # Populated plan → no "none declared" / "not declared" placeholder.
+        assert "none declared at intake" not in out
+        assert "was not declared at intake" not in out
+
+    def test_ongoing_monitoring_missing_value_plan_renders_placeholder(
+        self,
+    ) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            render_ongoing_monitoring,
+        )
+
+        out = render_ongoing_monitoring(intake={"governance": {}})
+        # Section still renders the baseline-metric bullet, as a placeholder.
+        assert "Business-value baseline metric:** (none declared at intake" in out
+        assert "business-value review cadence was not declared at intake" in out
+        # No real metric name leaks through.
+        assert "subrogation_recovery_rate" not in out
+
+    def test_deployment_gates_includes_measurement_plan_review(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            render_deployment_gates,
+        )
+
+        out = render_deployment_gates(intake={})
+        # The Phase-5 review gate is present in Stage 1.
+        assert "Production Measurement Plan" in out
+        assert "06_implementation_plan.qmd" in out
+        # The pre-existing Stage 1 gates are untouched.
+        assert "Model scores logged without affecting decisions" in out
+        assert "## Stage 3 — Full Production" in out

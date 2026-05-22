@@ -75,5 +75,17 @@
   "data_quality_concerns": [
     "Label leakage risk: information_completeness_score is computed post-intake and may reflect adjuster follow-up. Consider freezing at t+24h."
   ],
-  "created_at": "2026-04-14T12:00:00Z"
+  "created_at": "2026-04-14T12:00:00Z",
+  "baseline_snapshot": {
+    "metric_name": "subrogation_recovery_rate",
+    "value": 0.41,
+    "measurement_unit": "ratio",
+    "measurement_window_start": "2024-01-01T00:00:00Z",
+    "measurement_window_end": "2024-12-31T00:00:00Z",
+    "query_sql": "SELECT SUM(r.recovery_amount_usd) / NULLIF(SUM(e.eligible_subrogation_usd), 0) AS subrogation_recovery_rate\nFROM claims_dw.public.subrogation_recovery r\nJOIN claims_dw.public.subrogation_eligibility e\n  ON r.claim_id = e.claim_id\nWHERE e.month_end BETWEEN '2024-01-01' AND '2024-12-31'",
+    "query_execution_status": "EXECUTED",
+    "caveats": [
+      "Trailing-12-month window; partial boundary months excluded from the denominator."
+    ]
+  }
 }

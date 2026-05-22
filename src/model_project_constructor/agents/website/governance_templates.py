@@ -279,6 +279,36 @@ def render_ongoing_monitoring(*, intake: dict[str, Any]) -> str:
     governance = intake.get("governance") or {}
     cycle_time = str(governance.get("cycle_time", "tactical"))
     cadence = _CYCLE_CADENCE.get(cycle_time, "Quarterly review")
+
+    # Thread the intake's value-measurement baseline metric so model-health
+    # monitoring and business-value tracking sit side by side (Phase 5 of
+    # docs/planning/business-value-capture-plan.md).
+    vmp = intake.get("value_measurement_plan") or {}
+    baseline_metric = str(vmp.get("baseline_metric_name") or "").strip()
+    review_cadence = str(vmp.get("review_cadence") or "").strip()
+    if baseline_metric:
+        value_metric_line = (
+            f"- **Business-value baseline metric:** `{baseline_metric}` — "
+            "tracks realised value against the intake estimate (full "
+            "methodology in `analysis/06_implementation_plan.qmd`)\n"
+        )
+    else:
+        value_metric_line = (
+            "- **Business-value baseline metric:** (none declared at intake "
+            "— see `analysis/06_implementation_plan.qmd`)\n"
+        )
+    if review_cadence:
+        value_cadence_note = (
+            f"The business-value review runs on a `{review_cadence}` cadence "
+            "and is tracked separately from the model-health monitoring "
+            "cadence above.\n"
+        )
+    else:
+        value_cadence_note = (
+            "A business-value review cadence was not declared at intake; the "
+            "Data Science team should set one alongside the model-health "
+            "monitoring cadence above.\n"
+        )
     return (
         "# Ongoing Monitoring Plan\n"
         "\n"
@@ -291,6 +321,9 @@ def render_ongoing_monitoring(*, intake: dict[str, Any]) -> str:
         "- Population stability across key features\n"
         "- Score distribution drift\n"
         "- Coverage / volume (how often is the model scored?)\n"
+        f"{value_metric_line}"
+        "\n"
+        f"{value_cadence_note}"
         "\n"
         "## Trigger Conditions\n"
         "\n"
@@ -309,6 +342,8 @@ def render_deployment_gates(*, intake: dict[str, Any]) -> str:
         "\n"
         "## Stage 1 — Shadow\n"
         "\n"
+        "- [ ] Production Measurement Plan (`analysis/06_implementation_plan.qmd`)"
+        " reviewed by the Data Science team\n"
         "- [ ] Model scores logged without affecting decisions\n"
         "- [ ] Monitoring dashboards live for ≥ 2 weeks\n"
         "- [ ] No SEV-1 alerts in shadow window\n"
