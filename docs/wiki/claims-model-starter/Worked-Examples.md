@@ -49,9 +49,16 @@ Running the intake agent against this fixture produces `tests/fixtures/subrogati
 - `candidate_features:` information_completeness_score, adjuster_tenure_years, claim_type, time_from_incident_to_filing_days, damage_amount_usd, fault_evidence_level
 - `evaluation_metrics: ["AUC", "precision_at_top_decile", "recall"]`
 
-**Estimated value** (`:26-36`): a 10% lift on a ~$30M annual subrogation recovery yields roughly $3M/year. Low/high bracket: **$2,000,000 / $4,000,000**. Confidence: medium.
+**Estimated value** (`:26-47`): a 10% lift on a ~$30M annual subrogation recovery yields roughly $3M/year. Low/high bracket: **$2,000,000 / $4,000,000**. Confidence: medium. The Phase-1 business-case fields are populated alongside the narrative:
 
-**Governance classification** (`:37-48`):
+- `cost_of_inaction_narrative` — continuing without prompts and a recovery-likelihood score leaves ~$3M/year on the table indefinitely; `annual_cost_of_inaction_usd_low/high`: **$2,000,000 / $4,000,000**
+- `implementation_cost_band_usd_low/high`: **$250,000 / $500,000**
+- `payback_months`: **4**
+- `value_drivers`: `improved_subrogation_recovery_rate`, `adjuster_evidence_capture_compliance`, `prioritized_pursuit_of_high_likelihood_claims`
+
+**Value measurement plan** (`:48-71`): baseline metric `subrogation_recovery_rate` (trailing-12-month dollars recovered ÷ dollars identified); counterfactual design `champion_challenger` (adjusters randomly assigned to model-assisted vs control queues); evaluation horizon 6 months; review cadence monthly; decision rights — Claims VP + Data Science lead jointly review monthly, with a retire/retrain gate when treatment-control lift stays below 2pp for two consecutive reviews.
+
+**Governance classification** (`:72-83`):
 
 - `risk_tier: "tier_3_moderate"` — advisory recommendation only; humans decide; moderate financial exposure
 - `cycle_time: "tactical"` — scores consumed at intake, workflows change weekly
@@ -119,7 +126,7 @@ The Data Agent produces `tests/fixtures/sample_datareport.json`:
 
 ### Step 5 — Generated repository
 
-The Website Agent scaffolds a project named `subrogation-model` (slug `subrogation_model`). The Phase 4A baseline file set is enumerated in `tests/agents/website/test_templates.py:176-205`:
+The Website Agent scaffolds a project named `subrogation-model` (slug `subrogation_model`). The Phase 4A baseline file set is enumerated in `tests/agents/website/test_templates.py:229-258`:
 
 **Root and configuration**
 
@@ -185,6 +192,21 @@ Consumer-facing (`governance_templates.py:779-783`):
 Tier-2+ and tier-1 artifacts are **not** emitted at this tier; fairness scaffolds are not emitted because `uses_protected_attributes=false`.
 
 **Total file count:** ~38 files across source, analysis, tests, reports, queries, and governance.
+
+#### Rendered `01_business_understanding.qmd`
+
+The Website Agent renders the intake's business case into the first analysis narrative. `render_qmd_business_understanding` (`src/model_project_constructor/agents/website/templates.py`) emits these sections after the Quarto header:
+
+- `## Business Problem`, `## Proposed Solution`, `## Estimated Value` — the intake narrative prose
+- `## Annual Impact Band` — `$2,000,000 – $4,000,000 per year`
+- `## Cost of Inaction` — the inaction narrative, then `**Estimated annual cost of inaction:** $2,000,000 – $4,000,000 per year`
+- `## Implementation Cost` — `**Estimated one-time implementation cost:** $250,000 – $500,000`
+- `## Payback` — `**Estimated payback period:** 4 months`
+- `## Value Drivers` — the three bulleted drivers from the intake
+- `## Assumptions` — the three estimated-value assumptions
+- `## Decision Rights` — the value-measurement-plan's decision-rights statement
+
+The same business-case block is mirrored verbatim into `reports/intake_report.md` via a shared `_render_business_case_block` helper, and `governance/impact_assessment.md` surfaces the cost-of-inaction and implementation-cost bands in its Value Narrative section. Any optional field left empty renders a `(not estimated)` / `(none declared)` placeholder, so the business case stays structurally complete even for a sparse intake.
 
 ---
 

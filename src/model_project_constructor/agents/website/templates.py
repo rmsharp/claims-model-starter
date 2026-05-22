@@ -300,6 +300,83 @@ def _qmd_header(title: str) -> str:
     return f"---\ntitle: \"{title}\"\nformat: html\n---\n\n"
 
 
+def _format_usd_band(low: Any, high: Any, *, suffix: str = "") -> str:
+    """Format a low/high USD pair as ``$L – $H<suffix>``.
+
+    Returns ``(not estimated)`` when either bound is absent — the Phase-1
+    ``EstimatedValue`` business-case fields are all optional, so a sparse
+    intake must still render a structurally complete business case.
+    """
+    if low is None or high is None:
+        return "(not estimated)"
+    return f"${low:,.0f} – ${high:,.0f}{suffix}"
+
+
+def _render_business_case_block(*, intake: dict[str, Any]) -> str:
+    """Render the shared business-case sections for the generated website's
+    ``analysis/01_business_understanding.qmd`` and ``reports/intake_report.md``.
+
+    Both surfaces present the same case — Annual Impact Band, Cost of
+    Inaction, Implementation Cost, Payback, Value Drivers, Assumptions,
+    Decision Rights — so the block lives in one helper (Phase 4 of
+    ``docs/planning/business-value-capture-plan.md``). Every section is
+    always emitted; a missing optional field renders a ``(not estimated)``
+    / ``(none declared)`` placeholder so the business case stays
+    structurally complete no matter how sparse the intake is.
+    """
+    ev = intake.get("estimated_value") or {}
+    vmp = intake.get("value_measurement_plan") or {}
+
+    impact_band = _format_usd_band(
+        ev.get("annual_impact_usd_low"),
+        ev.get("annual_impact_usd_high"),
+        suffix=" per year",
+    )
+    cost_of_inaction = str(ev.get("cost_of_inaction_narrative") or "").strip()
+    cost_of_inaction_band = _format_usd_band(
+        ev.get("annual_cost_of_inaction_usd_low"),
+        ev.get("annual_cost_of_inaction_usd_high"),
+        suffix=" per year",
+    )
+    implementation_band = _format_usd_band(
+        ev.get("implementation_cost_band_usd_low"),
+        ev.get("implementation_cost_band_usd_high"),
+    )
+    payback = ev.get("payback_months")
+    payback_md = f"{payback} months" if payback is not None else "(not estimated)"
+    value_drivers = ev.get("value_drivers") or []
+    value_drivers_md = (
+        "\n".join(f"- {d}" for d in value_drivers)
+        if value_drivers
+        else "- (none declared)"
+    )
+    assumptions = ev.get("assumptions") or []
+    assumptions_md = (
+        "\n".join(f"- {a}" for a in assumptions)
+        if assumptions
+        else "- (none declared)"
+    )
+    decision_rights = str(vmp.get("decision_rights") or "").strip()
+
+    return (
+        "## Annual Impact Band\n\n"
+        f"{impact_band}\n\n"
+        "## Cost of Inaction\n\n"
+        f"{cost_of_inaction or '(not estimated)'}\n\n"
+        f"**Estimated annual cost of inaction:** {cost_of_inaction_band}\n\n"
+        "## Implementation Cost\n\n"
+        f"**Estimated one-time implementation cost:** {implementation_band}\n\n"
+        "## Payback\n\n"
+        f"**Estimated payback period:** {payback_md}\n\n"
+        "## Value Drivers\n\n"
+        f"{value_drivers_md}\n\n"
+        "## Assumptions\n\n"
+        f"{assumptions_md}\n\n"
+        "## Decision Rights\n\n"
+        f"{decision_rights or '(not specified)'}\n"
+    )
+
+
 def render_qmd_business_understanding(*, intake: dict[str, Any]) -> str:
     estimated_value = intake.get("estimated_value") or {}
     narrative = str(estimated_value.get("narrative", "")).strip()
@@ -313,7 +390,8 @@ def render_qmd_business_understanding(*, intake: dict[str, Any]) -> str:
         + "\n\n"
         + "## Estimated Value\n\n"
         + narrative
-        + "\n"
+        + "\n\n"
+        + _render_business_case_block(intake=intake)
     )
 
 
@@ -521,7 +599,8 @@ def render_reports_intake_md(*, intake: dict[str, Any]) -> str:
         "\n"
         "## Estimated Value\n\n"
         f"{ev.get('narrative', '')}\n\n"
-        "## Governance\n\n"
+        + _render_business_case_block(intake=intake)
+        + "\n## Governance\n\n"
         f"- Cycle time: `{gov.get('cycle_time', 'unknown')}`\n"
         f"- Risk tier: `{gov.get('risk_tier', 'unknown')}`\n"
         "- Regulatory frameworks: "

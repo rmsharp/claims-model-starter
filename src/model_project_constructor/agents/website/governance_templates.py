@@ -326,10 +326,32 @@ def render_deployment_gates(*, intake: dict[str, Any]) -> str:
     )
 
 
+def _usd_band(low: Any, high: Any, *, suffix: str = "") -> str:
+    """Format a low/high USD pair as ``$L – $H<suffix>``, or ``(not
+    estimated)`` when either bound is absent.
+
+    Parallels :func:`templates._format_usd_band`; kept local so this
+    governance module stays decoupled from ``templates`` (see the module
+    docstring — the 4A/4B split deliberately avoids cross-imports).
+    """
+    if low is None or high is None:
+        return "(not estimated)"
+    return f"${low:,.0f} – ${high:,.0f}{suffix}"
+
+
 def render_impact_assessment(*, intake: dict[str, Any]) -> str:
     governance = intake.get("governance") or {}
     estimated_value = intake.get("estimated_value") or {}
     narrative = str(estimated_value.get("narrative", "")).strip()
+    cost_of_inaction_band = _usd_band(
+        estimated_value.get("annual_cost_of_inaction_usd_low"),
+        estimated_value.get("annual_cost_of_inaction_usd_high"),
+        suffix=" per year",
+    )
+    implementation_band = _usd_band(
+        estimated_value.get("implementation_cost_band_usd_low"),
+        estimated_value.get("implementation_cost_band_usd_high"),
+    )
     return (
         "# Pre-Deployment Impact Assessment\n"
         "\n"
@@ -340,6 +362,9 @@ def render_impact_assessment(*, intake: dict[str, Any]) -> str:
         "## Value Narrative\n"
         "\n"
         f"{narrative or '(fill in from intake report)'}\n"
+        "\n"
+        f"- **Estimated annual cost of inaction:** {cost_of_inaction_band}\n"
+        f"- **Estimated implementation cost:** {implementation_band}\n"
         "\n"
         "## Risks\n"
         "\n"

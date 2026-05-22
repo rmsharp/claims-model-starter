@@ -115,6 +115,39 @@ class TestIndividualRenderers:
         assert "## Proposed Solution" in out
         assert "Subrogation recovery dropped" in out
 
+    def test_qmd_business_renders_business_case(
+        self, intake_report: IntakeReport
+    ) -> None:
+        intake = intake_report.model_dump(mode="json")
+        out = render_qmd_business_understanding(intake=intake)
+        # All seven business-case sections are present...
+        for heading in (
+            "## Annual Impact Band",
+            "## Cost of Inaction",
+            "## Implementation Cost",
+            "## Payback",
+            "## Value Drivers",
+            "## Assumptions",
+            "## Decision Rights",
+        ):
+            assert heading in out
+        # ...populated with the intake's figures.
+        assert "$2,000,000 – $4,000,000 per year" in out
+        assert "$250,000 – $500,000" in out
+        assert "4 months" in out
+        assert "improved_subrogation_recovery_rate" in out
+        assert "Claims VP + Data Science lead" in out
+
+    def test_qmd_business_missing_fields_render_placeholders(self) -> None:
+        # A sparse intake (no estimated_value, no value_measurement_plan)
+        # still yields a structurally complete business case.
+        out = render_qmd_business_understanding(intake={})
+        assert "## Cost of Inaction" in out
+        assert "## Decision Rights" in out
+        assert "(not estimated)" in out
+        assert "- (none declared)" in out
+        assert "(not specified)" in out
+
     def test_qmd_data_lists_queries(self, data_report: DataReport) -> None:
         data = data_report.model_dump(mode="json")
         out = render_qmd_data(data=data)
@@ -150,6 +183,26 @@ class TestIndividualRenderers:
         assert "tier_3_moderate" in out
         assert "tactical" in out
         assert "SR_11_7" in out
+
+    def test_intake_report_md_renders_business_case(
+        self, intake_report: IntakeReport
+    ) -> None:
+        intake = intake_report.model_dump(mode="json")
+        out = render_reports_intake_md(intake=intake)
+        assert "## Cost of Inaction" in out
+        assert "## Payback" in out
+        assert "## Decision Rights" in out
+        assert "$250,000 – $500,000" in out
+        # The business case sits between Estimated Value and Governance.
+        assert out.index("## Cost of Inaction") < out.index("## Governance")
+
+    def test_intake_report_md_missing_fields_render_placeholders(self) -> None:
+        out = render_reports_intake_md(intake={})
+        assert "## Value Drivers" in out
+        assert "- (none declared)" in out
+        assert "(not specified)" in out
+        # The Governance section still renders after the business case.
+        assert "## Governance" in out
 
     def test_data_report_md_lists_expectations(
         self, data_report: DataReport

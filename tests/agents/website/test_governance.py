@@ -443,3 +443,38 @@ class TestBuildGovernanceFilesUnit:
         assert not is_governance_artifact("src/proj/models.py")
         assert not is_governance_artifact("analysis/03_eda.qmd")
         assert not is_governance_artifact("tests/test_features.py")
+
+    def test_impact_assessment_surfaces_cost_bands(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            render_impact_assessment,
+        )
+
+        intake = {
+            "governance": {"regulatory_frameworks": ["SR_11_7"]},
+            "estimated_value": {
+                "narrative": "A 10% lift yields ~$3M annually.",
+                "annual_cost_of_inaction_usd_low": 2000000.0,
+                "annual_cost_of_inaction_usd_high": 4000000.0,
+                "implementation_cost_band_usd_low": 250000.0,
+                "implementation_cost_band_usd_high": 500000.0,
+            },
+        }
+        out = render_impact_assessment(intake=intake)
+        assert "## Value Narrative" in out
+        assert "Estimated annual cost of inaction" in out
+        assert "$2,000,000 – $4,000,000 per year" in out
+        assert "Estimated implementation cost" in out
+        assert "$250,000 – $500,000" in out
+
+    def test_impact_assessment_missing_cost_bands_render_placeholder(
+        self,
+    ) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            render_impact_assessment,
+        )
+
+        out = render_impact_assessment(
+            intake={"governance": {}, "estimated_value": {}}
+        )
+        assert "Estimated annual cost of inaction:** (not estimated)" in out
+        assert "Estimated implementation cost:** (not estimated)" in out

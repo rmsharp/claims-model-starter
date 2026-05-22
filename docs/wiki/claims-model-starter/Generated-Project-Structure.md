@@ -116,7 +116,7 @@ Seven `.qmd` files (Quarto markdown, YAML header with `format: html`). Each narr
 
 | Notebook | Content |
 |----------|---------|
-| `01_business_understanding` | Business problem, proposed solution, estimated value |
+| `01_business_understanding` | Business problem, proposed solution, and the full business case — estimated value, annual impact band, cost of inaction, implementation cost, payback, value drivers, assumptions, decision rights |
 | `02_data` | Data Agent summary, primary query list, loading code |
 | `03_eda` | Scaffolded EDA narrative with stub code |
 | `04_feature_engineering` | References `features.py`, shows import pattern |

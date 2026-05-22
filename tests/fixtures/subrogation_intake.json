@@ -32,7 +32,42 @@
       "Current annual subrogation recovery is approximately $30M.",
       "10% recovery lift is conservative given the proposed levers.",
       "Adjuster compliance with prompts reaches 60%+ within 6 months."
+    ],
+    "cost_of_inaction_narrative": "Continuing without prompts and a recovery-likelihood score leaves ~$3M/year on the table indefinitely; the cumulative gap grows as adjuster habits set under the new claims system.",
+    "annual_cost_of_inaction_usd_low": 2000000.0,
+    "annual_cost_of_inaction_usd_high": 4000000.0,
+    "implementation_cost_band_usd_low": 250000.0,
+    "implementation_cost_band_usd_high": 500000.0,
+    "payback_months": 4,
+    "value_drivers": [
+      "improved_subrogation_recovery_rate",
+      "adjuster_evidence_capture_compliance",
+      "prioritized_pursuit_of_high_likelihood_claims"
     ]
+  },
+  "value_measurement_plan": {
+    "baseline_metric_name": "subrogation_recovery_rate",
+    "baseline_metric_definition": "Trailing-12-month subrogation_dollars_recovered divided by eligible_subrogation_dollars_identified, computed at month-end from the claims data warehouse.",
+    "baseline_measurement_window": "trailing 12 months",
+    "counterfactual_design": "champion_challenger",
+    "counterfactual_rationale": "Adjusters are randomly assigned to model-assisted vs control queues during rollout; difference in recovery rate over the evaluation horizon attributes lift to the model + prompts.",
+    "attribution_method_narrative": "Outcome = subrogation recovery rate. Lift = treatment_rate - control_rate over each rolling 30-day window during the evaluation horizon. Confounders (claim-mix, line-of-business) controlled by stratified random assignment.",
+    "evaluation_horizon_months": 6,
+    "logging_requirements": [
+      "claim_id",
+      "model_input_features_snapshot",
+      "subrogation_likelihood_score",
+      "adjuster_action_taken",
+      "assigned_queue (treatment/control)",
+      "subrogation_outcome_at_18_months"
+    ],
+    "review_cadence": "monthly",
+    "success_criteria": [
+      "Recovery rate +5pp vs control at 6 months (treatment - control).",
+      "No degradation in adjuster cycle time.",
+      "No fairness SLA breach across line-of-business segments."
+    ],
+    "decision_rights": "Claims VP + Data Science lead jointly review monthly. Retire/retrain gate: if treatment-control lift < 2pp for two consecutive monthly reviews, model is retrained or rolled back."
   },
   "governance": {
     "cycle_time": "tactical",
