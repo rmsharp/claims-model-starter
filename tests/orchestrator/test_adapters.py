@@ -29,6 +29,7 @@ from model_project_constructor.schemas.v1.intake import (
     IntakeReport,
     ModelSolution,
     QAPair,
+    ValueMeasurementPlan,
 )
 
 
@@ -215,6 +216,38 @@ class TestIntakeReportToDataRequestInventory:
         )
         assert request.data_source_inventory is not None
         assert request.data_source_inventory.entries == []
+
+
+class TestIntakeReportToDataRequestBaseline:
+    """Phase 3 (business-value-capture-plan §5): ``value_measurement_plan``
+    projects into ``DataRequest.baseline_metric_*`` fields."""
+
+    def test_no_plan_leaves_baseline_fields_none(self) -> None:
+        intake = _make_intake()
+        assert intake.value_measurement_plan is None
+        request = intake_report_to_data_request(intake, run_id="run_001")
+        assert request.baseline_metric_name is None
+        assert request.baseline_metric_definition is None
+        assert request.baseline_measurement_window is None
+
+    def test_plan_projects_into_baseline_fields(self) -> None:
+        plan = ValueMeasurementPlan(
+            baseline_metric_name="subro_recovery_rate",
+            baseline_metric_definition=(
+                "subro_recovered_amount / paid_amount across closed claims"
+            ),
+            baseline_measurement_window="trailing 12 months",
+            counterfactual_design="champion_challenger",
+            evaluation_horizon_months=6,
+        )
+        intake = _make_intake()
+        intake_with_plan = intake.model_copy(update={"value_measurement_plan": plan})
+        request = intake_report_to_data_request(intake_with_plan, run_id="run_001")
+        assert request.baseline_metric_name == "subro_recovery_rate"
+        assert request.baseline_metric_definition == (
+            "subro_recovered_amount / paid_amount across closed claims"
+        )
+        assert request.baseline_measurement_window == "trailing 12 months"
 
 
 class TestIntakeQAPairsToInventory:

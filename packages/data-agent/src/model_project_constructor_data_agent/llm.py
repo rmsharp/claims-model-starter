@@ -64,6 +64,25 @@ class SummaryResult:
 
 
 @dataclass(frozen=True)
+class BaselineQuerySpec:
+    """LLM output shape for a baseline-metric collection query.
+
+    Produced by ``generate_baseline_query`` from the upstream intake's
+    ``value_measurement_plan`` (architecture plan §3.2). The SQL is executed
+    by ``baseline_collection_node`` against the read-only DB; the resulting
+    scalar value lands in ``DataReport.baseline_snapshot.value``.
+
+    ``measurement_unit`` is free-form prose echoed onto the
+    :class:`model_project_constructor_data_agent.schemas.BaselineSnapshot`
+    (e.g. ``"percent"``, ``"USD"``, ``"count"``).
+    """
+
+    metric_name: str
+    sql: str
+    measurement_unit: str
+
+
+@dataclass(frozen=True)
 class TableRanking:
     """LLM output shape for one ranked entry from ``rank_candidate_tables``.
 
@@ -124,3 +143,18 @@ class LLMClient(Protocol):
         self, request: DataRequest, primary_query: PrimaryQuerySpec
     ) -> Datasheet:
         """Produce a Gebru-2021 datasheet for a single primary query."""
+
+    def generate_baseline_query(
+        self,
+        request: DataRequest,
+        metric_name: str,
+        metric_definition: str,
+        measurement_window: str,
+    ) -> BaselineQuerySpec:
+        """Return SQL that computes the scalar baseline value for the metric.
+
+        Called by ``baseline_collection_node`` when the upstream intake
+        provided a ``value_measurement_plan`` with a baseline metric. The
+        SQL must return at least one row whose first column is the scalar
+        baseline value; downstream extraction reads only that cell.
+        """

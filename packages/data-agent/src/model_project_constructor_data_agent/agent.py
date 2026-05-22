@@ -21,6 +21,7 @@ from model_project_constructor_data_agent.llm import (
     SummaryResult,
 )
 from model_project_constructor_data_agent.schemas import (
+    BaselineSnapshot,
     DataReport,
     DataRequest,
     Datasheet,
@@ -140,6 +141,8 @@ def _assemble_complete_report(
             "quality checks not executed"
         )
 
+    baseline_snapshot: BaselineSnapshot | None = final_state.get("baseline_snapshot")
+
     return DataReport(
         status="COMPLETE",
         request=request,
@@ -149,4 +152,5 @@ def _assemble_complete_report(
         unconfirmed_expectations=list(summary.unconfirmed_expectations),
         data_quality_concerns=data_quality_concerns,
         created_at=datetime.now(UTC),
+        baseline_snapshot=baseline_snapshot,
     )

@@ -57,6 +57,13 @@ class DataRequest(StrictBase):
 
     data_source_inventory: DataSourceInventory | None = None
 
+    # Baseline-metric projection from upstream IntakeReport.value_measurement_plan
+    # (architecture plan §3.2 invariant: intake defines, data agent executes).
+    # All three present together or all three None.
+    baseline_metric_name: str | None = None
+    baseline_metric_definition: str | None = None
+    baseline_measurement_window: str | None = None
+
     source: Literal["pipeline", "standalone"]
     source_ref: str
 

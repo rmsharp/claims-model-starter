@@ -35,6 +35,7 @@ from typing import Any
 from anthropic.types import TextBlock
 
 from model_project_constructor_data_agent.llm import (
+    BaselineQuerySpec,
     PrimaryQuerySpec,
     QualityCheckSpec,
     SummaryResult,
@@ -265,6 +266,43 @@ class AnthropicLLMClient:
             uses=str(parsed["uses"]),
             known_biases=[str(x) for x in parsed["known_biases"]],
             maintenance=str(parsed["maintenance"]),
+        )
+
+    def generate_baseline_query(
+        self,
+        request: DataRequest,
+        metric_name: str,
+        metric_definition: str,
+        measurement_window: str,
+    ) -> BaselineQuerySpec:
+        system = (
+            "You are a senior P&C insurance data analyst. Given a baseline "
+            "metric definition and a measurement window, write a single "
+            "SELECT query that computes the scalar baseline value for the "
+            "current state of the business. Return ONE row whose FIRST "
+            "column is the scalar value."
+        )
+        user = (
+            f"DataRequest:\n{_dump_request(request)}\n\n"
+            f"Baseline metric name: {metric_name}\n"
+            f"Baseline metric definition: {metric_definition}\n"
+            f"Measurement window: {measurement_window}\n\n"
+            'Return a JSON object with keys: "metric_name" (echo back), '
+            '"sql" (a SELECT statement whose first column of the first row '
+            'is the scalar baseline value), "measurement_unit" (one of '
+            '"percent", "USD", "count", "ratio", "days", or another short '
+            "free-form unit string). Return ONLY the JSON object, no prose."
+        )
+        raw = self._call_claude(system, user)
+        parsed = _extract_json(raw)
+        if not isinstance(parsed, dict):
+            raise LLMParseError(
+                f"generate_baseline_query: expected JSON object, got {type(parsed).__name__}"
+            )
+        return BaselineQuerySpec(
+            metric_name=str(parsed["metric_name"]),
+            sql=str(parsed["sql"]),
+            measurement_unit=str(parsed["measurement_unit"]),
         )
 
     def rank_candidate_tables(

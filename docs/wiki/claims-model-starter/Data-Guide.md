@@ -83,6 +83,21 @@ The DataReport may flag data quality issues discovered during query generation:
 
 Review `reports/data_report.md` > "Data Quality Concerns" before beginning analysis.
 
+## Baseline collection
+
+When the intake interview captures a value-measurement plan with a baseline metric, the Data Agent collects the **current-state baseline** for that metric. After running quality checks, it asks the LLM for a `SELECT` that computes the metric's scalar value, executes it read-only, and records the result on `DataReport.baseline_snapshot`:
+
+| `BaselineSnapshot` field | Meaning |
+|--------------------------|---------|
+| `metric_name` | The baseline metric, e.g. `subro_recovery_rate` |
+| `value` | The scalar baseline (`null` when not executed or failed) |
+| `measurement_unit` | Free-form unit -- `percent`, `USD`, `count`, ... |
+| `query_sql` | The generated baseline query, preserved even when unexecuted |
+| `query_execution_status` | `EXECUTED`, `NOT_EXECUTED`, or `FAILED` |
+| `caveats` | Notes -- populated when the query was not executed or failed |
+
+The metric **definition** comes from intake (the `value_measurement_plan`); the Data Agent only **executes** the measurement. If intake supplied no plan, `baseline_snapshot` is `null` and this step is skipped. A baseline-query error never fails the run -- the snapshot records `FAILED` and the rest of the `DataReport` ships normally. This baseline is the "before" number the model's production value is later measured against.
+
 ## The Data Agent as a standalone tool
 
 The Data Agent is designed to be reusable beyond the pipeline. Analyst teams can use it independently:

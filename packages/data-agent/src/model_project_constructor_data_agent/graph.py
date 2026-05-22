@@ -10,6 +10,7 @@ from model_project_constructor_data_agent.db import ReadOnlyDB
 from model_project_constructor_data_agent.llm import LLMClient
 from model_project_constructor_data_agent.nodes import (
     fail_execution_invalid_sql,
+    make_baseline_collection,
     make_datasheet,
     make_execute_qc,
     make_generate_qc,
@@ -29,6 +30,7 @@ def build_graph(llm: LLMClient, db: ReadOnlyDB | None) -> Any:
     g.add_node("fail_execution", fail_execution_invalid_sql)
     g.add_node("generate_qc", make_generate_qc(llm))
     g.add_node("execute_qc", make_execute_qc(db))
+    g.add_node("baseline_collection", make_baseline_collection(llm, db))
     g.add_node("summarize", make_summarize(llm))
     g.add_node("datasheet", make_datasheet(llm))
 
@@ -45,7 +47,8 @@ def build_graph(llm: LLMClient, db: ReadOnlyDB | None) -> Any:
     g.add_edge("retry_once", "generate_queries")
     g.add_edge("fail_execution", END)
     g.add_edge("generate_qc", "execute_qc")
-    g.add_edge("execute_qc", "summarize")
+    g.add_edge("execute_qc", "baseline_collection")
+    g.add_edge("baseline_collection", "summarize")
     g.add_edge("summarize", "datasheet")
     g.add_edge("datasheet", END)
 

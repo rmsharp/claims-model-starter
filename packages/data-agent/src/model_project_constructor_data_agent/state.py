@@ -14,6 +14,7 @@ from model_project_constructor_data_agent.llm import (
     SummaryResult,
 )
 from model_project_constructor_data_agent.schemas import (
+    BaselineSnapshot,
     DataRequest,
     Datasheet,
     QualityCheck,
@@ -31,5 +32,6 @@ class DataAgentState(TypedDict, total=False):
     db_executed: bool
     summary_result: SummaryResult
     datasheets: list[Datasheet]
+    baseline_snapshot: BaselineSnapshot | None
     status: str
     failure_reason: str

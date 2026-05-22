@@ -35,6 +35,7 @@ from model_project_constructor_data_agent.anthropic_client import (
 from model_project_constructor_data_agent.db import ReadOnlyDB
 from model_project_constructor_data_agent.discovery import probe_information_schema
 from model_project_constructor_data_agent.llm import (
+    BaselineQuerySpec,
     LLMClient,
     PrimaryQuerySpec,
     QualityCheckSpec,
@@ -261,6 +262,19 @@ class _FakeCLIClient:
             uses="Smoke test only.",
             known_biases=["placeholder values are not representative"],
             maintenance="Not applicable.",
+        )
+
+    def generate_baseline_query(
+        self,
+        request: DataRequest,
+        metric_name: str,
+        metric_definition: str,
+        measurement_window: str,
+    ) -> BaselineQuerySpec:
+        return BaselineQuerySpec(
+            metric_name=metric_name,
+            sql="SELECT 0.0 AS placeholder_baseline",
+            measurement_unit="count",
         )
 
     def rank_candidate_tables(

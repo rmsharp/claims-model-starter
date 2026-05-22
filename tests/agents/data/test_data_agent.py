@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import pytest
+from model_project_constructor_data_agent.llm import BaselineQuerySpec
 
 from model_project_constructor.agents.data import DataAgent, LLMClient
 from model_project_constructor.agents.data.db import ReadOnlyDB
@@ -80,6 +81,19 @@ class FakeLLMClient:
         self, request: DataRequest, primary_query: PrimaryQuerySpec
     ) -> Datasheet:
         return self.datasheet_response
+
+    def generate_baseline_query(
+        self,
+        request: DataRequest,
+        metric_name: str,
+        metric_definition: str,
+        measurement_window: str,
+    ) -> BaselineQuerySpec:
+        return BaselineQuerySpec(
+            metric_name=metric_name,
+            sql=f"SELECT AVG(paid_amount) AS {metric_name} FROM claims",
+            measurement_unit="USD",
+        )
 
 
 def test_fake_llm_client_implements_protocol(
@@ -477,3 +491,188 @@ def test_inventory_entries_used_defaults_empty_when_inventory_absent(
     assert report.status == "COMPLETE"
     assert report.primary_queries[0].inventory_entries_used == []
     assert report.request.data_source_inventory is None
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 — baseline collection (business-value-capture-plan.md §5 Phase 3)
+# ---------------------------------------------------------------------------
+
+
+def _request_with_baseline(sample_request: DataRequest) -> DataRequest:
+    return sample_request.model_copy(
+        update={
+            "baseline_metric_name": "subro_recovery_rate",
+            "baseline_metric_definition": (
+                "Average paid_amount across all claims in the population."
+            ),
+            "baseline_measurement_window": "trailing 12 months",
+        }
+    )
+
+
+def test_baseline_collection_executed_when_plan_and_db_present(
+    seeded_db: ReadOnlyDB,
+    sample_request: DataRequest,
+    primary_query_spec_valid: PrimaryQuerySpec,
+    qc_specs_valid: list[QualityCheckSpec],
+    summary_response: SummaryResult,
+    datasheet_response: Datasheet,
+) -> None:
+    """Plan present + DB reachable → snapshot has EXECUTED status + numeric value."""
+    fake = FakeLLMClient(
+        primary_queries_sequence=[[primary_query_spec_valid]],
+        qc_response=[qc_specs_valid],
+        summary_response=summary_response,
+        datasheet_response=datasheet_response,
+    )
+    agent = DataAgent(llm=fake, db=seeded_db)
+
+    report = agent.run(_request_with_baseline(sample_request))
+
+    assert report.status == "COMPLETE"
+    assert report.baseline_snapshot is not None
+    assert report.baseline_snapshot.metric_name == "subro_recovery_rate"
+    assert report.baseline_snapshot.query_execution_status == "EXECUTED"
+    assert report.baseline_snapshot.value is not None
+    # Seeded fixture has 5 rows with paid_amount {5000, 8000, 2500, 15000, 6200};
+    # avg = 7340.0
+    assert report.baseline_snapshot.value == 7340.0
+    assert report.baseline_snapshot.measurement_unit == "USD"
+    assert report.baseline_snapshot.caveats == []
+
+
+def test_baseline_collection_skipped_when_no_plan(
+    seeded_db: ReadOnlyDB,
+    sample_request: DataRequest,
+    primary_query_spec_valid: PrimaryQuerySpec,
+    qc_specs_valid: list[QualityCheckSpec],
+    summary_response: SummaryResult,
+    datasheet_response: Datasheet,
+) -> None:
+    """No baseline_metric_definition on the request → baseline_snapshot is None."""
+    fake = FakeLLMClient(
+        primary_queries_sequence=[[primary_query_spec_valid]],
+        qc_response=[qc_specs_valid],
+        summary_response=summary_response,
+        datasheet_response=datasheet_response,
+    )
+    agent = DataAgent(llm=fake, db=seeded_db)
+
+    report = agent.run(sample_request)
+
+    assert report.status == "COMPLETE"
+    assert report.baseline_snapshot is None
+
+
+def test_baseline_collection_not_executed_when_db_unreachable(
+    sample_request: DataRequest,
+    primary_query_spec_valid: PrimaryQuerySpec,
+    qc_specs_valid: list[QualityCheckSpec],
+    summary_response: SummaryResult,
+    datasheet_response: Datasheet,
+) -> None:
+    """Plan present but DB unreachable → snapshot status NOT_EXECUTED, SQL preserved."""
+    unreachable = ReadOnlyDB("sqlite:////nonexistent/path/baseline.db")
+    fake = FakeLLMClient(
+        primary_queries_sequence=[[primary_query_spec_valid]],
+        qc_response=[qc_specs_valid],
+        summary_response=summary_response,
+        datasheet_response=datasheet_response,
+    )
+    agent = DataAgent(llm=fake, db=unreachable)
+
+    report = agent.run(_request_with_baseline(sample_request))
+
+    assert report.status == "COMPLETE"
+    assert report.baseline_snapshot is not None
+    assert report.baseline_snapshot.query_execution_status == "NOT_EXECUTED"
+    assert report.baseline_snapshot.value is None
+    assert "subro_recovery_rate" in report.baseline_snapshot.query_sql
+    assert any(
+        "database not reachable" in c for c in report.baseline_snapshot.caveats
+    )
+
+
+def test_baseline_collection_failed_on_sql_error(
+    seeded_db: ReadOnlyDB,
+    sample_request: DataRequest,
+    primary_query_spec_valid: PrimaryQuerySpec,
+    qc_specs_valid: list[QualityCheckSpec],
+    summary_response: SummaryResult,
+    datasheet_response: Datasheet,
+) -> None:
+    """LLM returns SQL against a missing table → fail-the-snapshot, not the graph."""
+
+    class BadBaselineSQLClient(FakeLLMClient):
+        def generate_baseline_query(
+            self,
+            request: DataRequest,
+            metric_name: str,
+            metric_definition: str,
+            measurement_window: str,
+        ) -> BaselineQuerySpec:
+            return BaselineQuerySpec(
+                metric_name=metric_name,
+                sql="SELECT AVG(x) FROM table_that_does_not_exist",
+                measurement_unit="USD",
+            )
+
+    fake = BadBaselineSQLClient(
+        primary_queries_sequence=[[primary_query_spec_valid]],
+        qc_response=[qc_specs_valid],
+        summary_response=summary_response,
+        datasheet_response=datasheet_response,
+    )
+    agent = DataAgent(llm=fake, db=seeded_db)
+
+    report = agent.run(_request_with_baseline(sample_request))
+
+    # Fail-the-snapshot, not fail-the-graph (Session 88 Phase 1A resolution).
+    assert report.status == "COMPLETE"
+    assert report.baseline_snapshot is not None
+    assert report.baseline_snapshot.query_execution_status == "FAILED"
+    assert report.baseline_snapshot.value is None
+    assert any(
+        "table_that_does_not_exist" in c for c in report.baseline_snapshot.caveats
+    )
+
+
+def test_baseline_collection_failed_on_llm_error(
+    seeded_db: ReadOnlyDB,
+    sample_request: DataRequest,
+    primary_query_spec_valid: PrimaryQuerySpec,
+    qc_specs_valid: list[QualityCheckSpec],
+    summary_response: SummaryResult,
+    datasheet_response: Datasheet,
+) -> None:
+    """LLM raises during baseline-query generation → fail-the-snapshot."""
+
+    class ExplodingBaselineClient(FakeLLMClient):
+        def generate_baseline_query(
+            self,
+            request: DataRequest,
+            metric_name: str,
+            metric_definition: str,
+            measurement_window: str,
+        ) -> BaselineQuerySpec:
+            raise RuntimeError("simulated baseline LLM crash")
+
+    fake = ExplodingBaselineClient(
+        primary_queries_sequence=[[primary_query_spec_valid]],
+        qc_response=[qc_specs_valid],
+        summary_response=summary_response,
+        datasheet_response=datasheet_response,
+    )
+    agent = DataAgent(llm=fake, db=seeded_db)
+
+    report = agent.run(_request_with_baseline(sample_request))
+
+    assert report.status == "COMPLETE"
+    assert report.baseline_snapshot is not None
+    assert report.baseline_snapshot.query_execution_status == "FAILED"
+    assert report.baseline_snapshot.value is None
+    assert report.baseline_snapshot.query_sql == ""
+    assert any(
+        "simulated baseline LLM crash" in c
+        for c in report.baseline_snapshot.caveats
+    )

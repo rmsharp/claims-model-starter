@@ -5,9 +5,94 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 87 — operator direction (off-BACKLOG; BACKLOG.md EMPTY since Session 70; 18th consecutive carry). Implement **Phase 2** of `docs/planning/business-value-capture-plan.md` (Session 85): extend intake interview prompt schema for 7 new `EstimatedValue` fields + new `value_measurement_plan` object; plumb through `protocol.py` `DraftReportResult`, `nodes.py` draft/revise/finalize (including `finalize` status-decision update per plan §3.3 — require `value_measurement_plan` with `baseline_metric_name` + `evaluation_horizon_months` non-null for `COMPLETE`); update `fixture.py` loader; extend 7 YAML intake fixtures with `value_measurement_plan:` block + new EstimatedValue fields; update intake-test trio (`test_anthropic_client.py` / `test_nodes.py` / `test_graph.py`); update wiki `Intake-Interview-Design.md` (four → five required sections + new §4.5 + Section 7 status-rule update) + `docs/tutorial.md` walk. Per Phase 1A AskUserQuestion (4th post-promotion self-application of row #40): measurement-plan prompt shape = **inline within `draft_report`** (Recommended); question-budget allocation = **~3-4 of MAX_QUESTIONS=20 cap** (Recommended) — both operator-confirmed.
+**Task:** Session 88 — operator direction "phase 3" (off-BACKLOG; BACKLOG.md EMPTY since Session 70; 19th consecutive carry). Implement **Phase 3** of `docs/planning/business-value-capture-plan.md` (Session 85): add `BaselineQuerySpec` + `generate_baseline_query()` method on `LLMClient` Protocol; implement `AnthropicLLMClient.generate_baseline_query()`; add `baseline_snapshot: BaselineSnapshot | None` to `DataAgentState`; add `baseline_collection_node` (`make_baseline_collection(llm, db)` factory) and insert in `graph.py` between `execute_qc` and `summarize`; pipe `state.baseline_snapshot` into `DataReport` in `agent.py`; thread `value_measurement_plan` through `orchestrator/adapters.py` (intake → DataRequest); extend tests with executed / skipped / failed paths; update wiki `Data-Guide.md` + architecture-plan §6. Per Phase 1A AskUserQuestion (5th post-promotion self-application of row #40): baseline-SQL-error failure mode = **fail-the-snapshot** (Recommended; `query_execution_status="FAILED"`, report still ships); execution order = **strictly after primary-query execution** (Recommended; sequential between `execute_qc` and `summarize`, no concurrency) — both operator-confirmed.
 
-**Status:** Session 87 IN PROGRESS. Phase 1B stub claim — applying Learning #29 (stub-insert anchor pre-grep returned 1, safe single-line, **51st consecutive clean**) + Learning #35 (raw-string archive pre-grep `### Session 86 ARCHIVED ACTIVE TASK` returned 2 prose-only hits, **20th consecutive post-promotion clean**) + permanent row #39 (file-tail archive zone locator returned line 2696, Session 85 archive heading — **6th-instance post-promotion self-application**) + permanent row #38 (raw-string `grep -c`, no regex anchors — **8th post-promotion self-application**) + Learning #37 (consume-and-replace at Phase 1B Edit #2 — consume Session 85 heading + first-line Task text, replicate at tail of new_string) + Learning #34 (multi-line anchor for Edit #2 uniqueness; Edit #1 single-line raw-string Task+Status block sufficient at single-match) + Learning #36 (Phase-1B vs Phase-3 boundary — touch only Task/Status + archive insert) + permanent row #40 (Phase 1A AskUserQuestion resolved 2 pre-named Phase-2 contract questions — measurement-plan prompt shape + question-budget allocation — before claim; **4th post-promotion self-application**, maximum-ROI inheriting-side use case validated again).
+**Status:** Session 88 COMPLETE. **Recovery session.** Phase 3 of `business-value-capture-plan.md` (data agent baseline collection) was implemented across 10 files by an interrupted prior Session 88 invocation that did Phase 0 / Phase 1A AskUserQuestion / Phase 1B stub + Session 87 archive / full implementation — then ended without committing or closing out. This invocation ran Phase 0 recovery orientation, detected the 12 uncommitted files, took operator direction ("verify, then close out") via AskUserQuestion, verified all gates against the uncommitted work (623/623 @ 96.96%, ruff clean after one I001 import-sort fix, mypy 0/61), completed the two Phase 3 documentation surfaces (`Data-Guide.md` + architecture-plan §4.2), and closed out. See `### What Session 88 Did` below + the CHANGELOG Session 88 entry. Commit pending.
+
+### Session 87 Handoff Evaluation (by Session 88)
+
+**Score: 9/10.** Session 87's handoff correctly forecast Phase 3 as the natural sequel (ranked likely direction #1, named verbatim) and pre-named the 2 Phase-3 contract questions (fail-the-snapshot vs fail-the-graph; sequential vs parallel) with bounded options + plan-recommended defaults — these fed directly into the interrupted invocation's Phase 1A AskUserQuestion (row #40 5th self-application; operator confirmed both Recommended options). Plan §5 Phase 3's file/anchor table gave a complete execution checklist. Gotcha #1 pre-commit baseline (616 @ 97.30%) matched. The handoff named the data-agent graph flow, the orchestrator adapter region, and the schema state accurately.
+
+- **What helped:** (a) The 2 pre-named contract questions resolved at Phase 1A with zero mid-execution round-trips. (b) Plan §5 Phase 3's file/anchor table was accurate enough to implement against directly (graph edge, adapter region, state field). (c) Gotcha specifics (BACKLOG empty, tooling PATH, pre-commit baseline) all matched.
+- **What was missing:** The handoff (carrying plan §5 Phase 3) named the architecture-plan doc target as "§6 (Data Agent)" — but §6 is "Handoff Envelope Protocol"; the Data Agent section is §4.2. Neither the plan nor the handoff flagged the section-number error; Session 88 resolved it via Learning #11 (the baseline subsection landed in §4.2). Minor.
+- **What was wrong:** Nothing material beyond the §6/§4.2 mismatch (traceable to the plan, carried forward verbatim by the handoff).
+- **ROI:** High (~9×). Pre-named contract questions + accurate plan anchors made the implementation a direct execution. The one cost the handoff could not prevent: the prior Session 88 invocation crashed mid-implementation without committing — see "What Session 88 Did" recovery note. The handoff was not at fault for the interruption, but a checkpoint-commit discipline (Candidate #59) would have bounded its blast radius.
+
+### What Session 88 Did
+
+**Deliverable:** Phase 3 of `docs/planning/business-value-capture-plan.md` — data agent baseline collection. **COMPLETE.**
+**Started:** 2026-05-21 (interrupted prior invocation) — **resumed/closed:** 2026-05-22.
+**Commit (pending):** `feat(data-agent): Phase 3 of business-value-capture — baseline collection (Session 88)`
+
+**Recovery context.** Session 88 ran across two invocations. The **first invocation** did Phase 0, Phase 1A (AskUserQuestion — operator confirmed fail-the-snapshot + strictly-after), Phase 1B (stub claim + Session 87 archive to the file tail), and the full 10-file implementation — then ended before committing or closing out. The **second invocation** (this one) ran Phase 0 orientation, detected the interrupted-but-uncommitted state (12 modified files, no commit), reported it, took operator direction ("verify, then close out") via AskUserQuestion per the SAFEGUARDS Session Recovery Protocol, verified all gates against the uncommitted work, fixed one ruff error, completed the two Phase 3 documentation surfaces, and closed out.
+
+**What was done:**
+
+1. **Implementation (first invocation; verified — not authored — this invocation):** `BaselineQuerySpec` + `generate_baseline_query()` on the `LLMClient` Protocol (`llm.py`); `AnthropicLLMClient.generate_baseline_query()` (`anthropic_client.py`, JSON-driven prompt pattern); `DataRequest` baseline-projection fields `baseline_metric_name`/`_definition`/`_measurement_window` (`schemas.py`); `DataAgentState.baseline_snapshot` (`state.py`); `make_baseline_collection(llm, db)` factory + node with skip / EXECUTED / NOT_EXECUTED / FAILED branches (`nodes.py`); `baseline_collection` graph node on the `execute_qc → summarize` edge (`graph.py`); `DataReport.baseline_snapshot` assembly (`agent.py`); `_FakeCLIClient` Protocol stub (`cli.py`); `value_measurement_plan` → `DataRequest` projection in the orchestrator adapter (`adapters.py`); 5 data-agent tests + 2 adapter tests.
+2. **Phase 0 recovery orientation (this invocation):** SAFEGUARDS / SESSION_NOTES head / SESSION_RUNNER read in full; dashboard run (MPC 96/100, medium risk, active); ghost-session check (no ghost commits — HEAD = Session 87's `3474ae9`; an interrupted in-progress Session 88 detected instead). Reported state; AskUserQuestion for the recovery decision.
+3. **Verification (this invocation):** `pytest -q` → 623 passed @ 96.96%; `mypy src/` + `mypy packages/data-agent/src/` → 0/61; `ruff` → 1 error (I001 import-sort in `test_data_agent.py` — the new `BaselineQuerySpec` import was placed mid-`model_project_constructor.*` block), `ruff --fix`'d, re-verified clean.
+4. **Documentation completion (this invocation):** `Data-Guide.md` — new "## Baseline collection" section (BaselineSnapshot field table + intake-defines / data-agent-executes note). `architecture-plan.md` §4.2 — baseline-collection behavior bullet + "Baseline collection" subsection paragraph. Plan §5 Phase 3 said "§6 (Data Agent)"; §6 is actually "Handoff Envelope Protocol", so the subsection landed in §4.2 (Learning #11).
+5. **All 5 Phase-3 plan §5 greppable completion criteria verified post-edit:** `graph.py` baseline → 4; `agent.py` baseline_snapshot → 2; `llm.py` BaselineQuerySpec/generate → 4; `adapters.py` value_measurement_plan → 5; skip-path test (`baseline_snapshot is None`) → 2.
+6. **Close-out (this invocation):** CHANGELOG Session 88 entry; this block; commit pending. Wiki publish hook WILL fire (`Data-Guide.md` edited).
+
+### Phase 3B: Self-assess — 8.5/10
+
+- **Research before creative work:** Yes (this invocation). Full Phase 0 read; reviewed the entire uncommitted diff (all 11 implementation files + tests) before verifying; read plan §5 Phase 3 + Appendix B + both doc targets before editing.
+- **Stakeholder corrections:** 0. The Phase 0 recovery AskUserQuestion was the correct call — SAFEGUARDS mandates "do not touch uncommitted changes from a previous session — report and ask."
+- **What I got right (this invocation):** (a) Honored the SAFEGUARDS Session Recovery Protocol — reported the interrupted state and asked before touching the work, rather than assuming. (b) Verified gates BEFORE doc work and BEFORE any close-out claim. (c) Caught the plan's "§6 (Data Agent)" error against the actual doc structure (Learning #11) instead of blindly editing §6. (d) Honest accounting — the 10-file implementation was the first invocation's work; this block and the CHANGELOG say so explicitly (Evidence Requirement: never claim credit for work you didn't do).
+- **What went wrong (Session 88 as a whole):** The first invocation violated SAFEGUARDS blast-radius discipline — it touched 10+ files with **zero checkpoint commits** and then ended, leaving uncommitted, unverified work. "Never touch more than 5 files without committing first" exists for exactly this. Recovery was clean only because the work happened to pass every gate; had a gate failed, diagnosis would have been materially harder with no commit boundary to bisect against. This is the −1.5 deduction.
+- **Quality bar:** The implementation itself is on par with Sessions 86/87 — clean, 5 failure-path tests (executed / skipped / NOT_EXECUTED / SQL-fail / LLM-fail), backward-compatible schema additions. The process failure (no checkpoint, no close-out before the interruption) is below bar — hence 8.5, not 9.5.
+
+### Phase 3C: Learnings
+
+**Learning #11 trust-the-code (PERMANENT) — applied.** Plan §5 Phase 3 named the architecture-plan target "§6 (Data Agent)"; §6 is "Handoff Envelope Protocol" and the Data Agent section is §4.2. The baseline subsection landed in §4.2. A plan's section number is a claim-at-write-time; the live doc structure wins.
+
+**Learning #1 plan-is-a-draft (PERMANENT) — applied.** Plan §5 Phase 3's file/anchor table was otherwise accurate; the first invocation implemented against it directly. The only drift was the §6/§4.2 mismatch.
+
+**SAFEGUARDS Session Recovery Protocol — applied and validated.** On detecting 12 uncommitted files from an interrupted session, this invocation did NOT touch them until the operator directed: reported state → AskUserQuestion → proceeded. The protocol worked as designed.
+
+**Candidate Learning #59 (5-file checkpoint) — first genuine disaster-context instance.** Prior instances (Sessions 81/84/86/87) were additive work with gates green throughout, so #59 was repeatedly judged "spirit-dormant." Session 88 is qualitatively different: the first invocation touched 10+ files with no checkpoint and was then interrupted, leaving uncommitted unverified work — the exact scenario #59's rationale targets. The recovery cost was modest *only because* the work passed all gates; the principle is now demonstrated, not hypothetical. **Recommendation: Session 89+ should weigh #59 for promotion (row #41)** — a checkpoint commit after a multi-file implementation block bounds the blast radius of an interruption and gives recovery a bisect boundary.
+
+**Candidate Learning #62 (verify tool-PATH) — 14th institutional application.** `.venv/bin/` prefix on all four gate runs.
+
+**Learning #40 pre-name contract questions (PERMANENT row #40) — 5th self-application (inheriting side).** The first invocation resolved Session 87's 2 pre-named Phase-3 questions at Phase 1A; both Recommended options operator-confirmed.
+
+### Phase 3D: Handoff to Session 89
+
+**No carried directive.** Session 89's anchor is fresh operator direction OR the natural sequel: **implement Phase 4 of `docs/planning/business-value-capture-plan.md`** (website pre-construction value-presentation templates — extend `render_qmd_business_understanding` + `render_reports_intake_md` + `render_impact_assessment`; mirror in `Generated-Project-Structure.md` + `Worked-Examples.md`). Phases 1+2+3 of the plan are complete (Sessions 86/87/88).
+
+**Open contract questions for Session 89 (per row #40):**
+
+Plan Appendix B names NO pre-set contract questions for Phase 4. Plan §5 Phase 4 flags one optional design choice:
+
+1. **Extract a shared `_render_business_case_block(intake)` helper, or inline the new business-case sections in both `render_qmd_business_understanding` and `render_reports_intake_md`?** The plan calls the helper "optional." A shared helper keeps the two surfaces in lockstep (DRY — Don't Repeat Yourself); inlining is simpler if the surfaces diverge in format. Lean toward the helper — plan §5 Phase 4's completion criterion greps for `_render_business_case_block`.
+
+**Important considerations for Session 89:**
+
+1. **Post-Session-88 pre-commit baseline:** pytest **623/623 @ 96.96%** coverage; ruff clean (`src/ tests/ packages/ scripts/`); mypy 0/61. Coverage fell 0.34 from Session 87's 97.30% — `AnthropicLLMClient.generate_baseline_query` (live-LLM path) is not unit-tested, consistent with the rest of `anthropic_client.py`. 1.96 absolute points of headroom above the 95% gate.
+2. **BACKLOG.md is empty** (19th consecutive carry; 20th at Session 89 Phase 0).
+3. **`SESSION_RUNNER.md` Learnings table at 40 rows.** Candidate #59 now has a genuine disaster-context instance (see Phase 3C) — Session 89+ should weigh promoting it to row #41.
+4. **Push state:** Session 87's `3474ae9` + Session 88's close-out commit = 2 unpushed at Session 89 Phase 0. Verify with `git rev-list --count @{u}..HEAD`.
+5. **Auto-publish hook fires on the Session 88 commit** (`docs/wiki/claims-model-starter/Data-Guide.md` edited). Verify the live GitHub wiki shows the new "## Baseline collection" section.
+6. **Plan section numbers can be wrong** — Phase 3's "architecture-plan §6 (Data Agent)" was actually §4.2. Before editing, verify Phase 4's named anchors (`templates.py:303-317` / `:500-529`, `governance_templates.py:329-355`) against the live files per Learning #1 — the plan was written 2026-05-21 and Sessions 86/87/88 have since modified neighboring code.
+7. **Tooling PATH:** `.venv/bin/` (Candidate #62, 14th institutional application).
+8. **`CHANGELOG.md`:** `## [Unreleased]` contains Sessions 78-88. Session 89 entries go under `## [Unreleased]`.
+9. **SESSION_NOTES close-out region:** Session 88's close-out block was *inserted* above Session 87's (close-out blocks accumulate in this file; an older Session 84+ chain sits below). At Phase 1B, Session 89 archives Session 88's ACTIVE TASK block to the file tail per row #39's file-tail locator.
+10. **Phase 3 settled surfaces:** `BaselineQuerySpec`/`generate_baseline_query` (data-agent `llm.py` + `anthropic_client.py`), `baseline_collection` node + graph edge, `DataRequest` baseline fields, `DataReport.baseline_snapshot` assembly, the orchestrator adapter projection. Phase 4 should not need to touch any of these.
+11. **`feedback_data_source_discovery.md` memory** stays relevant — the data agent *executes* baseline collection but does not *define* the metric (intake's contract). Phase 4 (website pre-construction) renders intake's business case; same separation-of-concerns principle.
+
+### Gotchas for Session 89
+
+1. **Pre-commit baseline:** 623/623 @ 96.96%, ruff clean, mypy 0/61. Coverage headroom 1.96 points above the 95% gate.
+2. **Recovery sessions happen.** If Phase 0 finds uncommitted multi-file work with no commit, treat it as an interrupted session: report, AskUserQuestion, do not touch until directed (SAFEGUARDS Session Recovery Protocol). Do not assume the work is yours to extend silently.
+3. **Verify before claiming.** When inheriting uncommitted work, run the full gate suite (`pytest` / `ruff` / `mypy`) before any close-out claim — the prior invocation may not have run them.
+4. **Plan section numbers drift.** Phase 4's plan §5 anchors (`templates.py:303-317`, `:500-529`, `governance_templates.py:329-355`) are 2026-05-21 claims — re-grep before editing.
+5. **Learning #29 / #34 / #35 / #38 / #39** — at Phase 1B, raw-string `grep -c` the stub-insert anchor + the `### Session 88 ARCHIVED ACTIVE TASK` archive heading before any Edit; locate the file-tail archive zone via the row #39 grep.
+6. **Tooling PATH:** `.venv/bin/` for pytest / ruff / mypy.
+7. **Auto-publish hook** fired on the Session 88 commit (`Data-Guide.md`). Phase 4 edits `Generated-Project-Structure.md` + `Worked-Examples.md`, which will fire it again. Escape hatch: `MPC_SKIP_WIKI_PUBLISH=1 git commit ...`.
+8. **CHANGELOG structure:** context paragraph / Changed / Verified / Unchanged intentionally / Next.
+9. **Commit message for Session 88:** `feat(data-agent): Phase 3 of business-value-capture — baseline collection (Session 88)`.
+10. **Candidate #59 (5-file checkpoint)** — promotion candidate after Session 88's disaster-context instance; **#57 / #61** dormant at 2nd instance; **#62** at 1st + 14 institutional; **#63** at 2nd (planning-session-only).
 
 ### Session 86 Handoff Evaluation (by Session 87)
 
@@ -2692,6 +2777,10 @@ Ranked likely directions:
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 87 ARCHIVED ACTIVE TASK
+
+**Task:** Session 87 — operator direction (off-BACKLOG; BACKLOG.md EMPTY since Session 70; 18th consecutive carry). Implemented **Phase 2** of `docs/planning/business-value-capture-plan.md`: extended `DraftReportResult` with `value_measurement_plan: dict[str, Any]`; extended interview system prompt to drive toward FIVE required sections (was four); plumbed value_measurement_plan through draft/revise/finalize round-trips in `anthropic_client.py` + `fixture.py`; added plan §3.3 structural gate in `finalize_node` (require `baseline_metric_name` + `evaluation_horizon_months` non-null for `COMPLETE`); populated `IntakeReport.value_measurement_plan` in `build_intake_report`; extended all 7 YAML intake fixtures; +5 tests (2 in test_anthropic_client.py + 3 in test_nodes.py); updated wiki `Intake-Interview-Design.md` (5 sections + §4.5 + Section 7 status-rule table) + `docs/tutorial.md`. 616/616 @ 97.30% coverage. Per Phase 1A AskUserQuestion (4th post-promotion self-application of row #40): measurement-plan prompt shape = inline within `draft_report` (Recommended); question-budget allocation = ~3-4 of MAX_QUESTIONS=20 cap (Recommended) — both operator-confirmed. **COMPLETE.**
 
 ### Session 86 ARCHIVED ACTIVE TASK
 

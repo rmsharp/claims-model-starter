@@ -26,7 +26,7 @@ from typing import Any, Literal
 
 from model_project_constructor_data_agent.db import DBConnectionError, ReadOnlyDB
 from model_project_constructor_data_agent.llm import LLMClient
-from model_project_constructor_data_agent.schemas import QualityCheck
+from model_project_constructor_data_agent.schemas import BaselineSnapshot, QualityCheck
 from model_project_constructor_data_agent.sql_validation import validate_sql
 from model_project_constructor_data_agent.state import DataAgentState
 
@@ -152,6 +152,98 @@ def make_execute_qc(
         return {"quality_checks": updated, "db_executed": True}
 
     return execute_qc
+
+
+def make_baseline_collection(
+    llm: LLMClient,
+    db: ReadOnlyDB | None,
+) -> Callable[[DataAgentState], dict[str, Any]]:
+    """Build the baseline-collection node.
+
+    Skips when the upstream intake did not supply a baseline metric
+    definition (``request.baseline_metric_definition is None``) — returns
+    ``baseline_snapshot=None``. Otherwise asks the LLM for SQL, executes
+    it against the read-only DB if reachable, and returns a
+    :class:`BaselineSnapshot` whose ``query_execution_status`` reflects the
+    outcome (``EXECUTED`` / ``NOT_EXECUTED`` / ``FAILED``).
+
+    Per Session 88 Phase 1A resolution: failure mode is **fail-the-snapshot**
+    — any LLM or SQL error is captured on the snapshot's ``caveats`` with
+    ``query_execution_status="FAILED"`` and the graph continues to
+    ``summarize``. The graph does not crash on baseline errors.
+    """
+
+    def baseline_collection(state: DataAgentState) -> dict[str, Any]:
+        request = state["request"]
+        metric_definition = request.baseline_metric_definition
+        if metric_definition is None:
+            return {"baseline_snapshot": None}
+
+        metric_name = request.baseline_metric_name or "unspecified"
+        measurement_window = request.baseline_measurement_window or "unspecified"
+
+        try:
+            spec = llm.generate_baseline_query(
+                request,
+                metric_name=metric_name,
+                metric_definition=metric_definition,
+                measurement_window=measurement_window,
+            )
+        except Exception as e:
+            return {
+                "baseline_snapshot": BaselineSnapshot(
+                    metric_name=metric_name,
+                    value=None,
+                    measurement_unit="unknown",
+                    query_sql="",
+                    query_execution_status="FAILED",
+                    caveats=[f"LLM baseline-query generation failed: {e}"],
+                )
+            }
+
+        if db is None or not state.get("db_executed", False):
+            return {
+                "baseline_snapshot": BaselineSnapshot(
+                    metric_name=spec.metric_name,
+                    value=None,
+                    measurement_unit=spec.measurement_unit,
+                    query_sql=spec.sql,
+                    query_execution_status="NOT_EXECUTED",
+                    caveats=["database not reachable at baseline-collection time"],
+                )
+            }
+
+        try:
+            rows = db.execute(spec.sql)
+        except Exception as e:
+            return {
+                "baseline_snapshot": BaselineSnapshot(
+                    metric_name=spec.metric_name,
+                    value=None,
+                    measurement_unit=spec.measurement_unit,
+                    query_sql=spec.sql,
+                    query_execution_status="FAILED",
+                    caveats=[f"baseline SQL execution error: {e}"],
+                )
+            }
+
+        value: float | None = None
+        if rows:
+            first_value = next(iter(rows[0].values()), None)
+            if isinstance(first_value, int | float):
+                value = float(first_value)
+
+        return {
+            "baseline_snapshot": BaselineSnapshot(
+                metric_name=spec.metric_name,
+                value=value,
+                measurement_unit=spec.measurement_unit,
+                query_sql=spec.sql,
+                query_execution_status="EXECUTED",
+            )
+        }
+
+    return baseline_collection
 
 
 def make_summarize(

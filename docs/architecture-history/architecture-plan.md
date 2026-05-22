@@ -170,6 +170,7 @@ Chosen approaches from `architecture-approaches.md`:
 - Primary queries are **not executed** — they are handed off as artifacts
 - Produces a natural-language summary of findings (confirmed expectations, unconfirmed expectations, data-quality concerns)
 - Produces a **datasheet** (per Gebru 2021) for each primary query's result set: provenance, composition, limitations, known biases
+- When the request carries a baseline metric (projected from intake's `value_measurement_plan`), generates and executes a **baseline-collection** query and records the result on `DataReport.baseline_snapshot`
 
 **Failure modes:**
 
@@ -179,6 +180,8 @@ Chosen approaches from `architecture-approaches.md`:
 | QC query errors | Syntax or permission error on QC query | Log; mark that specific QC as `ERROR`; proceed with others |
 | Primary query invalid SQL | `sqlparse` parse fails | Retry once with the error message in prompt; if still invalid, return with `primary_query_status=INVALID` |
 | Ambiguous request | `DataRequest` is missing target or granularity | Return `DataReport` with `status=INCOMPLETE_REQUEST` and list missing fields; orchestrator halts |
+
+**Baseline collection (business-value-capture Phase 3).** When the upstream `IntakeReport` carries a `value_measurement_plan` with a baseline metric, the orchestrator adapter projects `baseline_metric_name`, `baseline_metric_definition`, and `baseline_measurement_window` onto the `DataRequest`. The `baseline_collection` graph node — sequenced strictly after quality-check execution and before summarization — asks the LLM for a scalar-returning `SELECT`, executes it read-only, and records a `BaselineSnapshot` on `DataReport.baseline_snapshot`. The data agent **executes** the measurement; it does **not define** the metric (intake owns the definition). The node fails-the-snapshot, never the graph: an LLM or SQL error yields `query_execution_status=FAILED` with the error on `caveats`; an unreachable database yields `NOT_EXECUTED` with the SQL preserved. When intake supplies no plan, `baseline_snapshot` is `None` and the node is a pass-through.
 
 ---
 

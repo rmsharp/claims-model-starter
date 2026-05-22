@@ -97,6 +97,22 @@ def intake_report_to_data_request(
         f"Population scoped to the intake target definition: {target_description}"
     )
 
+    # Project the upstream value_measurement_plan into the three baseline
+    # fields the data agent's baseline_collection_node consumes (architecture
+    # plan §3.2 — intake defines, data agent executes; the data agent must
+    # not import IntakeReport).
+    baseline_metric_name: str | None = None
+    baseline_metric_definition: str | None = None
+    baseline_measurement_window: str | None = None
+    if intake.value_measurement_plan is not None:
+        baseline_metric_name = intake.value_measurement_plan.baseline_metric_name
+        baseline_metric_definition = (
+            intake.value_measurement_plan.baseline_metric_definition
+        )
+        baseline_measurement_window = (
+            intake.value_measurement_plan.baseline_measurement_window
+        )
+
     return DataRequest(
         target_description=target_description,
         target_granularity=infer_target_granularity(intake),
@@ -106,6 +122,9 @@ def intake_report_to_data_request(
         database_hint=None,
         data_quality_concerns=[],
         data_source_inventory=data_source_inventory,
+        baseline_metric_name=baseline_metric_name,
+        baseline_metric_definition=baseline_metric_definition,
+        baseline_measurement_window=baseline_measurement_window,
         source="pipeline",
         source_ref=run_id,
     )
