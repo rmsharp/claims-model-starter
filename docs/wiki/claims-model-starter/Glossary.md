@@ -27,6 +27,10 @@
 | **HandoffEnvelope** | Versioned wrapper for inter-agent payloads. Contains metadata (run ID, source/target agent, schema version) plus the payload. |
 | **Checkpoint** | A persisted JSON envelope representing a completed inter-agent handoff. Used for inspection and potential resumption. |
 | **Run ID** | UUID assigned by the orchestrator to a single pipeline execution. All checkpoints for one run share the same run ID. |
+| **Value Measurement Plan** | The fifth required intake section: how the model's realised business value will be measured after deployment. Carried on `IntakeReport.value_measurement_plan` — baseline metric, counterfactual design, attribution method, evaluation horizon, logging requirements, review cadence, success criteria, and decision rights. |
+| **Baseline Snapshot** | The current-state value of the metric a model is meant to improve, measured by the Data Agent before the model ships. Carried on `DataReport.baseline_snapshot`; it is the figure the model's post-deployment lift is measured against. |
+| **Counterfactual Design** | The experimental method for isolating the model's contribution to a business outcome — e.g. `champion_challenger` (adjusters randomly assigned to model-assisted vs control queues). Declared in the value measurement plan so attribution is decided before deployment, not after. |
+| **Cost of Inaction** | The annual business value forgone by *not* building the model — the do-nothing baseline against which the project's estimated impact is judged. Captured at intake and rendered into the generated `01_business_understanding.qmd` business case. |
 
 ## Governance terms
 

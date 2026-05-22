@@ -123,6 +123,7 @@ The Data Agent produces `tests/fixtures/sample_datareport.json`:
 - **One datasheet** (Gebru 2021 schema) covering motivation, composition, collection process, preprocessing, intended uses, known biases, and maintenance ownership.
 - **Summary:** "Built a single training set spanning 5 years of auto BI/PD claims with a binary subrogation-success label observed within 18 months of FNOL. 1.28M rows, ~10% label null rate concentrated in the most recent 18 months."
 - **Flagged concern:** label-leakage risk on `information_completeness_score`, which may reflect post-intake adjuster follow-up; recommendation to freeze at t+24h.
+- **Baseline snapshot:** because the upstream `IntakeReport` carries a `value_measurement_plan`, the Data Agent also collected a baseline of the current-state metric and recorded it on `DataReport.baseline_snapshot` — `subrogation_recovery_rate` = `0.41 ratio` over the window `2024-01-01 → 2024-12-31`, `query_execution_status: EXECUTED`, with a trailing-window caveat (partial boundary months excluded from the denominator). The scalar `SELECT` is preserved on the snapshot. This is the figure the deployed model's lift is measured against (Phase 3 of `business-value-capture-plan.md`).
 
 ### Step 5 — Generated repository
 
@@ -207,6 +208,21 @@ The Website Agent renders the intake's business case into the first analysis nar
 - `## Decision Rights` — the value-measurement-plan's decision-rights statement
 
 The same business-case block is mirrored verbatim into `reports/intake_report.md` via a shared `_render_business_case_block` helper, and `governance/impact_assessment.md` surfaces the cost-of-inaction and implementation-cost bands in its Value Narrative section. Any optional field left empty renders a `(not estimated)` / `(none declared)` placeholder, so the business case stays structurally complete even for a sparse intake.
+
+#### Rendered `06_implementation_plan.qmd`
+
+The implementation-plan narrative carries the *post-production* half of the value story. `render_qmd_implementation_plan` (`src/model_project_constructor/agents/website/templates.py`) emits the intake estimate (annual impact band, confidence, assumptions), then a structured **Production Measurement Plan** built from the Data Agent's `baseline_snapshot` and the intake's `value_measurement_plan`:
+
+- `## Baseline` — `subrogation_recovery_rate` = `0.41 ratio` over `2024-01-01 → 2024-12-31`, interpolated from `DataReport.baseline_snapshot` with a `[^baseline-src]` footnote citing `reports/data_report.json` for provenance
+- `## Counterfactual Design` — `champion_challenger`: adjusters randomly assigned to model-assisted vs control queues during rollout
+- `## Attribution Method` — lift measured as treatment minus control recovery rate over rolling 30-day windows, with claim-mix and line-of-business confounders controlled by stratified random assignment
+- `## Evaluation Horizon` — `6 months`
+- `## Logging Requirements` — the six production fields the Data Science team must instrument (`claim_id`, model-input feature snapshot, subrogation-likelihood score, adjuster action taken, assigned queue, 18-month outcome)
+- `## Review Cadence` — `monthly`
+- `## Success Criteria` — recovery rate +5pp vs control at 6 months; no degradation in adjuster cycle time; no fairness SLA breach across line-of-business segments
+- `## Decision Rights` — Claims VP + Data Science lead review monthly; retire/retrain gate if treatment-control lift stays below 2pp for two consecutive reviews
+
+When the upstream intake carries no `value_measurement_plan` (so the Data Agent collected no baseline), the `## Baseline` section renders a "no baseline snapshot was collected" instruction and the methodology sections fall back to `(not specified)` / `(none declared)` placeholders — the plan stays structurally complete either way. This structured section replaces the previous "intentionally sparse" TODO stub (Phase 5 of `business-value-capture-plan.md`).
 
 ---
 

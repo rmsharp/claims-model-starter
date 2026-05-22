@@ -24,6 +24,8 @@ The Model Project Constructor automates Steps 2–5 of a 6-step pipeline (see `i
 5. **Website Agent (continued)** — delivers GitLab project with governance scaffolding
 6. Data science team refines the draft (human)
 
+**Business-value capture (Sessions 86–91).** A cross-cutting extension threads value measurement through Steps 2–4 (see `docs/planning/business-value-capture-plan.md`): the Intake Agent captures a `ValueMeasurementPlan` alongside the estimated value — a fifth required interview section — the Data Agent collects a `BaselineSnapshot` of the current-state metric, and the Website Agent renders both a pre-construction business case in `analysis/01_business_understanding.qmd` and a post-production measurement plan in `analysis/06_implementation_plan.qmd`. The monitoring consequences are in §8.3.
+
 ### Hard Constraints
 
 | # | Constraint | Source |
@@ -612,6 +614,8 @@ The Website Agent writes the monitoring cadence into `governance/ongoing_monitor
 | tactical (quarterly-annual) | Quarterly review |
 | operational (weekly-monthly) | Monthly monitoring |
 | continuous (daily or faster) | Automated continuous monitoring + monthly human review |
+
+**Value-review cadence (business-value capture).** The cadence above governs *model-health* monitoring — drift, calibration, data quality. It is distinct from the **value-review cadence** carried on `IntakeReport.value_measurement_plan.review_cadence`, which governs how often the *realised business value* is assessed against the `BaselineSnapshot` (typically monthly during the evaluation horizon, then aligned with the model-health cadence once value is established). The generated `governance/ongoing_monitoring.md` threads the baseline metric and lists both cadences; `analysis/06_implementation_plan.qmd` carries the full Production Measurement Plan — baseline, counterfactual design, attribution method, evaluation horizon, success criteria, and decision rights. See `docs/planning/business-value-capture-plan.md`.
 
 ### 8.4 What Governance Is NOT Automated
 

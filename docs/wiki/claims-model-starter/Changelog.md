@@ -10,7 +10,16 @@ The repository is currently at version `0.1.0` (pre-1.0, pilot-ready). No extern
 
 ## [Unreleased]
 
-*No unreleased changes. Previous wiki-side entries (Sessions 18, 19, 20A, 20B) have been folded into the v0.1.0 release section below in Session 80 to mirror the root `CHANGELOG.md` transition formalized in Session 78.*
+### Business value capture — Sessions 86–91 (2026-05-22)
+
+A cross-cutting extension threads value measurement through the pipeline (`docs/planning/business-value-capture-plan.md`):
+
+- **Added:** `ValueMeasurementPlan` and `BaselineSnapshot` schemas, plus business-case fields (`cost_of_inaction`, `implementation_cost_band`, `payback_months`, `value_drivers`) on `EstimatedValue` (Session 86).
+- **Changed:** the intake interview now drives toward **five** required sections — a value measurement plan joins business problem, proposed solution, model solution, and estimated value. A `COMPLETE` intake must declare a baseline metric and an evaluation horizon (Session 87).
+- **Added:** the Data Agent collects a `BaselineSnapshot` of the current-state metric when the intake supplies a value measurement plan, recording it on `DataReport.baseline_snapshot` (Session 88).
+- **Changed:** the generated `analysis/01_business_understanding.qmd` (and `reports/intake_report.md`) now render a coherent business case — impact band, cost of inaction, implementation cost, payback, value drivers, assumptions, decision rights (Session 89).
+- **Changed:** the generated `analysis/06_implementation_plan.qmd` now carries a structured Production Measurement Plan — baseline, counterfactual design, attribution method, evaluation horizon, logging requirements, review cadence, success criteria, decision rights — replacing the previous placeholder TODO (Session 90).
+- **Changed:** the wiki, the architecture plan, and the worked examples describe the extended value capture end-to-end (Session 91).
 
 ---
 

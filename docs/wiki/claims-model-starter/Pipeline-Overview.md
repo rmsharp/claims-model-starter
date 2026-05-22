@@ -48,7 +48,7 @@ A schema registry maps `(payload_type, schema_version)` to the Pydantic class fo
 
 - **Input:** `InterviewSessionConfig` (user ID, session ID, initial problem statement)
 - **Output:** `IntakeReport`
-- **Behavior:** Asks one question at a time (max 10), drives toward four sections (business problem, proposed solution, model solution, estimated value) plus governance metadata. Presents a draft for stakeholder review with up to 3 revision cycles.
+- **Behavior:** Asks one question at a time (max 20), drives toward five sections (business problem, proposed solution, model solution, estimated value, and a value measurement plan) plus governance metadata. Presents a draft for stakeholder review with up to 3 revision cycles.
 - **Interfaces:** Web UI (`go/modelintake`), CLI (`model-intake-agent`), Python API
 - **Status values:** `COMPLETE`, `DRAFT_INCOMPLETE`
 
@@ -56,7 +56,7 @@ A schema registry maps `(payload_type, schema_version)` to the Pydantic class fo
 
 - **Input:** `DataRequest` (target, granularity, features, population, time range; optionally a `DataSourceInventory`)
 - **Output:** `DataReport`
-- **Behavior:** Generates SQL queries, writes quality-check queries, confirms data expectations, produces natural-language summary and Gebru 2021 datasheets per query. When `DataRequest.data_source_inventory` is set, the query-generation prompt includes a summarized inventory block and each `PrimaryQuery.inventory_entries_used` records which catalogued tables the SQL references.
+- **Behavior:** Generates SQL queries, writes quality-check queries, confirms data expectations, produces natural-language summary and Gebru 2021 datasheets per query. When `DataRequest.data_source_inventory` is set, the query-generation prompt includes a summarized inventory block and each `PrimaryQuery.inventory_entries_used` records which catalogued tables the SQL references. When the upstream `IntakeReport` carries a `value_measurement_plan`, the agent also generates and executes a baseline query and records the current-state metric on `DataReport.baseline_snapshot` (it executes the measurement; intake defines it).
 - **Interfaces:** CLI (`model-data-agent run`, `model-data-agent discover`), Python API, pipeline mode
 - **Status values:** `COMPLETE`, `INCOMPLETE_REQUEST`, `EXECUTION_FAILED`
 - **Design note:** Intentionally decoupled from `IntakeReport` -- usable as a standalone query tool for analyst teams. A CI test enforces zero imports of intake schemas.
@@ -65,7 +65,7 @@ A schema registry maps `(payload_type, schema_version)` to the Pydantic class fo
 
 - **Input:** `IntakeReport` + `DataReport` + `RepoTarget`
 - **Output:** `RepoProjectResult`
-- **Behavior:** Creates a repository, scaffolds `.qmd` analysis notebooks and `src/` Python modules, generates governance artifacts proportional to risk tier, commits all files in a single atomic operation.
+- **Behavior:** Creates a repository, scaffolds `.qmd` analysis notebooks and `src/` Python modules, generates governance artifacts proportional to risk tier, commits all files in a single atomic operation. Renders the intake's business case (impact band, cost of inaction, payback) into `analysis/01_business_understanding.qmd` and a structured Production Measurement Plan (baseline, counterfactual, attribution, success criteria) into `analysis/06_implementation_plan.qmd`.
 - **Status values:** `COMPLETE`, `PARTIAL`, `FAILED`
 
 ## Orchestrator

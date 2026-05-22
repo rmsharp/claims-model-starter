@@ -6,6 +6,8 @@ The **Model Project Constructor** is a multi-agent pipeline that turns a busines
 
 A stakeholder has a rough idea for a predictive model (e.g., "predict subrogation success on auto claims"). The pipeline conducts a guided interview, generates SQL queries for data collection, and scaffolds a complete project repository with draft analyses, tested Python modules, CI configuration, and governance artifacts proportional to model risk.
 
+It also captures the **business value** end-to-end: the interview elicits a business case and a value-measurement plan (baseline metric, counterfactual design, success criteria), the data step measures the current-state baseline, and the generated repository carries both a pre-construction business case and a post-production measurement plan — so a deployed model's realised value can be measured, not just estimated.
+
 ## The 6-step process
 
 | Step | Who | What happens |
