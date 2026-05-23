@@ -1,0 +1,114 @@
+---
+title: "Capturing Business Value in Claims Models"
+subtitle: "Executive Summary — Purpose, Method, and Expected Benefit"
+author: "Model Project Constructor"
+date: "2026-05-22"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    embed-resources: true
+  pdf:
+    toc: true
+    toc-depth: 2
+    number-sections: false
+    geometry: margin=1in
+---
+
+## At a glance
+
+Claims-organisation modelling investments are routinely approved on a narrative estimate and then judged on intuition. Model Project Constructor now captures the business case before a model is built **and** lays the measurement track that proves whether the value arrived. The same six-step intake pipeline that turns a stakeholder idea into a working project now also produces an auditable answer to two executive questions: *"What is this worth?"* and *"How will we know?"* — both answered before the first line of model code is written.
+
+The capability covers two halves of the value story. **Pre-construction**, the intake interview converges on a complete business case: problem, proposed solution, annual impact band, cost of inaction, implementation cost, payback, named value drivers, assumptions, and decision rights. **Post-production**, the data agent records the current-state baseline, and the generated project carries a structured measurement plan — baseline metric, counterfactual design, attribution method, evaluation horizon, logging requirements, review cadence, success criteria, and named decision-makers. An executive sponsor can fund the build with a defensible case and audit outcomes against it later.
+
+## Purpose
+
+Before this work, the pipeline captured an *estimate* of business value at intake — a paragraph of narrative and a dollar band — and that was the end of it. The generated project, the one the data science team would take forward into production, ended its implementation plan with a TODO note saying that the measurement methodology was the team's to define. Two practical consequences followed:
+
+- **Funding decisions rested on the estimate alone.** A sponsor saw a value range but no business case — no cost of inaction to weigh against, no implementation cost, no payback horizon, no named drivers, and no statement of who decides to retire or retrain.
+- **Outcomes could not be tied back to the estimate.** Once deployed, there was no captured baseline to compare against, no agreed counterfactual, no logged production fields, and no review cadence. Whatever value the model produced lived in spreadsheets owned by whichever analyst happened to care.
+
+The mandate was to close that gap end-to-end: extend the intake interview so the business case and the measurement plan are first-class outputs, extend the data agent so it captures the baseline before the model is built, and extend the generated project so the measurement plan ships with the code and is the data science team's working document, not a TODO.
+
+## Method
+
+The pipeline takes a stakeholder idea through six steps. Two of them — the intake interview and the data collection step — were extended to capture value-relevant facts. A third — the generated project's narrative — was extended to surface them.
+
+### Pre-construction: the intake interview produces a complete business case
+
+The intake agent now drives toward five required sections instead of four. The interviewer guides a claims-organisation stakeholder through the business problem, the proposed solution, the model solution, the **estimated value**, and the **value measurement plan**. Across those last two sections the agent captures:
+
+- **Annual impact band** (low and high USD) with a narrative and named assumptions
+- **Cost of inaction** — what continues to cost the business if the model is *not* built, in both prose and a USD band
+- **Implementation cost band** and **payback period** in months
+- **Value drivers** — the named levers that produce the impact (e.g. recovery-rate improvement, evidence-capture compliance)
+- **Baseline metric definition** — what is measured today, how it is defined, and over what window
+- **Counterfactual design** — how the lift attributable to the model will be isolated (champion–challenger, A/B test, geographic split, historical baseline, synthetic control, regression discontinuity, or an explicit "none declared")
+- **Attribution method**, **evaluation horizon**, **review cadence**, **success criteria**, and **decision rights**
+
+The interview converges on these alongside the model definition, so the estimate and the way it will be tested arrive in the same conversation. The intake report cannot be marked complete without a measurement plan.
+
+### Pre-construction: the data agent records the baseline
+
+The data agent now reads the intake's plan, generates the SQL that computes the baseline metric, executes it against the claims data warehouse, and records the result on its handoff to the next step. The baseline is captured **before** the model is trained, against a frozen measurement window, with the SQL preserved on the snapshot and execution status (executed or failed) recorded explicitly. When intake declines a measurement plan, the data agent skips the step. There is no silent failure mode: a baseline that could not be measured is recorded as such, with caveats, rather than omitted.
+
+### Post-production: the generated project carries the value story end-to-end
+
+The generated repository now opens with a complete business case in its first analysis narrative. The implementation-plan narrative — previously a TODO note — now carries a structured Production Measurement Plan: baseline (with the executed value interpolated from the data agent's snapshot and cited back to its source), counterfactual design, attribution method, evaluation horizon, logging requirements (the production fields the data-science team must instrument), review cadence, success criteria, and decision rights. The governance package surfaces the same baseline metric in the ongoing-monitoring playbook and adds an explicit deployment-gate item: *"Production Measurement Plan reviewed by Data Science team."* The cost-of-inaction and implementation-cost bands appear in the impact assessment's Value Narrative section, so the business case is visible in the governance review as well.
+
+### One coherent capability
+
+The six implementation steps modify the schema, the intake interview, the data agent, the pre-construction project narrative, the post-production project narrative, and the cross-cutting documentation in turn. From an executive standpoint they compose into a single capability: a value story that starts in the interview, is grounded in measured data before the model is built, and lands in the data-science team's working repository as a plan they can operate against — not a hand-off across teams with no contract between them.
+
+## Worked example: the subrogation case, before and after
+
+A Claims SVP observes that subrogation recovery has dropped roughly twenty per cent since a new claims-system rollout. Adjusters are no longer capturing the evidence — police reports, third-party insurer, fault evidence — required to pursue recovery. The proposed model would score each claim for subrogation recoverability and prompt adjusters to capture missing evidence at intake.
+
+**Before this work**, the intake captured a narrative ("a ten per cent lift on current ~$30M annual recovery yields ~$3M/year") and a low/high band ($2M–$4M annual impact). The generated project ended its implementation plan with a TODO note. The sponsor saw a value range; the data-science team had no defined baseline, no agreed counterfactual, and no review cadence.
+
+**After this work**, the same intake interview converges on the complete picture:
+
+| Business-case item                | Captured value                                                                                                  |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| Annual impact band                | $2,000,000 – $4,000,000                                                                                          |
+| Annual cost of inaction           | $2,000,000 – $4,000,000 (the cumulative gap if the new claims-system habits persist)                            |
+| Implementation cost band          | $250,000 – $500,000                                                                                              |
+| Payback period                    | ~4 months                                                                                                        |
+| Value drivers                     | Improved recovery rate; adjuster evidence-capture compliance; prioritised pursuit of high-likelihood claims      |
+| Confidence in the estimate        | Medium                                                                                                           |
+
+The data agent then captures the current-state baseline against a frozen window:
+
+| Measurement-plan item             | Captured value                                                                                                  |
+|-----------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| Baseline metric                   | Subrogation recovery rate = dollars recovered ÷ eligible dollars identified                                     |
+| Baseline value (current state)    | 0.41 (ratio), measured over calendar year 2024                                                                  |
+| Counterfactual design             | Champion–challenger: adjusters randomly assigned to model-assisted vs. control queues at rollout                 |
+| Evaluation horizon                | 6 months                                                                                                         |
+| Review cadence                    | Monthly                                                                                                          |
+| Success criterion                 | +5 percentage points treatment minus control at six months; no degradation in adjuster cycle time                |
+| Decision rights                   | Claims VP and Data Science lead jointly review monthly; retire/retrain if lift below 2 pp for two months running |
+
+The generated project's first narrative opens with the business case above. Its implementation-plan narrative opens with the baseline of `0.41 ratio` (with the executed SQL cited back to its source) and the counterfactual, attribution, horizon, logging, cadence, success-criteria, and decision-rights sections. The governance ongoing-monitoring playbook tracks the same baseline metric alongside model-performance metrics. Six months after rollout, the answer to *"did this work?"* is a single comparison against an agreed number, reviewed by the named decision-makers on the agreed cadence.
+
+## Expected benefit
+
+The benefit shows up at three points in a model's life cycle.
+
+**At funding.** Sponsors approve a build against a complete business case rather than a paragraph and a dollar band. The cost of inaction is on the table next to the implementation cost; the payback is named in months; the drivers are explicit. Reviews stop turning on "do I trust the estimate" and turn instead on whether the named assumptions are credible — a much sharper conversation, with a defensible record either way.
+
+**At deployment.** The data-science team inherits a project with the measurement plan already declared, the baseline already captured against a frozen window, and the review cadence and decision rights already named. The time-to-first-measurement on a deployed model shrinks from "however long it takes to negotiate a measurement methodology" to "the next review cadence after rollout."
+
+**At review.** Six months in — or whichever horizon was declared — there is one number to look at, against an agreed comparator, judged against a success criterion that was written before anyone knew the result. The retire-or-retrain decision has named owners and a stated trigger. Value claimed in the original estimate can be audited against value measured in production, and the gap is itself information that improves the next intake.
+
+In aggregate the capability raises the floor on every claims-organisation modelling investment: every project that emerges from the pipeline ships with the business case visible to the sponsor and the measurement plan visible to the data-science team. The estimate is no longer the end of the value conversation; it is the start of one that survives the hand-off to production.
+
+## Where this lives
+
+The capability is implemented across the intake interview, the data collection step, and the generated project the pipeline emits — the same pipeline that already turns a stakeholder idea into a working project for the data-science team. No new tooling is introduced for the business; the existing intake conversation simply converges on a richer answer, and the generated project carries the answer forward.
+
+The work was completed in the spring of 2026 across six coordinated changes to the schema, the intake interview, the data agent, the pre-construction narrative, the post-production narrative, and the cross-cutting documentation. Pre-existing pipeline behaviour is preserved: every projected drafted before this capability remains valid; every new project drafted after carries the extended business case and measurement plan.
+
+---
+
+*This document is the executive summary of a capability captured in the project's planning and change-history records. For the technical implementation plan, the engineering team can refer to `docs/planning/business-value-capture-plan.md` and the corresponding entries in `CHANGELOG.md`.*
