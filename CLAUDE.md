@@ -38,7 +38,7 @@ Each agent in the pipeline follows these principles (derived from `docs/architec
 
 2. **Agents hand off explicitly.** Step N writes a report, then hands it (and any artifacts like queries) to Step N+1. There is no shared state — everything the next agent needs must be in the handoff.
 
-3. **The intake agent interviews, not interrogates.** It asks one question at a time (max 10), converging on the 4 output sections. It guides the business stakeholder with its own domain expertise — it doesn't just transcribe answers.
+3. **The intake agent interviews, not interrogates.** It asks one question at a time (max 20), converging on the 4 output sections. It guides the business stakeholder with its own domain expertise — it doesn't just transcribe answers.
 
 4. **The data agent is potentially reusable.** The `docs/architecture-history/initial_purpose.txt` notes that this agent "would likely be useful for just writing queries in general" for analyst teams. Design it with reuse in mind.
 

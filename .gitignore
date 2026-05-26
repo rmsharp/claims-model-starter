@@ -19,3 +19,7 @@ intake_sessions.db-wal
 my_intake.yaml
 my_intake_report.json
 /site/
+
+# Executive-summary render artifacts — .qmd is the source of truth, renders are reproducible on demand
+docs/executive-summaries/*.html
+docs/executive-summaries/*.pdf
