@@ -22,6 +22,19 @@ It also captures the **business value** end-to-end: the interview elicits a busi
 
 This tool serves a **claims organization within a property & casualty insurance company** (auto and property policies). The intake agent acts as an expert data scientist, business analyst, and consultant focused on this domain.
 
+## What it depends on
+
+The constructor itself runs on Python 3.11+ with `uv` and `git`. No JavaScript build, no Docker required for development, no database server. External services in scope are exactly three, each gated by one credential:
+
+| Service | Credential | When required |
+|---|---|---|
+| **Anthropic Claude** | `ANTHROPIC_API_KEY` | Any live run that uses the intake or data agents |
+| **GitLab** *or* **GitHub** | `GITLAB_TOKEN` or `GITHUB_TOKEN` | When the website agent targets that host (one host per run, not both) |
+
+The **generated downstream project** is deliberately small (pandas + scikit-learn + sqlalchemy) and has **zero AI runtime dependency** — the data-science team can run it with no API key. AI-generated content is materialised as static markdown, SQL, and notebook files at construction time.
+
+See [Software Bill of Materials](Software-Bill-of-Materials) for full dependency tables and [Security Considerations](Security-Considerations) for credential handling.
+
 ## Wiki contents
 
 - [Getting Started](Getting-Started) -- Install, first run, verify

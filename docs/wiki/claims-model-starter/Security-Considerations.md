@@ -86,6 +86,16 @@ Both agents that use an LLM call Anthropic's Claude API:
 
 Both construct `anthropic.Anthropic()` with no explicit args — the SDK picks up `ANTHROPIC_API_KEY` from the environment. Both accept an injected `client` argument so tests can pass a mock. Both default to `claude-sonnet-4-6` and expose a `model` argument for override.
 
+**Which agents call Claude (and which do not):**
+
+| Agent | Calls Claude? | `ANTHROPIC_API_KEY` required? |
+|---|---|---|
+| Intake Agent | Yes | Yes |
+| Data Agent | Yes | Yes |
+| Website Agent | **No** | **No** |
+
+Consequence: `ANTHROPIC_API_KEY` is **not** required for website-only runs. The Website Agent operates on the prior agents' artifacts and needs only the git-host token (`GITLAB_TOKEN` or `GITHUB_TOKEN`). Operations recipes that list `ANTHROPIC_API_KEY` as a universal live-run prerequisite are over-specified — see [Evolution](Evolution) (Learning #24, Session 31).
+
 The Anthropic SDK's default endpoint is `https://api.anthropic.com`. Self-hosting the LLM is out of scope — the SDK does not support `base_url` override through our constructors.
 
 ### 2.2 GitLab (`PythonGitLabAdapter`)
