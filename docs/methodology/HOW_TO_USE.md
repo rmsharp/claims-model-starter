@@ -25,7 +25,7 @@ A practical guide for applying the methodology to real work. Includes quick star
 **To use this methodology, you need three things:**
 
 1. **The master framework:** `ITERATIVE_METHODOLOGY.md` — defines the 6 phases, 12 gates, and self-improvement loop
-2. **A workstream template:** Pick the one that matches your domain (design, architecture, development, audit) or create your own from `TEMPLATE_WORKSTREAM.md`
+2. **A workstream template:** Pick the one that matches your domain (design, architecture, development, audit, research documentation) or create your own from `TEMPLATE_WORKSTREAM.md`
 3. **A place to store session outputs:** Create a directory for your session documents (e.g., `sessions/{workstream-name}/`)
 
 **Every session follows the same loop:**
@@ -62,6 +62,19 @@ Examples of workstreams:
 - "Profile UI Design" — 11 sessions, each designing one operator profile
 
 The workstream is where knowledge compounds. Session 1 invents patterns. Session 5 applies them automatically. Session 10 validates them.
+
+### Campaigns
+
+A **campaign** is a multi-session work pattern with a reusable template — a reusable shape for work too large to fit in one session even after correct decomposition. Campaigns extend a workstream (which adapts the 6 phases to a domain) by sequencing N sessions toward a single multi-session deliverable: planning → per-unit execution → consolidation.
+
+Examples of work that benefits from a campaign:
+- Verifying every numeric, dated, or attributed claim in a 5-paper research repository against its primary sources (~500 verification events) — see `workstreams/RESEARCH_EXHAUSTIVE_VERIFICATION_CAMPAIGN.md`
+- Familiarizing a new owner with a 40-module codebase inherited from a departing engineer (one session per module + planning + consolidation)
+- Conducting a security-hardening pass across a system with 80+ endpoints (one session per endpoint cluster)
+
+When you face a deliverable that exceeds one session and the campaign shape will recur, write a campaign template. Campaign templates live in `workstreams/` under the `*_CAMPAIGN.md` naming convention. The blank starting point is `workstreams/TEMPLATE_CAMPAIGN.md`.
+
+A campaign is not a workstream (workstreams adapt the 6 phases to a domain) and not a planning-session output (which is a one-off plan). It is a reusable template — written once, invoked for every campaign of its type. See [`ITERATIVE_METHODOLOGY.md` §Multi-Session Campaigns](ITERATIVE_METHODOLOGY.md#multi-session-campaigns) for the formal definition.
 
 ### The Self-Improvement Loop
 
@@ -243,6 +256,16 @@ By the sixth session, the workstream would have accumulated:
 
 #### Research
 ```
+Read CONTEXT.md (project domain glossary):
+  - Project's accessibility baseline: WCAG 2.1 AA (load-bearing constraint).
+  - "ToggleSwitch" is a project-coined component (not a standard
+    <input type="checkbox">) — its API is documented under "Domain
+    Vocabulary" with a pointer to ToggleSwitch.vue.
+  - Pitfall noted: previous a11y fixes have hardcoded English labels;
+    project policy requires i18n keys (constraint discovered the hard way).
+  → Without CONTEXT.md, these three facts would have surfaced
+    mid-implementation via failing CI or operator correction.
+
 Study the 7 bugs:
   - Bug #101: Login form — email input has no label
   - Bug #102: Login form — password input has no label
@@ -746,7 +769,7 @@ The close-out is the most important innovation. Before the session runner, close
 
 The **handoff accountability loop** (steps 3A and 3D) is what makes sessions compound. Without it, handoff notes are perfunctory. With it — knowing the next session will score you, and having scored your predecessor — handoff notes include gotchas, file references with line numbers, and explicit warnings about traps. This single change (added around Session 34) correlated with 14 consecutive clean deliveries.
 
-**Known Failure Modes** — A table of 19 documented agent tendencies with specific countermeasures. This table exists because agents exhibit predictable failure patterns:
+**Known Failure Modes** — A table of 23 documented agent tendencies with specific countermeasures. This table exists because agents exhibit predictable failure patterns:
 
 | # | Tendency | Countermeasure |
 |---|----------|----------------|
@@ -769,6 +792,10 @@ The **handoff accountability loop** (steps 3A and 3D) is what makes sessions com
 | 17 | Protocol erosion (skip "just one" step) | Every step exists because a session failed without it |
 | 18 | Planning-to-implementation bleed | The plan is the deliverable; close out after the plan |
 | 19 | Plan-mode bypass | Plan-mode output is a draft; write to docs/planning/ with evidence first |
+| 20 | Edit from memory | Re-read the file immediately before editing; don't rely on stale context |
+| 21 | Greenfield assumption | Assume existing capabilities; read baseline docs during Orient |
+| 22 | Overwrite user edits | Check git blame before modifying; never regenerate without confirming |
+| 23 | Question-as-instruction | Present options and wait; a question is not a go-ahead |
 
 The failure modes table serves two purposes: it warns the agent about its own tendencies, and it gives the user language for course-correction ("You're doing Failure Mode #2 — stop and close out").
 
@@ -800,7 +827,7 @@ To use the session runner in your own project:
 
 3. **Update the task-to-workstream mapping table** (Phase 1) to match your project's workstream prompts.
 
-4. **Update the failure modes table** with any tendencies specific to your project. The 19 documented modes are common to most AI agent work, but your project may surface additional ones.
+4. **Update the failure modes table** with any tendencies specific to your project. The 23 documented modes are common to most AI agent work, but your project may surface additional ones.
 
 5. **Put the methodology framework in a known location** (e.g., `docs/methodology/`) so the session runner can reference it.
 

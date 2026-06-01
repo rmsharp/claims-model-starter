@@ -173,17 +173,39 @@ Every session follows these phases in order. Phases are sequential and gated —
 **This is the most critical phase.** The quality of research directly determines the quality of the output. Incomplete research produces rework; complete research produces first-pass approval.
 
 **Steps:**
-1. **Study the domain.** Read requirements, use case documents, specifications. Extract: who is the user? What is their workflow? What do they need most? What do they NOT need?
-2. **Inventory available tools/components.** Build a reference table of everything you could use. Include capabilities, constraints, sizes, dependencies.
-3. **Read implementations, not just descriptions.** A component's name or description tells you what it IS. Its implementation tells you how it BEHAVES. Read the actual code/config/spec for every component you might use.
-4. **Review ALL prior work in this series.** Read every previous session's output. Extract reusable patterns and avoidable mistakes. Note which patterns apply to your current work and which don't.
-5. **Challenge the scope.** (See Scope Validation section.) Is this the right problem to solve? Does this work item encompass things that should be separate?
-6. **Validate domain fit.** (See Domain-Ecosystem Validation section.) Are you using the right tools for this domain, or substituting generic equivalents for domain-specific tools?
-7. **Verify capability claims.** For any critical capability ("this component supports X"), verify by reading the implementation. Do not trust names, descriptions, or third-party summaries.
+1. **Read project `CONTEXT.md` if it exists.** A project-level domain glossary at the repo root captures load-bearing vocabulary, constraints, and architecture-decision pointers that a fresh reader needs before exploring code. If present, read it first — it is the cheapest grounding pass available. If absent, skip this step. If during this session you discover a project-specific term that would have helped to know up front, propose adding it to `CONTEXT.md` during close-out (Phase 6 hygiene). See [`starter-kit/CONTEXT_TEMPLATE.md`](starter-kit/CONTEXT_TEMPLATE.md) for the template; maintenance can use Pocock's `/grill-with-docs` (cited in [`starter-kit/RECOMMENDED_SKILLS.md`](starter-kit/RECOMMENDED_SKILLS.md)).
+2. **Study the domain.** Read requirements, use case documents, specifications. Extract: who is the user? What is their workflow? What do they need most? What do they NOT need?
+3. **Inventory available tools/components.** Build a reference table of everything you could use. Include capabilities, constraints, sizes, dependencies.
+4. **Read implementations, not just descriptions.** A component's name or description tells you what it IS. Its implementation tells you how it BEHAVES. Read the actual code/config/spec for every component you might use.
+5. **Review ALL prior work in this series.** Read every previous session's output. Extract reusable patterns and avoidable mistakes. Note which patterns apply to your current work and which don't.
+6. **Challenge the scope.** (See Scope Validation section.) Is this the right problem to solve? Does this work item encompass things that should be separate?
+7. **Validate domain fit.** (See Domain-Ecosystem Validation section.) Are you using the right tools for this domain, or substituting generic equivalents for domain-specific tools?
+8. **Verify capability claims.** For any critical capability ("this component supports X"), verify by reading the implementation. Do not trust names, descriptions, or third-party summaries.
 
-**Gate:** Research Complete — all components inventoried AND their implementations read, all prior work reviewed, scope validated, domain fit confirmed.
+**Gate:** Research Complete — `CONTEXT.md` read (if present), all components inventoried AND their implementations read, all prior work reviewed, scope validated, domain fit confirmed.
 
-**The Complete-Then-Create Rule:** Do NOT begin Phase 3 until all 7 steps are done. The temptation to start creating after steps 1-3 is strong. Resist it. Steps 4-7 routinely surface insights that change the entire approach.
+**The Complete-Then-Create Rule:** Do NOT begin Phase 3 until all 8 steps are done. The temptation to start creating after steps 1–4 is strong. Resist it. Steps 5–8 routinely surface insights that change the entire approach.
+
+### Phase 2.5: Pre-Create Grill (Optional)
+
+**Purpose:** Before designing a solution, surface every load-bearing decision the stakeholder has not yet made — by asking, not by guessing. Catches misalignment one phase earlier than Phase 4 (Present), where the failure mode is "stakeholder rejects the design because a foundational assumption was wrong."
+
+**When this applies:**
+- UX or interaction-model work where the right behavior is not derivable from existing patterns
+- Novel features with no precedent in the codebase
+- Sessions started without a pre-written plan from the stakeholder
+- Anything where the agent is about to design from inference rather than specification
+
+**When to skip:**
+- The stakeholder handed you a complete plan or specification
+- The work is mechanical (rename, lint cleanup, dependency bump, well-defined bug fix)
+- An equivalent feature already exists in the codebase and the stakeholder has confirmed "do it the same way"
+
+**Why this phase exists:** Phase 4 (Present) catches misalignment by showing the stakeholder a complete design. Phase 2.5 catches it earlier — before any design exists — by asking instead of inferring. The cost difference is large: a wrong inference at Phase 3 is rework of the design document; a wrong inference confirmed at Phase 4 is a new design cycle. UX rollbacks (designs that ship and revert because the interaction model was wrong) are the canonical failure this phase prevents.
+
+**Running the grill.** The methodology recommends Pocock's `/grill-me` skill — see [`starter-kit/RECOMMENDED_SKILLS.md`](starter-kit/RECOMMENDED_SKILLS.md). Methodology owns *when* to grill and *why*; the skill owns *how* to conduct the interview. When the skill is unavailable, the operative discipline is: enumerate every decision the design will encode, draft each with a recommended answer plus real alternatives, present them one at a time, and stop only when every load-bearing decision has an explicit answer locked into the Phase 3 Create document.
+
+**This phase is explicitly optional, not a gate.** Mechanical sessions should skip it. Adding ceremony to well-defined work erodes the protocol. The discipline is recognizing when *this* session has high misalignment risk — not running the grill on every session.
 
 ### Phase 3: Create
 
@@ -259,7 +281,7 @@ Every session follows these phases in order. Phases are sequential and gated —
 5. **Update the performance comparison table.** Add this session's metrics.
 6. **Update the pattern library and anti-pattern list.** If you discovered a new pattern or made a new mistake, name it and add it.
 7. **Write handoff notes for the next session.** (See below.) You will be judged on these — the next session will score your handoff just as you scored your predecessor's.
-8. **Commit the work.** Structured commit message referencing the session.
+8. **Commit the work.** Before committing, remove any debug instrumentation added during this session (tagged debug logs per `/diagnose` — see [`starter-kit/RECOMMENDED_SKILLS.md`](starter-kit/RECOMMENDED_SKILLS.md) — and ad-hoc prints). Then commit with a structured message referencing the session.
 
 **Minimum handoff requirements (Step 7):** The next session starts with zero context. Your handoff is their only connection to your work. A handoff that doesn't include ALL of the following is incomplete. "Done — pick next task" is not a handoff; it's an abdication that forces the next session to rediscover context you already had.
 
@@ -284,7 +306,7 @@ Every session follows these phases in order. Phases are sequential and gated —
 
 ## Session Types
 
-The 6-phase model assumes a full Research→Create→Present→Implement→Verify cycle. Not all sessions follow this pattern. The methodology recognizes three session types:
+The 6-phase model assumes a full Research→Create→Present→Implement→Verify cycle. Not all sessions follow this pattern. The methodology recognizes four session types:
 
 ### Implementation Sessions (Standard)
 Follow all 6 phases. The deliverable is working code, a design document, or an artifact.
@@ -298,6 +320,55 @@ The deliverable is an analysis document — a code review, audit report, or plan
 The deliverable is a plan or handoff document that sets up a future implementation session. These sessions invest heavily in Phase 2 (Research) and produce a Phase 3 design document that another session will implement. The value is front-loaded: a good plan collapses multi-session implementation work into a single session.
 
 **Speed warning:** High-quality plans can make implementation sessions complete very fast. This is the plan's success, not evidence that verification can be skipped. (See Phase 5 anti-patterns: "Treating speed as evidence of quality.")
+
+### Debugging Sessions
+The deliverable is a closed bug — a regression fixed, a flake stabilized, an incident root-caused. Debugging has a different epistemic structure than the other three types: you are *searching for a hidden cause*, not building toward a known shape. Treating debugging as "implementation with a bug-shaped requirement" hides this distinction and produces predictable failures (instrumentation left in commits, single-hypothesis tunnel vision, feedback loops too slow to be useful, "fixes" that pass without a regression test).
+
+The 6 phases still apply, but Phase 2 (Research) is dominated by building a feedback loop that makes the bug observable on demand, and Phase 6 (Verify) expands to remove the debug instrumentation before commit (the cleanup gate at `SESSION_RUNNER.md` §Phase 3F).
+
+The methodology recommends Pocock's `/diagnose` skill for the actual debugging workflow — see [`starter-kit/RECOMMENDED_SKILLS.md`](starter-kit/RECOMMENDED_SKILLS.md). Methodology recognizes debugging as a session type; `/diagnose` runs it. When the skill is unavailable, the operative rules are: build the feedback loop before forming hypotheses, change one variable at a time, write the regression test before the fix, remove all debug instrumentation before commit.
+
+---
+
+## Multi-Session Campaigns
+
+Some deliverables cannot be produced in one session even when the work is decomposed correctly: paper-wide claim verification across hundreds of citations; security hardening across dozens of endpoints; familiarization with an inherited 40-module codebase. The 6 phases bound a single session and **Principle 9: Session Scope Bounding** bounds what one session may produce. Cross-session coordination toward a single deliverable operates at a different scale.
+
+A **campaign** is a multi-session work pattern with a reusable template. The template prescribes a session sequence, a deliverable contract at each session boundary, and exit criteria for the campaign as a whole. Each session within a campaign still runs the 6 phases; the campaign coordinates *across* sessions toward a deliverable that no single session could produce.
+
+A campaign is **not** a workstream. Workstreams adapt the 6 phases to a domain (what does Phase 2 research look like for UI design vs. for research papers vs. for system audits). Campaigns sequence sessions toward one specific deliverable type within a workstream. One workstream may host many campaigns.
+
+A campaign template is **not** a planning-session output. A planning session produces a bespoke plan for one campaign instance; a campaign template is reusable across every campaign of its type. The planning session for an individual campaign uses the template as its starting point, not its alternative.
+
+### When to write or invoke a campaign
+
+Use a campaign when **all three** apply:
+
+1. The deliverable cannot be produced in one session even under correct decomposition.
+2. The campaign shape is, or will be, repeatable.
+3. Cross-session coordination — shared schemas, checkpoint deliverables, calibration rules — is load-bearing for quality.
+
+Do **not** use a campaign when: the work fits in one session; the deliverable is genuinely one-off (no expectation of repetition); or the right artifact is a domain adaptation, in which case the answer is a new workstream.
+
+If a deliverable has the multi-session shape but no campaign template exists yet, the first run produces both a planning-session plan AND a draft template; the second run tightens the template from experience. This is the same compounding mechanism the methodology applies at the session and workstream layers, applied at the campaign layer.
+
+### Where campaign templates live
+
+Campaign templates live in `workstreams/` alongside their parent workstream, under the naming convention `*_CAMPAIGN.md`. A blank starting point is `workstreams/TEMPLATE_CAMPAIGN.md`. A campaign template always extends a parent workstream — its `Relationship to Other Documents` table names that parent — and references the master framework for principles, phases, and gates.
+
+The first realized example is [`workstreams/RESEARCH_EXHAUSTIVE_VERIFICATION_CAMPAIGN.md`](workstreams/RESEARCH_EXHAUSTIVE_VERIFICATION_CAMPAIGN.md): a campaign template that decomposes exhaustive primary-source verification into a planning → execution → consolidation sequence, supporting both creation (writing) and audit (reviewing) modes.
+
+---
+
+## Recommended Skills
+
+> **Methodology recommends; methodology does not reimplement.**
+>
+> If a discipline can be expressed as a Claude Code skill — whether a built-in like `/verify` or `/code-review`, or a community skill from a repo such as [`github.com/mattpocock/skills`](https://github.com/mattpocock/skills) — methodology **cites the skill** at the relevant phase or workstream rather than re-documenting the discipline in its own voice. Methodology owns *what to do and when* (phases, gates, anti-patterns, failure modes, session-type definitions). Skills own *how to do it* (the actual workflow invoked by the slash command).
+
+The canonical index is [`starter-kit/RECOMMENDED_SKILLS.md`](starter-kit/RECOMMENDED_SKILLS.md). Each entry names the skill, its source (Claude Code built-in or external repo URL), the phase or workstream where methodology recommends it, and (for external skills) a known-good commit SHA so adopters can pin a version that has been verified to behave as documented.
+
+Inline pointers in this document and in the workstream files reference skills by their slash-command name (`/verify`, `/grill-me`, `/code-review`) without re-describing them. To learn what a skill does, run it or read its `SKILL.md` at the source URL listed in the index. **When a recommended skill is unavailable in your environment, the methodology's own rules** (the phase body, the failure mode, the anti-pattern) **remain the operative guidance.** The citation is a recommendation, not a hard dependency.
 
 ---
 
@@ -776,6 +847,7 @@ See the `workstreams/` directory for domain-specific adaptations:
 - `ARCHITECTURE_WORKSTREAM.md` — System architecture, API design, data modeling
 - `DEVELOPMENT_WORKSTREAM.md` — Feature implementation, bug fix campaigns
 - `AUDIT_WORKSTREAM.md` — Code audits, system reviews, security assessments
+- `RESEARCH_DOCUMENTATION_WORKSTREAM.md` — Research papers, technical reports, dissertations, regulatory analyses
 - `TEMPLATE_WORKSTREAM.md` — Blank template for creating new workstreams
 
 See `HOW_TO_USE.md` for practical examples and lifecycle guidance.

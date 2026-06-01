@@ -184,6 +184,43 @@ Before presenting the architecture:
 
 ---
 
+## Refactor Heuristics
+
+Two structural questions to apply when an existing module looks wrong but the right move is not obvious. Both come from John Ousterhout's *A Philosophy of Software Design* (2nd ed., chapters 4 and 6); the framing here matches Pocock's adaptation in `/improve-codebase-architecture` (cited in [`../starter-kit/RECOMMENDED_SKILLS.md`](../starter-kit/RECOMMENDED_SKILLS.md)).
+
+### Deepening: prefer deep modules to shallow ones
+
+A module is **deep** when its interface is simple relative to the functionality it provides — the caller sees a small surface, and the module hides most of the complexity inside. A module is **shallow** when its interface is roughly as complex as its implementation, or when the implementation is just a thin pass-through. Shallow modules impose a cost (one more thing to learn, navigate, and version) without paying back in hidden complexity.
+
+| Signal | Likely depth | Action |
+|---|---|---|
+| Interface has 1–3 methods; implementation is hundreds of lines of non-trivial logic | Deep | Keep; this is the shape you want |
+| Interface has 20+ methods that mostly mirror the implementation's internal structure | Shallow | Consider whether the module is doing real work or just naming sub-pieces of one larger concern |
+| Caller has to understand internal types, ordering rules, or lifecycle to use it correctly | Shallow (interface leaks) | Either deepen the interface (move the rules inside) or merge the module into its single caller |
+| Module exists primarily to "wrap" another module with no added behavior | Shallow | Delete; call the wrapped module directly |
+
+**Refactor move:** when two adjacent modules each look shallow, ask whether they should be one deeper module. Combining shallow modules can produce a deep one even when each piece in isolation looked fine.
+
+### The Deletion Test: where would the complexity go?
+
+When you suspect a module is wrong but cannot articulate why, mentally delete it and ask: **where does its work end up?**
+
+- **Disperses across many call sites** → the module was doing real abstraction. Its existence kept that complexity in one place. **Keep it.** If something feels off, deepen the interface or relocate it, but do not delete.
+- **Concentrates at one neighbor (and the neighbor is barely larger after absorbing it)** → the module was a shallow indirection. The work belongs at the neighbor; the module was a name without substance. **Delete; absorb.**
+- **Concentrates at a new, smaller, more-focused module that did not exist** → the original module's name was wrong, but a deep abstraction exists nearby. **Replace** with the focused module; delete the original.
+
+The deletion test is a thought experiment, not a recommendation to actually delete. Run it before designing the refactor — it tells you whether you are moving complexity or just moving names.
+
+### When to apply these heuristics
+
+- During Phase 2 (Research) when inventorying the existing architecture — flag shallow modules for the design.
+- During refactor planning — the deletion test produces the rationale that goes in the architecture document's "why" section.
+- **Not** during feature implementation. Spotting a shallow module mid-feature is a Mode-Switch trigger (see [`../starter-kit/SAFEGUARDS.md`](../starter-kit/SAFEGUARDS.md) §The Two-Mode Problem). Commit the feature, note the heuristic finding for a future architecture session, do not refactor inline.
+
+For applying these heuristics as a worked session, run `/improve-codebase-architecture`. The methodology owns *the heuristics and when to apply them*; the skill owns *the survey workflow*.
+
+---
+
 ## Common Anti-Patterns (Architecture)
 
 1. **Resume-driven architecture** — Choosing technologies because they're interesting or trendy, not because they're the right fit for the problem.

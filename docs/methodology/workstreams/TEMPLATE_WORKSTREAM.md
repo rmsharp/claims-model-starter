@@ -103,6 +103,30 @@ Before presenting:
 
 ---
 
+## Adaptation Notes for Documentation Projects
+
+When adapting this template for a documentation project (Quarto, LaTeX, Sphinx, etc.), make the following substitutions:
+
+| Software Concept | Documentation Equivalent |
+|---|---|
+| Build passes | Document renders without errors |
+| Tests pass | Citations resolve, cross-references resolve, figures generate |
+| Code review | Peer review of document sections |
+| Component inventory | Section inventory (headings, figures, tables, cross-references) |
+| Regression test | Re-render and verify all existing cross-references still resolve |
+| Deploy | Render final output (PDF, HTML) |
+| Design system | Style guide, citation convention, terminology conventions |
+| Prototype | Rendered draft |
+
+Additional documentation-specific anti-patterns:
+- **Edit from memory.** Modifying a section based on a stale mental model rather than re-reading it. Particularly dangerous after context compaction.
+- **Greenfield framing.** Writing as if the organization has no existing capabilities when it does. Destroys credibility with domain-expert readers.
+- **Overwriting user edits.** Regenerating figures, tables, or sections the user manually refined.
+- **Citation drift.** Referencing citation keys that do not exist in the bibliography file. Render after every edit to catch immediately.
+- **Redundant restatement.** Repeating the same argument in multiple sections during incremental drafting. Conduct a structural review after major additions.
+
+---
+
 ## Example Session Outline
 
 ```

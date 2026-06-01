@@ -12,6 +12,24 @@ Use this workstream when:
 - Evaluating a series of components against a standard
 - Conducting a quality gate review before a release or milestone
 - Assessing technical debt across a subsystem
+- Validating tooling or scripts against external test data (e.g., testing an extraction workflow against real-world files)
+- Auditing documents for internal consistency, citation completeness, or structural quality
+
+**This workstream is not limited to code.** The audit methodology — define criteria, inventory scope, examine systematically, report findings with evidence — applies to any artifact: documents, configurations, data pipelines, vendor integrations, or tooling. A three-session audit campaign validated Excel extraction tooling against 29 actuarial workbooks using this workstream without modification.
+
+---
+
+## Recommended Skills
+
+The methodology owns *the audit framework* (criteria definition, scope inventory, finding structure, the 7-Dimension audit grid, recurring-issue tracking, multi-session campaign shape). Several review workflows are covered better by Claude Code built-in skills — for those, the methodology cites the skill rather than re-implementing it. See [`../starter-kit/RECOMMENDED_SKILLS.md`](../starter-kit/RECOMMENDED_SKILLS.md) for the canonical index.
+
+| Audit purpose | Recommended skill |
+|---|---|
+| Correctness review of a code change | `/code-review` |
+| Reviewing a pull request | `/review` |
+| Security review of pending changes on the current branch | `/security-review` |
+
+When a recommended skill is unavailable, the audit framework in this document is the operative discipline — the skill is a sharper instrument, not a hard dependency.
 
 ---
 
