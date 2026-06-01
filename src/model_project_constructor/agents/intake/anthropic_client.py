@@ -303,17 +303,38 @@ def _build_governance(parsed: dict[str, Any]) -> GovernanceClassification:
         raise IntakeLLMError(f"classify_governance: missing key {exc}") from exc
 
 
-_CODE_FENCE = re.compile(r"^```(?:json)?\s*\n(.*?)\n```\s*$", re.DOTALL)
+_CODE_FENCE = re.compile(r"```(?:json)?\s*\n?(.*?)\n?```", re.DOTALL)
 
 
 def _extract_json(raw: str) -> Any:
+    """Parse JSON from an LLM response, defensively stripping markdown fences.
+
+    Claude sometimes returns clean JSON and sometimes wraps it in a ``` ```json
+    … ``` ``` (or ``` ``` … ``` ```) fence, occasionally with prose before or
+    after the fence. We try the bare response first (fast path: already valid
+    JSON); on :class:`json.JSONDecodeError` we search for a fenced block
+    anywhere in the response and retry with its contents. Only if both attempts
+    fail do we raise :class:`IntakeLLMError`, surfacing the bare-parse error
+    since that is what the caller sees on a truly malformed response.
+
+    Ported from the data agent's hardened ``_extract_json`` in Session 98
+    (audit finding #16). The intake copy was a stale pre-hardening version
+    whose regex required the *entire* stripped response to be a fenced block
+    (``^…$`` anchors with ``.match``); a real ``claude-sonnet-4-6`` response
+    that added prose around the fence crashed here. See the data agent's twin
+    and Session 51 ``run_id=run_b1_resume_live_1776570556``.
+    """
     stripped = raw.strip()
-    match = _CODE_FENCE.match(stripped)
-    if match:
-        stripped = match.group(1).strip()
     try:
         return json.loads(stripped)
-    except json.JSONDecodeError as exc:
+    except json.JSONDecodeError as first_error:
+        match = _CODE_FENCE.search(stripped)
+        if match:
+            candidate = match.group(1).strip()
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                pass
         raise IntakeLLMError(
-            f"Claude returned non-JSON: {exc}: {stripped[:200]!r}"
-        ) from exc
+            f"Claude returned non-JSON: {first_error}: {stripped[:200]!r}"
+        ) from first_error

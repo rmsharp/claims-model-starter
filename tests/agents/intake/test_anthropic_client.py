@@ -250,6 +250,54 @@ def test_extract_json_raises_on_garbage() -> None:
         _extract_json("this is not json")
 
 
+def test_extract_json_plain_object() -> None:
+    assert _extract_json('{"a": 1}') == {"a": 1}
+
+
+def test_extract_json_prose_before_fence() -> None:
+    """Regression for run_id=run_b1_resume_live_1776570556 (Session 51).
+
+    The intake parser was a stale pre-hardening copy until Session 98 ported
+    the data agent's bare-parse-then-fence-search logic (audit finding #16):
+    a real ``claude-sonnet-4-6`` response that prefixes the fence with prose
+    used to crash with ``IntakeLLMError: non-JSON``.
+    """
+    raw = 'Here is the JSON:\n```json\n{"a": 1}\n```'
+    assert _extract_json(raw) == {"a": 1}
+
+
+def test_extract_json_prose_after_fence() -> None:
+    """Regression for run_id=run_b1_resume_live_1776570556 (Session 51)."""
+    raw = '```json\n[{"k": "v"}]\n```\n\nExplanation: the array holds one item.'
+    assert _extract_json(raw) == [{"k": "v"}]
+
+
+def test_extract_json_prose_before_and_after_fence() -> None:
+    raw = 'Response below:\n```json\n{"x": [1, 2]}\n```\nLet me know if...'
+    assert _extract_json(raw) == {"x": [1, 2]}
+
+
+def test_extract_json_fence_without_language_tag_and_prose() -> None:
+    raw = 'Sure, here you go:\n```\n{"ok": true}\n```'
+    assert _extract_json(raw) == {"ok": True}
+
+
+def test_extract_json_fence_with_malformed_body_raises() -> None:
+    """A fence is found but its body is not JSON: fall through to IntakeLLMError.
+
+    Exercises the inner fence-parse failure path so the raise surfaces the
+    original bare-parse error rather than masking it.
+    """
+    with pytest.raises(IntakeLLMError, match="non-JSON"):
+        _extract_json("Here:\n```json\nnot valid json\n```")
+
+
+def test_extract_json_bare_json_still_parses() -> None:
+    """Fast path: bare JSON (no fence) must not regress after the fence rework."""
+    assert _extract_json('  {"a": 1}  ') == {"a": 1}
+    assert _extract_json("[1, 2, 3]") == [1, 2, 3]
+
+
 # --- SYSTEM_INTERVIEWER data-source probe pinning ------------------------
 
 
