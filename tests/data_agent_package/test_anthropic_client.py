@@ -99,6 +99,24 @@ def test_call_claude_rejects_non_text_block(request_obj: DataRequest) -> None:
         client.generate_primary_queries(request_obj)
 
 
+def test_call_claude_rejects_empty_content(request_obj: DataRequest) -> None:
+    """#16c (Session 100): an empty ``response.content`` list must raise
+    ``LLMParseError``, not ``IndexError`` — shared gap with intake's
+    ``_call_json`` (``test_call_json_rejects_empty_content``)."""
+    fake_msgs = _FakeMessages(canned=[], calls=[])
+
+    def create(**kwargs: Any) -> Any:
+        fake_msgs.calls.append(kwargs)
+        return type("R", (), {"content": []})()
+
+    fake_msgs.create = create  # type: ignore[method-assign]
+    fake = _FakeAnthropic(messages=fake_msgs)
+    client = AnthropicLLMClient(client=fake, model="fake-model")
+
+    with pytest.raises(LLMParseError, match="empty content"):
+        client.generate_primary_queries(request_obj)
+
+
 def test_generate_primary_queries_parses_json_array(
     request_obj: DataRequest,
 ) -> None:

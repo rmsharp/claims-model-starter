@@ -265,6 +265,27 @@ def test_call_json_rejects_non_text_block() -> None:
         client.next_question(_ctx())
 
 
+def test_call_json_rejects_empty_content() -> None:
+    """#16c (Session 100): an empty ``response.content`` list must raise
+    ``IntakeLLMError``, not ``IndexError``.
+
+    A live response could come back with no content blocks; ``_call_json``
+    indexed ``content[0]`` unguarded. Shared gap with the data agent's
+    ``_call_claude`` (``test_call_claude_rejects_empty_content``) — surfaced
+    by Session 99's adversarial completeness lens.
+    """
+    fake = _FakeAnthropic([])  # canned responses unused; create is overridden
+
+    def create(**kwargs: Any) -> _Response:
+        fake.messages.calls.append(kwargs)
+        return _Response(content=[])
+
+    fake.messages.create = create  # type: ignore[method-assign]
+    client = AnthropicLLMClient(client=fake)
+    with pytest.raises(IntakeLLMError, match="empty content"):
+        client.next_question(_ctx())
+
+
 # --- _extract_json edge cases --------------------------------------------
 
 

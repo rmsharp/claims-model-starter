@@ -360,6 +360,8 @@ class AnthropicLLMClient:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
+        if not response.content:
+            raise LLMParseError("Claude returned an empty content list")
         block = response.content[0]
         if not isinstance(block, TextBlock):
             raise LLMParseError(

@@ -248,9 +248,12 @@ class AnthropicLLMClient(IntakeLLMClient):
         # includes non-text blocks (tool_use, thinking, …). We only request
         # plain text, but a live response could still lead with a non-text
         # block, so guard before reading ``.text`` — an unguarded access
-        # raises ``AttributeError`` instead of our typed error. Mirrors the
-        # data agent's ``_call_claude``, preserving intake's ``IntakeLLMError``
-        # (the data agent raises ``LLMParseError``).
+        # raises ``AttributeError`` instead of our typed error. The list can
+        # also come back empty, so guard the index access first (``IndexError``
+        # otherwise). Mirrors the data agent's ``_call_claude``, preserving
+        # intake's ``IntakeLLMError`` (the data agent raises ``LLMParseError``).
+        if not response.content:
+            raise IntakeLLMError("Claude returned an empty content list")
         block = response.content[0]
         if not isinstance(block, TextBlock):
             raise IntakeLLMError(
