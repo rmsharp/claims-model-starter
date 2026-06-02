@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
+from anthropic.types import TextBlock
 
 from model_project_constructor.agents.intake.anthropic_client import (
     DEFAULT_MAX_TOKENS,
@@ -28,13 +29,12 @@ from model_project_constructor.agents.intake.protocol import (
 
 
 @dataclass
-class _Block:
-    text: str
-
-
-@dataclass
 class _Response:
-    content: list[_Block]
+    # ``content`` holds real ``anthropic.types.TextBlock`` instances on the
+    # happy path (so the production ``isinstance(block, TextBlock)`` guard
+    # accepts them); typed ``list[Any]`` so the guard-rejection test can
+    # inject a non-text block (see ``test_call_json_rejects_non_text_block``).
+    content: list[Any]
 
 
 class _FakeMessages:
@@ -45,7 +45,7 @@ class _FakeMessages:
     def create(self, **kwargs: Any) -> _Response:
         self.calls.append(kwargs)
         text = self._responses.pop(0)
-        return _Response(content=[_Block(text=text)])
+        return _Response(content=[TextBlock(text=text, type="text")])
 
 
 class _FakeAnthropic:
@@ -235,6 +235,34 @@ def test_revise_report_rejects_non_object() -> None:
     draft = DraftReportResult(**_draft_payload())
     with pytest.raises(IntakeLLMError, match="revise_report"):
         client.revise_report(draft, feedback="x")
+
+
+# --- _call_json content-block guard --------------------------------------
+
+
+def test_call_json_rejects_non_text_block() -> None:
+    """#16b (Session 99): a non-text first content block (e.g. tool_use /
+    thinking) must raise ``IntakeLLMError``, not ``AttributeError``.
+
+    Ports the guard the data agent's ``_call_claude`` has always had
+    (``test_call_claude_rejects_non_text_block``) into intake, whose
+    ``_call_json`` previously read ``.text`` off ``content[0]`` unguarded.
+    Surfaced by Session 98's adversarial verification workflow.
+    """
+
+    class _NotATextBlock:
+        pass
+
+    fake = _FakeAnthropic([])  # canned responses unused; create is overridden
+
+    def create(**kwargs: Any) -> _Response:
+        fake.messages.calls.append(kwargs)
+        return _Response(content=[_NotATextBlock()])
+
+    fake.messages.create = create  # type: ignore[method-assign]
+    client = AnthropicLLMClient(client=fake)
+    with pytest.raises(IntakeLLMError, match="expected TextBlock"):
+        client.next_question(_ctx())
 
 
 # --- _extract_json edge cases --------------------------------------------

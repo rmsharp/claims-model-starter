@@ -18,6 +18,8 @@ import json
 import re
 from typing import Any
 
+from anthropic.types import TextBlock
+
 from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
     GovernanceClassification,
@@ -242,11 +244,19 @@ class AnthropicLLMClient(IntakeLLMClient):
             system=system,
             messages=[{"role": "user", "content": user}],
         )
-        # Mirrors the pattern used by the data agent's AnthropicLLMClient:
-        # the SDK union includes non-text block types we never produce, so a
-        # runtime str() wrapping the .text attribute is safe but mypy-visible.
-        raw = str(response.content[0].text)  # type: ignore[union-attr]
-        return _extract_json(raw)
+        # The Anthropic SDK types ``response.content`` as a union that
+        # includes non-text blocks (tool_use, thinking, …). We only request
+        # plain text, but a live response could still lead with a non-text
+        # block, so guard before reading ``.text`` — an unguarded access
+        # raises ``AttributeError`` instead of our typed error. Mirrors the
+        # data agent's ``_call_claude``, preserving intake's ``IntakeLLMError``
+        # (the data agent raises ``LLMParseError``).
+        block = response.content[0]
+        if not isinstance(block, TextBlock):
+            raise IntakeLLMError(
+                f"expected TextBlock from Claude, got {type(block).__name__}"
+            )
+        return _extract_json(block.text)
 
 
 # --- helpers -----------------------------------------------------------
