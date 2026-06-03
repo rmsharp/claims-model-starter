@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+from model_project_constructor.agents.intake import MAX_QUESTIONS
 from model_project_constructor.agents.intake.fixture import (
     answers_from_fixture,
 )
@@ -39,6 +40,7 @@ def test_index_page_renders_start_form(subrogation_client: TestClient) -> None:
     assert resp.status_code == 200
     body = resp.text
     assert "Model Project Intake" in body
+    assert f"ask up to {MAX_QUESTIONS}" in body
     assert "stakeholder_id" in body
     assert "/sessions" in body
 
@@ -87,7 +89,7 @@ def test_create_session_redirects_and_starts_interview(
     # The redirect target should be rendering the first interview question.
     page = subrogation_client.get("/sessions/sub-alpha")
     assert page.status_code == 200
-    assert "Question 1 of up to 10" in page.text
+    assert f"Question 1 of up to {MAX_QUESTIONS}" in page.text
     assert "/sessions/sub-alpha/answer" in page.text
 
 

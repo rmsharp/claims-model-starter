@@ -11,6 +11,7 @@ from __future__ import annotations
 from html import escape
 from typing import Any
 
+from model_project_constructor.agents.intake import MAX_QUESTIONS
 from model_project_constructor.ui.intake.runner import SessionSnapshot
 
 _BASE_CSS = """
@@ -59,9 +60,9 @@ def _page(title: str, body: str) -> str:
 
 
 def render_index() -> str:
-    body = """
+    body = f"""
 <h1>Model Project Intake</h1>
-<p class=meta>Start a guided intake interview. The agent will ask up to 10
+<p class=meta>Start a guided intake interview. The agent will ask up to {MAX_QUESTIONS}
 questions and produce a draft intake report for your review.</p>
 <form action="/sessions" method="post">
   <label for=stakeholder_id>Your name or ID</label>
@@ -118,7 +119,7 @@ def _render_question(snap: SessionSnapshot) -> str:
     question = escape(snap.question or "")
     sid = escape(snap.session_id)
     return f"""
-<h1>Question {qnum} of up to 10</h1>
+<h1>Question {qnum} of up to {MAX_QUESTIONS}</h1>
 {_session_header(snap.session_id)}
 <p><strong>{question}</strong></p>
 <form action="/sessions/{sid}/answer" method="post">
