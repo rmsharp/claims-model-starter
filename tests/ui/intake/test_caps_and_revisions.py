@@ -1,4 +1,4 @@
-"""Tests covering 10-question and 3-revision caps via the web UI."""
+"""Tests covering 20-question and 3-revision caps via the web UI."""
 
 from __future__ import annotations
 

@@ -15,6 +15,14 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-06-03 — Fix MAX_QUESTIONS doc-drift: 2 stale `10-question` docstrings (Session 105)
+
+Operator-selected (Phase-0 standing option #1) doc-drift micro surfaced by Session 104's adversarial scope lens: two test docstrings still said `10-question` while the real cap is `MAX_QUESTIONS=20` (`src/model_project_constructor/agents/intake/state.py:57`, bumped 10→20 in Session 27). Docstrings only — no assertion depends on them, so no behavioral surface and no test-count change. A hyphenated `[0-9]+-question` sweep over `src/ tests/ packages/` confirmed exactly 3 hits; the third (`protocol.py:34`) already reads `20-question` (correct value, a Python docstring that cannot be f-string-interpolated) and was left. `docs/architecture-history/` left per the point-in-time-archive convention (Sessions 42/91). Touches `tests/` only. Run at default effort.
+
+- **Changed — `tests/ui/intake/test_caps_and_revisions.py:1`:** module docstring `"Tests covering 10-question and 3-revision caps via the web UI."` → `20-question`.
+- **Changed — `tests/schemas/test_intake.py:224`:** `test_questions_asked_required` docstring `"The 10-question cap is enforced by the agent..."` → `20-question`.
+- **Gates:** pytest 660/660 @ 97.12% (unchanged — docstring-only), mypy 0/61 (CI config scope), ruff clean, decoupling 2/2.
+
 ### 2026-06-03 — Fix Audit #19: intake UI question-cap lie (Session 104)
 
 Operator-selected (Phase-0 standing option #1) fix of Audit #19 (surfaced by Session 97's technical-debt audit): the intake web UI advertised "up to 10" questions while the real cap is `MAX_QUESTIONS=20` (`src/model_project_constructor/agents/intake/state.py:57`, bumped 10→20 in Session 27). Both user-facing surfaces now interpolate the constant dynamically, so the UI cannot re-drift from the cap again. Touches `src/.../ui/intake/templates.py` + `tests/ui/intake/test_app_happy_path.py` only. Run at `ultracode`, including a 3-lens adversarial self-verification (`wf_638a8da8-b2f`) of the diff before commit.

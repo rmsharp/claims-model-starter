@@ -5,9 +5,91 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 104 — operator selected (Phase-0 standing option #1) fix **Audit #19 (intake UI question-cap lie)**: `src/model_project_constructor/ui/intake/templates.py:64,121` render "up to 10" but `MAX_QUESTIONS=20` (`src/model_project_constructor/agents/intake/state.py:57`); `tests/ui/intake/test_app_happy_path.py:90` pins the lie. Fix to the dynamic single-source-of-truth form (`up to {MAX_QUESTIONS}`) per the Session-103 handoff's preferred option; update the test to assert the live value; RED-prove it fails against the old literal. Touches `src/.../ui/intake/` + `tests/ui/` -> full gates (`.venv/bin/{pytest,ruff,mypy}`; baseline 660/660 @ 97.12%, mypy 0/61, ruff clean, decoupling 2/2). Workstream: DEVELOPMENT_WORKSTREAM. 1-and-done: ONLY the cap-lie fix. Effort: `ultracode`.
 
-**Status:** Session 104 COMPLETE. Fixed **Audit #19** (intake UI question-cap lie): the intake web UI advertised "up to 10" questions while the real cap is `MAX_QUESTIONS=20`. Replaced both literal-"10" surfaces in `src/model_project_constructor/ui/intake/templates.py` with the **dynamic single-source-of-truth form** `up to {MAX_QUESTIONS}` (`render_index` :65 + `_render_question` :122; imported `MAX_QUESTIONS` from `agents.intake`, mirroring `runner.py:29`), and made the pinning assertions dynamic in `tests/ui/intake/test_app_happy_path.py` (NEW index-page cap pin at :43 + the question-page pin at :91). **RED-proven** (DEVELOPMENT anti-pattern #3): both updated tests fail against the reverted literal "10" → restored byte-clean. Ran a **3-lens adversarial-verify workflow** (`wf_638a8da8-b2f`) on my own diff before commit — **all 3 clean** (completeness / correctness / scope-efficacy); the scope lens surfaced **2 OUT-OF-SCOPE pre-existing stale `10-question` docstrings** (`test_caps_and_revisions.py:1`, `test_intake.py:224`) which I verified + handed off (Learning #43), did NOT fix. Scope held (3 files: templates.py + the test + procedural). Gates: pytest **660/660 @ 97.12%** (count unchanged — modified/added assertions, no new test fn), mypy 0/61, ruff clean (CI scope), decoupling 2/2. Off-BACKLOG (BACKLOG empty, 36th carry). Ran at `ultracode`. Commit (pending).
+**Task:** Session 105 — operator selected (Phase-0 standing option #1) the **MAX_QUESTIONS doc-drift micro**: fix the 2 pre-existing stale `10-question` docstrings to `20-question` (the real cap is `MAX_QUESTIONS=20`, `src/model_project_constructor/agents/intake/state.py:57`) — `tests/ui/intake/test_caps_and_revisions.py:1` (module docstring) + `tests/schemas/test_intake.py:224` (method docstring). Both are docstrings only (no assertion depends on them — verified). Complete inventory: a hyphenated `[0-9]+-question` sweep over `src/ tests/ packages/` finds exactly 3 hits — these 2 (stale) + `protocol.py:34` (`20-question`, CORRECT value, a Python docstring that cannot be f-string-interpolated → left, not drift). `docs/architecture-history/` left per the point-in-time-archive convention (Sessions 42/91). Touches `tests/` → full gates (`.venv/bin/{pytest,ruff,mypy}`; baseline 660/660 @ 97.12%, mypy 0/61, ruff clean, decoupling 2/2). Workstream: DEVELOPMENT_WORKSTREAM. Off-BACKLOG (BACKLOG empty, 37th carry). 1-and-done: ONLY the 2 docstrings.
+
+**Status:** Session 105 COMPLETE. Fixed the **MAX_QUESTIONS doc-drift micro** (Session 104's standing option #1): two stale `10-question` test docstrings now read `20-question`, matching `MAX_QUESTIONS=20` (`state.py:57`). Edits: `tests/ui/intake/test_caps_and_revisions.py:1` (module docstring) + `tests/schemas/test_intake.py:224` (`test_questions_asked_required` docstring). Both are **docstrings only** — no assertion depends on them, so there is no behavioral surface to RED-prove (DEVELOPMENT anti-pattern #3 N/A) and the test count is unchanged. **Complete inventory re-verified in this session:** a hyphenated `[0-9]+-question` sweep over `src/ tests/ packages/` found **exactly 3** hits — the 2 fixed + `protocol.py:34` (`20-question`, CORRECT value, a Python dataclass docstring that cannot be f-string-interpolated → LEFT, not drift, option #4 declined as over-engineering). `docs/architecture-history/` left per the point-in-time-archive convention (Sessions 42/91). Gates: pytest **660/660 @ 97.12%** (unchanged), mypy 0/61 (CI config scope), ruff clean (CI scope), decoupling 2/2. Off-BACKLOG (BACKLOG empty, 37th carry). Default effort (no `/effort` carry). Commit (pending).
+
+### Session 104 Handoff Evaluation (by Session 105)
+
+**Score: 10/10.** Session 104's handoff was the rare one I could execute end-to-end with zero discovery and zero ambiguity: it named the deliverable, gave the **complete verified inventory** (exactly the 2 docstrings + their file:line), pre-resolved the one contract question, and flagged the over-engineering trap before I could fall into it.
+
+- **What helped:** (a) **Standing option #1 carried the complete inventory** — "my hyphenated sweep found exactly these 2" with file:line + the `20-question` correct value of `state.py:57`. My independent re-sweep (Learning #28 — verify, don't trust) confirmed it byte-for-byte: exactly 3 hits, 2 stale + protocol.py correct. The handoff's inventory was 100% accurate. (b) **The pre-named open contract question** scoped both edge decisions for me: option #4 (`protocol.py:34`) framed as "very low priority, best bundled" — and when I read it, it's a *correct* docstring that *can't* be f-string'd, so "bundling" would have been over-engineering; the handoff's "reasonable, optional" framing let me decline cleanly. And `docs/architecture-history/` pre-resolved to LEAVE per the Sessions 42/91 convention. (c) **Gotcha #3 ("the 2 hits are docstrings, not assertions — won't affect behavior; gates still pass")** was exactly right and told me up front that RED-proof is N/A here. (d) **Gotcha "verify the cap is still `MAX_QUESTIONS=20` before editing"** — applied; `state.py:57` confirmed. (e) **Baseline + mypy-tests-scope + ruff-CI-scope + Phase-1B archive recipe** all accurate; the archive script claimed Session 104 first-try.
+- **What was missing:** Nothing material. The handoff even pre-warned that `protocol.py:34` exists and is correct, so I didn't waste a cycle wondering if it was a 3rd drift site.
+- **What was wrong:** Nothing. Inventory, line numbers, baseline, cap value, and push state all checked out.
+- **ROI:** ~10×. The deliverable was 2 one-line edits; the handoff turned "find and fix the drift" into "apply the 2 named edits, re-verify the known-complete inventory, gate." The −0 is because Session 104's adversarial scope lens did the discovery work *last* session, so this session was pure execution — exactly as a good micro-handoff should be.
+
+### What Session 105 Did
+
+**Deliverable:** Fixed the MAX_QUESTIONS doc-drift micro — 2 stale `10-question` docstrings → `20-question`. **COMPLETE.**
+**Started / Completed:** 2026-06-03. Effort: default (no `/effort` carry).
+**Commit (pending).**
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS (full) / SESSION_NOTES head + Session 104 close-out / SESSION_RUNNER read. Dashboard run (MPC **96/100**, medium risk, active — highest of 5; fleet 70/100; the 2 high-risk flags airqino + feedback-loop-comparison are not this repo). Ghost-check clean (HEAD `11a6926` = Session 104, 1:1 with the documented history). Push state **0** (`git rev-list`-verified — Session 104 was pushed). BACKLOG empty (37th carry). Reported, waited for direction (Learning #10) despite "go".
+2. **Operator direction.** "1" → standing option #1 (MAX_QUESTIONS doc-drift micro).
+3. **Phase 1 / 1B.** Stated understanding (DEVELOPMENT_WORKSTREAM; 2 docstrings only). **Verified all 3 targets before claiming** (Learning #28/#33): `test_caps_and_revisions.py:1` + `test_intake.py:224` (both stale `10-question`) + `protocol.py:34` (`20-question`, correct) + cap source `state.py:57` (`MAX_QUESTIONS=20`). Ran the complete hyphenated `[0-9]+-question` sweep (Candidate #75) — exactly 3 hits, confirming Session 104's inventory. Read `protocol.py` context to confirm option #4 is a docstring (not a prompt string) and decline it. Claimed via the self-verifying Python script (Learning #42, **13th instance**) — archived Session 104's block above the `### Session 103 ARCHIVED ACTIVE TASK` heading; newline-anchored counts handled the `### Session 104 ARCHIVED ACTIVE TASK` prose collision (raw count 2 → newline-anchored heading count 1).
+4. **Phase 2/3 — implementation (2 edits).** Replaced `10-question` → `20-question` in both docstrings. No production code, no assertions touched.
+5. **Verification — gates.** Post-fix sweep: all 3 `[0-9]+-question` hits now read `20-question`. ruff clean (CI scope), mypy 0/61 (CI config-driven), pytest 660/660 @ 97.12% (unchanged — docstring-only, no new test fn). RED-proof N/A (no assertion depends on the docstrings). Decoupling 2/2 (in suite).
+6. **Surfaced-not-fixed (Learning #43).** The explicit `mypy tests/ui/intake/test_caps_and_revisions.py` run (mypy doesn't cover `tests/` in CI) reported **5 pre-existing `[type-arg]` errors** (untyped `dict` at lines 45/46 etc.) — unrelated to my line-1 docstring edit and NOT in the CI gate. Handed off, did NOT fix (scope discipline; FM #2/#8).
+7. **Phase 3 close-out (this).** Session 104 eval (10/10) + this block + self-assess + learnings + handoff to Session 106 + CHANGELOG `[Unreleased]` entry.
+
+### Phase 3B: Self-assess — Session 105 — 9/10
+
+- **Research before creative work:** Yes. Verified all 3 sweep targets + the cap source + read `protocol.py` context before editing anything.
+- **Read implementations not descriptions:** Yes. Re-confirmed every file:line against the tree (Learning #28); read `protocol.py:17-40` to confirm option #4 is a dataclass docstring (un-interpolatable) rather than rubber-stamping the handoff's "bundle it" suggestion.
+- **Scope discipline (Learning #43, FM #2/#8):** Held tightly. Declined option #4 (correct value, can't be dynamic → fixing it = over-engineering), left `docs/architecture-history/` per convention, and surfaced-not-fixed the 5 pre-existing test-file mypy errors even though they're in a file I edited (proximity ≠ scope).
+- **Independent verification of the inherited inventory (Candidate #72 spirit):** Re-ran the complete sweep rather than trusting the handoff's "exactly these 2" — it matched, which is the point.
+- **RED discipline:** Correctly identified as N/A (docstrings have no behavioral surface) rather than performing theater.
+- **Right-sized effort:** No adversarial workflow for a 2-line docstring fix with no behavioral surface — that would have been process-for-process's-sake on a trivial, self-evidently-correct change (no `/effort` carry, default effort).
+- **The honest −1:** This was a near-trivial execution session (2 one-line edits) handed to me fully scoped; the quality bar was "don't over-engineer and don't break the baseline," which is a low bar to clear. I add little compounding value beyond clearing the drift and writing a clean handoff. Appropriate, but not a high-difficulty session.
+- **Quality bar vs previous sessions:** Met. Full verify → edit → gate → surface-out-of-scope → clean handoff loop; right-sized (no ceremony inflation on a micro).
+
+### Phase 3C: Learnings — Session 105
+
+**Candidate #75 (hyphenated `N-X` drift-form sweep) — advanced to 2nd instance & VINDICATED.** Session 104 filed #75 after its space-form sweep missed exactly these 2 hyphenated `10-question` docstrings. Session 105 used the hyphenated `[0-9]+-question` (regex digit-class, even broader) form from the start and found the complete inventory in one pass — the refinement works. **Now at 2 instances (104 file, 105 apply).** Recommend Session 106 fold #75 into Learning #31's mechanical column (sweep every adjacency form: `N X`, `N-X`, `up to N`, `max N`).
+
+**Candidate #72 (cross-check load-bearing inherited claims before acting) — reinforced (spirit).** Rather than trusting the handoff's "exactly these 2," I re-ran the complete sweep independently; it confirmed. Still **promotion-ready at 4 instances** (Sessions 101/102/103/104) — Session 106 should promote it (was Session 104's option #3, now twice-overdue).
+
+**Learning observed: decline over-engineering even when a handoff lightly suggests bundling.** Option #4 (`protocol.py:34`) was framed "reasonable to bundle." Reading it showed it's a *correct* docstring that *cannot* be f-string-interpolated — so "fixing the desync risk" has no clean implementation and would be ceremony. The right move was to verify-then-decline, not to bundle because the handoff mentioned it. (Mirrors Learning #43's "finding-adjacent ≠ in-scope.")
+
+**Learnings #10 / #28 / #33 / #42 / #43 (PERMANENT) — applied:** full orientation + wait despite "go" (#10); re-confirmed every file:line + read protocol.py context (#28); verified the standing-item targets before claiming (#33); self-verifying Phase-1B script, 13th instance (#42); surfaced-not-fixed the out-of-scope `protocol.py:34` + the 5 test-file mypy errors (#43).
+
+### Phase 3D: Handoff to Session 106
+
+**The MAX_QUESTIONS doc-drift micro is COMPLETE.** All `[0-9]+-question` references in `src/ tests/ packages/` now read `20-question`. BACKLOG.md is EMPTY (38th consecutive carry at Session 106 Phase 0).
+
+**Standing options for Session 106 (lead first):**
+
+1. **Promote Candidate #72** (cross-check load-bearing subagent/inherited output before acting) to `SESSION_RUNNER.md` row #45 — now at **4 instances (101/102/103/104) + a 105 reinforcement**, twice-overdue (was Session 104's option #3). 3-file promotion template (`SESSION_RUNNER.md` row append + `SESSION_NOTES.md` close-out note + `CHANGELOG.md` entry). Docs/state only — no code gates, no plan mode. Optionally also fold **Candidate #75** (hyphenated drift-form sweep, now 2 instances) into Learning #31's mechanical column in the same housekeeping pass.
+2. **Audit #39 (governance framework drift)** — carry-over: reconcile `governance_templates.py _FRAMEWORK_ARTIFACTS` with the intake prompt's framework set + add a drift-assertion test. ~1 session. Touches `src/` + `tests/` → gates run. DEVELOPMENT_WORKSTREAM.
+3. **Pre-existing test-file mypy debt (NEW, surfaced this session)** — `tests/ui/intake/test_caps_and_revisions.py` has **5 `[type-arg]` errors** (untyped `dict` at ~lines 45/46) under an explicit `mypy tests/...` run. NOT gated in CI (config-driven mypy covers only `src/`+`packages/`), so very low priority; only worth doing if the project ever wants `tests/` under mypy. Bounded, but check the full set with `.venv/bin/mypy tests/ui/intake/test_caps_and_revisions.py` first.
+4. **New off-BACKLOG operator direction.**
+
+**Open contract questions for Session 106 (Learning #40):** None blocking. If picking option #1, the only choice is whether to bundle Candidate #75 into the same docs pass (recommended — both are methodology housekeeping, same file `SESSION_RUNNER.md`, no code).
+
+**Important considerations for Session 106:**
+
+1. **Baseline UNCHANGED: pytest 660/660 @ 97.12%**, mypy 0/61, ruff clean (CI scope `src/ tests/ packages/ scripts/`), decoupling 2/2. Session 105 changed only 2 docstrings (no assertion, no new test fn) → count stayed 660. Re-run gates on any `tests/`/`src/`/`packages/` touch.
+2. **mypy does NOT type-check `tests/`** (config-driven, 2 packages / 61 files). The 5 `[type-arg]` errors in `test_caps_and_revisions.py` are pre-existing and out-of-CI — see option #3.
+3. **MAX_QUESTIONS drift is now fully cleared in code/tests.** All 3 `[0-9]+-question` hits in `src/ tests/ packages/` read `20-question` (`protocol.py:34` correct; the 2 docstrings fixed). The intake UI itself is dynamic since Session 104 (`templates.py` interpolates `{MAX_QUESTIONS}`). **Do NOT re-introduce literal cap values.**
+4. **`docs/architecture-history/` still contains "max 10 questions" planning-doc text** (`architecture-plan.md:35/136/147`, `initial_purpose.txt:22`) — these are INTENTIONALLY left per the point-in-time-archive convention (Sessions 42/91; CHANGELOG :139/:714). Do NOT "fix" them; they record history accurately.
+5. **Push state:** Session 105's commit is NOT yet pushed (operator did not direct a push this session). **Verify with `git rev-list --count @{u}..HEAD`, do not trust this sentence** — expect 1 unpushed (105) unless the operator pushed.
+6. **Wiki publish hook will NOT fire** on Session 105's commit — touched `tests/` + `SESSION_NOTES.md` + `CHANGELOG.md`, none under `docs/wiki/claims-model-starter/`.
+7. **No `/effort` carry.** Session 105 ran at default effort. Session 106 default unless the operator says otherwise.
+8. **`SESSION_RUNNER.md` Learnings table = 44 rows** (unchanged). Candidates: #72(**4, promotion-ready + 105 reinforcement**), #75(**2** — hyphenated drift-form sweep, vindicated this session), #74(1), plus older carries (#62, #65, #66, #67, #70, #71, #73).
+9. **`CHANGELOG.md`:** `## [Unreleased]` carries Sessions 78–105. Session 106 entries go under `## [Unreleased]`.
+10. **Phase-1B archive recipe (Learning #42)** for Session 106: archive `### Session 105 ARCHIVED ACTIVE TASK` + Session 105 Task/Status above the `### Session 104 ARCHIVED ACTIVE TASK` heading (file-tail zone; locate with `grep -n "^### Session .* ARCHIVED ACTIVE TASK" SESSION_NOTES.md | head -1`). Use the self-verifying Python script with newline-anchored counts; `### Session 105 ARCHIVED ACTIVE TASK` recurs in this handoff's prose — anchor on the heading-line form (`\n### Session 105 ARCHIVED ACTIVE TASK\n`), not a raw substring count.
+
+### Gotchas for Session 106
+
+1. Baseline 660/660 @ 97.12%, mypy 0/61, ruff clean, decoupling 2/2 — re-run on a `tests/`/`src/`/`packages/` touch.
+2. No `/effort` carry (Session 105 was default effort).
+3. **MAX_QUESTIONS drift fully cleared** — do NOT re-introduce literal cap values; the UI is dynamic, the docstrings now say `20-question`, `protocol.py:34` is correct.
+4. **Candidate #72 promotion-ready at 4 instances** (option #1, twice-overdue). #75 NEW at 2 (hyphenated drift-form sweep — refines #31).
+5. **`docs/architecture-history/` "max 10 questions" text is INTENTIONALLY left** (point-in-time archives) — not a drift bug.
+6. **Phase-1B**: `### Session 105 ARCHIVED ACTIVE TASK` recurs in this handoff's prose — newline-anchored `str.count` only (Learning #38 + #42).
 
 ### Session 103 Handoff Evaluation (by Session 104)
 
@@ -4229,6 +4311,12 @@ Ranked likely directions:
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 104 ARCHIVED ACTIVE TASK
+
+**Task:** Session 104 — operator selected (Phase-0 standing option #1) fix **Audit #19 (intake UI question-cap lie)**: `src/model_project_constructor/ui/intake/templates.py:64,121` render "up to 10" but `MAX_QUESTIONS=20` (`src/model_project_constructor/agents/intake/state.py:57`); `tests/ui/intake/test_app_happy_path.py:90` pins the lie. Fix to the dynamic single-source-of-truth form (`up to {MAX_QUESTIONS}`) per the Session-103 handoff's preferred option; update the test to assert the live value; RED-prove it fails against the old literal. Touches `src/.../ui/intake/` + `tests/ui/` -> full gates (`.venv/bin/{pytest,ruff,mypy}`; baseline 660/660 @ 97.12%, mypy 0/61, ruff clean, decoupling 2/2). Workstream: DEVELOPMENT_WORKSTREAM. 1-and-done: ONLY the cap-lie fix. Effort: `ultracode`.
+
+**Status:** Session 104 COMPLETE. Fixed **Audit #19** (intake UI question-cap lie): the intake web UI advertised "up to 10" questions while the real cap is `MAX_QUESTIONS=20`. Replaced both literal-"10" surfaces in `src/model_project_constructor/ui/intake/templates.py` with the **dynamic single-source-of-truth form** `up to {MAX_QUESTIONS}` (`render_index` :65 + `_render_question` :122; imported `MAX_QUESTIONS` from `agents.intake`, mirroring `runner.py:29`), and made the pinning assertions dynamic in `tests/ui/intake/test_app_happy_path.py` (NEW index-page cap pin at :43 + the question-page pin at :91). **RED-proven** (DEVELOPMENT anti-pattern #3): both updated tests fail against the reverted literal "10" → restored byte-clean. Ran a **3-lens adversarial-verify workflow** (`wf_638a8da8-b2f`) on my own diff before commit — **all 3 clean** (completeness / correctness / scope-efficacy); the scope lens surfaced **2 OUT-OF-SCOPE pre-existing stale `10-question` docstrings** (`test_caps_and_revisions.py:1`, `test_intake.py:224`) which I verified + handed off (Learning #43), did NOT fix. Scope held (3 files: templates.py + the test + procedural). Gates: pytest **660/660 @ 97.12%** (count unchanged — modified/added assertions, no new test fn), mypy 0/61, ruff clean (CI scope), decoupling 2/2. Off-BACKLOG (BACKLOG empty, 36th carry). Ran at `ultracode`. Commit (pending).
 
 ### Session 103 ARCHIVED ACTIVE TASK
 

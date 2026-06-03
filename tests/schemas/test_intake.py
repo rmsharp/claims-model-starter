@@ -221,7 +221,7 @@ class TestIntakeReport:
         assert restored == original
 
     def test_questions_asked_required(self) -> None:
-        """The 10-question cap is enforced by the agent, but the *field* must
+        """The 20-question cap is enforced by the agent, but the *field* must
         be present so the cap can be verified post-hoc."""
         with pytest.raises(ValidationError):
             make_intake_report(questions_asked=None)
