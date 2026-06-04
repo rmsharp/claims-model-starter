@@ -190,7 +190,7 @@ Use case: your jurisdiction requires a framework not currently supported (e.g., 
 
 ### Current framework registry
 
-`src/model_project_constructor/agents/website/governance_templates.py:77-103`:
+`src/model_project_constructor/agents/website/governance_templates.py:77-111`:
 
 ```python
 _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
@@ -211,9 +211,10 @@ _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
         "governance/impact_assessment.md",
         "governance/regulatory_mapping.md",
     ],
-    "EU_AI_ACT": [
+    "GDPR_ART_22": [
         "governance/eu_ai_act_compliance.md",
         "governance/impact_assessment.md",
+        "governance/regulatory_mapping.md",
     ],
     "ASOP_56": [
         "governance/model_card.md",
@@ -222,7 +223,7 @@ _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
 }
 ```
 
-At render time, `build_regulatory_mapping(frameworks, emitted_paths)` (`governance_templates.py:106-121`) intersects each declared framework's artifact list with the actually-emitted paths for this run — so the `regulatory_mapping.md` content only claims coverage for artifacts that were in fact generated.
+At render time, `build_regulatory_mapping(frameworks, emitted_paths)` (`governance_templates.py:114-129`) intersects each declared framework's artifact list with the actually-emitted paths for this run — so the `regulatory_mapping.md` content only claims coverage for artifacts that were in fact generated.
 
 ### Files to add or edit
 

@@ -8,7 +8,7 @@ Model governance is not a bolt-on -- it is captured at intake and scaffolded pro
 |-------|--------|-----------------|
 | `risk_tier` | `tier_1_critical`, `tier_2_high`, `tier_3_moderate`, `tier_4_low` | Depth of governance artifact checklist |
 | `cycle_time` | `strategic`, `tactical`, `operational`, `continuous` | Monitoring cadence |
-| `regulatory_frameworks` | `SR_11_7`, `NAIC_AIS`, `EU_AI_ACT_ART_9`, `ASOP_56` | Regulatory mapping document |
+| `regulatory_frameworks` | `SR_11_7`, `NAIC_AIS`, `EU_AI_ACT_ART_9`, `GDPR_ART_22`, `ASOP_56` | Regulatory mapping document |
 | `affects_consumers` | boolean | EU AI Act compliance scaffold |
 | `uses_protected_attributes` | boolean | Fairness testing scaffold |
 
@@ -91,6 +91,7 @@ Supported frameworks:
 | `SR_11_7` | Federal Reserve SR 11-7 (Guidance on Model Risk Management) |
 | `NAIC_AIS` | NAIC Model Bulletin on AI Systems |
 | `EU_AI_ACT_ART_9` | EU AI Act Articles 9-15 |
+| `GDPR_ART_22` | GDPR Article 22 (Automated individual decision-making, incl. profiling) |
 | `ASOP_56` | Actuarial Standard of Practice No. 56 (Modeling) |
 
 The mapping only includes artifacts that are actually emitted for the project's risk tier -- it will not reference an artifact that wasn't generated.

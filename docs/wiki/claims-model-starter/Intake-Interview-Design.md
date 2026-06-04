@@ -23,9 +23,9 @@ Three rules are load-bearing and worth flagging:
 - **Drive toward five sections.** Every question should move the conversation closer to completing `business_problem`, `proposed_solution`, `model_solution`, `estimated_value`, or `value_measurement_plan` — plus a governance classification. Exploratory small talk is out of scope.
 - **Roughly 3-4 questions for the measurement plan.** Within the hard 20-question cap, the agent reserves about 3-4 questions for measurement-plan probes (baseline metric, counterfactual, evaluation horizon, decision rights). The split is a soft target — the LLM allocates dynamically based on what the stakeholder has already covered.
 
-A second system prompt covers governance classification (`anthropic_client.py:44-50`):
+A second system prompt covers governance classification (`anthropic_client.py:121-128`):
 
-> You classify model projects against an internal governance matrix. cycle_time ∈ {strategic, tactical, operational, continuous}. risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. Regulatory frameworks include SR_11_7, NAIC_AIS, EU_AI_ACT_ART_9, GDPR_ART_22. Be conservative: if in doubt, pick the stricter tier.
+> You classify model projects against an internal governance matrix. cycle_time ∈ {strategic, tactical, operational, continuous}. risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. Regulatory frameworks include SR_11_7, NAIC_AIS, EU_AI_ACT_ART_9, GDPR_ART_22, ASOP_56. Be conservative: if in doubt, pick the stricter tier.
 
 The conservative-bias heuristic is deliberate. Under-classifying a model's risk produces downstream governance gaps that are expensive to detect. Over-classifying only costs some extra documentation.
 
@@ -272,7 +272,7 @@ Four extension points, ordered by effort:
 
 1. **Swap the LLM provider** — implement `IntakeLLMClient` (4 methods). Do not modify the nodes; they are provider-agnostic.
 2. **Change the caps** — edit `MAX_QUESTIONS` / `MAX_REVISIONS` in `state.py:57-58`. These are hard-coded by design; changing them is a deliberate policy decision.
-3. **Add governance dimensions** — extend `GovernanceClassification` in `protocol.py:59-68` and `GovernanceMetadata` in `schemas/v1/intake.py:35-43`. Update the classification prompt in `anthropic_client.py:44-50` and the classification node in `nodes.py`. Downstream governance artifact templates in `governance_templates.py` may also need updates.
+3. **Add governance dimensions** — extend `GovernanceClassification` in `protocol.py:59-68` and `GovernanceMetadata` in `schemas/v1/intake.py:35-43`. Update the classification prompt in `anthropic_client.py:121-128` and the classification node in `nodes.py`. Downstream governance artifact templates in `governance_templates.py` may also need updates.
 4. **Add a new interview phase** — add a node, wire edges in `graph.py`, extend `IntakeState` in `state.py`. This is the largest change and should go through a planning session — the current two-phase shape (interview → review) is load-bearing for the CLI, the web UI, and the fixture format.
 
 ---

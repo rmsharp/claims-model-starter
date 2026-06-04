@@ -5,9 +5,93 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 108 — operator-selected (Phase-0 standing option #1) **Audit #39 (governance framework drift)**: reconcile the intake prompt's regulatory-framework set (`SYSTEM_GOVERNANCE`, `anthropic_client.py`) with the website agent's `_FRAMEWORK_ARTIFACTS` map (`governance_templates.py`) + add a parity drift-test. Operator chose **strict-equality, map-forward** (the audit's literal rec) at Phase 1A: add `GDPR_ART_22` to the map (EU consumer-protection artifact set, mirroring `EU_AI_ACT_ART_9`), add `ASOP_56` to the prompt set, delete the dead `EU_AI_ACT` alias; pin with `set(GOVERNANCE_FRAMEWORKS) == set(_FRAMEWORK_ARTIFACTS)`. Wiki mirrors (5 files) HANDED OFF (separate surface w/ pre-existing internal drift + outward live-Wiki publish). Touches `src/` + `tests/` → gates run. DEVELOPMENT_WORKSTREAM. Off-BACKLOG (BACKLOG empty, 41st carry). **COMPLETE.**
+**Task:** Session 109 — operator-selected (Phase-0 standing option #1) **Wiki framework-sync**: mirror the Session-108 Audit #39 framework change into the `docs/wiki/claims-model-starter/` canonical mirrors (+`GDPR_ART_22`, +`ASOP_56`, drop the dead `EU_AI_ACT` alias). Phase-1A operator choices: **publish live now** (post-commit hook → live GitHub Wiki) + **canonical-only** (fix the 4 canonical/code mirrors + 3 folded stale code-citations; leave the 3 illustrative 'e.g.' mirrors partial). Master framework (ITERATIVE_METHODOLOGY); drift-class sync (Learning #31). Off-BACKLOG (BACKLOG empty, 42nd carry). (IN PROGRESS)
 
-**Status:** Session 108 COMPLETE. Reconciled **Audit #39** (governance framework drift) via **strict-equality / map-forward** (operator's Phase-1A choice). The intake `GOVERNANCE_FRAMEWORKS` tuple (`anthropic_client.py`) is now the producer single-source and drives `SYSTEM_GOVERNANCE` (`+ASOP_56`); the website `_FRAMEWORK_ARTIFACTS` map (`governance_templates.py`) gained `GDPR_ART_22` (EU consumer-protection set: `eu_ai_act_compliance.md` + `impact_assessment.md` + `regulatory_mapping.md`, mirroring `EU_AI_ACT_ART_9`) and dropped the dead `EU_AI_ACT` alias. Pinned by `TestFrameworkPromptMapParity` (2 tests, proven RED→GREEN). Gates: **pytest 662/662 @ 97.12%** (+2), mypy 0/61, ruff clean, decoupling 2/2. Adversarially verified by 3 read-only `agentType: 'Explore'` lenses (`wf_a5329e28-dd6`): all PASS, max severity minor (the handed-off wiki staleness — not a code defect). Wiki mirrors HANDED OFF to Session 109. Effort: `ultracode` (repo default). Commit pending.
+**Status:** Session 109 COMPLETE. Synced the Session-108 Audit #39 framework change into the 3 canonical wiki mirrors (`docs/wiki/claims-model-starter/`): the `SYSTEM_GOVERNANCE` prompt quote `+ASOP_56` (now byte-verbatim); the `_FRAMEWORK_ARTIFACTS` code mirror `−EU_AI_ACT`/`+GDPR_ART_22` (3 paths); both `Governance-Framework.md` tables `+GDPR_ART_22`; 4 stale code-citations corrected (governance-prompt `44-50`→`121-128` ×2, dict `77-103`→`77-111`, fn `106-121`→`114-129`). **Canonical-only** (operator Phase-1A choice): the 3 illustrative `e.g.` mirrors + all historical prose (Evolution/Changelog) left untouched. Adversarially verified by 3 read-only `agentType:'Explore'` lenses (`wf_58c4c3dd-ade`): all PASS, `max_severity: none`; HEAD-diff confirmed zero verifier writes. No gates (wiki-only — no `src/`/`tests/`). **PUBLISH LIVE on commit** (hook armed, operator-authorized). Effort: `ultracode`. Commit pending.
+
+### Session 108 Handoff Evaluation (by Session 109)
+
+**Score: 9/10.** Session 108's standing option #1 named this deliverable with precision — the exact files, the newly-stale-vs-pre-existing breakdown, AND (highest value) both open contract questions pre-named with bounded options (Learning #40), which let me resolve publish-policy + illustrative-mirror-policy in a single Phase-1A AskUserQuestion with zero mid-execution round-trips. It also carried the live-publish-hook warning, Learning #32 (leave historical prose), Candidate #76 (`agentType:'Explore'`), and an accurate baseline + push-state.
+
+- **What helped:** (a) **The two pre-named contract questions (line 70) with bounded options** were load-bearing — both resolved at Phase 1A before any edit. (b) The **named file list + line numbers** (Intake :28, Extending :197-218, Governance :11/:91-94) were accurate enough to grep-confirm in one pass; the newly-stale (108) vs pre-existing (GDPR table gap) split was correct. (c) The **publish-hook warning** (auto-publishes; `MPC_SKIP_WIKI_PUBLISH=1`) framed contract question (a) precisely. (d) **Candidate #76** applied directly — read-only verification, HEAD-diff confirmed zero writes. (e) **Push-state prediction "expect 1 unpushed" was correct** (Session 108's `2c1b4d6`) — a refreshing contrast to the prior two handoffs' session-vs-commit miscounts.
+- **What was missing:** it named the *framework-content* drift but not the **co-located citation drift** in those same sections (the `44-50`→`121-128`, `77-103`→`77-111`, `106-121`→`114-129` shifts) — I discovered these during Phase-0 grounding. Minor; arguably executor-discovery. It also didn't note the governance-prompt citation appears **twice** (:26 + :275) — found via `grep -c`.
+- **What was wrong:** nothing material.
+- **ROI:** ~8×. Turned "sync the wiki" into "confirm the named drift → resolve 2 pre-named contracts at Phase 1A → ground line numbers → edit → read-only-verify → publish." The pre-named contracts alone saved two round-trips.
+
+### What Session 109 Did
+
+**Deliverable:** Synced the Audit #39 framework reconciliation into the 3 canonical `docs/wiki/claims-model-starter/` mirrors + published live. **COMPLETE.**
+**Started / Completed:** 2026-06-04. Effort: `ultracode` (repo default).
+**Commit (pending).**
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS (full) / SESSION_NOTES head + Session 108 close-out / SESSION_RUNNER 1-339 read. Dashboard run (MPC **96/100**, medium risk, active — highest of 5; fleet 70/100; the 2 high-risk flags airqino + feedback-loop-comparison are not this repo). Ghost-check clean (HEAD `2c1b4d6` = Session 108). Push state **1** (`git rev-list`-verified — Session 108's commit; handoff predicted 1, correct). BACKLOG empty (42nd carry). `ultracode` reminder present. Reported + waited despite "go" (Learning #10).
+2. **Operator direction.** "1" → standing option #1 (wiki framework-sync).
+3. **Read-only grounding (Learnings #33/#45/#31).** Read the canonical source (`GOVERNANCE_FRAMEWORKS` tuple = 5-set in order; `_FRAMEWORK_ARTIFACTS` dict; `SYSTEM_GOVERNANCE` @ :121-128). Ran the widest framework-symbol sweep across the whole wiki dir (Learning #31) — confirmed the handoff's drift inventory AND surfaced co-located stale code-citations in the same sections.
+4. **Phase 1A contract resolution (Learning #40).** One AskUserQuestion (2 questions, previews on the illustrative-mirror policy) → operator chose **publish live now** + **canonical-only**.
+5. **Phase 1B claim** via the self-verifying Python script (Learning #42, **17th instance**). **The script's assert caught a `.index()` prose-collision before any write** (`t.index("### Session 107 ARCHIVED ACTIVE TASK")` landed on the backtick-wrapped gotcha prose at the file head, not the line-4547 heading); recovered by switching the locator to the newline-wrapped form → clean (Candidate #78). Archived Session 108's Task/Status above `### Session 107 ARCHIVED ACTIVE TASK` (file-tail zone, line 4547).
+6. **Scope judgment on the discovered citation drift (Learnings #43/#31).** Distinguished **#39-caused line-shifts** (dict `77-103`→`77-111`, fn `106-121`→`114-129` — folded in) from the **governance-prompt citation** `44-50`→`121-128` (the exact prompt being synced, co-located with the quote — folded in, both occurrences) from **pre-existing file-restructure drift** on *other* prompts (interview `33-49`, draft `94-119` — handed off, NOT bundled).
+7. **Phase 2 — 7 edits across 3 files** (anchors pre-verified unique via raw-string `grep -c`, Learning #38; `anthropic_client.py:44-50` ×2 via `replace_all`). Verified: no bare `EU_AI_ACT` alias remains; prompt quote byte-matches the rendered `SYSTEM_GOVERNANCE`; dict keys/order/paths match canonical; both tables list 5.
+8. **Adversarial verification — 3 read-only `agentType:'Explore'` lenses** (`wf_58c4c3dd-ade`, Candidate #76, right-sized — NOT the 9-agent over-scope of 106's incident): parity (PASS/none), citation-accuracy (PASS/none — independently re-derived all 8 citations against source; also surfaced the out-of-scope governance_templates.py citation drift), scope/completeness (PASS/none — exhaustive whole-dir classification sweep, no MISSED-DRIFT, no WRONGLY-EDITED). `any_fail: false`, `max_severity: none`. HEAD-diff confirmed zero verifier writes.
+9. **Phase 3 close-out (this)** + CHANGELOG `[Unreleased]` entry. Candidate #76 → 4th instance; filed Candidate #78.
+
+### Phase 3B: Self-assess — Session 109 — 9/10
+
+- **Phase-1A contract discipline (high value, #40):** resolved both pre-named contracts (publish-policy + illustrative-mirror-policy) in one AskUserQuestion with previews, before any edit — zero mid-execution round-trips.
+- **Grounding before claiming (#33/#45/#31):** the widest framework-symbol sweep confirmed the inventory AND surfaced the co-located citation drift the handoff hadn't named — so the scope decision was made on evidence, not the handoff's word.
+- **Self-verifying Phase-1B script earned its keep:** the assert caught the `.index()` prose-collision before any write (the file was never damaged). This is exactly the failure Learning #42's "write only if all asserts pass" property exists to prevent — and it surfaced a genuine refinement (Candidate #78: newline-anchor the *locator*, not just the *assert*).
+- **Scope discipline on discovered drift (#43):** folded ONLY the citations co-located with the framework content being synced (the governance prompt + its dict/fn); handed off the unrelated interview/draft-prompt citation drift rather than expanding into a full citation audit. Held the operator's canonical-only line on the illustrative mirrors.
+- **#76 applied + right-sized:** 3 read-only Explore lenses, not 9; HEAD-diff confirmed zero writes; the citation lens did bonus discovery (the out-of-scope governance_templates.py drift) that became a clean handoff option.
+- **The honest −1:** in my Phase-1A preamble I characterized *all* the folded citations as "#39-caused line shifts," but on execution found the governance-prompt `44-50`→`121-128` gap (~77 lines) was actually pre-existing restructure drift, not a 6-line GDPR shift. I caught and reasoned through it correctly mid-execution (folded it because it's the citation *for the prompt I was syncing*, not because #39 moved it), but the initial characterization was imprecise.
+- **Quality bar vs previous sessions:** met — a fully-verified, adversarially-checked, outward-facing doc sync with zero scope creep, a clean self-caught Phase-1B near-miss, and a bonus handoff finding.
+
+### Phase 3C: Learnings — Session 109
+
+**Candidate #76 — advanced to 4th clean instance (overdue promotion).** 106 filed (incident), 107/108/109 applied clean. Promotion-ripe since Session 108 (it crossed the 3-instance threshold then). **Promote to a NEW Learnings row #46 next session** (read-only subagent tooling — the action-side complement to row #45). Not promoted this session (1-and-done; promotion is its own docs deliverable).
+
+**Candidate #78 — FILED (1st instance).** *In the Phase-1B self-verifying archive script, the newline-anchoring discipline must apply to the archive-zone LOCATOR (`str.index()`), not only the uniqueness ASSERT (`str.count()`).* A bare `t.index("### Session N-1 ARCHIVED ACTIVE TASK")` lands on the FIRST occurrence — the backtick-wrapped gotcha-prose mention near the file head — not the real file-tail heading, silently mis-targeting the archive insert (the downstream asserts then fail, harmlessly, but you lose a round-trip). Anchor the locator on the newline-wrapped form: `a = t.index("\n### Session N-1 ARCHIVED ACTIVE TASK\n") + 1`. *Refines Learning #42* (which named the newline-anchored `.count()` assert) *and Learning #38* (`grep -c` / Edit-anchor pre-greps). Watch for a 2nd/3rd instance at future Phase-1B claims.
+
+**Carry: Candidate #77** (Session 108, 1st instance — parseable producer constant for drift-guard tests) — NOT applied this session (no drift-guard test added; wiki-only).
+
+**Learnings #10/#31/#32/#33/#38/#40/#42/#43/#45/#76 — applied:** orient + wait despite "go" (#10); widest framework-symbol sweep across the wiki dir (#31); left historical prose untouched (#32); verified the handoff's named targets + line numbers against current files at Phase 0 (#33/#45); raw-string `grep -c` Edit-anchor pre-greps (#38); Phase-1A contract resolution with previews (#40); self-verifying Phase-1B script, 17th instance (#42); scope held on the discovered citation drift — surfaced + handed off, not bundled (#43); read-only Explore verifier (#76).
+
+### Phase 3D: Handoff to Session 110
+
+**Audit #39 is now FULLY CLOSED — code (Session 108) + wiki mirrors + live-Wiki publish (Session 109).** The framework single-source (`GOVERNANCE_FRAMEWORKS` ↔ `_FRAMEWORK_ARTIFACTS`, pinned by `TestFrameworkPromptMapParity`) is now mirrored accurately in the 3 canonical wiki files too. BACKLOG.md is EMPTY (43rd consecutive carry at Session 110 Phase 0).
+
+**Standing options for Session 110 (lead first):**
+
+1. **Promote Candidate #76 → SESSION_RUNNER Learnings row #46 (OVERDUE — top option).** Now **4 instances** (106 filed, 107/108/109 applied). It is a NEW discipline (read-only subagent tooling: `agentType:'Explore'` for any verification/research subagent — the default workflow/Agent subagent has Edit/Write and WILL make unauthorized edits, per Session 106's incident), so a **new row**, not a fold. Docs/state only. ~1 session.
+2. **Wiki citation-drift resync (NEW — surfaced by Session 109's verification pass).** Pre-existing file-restructure citation drift in the wiki, unrelated to #39: `Extending-the-Pipeline.md:140` cites `governance_templates.py:733-736` (actual `ci_platform` dispatch ~801-804); `:154` cites `:708-785` (actual `build_governance_files` starts ~770); `:177` cites `:837-858` (actual `is_governance_artifact` ~905-926) — note `:171` `:47-54` is CORRECT, leave it; plus `Intake-Interview-Design.md:16` cites `anthropic_client.py:33-49` (interview prompt) and `:103` cites `:94-119` (draft prompt). ⚠ A wiki commit **auto-publishes to the live GitHub Wiki**. ~1 session.
+3. **Tier-2 audit drift guards** (carried from Session 108, ~30 min each, 2026-06-01 audit §7): **#2** import-time asserts tying `_TIER_SEVERITY`/`_CYCLE_CADENCE` to schema `Literal`s; **#8** single `RepoHost` Literal + `SUPPORTED_HOSTS` source; **#28/#30** delete the dead `SCHEMA_VERSION` export / trim the registry docstring. Touch `src/`+`tests/` → gates run.
+4. **Older candidate carries** — #62, #65, #66, #67, #70, #71, #73, #74, plus #77 (Session 108) and new **#78**. Audit which remain live before promoting.
+5. **New off-BACKLOG operator direction** (incl. the larger audit overhauls O1/O3/O4 — each plan-first / multi-session).
+
+**Open contract questions for Session 110 (Learning #40):**
+- If picking option #2 (citation resync): is the scope the governance-related citations only, or a full wiki-wide `file.py:N-M` citation audit (every code citation across all `docs/wiki/claims-model-starter/` pages re-checked against current line numbers)? And: live-publish now, or local-only (`MPC_SKIP_WIKI_PUBLISH=1`) staged update?
+- If picking option #1 (promote #76): none — it is a mechanical new-row promotion; the row text describes read-only-subagent tooling.
+
+**Important considerations for Session 110:**
+1. **Baseline UNCHANGED: pytest 662/662 @ 97.12%, mypy 0/61, ruff clean, decoupling 2/2** (Session 109 touched NO `src/`/`tests/` — wiki + procedural docs only). Re-run gates on any `src/`/`tests/`/`packages/` touch.
+2. **Wiki publish hook IS active** (`core.hooksPath=.githooks`). **Session 109's commit touched `docs/wiki/` → it published to the live GitHub Wiki.** Any future wiki commit auto-publishes; confirm with operator + consider `MPC_SKIP_WIKI_PUBLISH=1` for a staged/local-only pass.
+3. **Framework single-source:** `GOVERNANCE_FRAMEWORKS` + `_FRAMEWORK_ARTIFACTS`, pinned by `TestFrameworkPromptMapParity`; the 3 canonical wiki mirrors are now in parity too. The deeper E2/O4 fix (one shared constant both modules import) is still open — it crosses the intake↔website boundary, so it needs plan mode.
+4. **Candidate #76** at 4 instances (OVERDUE promotion → row #46). **Candidate #78** filed (1st instance). **Candidate #77** carried (1st instance, Session 108).
+5. **Push state:** expect **2 unpushed** (Session 108 `2c1b4d6` + Session 109's commit) unless the operator pushes. Verify `git rev-list --count @{u}..HEAD`.
+6. **Effort:** `ultracode` is the repo default (active at Session 109 startup). Carries to 110; if no reminder, type `ultracode`.
+7. **`CHANGELOG.md` `## [Unreleased]`** carries Sessions 78-109. Session 110 entries go under `## [Unreleased]`.
+8. **Phase-1B archive recipe (Learnings #42 + #78)** for Session 110: archive `### Session 109 ARCHIVED ACTIVE TASK` + Session 109 Task/Status above the `### Session 108 ARCHIVED ACTIVE TASK` heading (file-tail zone; locate via `grep -n "^### Session .* ARCHIVED ACTIVE TASK" SESSION_NOTES.md | head -1`). Self-verifying script; newline-anchored `.count()` asserts **AND** newline-anchored `.index()` locator (Candidate #78).
+
+### Gotchas for Session 110
+
+1. Baseline 662/662 @ 97.12%, mypy 0/61, ruff clean, decoupling 2/2 — re-run on any `src/`/`tests/`/`packages/` touch.
+2. **`agentType: 'Explore'` for read-only subagents (Candidate #76, OVERDUE promotion)** — the default workflow/Agent subagent has Edit/Write and WILL make unauthorized edits (Session 106's incident). HEAD-diff after any verification fan-out to confirm zero writes.
+3. **Wiki publish hook is active** — any commit touching `docs/wiki/claims-model-starter/` auto-publishes to the live GitHub Wiki; confirm with operator + consider `MPC_SKIP_WIKI_PUBLISH=1` for a staged/local-only pass.
+4. **Learning #32 (historical prose):** `Evolution.md` / `Changelog.md` framework mentions record what-was-at-the-time — do NOT "fix" them in a sync.
+5. **Framework changes need BOTH code surfaces** (`GOVERNANCE_FRAMEWORKS` + `_FRAMEWORK_ARTIFACTS`) **plus the 3 canonical wiki mirrors** for full parity, or `TestFrameworkPromptMapParity` (code) / the wiki goes stale.
+6. **Candidate #78 (Phase-1B locator):** in the archive script, locate the zone with `t.index("\n### Session N-1 ARCHIVED ACTIVE TASK\n")` — the **bare** `.index()` lands on backtick gotcha-prose near the file head, not the real heading. (The newline-anchored `.count()` assert side is already Learning #42.)
+7. **Push state:** expect 2 unpushed (108 + 109) unless the operator pushed; verify with `git rev-list`.
+8. **Phase-1B:** `### Session 109 ARCHIVED ACTIVE TASK` recurs backtick-wrapped in this handoff's gotcha prose — newline-anchored `str.count` for asserts AND newline-anchored `.index` for the locator (Learnings #38/#42 + Candidate #78).
 
 ### Session 107 Handoff Evaluation (by Session 108)
 
@@ -4543,6 +4627,12 @@ Ranked likely directions:
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 108 ARCHIVED ACTIVE TASK
+
+**Task:** Session 108 — operator-selected (Phase-0 standing option #1) **Audit #39 (governance framework drift)**: reconcile the intake prompt's regulatory-framework set (`SYSTEM_GOVERNANCE`, `anthropic_client.py`) with the website agent's `_FRAMEWORK_ARTIFACTS` map (`governance_templates.py`) + add a parity drift-test. Operator chose **strict-equality, map-forward** (the audit's literal rec) at Phase 1A: add `GDPR_ART_22` to the map (EU consumer-protection artifact set, mirroring `EU_AI_ACT_ART_9`), add `ASOP_56` to the prompt set, delete the dead `EU_AI_ACT` alias; pin with `set(GOVERNANCE_FRAMEWORKS) == set(_FRAMEWORK_ARTIFACTS)`. Wiki mirrors (5 files) HANDED OFF (separate surface w/ pre-existing internal drift + outward live-Wiki publish). Touches `src/` + `tests/` → gates run. DEVELOPMENT_WORKSTREAM. Off-BACKLOG (BACKLOG empty, 41st carry). **COMPLETE.**
+
+**Status:** Session 108 COMPLETE. Reconciled **Audit #39** (governance framework drift) via **strict-equality / map-forward** (operator's Phase-1A choice). The intake `GOVERNANCE_FRAMEWORKS` tuple (`anthropic_client.py`) is now the producer single-source and drives `SYSTEM_GOVERNANCE` (`+ASOP_56`); the website `_FRAMEWORK_ARTIFACTS` map (`governance_templates.py`) gained `GDPR_ART_22` (EU consumer-protection set: `eu_ai_act_compliance.md` + `impact_assessment.md` + `regulatory_mapping.md`, mirroring `EU_AI_ACT_ART_9`) and dropped the dead `EU_AI_ACT` alias. Pinned by `TestFrameworkPromptMapParity` (2 tests, proven RED→GREEN). Gates: **pytest 662/662 @ 97.12%** (+2), mypy 0/61, ruff clean, decoupling 2/2. Adversarially verified by 3 read-only `agentType: 'Explore'` lenses (`wf_a5329e28-dd6`): all PASS, max severity minor (the handed-off wiki staleness — not a code defect). Wiki mirrors HANDED OFF to Session 109. Effort: `ultracode` (repo default). Commit pending.
 
 ### Session 107 ARCHIVED ACTIVE TASK
 
