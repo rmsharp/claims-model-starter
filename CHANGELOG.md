@@ -15,6 +15,15 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-06-04 — Fold Candidate Learning #75 into SESSION_RUNNER row #31 (Session 107)
+
+Operator-selected (Phase-0 standing option #1) methodology housekeeping: folded **Candidate Learning #75** — "a drift-class sweep must include the hyphenated `N-X` join form, not just space-separated `N X` / `up to N`" — into `SESSION_RUNNER.md` Learnings **row #31** (the drift-class wide-sweep learning that #75 refines). At 2 instances: Session 104 filed it (after its space-form sweep missed two `10-question` docstrings that the adversarial scope lens then caught), Session 105 vindicated it (the `[0-9]+-question` digit-class form found the complete inventory in one pass). Because #75 refines an existing row rather than introducing a new discipline, it folds into #31 in place — the Learnings table stays at **45 rows**. Operator chose the fuller wording at Phase 1A. Docs/state only — no code, no gates. Run at `ultracode` (repo default).
+
+- **Changed — `SESSION_RUNNER.md` row #31 mechanical clause (b):** `adjacent prose forms ("max N X", "Maximum N X", "hard N")` → "adjacent prose AND typographic-join forms — sweep EVERY adjacency form (`N X`, `N-X`, `up to N`, `max N`, `Maximum N`, `hard N`), preferring a digit-class regex like `[0-9]+-X` over the literal value so any numeral is caught, not just the current one." Adds the hyphenated `N-X` join form (the gap #75 identified) plus the digit-class generalization Session 105 validated.
+- **Changed — `SESSION_RUNNER.md` row #31 Source column:** appended the #75 credit (Session 104 filed / Session 105 vindicated).
+- **Verification (#45 + #76 applied):** the inherited "2 instances" claim was re-derived from the source-of-truth (`SESSION_NOTES.md` lines 209/126) before it entered the permanent row; the committed row was then fidelity-checked by ONE read-only `agentType: 'Explore'` verifier (Candidate #76 honored — zero writes confirmed by HEAD-diff, right-sized vs. Session 106's over-scoped fan-out) against the operator-approved preview and the SoT — overall PASS.
+- **Candidate roster:** #75 removed (folded). Candidate #76 ("spawn read-only / critique / verify subagents with `agentType: 'Explore'`") advanced to its 2nd instance (Session 106 filed, Session 107 applied) and was validated.
+
 ### 2026-06-03 — Promote Candidate Learning #72 to SESSION_RUNNER row #45 (Session 106)
 
 Operator-selected (Phase-0 standing option #1) methodology housekeeping: promoted **Candidate Learning #72** — "cross-check any load-bearing inherited / subagent-produced claim (count, provenance, OR reasoning) against the authoritative single-source record / first principles BEFORE it enters a permanent artifact or drives a decision" — to `SESSION_RUNNER.md` Learnings **row #45**. At 4 counted instances (Sessions 101/102/103/104) + a Session-105 reinforcement; promotion-ready since Session 103 (project threshold is 3), carried as overdue standing option #3. Docs/state only — no code, no gates. Operator declined the optional Candidate-#75-into-#31 bundle (kept tight; #75 carries forward). Run at `ultracode`.
