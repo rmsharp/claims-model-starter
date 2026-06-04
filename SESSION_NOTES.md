@@ -5,9 +5,90 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 110 — operator-selected (Phase-0 standing option #1) **Promote Candidate #76 → new `SESSION_RUNNER.md` Learnings row #46**: read-only subagent tooling — spawn any read / critique / verify / research / audit subagent with `agentType: 'Explore'` (no Edit/Write), never the default write-capable workflow/`Agent` type, which WILL make unauthorized edits to permanent files (Session 106's incident). The action-side complement to Learning #45. 4 instances (106 filed = the incident; 107/108/109 applied clean) — 3-instance threshold crossed at Session 108, so OVERDUE. New discipline → a NEW row, not a fold. Master framework (ITERATIVE_METHODOLOGY); methodology housekeeping. Docs/state only — no `src/`/`tests/`, no gates, no plan mode. Off-BACKLOG (BACKLOG empty, 43rd carry). **COMPLETE.**
+**Task:** Session 111 — operator-directed: **drive to a new tagged release `v0.2.0`**. Sub-steps: (1) **full wiki-wide `file.py:N-M` citation audit** across all 22 `docs/wiki/claims-model-starter/` pages (118 source-file line citations; 43 fixed) — verify each against current source, fix drifted *current-pointer* citations, LEAVE historical prose (Evolution / Changelog, Learning #32); read-only `agentType:'Explore'` verification + HEAD-diff; commit → **auto-publishes live** (operator Phase-1A: full-audit + publish-live). (2) pre-release gate confirmation. (3) cut release `0.2.0` — bump version (2× `pyproject.toml`, `__init__.py`, `README.md:3`) + `uv.lock`, CHANGELOG `[Unreleased]`→`[0.2.0] - 2026-06-04` + fresh Unreleased, mirror audience-facing wiki `Changelog.md` (publishes live). (4) push all commits (incl. 108/109/110) + annotated tag `v0.2.0`. Master framework + release chore. Off-BACKLOG (BACKLOG empty, 44th carry). **COMPLETE.**
 
-**Status:** Session 110 COMPLETE. Promoted **Candidate #76 → `SESSION_RUNNER.md` Learnings row #46** (read-only subagent tooling: spawn any read/critique/verify/research/audit subagent with `agentType: 'Explore'`, never the default write-capable workflow/`Agent` type — the action-side complement to Learning #45). The 4-instance provenance (106 filed=incident, 107/108/109 applied clean; threshold crossed at 108) was re-derived directly against the close-out SoT before the row hardened (Learning #45), then **dogfood-verified by 2 read-only `agentType:'Explore'` lenses** (right-sized within #46's own 1–3 range): provenance lens re-confirmed all 6 Source-column claims with SoT line cites (incident :277, 107 :201, 108 `wf_a5329e28-dd6` :121, 109 `wf_58c4c3dd-ade` :4635, threshold :136); content lens confirmed table well-formedness (5 pipes, single line, clean `---` close), genuine distinctness from #45 (capability-side vs claim-side), and internal consistency. **HEAD-diff confirmed zero verifier writes** (only the 2 intended files modified). SESSION_RUNNER Learnings table now **46 rows**; Candidate #76 removed from the active roster (promoted). Docs/state only — no `src/`/`tests/`, no gates. Effort: `ultracode`. Commit pending.
+**Status:** Session 111 COMPLETE. Drove to tagged release **v0.2.0** (operator goal, introduced mid-session). **(1) Full wiki-wide citation audit:** 8 read-only `agentType:'Explore'` agents (`wf_18c7de31-050`) verified all **118** `file.py:N-M`-style citations across 22 pages → 62 CORRECT / 50 DRIFTED / 7 HISTORICAL. **43 drifted current-pointer citations fixed** across 6 reference pages (Extending ×5, Intake ×12, Schema ×4, Security ×11, Worked-Examples ×8, Contributing ×3) — commit `f4e6272`, **published live** (wiki clone `9258c04`). Every fix independently re-derived against live source **before applying** (Learning #45) — caught **4 agent errors** (intake constructor `32-46`→`32, 134-146`; interviewer-prompt span →`35-66`; fairness scaffolds →`856-904`; OPERATIONS →`81-107`) — then re-verified by an independent read-only Explore lens (43/44 MATCH; the 1 "mismatch" a false positive on a bare continuation token). The **6 historical-page drifts** (Evolution ×5, Changelog ×1) left untouched per **Learning #32** (operator-confirmed; #4 would otherwise cite since-fixed code while narrating the old bug). **(2) Gates green** (no `src/`/`tests/` touched): ruff clean, mypy 0/48, **pytest 662/662 @ 97.12%**, decoupling 2/2. **(3) Release cut** `2442fd7` (published wiki live `4d87ad8`): version `0.1.0`→`0.2.0` in 4 markers + `uv.lock` (both editable members; clean `uv lock`, no dep churn); CHANGELOG `[Unreleased]`→`[0.2.0] - 2026-06-04` + fresh empty Unreleased + Session 111 entry; audience-facing wiki `Changelog.md` version line + release entry. **(4) Pushed** `cd3c341..2442fd7` (5 commits: 108/109/110 + `f4e6272` + `2442fd7`) + **annotated tag `v0.2.0`** → origin. Verified on origin: tag `v0.2.0`→`2442fd7`, master in sync, **0 unpushed** (before this close-out commit). Effort: `ultracode`. Close-out commit pending.
+
+### Session 110 Handoff Evaluation (by Session 111)
+
+**Score: 9/10.** Session 110's standing option #1 ("Wiki citation-drift resync") named *exactly* the deliverable the operator picked — including the specific known-drifted citations, the ⚠ auto-publish warning, AND both contract questions pre-named (Learning #40), which let me frame the operator's Phase-1A choices (scope + publish) cleanly. It could not have anticipated the *release* goal (operator introduced it live), so I judge it only on the citation deliverable, where it was excellent.
+
+- **What helped:** (a) **Option #1 pre-named the two contract questions** — "governance-only vs full wiki-wide audit" and "publish live vs `MPC_SKIP_WIKI_PUBLISH=1`" — verbatim what I surfaced to the operator. (b) The **specific drifted citations** (Extending :140/:154/:177, Intake :16/:103) were accurate and grep-confirmed in one pass — a trustworthy seed for the full audit. (c) **Push-state "expect 3 unpushed (108+109+110)" was CORRECT** (`git rev-list` =3). (d) **Gotcha #2 (`agentType:'Explore'` = Learning #46)** applied directly for the 8-agent audit fan-out AND the verification lens; HEAD-diff confirmed zero verifier writes. (e) **Learning #32** (leave historical prose) was the precise discipline for the 6 historical findings. (f) **Phase-1B recipe (Learnings #42+#78)** — newline-anchored `.count()` asserts + `.index()` locator — applied clean first-try. (g) Baseline (662/662 @ 97.12%) accurate.
+- **What was missing:** trivia only — (a) the handoff's drift list was a 5-citation *sample*; the full audit surfaced 50 drifted (44 non-historical). But option #1 explicitly *offered* the "full wiki-wide audit" scope, so this was expected, not a gap. (b) No release-cut mechanics (version files, `uv.lock` desync) — but the release goal wasn't in the handoff.
+- **What was wrong:** nothing material.
+- **ROI:** ~8×. The pre-named contracts + auto-publish warning turned "what is the resync?" into a clean Phase-1A decision and a seeded, scoped audit.
+
+### What Session 111 Did
+
+**Deliverable:** Tagged release **v0.2.0** — a full wiki citation-accuracy pass + the version cut/push/tag. **COMPLETE.**
+**Started / Completed:** 2026-06-04. Effort: `ultracode` (repo default).
+**Commits:** `f4e6272` (wiki citation resync, published live), `2442fd7` (release cut, published live), tag `v0.2.0`→`2442fd7`. Close-out commit pending.
+
+1. **Phase 0 orientation.** SAFEGUARDS (full) / SESSION_NOTES head + Session 110 close-out / SESSION_RUNNER read. Dashboard (MPC **96/100**, medium risk, active — highest of 5; fleet 70/100). Ghost-check clean (HEAD `9cf89ed` = Session 110). Push state **3** (`git rev-list`-verified — 108/109/110; handoff predicted 3, correct). BACKLOG empty (44th carry). Reported + waited despite "go" (Learning #10).
+2. **Operator dialogue (Phase 1A).** Answered "what is the wiki citation-drift resync?" with a grounded explanation (re-checked the named drifts against source). Operator chose **full wiki audit + publish live**, then introduced the session goal: **"get to a new tagged release."** One AskUserQuestion resolved version → **0.2.0** (recommended minor bump). Claimed via self-verifying Phase-1B script (Learnings #42+#78, **19th instance**), clean first try.
+3. **Step 1 — audit (Workflow `wf_18c7de31-050`).** 8 read-only `Explore` agents (one per cited page) enumerated + verified all 118 citations against live source, returning structured per-citation verdicts.
+4. **Independent re-derivation (Learning #45, dogfooded at scale).** Re-checked all 50 DRIFTED suggestions against source myself before applying — confirmed the start line lands on the claimed symbol for every one; **overrode 4 agent errors**. Confirmed each `citation` token unique in its page (Learning #38) before replacing.
+5. **Applied 43 fixes** (42 token-swaps + 1 prose-phrase covering the two co-located L145 citations) across 6 pages via an asserting script; re-verified 0 old ranges remain, 0 new missing, only wiki pages changed.
+6. **Adversarial verification (Learning #46).** Independent read-only `Explore` lens re-derived all 44 corrected ranges → 43/44 MATCH (1 false positive). Committed `f4e6272`; post-commit hook published live.
+7. **Historical-6 decision (Learning #32).** Surfaced the 6 historical-page drifts to the operator with recommendation → **leave all** (operator-confirmed).
+8. **Step 2 — gates.** ruff clean, mypy 0/48, pytest 662/662 @ 97.12%, decoupling 2/2 — identical to baseline.
+9. **Step 3 — release cut.** Bumped 4 version markers + regenerated `uv.lock` (caught the workspace-version desync); converted CHANGELOG `[Unreleased]`→`[0.2.0]` + Session 111 entry; updated audience-facing wiki `Changelog.md`. Committed `2442fd7` (published wiki live).
+10. **Step 4 — push + tag.** Annotated `v0.2.0` on `2442fd7` (mirroring `v0.1.0` style); pushed master + tag; verified origin state (tag→2442fd7, 0 unpushed).
+11. **Phase 3 close-out (this).** Filed Candidate #79 (release `uv.lock` desync).
+
+### Phase 3B: Self-assess — Session 111 — 9/10
+
+- **Learning #45 dogfooded at scale (highest value):** independently re-derived all 50 drifted citations against live source *before* applying — caught **4 concrete agent errors**, one flat-wrong (the L84 constructor `32-46`; `__init__` is actually at 134). Trusting the 8-agent audit blindly would have published 4 wrong citations live. This is exactly what #45 exists to prevent, applied to 50 items not 1.
+- **Learning #46 throughout:** every subagent (8 auditors + 1 verifier) was read-only `Explore`; confirmed via `git diff --stat` that only wiki pages changed (the HEAD-diff backstop).
+- **Learning #40:** surfaced both audit contract questions AND the historical-6 decision as bounded operator choices — zero mid-execution round-trips on scope.
+- **Release discipline:** caught the `uv.lock` desync (would have shipped a stale lockfile), re-confirmed gates, kept audit and release as separate clean commits, annotated tag mirroring v0.1.0, verified origin state rather than trusting the push output.
+- **1-and-done tension (the honest read):** the session did *two* deliverables (audit + release) — but the operator explicitly set "tagged release" as the goal, so the arc was authorized, not scope creep; each step was a discrete committed unit. Still, it's the largest single session in a while.
+- **The honest −1:** I broadened the audit from the operator's literal "`file.py:N-M`" to all source extensions (`.md`/`.toml`/`.yml`) without explicitly confirming — it found real additional drift (good), but was a scope judgment made unilaterally. Also the verification lens was partly confirmatory given my manual #45 pass already satisfied the bar (right-sized to 1 lens, defensible under `ultracode`).
+- **Quality bar vs previous sessions:** exceeded — a fully-verified, published, tagged release with provenance triple-checked (audit → my re-derivation → Explore lens), 4 caught errors, zero scope creep within each step.
+
+### Phase 3C: Learnings — Session 111
+
+**Candidate #79 filed (release `uv.lock` desync) — 1st instance.** Bumping a workspace package `version` in `pyproject.toml` desyncs `uv.lock` (it pins each editable member's version). Run `uv lock` after the bump and confirm the diff is *only* the version line(s) — no dependency churn. **When to use:** any version bump in a `uv` workspace repo. **Root cause:** the lockfile records member versions, not just dependency pins, so a metadata-only bump still requires a re-lock. Watch for a 2nd/3rd instance at the next release.
+
+**Learning #45 reinforced HARD (50-item scale).** Re-deriving every subagent-suggested fix against the SoT before acting caught a 4/50 error rate — a strong argument that #45 scales with fan-out size, not just single high-stakes claims. Consider whether this warrants strengthening row #45's wording (e.g. "verify *each* item of a fan-out, not a sample").
+
+**Applied:** #10 (orient+wait despite "go"); #40 (contract questions pre-resolved at Phase 1A); #42+#78 (self-verifying Phase-1B script, 19th instance, clean); #32 (leave historical prose); #45 (re-derive, don't trust — 4 catches); #46 (read-only `Explore` for all fan-outs + diff backstop); #38 (raw-string token-uniqueness before replace).
+
+**No advance on the older candidate roster** (#62/#65/#66/#67/#70/#71/#73/#74/#77/#78) — a cull remains a standing option.
+
+### Phase 3D: Handoff to Session 112
+
+**`v0.2.0` is released, pushed, and tagged (`2442fd7`).** The product is at its first minor release since v0.1.0. BACKLOG.md is EMPTY (45th consecutive carry at Session 112 Phase 0). Remaining work is discretionary audit-followup + methodology housekeeping.
+
+**Standing options for Session 112 (lead first):**
+
+1. **GitHub Release object for `v0.2.0` (optional polish).** The git *tag* exists and is pushed, but no GitHub *Release* (the Releases-UI object with rendered notes) was created — same as `v0.1.0` (tag-only). If the operator wants a published release page: `gh release create v0.2.0 --title "v0.2.0" --notes-from-tag` (or `--notes-file` from the CHANGELOG `[0.2.0]` section). ~15 min. Outward-facing — confirm first.
+2. **Tier-2 audit drift guards** (2026-06-01 audit §7, ~30 min each): **#2** import-time asserts tying `_TIER_SEVERITY`/`_CYCLE_CADENCE` to schema `Literal`s; **#8** single `RepoHost` Literal + `SUPPORTED_HOSTS`; **#28/#30** delete dead `SCHEMA_VERSION` export / trim registry docstring. Touch `src/`+`tests/` → gates run.
+3. **Candidate-roster audit/cull.** Active: #62/#65/#66/#67/#70/#71/#73/#74 (older single-instance) + #77 (Session 108) + #78 (Session 109) + **#79 (Session 111, release uv.lock)**. Several stale single-instance carries — a session to retire dead ones / promote any quietly at 3 instances. Docs/state only.
+4. **New off-BACKLOG operator direction** — incl. the larger overhauls **O1** (Stage-list pipeline driver), **O3** (`REPO_PLATFORMS` registry), **O4** (controlled-vocabulary single-source) — each plan-first / multi-session.
+
+**Open contract questions for Session 112 (Learning #40):**
+- If option #1 (GitHub Release): notes from the tag annotation, or from the CHANGELOG `[0.2.0]` section (richer)? And: mark as "latest release"?
+- If option #2 (tier-2 guards): which subset (#2 / #8 / #28+#30), and is #8 just the `RepoHost` Literal-source or the full O3 registry (latter is plan-first)?
+
+**Important considerations for Session 112:**
+1. **Baseline UNCHANGED: pytest 662/662 @ 97.12%, mypy 0/48, ruff clean, decoupling 2/2** (Session 111 touched NO `src/`/`tests/` logic — only version markers + `uv.lock` + docs). Re-run gates on any `src/`/`tests/`/`packages/` touch.
+2. **Release state:** `v0.2.0` tagged at `2442fd7` and on origin. `pyproject.toml` ×2 + `__init__.py` + `README.md` all read `0.2.0`; `uv.lock` members at `0.2.0`. **CHANGELOG `## [Unreleased]` is now EMPTY/fresh** — Session 112 entries go there.
+3. **Push state:** expect **1 unpushed** (this close-out commit) unless I pushed it / the operator pushes. Verify `git rev-list --count @{u}..HEAD`. *(Session 111 pushed the release; the close-out commit is the only follow-on.)*
+4. **Wiki publish hook IS active** (`core.hooksPath=.githooks`): any commit touching `docs/wiki/claims-model-starter/` auto-publishes live. Session 111's two wiki-touching commits both published. A `src/`-only or SESSION_NOTES-only commit does NOT publish.
+5. **Candidate #79 (release uv.lock desync)** is the freshest learning — relevant to any future version bump.
+6. **Effort:** `ultracode` is the repo default. Carries to 112; if no reminder, type `ultracode`.
+7. **Phase-1B archive recipe (Learnings #42+#78)** for Session 112: archive `### Session 111 ARCHIVED ACTIVE TASK` + Session 111 Task/Status above `### Session 110 ARCHIVED ACTIVE TASK` (file-tail zone; `grep -n "^### Session .* ARCHIVED ACTIVE TASK" SESSION_NOTES.md | head -1`). Self-verifying script; newline-anchored `.count()` asserts AND `.index()` locator.
+
+### Gotchas for Session 112
+
+1. Baseline 662/662 @ 97.12%, mypy 0/48, ruff clean, decoupling 2/2 — re-run on any `src/`/`tests/`/`packages/` touch.
+2. **`v0.2.0` is live on origin** (tag + master). Do NOT re-bump or re-tag; the next release is `0.2.1`/`0.3.0` depending on the work. CHANGELOG `[Unreleased]` is the staging area again.
+3. **Candidate #79:** any future version bump must `uv lock` + verify the lockfile diff is only the version line(s).
+4. **`agentType:'Explore'` for ALL read-only subagent fan-outs (Learning #46);** `git diff --stat` after to confirm zero writes — the diff, not the agent self-report, is the proof.
+5. **Learning #45 scales:** when a subagent fan-out suggests N fixes, re-derive *each* against the SoT before acting — Session 111 found a 4/50 error rate.
+6. **Learning #32:** Evolution.md / Changelog.md citations in dated narrative record what-was-then — do NOT "fix" them (the operator explicitly confirmed leaving the 6 historical drifts).
+7. **Push state:** expect 1 unpushed (the close-out) unless pushed; verify with `git rev-list`.
 
 ### Session 109 Handoff Evaluation (by Session 110)
 
@@ -4710,6 +4791,12 @@ Ranked likely directions:
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 110 ARCHIVED ACTIVE TASK
+
+**Task:** Session 110 — operator-selected (Phase-0 standing option #1) **Promote Candidate #76 → new `SESSION_RUNNER.md` Learnings row #46**: read-only subagent tooling — spawn any read / critique / verify / research / audit subagent with `agentType: 'Explore'` (no Edit/Write), never the default write-capable workflow/`Agent` type, which WILL make unauthorized edits to permanent files (Session 106's incident). The action-side complement to Learning #45. 4 instances (106 filed = the incident; 107/108/109 applied clean) — 3-instance threshold crossed at Session 108, so OVERDUE. New discipline → a NEW row, not a fold. Master framework (ITERATIVE_METHODOLOGY); methodology housekeeping. Docs/state only — no `src/`/`tests/`, no gates, no plan mode. Off-BACKLOG (BACKLOG empty, 43rd carry). **COMPLETE.**
+
+**Status:** Session 110 COMPLETE. Promoted **Candidate #76 → `SESSION_RUNNER.md` Learnings row #46** (read-only subagent tooling: spawn any read/critique/verify/research/audit subagent with `agentType: 'Explore'`, never the default write-capable workflow/`Agent` type — the action-side complement to Learning #45). The 4-instance provenance (106 filed=incident, 107/108/109 applied clean; threshold crossed at 108) was re-derived directly against the close-out SoT before the row hardened (Learning #45), then **dogfood-verified by 2 read-only `agentType:'Explore'` lenses** (right-sized within #46's own 1–3 range): provenance lens re-confirmed all 6 Source-column claims with SoT line cites (incident :277, 107 :201, 108 `wf_a5329e28-dd6` :121, 109 `wf_58c4c3dd-ade` :4635, threshold :136); content lens confirmed table well-formedness (5 pipes, single line, clean `---` close), genuine distinctness from #45 (capability-side vs claim-side), and internal consistency. **HEAD-diff confirmed zero verifier writes** (only the 2 intended files modified). SESSION_RUNNER Learnings table now **46 rows**; Candidate #76 removed from the active roster (promoted). Docs/state only — no `src/`/`tests/`, no gates. Effort: `ultracode`. Commit pending.
 
 ### Session 109 ARCHIVED ACTIVE TASK
 
