@@ -14,9 +14,9 @@ There are **5 registered payload schemas** plus the **HandoffEnvelope** transpor
 
 | Schema | Purpose | Writer | Reader(s) | File |
 |---|---|---|---|---|
-| `IntakeReport` | Interview output | Intake Agent | Orchestrator, Website Agent | `schemas/v1/intake.py:45-62` |
-| `DataRequest` | What the Data Agent needs | Orchestrator (adapted from intake) or user (standalone) | Data Agent | `packages/data-agent/.../schemas.py:46-60` |
-| `DataReport` | Queries + quality checks + summary | Data Agent | Orchestrator, Website Agent | `packages/data-agent/.../schemas.py:92-102` |
+| `IntakeReport` | Interview output | Intake Agent | Orchestrator, Website Agent | `schemas/v1/intake.py:86-105` |
+| `DataRequest` | What the Data Agent needs | Orchestrator (adapted from intake) or user (standalone) | Data Agent | `packages/data-agent/.../schemas.py:46-68` |
+| `DataReport` | Queries + quality checks + summary | Data Agent | Orchestrator, Website Agent | `packages/data-agent/.../schemas.py:113-123` |
 | `RepoTarget` | Destination repo config | Orchestrator (from user config) | Website Agent | `schemas/v1/repo.py:12-17` |
 | `RepoProjectResult` | Generated repo metadata | Website Agent | Orchestrator | `schemas/v1/repo.py:28-37` |
 | `HandoffEnvelope` | Transport wrapper | All senders | All receivers | `schemas/envelope.py:20-34` |
@@ -93,7 +93,7 @@ ModelType = Literal[
 ]
 ```
 
-The orchestrator's `infer_target_granularity` adapter branches on `model_type`: `time_series` maps to a monthly grain, everything else maps to `event` grain with `unit="claim"` (`orchestrator/adapters.py:82`).
+The orchestrator's `infer_target_granularity` adapter branches on `model_type`: `time_series` maps to a monthly grain, everything else maps to `event` grain with `unit="claim"` (`orchestrator/adapters.py:55`).
 
 ### Version constant
 

@@ -112,7 +112,7 @@ Pipeline-mode invocation:
 uv run python scripts/run_pipeline.py --host gitlab --inventory-from-intake
 ```
 
-The converter is `intake_qa_pairs_to_inventory` at `src/model_project_constructor/orchestrator/adapters.py:113`; the flag is wired in `scripts/run_pipeline.py:477`. When `--inventory-from-intake` is combined with `--curated-inventory <path>`, the curated entries win on duplicate `fully_qualified_name` (richer, hand-maintained signal) and interview-derived entries enrich the remainder.
+The converter is `intake_qa_pairs_to_inventory` at `src/model_project_constructor/orchestrator/adapters.py:133`; the flag is wired in `scripts/run_pipeline.py:477`. When `--inventory-from-intake` is combined with `--curated-inventory <path>`, the curated entries win on duplicate `fully_qualified_name` (richer, hand-maintained signal) and interview-derived entries enrich the remainder.
 
 ### Step 4 — DataReport output
 
@@ -127,7 +127,7 @@ The Data Agent produces `tests/fixtures/sample_datareport.json`:
 
 ### Step 5 — Generated repository
 
-The Website Agent scaffolds a project named `subrogation-model` (slug `subrogation_model`). The Phase 4A baseline file set is enumerated in `tests/agents/website/test_templates.py:229-258`:
+The Website Agent scaffolds a project named `subrogation-model` (slug `subrogation_model`). The Phase 4A baseline file set is enumerated in `tests/agents/website/test_templates.py:294-341`:
 
 **Root and configuration**
 
@@ -169,7 +169,7 @@ The Website Agent scaffolds a project named `subrogation-model` (slug `subrogati
 - `queries/quality/subrogation_training_set/row_count_sanity.sql`
 - `queries/quality/subrogation_training_set/target_nullability.sql`
 
-**Governance artifacts (Phase 4B, tier-3 moderate with `affects_consumers=true`)** — emitted by `build_governance_files` in `src/model_project_constructor/agents/website/governance_templates.py:708-785`:
+**Governance artifacts (Phase 4B, tier-3 moderate with `affects_consumers=true`)** — emitted by `build_governance_files` in `src/model_project_constructor/agents/website/governance_templates.py:770-853`:
 
 Always-emitted:
 
@@ -180,13 +180,13 @@ Always-emitted:
 - `.pre-commit-config.yaml`
 - `data/datasheet_subrogation_training_set.md` (one per primary query)
 
-Tier-3+ (`governance_templates.py:744-754`):
+Tier-3+ (`governance_templates.py:812-823`):
 
 - `governance/three_pillar_validation.md`
 - `governance/ongoing_monitoring.md`
 - `governance/deployment_gates.md`
 
-Consumer-facing (`governance_templates.py:779-783`):
+Consumer-facing (`governance_templates.py:847-851`):
 
 - `governance/eu_ai_act_compliance.md`
 
@@ -251,17 +251,17 @@ Personal auto policy renewals are currently decided by a rules engine that over-
 
 Because this intake is **tier-1**, **consumer-facing**, and **uses protected attributes**, `build_governance_files`, `build_analysis_files`, and `build_test_files` in `governance_templates.py` add:
 
-Tier-2+ (`governance_templates.py:756-772`):
+Tier-2+ (`governance_templates.py:824-841`):
 
 - `governance/impact_assessment.md`
 - `governance/regulatory_mapping.md` (maps each declared framework to the emitted artifact list via `build_regulatory_mapping`)
 
-Tier-1 only (`governance_templates.py:774-777`):
+Tier-1 only (`governance_templates.py:842-846`):
 
 - `governance/lcp_integration.md`
 - `governance/audit_log/README.md`
 
-Fairness scaffolds (`governance_templates.py:788-829`, triggered by `uses_protected_attributes=true`):
+Fairness scaffolds (`governance_templates.py:856-904`, triggered by `uses_protected_attributes=true`):
 
 - `analysis/fairness_audit.qmd`
 - `src/renewal_profitability_model/fairness/__init__.py`

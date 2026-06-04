@@ -11,7 +11,7 @@ The project is MIT-licensed (see `LICENSE` at the repository root). External con
 ### Prerequisites
 
 - **Python ≥ 3.11** — `requires-python = ">=3.11"` in `pyproject.toml:6`.
-- **[uv](https://docs.astral.sh/uv/)** — the project is a `uv` workspace (`pyproject.toml:45-49`). The root `pyproject.toml` declares `packages/*` as workspace members and resolves `model-project-constructor-data-agent` from the workspace rather than PyPI.
+- **[uv](https://docs.astral.sh/uv/)** — the project is a `uv` workspace (`pyproject.toml:49-50`). The root `pyproject.toml` declares `packages/*` as workspace members and resolves `model-project-constructor-data-agent` from the workspace rather than PyPI.
 
 ### First-time setup
 
@@ -43,7 +43,7 @@ All four gates run in CI on every push and every pull request to `master` (`.git
 
 ### 2.1 Lint (`ruff`)
 
-Configuration at `pyproject.toml:79-88`:
+Configuration at `pyproject.toml:83-92`:
 
 - `target-version = "py311"`
 - `line-length = 100`
@@ -64,7 +64,7 @@ uv run ruff format src/ tests/ packages/   # apply formatting
 
 ### 2.2 Type check (`mypy --strict`)
 
-Configuration at `pyproject.toml:90-94`:
+Configuration at `pyproject.toml:94-98`:
 
 - `python_version = "3.11"`
 - **`strict = true`** — enables every strictness flag (no-implicit-optional, check-untyped-defs, disallow-untyped-defs, disallow-incomplete-defs, warn-redundant-casts, warn-unused-ignores, etc.)

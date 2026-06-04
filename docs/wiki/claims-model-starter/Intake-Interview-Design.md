@@ -13,7 +13,7 @@ For the full agent entry-point reference (CLI, fixture mode, programmatic use) s
 
 The interviewer is prompted as **"an expert data scientist, business analyst, and consultant focused on a claims organization within a property & casualty insurance company that sells auto and property policies."** It is not a transcription bot — it brings domain framing to the conversation and drives toward a defensible draft.
 
-The system prompt (verbatim from `src/model_project_constructor/agents/intake/anthropic_client.py:33-49`):
+The system prompt (verbatim from `src/model_project_constructor/agents/intake/anthropic_client.py:35-51`):
 
 > You are an expert data scientist, business analyst, and consultant focused on a claims organization within a property & casualty insurance company that sells auto and property policies. You are interviewing a business stakeholder to draft an intake document covering FIVE required sections: business problem, proposed solution, model solution (target and inputs), estimated value, and value measurement plan (how downstream success will be demonstrated). Ask ONE question at a time. Drive toward the five required sections and toward a defensible governance classification (cycle time + risk tier). Reserve roughly 3-4 of your question budget for the value measurement plan: the baseline metric the business uses today, its definition and measurement window, the counterfactual design that will attribute outcomes to the model, the evaluation horizon, the logging requirements, the review cadence, success criteria, and decision rights for retire/retrain.
 
@@ -82,7 +82,7 @@ The LLM returns two fields (`NextQuestionResult` in `protocol.py:30-39`):
 - `question: str` — the next single question to ask, or `""` if none.
 - `believe_enough_info: bool` — the agent's own judgment that it now has enough to draft all five required sections (including the value measurement plan) *and* classify governance.
 
-`evaluate_interview` then decides whether to loop or drop through (`nodes.py:78-82`):
+`evaluate_interview` then decides whether to loop or drop through (`nodes.py:80-84`):
 
 ```python
 complete = enough or asked >= MAX_QUESTIONS
@@ -100,7 +100,7 @@ The soft and hard stops are independent signals. An agent that reaches question 
 
 ## 4. What the five required sections look like
 
-After the interview loop exits, `draft_report` asks the LLM to emit a full draft (`nodes.py` draft node + `anthropic_client.py:94-119`). The five sections are:
+After the interview loop exits, `draft_report` asks the LLM to emit a full draft (`nodes.py` draft node + `anthropic_client.py:173-217`). The five sections are:
 
 ### 4.1 `business_problem` (prose)
 
@@ -144,7 +144,7 @@ Full field definitions are in the [Schema Reference](Schema-Reference).
 
 ## 5. Governance classification
 
-Right after the draft, `classify_governance` asks the LLM to classify the project on the governance matrix (`nodes.py:88-92` + `anthropic_client.py:121-137`). This produces:
+Right after the draft, `classify_governance` asks the LLM to classify the project on the governance matrix (`nodes.py:90-94` + `anthropic_client.py:121-128`). This produces:
 
 - **`cycle_time`** — `strategic` (months/quarters), `tactical` (weeks), `operational` (days/hours), or `continuous` (real-time).
 - **`risk_tier`** — `tier_1_critical`, `tier_2_high`, `tier_3_moderate`, or `tier_4_low`.
@@ -154,15 +154,15 @@ Right after the draft, `classify_governance` asks the LLM to classify the projec
 
 Each classification carries a `_rationale` string explaining the choice. Those rationales survive into the final `GovernanceMetadata` on the report and downstream into the generated project's `model_registry.json`, so they must be defensible — not filler.
 
-**Governance is recomputed on every revision.** If a stakeholder says "actually this will affect consumers," the revised draft triggers a fresh governance pass (`nodes.py:108-119`). The agent cannot end up with a revised draft that disagrees with its own governance classification.
+**Governance is recomputed on every revision.** If a stakeholder says "actually this will affect consumers," the revised draft triggers a fresh governance pass (`nodes.py:110-121`). The agent cannot end up with a revised draft that disagrees with its own governance classification.
 
 ---
 
 ## 6. The review loop
 
-After the classification, the draft and governance are handed to the stakeholder for review (`await_review`, `nodes.py:94-106`). The stakeholder responds with either an **accept token** or a **revision request**.
+After the classification, the draft and governance are handed to the stakeholder for review (`await_review`, `nodes.py:96-108`). The stakeholder responds with either an **accept token** or a **revision request**.
 
-Accept tokens (case-insensitive, whitespace-trimmed; `nodes.py:35`):
+Accept tokens (case-insensitive, whitespace-trimmed; `nodes.py:37`):
 
 ```
 accept | yes | approve | approved | ok | looks good
@@ -176,7 +176,7 @@ After three revisions without an accept, the loop exits with `status="DRAFT_INCO
 
 ## 7. Terminal status rules
 
-`finalize` computes the final status (`nodes.py:121-160`):
+`finalize` computes the final status (`nodes.py:123-163`):
 
 | Accepted? | At questions cap? | At revisions cap? | Plan: `baseline_metric_name` & `evaluation_horizon_months` populated? | Status | `missing_fields` additions |
 |---|---|---|---|---|---|
@@ -262,7 +262,7 @@ report = agent.run_scripted(
 )
 ```
 
-The `IntakeLLMClient` is a `Protocol` (`protocol.py:71-89`), so you can swap in a different LLM provider by implementing `next_question`, `draft_report`, `classify_governance`, and `revise_report`.
+The `IntakeLLMClient` is a `Protocol` (`protocol.py:75-93`), so you can swap in a different LLM provider by implementing `next_question`, `draft_report`, `classify_governance`, and `revise_report`.
 
 ---
 
@@ -272,7 +272,7 @@ Four extension points, ordered by effort:
 
 1. **Swap the LLM provider** — implement `IntakeLLMClient` (4 methods). Do not modify the nodes; they are provider-agnostic.
 2. **Change the caps** — edit `MAX_QUESTIONS` / `MAX_REVISIONS` in `state.py:57-58`. These are hard-coded by design; changing them is a deliberate policy decision.
-3. **Add governance dimensions** — extend `GovernanceClassification` in `protocol.py:59-68` and `GovernanceMetadata` in `schemas/v1/intake.py:35-43`. Update the classification prompt in `anthropic_client.py:121-128` and the classification node in `nodes.py`. Downstream governance artifact templates in `governance_templates.py` may also need updates.
+3. **Add governance dimensions** — extend `GovernanceClassification` in `protocol.py:63-72` and `GovernanceMetadata` in `schemas/v1/intake.py:67-75`. Update the classification prompt in `anthropic_client.py:121-128` and the classification node in `nodes.py`. Downstream governance artifact templates in `governance_templates.py` may also need updates.
 4. **Add a new interview phase** — add a node, wire edges in `graph.py`, extend `IntakeState` in `state.py`. This is the largest change and should go through a planning session — the current two-phase shape (interview → review) is load-bearing for the CLI, the web UI, and the fixture format.
 
 ---

@@ -17,7 +17,7 @@ This page is for anyone doing a security review of the Model Project Constructor
 
 ### 1.1 Every secret comes from the environment
 
-There are **no hardcoded credentials anywhere in the source tree**. The orchestrator reads secrets exclusively via `OrchestratorSettings.from_env()` at `src/model_project_constructor/orchestrator/config.py:72-120`. Module docstring (`config.py:3-6`):
+There are **no hardcoded credentials anywhere in the source tree**. The orchestrator reads secrets exclusively via `OrchestratorSettings.from_env()` at `src/model_project_constructor/orchestrator/config.py:78-129`. Module docstring (`config.py:3-6`):
 
 > every secret and every deployment-variable parameter must come from the environment (or a `.env` file loaded into the environment by the caller). There are no hardcoded credentials or hostnames anywhere in the codebase.
 
@@ -41,16 +41,16 @@ Defined in `.env.example` and documented in `OPERATIONS.md:11-30`:
 Only two places outside `config.py` read env vars directly:
 
 - `src/model_project_constructor/ui/intake/app.py:75` — `INTAKE_DB_PATH` for the FastAPI web UI.
-- `scripts/run_pipeline.py:78-82, 118` — demo script convenience defaults.
+- `scripts/run_pipeline.py:114-119` — demo script convenience defaults.
 
-The adapters consume tokens via the settings object; their `__init__` signatures take `private_token: str` as a parameter (`gitlab_adapter.py:56-66`, `github_adapter.py:66-72`), so a caller must decide how to get the value to them. The example in the docstring shows `os.environ["GITLAB_TOKEN"]`, but the adapter itself has no opinion on where the token came from — a secret manager, a vault agent, or a keychain all work.
+The adapters consume tokens via the settings object; their `__init__` signatures take `private_token: str` as a parameter (`src/model_project_constructor/agents/website/gitlab_adapter.py:56-65`, `github_adapter.py:66-72`), so a caller must decide how to get the value to them. The example in the docstring shows `os.environ["GITLAB_TOKEN"]`, but the adapter itself has no opinion on where the token came from — a secret manager, a vault agent, or a keychain all work.
 
 ### 1.3 Fail-loud helpers
 
 `OrchestratorSettings` is constructable without credentials so tests and preview runs can build a settings object unconditionally. Runners that actually make HTTP calls must guard against missing tokens by calling the require helpers:
 
 ```python
-# config.py:122-140
+# src/model_project_constructor/orchestrator/config.py:131-149
 def require_host_token(self) -> str:
     if not self.host_token:
         var = "GITLAB_TOKEN" if self.host == "gitlab" else "GITHUB_TOKEN"
@@ -81,8 +81,8 @@ Both agents that use an LLM call Anthropic's Claude API:
 
 | Caller | File | Model (default) |
 |---|---|---|
-| Intake Agent | `src/model_project_constructor/agents/intake/anthropic_client.py:30, 63-65` | `claude-sonnet-4-6` |
-| Data Agent | `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:43, 60-63` | `claude-sonnet-4-6` |
+| Intake Agent | `src/model_project_constructor/agents/intake/anthropic_client.py:32, 134-146` | `claude-sonnet-4-6` |
+| Data Agent | `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:52, 99-111` | `claude-sonnet-4-6` |
 
 Both construct `anthropic.Anthropic()` with no explicit args — the SDK picks up `ANTHROPIC_API_KEY` from the environment. Both accept an injected `client` argument so tests can pass a mock. Both default to `claude-sonnet-4-6` and expose a `model` argument for override.
 
@@ -142,8 +142,8 @@ If no DB URL is configured, quality checks are generated but not executed — al
 
 Every LLM call sends:
 
-- One of two system prompts (`anthropic_client.py:33-42` for the interviewer, 44-50 for governance classification).
-- A user message containing: the domain, the optional `initial_problem`, the full `qa_pairs` history, and the `questions_asked` counter (`anthropic_client.py:72-83`).
+- One of two system prompts (`anthropic_client.py:35-66` for the interviewer, 121-128 for governance classification).
+- A user message containing: the domain, the optional `initial_problem`, the full `qa_pairs` history, and the `questions_asked` counter (`src/model_project_constructor/agents/intake/anthropic_client.py:150-162`).
 
 **The stakeholder's answers are forwarded verbatim to Anthropic.** Any PII or confidential claim details included in an answer are transmitted as-is. There is **no redaction, scrubbing, or PII filter in this codebase** — grep for `redact|pii|scrub|mask|sanitize` in `src/` returns zero hits.
 
@@ -151,13 +151,13 @@ Implication for operators: if the interview may contain policyholder-identifying
 
 ### 3.2 Data Agent
 
-Prompts sent to Anthropic (`packages/data-agent/.../anthropic_client.py:68-209`):
+Prompts sent to Anthropic (`packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:113-235`):
 
 - The full `DataRequest` JSON — which includes the `target_description`, `required_features`, `population_filter`, `time_range`, and `database_hint`.
 - The generated SQL and quality-check SQL (for the `summarize` and `generate_datasheet` calls).
 - **No actual data rows.** The Data Agent asks Claude to *generate* SQL; it does not feed query results back into the LLM.
 
-Observed rule: **`raw_result` (the executed query output) is never sent to Claude.** The `summarize` call receives only quality-check status summaries (`_dump_qc_status` at `anthropic_client.py:225-235` formats `check_name: execution_status — result_summary`), not row-level data. This is a significant security property — deployments can safely execute queries against sensitive tables knowing the rows themselves never reach the LLM.
+Observed rule: **`raw_result` (the executed query output) is never sent to Claude.** The `summarize` call receives only quality-check status summaries (`_dump_qc_status` at `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:449-460` formats `check_name: execution_status — result_summary`), not row-level data. This is a significant security property — deployments can safely execute queries against sensitive tables knowing the rows themselves never reach the LLM.
 
 ### 3.3 Website Agent
 
@@ -251,7 +251,7 @@ No field in the context dict carries credentials. `agent`, `run_id`, and `correl
 
 ### 6.3 Log format
 
-The module uses stdlib `logging`. Structured fields land on the record's `extra={"context": ...}` dict. To produce JSON logs, operators install a JSON formatter on the `model_project_constructor.orchestrator` logger namespace (see `OPERATIONS.md:80-106` for a `python-json-logger` snippet).
+The module uses stdlib `logging`. Structured fields land on the record's `extra={"context": ...}` dict. To produce JSON logs, operators install a JSON formatter on the `model_project_constructor.orchestrator` logger namespace (see `OPERATIONS.md:81-107` for a `python-json-logger` snippet).
 
 Default level is `INFO` via `MPC_LOG_LEVEL`. `DEBUG` is safe — there is no DEBUG-level log that prints tokens or payloads. (Verified by reading every call site in `logging.py` and `metrics.py`.)
 
