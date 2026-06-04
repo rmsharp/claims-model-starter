@@ -5,9 +5,92 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 109 — operator-selected (Phase-0 standing option #1) **Wiki framework-sync**: mirror the Session-108 Audit #39 framework change into the `docs/wiki/claims-model-starter/` canonical mirrors (+`GDPR_ART_22`, +`ASOP_56`, drop the dead `EU_AI_ACT` alias). Phase-1A operator choices: **publish live now** (post-commit hook → live GitHub Wiki) + **canonical-only** (fix the 4 canonical/code mirrors + 3 folded stale code-citations; leave the 3 illustrative 'e.g.' mirrors partial). Master framework (ITERATIVE_METHODOLOGY); drift-class sync (Learning #31). Off-BACKLOG (BACKLOG empty, 42nd carry). (IN PROGRESS)
+**Task:** Session 110 — operator-selected (Phase-0 standing option #1) **Promote Candidate #76 → new `SESSION_RUNNER.md` Learnings row #46**: read-only subagent tooling — spawn any read / critique / verify / research / audit subagent with `agentType: 'Explore'` (no Edit/Write), never the default write-capable workflow/`Agent` type, which WILL make unauthorized edits to permanent files (Session 106's incident). The action-side complement to Learning #45. 4 instances (106 filed = the incident; 107/108/109 applied clean) — 3-instance threshold crossed at Session 108, so OVERDUE. New discipline → a NEW row, not a fold. Master framework (ITERATIVE_METHODOLOGY); methodology housekeeping. Docs/state only — no `src/`/`tests/`, no gates, no plan mode. Off-BACKLOG (BACKLOG empty, 43rd carry). **COMPLETE.**
 
-**Status:** Session 109 COMPLETE. Synced the Session-108 Audit #39 framework change into the 3 canonical wiki mirrors (`docs/wiki/claims-model-starter/`): the `SYSTEM_GOVERNANCE` prompt quote `+ASOP_56` (now byte-verbatim); the `_FRAMEWORK_ARTIFACTS` code mirror `−EU_AI_ACT`/`+GDPR_ART_22` (3 paths); both `Governance-Framework.md` tables `+GDPR_ART_22`; 4 stale code-citations corrected (governance-prompt `44-50`→`121-128` ×2, dict `77-103`→`77-111`, fn `106-121`→`114-129`). **Canonical-only** (operator Phase-1A choice): the 3 illustrative `e.g.` mirrors + all historical prose (Evolution/Changelog) left untouched. Adversarially verified by 3 read-only `agentType:'Explore'` lenses (`wf_58c4c3dd-ade`): all PASS, `max_severity: none`; HEAD-diff confirmed zero verifier writes. No gates (wiki-only — no `src/`/`tests/`). **PUBLISH LIVE on commit** (hook armed, operator-authorized). Effort: `ultracode`. Commit pending.
+**Status:** Session 110 COMPLETE. Promoted **Candidate #76 → `SESSION_RUNNER.md` Learnings row #46** (read-only subagent tooling: spawn any read/critique/verify/research/audit subagent with `agentType: 'Explore'`, never the default write-capable workflow/`Agent` type — the action-side complement to Learning #45). The 4-instance provenance (106 filed=incident, 107/108/109 applied clean; threshold crossed at 108) was re-derived directly against the close-out SoT before the row hardened (Learning #45), then **dogfood-verified by 2 read-only `agentType:'Explore'` lenses** (right-sized within #46's own 1–3 range): provenance lens re-confirmed all 6 Source-column claims with SoT line cites (incident :277, 107 :201, 108 `wf_a5329e28-dd6` :121, 109 `wf_58c4c3dd-ade` :4635, threshold :136); content lens confirmed table well-formedness (5 pipes, single line, clean `---` close), genuine distinctness from #45 (capability-side vs claim-side), and internal consistency. **HEAD-diff confirmed zero verifier writes** (only the 2 intended files modified). SESSION_RUNNER Learnings table now **46 rows**; Candidate #76 removed from the active roster (promoted). Docs/state only — no `src/`/`tests/`, no gates. Effort: `ultracode`. Commit pending.
+
+### Session 109 Handoff Evaluation (by Session 110)
+
+**Score: 9/10.** Session 109's standing option #1 named this deliverable with near-perfect precision and, critically, pre-resolved the contract question — letting me go from "promote #76" to a verified, dogfooded row with zero mid-execution round-trips.
+
+- **What helped:** (a) **Option #1 named the exact deliverable** — "Promote Candidate #76 → SESSION_RUNNER row #46 (OVERDUE)" with the instance count (4), the breakdown (106 filed, 107/108/109 applied), the NEW-discipline-→-new-row-not-fold rationale, and the docs-only scope. (b) **It pre-named the contract question as "none — mechanical new-row promotion" (Learning #40)** — accurate; nothing to resolve at Phase 1A beyond the operator's pick. (c) **The exact Phase-1B recipe (Learnings #42 + #78)** — archive 109 above the 108 heading, self-verifying script, newline-anchored `.count()` asserts AND newline-anchored `.index()` locator — applied directly; the script claimed first-try (and the #78 locator form preempted the prose-collision that bit Session 109). (d) **Push-state "expect 2 unpushed (108+109)" CONFIRMED** via `git rev-list` (=2). (e) **Gotcha #2 (`agentType:'Explore'`)** was the very discipline being promoted — I applied it for the verification pass, eating our own dogfood.
+- **What was missing:** trivia only — (a) it didn't pre-name *where* in the table row #46 sits relative to #45 (obvious: after #45, before the `---`); (b) the per-session workflow IDs (`wf_a5329e28-dd6` / `wf_58c4c3dd-ade`) lived in the "What was done" bodies, not pulled forward into option #1 — I sourced them from there. Neither cost real time.
+- **What was wrong:** nothing material.
+- **ROI:** ~8–9×. Turned "promote #76" into "re-derive the 4-instance provenance against SoT → write the row → dogfood-verify with 2 Explore lenses → HEAD-diff → commit." The pre-named "no contract question" + exact Phase-1B recipe meant a first-try claim and zero round-trips.
+
+### What Session 110 Did
+
+**Deliverable:** Promoted Candidate #76 to `SESSION_RUNNER.md` Learnings **row #46** (read-only subagent tooling). **COMPLETE.**
+**Started / Completed:** 2026-06-04. Effort: `ultracode` (repo default).
+**Commit (pending).**
+
+**What was done:**
+
+1. **Phase 0 orientation.** SAFEGUARDS (full) / SESSION_NOTES head + Session 109 close-out / SESSION_RUNNER 1-339 read. Dashboard run (MPC **96/100**, medium risk, active — highest of 5; fleet 70/100; the 2 high-risk flags airqino + feedback-loop-comparison are not this repo). Ghost-check clean (HEAD `64b0775` = Session 109). Push state **2** (`git rev-list`-verified — 108 `2c1b4d6` + 109 `64b0775`; handoff predicted 2, correct). BACKLOG empty (43rd carry). `ultracode` reminder present. Reported + waited despite "go" (Learning #10).
+2. **Operator dialogue (Phase 1A).** Answered two operator questions before claiming: (i) "is any audit-based work affecting the wiki pages?" — grounded answer from the 2026-06-01 audit doc (docs scoped OUT; only #39 rippled to the wiki, now closed; remaining items #2/#8/#28/#30/O1–O4 don't change wiki-visible values, O4 conditionally); (ii) explained the 3 deliberately-partial illustrative `e.g.` mirrors (canonical vs illustrative mirror; decision-not-drift). Operator: **"I like the current status"** (wiki stays as-is) + **"Promote Candidate #76 → row #46."**
+3. **Provenance re-derivation (Learning #45).** Re-derived #76's 4-instance history directly from the SoT (`grep "#76" SESSION_NOTES.md`): 106 filed/incident (:277), 107 applied 1×Explore (:201), 108 3×Explore `wf_a5329e28-dd6` (:121), 109 3×Explore `wf_58c4c3dd-ade` (:36/:4635); 3-instance threshold (row #45's own Source) crossed at 108. Matched the handoff — but verified, not trusted.
+4. **Phase 1B claim** via the self-verifying Python script (Learning #42, **18th instance**) — extracted Session 109's head block verbatim (no retyping), archived it above `### Session 108 ARCHIVED ACTIVE TASK`, wrote the Session 110 stub; newline-anchored `.count()` asserts + newline-anchored `.index()` locator (Candidate #78). **Clean first try.** Also self-caught a brittle len-arithmetic assert in my own draft and replaced it with a clean `count(active.strip())==1` conservation check before running (the Candidate #78 spirit — a wrong assert wastes a round-trip).
+5. **Phase 2 — row #46 inserted** into `SESSION_RUNNER.md` after row #45, consuming the `#45 → ---` boundary (Learning #37); anchor uniqueness pre-confirmed with raw-string `grep -c` (=1, Learning #38). The row captures: the rule (`Explore` = no Edit/Write/NotebookEdit vs the default's Edit/Write), the Session 106 incident as evidence, the `git diff HEAD` backstop, the right-sizing lesson (1–3 lenses not 9), and the #45-complement framing (claims vs capabilities).
+6. **Dogfood verification (the very discipline being promoted — Learning #46/#76).** 2 read-only `agentType:'Explore'` lenses, right-sized (NOT 106's 9): provenance lens independently re-confirmed all 6 Source claims against SoT line numbers; content lens confirmed table well-formedness, distinctness from #45, internal consistency. Both PASS. **HEAD-diff confirmed zero verifier writes** (only SESSION_NOTES.md + SESSION_RUNNER.md modified).
+7. **Phase 3 close-out (this)** + CHANGELOG `[Unreleased]` entry. Candidate #76 promoted; no new candidate filed.
+
+### Phase 3B: Self-assess — Session 110 — 9/10
+
+- **Provenance SoT-anchored, then independently re-checked (#45, high value):** re-derived the 4-instance history directly via grep BEFORE the row hardened, then had a 2nd independent Explore lens re-derive it again with line cites. The Source column is SoT-anchored, not handoff-parroted — exactly what #45 exists to enforce, applied to a row *about* subagent trust.
+- **Dogfooded the discipline being promoted (#46/#76):** verified row #46 with 2 read-only Explore lenses, right-sized within the row's own 1–3 range, HEAD-diff confirmed zero writes. Promoting "use read-only subagents" by *using read-only subagents* is the highest-signal possible validation.
+- **Clean Phase-1B (#42, 18th instance) + #78 applied:** newline-anchored locator preempted the prose-collision; first-try claim. Self-caught my own brittle assert before running.
+- **Edit discipline (#37/#38):** consumed the row-boundary anchor; raw-string `grep -c` confirmed uniqueness before the Edit.
+- **1-and-done held:** ONLY the #76 promotion + close-out + CHANGELOG. Did not advance Candidate #78 (no Phase-1B near-miss this session), did not touch the other carried candidates, did not start the wiki-citation option.
+- **The honest −1:** the dogfood Explore pass was arguably belt-and-suspenders — Learning #45 was already satisfied by my direct grep, so the 2 lenses were confirmatory rather than load-bearing. I judged them worth it (high thematic signal + ultracode), but a stricter reading of "right-size" could call one lens sufficient. Also I listed `general-purpose` alongside the default workflow type as write-capable examples — accurate, though the incident's canonical contrast was specifically the default workflow subagent.
+- **Quality bar vs previous sessions:** met/exceeded — a fully-verified permanent-row promotion, provenance triple-checked (handoff → my grep → Explore lens), the discipline dogfooded, zero scope creep, clean first-try Phase-1B.
+
+### Phase 3C: Learnings — Session 110
+
+**Candidate #76 → PROMOTED to Learnings row #46.** The candidate roster's most overdue item (promotion-ripe since Session 108) is now closed. Row #46 is the action/capability-side complement to row #45's claim/trust-side — together they bound a verification subagent's outputs *and* its powers.
+
+**No new candidate filed this session** — clean execution, no novel failure mode surfaced.
+
+**Candidate #78 (Phase-1B locator newline-anchoring) — carried, 1st instance; NOT advanced.** The script ran clean first-try and I applied #78's locator form *preemptively*, so there was no near-miss to count as a 2nd instance. Watch for a genuine 2nd/3rd instance at a future Phase 1B.
+
+**Candidate #77 (parseable producer constant for drift-guard tests) — carried, 1st instance; not applicable** (no drift-guard test this session).
+
+**Learnings #10/#36/#37/#38/#39/#42/#45/#46(#76) — applied:** orient + wait despite "go" (#10); Phase-1B touched only Task/Status + archive heading, no eval/did content drafted at 1B (#36); consume-and-replace Edit anchor (#37); raw-string `grep -c` uniqueness (#38); file-tail archive-zone grep (#39); self-verifying Phase-1B script, 18th instance (#42); provenance re-derived against SoT before the row hardened (#45); read-only Explore verifiers + HEAD-diff backstop — the newly-promoted discipline, dogfooded (#46/#76).
+
+### Phase 3D: Handoff to Session 111
+
+**Candidate #76 is promoted (row #46); the SESSION_RUNNER Learnings table is now 46 rows.** BACKLOG.md is EMPTY (44th consecutive carry at Session 111 Phase 0). The product is complete; remaining work is discretionary audit-followup + methodology housekeeping.
+
+**Standing options for Session 111 (lead first):**
+
+1. **Wiki citation-drift resync (carried from Session 109's option #2 — top discretionary item).** Pre-existing `file.py:N-M` line-number drift in the wiki, **unrelated to Audit #39**, surfaced by Session 109's verification: `Extending-the-Pipeline.md:140` (cites `governance_templates.py:733-736`; actual `ci_platform` dispatch ~801-804), `:154` (cites `:708-785`; actual `build_governance_files` ~770), `:177` (cites `:837-858`; actual `is_governance_artifact` ~905-926) — note `:171`'s `:47-54` is CORRECT, leave it; plus `Intake-Interview-Design.md:16` (cites `anthropic_client.py:33-49` interview prompt) and `:103` (cites `:94-119` draft prompt). ⚠ A wiki commit **auto-publishes to the live GitHub Wiki**. ~1 session.
+2. **Tier-2 audit drift guards** (2026-06-01 audit §7, ~30 min each): **#2** import-time asserts tying `_TIER_SEVERITY`/`_CYCLE_CADENCE` to schema `Literal`s; **#8** single `RepoHost` Literal + `SUPPORTED_HOSTS` source; **#28/#30** delete the dead `SCHEMA_VERSION` export / trim the registry docstring. Touch `src/`+`tests/` → gates run.
+3. **Candidate-roster audit/cull.** Active candidates after #76's promotion: **#62, #65, #66, #67, #70, #71, #73, #74** (older carries) + **#77** (Session 108, 1st) + **#78** (Session 109, 1st). Several are old single-instance carries — a session to audit which remain live, promote any that quietly hit 3 instances, and retire dead ones. Docs/state only.
+4. **New off-BACKLOG operator direction** — incl. the larger audit overhauls **O1** (Stage-list pipeline driver), **O3** (`REPO_PLATFORMS` registry), **O4** (controlled-vocabulary single-source) — each plan-first / multi-session.
+
+**Open contract questions for Session 111 (Learning #40):**
+- If option #1 (citation resync): scope = the governance-related citations only, or a full wiki-wide `file.py:N-M` audit (every code citation across all `docs/wiki/claims-model-starter/` pages re-checked)? And: publish live now, or local-only (`MPC_SKIP_WIKI_PUBLISH=1`)?
+- If option #2 (tier-2 guards): which subset (#2 / #8 / #28+#30), and is #8 just the `RepoHost` Literal-source step or the full O3 registry (the latter is plan-first / multi-session)?
+- If option #3 (roster cull): retire-threshold for stale single-instance candidates (e.g. "filed >20 sessions ago, never re-applied → retire"), or keep all and only promote?
+
+**Important considerations for Session 111:**
+1. **Baseline UNCHANGED: pytest 662/662 @ 97.12%, mypy 0/61, ruff clean, decoupling 2/2** (Session 110 touched NO `src/`/`tests/` — docs/procedural only). Re-run gates on any `src/`/`tests/`/`packages/` touch.
+2. **SESSION_RUNNER Learnings table is now 46 rows.** Candidate #76 is PROMOTED (row #46) and removed from the active roster. Row #46 = read-only subagent tooling; row #45 = don't-trust-subagent-claims (its read-side complement).
+3. **Wiki publish hook IS active** (`core.hooksPath=.githooks`): any commit touching `docs/wiki/claims-model-starter/` runs `scripts/publish_wiki.sh` → live GitHub Wiki. **Session 110 touched NO wiki file → it will NOT publish.** Option #1 WOULD publish — confirm with operator + consider `MPC_SKIP_WIKI_PUBLISH=1`.
+4. **Framework single-source:** `GOVERNANCE_FRAMEWORKS` + `_FRAMEWORK_ARTIFACTS`, pinned by `TestFrameworkPromptMapParity`; the 3 canonical wiki mirrors are in parity. The deeper E2/O4 fix (one shared constant both modules import) is still open — it crosses the intake↔website boundary, so it needs plan mode.
+5. **Push state:** expect **3 unpushed** (108 `2c1b4d6` + 109 `64b0775` + 110's commit) unless the operator pushes. Verify `git rev-list --count @{u}..HEAD`.
+6. **Effort:** `ultracode` is the repo default (active at Session 110 startup). Carries to 111; if no reminder, type `ultracode`.
+7. **`CHANGELOG.md` `## [Unreleased]`** carries Sessions 78-110. Session 111 entries go under `## [Unreleased]`.
+8. **Phase-1B archive recipe (Learnings #42 + #78)** for Session 111: archive `### Session 110 ARCHIVED ACTIVE TASK` + Session 110 Task/Status above the `### Session 109 ARCHIVED ACTIVE TASK` heading (file-tail zone; locate via `grep -n "^### Session .* ARCHIVED ACTIVE TASK" SESSION_NOTES.md | head -1`). Self-verifying script; newline-anchored `.count()` asserts **AND** newline-anchored `.index()` locator (Candidate #78).
+
+### Gotchas for Session 111
+
+1. Baseline 662/662 @ 97.12%, mypy 0/61, ruff clean, decoupling 2/2 — re-run on any `src/`/`tests/`/`packages/` touch.
+2. **`agentType:'Explore'` for read-only subagents is now Learning #46** (promoted from Candidate #76 — no longer a candidate). The default workflow/`Agent` subagent has Edit/Write and WILL make unauthorized edits (Session 106's incident). HEAD-diff after any verification fan-out to confirm zero writes — the diff, not the agent's self-report, is the proof.
+3. **Wiki publish hook is active** — any commit touching `docs/wiki/claims-model-starter/` auto-publishes to the live GitHub Wiki; confirm with operator + consider `MPC_SKIP_WIKI_PUBLISH=1` for a staged/local-only pass. (Relevant to option #1.)
+4. **Learning #32 (historical prose):** `Evolution.md` / `Changelog.md` framework + citation mentions record what-was-at-the-time — do NOT "fix" them in a sync.
+5. **Candidate #78 (Phase-1B locator):** locate the archive zone with `t.index("\n### Session N-1 ARCHIVED ACTIVE TASK\n")` — the **bare** `.index()` lands on backtick gotcha-prose near the file head, not the real file-tail heading. (Newline-anchored `.count()` asserts are Learning #42.)
+6. **Push state:** expect 3 unpushed (108 + 109 + 110) unless the operator pushed; verify with `git rev-list`.
+7. **Candidate roster after #76's promotion:** #62/#65/#66/#67/#70/#71/#73/#74 (older) + #77 + #78. Several are old single-instance carries — consider option #3 (roster cull) before they accrete further.
 
 ### Session 108 Handoff Evaluation (by Session 109)
 
@@ -4627,6 +4710,12 @@ Ranked likely directions:
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 109 ARCHIVED ACTIVE TASK
+
+**Task:** Session 109 — operator-selected (Phase-0 standing option #1) **Wiki framework-sync**: mirror the Session-108 Audit #39 framework change into the `docs/wiki/claims-model-starter/` canonical mirrors (+`GDPR_ART_22`, +`ASOP_56`, drop the dead `EU_AI_ACT` alias). Phase-1A operator choices: **publish live now** (post-commit hook → live GitHub Wiki) + **canonical-only** (fix the 4 canonical/code mirrors + 3 folded stale code-citations; leave the 3 illustrative 'e.g.' mirrors partial). Master framework (ITERATIVE_METHODOLOGY); drift-class sync (Learning #31). Off-BACKLOG (BACKLOG empty, 42nd carry). (IN PROGRESS)
+
+**Status:** Session 109 COMPLETE. Synced the Session-108 Audit #39 framework change into the 3 canonical wiki mirrors (`docs/wiki/claims-model-starter/`): the `SYSTEM_GOVERNANCE` prompt quote `+ASOP_56` (now byte-verbatim); the `_FRAMEWORK_ARTIFACTS` code mirror `−EU_AI_ACT`/`+GDPR_ART_22` (3 paths); both `Governance-Framework.md` tables `+GDPR_ART_22`; 4 stale code-citations corrected (governance-prompt `44-50`→`121-128` ×2, dict `77-103`→`77-111`, fn `106-121`→`114-129`). **Canonical-only** (operator Phase-1A choice): the 3 illustrative `e.g.` mirrors + all historical prose (Evolution/Changelog) left untouched. Adversarially verified by 3 read-only `agentType:'Explore'` lenses (`wf_58c4c3dd-ade`): all PASS, `max_severity: none`; HEAD-diff confirmed zero verifier writes. No gates (wiki-only — no `src/`/`tests/`). **PUBLISH LIVE on commit** (hook armed, operator-authorized). Effort: `ultracode`. Commit pending.
 
 ### Session 108 ARCHIVED ACTIVE TASK
 
