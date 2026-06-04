@@ -102,12 +102,29 @@ _STATISTICAL_TERMS_NOTE = (
 
 SYSTEM_INTERVIEWER = _INTERVIEWER_BASE + _STATISTICAL_TERMS_NOTE
 
+# Regulatory frameworks the intake agent is told to classify against. This
+# tuple is the producer-side source for the prompt's framework enumeration; the
+# website agent's ``_FRAMEWORK_ARTIFACTS`` map (``governance_templates.py``) is
+# the consumer that binds each framework to its governance artifacts. The two
+# MUST stay in lockstep — a framework named here but unmapped there scaffolds
+# zero artifacts (the Audit #39 governance hole). Parity is pinned by
+# ``tests/agents/website/test_governance.py`` (``set(GOVERNANCE_FRAMEWORKS) ==
+# set(_FRAMEWORK_ARTIFACTS)``); add a framework here only alongside its mapping.
+GOVERNANCE_FRAMEWORKS: tuple[str, ...] = (
+    "SR_11_7",
+    "NAIC_AIS",
+    "EU_AI_ACT_ART_9",
+    "GDPR_ART_22",
+    "ASOP_56",
+)
+
 SYSTEM_GOVERNANCE = (
     "You classify model projects against an internal governance matrix. "
     "cycle_time ∈ {strategic, tactical, operational, continuous}. "
     "risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. "
-    "Regulatory frameworks include SR_11_7, NAIC_AIS, EU_AI_ACT_ART_9, "
-    "GDPR_ART_22. Be conservative: if in doubt, pick the stricter tier."
+    "Regulatory frameworks include "
+    + ", ".join(GOVERNANCE_FRAMEWORKS)
+    + ". Be conservative: if in doubt, pick the stricter tier."
 )
 
 

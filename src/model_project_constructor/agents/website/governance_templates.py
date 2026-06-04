@@ -92,9 +92,17 @@ _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
         "governance/impact_assessment.md",
         "governance/regulatory_mapping.md",
     ],
-    "EU_AI_ACT": [
+    "GDPR_ART_22": [
+        # GDPR Art. 22 (automated individual decision-making, incl. profiling):
+        # the data subject's right to human intervention + transparency is
+        # documented by the same EU consumer-protection artifacts as
+        # EU_AI_ACT_ART_9 — the AI Act compliance map (Arts. 13-14: transparency
+        # + human oversight) and the pre-deployment impact assessment. The
+        # emitted-paths filter in build_regulatory_mapping keeps only the
+        # artifacts actually scaffolded for this project's tier/flags.
         "governance/eu_ai_act_compliance.md",
         "governance/impact_assessment.md",
+        "governance/regulatory_mapping.md",
     ],
     "ASOP_56": [
         "governance/model_card.md",

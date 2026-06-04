@@ -527,3 +527,48 @@ class TestBuildGovernanceFilesUnit:
         # The pre-existing Stage 1 gates are untouched.
         assert "Model scores logged without affecting decisions" in out
         assert "## Stage 3 — Full Production" in out
+
+
+class TestFrameworkPromptMapParity:
+    """Audit #39 — the intake prompt's regulatory-framework enumeration
+    (producer) and the website agent's ``_FRAMEWORK_ARTIFACTS`` map (consumer)
+    must not drift. A framework the prompt nudges the LLM toward but the map
+    omits scaffolds zero governance artifacts (a silent compliance gap, e.g.
+    the original ``GDPR_ART_22``); a mapped framework the prompt never names is
+    dead (e.g. the original bare ``EU_AI_ACT`` alias). These tests pin the two
+    enumerations equal so the drift fails the build instead of escaping it."""
+
+    def test_prompt_framework_set_equals_artifact_map_keys(self) -> None:
+        from model_project_constructor.agents.intake.anthropic_client import (
+            GOVERNANCE_FRAMEWORKS,
+        )
+        from model_project_constructor.agents.website.governance_templates import (
+            _FRAMEWORK_ARTIFACTS,
+        )
+
+        prompt_set = set(GOVERNANCE_FRAMEWORKS)
+        map_keys = set(_FRAMEWORK_ARTIFACTS)
+        prompt_only = prompt_set - map_keys
+        map_only = map_keys - prompt_set
+        assert prompt_set == map_keys, (
+            "Regulatory-framework drift (Audit #39): "
+            f"prompted-but-unmapped (scaffold nothing) = {sorted(prompt_only)}; "
+            f"mapped-but-unprompted (dead) = {sorted(map_only)}. Reconcile "
+            "anthropic_client.GOVERNANCE_FRAMEWORKS with "
+            "governance_templates._FRAMEWORK_ARTIFACTS."
+        )
+
+    def test_every_prompted_framework_scaffolds_at_least_one_artifact(self) -> None:
+        # Stronger than key-presence: each prompted framework must bind to a
+        # NON-empty artifact list, so none maps to ``[]`` by accident.
+        from model_project_constructor.agents.intake.anthropic_client import (
+            GOVERNANCE_FRAMEWORKS,
+        )
+        from model_project_constructor.agents.website.governance_templates import (
+            _FRAMEWORK_ARTIFACTS,
+        )
+
+        for framework in GOVERNANCE_FRAMEWORKS:
+            assert _FRAMEWORK_ARTIFACTS.get(
+                framework
+            ), f"{framework} maps to no governance artifacts"
