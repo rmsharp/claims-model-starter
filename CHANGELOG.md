@@ -15,6 +15,16 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-04
+
+### 2026-06-04 — Wiki citation-drift resync + cut v0.2.0 release (Session 111)
+
+Operator-directed release. Two parts: a pre-release documentation-accuracy pass, then the `v0.2.0` version cut. `v0.2.0` is the first minor release since `v0.1.0` (2026-05-12); it captures the Sessions 78–110 work below — most substantively the **business-value-capture feature arc** (Sessions 86–91) and the **Audit #39 governance-framework reconciliation** (Sessions 108–109).
+
+- **Changed — wiki code-citation resync (commit `f4e6272`, published live):** a full wiki-wide `file.py:N-M` citation audit (operator chose *full audit + publish live*). All 118 source-file line citations across 22 `docs/wiki/claims-model-starter/` pages were verified against current source via 8 read-only `agentType: 'Explore'` agents; **43 drifted current-pointer citations** were corrected across 6 reference pages (Extending-the-Pipeline ×5, Intake-Interview-Design ×12, Schema-Reference ×4, Security-Considerations ×11, Worked-Examples ×8, Contributing ×3). Every corrected range was independently re-derived against live source (Learning #45) — catching 4 agent errors before applying — then re-verified by an independent read-only Explore lens (43/44 MATCH; the 1 flag a false positive on a bare continuation token). The 6 drifted citations on the historical pages (Evolution ×5, Changelog ×1) were left untouched per Learning #32 (operator-confirmed) — they record what-was-true-then.
+- **Changed — version markers → `0.2.0`:** `pyproject.toml`, `packages/data-agent/pyproject.toml`, `src/model_project_constructor/__init__.py`, `README.md`.
+- **Gates (unchanged from baseline; no `src/`/`tests/` touched):** ruff clean, mypy 0 errors (48 files), **pytest 662/662 @ 97.12%**, decoupling 2/2.
+
 ### 2026-06-04 — Promote Candidate #76 to SESSION_RUNNER Learnings row #46 (Session 110)
 
 Operator-selected (Phase-0 standing option #1) methodology housekeeping: promoted **Candidate Learning #76** — "spawn any read-only subagent (critique / verify / research / audit lens, or a read-and-report workflow fan-out) with `agentType: 'Explore'` (no Edit/Write/NotebookEdit), never the default write-capable workflow/`Agent` subagent type, which WILL make unauthorized edits to permanent files" — to a **new** `SESSION_RUNNER.md` Learnings **row #46**. Because #76 is a new discipline (read-only subagent *tooling*), it is a new row, not a fold; the table grows from 45 to **46 rows**. Row #46 is the action/capability-side complement to row #45 (don't *trust* a subagent's claims): #45 bounds what a verification subagent may *assert*, #46 bounds what it may *do*. Docs/state only — no code, no gates. Run at `ultracode` (repo default).

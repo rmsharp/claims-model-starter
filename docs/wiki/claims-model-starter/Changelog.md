@@ -4,11 +4,17 @@
 
 This page records notable changes to the Model Project Constructor, grouped by implementation phase. Format loosely follows [Keep a Changelog](https://keepachangelog.com/). Dates are the commit dates on `master`; phases map to the structure in `docs/architecture-history/architecture-plan.md` §14.
 
-The repository is currently at version `0.1.0` (pre-1.0, pilot-ready). No external releases have been cut; the `master` branch is the sole integration target.
+The repository is at version `0.2.0` (pre-1.0, pilot-ready). Release tags `v0.1.0` (2026-05-12) and `v0.2.0` (2026-06-04) mark integration milestones on the `master` branch; the project is not yet published to an external package index.
 
 ---
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-06-04
+
+### Documentation accuracy + v0.2.0 release (Session 111, 2026-06-04)
+
+`v0.2.0` is the first minor release since `v0.1.0`. It bundles the work recorded below — most substantively the business-value-capture extension (Sessions 86–91) and the Audit #39 governance-framework reconciliation (Sessions 108–109). As a pre-release accuracy pass, a full wiki-wide audit re-verified every `file.py:N-M` code citation against the current source and corrected 43 that had drifted as the code evolved; citations embedded in historical narrative were deliberately left as-of-their-time.
 
 ### Business value capture — Sessions 86–91 (2026-05-22)
 
