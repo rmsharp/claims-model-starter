@@ -572,3 +572,72 @@ class TestFrameworkPromptMapParity:
             assert _FRAMEWORK_ARTIFACTS.get(
                 framework
             ), f"{framework} maps to no governance artifacts"
+
+
+class TestVocabularyDriftGuards:
+    """Audit #2 — the governance consumer dicts ``_TIER_SEVERITY`` and
+    ``_CYCLE_CADENCE`` (``governance_templates.py``) re-list the ``RiskTier`` /
+    ``CycleTime`` schema ``Literal`` members. Their lookups fall back silently:
+    ``_TIER_SEVERITY.get(tier, 99)`` ranks an unknown tier LEAST severe, so an
+    added critical tier would skip every tier-gated governance artifact — a
+    silent compliance gap. An import-time guard ties each dict to
+    ``get_args(<Literal>)`` so an added/renamed member fails the build loudly.
+    These tests pin the live parity AND prove the guard raises on drift (so the
+    parity pins are not vacuous behind the import-time assert)."""
+
+    def test_tier_severity_matches_risk_tier_literal(self) -> None:
+        from typing import get_args
+
+        from model_project_constructor.agents.website.governance_templates import (
+            _TIER_SEVERITY,
+        )
+        from model_project_constructor.schemas.v1.common import RiskTier
+
+        assert set(_TIER_SEVERITY) == set(get_args(RiskTier))
+
+    def test_cycle_cadence_matches_cycle_time_literal(self) -> None:
+        from typing import get_args
+
+        from model_project_constructor.agents.website.governance_templates import (
+            _CYCLE_CADENCE,
+        )
+        from model_project_constructor.schemas.v1.common import CycleTime
+
+        assert set(_CYCLE_CADENCE) == set(get_args(CycleTime))
+
+    def test_guard_raises_on_missing_member(self) -> None:
+        # The real guard function, fed a member set MISSING a Literal value,
+        # must raise — proving drift is caught, not silently tolerated.
+        from model_project_constructor.agents.website.governance_templates import (
+            _assert_vocab_parity,
+        )
+        from model_project_constructor.schemas.v1.common import RiskTier
+
+        with pytest.raises(AssertionError, match="drifted"):
+            _assert_vocab_parity({"tier_1_critical"}, RiskTier, name="_TEST")
+
+    def test_guard_raises_on_extra_member(self) -> None:
+        from typing import get_args
+
+        from model_project_constructor.agents.website.governance_templates import (
+            _assert_vocab_parity,
+        )
+        from model_project_constructor.schemas.v1.common import CycleTime
+
+        drifted = set(get_args(CycleTime)) | {"biweekly"}
+        with pytest.raises(AssertionError, match="drifted"):
+            _assert_vocab_parity(drifted, CycleTime, name="_TEST")
+
+    def test_guard_passes_on_exact_match(self) -> None:
+        from typing import get_args
+
+        from model_project_constructor.agents.website.governance_templates import (
+            _assert_vocab_parity,
+        )
+        from model_project_constructor.schemas.v1.common import RiskTier
+
+        # Exact parity returns None (no raise).
+        assert (
+            _assert_vocab_parity(set(get_args(RiskTier)), RiskTier, name="_TEST")
+            is None
+        )
