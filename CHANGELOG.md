@@ -15,6 +15,16 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-06-05 — Tier-2 audit drift guards: governance-vocab parity + honest schema-versioning (Session 113)
+
+Operator-selected fix of the 2026-06-01 tech-debt audit §7 Tier-2 drift guards, subset **#2 + #28&#30** (audit item **#8** deferred to Overhaul O3 — the RepoHost-vs-CIPlatform semantic question makes it more than a mechanical quick win). Touches `src/`+`tests/` only; two atomic commits, each TDD'd with a RED proof. Run at `ultracode`.
+
+- **Added — `#2` governance-vocabulary drift guard (commit `db63665`):** `agents/website/governance_templates.py` now imports `RiskTier`/`CycleTime` from `schemas/v1/common.py` and adds `_assert_vocab_parity(members, literal, *, name)` — a real `raise` (not a bare `assert`, which `python -O` strips) — called at import time for both `_TIER_SEVERITY` and `_CYCLE_CADENCE`. Each dict previously re-listed the Literal members and looked them up with silent `.get(..., 99)` / `.get(..., "Quarterly review")` fallbacks, so an added/renamed tier or cadence would rank least-severe / default-cadence and silently skip every tier-gated governance artifact (a quiet P&C compliance gap). `tests/agents/website/test_governance.py::TestVocabularyDriftGuards` (5 tests) pins live parity for both dicts AND proves the guard raises on a missing/extra member (non-vacuous behind the import-time guard). The guard reads the producer via `typing.get_args(Literal)` — the 2nd instance of Candidate #77.
+- **Changed — `#28`/`#30` honest schema-versioning (commit `2791383`):** deleted the dead `SCHEMA_VERSION` constant — exported from `schemas/v1` but consumed by nothing (every payload class carries its own `schema_version: Literal["1.0.0"]` field, `intake.py:87`/`repo.py:13`) — from `schemas/v1/common.py` and the `schemas/v1` import + `__all__`. Trimmed the `schemas/registry.py` docstring, which described a `schemas/migrations/` minor/major-bump workflow that does not exist (only `v1/` ships), to state actual reality.
+- **Tested / RED-proven (DEVELOPMENT anti-pattern #3):** #2's 3 guard-mechanism tests proven RED (ImportError) before impl → GREEN after; the import-time wiring separately RED-proven by renaming a `_TIER_SEVERITY` key in a subprocess import (→ AssertionError) then restoring byte-identical. #28 is a dead-code deletion (zero code consumers by grep; full suite green); #30 is a non-behavioral docstring trim.
+- **Gates:** pytest **667/667 @ 97.13%** (+5; was 662/662 @ 97.12%), mypy 0/48 + 0/13, ruff clean, decoupling 2/2.
+- **Out of scope — HANDED OFF (Learning #43; wiki auto-publishes, separate outward-facing session):** the wiki still documents the removed `SCHEMA_VERSION` (`Schema-Reference.md:101,640`) and the nonexistent `schemas/migrations/` workflow (`Changelog.md:173`, `Extending-the-Pipeline.md:49`, `Schema-Reference.md:504,586,597`). Audit `#8`/O3 (RepoHost registry) and overhauls O1/O4 remain open.
+
 ### 2026-06-05 — Candidate-roster audit/cull (Session 112)
 
 Operator-selected (Phase-0 standing option #3) methodology housekeeping: a full reconciliation of every candidate-learning number in `SESSION_NOTES.md` against the source of truth, with disposition decisions. Docs/state only — no code, no gates. Run at `ultracode` (repo default).
