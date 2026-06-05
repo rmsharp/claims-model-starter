@@ -15,6 +15,15 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ## [Unreleased]
 
+### 2026-06-05 — Candidate-roster audit/cull (Session 112)
+
+Operator-selected (Phase-0 standing option #3) methodology housekeeping: a full reconciliation of every candidate-learning number in `SESSION_NOTES.md` against the source of truth, with disposition decisions. Docs/state only — no code, no gates. Run at `ultracode` (repo default).
+
+- **Method (Learnings #46 + #45 dogfooded):** traced ~26 candidate numbers via a 5-agent read-only `agentType: 'Explore'` fan-out (`wf_3f8f29fe-638`), then cross-checked every load-bearing disposition directly against the SoT before trusting it; a final read-only `Explore` verify lens (32/33 PASS) was itself cross-checked (its 1 FAIL was wrong and was overturned by direct SoT read). `git diff HEAD` confirmed zero subagent writes.
+- **Structural finding — candidate-number reuse:** numbers **#64/#65/#66 were each assigned to two distinct candidates** (an early-series candidate later promoted/closed, then a late-series candidate that reused the number). Root cause: numbering off the *active-roster max* rather than the *all-time max*, which silently reissues promoted candidates' numbers. Documented (not renumbered, per Learning #32); the going-forward fix is filed as Candidate #80 (number from the all-time max).
+- **Cull:** RETIRED 5 — #57, #61, #63 (stale early-series danglers, subsumed/dormant), #62 (institutionalized standard practice), #71 (subsumed by SESSION_RUNNER row #42). KEPT 9 active (disambiguated): #65-late, #66-late, #67, #70, #73, #74, #77, #78, #79. 0 promotions (none at 3 clean instances). #78 flagged to fold into row #42 at its 3rd instance rather than promote standalone.
+- **Gates:** unchanged (no `src/`/`tests/` touched) — pytest 662/662 @ 97.12%, mypy 0/48, ruff clean, decoupling 2/2.
+
 ## [0.2.0] - 2026-06-04
 
 ### 2026-06-04 — Wiki citation-drift resync + cut v0.2.0 release (Session 111)

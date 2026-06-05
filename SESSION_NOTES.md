@@ -5,9 +5,130 @@
 ---
 
 ## ACTIVE TASK
-**Task:** Session 111 — operator-directed: **drive to a new tagged release `v0.2.0`**. Sub-steps: (1) **full wiki-wide `file.py:N-M` citation audit** across all 22 `docs/wiki/claims-model-starter/` pages (118 source-file line citations; 43 fixed) — verify each against current source, fix drifted *current-pointer* citations, LEAVE historical prose (Evolution / Changelog, Learning #32); read-only `agentType:'Explore'` verification + HEAD-diff; commit → **auto-publishes live** (operator Phase-1A: full-audit + publish-live). (2) pre-release gate confirmation. (3) cut release `0.2.0` — bump version (2× `pyproject.toml`, `__init__.py`, `README.md:3`) + `uv.lock`, CHANGELOG `[Unreleased]`→`[0.2.0] - 2026-06-04` + fresh Unreleased, mirror audience-facing wiki `Changelog.md` (publishes live). (4) push all commits (incl. 108/109/110) + annotated tag `v0.2.0`. Master framework + release chore. Off-BACKLOG (BACKLOG empty, 44th carry). **COMPLETE.**
+**Task:** Session 112 — operator-selected (Phase-0 standing option #3): **Candidate-roster audit/cull**. Trace each active candidate-learning's instance history against the SoT (`SESSION_NOTES.md`), retire dead/stale single-instance candidates, promote any quietly at the 3-instance threshold, keep the roster signal-rich. Active roster per Session 111 handoff: #62/#65/#66/#67/#70/#71/#73/#74/#77/#78/#79. Operator sequencing for later sessions: option #2 (tier-2 audit guards) next, then #4 (overhauls, plan-first), #1 (GitHub Release) delayed. AUDIT_WORKSTREAM; methodology housekeeping. Docs/state only — no `src/`/`tests/`, no gates, no plan mode. Off-BACKLOG (BACKLOG empty, 45th carry). **COMPLETE.**
 
-**Status:** Session 111 COMPLETE. Drove to tagged release **v0.2.0** (operator goal, introduced mid-session). **(1) Full wiki-wide citation audit:** 8 read-only `agentType:'Explore'` agents (`wf_18c7de31-050`) verified all **118** `file.py:N-M`-style citations across 22 pages → 62 CORRECT / 50 DRIFTED / 7 HISTORICAL. **43 drifted current-pointer citations fixed** across 6 reference pages (Extending ×5, Intake ×12, Schema ×4, Security ×11, Worked-Examples ×8, Contributing ×3) — commit `f4e6272`, **published live** (wiki clone `9258c04`). Every fix independently re-derived against live source **before applying** (Learning #45) — caught **4 agent errors** (intake constructor `32-46`→`32, 134-146`; interviewer-prompt span →`35-66`; fairness scaffolds →`856-904`; OPERATIONS →`81-107`) — then re-verified by an independent read-only Explore lens (43/44 MATCH; the 1 "mismatch" a false positive on a bare continuation token). The **6 historical-page drifts** (Evolution ×5, Changelog ×1) left untouched per **Learning #32** (operator-confirmed; #4 would otherwise cite since-fixed code while narrating the old bug). **(2) Gates green** (no `src/`/`tests/` touched): ruff clean, mypy 0/48, **pytest 662/662 @ 97.12%**, decoupling 2/2. **(3) Release cut** `2442fd7` (published wiki live `4d87ad8`): version `0.1.0`→`0.2.0` in 4 markers + `uv.lock` (both editable members; clean `uv lock`, no dep churn); CHANGELOG `[Unreleased]`→`[0.2.0] - 2026-06-04` + fresh empty Unreleased + Session 111 entry; audience-facing wiki `Changelog.md` version line + release entry. **(4) Pushed** `cd3c341..2442fd7` (5 commits: 108/109/110 + `f4e6272` + `2442fd7`) + **annotated tag `v0.2.0`** → origin. Verified on origin: tag `v0.2.0`→`2442fd7`, master in sync, **0 unpushed** (before this close-out commit). Effort: `ultracode`. Close-out commit pending.
+**Status:** Session 112 COMPLETE. Reconciled the FULL candidate-learning roster against the SoT (not just the handoff's 11). Traced ~26 candidate numbers via a 5-agent read-only `Explore` fan-out (`wf_3f8f29fe-638`), then cross-checked every load-bearing disposition directly (Learning #45) — the fan-out MISSED the **#64/#65/#66 reuse collision** and mis-classified ≥5 already-promoted candidates (#59/#60/#68/#72/#75) as "active"; a verify `Explore` lens (32/33 PASS) had its 1 FAIL itself wrong (it swapped early/late #64), overturned by direct SoT read (`line 3234` + row #38 Source = "filed Session 76"). **Cull: RETIRED 5** (#57/#61/#62/#63 stale early-series danglers + #71 subsumed by row #42), **KEPT 9** (#65/#66/#67/#70/#73/#74/#77/#78/#79, disambiguated by filed-session+title), **0 promotions** (none at 3 clean instances). **Structural finding:** candidate numbers **#64/#65/#66 were each used twice** (early-series → promoted; late-series → active) because sessions numbered off the *active-roster max* instead of the *all-time max*; documented + fixed (next candidate = **#80**, filed this session). Docs/state only — no `src/`/`tests/`, no gates. HEAD-diff confirmed zero subagent writes. Effort: `ultracode`. Close-out commit pending.
+
+### Session 111 Handoff Evaluation (by Session 112)
+
+**Score: 9/10.** Session 111's handoff named option #3 (candidate-roster audit/cull) with the active roster enumerated (#62/#65/#66/#67/#70/#71/#73/#74/#77/#78/#79) and pre-named the contract questions (Learning #40), making the operator's Phase-1A pick clean. Baseline (662/662 @ 97.12%), the Phase-1B recipe (Learnings #42+#78, claimed first-try), and gotcha #4/#5 were all accurate and load-bearing.
+
+- **What helped:** (a) the enumerated roster was the seed for the reconciliation; (b) gotcha #4 (`agentType:'Explore'` for ALL read-only fan-outs + HEAD-diff backstop) applied directly to the 5-agent trace + verify lens; (c) **gotcha #5 ("Learning #45 scales: re-derive each fan-out item") was the exact discipline that caught this session's confabulations** — it told me to distrust the fan-out, and the fan-out was indeed ~5-errors unreliable; (d) Phase-1B script landed first-try (Learnings #42+#78, **20th instance**).
+- **What was incomplete (the −1):** the handoff's roster of 11 was internally consistent with the late-series enumeration, but (a) it silently omitted three early-series danglers (#57/#61/#63) never *formally* retired — they fell off the enumeration ~Session 100; and (b) it did not flag that candidate numbers #64/#65/#66 had been **reused** — a latent landmine that made every trace agent confabulate. Neither is a Session-111 defect (the reuse predates it by ~15 sessions), but the carried roster was a partial view, not the reconciled truth.
+- **What was wrong:** nothing material. Push-state "expect 1 unpushed" was already 0 (S111 pushed its own close-out) — non-load-bearing, and the handoff flagged the caveat.
+- **ROI:** ~7×. The enumerated roster + the "#45 scales" gotcha turned a vague "cull" into a scoped reconciliation that the gotcha itself told me to verify item-by-item.
+
+### What Session 112 Did
+
+**Deliverable:** Candidate-roster audit/cull — a full reconciliation of every candidate-learning number against the SoT, with disposition decisions. **COMPLETE.** Docs/state only.
+
+**Method (Learnings #46 + #45 dogfooded; this session is itself a fresh instance of Candidate #67 — workflow-orchestrated audit shape).** Traced all ~26 candidate numbers via a 5-agent read-only `Explore` fan-out (`wf_3f8f29fe-638`), then **cross-checked every load-bearing disposition directly against the SoT before trusting it.** The fan-out was substantially unreliable — it missed the #64/#65/#66 reuse and mis-classified ≥5 promoted candidates (#59/#60/#68/#72/#75) as "active." A final read-only `Explore` verify lens checked the reconciled map (32/33 PASS); its 1 "FAIL" was itself wrong (swapped early/late #64) and was overturned by direct SoT read (`line 3234`: "promote Candidate Learning #64 → row #38"; SESSION_RUNNER row #38 Source = "filed Session 76/77/78"). **HEAD-diff confirmed zero subagent writes** (only the Phase-1B SESSION_NOTES claim was in the tree before this close-out).
+
+**STRUCTURAL FINDING — candidate-number REUSE (collision on #64/#65/#66).** Three numbers were each assigned to TWO distinct candidates: an *early-series* candidate that was later promoted/closed (and dropped from the active roster), then a *late-series* candidate that re-derived the same number. Root cause: sessions numbered new candidates off the **active-roster maximum** (which at Session 93 was #63, since #64-#66 had been promoted away and were no longer visible) instead of the **all-time maximum ever used**. This silently violated the "monotonic-candidate-numbering invariant" cited in row #45 (Candidate #72), and is exactly why a bare candidate number is ambiguous in the history and why the trace agents confabulated. **Fix (no history rewrite — Learning #32):** documented below; the next candidate is **#80**, numbered from the all-time max, and all future numbering continues monotonically from the all-time max forever.
+
+The disambiguated collisions:
+
+| # | Early-series candidate | Late-series candidate |
+|---|---|---|
+| #64 | raw-string Edit pre-grep, no `^/$` anchors (filed S76 → **row #38**) | Phase-1B archive-then-overwrite, two ordered edits (filed S93 → **row #42**) |
+| #65 | handoff convention/date/boundary pre-naming (filed S78 → **row #40**) | cross-instance continuity check at Phase 0 (filed S95 → **ACTIVE**) |
+| #66 | Phase-1B archive-placement file-tail locator (filed S79 → **row #39**) | vendored-doc refresh safety check (filed S96 → **ACTIVE**) |
+
+**RECONCILED ROSTER (full, SoT-verified).**
+
+*Promoted / folded / superseded — out of the pipeline, NOT active (do not carry):*
+
+| Candidate (disambiguated) | Disposition |
+|---|---|
+| #52 pre-grep structured-file Edit uniqueness | → row #34 (S69) |
+| #55 archive-placement convention | superseded by row #39/#66 (S82) |
+| #56 archive-heading pre-grep | → row #35 (S71) |
+| #58 Phase-1B touches only Task/Status | → row #36 (S72) |
+| #60 Edit consume boundary heading | → row #37 (S73) |
+| #59 5-file checkpoint discipline | → row #41 (S92) |
+| #64-early raw-string pre-grep | → row #38 (S79) |
+| #65-early handoff contract pre-naming | → row #40 (S83) |
+| #66-early archive-placement locator | → row #39 (S82) |
+| #64-late archive-then-overwrite | → row #42 (S101) |
+| #68 audit finding-a-bug ≠ license-to-fix | → row #43 (S101) |
+| #69 port-hardened-twin 4-lens verify | → row #44 (S101) |
+| #72 cross-check subagent provenance | → row #45 (S106) |
+| #75 drift-sweep hyphenated `N-X` form | folded into row #31 (S107) |
+| #76 read-only subagents = `Explore` | → row #46 (S110) |
+
+*Active — KEPT (the forward roster; 9):*
+
+| Candidate (disambiguated) | Filed | Instances | Why KEEP |
+|---|---|---|---|
+| #65-late cross-instance continuity check at Phase 0 | S95 | 2 | fires on crash/continuation recovery (real, rare) |
+| #66-late vendored-doc refresh safety check | S96 | 1 | fires on vendored-doc overwrites (methodology docs are vendored) |
+| #67 workflow-orchestrated audit shape | S97 | 1 (S112 = fresh instance) | recurs on codebase/roster-wide audits |
+| #70 guard-port blast-radius = test doubles | S99 | 1 | fires on type-guard ports |
+| #73 guard-don't-merge parity test (DRY refactor) | S102 | 1 | fires on DRY-refactor planning |
+| #74 optional+brittle plan component → adversarial-verify decides | S103 | 1 | fires on optional-component implementation |
+| #77 parseable producer constant for drift-guard tests | S108 | 1 | likely 2nd instance during option #2 (tier-2 audit guards) |
+| #78 newline-anchored `.index()` locator for Phase-1B script | S109 | 2 | **fold into row #42 at 3rd instance — do NOT promote standalone** |
+| #79 release `uv.lock` desync on version bump | S111 | 1 | watch at next release (`0.2.1`/`0.3.0`) |
+
+*Retired this session (5) — stop carrying:*
+
+| Candidate | Filed | Reason |
+|---|---|---|
+| #57 Edit "new_string missing" → multi-match diagnosis | S69 | subsumed by rows #34/#38 (raw-string pre-grep prevents the condition; its own filing said it "may never fire"); dormant ~43 sessions |
+| #61 audit BOTH sides before "align X to Y" | S74 | stale (2 instances, last ~S75; ~37 sessions dormant); spirit covered by Phase-0 verify-named-state (rows #33/#45) |
+| #62 verify tool-PATH at Phase 0 (`.venv/bin/`) | S74 | **institutionalized** — ~17 applications but stuck at "1st instance"; it is standard practice, not a methodology learning headed for a row |
+| #63 planning per-file completion criteria | S75 | stale single-instance (planning-only, ~37 sessions dormant); subsumed by the runner's planning-session per-phase-criteria guidance + Learning #32 |
+| #71 newline-anchored Phase-1B-script counts | S100 | **subsumed** — its rule is already cited and encoded inside permanent row #42 ("...newline-anchored `str.count`... Candidate #71"); tracking it toward a standalone row is pointless |
+
+### Phase 3B: Self-assess — Session 112 — 9/10
+
+- **Learning #45 dogfooded at scale, then recursively (highest value):** re-derived every fan-out disposition against the SoT (caught the #64/#65/#66 reuse + ≥5 mis-classifications the agents missed), THEN cross-checked the verify lens's lone FAIL and found *it* wrong too. The reconciled roster is SoT-anchored at every load-bearing claim, not agent-parroted. This is exactly the "permanent artifact" scenario #45 targets, applied recursively to the verifier.
+- **Learning #46 throughout:** all 6 subagents (5 trace + 1 verify) were read-only `Explore`; `git diff HEAD` confirmed only the Phase-1B claim in the tree before close-out. Right-sized (5 trace agents over ~26 candidates is a genuine fan-out, not the incident's over-scope; 1 verify lens).
+- **Structural value:** the deliverable isn't just "5 retired / 9 kept" — it's the reconciled, disambiguated roster + the root-caused numbering-reuse finding + the forward fix. That converts a recurring confabulation landmine into a documented, closed issue.
+- **The honest −1:** I broadened scope from the handoff's literal 11-candidate roster to the full ~26-number reconciliation without a pre-confirmation round-trip. It was the *correct* call (the 11 were a partial view and the reuse had to be surfaced), and it stayed docs/state-only, but it was a unilateral scope judgment. Also #61/#62 "RETIRE" are judgment calls (both are sound learnings, just dormant/institutionalized) — I retired rather than indefinitely carry, matching the operator's explicit "retire dead ones" intent, but a reasonable reviewer could KEEP them.
+- **Quality bar vs previous sessions:** met/exceeded — a fully SoT-verified reconciliation with the verifier itself cross-checked, zero scope creep beyond docs/state, and a root-caused structural finding with a forward fix.
+
+### Phase 3C: Learnings — Session 112
+
+**Candidate #80 filed (number from the ALL-TIME max, NOT the active-roster max) — 1st instance.** When assigning a new candidate-learning number, use `max(all candidate numbers EVER filed) + 1`, never `max(currently-active candidates) + 1`. **Root cause of the #64/#65/#66 collision:** promoted/closed candidates are removed from the active roster, so numbering off the active max silently reissues their numbers — breaking the monotonic invariant and causing provenance confabulation (this session's trace agents each fell for it). **Mechanical:** before filing, `grep -oE "Candidate (Learning )?#[0-9]+" SESSION_NOTES.md | grep -oE "[0-9]+" | sort -n | tail -1` → add 1. **When to use:** every candidate filing. **Watch for a 2nd/3rd instance** (i.e., the next two filings correctly continuing #81, #82 from the all-time max).
+
+**Learning #45 reinforced (recursive application).** #45 already says "verify *each* item of a fan-out." This session adds the recursive corollary: the *verify lens is itself a fan-out item* — its FAIL was wrong and had to be cross-checked against the SoT. A verifier's verdict is a claim, not a verdict. (Composes with the row #45/#46 pairing.)
+
+**Learning #67 (workflow-orchestrated audit shape) — fresh instance.** This session's trace-fan-out → main-loop-synthesis → verify-lens shape is a clean re-application of #67 (kept in the roster).
+
+**Applied:** #10 (orient+wait despite "go"); #40 (sequencing pre-resolved at Phase 1A); #42+#78 (self-verifying Phase-1B script, 20th instance, clean); #45 (re-derive each fan-out item — recursively); #46 (read-only `Explore` + HEAD-diff backstop); #32 (no history rewrite — reuse documented forward, not renumbered); #33 (verified the handoff's named roster rather than trusting it).
+
+### Phase 3D: Handoff to Session 113
+
+**The candidate roster is reconciled and culled.** Forward active roster = **9** (disambiguated): #65-late (continuity check, S95), #66-late (vendored-doc, S96), #67 (workflow-audit, S97), #70 (guard-port radius, S99), #73 (guard-don't-merge, S102), #74 (optional+brittle, S103), #77 (parseable producer const, S108), #78 (`.index()` locator, S109), #79 (release `uv.lock`, S111). **Retired (do NOT carry):** #57, #61, #62, #63, #71. **Next candidate number = #80+ (all-time max), Candidate #80 filed this session.** BACKLOG.md EMPTY (46th carry at Session 113 Phase 0).
+
+**Operator-set session sequencing (from Session 112 Phase 1A):**
+1. **Option #2 — Tier-2 audit drift guards (NEXT SESSION).** 2026-06-01 audit §7: **#2** import-time asserts tying `_TIER_SEVERITY`/`_CYCLE_CADENCE` to schema `Literal`s; **#8** single `RepoHost` Literal + `SUPPORTED_HOSTS`; **#28/#30** delete dead `SCHEMA_VERSION` export / trim registry docstring. Touches `src/`+`tests/` → **gates run**. *This work likely produces the 2nd instance of Candidate #77 (parseable producer constant for drift-guard tests) — track it.*
+2. **Option #4 — larger overhauls (after #2), each plan-first / multi-session:** O1 (Stage-list pipeline driver), O3 (`REPO_PLATFORMS` registry — subsumes audit #8), O4 (controlled-vocabulary single-source).
+3. **Option #1 — GitHub Release object for `v0.2.0` — DELAYED** (operator deferred). Tag exists; no Releases-UI object. Outward-facing — confirm before doing.
+
+**Open contract questions for Session 113 (Learning #40):**
+- Option #2 scope: which subset (#2 / #8 / #28+#30 / all)? And is #8 just the `RepoHost` Literal-source, or the full O3 registry (the latter is plan-first, belongs to option #4)?
+
+**Important considerations for Session 113:**
+1. **Baseline UNCHANGED: pytest 662/662 @ 97.12%, mypy 0/48, ruff clean, decoupling 2/2** (Session 112 touched only `SESSION_NOTES.md` + `CHANGELOG.md`). Option #2 touches `src/`+`tests/` → **re-run all gates**.
+2. **Candidate-number-reuse landmine (closed but historically live):** #64/#65/#66 are AMBIGUOUS in the history — ALWAYS disambiguate a candidate by (filed-session + title), never the bare number. Candidate #80 fixed the going-forward rule.
+3. **#78 fold path:** at its 3rd instance (next Phase-1B archive), FOLD #78 into row #42 — do NOT create a standalone row (it's the same self-verifying-Phase-1B-script family already encoded there).
+4. **Read-only subagent fan-outs:** `agentType:'Explore'` + `git diff HEAD` backstop (Learning #46). **Learning #45 scales AND recurses** — re-derive each fan-out item AND cross-check the verifier itself (S112: trace fan-out ~5 errors; verify lens 1 error).
+5. **Push state:** expect **1 unpushed** (this close-out commit) unless pushed; verify `git rev-list --count @{u}..HEAD`.
+6. **Wiki publish hook active** (`core.hooksPath=.githooks`): Session 112 touched NO `docs/wiki/` files, so this close-out does NOT publish.
+7. **Effort:** `ultracode` is the repo default; carries to 113.
+8. **Phase-1B recipe (Learnings #42+#78):** archive `### Session 112 ARCHIVED ACTIVE TASK` + Session 112 Task/Status above `### Session 111 ARCHIVED ACTIVE TASK` (file-tail zone; `grep -n "^### Session .* ARCHIVED ACTIVE TASK" SESSION_NOTES.md | head -1`). Self-verifying script; newline-anchored `.count()` asserts + `.index()` locator.
+
+### Gotchas for Session 113
+
+1. Baseline 662/662 @ 97.12%, mypy 0/48, ruff clean, decoupling 2/2 — re-run on any `src/`/`tests/`/`packages/` touch (option #2 qualifies).
+2. **Active candidate roster is now 9** (#65/#66/#67/#70/#73/#74/#77/#78/#79). Retired #57/#61/#62/#63/#71 — do NOT re-list them. Next number is **#80** (Candidate #80 filed S112), assigned from the all-time max.
+3. **Candidate #64/#65/#66 are reused numbers** — a bare number is ambiguous in the SoT; disambiguate by filed-session+title (see the collision table in "What Session 112 Did").
+4. **#78 → fold into row #42 at 3rd instance**, not a standalone promotion.
+5. `agentType:'Explore'` + `git diff HEAD` for read-only fan-outs (Learning #46). Learning #45 scales and recurses (cross-check the verifier too).
+6. **Option #2 (tier-2 guards)** likely exercises Candidate #77 (parseable producer constant) — record its 2nd instance if so.
+7. Push state: expect 1 unpushed (the close-out) unless pushed; verify with `git rev-list`.
 
 ### Session 110 Handoff Evaluation (by Session 111)
 
@@ -4791,6 +4912,12 @@ Ranked likely directions:
 19. **Session 67 did NOT run `uv sync`** — no local dependency change needed (docs extra installed in Session 66; gate commands ran against the existing `.venv`). `uv.lock` unchanged this session.
 
 20. **Commit message for Session 67:** `feat(ci): phase 2 — publish tutorial to GitHub Pages via Actions`. Matches Session 66's `feat(docs): ...` shape, scope prefix differs because this is a CI-surface change, not a docs-config change.
+
+### Session 111 ARCHIVED ACTIVE TASK
+
+**Task:** Session 111 — operator-directed: **drive to a new tagged release `v0.2.0`**. Sub-steps: (1) **full wiki-wide `file.py:N-M` citation audit** across all 22 `docs/wiki/claims-model-starter/` pages (118 source-file line citations; 43 fixed) — verify each against current source, fix drifted *current-pointer* citations, LEAVE historical prose (Evolution / Changelog, Learning #32); read-only `agentType:'Explore'` verification + HEAD-diff; commit → **auto-publishes live** (operator Phase-1A: full-audit + publish-live). (2) pre-release gate confirmation. (3) cut release `0.2.0` — bump version (2× `pyproject.toml`, `__init__.py`, `README.md:3`) + `uv.lock`, CHANGELOG `[Unreleased]`→`[0.2.0] - 2026-06-04` + fresh Unreleased, mirror audience-facing wiki `Changelog.md` (publishes live). (4) push all commits (incl. 108/109/110) + annotated tag `v0.2.0`. Master framework + release chore. Off-BACKLOG (BACKLOG empty, 44th carry). **COMPLETE.**
+
+**Status:** Session 111 COMPLETE. Drove to tagged release **v0.2.0** (operator goal, introduced mid-session). **(1) Full wiki-wide citation audit:** 8 read-only `agentType:'Explore'` agents (`wf_18c7de31-050`) verified all **118** `file.py:N-M`-style citations across 22 pages → 62 CORRECT / 50 DRIFTED / 7 HISTORICAL. **43 drifted current-pointer citations fixed** across 6 reference pages (Extending ×5, Intake ×12, Schema ×4, Security ×11, Worked-Examples ×8, Contributing ×3) — commit `f4e6272`, **published live** (wiki clone `9258c04`). Every fix independently re-derived against live source **before applying** (Learning #45) — caught **4 agent errors** (intake constructor `32-46`→`32, 134-146`; interviewer-prompt span →`35-66`; fairness scaffolds →`856-904`; OPERATIONS →`81-107`) — then re-verified by an independent read-only Explore lens (43/44 MATCH; the 1 "mismatch" a false positive on a bare continuation token). The **6 historical-page drifts** (Evolution ×5, Changelog ×1) left untouched per **Learning #32** (operator-confirmed; #4 would otherwise cite since-fixed code while narrating the old bug). **(2) Gates green** (no `src/`/`tests/` touched): ruff clean, mypy 0/48, **pytest 662/662 @ 97.12%**, decoupling 2/2. **(3) Release cut** `2442fd7` (published wiki live `4d87ad8`): version `0.1.0`→`0.2.0` in 4 markers + `uv.lock` (both editable members; clean `uv lock`, no dep churn); CHANGELOG `[Unreleased]`→`[0.2.0] - 2026-06-04` + fresh empty Unreleased + Session 111 entry; audience-facing wiki `Changelog.md` version line + release entry. **(4) Pushed** `cd3c341..2442fd7` (5 commits: 108/109/110 + `f4e6272` + `2442fd7`) + **annotated tag `v0.2.0`** → origin. Verified on origin: tag `v0.2.0`→`2442fd7`, master in sync, **0 unpushed** (before this close-out commit). Effort: `ultracode`. Close-out commit pending.
 
 ### Session 110 ARCHIVED ACTIVE TASK
 
