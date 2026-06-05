@@ -95,13 +95,13 @@ ModelType = Literal[
 
 The orchestrator's `infer_target_granularity` adapter branches on `model_type`: `time_series` maps to a monthly grain, everything else maps to `event` grain with `unit="claim"` (`orchestrator/adapters.py:55`).
 
-### Version constant
+### Version field
+
+There is no shared `SCHEMA_VERSION` constant. Every payload class declares its own immutable version field:
 
 ```python
-SCHEMA_VERSION: Literal["1.0.0"] = "1.0.0"  # common.py:9
+schema_version: Literal["1.0.0"] = "1.0.0"   # declared on each payload, e.g. intake.py, repo.py
 ```
-
-Every payload carries this as an immutable `schema_version` field.
 
 ---
 
@@ -501,7 +501,7 @@ class HandoffEnvelope(BaseModel):
 
 Three properties worth internalizing:
 
-- **`envelope_version` is locked at `"1.0.0"` forever.** The envelope protocol evolves by adding a new version field for a future iteration — old envelope versions route through a migration function, not a mutation of the current field.
+- **`envelope_version` is locked at `"1.0.0"` forever.** The envelope protocol evolves by adding a new version field for a future iteration — old envelope versions would route through a migration step rather than mutating the current field. No such migration machinery exists today; only `1.0.0` ships.
 - **Payload is a raw `dict`, not a Pydantic instance.** The envelope deliberately does not enforce payload schema. Validation happens in `registry.load_payload(envelope)` — this keeps the envelope cheap to serialize/forward without forcing a full Pydantic parse.
 - **The orchestrator never *receives* an envelope** — `target_agent` excludes `"orchestrator"`. This is enforced by a dedicated test (`tests/schemas/test_envelope_and_registry.py` — `test_target_agent_cannot_be_orchestrator`). The orchestrator's own terminal outputs use a separate channel (see §8).
 
@@ -583,7 +583,7 @@ See [Monitoring and Operations §5](Monitoring-and-Operations) for resume recipe
 
 ## 10. Versioning strategy
 
-All payloads are currently v1.0.0. The registry keys on `(payload_type, schema_version)` so multiple versions can coexist during a migration.
+Schema versioning is intentionally minimal today: every payload is `1.0.0`, and there is no migration machinery. The registry keys on `(payload_type, schema_version)`, so multiple versions *can* coexist once a second one is introduced. When that day comes:
 
 **Minor bump** (1.0.0 → 1.1.0, backward-compatible additions):
 
@@ -594,7 +594,7 @@ All payloads are currently v1.0.0. The registry keys on `(payload_type, schema_v
 **Major bump** (1.0.0 → 2.0.0, breaking change):
 
 - Register 2.0.0 and keep 1.0.0 for at least two major releases — in-flight runs must not break mid-upgrade.
-- Provide a migration function in `schemas/migrations/` that converts a v1 payload dict to v2.
+- Add whatever migration the change needs at that point. There is no `schemas/migrations/` package today; the registry does not yet implement a migration workflow.
 
 **Envelope version** is separate and is locked at `1.0.0` permanently. Envelope protocol evolution happens via additive fields, not version bumps.
 
@@ -637,7 +637,7 @@ Datetime fields serialize as ISO 8601 with timezone. Nested models survive intac
 
 | File | Contents |
 |---|---|
-| `src/model_project_constructor/schemas/v1/common.py` | `StrictBase`, `CycleTime`, `RiskTier`, `ModelType`, `SCHEMA_VERSION` |
+| `src/model_project_constructor/schemas/v1/common.py` | `StrictBase`, `CycleTime`, `RiskTier`, `ModelType` |
 | `src/model_project_constructor/schemas/v1/intake.py` | `IntakeReport`, `ModelSolution`, `EstimatedValue`, `GovernanceMetadata` |
 | `src/model_project_constructor/schemas/v1/data.py` | Re-export surface for Data Agent schemas |
 | `src/model_project_constructor/schemas/v1/repo.py` | `RepoTarget`, `GovernanceManifest`, `RepoProjectResult` |

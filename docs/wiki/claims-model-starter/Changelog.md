@@ -167,10 +167,10 @@ Pilot-readiness fixes (Session 17, `17f661d` + `d62efc2` + `b8d8d7e`):
 
 ## Versioning policy
 
-The project is currently pre-1.0. Schema versioning follows the registry contract at `src/model_project_constructor/schemas/registry.py:7-13`:
+The project is currently pre-1.0. Schema versioning is intentionally minimal — every payload is `1.0.0` and there is no migration machinery yet. The registry contract at `src/model_project_constructor/schemas/registry.py:7-13` keys on `(payload_type, schema_version)`, so multiple versions *can* coexist once a second is introduced:
 
 - **Minor bump** (1.0.0 → 1.1.0, backwards-compatible additions): register the new class under its new version key; keep 1.0.0.
-- **Major bump** (1.0.0 → 2.0.0): register v2 and keep v1 for at least two major releases; provide a migration function in `schemas/migrations/`.
+- **Major bump** (1.0.0 → 2.0.0): register v2 and keep v1 for at least two major releases; add whatever migration the change needs at that point. There is no `schemas/migrations/` package today.
 
 The envelope version (`HandoffEnvelope.envelope_version`) is versioned independently from payload schemas so the transport can evolve without forcing every payload to rev.
 

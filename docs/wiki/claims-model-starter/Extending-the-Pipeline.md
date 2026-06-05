@@ -43,10 +43,10 @@ REGISTRY: dict[SchemaKey, type[BaseModel]] = {
 
 `load_payload(envelope)` at `registry.py:39-58` looks up `(payload_type, payload_schema_version)` and validates `envelope.payload` against the matching class. Unknown keys raise `UnknownPayloadError`.
 
-The registry docstring (`registry.py:7-13`) codifies the versioning policy:
+The registry docstring (`registry.py:7-13`) codifies the versioning policy. Versioning is intentionally minimal today — only `1.0.0` exists and there is no migration machinery — but the registry keys on `(payload_type, schema_version)`, so versions can coexist once a second is added:
 
 - **Minor bump** (1.0.0 → 1.1.0, backwards-compatible additions): register the new class under its new version and keep 1.0.0.
-- **Major bump** (1.0.0 → 2.0.0): register v2, keep v1 for at least two major releases, provide a migration function in `schemas/migrations/`.
+- **Major bump** (1.0.0 → 2.0.0): register v2, keep v1 for at least two major releases, and add whatever migration the change needs at that point. There is no `schemas/migrations/` package today.
 
 ---
 
