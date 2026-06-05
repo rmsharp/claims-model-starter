@@ -6,8 +6,6 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-SCHEMA_VERSION: Literal["1.0.0"] = "1.0.0"
-
 
 class StrictBase(BaseModel):
     """Base for every v1 schema.

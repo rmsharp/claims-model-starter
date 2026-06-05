@@ -4,13 +4,13 @@ The registry is the **single** place where ``(payload_type, schema_version)``
 is mapped to a concrete Pydantic model class. Agents resolve payloads via
 :func:`load_payload` rather than importing payload classes from each other.
 
-Adding a new version:
-
-- **Minor bump** (1.0.0 → 1.1.0, backwards-compatible additions): register the
-  new class under its new version key and keep 1.0.0 in the registry.
-- **Major bump** (1.0.0 → 2.0.0): register v2 and keep v1 for at least two
-  major releases so in-flight runs do not break mid-upgrade. A migration
-  function in ``schemas/migrations/`` is required.
+Schema versioning is intentionally minimal today: only ``1.0.0`` exists, and
+every payload registers under it. The read path (:func:`load_payload`) already
+keys on ``(payload_type, schema_version)``, so multiple versions *can* coexist
+once one is introduced — register the new class under its version key here
+(keeping ``1.0.0`` so in-flight runs still resolve) and add whatever migration
+the change needs at that point. There is no ``schemas/migrations/`` package yet;
+this registry does not implement a migration workflow.
 """
 
 from __future__ import annotations

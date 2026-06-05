@@ -6,7 +6,6 @@ the key ``(class_name, "1.0.0")``.
 """
 
 from model_project_constructor.schemas.v1.common import (
-    SCHEMA_VERSION,
     CycleTime,
     ModelType,
     RiskTier,
@@ -39,7 +38,6 @@ from model_project_constructor.schemas.v1.repo import (
 )
 
 __all__ = [
-    "SCHEMA_VERSION",
     "CycleTime",
     "ModelType",
     "RiskTier",
