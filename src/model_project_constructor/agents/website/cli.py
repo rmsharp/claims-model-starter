@@ -29,6 +29,7 @@ import typer
 from model_project_constructor.agents.website.agent import WebsiteAgent
 from model_project_constructor.agents.website.fake_client import FakeRepoClient
 from model_project_constructor.agents.website.protocol import RepoClient
+from model_project_constructor.orchestrator.config import REPO_PLATFORMS
 from model_project_constructor.schemas.v1.data import DataReport
 from model_project_constructor.schemas.v1.intake import IntakeReport
 from model_project_constructor.schemas.v1.repo import RepoTarget
@@ -39,7 +40,10 @@ DEFAULT_NAMESPACE = "data-science/model-drafts"
 GITLAB_DEFAULT_HOST_URL = "https://gitlab.com"
 GITHUB_DEFAULT_HOST_URL = "https://api.github.com"
 
-VALID_HOSTS: frozenset[str] = frozenset({"gitlab", "github"})
+# Host membership derives from the single-source REPO_PLATFORMS registry (O3);
+# the CI-platform vocabulary is separate and stays hand-listed (it is its own
+# controlled vocabulary — C4/E2, not O3).
+VALID_HOSTS: frozenset[str] = frozenset(REPO_PLATFORMS)
 VALID_CI_PLATFORMS: frozenset[str] = frozenset({"gitlab", "github"})
 
 

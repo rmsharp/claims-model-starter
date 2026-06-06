@@ -83,6 +83,7 @@ from model_project_constructor.orchestrator import (  # noqa: E402
     run_pipeline,
 )
 from model_project_constructor.orchestrator.config import (  # noqa: E402
+    REPO_PLATFORMS,
     validate_namespace,
 )
 from model_project_constructor.schemas.v1.data import DataReport  # noqa: E402
@@ -413,7 +414,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--host",
-        choices=["gitlab", "github"],
+        choices=sorted(REPO_PLATFORMS),
         default="gitlab",
         help="Target repo host (default: gitlab)",
     )

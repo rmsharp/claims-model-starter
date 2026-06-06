@@ -26,7 +26,52 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+from model_project_constructor._vocab_guard import assert_vocab_parity
+
 HostLiteral = Literal["gitlab", "github"]
+
+
+@dataclass(frozen=True)
+class PlatformSpec:
+    """Per-host configuration carried by the :data:`REPO_PLATFORMS` registry.
+
+    Phase O3-1 (Overhaul O3) introduces the two *data* fields below; an
+    ``adapter_factory`` field is added in Phase O3-3 once adapter dispatch is
+    routed through the registry. Until then only the registry *keys* are
+    consumed (host membership); the URL/token call sites still read the
+    ``DEFAULT_*`` constants directly and are folded in by Phase O3-2.
+    """
+
+    default_api_url: str
+    token_env_var: str
+
+
+# The single source of truth for the host vocabulary: which repo hosts exist,
+# their default API URL, and the env var that carries their token. ``.keys()``
+# replaces the four independent membership declarations that previously listed
+# ``{"gitlab", "github"}`` by hand (this module's validation tuple,
+# ``cli.VALID_HOSTS``, ``run_pipeline``'s argparse ``choices``). ``HostLiteral``
+# stays hand-written (mypy cannot read a runtime-derived ``Literal``) and is
+# pinned to these keys by the import-time guard below.
+REPO_PLATFORMS: dict[str, PlatformSpec] = {
+    "gitlab": PlatformSpec(
+        default_api_url="https://gitlab.com",
+        token_env_var="GITLAB_TOKEN",
+    ),
+    "github": PlatformSpec(
+        default_api_url="https://api.github.com",
+        token_env_var="GITHUB_TOKEN",
+    ),
+}
+
+# Fail the build loudly if a host is added to one of ``REPO_PLATFORMS`` /
+# ``HostLiteral`` but not the other (Audit #8 / O3; mirrors Audit #2's guard).
+assert_vocab_parity(
+    set(REPO_PLATFORMS),
+    HostLiteral,
+    name="REPO_PLATFORMS",
+    reconcile_hint="Reconcile the REPO_PLATFORMS keys with HostLiteral in orchestrator/config.py.",
+)
 
 DEFAULT_CHECKPOINT_DIR = Path(".orchestrator/checkpoints")
 DEFAULT_HOST: HostLiteral = "gitlab"
@@ -89,9 +134,9 @@ class OrchestratorSettings:
         source: Mapping[str, str] = env if env is not None else os.environ
 
         host_raw = source.get("MPC_HOST", DEFAULT_HOST).strip().lower()
-        if host_raw not in ("gitlab", "github"):
+        if host_raw not in REPO_PLATFORMS:
             raise ConfigError(
-                f"MPC_HOST must be 'gitlab' or 'github', got {host_raw!r}"
+                f"MPC_HOST must be one of {sorted(REPO_PLATFORMS)}, got {host_raw!r}"
             )
         host: HostLiteral = "gitlab" if host_raw == "gitlab" else "github"
 
@@ -187,9 +232,11 @@ __all__ = [
     "DEFAULT_GITLAB_URL",
     "DEFAULT_HOST",
     "DEFAULT_LOG_LEVEL",
+    "REPO_PLATFORMS",
     "ConfigError",
     "HostLiteral",
     "OrchestratorSettings",
+    "PlatformSpec",
     "parse_bool",
     "validate_namespace",
 ]
