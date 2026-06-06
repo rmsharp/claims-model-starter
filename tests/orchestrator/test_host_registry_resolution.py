@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import pytest
 
+from model_project_constructor.agents.website.fake_client import FakeRepoClient
 from model_project_constructor.orchestrator import config as cfg
 from model_project_constructor.orchestrator.config import (
     DEFAULT_GITHUB_URL,
@@ -27,6 +28,12 @@ from model_project_constructor.orchestrator.config import (
     REPO_PLATFORMS,
     OrchestratorSettings,
 )
+
+
+def _stub_factory(**_kwargs: object) -> FakeRepoClient:
+    """No-op adapter factory for synthetic specs (O3-3 made the field required;
+    these tests exercise only URL/token resolution, never build an adapter)."""
+    return FakeRepoClient()
 
 
 class TestUrlAndTokenAreRegistryDriven:
@@ -69,6 +76,7 @@ class TestRegistryOnlyHostResolves:
         spec = cfg.PlatformSpec(
             default_api_url="https://bitbucket.example.com",
             token_env_var="BITBUCKET_TOKEN",
+            adapter_factory=_stub_factory,
         )
         monkeypatch.setitem(cfg.REPO_PLATFORMS, "bitbucket", spec)
 

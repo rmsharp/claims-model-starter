@@ -168,26 +168,13 @@ def run(
     client: RepoClient
     if fake:
         client = FakeRepoClient()
-    elif host == "gitlab":
-        # Lazy-import so `--help` and the fake/github paths don't pull in
-        # python-gitlab.
-        from model_project_constructor.agents.website.gitlab_adapter import (
-            PythonGitLabAdapter,
-        )
-
+    else:
+        # The registry decides which adapter to build; its factory lazy-imports
+        # the SDK, so `--help` and the fake path never pull python-gitlab or
+        # PyGithub. ``host`` was validated against REPO_PLATFORMS above, so the
+        # lookup cannot miss — an unknown host would fail loud, not fall through.
         assert private_token is not None  # narrowed by the guard above
-        client = PythonGitLabAdapter(
-            host_url=resolved_host_url, private_token=private_token
-        )
-    else:  # host == "github" (validated above)
-        # Lazy-import so `--help` and the fake/gitlab paths don't pull in
-        # PyGithub.
-        from model_project_constructor.agents.website.github_adapter import (
-            PyGithubAdapter,
-        )
-
-        assert private_token is not None
-        client = PyGithubAdapter(
+        client = REPO_PLATFORMS[host].adapter_factory(
             host_url=resolved_host_url, private_token=private_token
         )
 

@@ -21,12 +21,19 @@ The full env-var matrix is documented in ``OPERATIONS.md``.
 from __future__ import annotations
 
 import os
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 from model_project_constructor._vocab_guard import assert_vocab_parity
+
+if TYPE_CHECKING:
+    # Type-only import: pulling the protocol at runtime would trigger the
+    # SDK-eager ``agents.website`` package __init__ and regress this module's
+    # SDK-freeness. Under ``from __future__ import annotations`` the annotations
+    # below are strings, so ``RepoClient`` is never looked up at runtime.
+    from model_project_constructor.agents.website.protocol import RepoClient
 
 HostLiteral = Literal["gitlab", "github"]
 
@@ -35,15 +42,46 @@ HostLiteral = Literal["gitlab", "github"]
 class PlatformSpec:
     """Per-host configuration carried by the :data:`REPO_PLATFORMS` registry.
 
-    Phase O3-1 (Overhaul O3) introduces the two *data* fields below; an
-    ``adapter_factory`` field is added in Phase O3-3 once adapter dispatch is
-    routed through the registry. Until then only the registry *keys* are
-    consumed (host membership); the URL/token call sites still read the
-    ``DEFAULT_*`` constants directly and are folded in by Phase O3-2.
+    Grown across Overhaul O3: Phase O3-1 introduced the two *data* fields
+    (consumed first as host membership, then as the URL/token sources in O3-2);
+    Phase O3-3 adds :attr:`adapter_factory`, so the registry now also decides
+    which ``RepoClient`` adapter a live run builds. The factory lazy-imports its
+    SDK inside the body, so importing this module stays SDK-free — the registry
+    pulls ``python-gitlab`` / ``PyGithub`` only when an adapter is actually
+    constructed.
     """
 
     default_api_url: str
     token_env_var: str
+    adapter_factory: Callable[..., RepoClient]
+
+
+def _make_gitlab_adapter(*, host_url: str, private_token: str) -> RepoClient:
+    """Build the GitLab :class:`RepoClient` adapter (lazy SDK import).
+
+    Imported inside the body so importing the registry never pulls
+    ``python-gitlab``; the SDK loads only when a live run builds the adapter.
+    """
+    from model_project_constructor.agents.website.gitlab_adapter import (
+        PythonGitLabAdapter,
+    )
+
+    return PythonGitLabAdapter(host_url=host_url, private_token=private_token)
+
+
+def _make_github_adapter(*, host_url: str, private_token: str) -> RepoClient:
+    """Build the GitHub :class:`RepoClient` adapter (lazy SDK import).
+
+    The uniform ``(*, host_url, private_token)`` signature absorbs the
+    constructor asymmetry (GitHub bakes a URL default and omits ``ssl_verify``);
+    ``host_url`` is always passed explicitly so an ``MPC_HOST_URL`` override
+    (e.g. GitHub Enterprise) wins over that baked default.
+    """
+    from model_project_constructor.agents.website.github_adapter import (
+        PyGithubAdapter,
+    )
+
+    return PyGithubAdapter(host_url=host_url, private_token=private_token)
 
 
 # The single source of truth for the host vocabulary: which repo hosts exist,
@@ -57,10 +95,12 @@ REPO_PLATFORMS: dict[str, PlatformSpec] = {
     "gitlab": PlatformSpec(
         default_api_url="https://gitlab.com",
         token_env_var="GITLAB_TOKEN",
+        adapter_factory=_make_gitlab_adapter,
     ),
     "github": PlatformSpec(
         default_api_url="https://api.github.com",
         token_env_var="GITHUB_TOKEN",
+        adapter_factory=_make_github_adapter,
     ),
 }
 

@@ -375,6 +375,63 @@ def test_cli_host_github_explicit_host_url_override(
     }
 
 
+def test_cli_dispatch_routes_through_registry_factory(
+    intake_report_path: Path,
+    data_report_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The non-fake CLI path obtains its client from
+    ``REPO_PLATFORMS[host].adapter_factory`` — not a hardcoded adapter call (O3-3).
+
+    The adapter-selection tests above monkeypatch the adapter *class*, so they
+    pass whether the dispatch is hardcoded or registry-routed. This test
+    monkeypatches the *factory* (the registry entry) instead: a hardcoded
+    dispatch would never invoke this sentinel, so the populated ``calls`` dict +
+    exit 0 prove cli.py actually routes through the registry. (The
+    ``run_pipeline`` equivalent lives in test_host_registry_extensibility.py.)
+    """
+    from model_project_constructor.orchestrator import config as cfg
+
+    sentinel = FakeRepoClient()
+    calls: dict[str, Any] = {}
+
+    def _factory(*, host_url: str, private_token: str) -> FakeRepoClient:
+        calls.update(host_url=host_url, private_token=private_token)
+        return sentinel
+
+    monkeypatch.setitem(
+        cfg.REPO_PLATFORMS,
+        "github",
+        cfg.PlatformSpec(
+            default_api_url="https://api.github.com",
+            token_env_var="GITHUB_TOKEN",
+            adapter_factory=_factory,
+        ),
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--intake",
+            str(intake_report_path),
+            "--data",
+            str(data_report_path),
+            "--host",
+            "github",
+            "--private-token",
+            "tok-gh",
+            "--host-url",
+            "https://github.example.com/api/v3",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+    assert "Status:  COMPLETE" in result.stdout
+    assert calls == {
+        "host_url": "https://github.example.com/api/v3",
+        "private_token": "tok-gh",
+    }
+
+
 # ---------------------------------------------------------------------------
 # Phase D: removed deprecated aliases
 # ---------------------------------------------------------------------------

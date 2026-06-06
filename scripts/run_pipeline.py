@@ -285,16 +285,13 @@ def build_website_runner(*, host: str, live: bool):
     token = settings.require_host_token()
 
     host_url = os.environ.get("MPC_HOST_URL", REPO_PLATFORMS[host].default_api_url)
-    if host == "github":
-        from model_project_constructor.agents.website.github_adapter import (
-            PyGithubAdapter,
-        )
-        client = PyGithubAdapter(private_token=token, host_url=host_url)
-    else:
-        from model_project_constructor.agents.website.gitlab_adapter import (
-            PythonGitLabAdapter,
-        )
-        client = PythonGitLabAdapter(host_url=host_url, private_token=token)
+    # The registry decides which adapter to build (its factory lazy-imports the
+    # SDK). ``host`` came from argparse ``choices=sorted(REPO_PLATFORMS)``, so the
+    # lookup cannot miss; an unknown host fails loud (KeyError) rather than
+    # silently falling through to GitLab as the old ``else`` branch did.
+    client = REPO_PLATFORMS[host].adapter_factory(
+        host_url=host_url, private_token=token
+    )
 
     agent = WebsiteAgent(client, ci_platform=ci_platform)
     return agent.run, None  # no fake client to inspect
