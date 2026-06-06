@@ -24,7 +24,7 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from model_project_constructor._vocab_guard import assert_vocab_parity
 
@@ -75,8 +75,11 @@ assert_vocab_parity(
 
 DEFAULT_CHECKPOINT_DIR = Path(".orchestrator/checkpoints")
 DEFAULT_HOST: HostLiteral = "gitlab"
-DEFAULT_GITLAB_URL = "https://gitlab.com"
-DEFAULT_GITHUB_URL = "https://api.github.com"
+# Back-compat aliases over the single-source registry: tests import these by
+# name (tests/orchestrator/test_config.py:15-16). Sourcing them from
+# REPO_PLATFORMS keeps each URL written exactly once — inside the registry above.
+DEFAULT_GITLAB_URL = REPO_PLATFORMS["gitlab"].default_api_url
+DEFAULT_GITHUB_URL = REPO_PLATFORMS["github"].default_api_url
 DEFAULT_LOG_LEVEL = "INFO"
 
 _TRUTHY = {"1", "true", "yes", "on"}
@@ -138,14 +141,17 @@ class OrchestratorSettings:
             raise ConfigError(
                 f"MPC_HOST must be one of {sorted(REPO_PLATFORMS)}, got {host_raw!r}"
             )
-        host: HostLiteral = "gitlab" if host_raw == "gitlab" else "github"
+        # ``host_raw`` was validated above to be a REPO_PLATFORMS key, and the
+        # import-time guard pins those keys == HostLiteral members, so the cast
+        # is sound — and lets a future host resolve without editing this line.
+        host: HostLiteral = cast(HostLiteral, host_raw)
 
-        default_url = DEFAULT_GITLAB_URL if host == "gitlab" else DEFAULT_GITHUB_URL
+        default_url = REPO_PLATFORMS[host].default_api_url
         host_url = source.get("MPC_HOST_URL", default_url).strip()
         if not host_url:
             raise ConfigError("MPC_HOST_URL must not be empty")
 
-        token_var = "GITLAB_TOKEN" if host == "gitlab" else "GITHUB_TOKEN"
+        token_var = REPO_PLATFORMS[host].token_env_var
         host_token = source.get(token_var) or None
 
         checkpoint_dir = Path(
@@ -182,7 +188,7 @@ class OrchestratorSettings:
         """
 
         if not self.host_token:
-            var = "GITLAB_TOKEN" if self.host == "gitlab" else "GITHUB_TOKEN"
+            var = REPO_PLATFORMS[self.host].token_env_var
             raise ConfigError(
                 f"{var} is required for host={self.host!r} but was not set"
             )

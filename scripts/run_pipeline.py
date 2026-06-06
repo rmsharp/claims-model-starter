@@ -111,11 +111,12 @@ def load_data_fixture() -> DataReport:
 
 def build_repo_target(host: str) -> RepoTarget:
     """Build a RepoTarget appropriate for the selected host."""
+    host_url = os.environ.get("MPC_HOST_URL", REPO_PLATFORMS[host].default_api_url)
+    # The per-host default *namespace* is deployment policy, not host wiring, so
+    # the branch stays (O3 plan §11); only the host_url default is single-sourced.
     if host == "github":
-        host_url = os.environ.get("MPC_HOST_URL", "https://api.github.com")
         namespace = validate_namespace(os.environ.get("MPC_NAMESPACE", "my-org"))
     else:
-        host_url = os.environ.get("MPC_HOST_URL", "https://gitlab.com")
         namespace = validate_namespace(
             os.environ.get("MPC_NAMESPACE", "data-science/model-drafts")
         )
@@ -283,17 +284,16 @@ def build_website_runner(*, host: str, live: bool):
     settings = OrchestratorSettings.from_env()
     token = settings.require_host_token()
 
+    host_url = os.environ.get("MPC_HOST_URL", REPO_PLATFORMS[host].default_api_url)
     if host == "github":
         from model_project_constructor.agents.website.github_adapter import (
             PyGithubAdapter,
         )
-        host_url = os.environ.get("MPC_HOST_URL", "https://api.github.com")
         client = PyGithubAdapter(private_token=token, host_url=host_url)
     else:
         from model_project_constructor.agents.website.gitlab_adapter import (
             PythonGitLabAdapter,
         )
-        host_url = os.environ.get("MPC_HOST_URL", "https://gitlab.com")
         client = PythonGitLabAdapter(host_url=host_url, private_token=token)
 
     agent = WebsiteAgent(client, ci_platform=ci_platform)

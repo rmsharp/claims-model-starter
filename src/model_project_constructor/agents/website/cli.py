@@ -37,8 +37,6 @@ from model_project_constructor.schemas.v1.repo import RepoTarget
 app = typer.Typer(add_completion=False, help="Website Agent CLI")
 
 DEFAULT_NAMESPACE = "data-science/model-drafts"
-GITLAB_DEFAULT_HOST_URL = "https://gitlab.com"
-GITHUB_DEFAULT_HOST_URL = "https://api.github.com"
 
 # Host membership derives from the single-source REPO_PLATFORMS registry (O3);
 # the CI-platform vocabulary is separate and stays hand-listed (it is its own
@@ -103,8 +101,8 @@ def run(
             "--host-url",
             help=(
                 "Repository host base URL. Defaults to "
-                f"{GITLAB_DEFAULT_HOST_URL!r} for --host gitlab and "
-                f"{GITHUB_DEFAULT_HOST_URL!r} for --host github."
+                f"{REPO_PLATFORMS['gitlab'].default_api_url!r} for --host gitlab "
+                f"and {REPO_PLATFORMS['github'].default_api_url!r} for --host github."
             ),
         ),
     ] = None,
@@ -154,8 +152,8 @@ def run(
         )
         raise typer.Exit(code=2)
 
-    resolved_host_url: str = host_url if host_url is not None else (
-        GITHUB_DEFAULT_HOST_URL if host == "github" else GITLAB_DEFAULT_HOST_URL
+    resolved_host_url: str = (
+        host_url if host_url is not None else REPO_PLATFORMS[host].default_api_url
     )
 
     intake_report = IntakeReport.model_validate_json(intake.read_text())
