@@ -81,6 +81,7 @@ from model_project_constructor.orchestrator import (  # noqa: E402
     make_logged_runner,
     make_measured_runner,
     run_pipeline,
+    skipped_stages,
 )
 from model_project_constructor.orchestrator.config import (  # noqa: E402
     REPO_PLATFORMS,
@@ -311,17 +312,6 @@ def instrument(runner, *, name: str, config: PipelineConfig, metrics: MetricsReg
 # Resume helpers (Phase 3 of resume-from-checkpoint-plan.md §7.3)
 # ---------------------------------------------------------------------------
 
-# Stages that are skipped (loaded from disk) for each resume point. Used to
-# render the operator-facing "Skipping: ..." banner. Keys mirror ResumePoint
-# values; "intake" loads nothing and re-executes everything.
-_SKIPPED_STAGES_BY_RESUME_POINT: dict[ResumePoint, list[str]] = {
-    "intake": [],
-    "intake_to_data_adapter": ["intake"],
-    "data": ["intake", "intake_to_data_adapter"],
-    "website": ["intake", "intake_to_data_adapter", "data"],
-    "already_complete": ["intake", "intake_to_data_adapter", "data", "website"],
-}
-
 
 def _resume_preflight(checkpoint_dir: Path, run_id: str) -> None:
     """Reject ``--resume <run_id>`` when no checkpoint directory exists.
@@ -523,7 +513,7 @@ def main() -> None:
     print(f"  Mode: {mode}  |  Host: {args.host}  |  LLM: {llm_label}")
     if resume_point is not None:
         print(f"  Run ID: {args.run_id}  (RESUMED from: {resume_point})")
-        skipped = _SKIPPED_STAGES_BY_RESUME_POINT[resume_point]
+        skipped = skipped_stages(resume_point)
         if skipped:
             print(f"  Skipping: {', '.join(skipped)}")
     else:

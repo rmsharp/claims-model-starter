@@ -35,6 +35,7 @@ from model_project_constructor.orchestrator import (
     PipelineResult,
     ResumeInconsistent,
     determine_resume_point,
+    pipeline,
     run_pipeline,
 )
 from model_project_constructor.orchestrator.adapters import (
@@ -932,6 +933,154 @@ def _make_resume_config(
         checkpoint_dir=tmp_path / "checkpoints",
         resume_from=resume_from,
     )
+
+
+def _seed_complete_prefix(
+    store: CheckpointStore,
+    run_id: str,
+    *,
+    through: Literal["intake", "request", "report"],
+) -> None:
+    """Seed COMPLETE handoff envelopes for the clean prefix up to ``through``."""
+
+    intake = _load_intake()
+    _seed_envelope(store, run_id, "IntakeReport", intake)
+    if through in ("request", "report"):
+        _seed_envelope(
+            store, run_id, "DataRequest", intake_report_to_data_request(intake, run_id)
+        )
+    if through == "report":
+        _seed_envelope(store, run_id, "DataReport", _load_data())
+
+
+class TestGateLadderInverseConsistency:
+    """O1-2: the forward gates (``_should_run`` / ``skipped_stages``) and the
+    inverse ladder (``determine_resume_point``) are exact inverses.
+
+    Feeding ``determine_resume_point``'s output back through ``skipped_stages``
+    must name exactly the stages that are present-and-COMPLETE on disk (the
+    loaded predecessors); every later stage re-executes. This pins the
+    single-source equivalence O1-2 introduces — ``determine_resume_point`` now
+    returns ``STAGE_NAMES``-sourced tokens and the CLI banner derives from the
+    same ``STAGE_ORDER`` — so a token mis-sourced in either direction breaks
+    here. A FAILED / DRAFT_INCOMPLETE halt artifact is NOT a completed
+    predecessor: it demotes the resume point to its own stage, so it re-runs.
+    """
+
+    def _assert_inverse(
+        self,
+        store: CheckpointStore,
+        run_id: str,
+        *,
+        expected_rp: str,
+        expected_loaded: list[str],
+    ) -> None:
+        rp = determine_resume_point(store, run_id)
+        assert rp == expected_rp
+        # The ladder's output, fed forward, loads exactly the done stages.
+        assert pipeline.skipped_stages(rp) == expected_loaded
+        # ``already_complete`` is not a gate input (run_pipeline rejects it
+        # before any gate), so only cross-check ``_should_run`` for real stages.
+        if rp != "already_complete":
+            for stage in pipeline.STAGE_ORDER:
+                assert pipeline._should_run(rp, stage) == (
+                    stage.name not in expected_loaded
+                )
+
+    def test_empty_dir_runs_everything(self, tmp_path: Path) -> None:
+        store = CheckpointStore(tmp_path)
+        self._assert_inverse(
+            store, "run_inv_empty", expected_rp="intake", expected_loaded=[]
+        )
+
+    def test_through_intake_loads_intake(self, tmp_path: Path) -> None:
+        store = CheckpointStore(tmp_path)
+        _seed_complete_prefix(store, "run_inv_intake", through="intake")
+        self._assert_inverse(
+            store,
+            "run_inv_intake",
+            expected_rp="intake_to_data_adapter",
+            expected_loaded=["intake"],
+        )
+
+    def test_through_request_loads_intake_and_adapter(self, tmp_path: Path) -> None:
+        store = CheckpointStore(tmp_path)
+        _seed_complete_prefix(store, "run_inv_request", through="request")
+        self._assert_inverse(
+            store,
+            "run_inv_request",
+            expected_rp="data",
+            expected_loaded=["intake", "intake_to_data_adapter"],
+        )
+
+    def test_through_report_loads_through_data(self, tmp_path: Path) -> None:
+        store = CheckpointStore(tmp_path)
+        _seed_complete_prefix(store, "run_inv_report", through="report")
+        self._assert_inverse(
+            store,
+            "run_inv_report",
+            expected_rp="website",
+            expected_loaded=["intake", "intake_to_data_adapter", "data"],
+        )
+
+    def test_terminal_result_is_already_complete(self, tmp_path: Path) -> None:
+        store = CheckpointStore(tmp_path)
+        _seed_complete_prefix(store, "run_inv_done", through="report")
+        (tmp_path / "run_inv_done" / "RepoProjectResult.result.json").write_text("{}")
+        self._assert_inverse(
+            store,
+            "run_inv_done",
+            expected_rp="already_complete",
+            expected_loaded=["intake", "intake_to_data_adapter", "data", "website"],
+        )
+
+    def test_failed_data_report_reruns_data(self, tmp_path: Path) -> None:
+        store = CheckpointStore(tmp_path)
+        intake = _load_intake()
+        request = intake_report_to_data_request(intake, "run_inv_faildata")
+        _seed_envelope(store, "run_inv_faildata", "IntakeReport", intake)
+        _seed_envelope(store, "run_inv_faildata", "DataRequest", request)
+        _seed_envelope(
+            store, "run_inv_faildata", "DataReport", _incomplete_data_report(request)
+        )
+        self._assert_inverse(
+            store,
+            "run_inv_faildata",
+            expected_rp="data",
+            expected_loaded=["intake", "intake_to_data_adapter"],
+        )
+
+    def test_draft_incomplete_intake_reruns_intake(self, tmp_path: Path) -> None:
+        store = CheckpointStore(tmp_path)
+        _seed_envelope(
+            store, "run_inv_draft", "IntakeReport", _draft_incomplete_intake()
+        )
+        self._assert_inverse(
+            store, "run_inv_draft", expected_rp="intake", expected_loaded=[]
+        )
+
+    def test_request_present_with_draft_intake_demotes_to_intake(
+        self, tmp_path: Path
+    ) -> None:
+        # Defensive demotion (determine_resume_point ``request_present`` branch,
+        # the hand-mutated-dir case): a DataRequest on disk over a
+        # DRAFT_INCOMPLETE IntakeReport demotes all the way back to ``intake``.
+        # This is the one return token O1-2 swapped that no other case here — nor
+        # TestDetermineResumePoint — exercises, so it closes the (presence ×
+        # status) coverage gap on that branch.
+        store = CheckpointStore(tmp_path)
+        _seed_envelope(
+            store, "run_inv_req_draft", "IntakeReport", _draft_incomplete_intake()
+        )
+        _seed_envelope(
+            store,
+            "run_inv_req_draft",
+            "DataRequest",
+            intake_report_to_data_request(_load_intake(), "run_inv_req_draft"),
+        )
+        self._assert_inverse(
+            store, "run_inv_req_draft", expected_rp="intake", expected_loaded=[]
+        )
 
 
 class TestRunPipelineResume:

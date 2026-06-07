@@ -140,6 +140,16 @@ order; the resume gates (O1-2), the CLI banner (O1-2), and the save/halt helpers
 STAGE_NAMES: tuple[ResumePoint, ...] = tuple(s.name for s in STAGE_ORDER)
 _STAGE_INDEX: dict[str, int] = {s.name: i for i, s in enumerate(STAGE_ORDER)}
 
+# Named bindings for the four descriptor rows. The resume gates in
+# ``run_pipeline`` and the demotion ladder in ``determine_resume_point`` reference
+# these (and ``.name``) instead of literal stage tokens, so ``STAGE_ORDER`` is
+# their single source. Positions are pinned by ``test_stage_order.py``'s field
+# table; ``_STAGE_WEBSITE`` has no gate (it always re-executes).
+_STAGE_INTAKE = STAGE_ORDER[0]
+_STAGE_ADAPTER = STAGE_ORDER[1]
+_STAGE_DATA = STAGE_ORDER[2]
+_STAGE_WEBSITE = STAGE_ORDER[3]
+
 
 def _should_run(resume: ResumePoint | None, stage: Stage) -> bool:
     """Return True iff ``stage`` must (re-)execute given ``resume``.
@@ -249,8 +259,8 @@ def determine_resume_point(store: CheckpointStore, run_id: str) -> ResumePoint:
     # result is present.
     if report_present:
         if _is_saved_payload_complete(store, run_id, "DataReport"):
-            return "website"
-        return "data"  # DataReport FAILED → re-run data stage.
+            return _STAGE_WEBSITE.name
+        return _STAGE_DATA.name  # DataReport FAILED → re-run data stage.
     if request_present:
         # DataRequest present with IntakeReport missing is already caught
         # by the INVALID check above, so intake_present is True here.
@@ -259,13 +269,13 @@ def determine_resume_point(store: CheckpointStore, run_id: str) -> ResumePoint:
         # non-COMPLETE intake), so demotion from "data" is defensive
         # only — the branch fires for a hand-mutated dir.
         if _is_saved_payload_complete(store, run_id, "IntakeReport"):
-            return "data"
-        return "intake"
+            return _STAGE_DATA.name
+        return _STAGE_INTAKE.name
     if intake_present:
         if _is_saved_payload_complete(store, run_id, "IntakeReport"):
-            return "intake_to_data_adapter"
-        return "intake"  # DRAFT_INCOMPLETE intake → re-run interview.
-    return "intake"
+            return _STAGE_ADAPTER.name
+        return _STAGE_INTAKE.name  # DRAFT_INCOMPLETE intake → re-run interview.
+    return _STAGE_INTAKE.name
 
 
 def _is_saved_payload_complete(
@@ -408,7 +418,7 @@ def run_pipeline(
     # re-execution point. When loaded, halt logic does not fire (the
     # saved envelope is treated as trusted predecessor output; see
     # resume-from-checkpoint-plan.md §11 risk #5).
-    if resume is None or resume == "intake":
+    if _should_run(resume, _STAGE_INTAKE):
         intake_report = intake_runner()
         checkpoint_store.save(
             _envelope(
@@ -440,7 +450,7 @@ def run_pipeline(
     # Adapter stage — deterministic pure code. On resume from "data" or
     # later, load the saved DataRequest instead of re-deriving (§6.3:
     # the envelope on disk is ground truth for what the data agent saw).
-    if resume in (None, "intake", "intake_to_data_adapter"):
+    if _should_run(resume, _STAGE_ADAPTER):
         curated = (
             load_curated_inventory(config.curated_inventory_path)
             if config.curated_inventory_path is not None
@@ -476,7 +486,7 @@ def run_pipeline(
         )
 
     # Data stage — halt logic only fires when data_runner executed.
-    if resume in (None, "intake", "intake_to_data_adapter", "data"):
+    if _should_run(resume, _STAGE_DATA):
         data_report = data_runner(data_request)
         checkpoint_store.save(
             _envelope(
