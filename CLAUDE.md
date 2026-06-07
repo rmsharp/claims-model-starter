@@ -59,3 +59,25 @@ Each agent in the pipeline follows these principles (derived from `docs/architec
 - `SESSION_RUNNER.md` — Operating procedure for every session (customized Phase 1 mapping for this project)
 - `SAFEGUARDS.md` — Commit discipline, blast radius limits, mode-switching rules
 - `docs/methodology/` — Framework reference (ITERATIVE_METHODOLOGY.md, HOW_TO_USE.md, workstreams/)
+
+---
+
+## Project-Specific Methodology Adaptations
+
+*Additions and overrides to the base methodology at `SESSION_RUNNER.md` and `SAFEGUARDS.md` (synced from canonical, not project-owned). The base files govern unless explicitly overridden here. **Do not edit the synced files** — put customizations here.*
+
+### Additional Phase 0 steps
+
+(none)
+
+### Additional task-to-workstream mappings
+
+(none)
+
+### Project-specific Learnings
+
+Project institutional memory (46 learnings, Sessions 9–110) lives in [`PROJECT_LEARNINGS.md`](PROJECT_LEARNINGS.md) — extracted from the `SESSION_RUNNER.md` table to keep `CLAUDE.md` within its size budget (Claude Code targets ~200 lines / ~25 KB). **Read it when a task resembles earlier work; append new learnings there, not here.** Base methodology-level learnings remain in `SESSION_RUNNER.md`.
+
+### Project-specific Failure Modes
+
+(none — the base failure modes in `SESSION_RUNNER.md` apply.)

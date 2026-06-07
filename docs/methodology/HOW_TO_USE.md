@@ -760,7 +760,7 @@ The session runner is deliberately short. It fits in a single read. Every line i
 **Phase 3: Close Out** — The automatic close-out protocol. When the deliverable is complete, the agent executes all of these WITHOUT being asked:
 - **3A: Evaluate the previous session's handoff** — Score it 1-10, document what helped, what was missing, what was wrong. This is the compounding mechanism — it creates accountability for handoff quality.
 - **3B: Self-assess** — Compare work to previous sessions' quality bar
-- **3C: Document learnings** — Update workstream prompt and SESSION_RUNNER learnings table
+- **3C: Document learnings** — Update the workstream document; record project learnings in CLAUDE.md → Adaptations → Project-specific Learnings (adopters), or append to the SESSION_RUNNER learnings table (canonical repo dogfooding)
 - **3D: Write handoff notes** — Update SESSION_NOTES.md for the next session. **The agent knows the next session will score these notes**, which changes the quality of what gets written.
 - **3E: Commit** — All changes committed
 - **3F: Report and STOP** — Summary to user including previous session's handoff score, then session is over
