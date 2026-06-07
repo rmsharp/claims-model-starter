@@ -24,7 +24,9 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, fields
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal, TypeVar, cast
+
+from pydantic import BaseModel
 
 from model_project_constructor._vocab_guard import assert_vocab_parity
 from model_project_constructor.orchestrator.adapters import (
@@ -49,6 +51,11 @@ from model_project_constructor.schemas.v1.repo import (
 IntakeRunner = Callable[[], IntakeReport]
 DataRunner = Callable[[DataRequest], DataReport]
 WebsiteRunner = Callable[[IntakeReport, DataReport, RepoTarget], RepoProjectResult]
+
+_StageT = TypeVar("_StageT", bound=BaseModel)
+"""Per-stage payload type — narrows the registry-resolved ``BaseModel`` back to a
+stage's concrete model in :func:`_run_or_load_stage` (inferred from the stage's
+``execute`` runner, so no separate ``payload_model`` argument is needed)."""
 
 PipelineStatus = Literal[
     "COMPLETE",
@@ -407,127 +414,65 @@ def run_pipeline(
     """
 
     checkpoint_store = store or CheckpointStore(config.checkpoint_dir)
-    resume = config.resume_from
 
-    if resume == "already_complete":
+    if config.resume_from == "already_complete":
         raise ValueError(
             f"Run {config.run_id!r}: already_complete — nothing to resume."
         )
 
-    # Intake stage — execute unless resume says a later stage is the
-    # re-execution point. When loaded, halt logic does not fire (the
-    # saved envelope is treated as trusted predecessor output; see
-    # resume-from-checkpoint-plan.md §11 risk #5).
-    if _should_run(resume, _STAGE_INTAKE):
-        intake_report = intake_runner()
-        checkpoint_store.save(
-            _envelope(
-                run_id=config.run_id,
-                correlation_id=config.correlation_id,
-                source="orchestrator",
-                target="data",
-                payload_type="IntakeReport",
-                payload=intake_report.model_dump(mode="json"),
-            )
-        )
-        if intake_report.status != "COMPLETE":
-            return PipelineResult(
-                run_id=config.run_id,
-                status="FAILED_AT_INTAKE",
-                intake_report=intake_report,
-                failure_reason=(
-                    f"intake_status={intake_report.status}; "
-                    f"missing_fields={intake_report.missing_fields}"
-                ),
-                resume_point=resume,
-            )
-    else:
-        intake_report = cast(
-            IntakeReport,
-            checkpoint_store.load_payload(config.run_id, "IntakeReport"),
+    # Intake stage — execute unless resume points past it; a loaded envelope is
+    # trusted predecessor output, so the halt check is gated on ``executed``
+    # (resume-from-checkpoint-plan.md §11 risk #5).
+    intake_report, executed = _run_or_load_stage(
+        checkpoint_store,
+        config,
+        stage=_STAGE_INTAKE,
+        execute=intake_runner,
+    )
+    if executed and intake_report.status != "COMPLETE":
+        return _halt(
+            config,
+            "FAILED_AT_INTAKE",
+            failure_reason=(
+                f"intake_status={intake_report.status}; "
+                f"missing_fields={intake_report.missing_fields}"
+            ),
+            intake_report=intake_report,
         )
 
-    # Adapter stage — deterministic pure code. On resume from "data" or
-    # later, load the saved DataRequest instead of re-deriving (§6.3:
-    # the envelope on disk is ground truth for what the data agent saw).
-    if _should_run(resume, _STAGE_ADAPTER):
-        curated = (
-            load_curated_inventory(config.curated_inventory_path)
-            if config.curated_inventory_path is not None
-            else None
-        )
-        interview = (
-            intake_qa_pairs_to_inventory(intake_report)
-            if config.inventory_from_intake
-            else None
-        )
-        inventory: DataSourceInventory | None
-        if curated is not None and interview is not None:
-            inventory = merge_inventories(curated, interview)
-        else:
-            inventory = curated or interview
-        data_request = intake_report_to_data_request(
-            intake_report, config.run_id, data_source_inventory=inventory
-        )
-        checkpoint_store.save(
-            _envelope(
-                run_id=config.run_id,
-                correlation_id=config.correlation_id,
-                source="orchestrator",
-                target="data",
-                payload_type="DataRequest",
-                payload=data_request.model_dump(mode="json"),
-            )
-        )
-    else:
-        data_request = cast(
-            DataRequest,
-            checkpoint_store.load_payload(config.run_id, "DataRequest"),
-        )
-
-    # Data stage — halt logic only fires when data_runner executed.
-    if _should_run(resume, _STAGE_DATA):
-        data_report = data_runner(data_request)
-        checkpoint_store.save(
-            _envelope(
-                run_id=config.run_id,
-                correlation_id=config.correlation_id,
-                source="orchestrator",
-                target="website",
-                payload_type="DataReport",
-                payload=data_report.model_dump(mode="json"),
-            )
-        )
-        if data_report.status != "COMPLETE":
-            return PipelineResult(
-                run_id=config.run_id,
-                status="FAILED_AT_DATA",
-                intake_report=intake_report,
-                data_request=data_request,
-                data_report=data_report,
-                failure_reason=f"data_status={data_report.status}",
-                resume_point=resume,
-            )
-    else:
-        data_report = cast(
-            DataReport,
-            checkpoint_store.load_payload(config.run_id, "DataReport"),
-        )
-
-    # Website stage — always re-executes when reached. RepoTarget from
-    # config always wins on resume (§6.4); any prior saved RepoTarget is
-    # overwritten.
-    checkpoint_store.save(
-        _envelope(
-            run_id=config.run_id,
-            correlation_id=config.correlation_id,
-            source="orchestrator",
-            target="website",
-            payload_type="RepoTarget",
-            payload=config.repo_target.model_dump(mode="json"),
-        )
+    # Adapter stage — deterministic pure code (no runner, no halt: DataRequest
+    # carries no .status). On resume past it, the saved DataRequest envelope is
+    # ground truth (§6.3); otherwise derive it inline (§6.5).
+    data_request, _ = _run_or_load_stage(
+        checkpoint_store,
+        config,
+        stage=_STAGE_ADAPTER,
+        execute=lambda: _derive_data_request(intake_report, config),
     )
 
+    # Data stage — halt only fires when the data runner actually executed.
+    data_report, executed = _run_or_load_stage(
+        checkpoint_store,
+        config,
+        stage=_STAGE_DATA,
+        execute=lambda: data_runner(data_request),
+    )
+    if executed and data_report.status != "COMPLETE":
+        return _halt(
+            config,
+            "FAILED_AT_DATA",
+            failure_reason=f"data_status={data_report.status}",
+            intake_report=intake_report,
+            data_request=data_request,
+            data_report=data_report,
+        )
+
+    # Website stage — terminal, always re-executes when reached. Explicit block
+    # (§6.5): save the RepoTarget envelope (config always wins, overwrites any
+    # prior) BEFORE the runner; persist the terminal RepoProjectResult via
+    # save_result (NOT _save — un-enveloped, distinct method) AFTER. Ordering
+    # pinned by TestWebsiteSaveOrdering.
+    _save(checkpoint_store, config, stage=_STAGE_WEBSITE, payload=config.repo_target)
     project_result = website_runner(intake_report, data_report, config.repo_target)
     checkpoint_store.save_result(
         run_id=config.run_id,
@@ -535,28 +480,27 @@ def run_pipeline(
         model=project_result,
     )
     if project_result.status != "COMPLETE":
-        return PipelineResult(
-            run_id=config.run_id,
-            status="FAILED_AT_WEBSITE",
-            intake_report=intake_report,
-            data_request=data_request,
-            data_report=data_report,
-            project_result=project_result,
+        return _halt(
+            config,
+            "FAILED_AT_WEBSITE",
             failure_reason=(
                 project_result.failure_reason
                 or f"website_status={project_result.status}"
             ),
-            resume_point=resume,
+            intake_report=intake_report,
+            data_request=data_request,
+            data_report=data_report,
+            project_result=project_result,
         )
 
-    return PipelineResult(
-        run_id=config.run_id,
-        status="COMPLETE",
+    return _halt(
+        config,
+        "COMPLETE",
+        failure_reason=None,
         intake_report=intake_report,
         data_request=data_request,
         data_report=data_report,
         project_result=project_result,
-        resume_point=resume,
     )
 
 
@@ -578,6 +522,132 @@ def _envelope(
         payload=payload,
         created_at=datetime.now(UTC),
         correlation_id=correlation_id,
+    )
+
+
+def _save(
+    store: CheckpointStore,
+    config: PipelineConfig,
+    *,
+    stage: Stage,
+    payload: BaseModel,
+) -> None:
+    """Persist ``payload`` as the stage's orchestrator handoff envelope.
+
+    The single place that builds + saves the four non-terminal handoff envelopes
+    (formerly four inline envelope-save blocks in :func:`run_pipeline`).
+    ``source_agent`` is always ``"orchestrator"``; ``target_agent`` and
+    ``payload_type`` come from the :class:`Stage`, so ``STAGE_ORDER`` is their
+    single source (pinned by ``TestEnvelopeTargetAgents``). NOT used for the
+    terminal ``RepoProjectResult`` — that is un-enveloped and goes through
+    :meth:`CheckpointStore.save_result` (§6.5; ``save``/``save_result`` stay
+    distinct).
+    """
+
+    store.save(
+        _envelope(
+            run_id=config.run_id,
+            correlation_id=config.correlation_id,
+            source="orchestrator",
+            target=stage.target_agent,
+            payload_type=stage.payload_type,
+            payload=payload.model_dump(mode="json"),
+        )
+    )
+
+
+def _run_or_load_stage(
+    store: CheckpointStore,
+    config: PipelineConfig,
+    *,
+    stage: Stage,
+    execute: Callable[[], _StageT],
+) -> tuple[_StageT, bool]:
+    """Execute ``stage`` and persist its output, or load it from a checkpoint.
+
+    Returns ``(payload, executed)``. When :func:`_should_run` says the stage is
+    at or before the resume point it runs ``execute``, saves the envelope via
+    :func:`_save`, and returns ``executed=True``; otherwise it loads the saved
+    payload and returns ``executed=False``. The ``FAILED_AT_*`` halt check stays
+    at the CALL SITE, gated on ``executed`` — so a LOADED FAILED/DRAFT envelope
+    is treated as trusted predecessor output and never re-halts (resume risk #5,
+    §6.5). The concrete payload type ``_StageT`` is inferred from ``execute`` (no
+    separate ``payload_model`` arg — the runner's return type already fixes it);
+    the registry-resolved ``BaseModel`` on the load path is cast back to it. NOT
+    used for the terminal website stage (it owns its explicit ``_save`` +
+    ``save_result`` sequence — §6.5).
+    """
+
+    if _should_run(config.resume_from, stage):
+        payload = execute()
+        _save(store, config, stage=stage, payload=payload)
+        return payload, True
+    return (
+        cast(_StageT, store.load_payload(config.run_id, stage.payload_type)),
+        False,
+    )
+
+
+def _halt(
+    config: PipelineConfig,
+    status: PipelineStatus,
+    *,
+    failure_reason: str | None,
+    **reports: Any,
+) -> PipelineResult:
+    """Build the terminal :class:`PipelineResult` — the single return point.
+
+    Collapses the three ``FAILED_AT_*`` returns and the ``COMPLETE`` return.
+    ``reports`` is the ``result_field``-keyed dict of artifacts produced so far
+    (``intake_report`` / ``data_request`` / ``data_report`` / ``project_result``);
+    unset reports default to ``None``. ``resume_point`` echoes
+    ``config.resume_from`` on EVERY path — load-bearing for the resume matrix
+    (pinned by ``TestResumePointEchoedOnEveryReturnPath``). A typo'd report key
+    raises ``TypeError`` at call time (``PipelineResult`` is a dataclass — it does
+    not silently drop); a wrong-but-valid key is caught by guard #3 +
+    ``TestHaltPaths``'s retained-report assertions (§6.4).
+    """
+
+    return PipelineResult(
+        run_id=config.run_id,
+        status=status,
+        failure_reason=failure_reason,
+        resume_point=config.resume_from,
+        **reports,
+    )
+
+
+def _derive_data_request(
+    intake_report: IntakeReport, config: PipelineConfig
+) -> DataRequest:
+    """Adapter-stage body — derive the ``DataRequest`` from the intake report.
+
+    Kept inline (not a fake ``DataRunner``) because it closes over
+    ``config.curated_inventory_path`` / ``config.inventory_from_intake`` /
+    ``config.run_id`` and the live ``intake_report`` — none of which the runner
+    aliases carry (§6.5). Optional curated + interview inventories merge with
+    curated winning on duplicate FQN (the contract pinned by ``TestPipelineConfig``
+    inventory tests). A verbatim extraction of the former inline adapter block —
+    no behavior change.
+    """
+
+    curated = (
+        load_curated_inventory(config.curated_inventory_path)
+        if config.curated_inventory_path is not None
+        else None
+    )
+    interview = (
+        intake_qa_pairs_to_inventory(intake_report)
+        if config.inventory_from_intake
+        else None
+    )
+    inventory: DataSourceInventory | None
+    if curated is not None and interview is not None:
+        inventory = merge_inventories(curated, interview)
+    else:
+        inventory = curated or interview
+    return intake_report_to_data_request(
+        intake_report, config.run_id, data_source_inventory=inventory
     )
 
 
