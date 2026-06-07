@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Literal
 
 import pytest
+from pydantic import BaseModel
 
 from model_project_constructor.agents.website.agent import WebsiteAgent
 from model_project_constructor.agents.website.fake_client import FakeRepoClient
@@ -1170,3 +1171,176 @@ class TestRunPipelineResume:
                 data_runner=lambda _req: _load_data(),
                 website_runner=lambda _i, _d, _t: _failed_repo_project_result("n/a"),
             )
+
+
+# --- Characterization tests for currently-UNGUARDED behaviors (O1 plan §3.6) -
+#
+# These pin behaviors that the O1 refactor (O1-2/O1-3) could silently change but
+# that NO existing test catches — added against UNCHANGED code in Phase O1-1 so
+# the later phases refactor under a net that already covers them. See
+# ``docs/planning/o1-stage-driver-plan.md`` §3.6.
+
+
+class TestEnvelopeTargetAgents:
+    """Each pipeline-produced handoff envelope carries the correct ``target_agent``.
+
+    The only pre-existing ``target_agent`` assertion is on a HAND-BUILT envelope
+    (``tests/schemas/test_envelope_and_registry.py:52``); the pipeline tests
+    asserted only file existence keyed by ``payload_type``. So moving
+    ``target_agent`` onto a ``Stage`` field (O1-3) and mis-transcribing it (e.g.
+    ``IntakeReport`` -> ``website``) would pass all gate tests silently. This
+    loads each saved envelope and pins its target against the ``STAGE_ORDER``
+    ``target_agent`` column (data, data, website, website).
+    """
+
+    def test_each_handoff_envelope_targets_the_right_agent(
+        self, tmp_path: Path
+    ) -> None:
+        intake = _load_intake()
+        data = _load_data()
+        agent = WebsiteAgent(FakeRepoClient(), ci_platform="gitlab")
+        config = _make_config(tmp_path, run_id="run_targets")
+
+        run_pipeline(
+            config,
+            intake_runner=lambda: intake,
+            data_runner=lambda _req: data,
+            website_runner=agent.run,
+        )
+
+        store = CheckpointStore(config.checkpoint_dir)
+        assert store.load("run_targets", "IntakeReport").target_agent == "data"
+        assert store.load("run_targets", "DataRequest").target_agent == "data"
+        assert store.load("run_targets", "DataReport").target_agent == "website"
+        assert store.load("run_targets", "RepoTarget").target_agent == "website"
+
+
+class _OrderRecordingStore(CheckpointStore):
+    """A ``CheckpointStore`` that records the order of ``save`` / ``save_result``
+    calls so a test can assert the website stage's save-run-save_result sequence."""
+
+    def __init__(self, base_dir: Path, events: list[tuple[str, str]]) -> None:
+        super().__init__(base_dir)
+        self._events = events
+
+    def save(self, envelope: HandoffEnvelope) -> Path:
+        self._events.append(("save", envelope.payload_type))
+        return super().save(envelope)
+
+    def save_result(self, run_id: str, name: str, model: BaseModel) -> Path:
+        self._events.append(("save_result", name))
+        return super().save_result(run_id, name, model)
+
+
+class TestWebsiteSaveOrdering:
+    """The website stage saves the ``RepoTarget`` envelope BEFORE the runner
+    executes and persists the terminal ``RepoProjectResult`` AFTER it.
+
+    Existing website tests assert only end-state existence (both files present at
+    the end), so a reshuffled website block (runner-first) would pass yet violate
+    "operator config is written before the run". This spies the call sequence.
+    """
+
+    def test_repo_target_saved_before_run_and_result_saved_after(
+        self, tmp_path: Path
+    ) -> None:
+        intake = _load_intake()
+        data = _load_data()
+        agent = WebsiteAgent(FakeRepoClient(), ci_platform="gitlab")
+        events: list[tuple[str, str]] = []
+        store = _OrderRecordingStore(tmp_path / "checkpoints", events)
+        config = _make_config(tmp_path, run_id="run_save_order")
+
+        def recording_website(
+            i: IntakeReport, d: DataReport, t: RepoTarget
+        ) -> RepoProjectResult:
+            events.append(("run", "website"))
+            return agent.run(i, d, t)
+
+        result = run_pipeline(
+            config,
+            intake_runner=lambda: intake,
+            data_runner=lambda _req: data,
+            website_runner=recording_website,
+            store=store,
+        )
+
+        assert result.status == "COMPLETE"
+        i_target = events.index(("save", "RepoTarget"))
+        i_run = events.index(("run", "website"))
+        i_result = events.index(("save_result", "RepoProjectResult"))
+        assert i_target < i_run < i_result, events
+
+
+class TestResumePointEchoedOnEveryReturnPath:
+    """``result.resume_point`` echoes ``config.resume_from`` on ALL FOUR return
+    paths — COMPLETE (``:391``) and each ``FAILED_AT_*`` (``:274/:341/:381``).
+
+    O1-3 collapses these four returns into one ``_halt`` helper; the echo (which
+    the resume matrix depends on) must survive on every path. The COMPLETE and
+    FAILED_AT_DATA echoes are exercised elsewhere; pinned here as one explicit,
+    per-path set so the refactor cannot drop one silently.
+    """
+
+    def test_complete_path_echoes_resume_point(self, tmp_path: Path) -> None:
+        intake = _load_intake()
+        data = _load_data()
+        agent = WebsiteAgent(FakeRepoClient(), ci_platform="gitlab")
+        config = _make_config(tmp_path, run_id="run_echo_complete")
+        result = run_pipeline(
+            config,
+            intake_runner=lambda: intake,
+            data_runner=lambda _req: data,
+            website_runner=agent.run,
+        )
+        assert result.status == "COMPLETE"
+        assert result.resume_point is None
+
+    def test_failed_at_intake_echoes_resume_point(self, tmp_path: Path) -> None:
+        config = _make_resume_config(
+            tmp_path, run_id="run_echo_intake", resume_from="intake"
+        )
+        result = run_pipeline(
+            config,
+            intake_runner=_draft_incomplete_intake,
+            data_runner=lambda _req: _load_data(),
+            website_runner=lambda _i, _d, _t: _failed_repo_project_result("n/a"),
+        )
+        assert result.status == "FAILED_AT_INTAKE"
+        assert result.resume_point == "intake"
+
+    def test_failed_at_data_echoes_resume_point(self, tmp_path: Path) -> None:
+        intake = _load_intake()
+        run_id = "run_echo_data"
+        pre_store = CheckpointStore(tmp_path / "checkpoints")
+        _seed_envelope(pre_store, run_id, "IntakeReport", intake)
+        request = intake_report_to_data_request(intake, run_id)
+        _seed_envelope(pre_store, run_id, "DataRequest", request, target="data")
+        config = _make_resume_config(tmp_path, run_id=run_id, resume_from="data")
+        result = run_pipeline(
+            config,
+            intake_runner=lambda: intake,
+            data_runner=lambda req: _incomplete_data_report(req),
+            website_runner=lambda _i, _d, _t: _failed_repo_project_result("n/a"),
+        )
+        assert result.status == "FAILED_AT_DATA"
+        assert result.resume_point == "data"
+
+    def test_failed_at_website_echoes_resume_point(self, tmp_path: Path) -> None:
+        intake = _load_intake()
+        data = _load_data()
+        run_id = "run_echo_website"
+        pre_store = CheckpointStore(tmp_path / "checkpoints")
+        _seed_envelope(pre_store, run_id, "IntakeReport", intake)
+        request = intake_report_to_data_request(intake, run_id)
+        _seed_envelope(pre_store, run_id, "DataRequest", request, target="data")
+        _seed_envelope(pre_store, run_id, "DataReport", data, target="website")
+        config = _make_resume_config(tmp_path, run_id=run_id, resume_from="website")
+        result = run_pipeline(
+            config,
+            intake_runner=lambda: intake,
+            data_runner=lambda _req: data,
+            website_runner=lambda _i, _d, _t: _failed_repo_project_result("boom"),
+        )
+        assert result.status == "FAILED_AT_WEBSITE"
+        assert result.resume_point == "website"

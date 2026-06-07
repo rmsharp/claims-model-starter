@@ -21,11 +21,12 @@ decide whether to re-run with a fresh ``run_id`` or investigate.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
+from model_project_constructor._vocab_guard import assert_vocab_parity
 from model_project_constructor.orchestrator.adapters import (
     intake_qa_pairs_to_inventory,
     intake_report_to_data_request,
@@ -63,6 +64,116 @@ ResumePoint = Literal[
     "website",
     "already_complete",
 ]
+
+TargetAgent = Literal["intake", "data", "website"]
+"""The envelope ``target_agent`` domain (== ``HandoffEnvelope.target_agent``)."""
+
+
+@dataclass(frozen=True)
+class Stage:
+    """Per-stage metadata — the single source of stage order (via ``STAGE_ORDER``).
+
+    Pure metadata only: **no callables**. The agent runners stay
+    :func:`run_pipeline` keyword arguments (the ``IntakeRunner`` / ``DataRunner``
+    / ``WebsiteRunner`` aliases above) because their closures capture per-run
+    state (``intake_report``, ``data_request``, ``config.repo_target``) that
+    cannot exist at module-import time. Keeping the record import-time
+    inspectable is the precondition for the drift guards below to derive
+    ``ResumePoint`` / ``PipelineStatus`` parity *without* executing a runner.
+    See ``docs/planning/o1-stage-driver-plan.md`` §6.1.
+
+    Introduced **dormant** in Phase O1-1 (no consumer); the resume gates and the
+    CLI banner are wired to it in O1-2, the decomposition helpers in O1-3.
+    """
+
+    name: ResumePoint
+    payload_type: str
+    target_agent: TargetAgent
+    has_runner: bool
+    halt_status: PipelineStatus | None
+    result_field: str
+    always_runs: bool = False
+    terminal_result: bool = False
+
+
+STAGE_ORDER: tuple[Stage, ...] = (
+    Stage(
+        "intake",
+        "IntakeReport",
+        "data",
+        has_runner=True,
+        halt_status="FAILED_AT_INTAKE",
+        result_field="intake_report",
+    ),
+    Stage(
+        "intake_to_data_adapter",
+        "DataRequest",
+        "data",
+        has_runner=False,
+        halt_status=None,
+        result_field="data_request",
+    ),
+    Stage(
+        "data",
+        "DataReport",
+        "website",
+        has_runner=True,
+        halt_status="FAILED_AT_DATA",
+        result_field="data_report",
+    ),
+    Stage(
+        "website",
+        "RepoTarget",
+        "website",
+        has_runner=True,
+        halt_status="FAILED_AT_WEBSITE",
+        result_field="project_result",
+        always_runs=True,
+        terminal_result=True,
+    ),
+)
+"""The ordered pipeline stages. Its sequence is the single source of stage
+order; the resume gates (O1-2), the CLI banner (O1-2), and the save/halt helpers
+(O1-3) all derive from it. The website stage is terminal and MUST be last
+(pinned by ``tests/orchestrator/test_stage_order.py``)."""
+
+STAGE_NAMES: tuple[ResumePoint, ...] = tuple(s.name for s in STAGE_ORDER)
+_STAGE_INDEX: dict[str, int] = {s.name: i for i, s in enumerate(STAGE_ORDER)}
+
+
+def _should_run(resume: ResumePoint | None, stage: Stage) -> bool:
+    """Return True iff ``stage`` must (re-)execute given ``resume``.
+
+    Replaces the three hand-written resume-membership gates in
+    :func:`run_pipeline` (the ``resume is None or resume == "intake"``,
+    ``resume in (None, "intake", "intake_to_data_adapter")``, and
+    ``... "data")`` conditionals): a stage runs when the resume point is at or
+    before it in ``STAGE_ORDER``; ``always_runs`` (the terminal website stage)
+    is unconditional. ``resume == "already_complete"`` never reaches this gate —
+    :func:`run_pipeline` rejects it up front — so ``_STAGE_INDEX`` need not
+    contain it. Dormant until O1-2.
+    """
+
+    return (
+        stage.always_runs
+        or resume is None
+        or _STAGE_INDEX[resume] <= _STAGE_INDEX[stage.name]
+    )
+
+
+def skipped_stages(resume: ResumePoint | None) -> list[str]:
+    """Return the stage names LOADED (not re-executed) for ``resume``.
+
+    Replaces ``_SKIPPED_STAGES_BY_RESUME_POINT``
+    (``scripts/run_pipeline.py:317``); the CLI banner consumes it in O1-2.
+    ``already_complete`` is not a stage — the CLI intercepts it before the
+    banner — so it returns all four names (the dead-but-present CLI row).
+    Dormant until O1-2.
+    """
+
+    if resume == "already_complete":
+        return [stage.name for stage in STAGE_ORDER]
+    return [stage.name for stage in STAGE_ORDER if not _should_run(resume, stage)]
 
 
 class ResumeInconsistent(RuntimeError):
@@ -219,6 +330,53 @@ class PipelineResult:
         if self.project_result is None:
             return None
         return self.project_result.project_url or None
+
+
+# --- Import-time drift guards (o1-stage-driver-plan.md §6.3) -----------------
+# ``STAGE_ORDER`` is the runtime single source of stage order + per-stage status
+# metadata; the hand-written ``ResumePoint`` / ``PipelineStatus`` Literals (which
+# mypy can read but cannot derive from a runtime tuple) are pinned to it by these
+# checks so the build fails loudly the moment they drift. A real ``raise`` (not a
+# bare ``assert``) is used so the guards survive ``python -O`` — see
+# ``_vocab_guard`` and ``tests/orchestrator/test_stage_order.py`` (non-vacuous
+# RED proofs).
+
+# Guard 1 — ResumePoint == the stage names + the non-stage ``already_complete``
+# sentinel. ``assert_vocab_parity`` does an EXACT set match, so the sentinel
+# (a CLI-layer signal, not a STAGE_ORDER row) MUST be added explicitly; passing
+# ``set(STAGE_NAMES)`` alone would (correctly) fail import.
+assert_vocab_parity(
+    set(STAGE_NAMES) | {"already_complete"},
+    ResumePoint,
+    name="STAGE_ORDER",
+    reconcile_hint=(
+        "Reconcile STAGE_ORDER with ResumePoint in pipeline.py "
+        "(ResumePoint = stage names + 'already_complete')."
+    ),
+)
+
+# Guard 2 — PipelineStatus == COMPLETE + each stage's halt_status. Closes the
+# §3.6 metrics gap: a misspelled halt_status would otherwise leak a non-literal
+# status into a ``record_run`` metrics key silently.
+assert_vocab_parity(
+    {"COMPLETE"} | {s.halt_status for s in STAGE_ORDER if s.halt_status is not None},
+    PipelineStatus,
+    name="STAGE_ORDER.halt_status",
+    reconcile_hint="Reconcile STAGE_ORDER.halt_status with PipelineStatus in pipeline.py.",
+)
+
+# Guard 3 — every result_field names a real PipelineResult attribute. A SUBSET
+# check, so it cannot use ``assert_vocab_parity`` (exact-match only); a raise
+# (not a bare assert) keeps it live under ``python -O``. Closes the §3.6
+# wrong-field gap.
+_missing_result_fields = {s.result_field for s in STAGE_ORDER} - {
+    f.name for f in fields(PipelineResult)
+}
+if _missing_result_fields:
+    raise AssertionError(
+        "STAGE_ORDER.result_field names attributes absent from PipelineResult: "
+        f"{sorted(_missing_result_fields)}"
+    )
 
 
 def run_pipeline(
@@ -414,6 +572,7 @@ def _envelope(
 
 
 __all__ = [
+    "STAGE_ORDER",
     "DataRunner",
     "IntakeRunner",
     "PipelineConfig",
@@ -421,7 +580,9 @@ __all__ = [
     "PipelineStatus",
     "ResumeInconsistent",
     "ResumePoint",
+    "Stage",
     "WebsiteRunner",
     "determine_resume_point",
     "run_pipeline",
+    "skipped_stages",
 ]

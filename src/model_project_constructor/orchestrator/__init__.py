@@ -39,15 +39,18 @@ from model_project_constructor.orchestrator.metrics import (
     make_measured_runner,
 )
 from model_project_constructor.orchestrator.pipeline import (
+    STAGE_ORDER,
     DataRunner,
     IntakeRunner,
     PipelineConfig,
     PipelineResult,
     ResumeInconsistent,
     ResumePoint,
+    Stage,
     WebsiteRunner,
     determine_resume_point,
     run_pipeline,
+    skipped_stages,
 )
 
 __all__ = [
@@ -55,6 +58,7 @@ __all__ = [
     "EVENT_AGENT_ERROR",
     "EVENT_AGENT_START",
     "ORCHESTRATOR_LOGGER_NAME",
+    "STAGE_ORDER",
     "CheckpointStore",
     "DataRunner",
     "IntakeRunner",
@@ -66,6 +70,7 @@ __all__ = [
     "PipelineResult",
     "ResumeInconsistent",
     "ResumePoint",
+    "Stage",
     "WebsiteRunner",
     "determine_resume_point",
     "get_logger",
@@ -74,4 +79,5 @@ __all__ = [
     "make_logged_runner",
     "make_measured_runner",
     "run_pipeline",
+    "skipped_stages",
 ]
