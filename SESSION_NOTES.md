@@ -6,6 +6,66 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 125 — operator-directed: **Land the methodology PR #25/#27 remediation branch** — fast-forward-merge `chore/methodology-pr2527-remediation` (2 docs-only commits, clean linear FF over `master`) onto `master`; do **NOT** push (operator chose local-only). Methodology-remediation / git-ops workstream — a single "1-and-done" deliverable. (**COMPLETE** — `master` fast-forwarded `2753fac → 90540ea`; branch fully merged [tips byte-identical]; `PROJECT_LEARNINGS.md` + the remediation now on `master`; no push, no wiki publish.)
+
+**Started / Completed:** 2026-06-07.
+
+**Status:** **COMPLETE.** Landing strategy confirmed with the operator via `AskUserQuestion` (Learning #40): **fast-forward merge**, **no push** (keep local). Method: the Phase-1B stub was an uncommitted `SESSION_NOTES.md` edit, and `SESSION_NOTES.md` **diverges** between `master` (`2753fac`, S123 notes) and the branch tip (`90540ea`, S124 notes) — a naive `git checkout master` would have been blocked by the local mod. So I `git stash push SESSION_NOTES.md` → `git checkout master` → `git merge --ff-only chore/methodology-pr2527-remediation` (`Updating 2753fac..90540ea`, 6 files, +280/−48; `PROJECT_LEARNINGS.md` + `docs/planning/methodology-pr2527-remediation-mpc.md` created) → `git stash pop` (clean apply — after the FF the stub's base matched `master`). **Verification:** `master` = `90540ea`, **8 ahead of origin**; `PROJECT_LEARNINGS.md` present on `master` (`git cat-file -e`); `git branch --merged master` lists `chore/...` (fully merged); branch tip == master tip == `90540ea` byte-identical. **No push** (operator's choice — `master` stays 8 ahead of origin locally). **No `docs/wiki/` in the landed diff** → no wiki auto-publish. **Branch left in place** (fully merged, safe to delete anytime — handed to S126 as trivial cleanup, not auto-done per Learning #43). **Scope:** docs/git-ops only — zero source/tests touched (baseline pytest 759/759 @ 97.18% untouched by definition). Close-out commit on `master` pending.
+
+### Session 124 Handoff Evaluation (by Session 125)
+
+**Score: 9/10.** S124's Phase-3D handoff **pre-named this exact deliverable as item #1** ("Land the remediation branch") with the precise mechanism and every count I needed: "**NOT merged and NOT pushed**", "`chore/methodology-pr2527-remediation` is **2 commits ahead of master** (`ae67b9d` + close-out)", "`master` itself is still **6 ahead of origin**", and the decision framing "merge to master / open a PR / push." Near-zero discovery.
+
+- **What helped:** (a) item #1 pre-named the deliverable + branch name verbatim. (b) **Every push-state count reproduced EXACTLY** — branch 2 ahead of master, master 6 ahead of origin (both confirmed at my Phase 0) — the series' recurring accuracy, **tenth session running**. (c) consideration #4 ("Nothing touched `docs/wiki/` → no wiki auto-publish") was exactly right — I confirmed the landed diff has no wiki files, so no publish hook concern. (d) the "operator's call: merge/PR/push" framing correctly flagged this as a decision to surface, not assume — drove my `AskUserQuestion`.
+- **What was missing:** essentially nothing for a deliverable this small. The handoff didn't explicitly state "it's a clean fast-forward" — but that's trivially verifiable (`git merge-base --is-ancestor`) and I confirmed it in one command. No real gap.
+- **What was wrong:** **nothing.** Every count (2 ahead, 6 ahead, no wiki) reproduced.
+- **ROI:** very high for the discovery it saved (pre-named deliverable + exact counts), though the deliverable itself was a small mechanical merge.
+
+### What Session 125 Did
+
+**Deliverable:** Land the methodology PR #25/#27 remediation branch onto `master`. **COMPLETE.** Git-ops session; the landing is the FF-merge `2753fac → 90540ea`, plus this close-out commit on `master`.
+
+- **Orientation + claim (Phase 0/1B):** read SAFEGUARDS full → SESSION_NOTES top → SESSION_RUNNER (full) → ran the shared dashboard (MPC **96/100**, medium, active) → git (on `chore/...`, clean; branch 2 ahead of master; master 6 ahead of origin; ghost-check clean — HEAD `90540ea` = S124 close-out, no gaps) → reported, waited. On "Land the remediation branch" wrote the Phase-1B stub before any git action (Learning #84).
+- **Pre-flight facts (before acting):** `git merge-base --is-ancestor master HEAD` → clean FF; the 2 branch commits are docs-only (no `docs/wiki/`); remote is GitHub `rmsharp/claims-model-starter`, `origin/master` exists, `master` 6 behind it.
+- **Strategy confirmation (Learning #40):** surfaced the two operator-only decisions via `AskUserQuestion` — (1) **FF-merge** (vs merge-commit / GitHub PR), (2) **no push** (vs push 8 commits, outward-facing). Operator chose FF + local-only.
+- **Execution:** stash stub → `checkout master` → `merge --ff-only` → `stash pop` (the stash dance was required because `SESSION_NOTES.md` diverges between master and branch tip — see Candidate #91).
+- **Verification:** master = `90540ea` / 8 ahead of origin; `PROJECT_LEARNINGS.md` on master; `git branch --merged` confirms the branch fully merged; tips byte-identical.
+- **Commit discipline:** single close-out commit on `master` (no separate deliverable commit — the "deliverable" IS the FF-merge of already-committed S124 work; nothing new to commit beyond these notes). No wiki publish.
+
+### Phase 3B: Self-assess — Session 125 — 9/10
+
+- **The +:** treated **push as outward-facing and confirmed before acting** (`AskUserQuestion`, never assumed) — exactly the SAFEGUARDS posture. **Anticipated the working-tree trap** — recognized that `SESSION_NOTES.md` diverges between master and the branch tip, so a naive `checkout master` would be blocked by the stub; handled it cleanly with `stash → merge → pop` (the pop applies because post-FF the base matches), no data loss, no `--force` anything. Used **`--ff-only`** to keep linear history (no spurious merge commit). Verified the landed state three ways (file present, `--merged`, tip equality). Held scope strictly to the one deliverable — did **not** auto-do the over-ripe learning promotions or the branch deletion (Learning #43), which are separate deliverables.
+- **The −:** minor — this was a small mechanical deliverable, so there is little to stress-test; the rigor was in the safety of the git moves, not depth. No code/tests involved, so no mutation/adversarial pass was warranted (correctly omitted, not skipped).
+- **Quality bar vs previous sessions:** appropriate for a git-ops landing. Matches the series' discipline (orient → claim → confirm operator-only decisions → safe execution → verified → clean close-out) right-sized to a 2-commit FF-merge.
+
+### Phase 3C: Learnings — Session 125
+
+**Candidate #91 — 1st instance (when landing a branch via `checkout`+`merge` while holding an uncommitted edit to a file that DIFFERS between the two branches, `stash` the edit first, merge, then `stash pop`).** A live Phase-1B stub in `SESSION_NOTES.md` blocks `git checkout master` whenever `SESSION_NOTES.md` diverges between branches (it nearly always does — each session rewrites the top). Stashing only that file, doing the FF-merge, then `stash pop` works because **after the fast-forward the stash's base matches the new `master`**, so the pop is a clean apply. **When to apply:** any session whose deliverable is "land/merge a branch" while it already holds an uncommitted housekeeping edit (the stub). Now at **1 instance**.
+
+**⚠ Learnings home (reminder, unchanged from S124):** project learnings + candidate PROMOTIONS go in **`PROJECT_LEARNINGS.md`** (append row #47+), NOT the `SESSION_RUNNER.md` table (canonical framework rows only). No promotions done this session (housekeeping is its own deliverable — Learning #43).
+
+**Applied:** #10 (oriented + reported + waited despite "go", then acted on the direct task); #84 (inline-at-top archival, this close-out — **9th instance**); #40 (surfaced the operator-only merge-method + push decisions via `AskUserQuestion` rather than assuming); #43 (deferred the over-ripe learning promotions + the merged-branch deletion as out-of-scope — did NOT auto-fix).
+
+### Phase 3D: Handoff to Session 126
+
+**The methodology PR #25/#27 remediation is now LANDED on `master` (`90540ea`).** `master` fast-forwarded over the 2-commit `chore/methodology-pr2527-remediation` branch; `PROJECT_LEARNINGS.md` (46 rows) and the canonical-restore changes are on `master`. **`master` is 8 ahead of `origin/master` — NOT pushed** (operator chose local-only). The `chore/...` branch still exists, fully merged (tip == master tip), **safe to delete anytime**.
+
+**What's next (operator's call):**
+1. **(Trivial cleanup)** Delete the now-merged `chore/methodology-pr2527-remediation` local branch — `git branch -d chore/methodology-pr2527-remediation` (fully merged into `master`, so `-d` is safe, no `-D` needed). Left in place by S125 (not asked).
+2. **Back to the O-series.** Implement **O4 Phase O4-1** — single-source the 6 intake producer-prose enumerations (`agents/intake/anthropic_client.py`) via `get_args` derivation, per `docs/planning/o4-controlled-vocabulary-plan.md`. **Resolve §6.5 Q1–Q5 via `AskUserQuestion` first** (Learning #40); **re-grep the plan's §13 anchors at Phase 0** (Learning #88 — the prompt-prose line numbers shift the moment the file is edited). Then **O4-2** (data-agent prose in-wheel + the `"unknown"` consumer-fallback hygiene). ONE phase per session (FM #18).
+3. **Housekeeping (over-ripe, a dedicated session — `PROJECT_LEARNINGS.md` is the target now):** PROMOTE **#86** (6×), **#84** (now **9×**), **#77** (3×) into `PROJECT_LEARNINGS.md` as rows #47+; **#88/#89 at 2** (promotion-watch); **#90 at 1**, **#91 at 1** (new); reconcile Learnings #34–#42.
+4. **E4** (LLM-provider factory) + **GitHub Release v0.2.0** (outward-facing, deferred).
+
+**Important considerations for Session 126:**
+1. **Baseline unchanged:** S125 was docs/git-ops only — zero source/tests touched, so pytest **759/759 @ 97.18%**, mypy 0/62, ruff clean, decoupling 2/2 all stand by definition. **⚠ Use `.venv/bin/python` (3.13.5), NOT bare `python` (3.10 → `UTC` ImportError).**
+2. **Branch/push state:** you will likely be **on `master`** (S125 ended there). `master` is **8 ahead of origin + this S125 close-out = 9 ahead** at your Phase 0 — verify `git rev-list --count origin/master..master`. The `chore/...` branch is fully merged (delete or ignore). **If starting O4, branch off `master` fresh.** S125 did **not** push.
+3. **⚠ THE LEARNINGS HOME MOVED (now landed on master):** new project learnings + all candidate PROMOTIONS go in **`PROJECT_LEARNINGS.md`**, NOT `SESSION_RUNNER.md`'s table (now canonical framework rows only). The `CLAUDE.md` Adaptations receptacle + the plain-link pointer route there.
+4. **The committed brief (`docs/planning/methodology-pr2527-remediation-mpc.md`, now on master) contains the "Sessions 92–110" error** that S124 corrected to "9–110" in `CLAUDE.md` — the brief is a frozen historical artifact; the corrected `CLAUDE.md` is authoritative. Do **not** "fix" the brief.
+5. **Candidate numbering:** next = **#92** (all-time max now 91). **#86 at 6** (over-ripe), **#84 at 9**, **#77 at 3**, **#88 at 2**, **#89 at 2**, **#90 at 1**, **#91 at 1**.
+6. **Standing options (out-of-scope finds, Learning #43 — DO NOT auto-fix):** (a) delete the merged `chore/...` branch (item #1); (b) `orchestrator/adapters.py:64` `if model_type == "time_series"` magic-string branch (a future micro, plan §11); (c) migrate `governance_templates.py`'s local `_assert_vocab_parity` to the shared `_vocab_guard`; (d) the prompt's misleading `measurement_unit` "one of …" wording (cosmetic); (e) untracked `.claude/` not in `.gitignore`; (f) the housekeeping promotions (item #3). **Effort:** `ultracode` (repo default).
+
+**(Session 124 — COMPLETE, archived below.)**
+
 **Task:** Session 124 — operator-directed: **methodology PR #25 + #27 remediation** — execute `docs/planning/methodology-pr2527-remediation-mpc.md`. Migrate the 46-row `SESSION_RUNNER.md` "Learnings (added by sessions)" table → a new project-owned `PROJECT_LEARNINGS.md`; restore canonical's 6 framework seed rows + new caption (C2) + 3C body (C1) in `SESSION_RUNNER.md`; add the `## Project-Specific Methodology Adaptations` receptacle to `CLAUDE.md` with a plain-link pointer (NOT an `@`-import); apply C3 to `HOW_TO_USE.md`. Methodology-remediation workstream — a single "1-and-done" deliverable (Asset D / `bin/sync` N/A for mpc). Branch `chore/methodology-pr2527-remediation` off `master`. **ONE deliverable.** (**COMPLETE** — deliverable commit `ae67b9d`; 46-row table → `PROJECT_LEARNINGS.md` byte-for-byte, canonical's 6 seed rows + C2 caption + C1 3C body restored to `SESSION_RUNNER.md`, `CLAUDE.md` receptacle + plain-link pointer added, C3 applied to `HOW_TO_USE.md`; C1/C2/C3 + 6 seed rows byte-verified vs canonical, 46 rows byte-verified vs HEAD, then 3 read-only adversarial `Explore` lenses all PASS + HEAD-diff zero-write backstop.)
 
 **Started / Completed:** 2026-06-07.
