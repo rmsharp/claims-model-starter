@@ -8,12 +8,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, get_args
 
 import pytest
 from anthropic.types import TextBlock
 
+from model_project_constructor._vocab_guard import join_members
 from model_project_constructor.agents.intake.anthropic_client import (
+    _DRAFT_REPORT_INSTRUCTIONS,
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODEL,
     SYSTEM_GOVERNANCE,
@@ -25,6 +27,12 @@ from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
     IntakeLLMError,
     InterviewContext,
+)
+from model_project_constructor.schemas.v1.common import CycleTime, ModelType, RiskTier
+from model_project_constructor.schemas.v1.intake import (
+    Confidence,
+    CounterfactualDesign,
+    ReviewCadence,
 )
 
 
@@ -433,6 +441,49 @@ def test_system_governance_excludes_statistical_terms_note() -> None:
     """
 
     assert "docs/style/statistical_terms.md" not in SYSTEM_GOVERNANCE
+
+
+# --- controlled-vocabulary derivation pins (Overhaul O4-1) ----------------
+
+# Each intake prompt enumeration must DERIVE from its schema ``Literal`` via
+# ``join_members`` (so the producer prose cannot drift from the validator).
+# These pins prove every Literal member appears in the prompt and that the
+# full derived enumeration is present verbatim — a future hardcode that drops
+# or reorders a member fails this build. The separator matters: ``confidence``
+# joins with "/" (low/medium/high), the rest with ", ".
+_VOCAB_PROMPT_PINS = [
+    pytest.param(CycleTime, ", ", SYSTEM_GOVERNANCE, id="cycle_time"),
+    pytest.param(RiskTier, ", ", SYSTEM_GOVERNANCE, id="risk_tier"),
+    pytest.param(ModelType, ", ", _DRAFT_REPORT_INSTRUCTIONS, id="model_type"),
+    pytest.param(Confidence, "/", _DRAFT_REPORT_INSTRUCTIONS, id="confidence"),
+    pytest.param(
+        CounterfactualDesign,
+        ", ",
+        _DRAFT_REPORT_INSTRUCTIONS,
+        id="counterfactual_design",
+    ),
+    pytest.param(ReviewCadence, ", ", _DRAFT_REPORT_INSTRUCTIONS, id="review_cadence"),
+]
+
+
+@pytest.mark.parametrize(("literal", "sep", "prompt"), _VOCAB_PROMPT_PINS)
+def test_prompt_enumerates_all_literal_members(
+    literal: Any, sep: str, prompt: str
+) -> None:
+    members = get_args(literal)
+    assert members, "Literal under test has no members (test would be vacuous)"
+    # The full derived enumeration appears verbatim. This is the discriminating
+    # assertion: dropping or reordering a member in the prompt (or re-hardcoding
+    # a drifted list) makes this contiguous substring absent → RED. (A bare
+    # per-member ``in`` check is vacuous for "low", which also occurs inside
+    # "annual_impact_usd_low".)
+    enumeration = join_members(literal, sep=sep)
+    assert enumeration in prompt, (
+        f"prompt does not contain the derived enumeration {enumeration!r}"
+    )
+    # Defense in depth: every member is individually present.
+    for member in members:
+        assert str(member) in prompt, f"member {member!r} missing from prompt"
 
 
 # --- default construction path (monkeypatch on anthropic.Anthropic) ------

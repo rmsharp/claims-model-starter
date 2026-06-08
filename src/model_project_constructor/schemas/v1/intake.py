@@ -14,6 +14,25 @@ from model_project_constructor.schemas.v1.common import (
     StrictBase,
 )
 
+# Named aliases for the value-section vocabularies. These were inline
+# ``Literal``s on the fields below; naming them lets the intake prompt DERIVE
+# its enumerations from the same ``Literal`` the validator uses
+# (``join_members`` — Overhaul O4 producer single-sourcing) instead of
+# hand-listing the members in prose. Kept here in ``intake.py`` (deliberately
+# NOT promoted to ``common.py``) — each is used by exactly this schema family,
+# and single-sourcing is independent of where the ``Literal`` lives.
+Confidence = Literal["low", "medium", "high"]
+CounterfactualDesign = Literal[
+    "champion_challenger",
+    "ab_test",
+    "geographic_split",
+    "historical_baseline_with_detrending",
+    "synthetic_control",
+    "regression_discontinuity",
+    "none_declared",
+]
+ReviewCadence = Literal["weekly", "monthly", "quarterly", "ad_hoc"]
+
 
 class ModelSolution(StrictBase):
     target_variable: str | None
@@ -28,7 +47,7 @@ class EstimatedValue(StrictBase):
     narrative: str
     annual_impact_usd_low: float | None
     annual_impact_usd_high: float | None
-    confidence: Literal["low", "medium", "high"]
+    confidence: Confidence
     assumptions: list[str]
 
     cost_of_inaction_narrative: str | None = None
@@ -45,21 +64,13 @@ class ValueMeasurementPlan(StrictBase):
     baseline_metric_definition: str | None = None
     baseline_measurement_window: str | None = None
 
-    counterfactual_design: Literal[
-        "champion_challenger",
-        "ab_test",
-        "geographic_split",
-        "historical_baseline_with_detrending",
-        "synthetic_control",
-        "regression_discontinuity",
-        "none_declared",
-    ] | None = None
+    counterfactual_design: CounterfactualDesign | None = None
     counterfactual_rationale: str | None = None
     attribution_method_narrative: str | None = None
 
     evaluation_horizon_months: int | None = None
     logging_requirements: list[str] = Field(default_factory=list)
-    review_cadence: Literal["weekly", "monthly", "quarterly", "ad_hoc"] | None = None
+    review_cadence: ReviewCadence | None = None
     success_criteria: list[str] = Field(default_factory=list)
     decision_rights: str | None = None
 

@@ -52,4 +52,27 @@ def assert_vocab_parity(
         )
 
 
-__all__ = ["assert_vocab_parity"]
+def literal_members(literal: Any) -> tuple[str, ...]:
+    """The members of a ``Literal``, in definition order (a thin, typed ``get_args``).
+
+    ``get_args`` returns a ``Literal``'s members in the order they were written,
+    which is the same order the prompt prose lists them — so a join of this is
+    byte-identical to the hand-written enumeration it replaces.
+    """
+
+    return tuple(str(m) for m in get_args(literal))
+
+
+def join_members(literal: Any, *, sep: str = ", ") -> str:
+    """Comma-joined ``Literal`` members for prompt prose, e.g. ``'a, b, c'``.
+
+    Lets an LLM prompt *derive* its enumeration from the canonical ``Literal``
+    instead of hand-listing the members, so the producer prose cannot drift from
+    the validator (Overhaul O4). ``sep`` overrides the separator for the rare
+    prompt that joins differently (e.g. ``low/medium/high``).
+    """
+
+    return sep.join(literal_members(literal))
+
+
+__all__ = ["assert_vocab_parity", "join_members", "literal_members"]

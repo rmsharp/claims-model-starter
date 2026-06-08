@@ -20,6 +20,7 @@ from typing import Any
 
 from anthropic.types import TextBlock
 
+from model_project_constructor._vocab_guard import join_members
 from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
     GovernanceClassification,
@@ -27,6 +28,12 @@ from model_project_constructor.agents.intake.protocol import (
     IntakeLLMError,
     InterviewContext,
     NextQuestionResult,
+)
+from model_project_constructor.schemas.v1.common import CycleTime, ModelType, RiskTier
+from model_project_constructor.schemas.v1.intake import (
+    Confidence,
+    CounterfactualDesign,
+    ReviewCadence,
 )
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -120,11 +127,53 @@ GOVERNANCE_FRAMEWORKS: tuple[str, ...] = (
 
 SYSTEM_GOVERNANCE = (
     "You classify model projects against an internal governance matrix. "
-    "cycle_time ∈ {strategic, tactical, operational, continuous}. "
-    "risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. "
+    f"cycle_time ∈ {{{join_members(CycleTime)}}}. "
+    f"risk_tier ∈ {{{join_members(RiskTier)}}}. "
     "Regulatory frameworks include "
     + ", ".join(GOVERNANCE_FRAMEWORKS)
     + ". Be conservative: if in doubt, pick the stricter tier."
+)
+
+# Static JSON-shape instructions for ``draft_report``. Pulled out of the method
+# into a module constant so (a) the controlled-vocabulary enumerations
+# (model_type, confidence, counterfactual_design, review_cadence) DERIVE from
+# their schema ``Literal``s via ``join_members`` instead of being hand-listed in
+# prose (Overhaul O4 producer single-sourcing), and (b) a member-presence test
+# can pin the derived prose. Each enumeration keeps its own separator and
+# decoration: ``model_type`` uses ", " inside "[one of …]"; ``confidence`` uses
+# "/" (low/medium/high); the two Optional fields keep the literal ", or null]"
+# framing. ``join_members`` reproduces the members in definition order, so the
+# rendered text is byte-identical to the previous hand-written prose.
+_DRAFT_REPORT_INSTRUCTIONS = (
+    "Draft the intake document. Return a JSON object with keys: "
+    '"business_problem" (prose), "proposed_solution" (prose), '
+    '"model_solution" (object with keys target_variable [str|null], '
+    "target_definition, candidate_features [list of str], "
+    f"model_type [one of {join_members(ModelType)}], "
+    "evaluation_metrics [list of str], is_supervised [bool]), "
+    '"estimated_value" (object with keys narrative, '
+    "annual_impact_usd_low [number|null], annual_impact_usd_high "
+    f"[number|null], confidence [one of {join_members(Confidence, sep='/')}], "
+    "assumptions [list of str], cost_of_inaction_narrative "
+    "[str|null], annual_cost_of_inaction_usd_low [number|null], "
+    "annual_cost_of_inaction_usd_high [number|null], "
+    "implementation_cost_band_usd_low [number|null], "
+    "implementation_cost_band_usd_high [number|null], "
+    "payback_months [int|null], value_drivers [list of str]), "
+    '"value_measurement_plan" (object with keys '
+    "baseline_metric_name [str|null], "
+    "baseline_metric_definition [str|null — formula or "
+    "SQL-derivable spec], baseline_measurement_window "
+    '[str|null e.g. "trailing 12 months"], counterfactual_design '
+    f"[one of {join_members(CounterfactualDesign)}, or null], "
+    "counterfactual_rationale [str|null], "
+    "attribution_method_narrative [str|null], "
+    "evaluation_horizon_months [int|null], logging_requirements "
+    f"[list of str], review_cadence [one of {join_members(ReviewCadence)}, "
+    "or null], success_criteria [list of "
+    "str], decision_rights [str|null]), "
+    '"missing_fields" (list of str — any required section you '
+    "could not draft). Return ONLY the JSON object."
 )
 
 
@@ -175,39 +224,7 @@ class AnthropicLLMClient(IntakeLLMClient):
             f"Domain: {context.domain}\n"
             f"Initial problem statement (optional): {context.initial_problem}\n\n"
             f"Conversation:\n{_format_qa(context.qa_pairs)}\n\n"
-            "Draft the intake document. Return a JSON object with keys: "
-            '"business_problem" (prose), "proposed_solution" (prose), '
-            '"model_solution" (object with keys target_variable [str|null], '
-            "target_definition, candidate_features [list of str], "
-            "model_type [one of supervised_classification, "
-            "supervised_regression, unsupervised_clustering, "
-            "unsupervised_anomaly, time_series, reinforcement, other], "
-            "evaluation_metrics [list of str], is_supervised [bool]), "
-            '"estimated_value" (object with keys narrative, '
-            "annual_impact_usd_low [number|null], annual_impact_usd_high "
-            "[number|null], confidence [one of low/medium/high], "
-            "assumptions [list of str], cost_of_inaction_narrative "
-            "[str|null], annual_cost_of_inaction_usd_low [number|null], "
-            "annual_cost_of_inaction_usd_high [number|null], "
-            "implementation_cost_band_usd_low [number|null], "
-            "implementation_cost_band_usd_high [number|null], "
-            "payback_months [int|null], value_drivers [list of str]), "
-            '"value_measurement_plan" (object with keys '
-            "baseline_metric_name [str|null], "
-            "baseline_metric_definition [str|null — formula or "
-            "SQL-derivable spec], baseline_measurement_window "
-            '[str|null e.g. "trailing 12 months"], counterfactual_design '
-            "[one of champion_challenger, ab_test, geographic_split, "
-            "historical_baseline_with_detrending, synthetic_control, "
-            "regression_discontinuity, none_declared, or null], "
-            "counterfactual_rationale [str|null], "
-            "attribution_method_narrative [str|null], "
-            "evaluation_horizon_months [int|null], logging_requirements "
-            "[list of str], review_cadence [one of weekly, monthly, "
-            "quarterly, ad_hoc, or null], success_criteria [list of "
-            "str], decision_rights [str|null]), "
-            '"missing_fields" (list of str — any required section you '
-            "could not draft). Return ONLY the JSON object."
+            + _DRAFT_REPORT_INSTRUCTIONS
         )
         parsed = self._call_json(SYSTEM_INTERVIEWER, user)
         if not isinstance(parsed, dict):
