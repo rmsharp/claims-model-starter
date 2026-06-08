@@ -6,6 +6,63 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 126 — operator-directed: **Delete the now-merged `chore/methodology-pr2527-remediation` local branch** (`git branch -d` — safe, fully merged into `master`). Methodology / git-ops cleanup — a single "1-and-done" deliverable. (**COMPLETE** — `git branch -d` deleted the branch [was `90540ea`]; `master` is now the only local branch; tip `90540ea` remains reachable as an ancestor of `master`, so zero history loss.)
+
+**Started / Completed:** 2026-06-08.
+
+**Status:** **COMPLETE.** Verified the branch fully merged THREE ways before deletion — `git merge-base --is-ancestor chore/... master` (exit 0 = ancestor), `git branch --merged master` (listed it), and `git rev-parse` (tip == `90540ea`). Then `git branch -d` (the merge-safe form — it *refuses* to delete an unmerged branch; no `-D` force needed). Result: `Deleted branch chore/methodology-pr2527-remediation (was 90540ea)`, exit 0; only `master` remains; `git rev-parse 90540ea^{commit}` still resolves (the S124 close-out is an ancestor of `master`, so the commit is permanently reachable — deletion removed only the redundant ref, not the history). **Scope:** git-ops only — no source/tests/docs-content touched (baseline pytest 759/759 @ 97.18% untouched by definition). Close-out commit on `master` pending.
+
+### Session 125 Handoff Evaluation (by Session 126)
+
+**Score: 10/10.** S125's Phase-3D handoff **pre-named this exact deliverable as item #1** with the literal command: "**(Trivial cleanup)** Delete the now-merged `chore/methodology-pr2527-remediation` local branch — `git branch -d chore/methodology-pr2527-remediation` (fully merged into `master`, so `-d` is safe, no `-D` needed). Left in place by S125 (not asked)." Nothing to discover — the deliverable, the command, the safety rationale, and *why it was deferred* were all stated.
+
+- **What helped:** (a) item #1 gave the verbatim command + the `-d`-not-`-D` safety reasoning, which I confirmed rather than re-derived. (b) **Push-state count reproduced EXACTLY** — consideration #2 said "master is 8 ahead of origin + this S125 close-out = 9 ahead … verify `git rev-list --count origin/master..master`"; I ran it → **9**, the series' recurring accuracy now **eleventh session running**. (c) standing-option (a) flagged this very branch deletion as a Learning-#43 deferred item, so I knew it was authorized-on-request, not auto-do. (d) baseline facts (docs/git-ops → pytest untouched, `.venv/bin/python` trap) all accurate.
+- **What was missing:** nothing. For a one-command deliverable the handoff was complete to the byte.
+- **What was wrong:** **nothing.** Every count (9 ahead, branch fully merged, tip `90540ea`) reproduced.
+- **ROI:** maximal for the size — the handoff turned a "decide what to clean up and how" into "run the pre-named, pre-justified command." First 10/10 of the recent run; earned because there was genuinely zero gap.
+
+### What Session 126 Did
+
+**Deliverable:** Delete the now-merged `chore/methodology-pr2527-remediation` local branch. **COMPLETE.** Git-ops session; the deletion is a ref removal (no working-tree change), so the only commit is this close-out on `master`.
+
+- **Orientation + claim (Phase 0/1B):** read SAFEGUARDS (full) → SESSION_NOTES top (S125 ACTIVE TASK + handoff) → SESSION_RUNNER (full) → `gh issue list` (empty — tracker not yet in use) → git (on `master`, clean; **9 ahead of origin**; `git branch --merged` showed `chore/...` fully merged; ghost-check clean — HEAD `414670c` = S125 close-out, no gaps) → ran the shared dashboard (MPC **96/100**, medium, active) → reported, waited. On the operator's "1" (= S125 handoff item #1) wrote the Phase-1B stub before any git action (Learning #84).
+- **Pre-deletion verification (SAFEGUARDS "verify before delete" applied to a branch):** confirmed merged three independent ways (`merge-base --is-ancestor` exit 0, `branch --merged`, `rev-parse` tip = `90540ea`) so `-d` could not be a surprise.
+- **Execution:** `git branch -d chore/methodology-pr2527-remediation` → `Deleted branch … (was 90540ea)`, exit 0. Verified only `master` remains and `90540ea` is still reachable on `master`'s history (no orphaning).
+- **Commit discipline:** single close-out commit on `master` — the deliverable (a branch ref deletion) produces no tracked-file change, so there is no separate "deliverable commit"; only these notes. No `docs/wiki/` touched → no wiki auto-publish. No push (consistent with the operator's local-only posture; not re-asked for a trivial cleanup, but flagged to S127).
+
+### Phase 3B: Self-assess — Session 126 — 9/10
+
+- **The +:** treated **delete-before-verify as the SAFEGUARDS gate it is** — verified the branch fully merged three ways *before* removing the ref, and chose `-d` (merge-safe, refuses unmerged) over `-D` (force) deliberately. Confirmed post-deletion that `90540ea` stays reachable (no history loss), so the action is fully reversible via `master`'s history even without the reflog. Held scope strictly to the one trivial deliverable — did **not** drift into the O4 work or the over-ripe learning promotions (Learning #43, FM #2 "keep going"). Reproduced and reported the exact push-state count.
+- **The −:** this is an intrinsically tiny mechanical deliverable, so there is little to stress-test; the rigor is in the safety of the ref deletion, not in depth. No code/tests involved → no mutation/adversarial pass warranted (correctly omitted, not skipped). Did not re-ask the operator about pushing (the local-only posture is established and a branch cleanup is not itself a push decision) — defensible, but noted for S127.
+- **Quality bar vs previous sessions:** appropriate for a git-ops cleanup — matches the series' discipline (orient → claim → verify → safe execution → verified → clean close-out), right-sized to a one-command deletion.
+
+### Phase 3C: Learnings — Session 126
+
+**No new candidate.** The deliverable was a single well-understood git operation; it surfaced no novel pattern worth coining. (The closest reusable nugget — "`git branch -d` is its own merge-safety gate; reach for `-D` only to force-delete an unmerged branch" — is standard git knowledge, not a project-specific learning.) Next candidate number remains **#92**.
+
+**⚠ Learnings home (reminder, unchanged from S124/S125):** project learnings + candidate PROMOTIONS go in **`PROJECT_LEARNINGS.md`** (append row #47+), NOT the `SESSION_RUNNER.md` table (canonical framework rows only). No promotions done this session (housekeeping is its own deliverable — Learning #43).
+
+**Applied:** #10 (oriented + reported + waited despite "go", then acted on the "1" direction); #84 (inline-at-top archival, this close-out — **10th instance**, now firmly over-ripe for promotion); #43 (held scope — did NOT auto-do the O4 work or the learning promotions); SAFEGUARDS "verify committed/reachable before deleting" applied to a branch ref rather than a file.
+
+### Phase 3D: Handoff to Session 127
+
+**The merged `chore/methodology-pr2527-remediation` branch is DELETED.** `master` (`414670c` + this close-out) is the only local branch. The methodology PR #25/#27 remediation remains landed on `master`; `PROJECT_LEARNINGS.md` (46 rows) is on `master`. **`master` is ahead of `origin/master` and NOT pushed** (operator's local-only choice — unchanged since S122).
+
+**What's next (operator's call):**
+1. **Back to the O-series (the primary thread).** Implement **O4 Phase O4-1** — single-source the 6 intake producer-prose enumerations (`agents/intake/anthropic_client.py`) via `get_args` derivation, per `docs/planning/o4-controlled-vocabulary-plan.md`. **Resolve §6.5 Q1–Q5 via `AskUserQuestion` first** (Learning #40); **re-grep the plan's §13 anchors at Phase 0** (Learning #88 — prompt-prose line numbers shift the moment the file is edited). Then **O4-2** (data-agent prose in-wheel + the `"unknown"` consumer-fallback hygiene). ONE phase per session (FM #18). **Branch off `master` fresh.**
+2. **Housekeeping (over-ripe, a dedicated session — `PROJECT_LEARNINGS.md` is the target):** PROMOTE **#84** (now **10×**), **#86** (6×), **#77** (3×) into `PROJECT_LEARNINGS.md` as rows #47+; **#88/#89 at 2** (promotion-watch); **#90 at 1**, **#91 at 1**; reconcile Learnings #34–#42.
+3. **E4** (LLM-provider factory) + **GitHub Release v0.2.0** (outward-facing, deferred).
+
+**Important considerations for Session 127:**
+1. **Baseline unchanged:** S126 was git-ops only (a branch ref deletion + these notes) — zero source/tests touched, so pytest **759/759 @ 97.18%**, mypy 0/62, ruff clean, decoupling 2/2 all stand by definition. **⚠ Use `.venv/bin/python` (3.13.5), NOT bare `python` (3.10 → `UTC` ImportError).**
+2. **Branch/push state:** you will be **on `master`** (the only branch — `chore/...` deleted this session). `master` was **9 ahead of origin** at S126's Phase 0; **+ this S126 close-out = 10 ahead** at your Phase 0 — verify `git rev-list --count origin/master..master`. S126 did **not** push. **If starting O4, branch off `master` fresh.**
+3. **⚠ THE LEARNINGS HOME (landed on master since S124):** new project learnings + all candidate PROMOTIONS go in **`PROJECT_LEARNINGS.md`**, NOT `SESSION_RUNNER.md`'s table (now canonical framework rows only). The `CLAUDE.md` Adaptations receptacle + the plain-link pointer route there.
+4. **The committed brief (`docs/planning/methodology-pr2527-remediation-mpc.md`, on master) contains the "Sessions 92–110" error** that S124 corrected to "9–110" in `CLAUDE.md` — the brief is a frozen historical artifact; the corrected `CLAUDE.md` is authoritative. Do **not** "fix" the brief.
+5. **Candidate numbering:** next = **#92** (all-time max still 91 — S126 coined none). **#84 at 10** (over-ripe), **#86 at 6** (over-ripe), **#77 at 3**, **#88 at 2**, **#89 at 2**, **#90 at 1**, **#91 at 1**.
+6. **Standing options (out-of-scope finds, Learning #43 — DO NOT auto-fix):** (a) `orchestrator/adapters.py:64` `if model_type == "time_series"` magic-string branch (a future micro, plan §11); (b) migrate `governance_templates.py`'s local `_assert_vocab_parity` to the shared `_vocab_guard`; (c) the prompt's misleading `measurement_unit` "one of …" wording (cosmetic); (d) untracked `.claude/` not in `.gitignore`; (e) the housekeeping promotions (item #2). **(The S125 standing option "delete the merged `chore/...` branch" is now DONE — removed from this list.)** **Effort:** `ultracode` (repo default).
+
+**(Session 125 — COMPLETE, archived below.)**
+
 **Task:** Session 125 — operator-directed: **Land the methodology PR #25/#27 remediation branch** — fast-forward-merge `chore/methodology-pr2527-remediation` (2 docs-only commits, clean linear FF over `master`) onto `master`; do **NOT** push (operator chose local-only). Methodology-remediation / git-ops workstream — a single "1-and-done" deliverable. (**COMPLETE** — `master` fast-forwarded `2753fac → 90540ea`; branch fully merged [tips byte-identical]; `PROJECT_LEARNINGS.md` + the remediation now on `master`; no push, no wiki publish.)
 
 **Started / Completed:** 2026-06-07.
