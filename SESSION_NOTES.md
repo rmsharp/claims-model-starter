@@ -6,6 +6,66 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 131 — operator-directed (S130 handoff item #1): **Housekeeping — promote 5 over-threshold learning candidates into `PROJECT_LEARNINGS.md`** as new rows #47–#51 (**#77→#47, #84→#48, #86→#49, #91→#50, #93→#51**), each with its full coining/instance provenance chain, and **reconcile existing Learnings #34–#42** per operator (annotate #35/#39/#42 as superseded by #48 + fix the #34/#41/#43 candidate-number self-refs). Methodology housekeeping workstream; ONE "1-and-done" deliverable. (**COMPLETE** — `PROJECT_LEARNINGS.md` now **51 rows**; provenance + cross-refs adversarially verified against SoT; the lens-3 "fail" proven a spurious file-line/row-number confusion (Learning #45); committed, NOT pushed — operator's call.)
+
+**Started / Completed:** 2026-06-09.
+
+**Status:** **COMPLETE.** Promoted the 5 over-threshold candidates as rows #47–#51 with SoT-verified provenance, and reconciled #34–#42 per the operator's `AskUserQuestion` decision (**"annotate superseded + fix self-refs"** + **"fix #43 too"**). Pipeline: **research → SoT-cross-check → draft → adversarial-verify.** A 6-agent `Explore` research fan-out extracted each candidate's verbatim coining text + instance chain; I **cross-checked the load-bearing facts directly** (Learning #45) and caught the reconcile agent's **under-count** (it found 1 stale self-ref; an exhaustive `#5x/#6x/#7x/#8x` token grep found **3** — #34 `#52`, #41 `#59`×2, #43 `#68`). The genuine **reconcile fork** (the phrase traces to Candidate #84's own recommendation: the file-tail archival mechanic in #35/#39/#42 froze at S112, superseded by inline-at-top) was resolved via `AskUserQuestion` rather than guessed. New rows cross-reference each other by **promoted** numbers (#50↔#51), so no new self-ref was introduced. A 3-lens `Explore` verify returned provenance + cross-ref **pass**; the **fidelity lens "fail" (5 blockers) was REJECTED** — it had read file lines 47–51 (existing #41–#45) instead of the new rows at lines 53–57; disproven against SoT (Learning #45, applied on the very session promoting it). Mechanical gate green: 51 rows, 4 columns each, zero remaining stale self-refs, 3 supersede-pointers on exactly #35/#39/#42; `git diff HEAD` backstop confirmed the lenses wrote nothing (Learning #46). **Scope:** docs-only — `PROJECT_LEARNINGS.md` + this `SESSION_NOTES.md`; no source/tests/wiki touched (no auto-publish). Close-out commit pending.
+
+### Session 130 Handoff Evaluation (by Session 131)
+
+**Score: 8/10.** S130's handoff **pre-named "Housekeeping" as item #1** with the exact 5 candidates and their counts (#84 14×, #86 6×, #77/#91/#93 3×), the baseline, the exact gate invocations, the branch/push state, the learnings home, and the full candidate roster — near-zero discovery about *which* candidates and *what counts*.
+
+- **What helped:** (a) the pre-named deliverable + all 5 candidates with exact instance counts — every count reproduced against SoT (3/14/6/3/3). (b) "learnings home = `PROJECT_LEARNINGS.md`, 46 rows" was exactly right (I appended #47+). (c) the standing-options list + candidate roster (#88/#89/#92 at 2, #90/#94 at 1) let me confirm I was promoting exactly the over-threshold set and nothing below it.
+- **What was missing (the −2):** the handoff carried **"reconcile Learnings #34–#42" verbatim for ~6 sessions without ever defining it.** The phrase has a load-bearing fork (stale-self-ref fixes vs. archival-convention supersession) that I had to discover by reading Candidate #84's coining text, then resolve via `AskUserQuestion`. The handoff could have pre-named the fork (Learning #40) — especially since Candidate #84's OWN text contains the reconcile recommendation. A pointer ("see #84's coining text for what 'reconcile' means") would have saved the discovery.
+- **What was wrong:** nothing. Every count and the baseline reproduced.
+- **ROI:** high on the promotion half (exact candidates + counts), thinner on the reconcile half (undefined task semantics).
+
+### What Session 131 Did
+
+**Deliverable:** Promote 5 over-threshold candidates → Learnings #47–#51 + reconcile #34–#42. **COMPLETE.** Single close-out commit (the deliverable IS the `PROJECT_LEARNINGS.md` edits).
+
+- **Orientation + claim (Phase 0/1B):** read SAFEGUARDS (full) → SESSION_NOTES top (S130 ACTIVE TASK + handoff) → SESSION_RUNNER (full) → `gh issue list` (empty) → git (on `master`, clean, 0 ahead of origin; ghost-check clean — HEAD `6949df2` = S130 close-out) → dashboard (MPC 96/100) → reported, waited. On "promote learnings" wrote the Phase-1B stub (inline-at-top, Learning #48).
+- **Research (6-agent `Explore` fan-out):** extracted each candidate's verbatim coining text, coining session, instance chain, "When to Apply"; plus a reconcile-investigator. **Cross-checked every load-bearing fact directly** (Learning #45): confirmed coining sessions (S108/116/118/125/128) and counts (3/14/6/3/3); **caught the reconcile agent's under-count** (1 found vs. 3 real) via the exhaustive token grep.
+- **Contract resolution (Learning #40):** the reconcile fork (Candidate #84's "reconcile to the live convention OR restore the file-tail zone") → `AskUserQuestion` (2 Qs) → **"annotate superseded + fix self-refs"** + **"fix #43 too"**, locking #84→Learning #48.
+- **Edits (1 append + 7 reconcile):** appended rows #47–#51 (cross-referencing each other by promoted numbers); fixed self-refs #34 (`#52`→`#34`), #41 (`#59`→`#41` ×2), #43 (`#68`→`#43`); annotated #35/#39/#42 with "⚠ Superseded for the live convention by Learning #48".
+- **Verification:** mechanical (51 rows, 4-col integrity, zero stale self-refs, 3 pointers) + 3-lens `Explore` adversarial verify (provenance **pass**, cross-ref/reconcile **pass**, fidelity **"fail" REJECTED** as a file-line/row-number confusion proven against SoT — Learning #45) + `git diff HEAD` backstop (lenses wrote nothing — Learning #46).
+- **Commit discipline:** one close-out commit (`PROJECT_LEARNINGS.md` + `SESSION_NOTES.md`). No `docs/wiki/` → no auto-publish. Not pushed (operator's call).
+
+### Phase 3B: Self-assess — Session 131 — 9/10
+
+- **The +:** ran the full **research → SoT-cross-check → draft → adversarial-verify** discipline on a permanent artifact. **Learning #45 fired twice and both times changed the outcome**: caught the research agent's stale-ref under-count (1→3), and **rejected lens 3's 5-blocker "fail" verdict** by proving from SoT it had verified the wrong rows — a clean demonstration of #45 on the session that promoted it. Surfaced the genuine reconcile fork via Candidate #84's coining text and put it to the operator (Learning #40) rather than guessing scope. New rows cross-reference by **promoted** numbers, avoiding re-introducing the defect being fixed. `Explore` for every fan-out + `git diff HEAD` backstop (Learning #46). Held scope (no E4, no touching sub-threshold #88/#89/#92).
+- **The −:** my fidelity-lens prompt said "Read rows #47–#51" without warning that row #N ≠ file line N — which *caused* the lens-3 false positives (wasted ~1 lens of effort, though the backstop + #45 caught it cleanly). Coined as Candidate #95. Minor: lens 1 had a cosmetic citation slip ("row #55, line 55") with a correct verdict.
+- **Quality bar vs previous sessions:** matches the S101/S110 promotion-session bar (SoT-verified provenance, adversarial verify before commit) and adds the live demonstration that the verify-lens itself must be SoT-checked (#45).
+
+### Phase 3C: Learnings — Session 131
+
+**Candidate #95 — 1st instance.** *When spawning a verification lens over a NUMBERED-ROW artifact (a learnings table, a numbered list), the prompt MUST disambiguate "row #N" from "file line N" — hand the agent the row's real locator (anchor text, or the explicit file-line range), because an agent that conflates the two silently verifies the WRONG rows and returns confident false positives.* This session the fidelity lens read file lines 47–51 (existing Learnings #41–#45) instead of the new rows #47–#51 (file lines 53–57; Learning #N lives at file line N+6), returning 5 spurious "blocker" DRIFT findings — caught only because Learning #45 mandates SoT-cross-checking a subagent verdict before acting. **Composes with Learning #45** (#45 says verify the claim; #95 says prevent the class of false claim at prompt-design time) **and #46** (read-only lenses still need correct targeting). **When to apply:** any verification fan-out over a numbered-row / numbered-line artifact where row-number and file-line-number diverge — give the agent anchor text or a line range, never a bare "row #N". Now at **1 instance.**
+
+**⚠ Learnings home (unchanged):** project learnings live in **`PROJECT_LEARNINGS.md`**, NOT the `SESSION_RUNNER.md` table. **This session promoted 5 → rows #47–#51**; the learnings-promotion backlog is now caught up (no candidate at the 3× threshold).
+
+**Applied:** #10 (oriented + reported + waited); #48 (inline-at-top archival — this close-out, the **1st application under its new promoted number**; was Candidate #84 ×14); #40 (resolved the reconcile fork via `AskUserQuestion` before editing); **#45 (twice — the under-count catch + the lens-3 false-verdict rejection, both SoT-verified)**; #46 (`Explore` fan-outs + `git diff HEAD` backstop, zero writes); #43 (held scope — did NOT promote sub-threshold #88/#89/#92, did NOT start E4); #34/#37/#38 (unique Edit anchors for the reconcile edits); #49 (no real in-scope finding to apply — the lens-3 "findings" were rejected as false, not applied).
+
+### Phase 3D: Handoff to Session 132
+
+**The learnings-promotion housekeeping thread is now CAUGHT UP.** `PROJECT_LEARNINGS.md` has **51 rows** (#47–#51 new this session). No candidate is at the 3× promotion threshold, so there is no promotion due. The inline-at-top archival convention is now **Learning #48** (the live Phase-1B/Phase-3 convention; #35/#39/#42 carry superseded-pointers to it).
+
+**What's next (operator's call):**
+1. **E4** (LLM-provider factory) + **GitHub Release v0.2.0** (outward-facing). *Re-confirm push intent per task (Learning #40 — one push authorization does not auto-extend).*
+2. **Standing micros** (Learning #43 — DO NOT auto-fix): (a) `orchestrator/adapters.py:64` `if model_type == "time_series"` magic-string branch; (b) migrate `governance_templates.py`'s local `_assert_vocab_parity` to the shared `_vocab_guard`; (c) the data-agent prompt's `measurement_unit` "one of …" wording; (d) untracked `.claude/` not in `.gitignore`; (e) the O4-plan §6.3/§7.2 nonexistent `packages/data-agent/tests/` path nit; (f) origin has a `gh-pages` branch (informational).
+
+**Important considerations for Session 132:**
+1. **Baseline (unchanged — docs-only session; last verified S130):** **772/772 @ 97.19%**, mypy **0/62**, ruff clean, decoupling **2/2**. ⚠ Exact documented gate invocations (now **Learning #51**): `.venv/bin/python -m pytest -q`; **bare** `.venv/bin/python -m mypy` (NOT `mypy src tests`); `.venv/bin/ruff check src/ tests/ packages/ scripts/`. Use `.venv/bin/python` (3.13.5), not bare `python`.
+2. **⚠ Branch/push state:** you will be **on `master`**, **1 commit ahead of `origin/master`** (this close-out — NOT pushed; the housekeeping deliverable did not include a push). Verify with `git rev-list --count origin/master..master` (expect **1**). **Re-confirm push intent via `AskUserQuestion`** before pushing (Learning #40). Branch off `master` fresh for new work.
+3. **⚠ THE LEARNINGS HOME:** `PROJECT_LEARNINGS.md` (now **51 rows**), NOT `SESSION_RUNNER.md`'s table.
+4. **Phase 1B/3 archival is Learning #48 (inline-at-top):** new stub under `## ACTIVE TASK`; predecessor demoted in place with the `**(Session N-1 — COMPLETE, archived below.)**` marker; the close-out record inserted between stub and marker (+ `---`). The file-tail zone (Learnings #35/#39/#42) is **dead** (frozen at S112).
+5. **Candidate roster (post-promotion):** **#88 at 2**, **#89 at 2**, **#92 at 2**, **#90 at 1**, **#94 at 1**, **#95 at 1** (new — verification-lens row/line disambiguation). Next candidate = **#96** (all-time max now 95). No candidate at 3× → no promotion due.
+6. **New meta-learning (Candidate #95):** when verifying any numbered-row artifact with a subagent, give it anchor text / a file-line range, not a bare "row #N" — the file-line/row-number conflation produced 5 false "blocker" findings this session (rejected via Learning #45).
+
+---
+
+**(Session 130 — COMPLETE, archived below.)**
+
 **Task:** Session 130 — operator-directed: **Land O4 Phase O4-2 onto `master`** — fast-forward-merge `feat/o4-2-data-agent-vocab-derivation` (2 commits straight off `master`'s tip: `b767122` deliverable + `890c6e7` S129 close-out) onto `master`, then delete the merged branch. Git-ops / methodology workstream — a single "1-and-done" deliverable. (**COMPLETE** — `master` fast-forwarded `d915772 → 890c6e7`; merged branch deleted; **PUSHED to `origin/master`** — operator-authorized via `AskUserQuestion` for this O4-2 landing specifically; full gate re-confirmed green on the master tree. **With O4-1 (landed S128) + O4-2 (landed this session), the committed O4 scope is LANDED and PUSHED — content-complete.**)
 
 **Started / Completed:** 2026-06-08.
