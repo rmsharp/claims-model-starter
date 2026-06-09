@@ -24,12 +24,12 @@ from model_project_constructor_data_agent.schemas import (
 class PrimaryQuerySpec:
     """LLM output shape for a primary data-collection query.
 
-    The ``expected_row_count_order`` value must be one of the four literals
-    accepted by
+    The ``expected_row_count_order`` value must be one of the members of
+    :data:`model_project_constructor_data_agent.schemas.RowCountOrder` — the
+    canonical Literal that
     :attr:`model_project_constructor_data_agent.schemas.PrimaryQuery.expected_row_count_order`
-    (``"tens"``, ``"hundreds"``, ``"thousands"``, ``"millions"``). It is typed
-    as ``str`` here to keep the intermediate shape simple; the downstream
-    pydantic model is the enforcer.
+    is typed against. It is typed as ``str`` here to keep the intermediate shape
+    simple; the downstream pydantic model is the enforcer.
 
     ``inventory_entries_used`` is the LLM's self-reported list of inventory
     entry fully-qualified names referenced by the SQL. Empty list when no

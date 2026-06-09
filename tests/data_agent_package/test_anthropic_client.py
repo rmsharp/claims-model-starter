@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, get_args
 
 import pytest
 from anthropic.types import TextBlock
@@ -36,6 +36,7 @@ from model_project_constructor_data_agent.schemas import (
     DataSourceEntry,
     DataSourceInventory,
     ProducerMetadata,
+    RowCountOrder,
 )
 
 FIXED_TS = datetime(2026, 4, 19, 12, 0, 0, tzinfo=UTC)
@@ -167,6 +168,44 @@ def test_generate_primary_queries_with_retry_hint(
     user_msg = msgs.calls[0]["messages"][0]["content"]
     assert "syntax error at line 3" in user_msg
     assert "previous response produced invalid SQL" in user_msg
+
+
+def test_primary_query_prompt_enumerates_all_row_count_orders(
+    request_obj: DataRequest,
+) -> None:
+    """O4-2: the ``expected_row_count_order`` enumeration in the
+    ``generate_primary_queries`` prompt is single-sourced from
+    ``schemas.RowCountOrder`` (in-wheel ``get_args`` derivation), so the prompt
+    offers every member the validator accepts — the producer cannot drift.
+
+    This guards against a future re-hardcode of the prompt. Mutation-proven by
+    dropping a member from the *producer* prose while ``RowCountOrder`` keeps it
+    — the test goes RED. (Dropping it from the Literal instead cannot turn it
+    RED: the derived prose and this loop read the same Literal in lockstep,
+    which is precisely the point of derivation.) Each member is asserted in its
+    double-quoted prompt form, which also pins that the in-wheel derivation
+    reproduces the JSON-shape quoting byte-for-byte (a bare ``", ".join`` would
+    drop the quotes).
+    """
+    canned = (
+        '[{"name": "q", "sql": "SELECT 1",'
+        ' "purpose": "x", "expected_row_count_order": "tens"}]'
+    )
+    fake, msgs = _fake_client([canned])
+    client = AnthropicLLMClient(client=fake, model="fake-model")
+
+    client.generate_primary_queries(request_obj)
+
+    user_msg = msgs.calls[0]["messages"][0]["content"]
+    members = get_args(RowCountOrder)
+    assert members  # guard against a vacuous loop if the Literal ever empties
+    # Scope the search to the JSON-shape region that FOLLOWS the key, so a member
+    # value coincidentally appearing in the serialized DataRequest dump (which
+    # precedes it in the prompt) cannot mask a producer that drops that member.
+    _, sep, enum_region = user_msg.partition('"expected_row_count_order"')
+    assert sep, "prompt no longer mentions expected_row_count_order"
+    for member in members:
+        assert f'"{member}"' in enum_region
 
 
 def test_generate_primary_queries_non_array_raises(

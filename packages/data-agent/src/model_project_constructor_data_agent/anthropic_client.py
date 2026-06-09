@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
+from typing import Any, get_args
 
 from anthropic.types import TextBlock
 
@@ -47,6 +47,7 @@ from model_project_constructor_data_agent.schemas import (
     DataSourceEntry,
     DataSourceInventory,
     QualityCheck,
+    RowCountOrder,
 )
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
@@ -54,6 +55,15 @@ DEFAULT_MAX_TOKENS = 4096
 
 MAX_INVENTORY_ENTRIES_IN_PROMPT = 20
 MAX_INVENTORY_FIELD_CHARS = 2000
+
+# The expected_row_count_order enumeration offered in generate_primary_queries'
+# prompt is single-sourced from its schema Literal (schemas.RowCountOrder), so the
+# producer prose cannot drift from the validator. Derived in-wheel: the standalone
+# package must NOT import the main package's join_members helper (decoupling
+# boundary §1.4 — the decoupling test would not even catch such an import). The
+# members are double-quoted to match the surrounding JSON-shape instructions
+# byte-for-byte.
+_ROW_COUNT_ORDER_CHOICES = '"' + '", "'.join(get_args(RowCountOrder)) + '"'
 
 # Curated subset of docs/style/statistical_terms.md injected into the
 # summarize() and generate_datasheet() system strings so prose-generating
@@ -137,7 +147,7 @@ class AnthropicLLMClient:
             'Return a JSON array. Each element is an object with keys: '
             '"name" (snake_case identifier), "sql" (a SELECT statement), '
             '"purpose" (one sentence on why), "expected_row_count_order" '
-            '(one of "tens", "hundreds", "thousands", "millions"), and '
+            f"(one of {_ROW_COUNT_ORDER_CHOICES}), and "
             '"inventory_entries_used" (list of fully_qualified_name strings '
             "from the Available data sources block that your SQL references; "
             "empty list if no inventory was provided or none were used). "

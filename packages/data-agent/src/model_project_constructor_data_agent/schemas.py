@@ -89,11 +89,23 @@ class Datasheet(StrictBase):
     maintenance: str
 
 
+RowCountOrder = Literal["tens", "hundreds", "thousands", "millions"]
+"""Canonical magnitude buckets for a primary query's expected row count.
+
+This named alias is the single source for the vocabulary: the Anthropic client's
+prompt prose derives its enumeration from it via ``get_args``
+(``anthropic_client._ROW_COUNT_ORDER_CHOICES``), so the producer prose cannot
+drift from this validator. Kept in-wheel — the standalone package must not import
+the main package's ``join_members`` helper (decoupling boundary; the decoupling
+test would not even catch such an import — see
+docs/planning/o4-controlled-vocabulary-plan.md §1.4)."""
+
+
 class PrimaryQuery(StrictBase):
     name: str
     sql: str
     purpose: str
-    expected_row_count_order: Literal["tens", "hundreds", "thousands", "millions"]
+    expected_row_count_order: RowCountOrder
     quality_checks: list[QualityCheck]
     datasheet: Datasheet
     inventory_entries_used: list[str] = Field(default_factory=list)
@@ -102,6 +114,10 @@ class PrimaryQuery(StrictBase):
 class BaselineSnapshot(StrictBase):
     metric_name: str
     value: float | None
+    # measurement_unit is free-form by design (O4 plan §1.5): domain units are
+    # unbounded ("percent", "USD", "count", "claims", "basis points", ...), so
+    # this is intentionally a bare str, NOT a Literal. Do not "complete" the
+    # audit by closing this set.
     measurement_unit: str
     measurement_window_start: datetime | None = None
     measurement_window_end: datetime | None = None
@@ -200,6 +216,7 @@ __all__ = [
     "DataRequest",
     "QualityCheck",
     "Datasheet",
+    "RowCountOrder",
     "PrimaryQuery",
     "BaselineSnapshot",
     "DataReport",

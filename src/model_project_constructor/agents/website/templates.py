@@ -671,6 +671,10 @@ def render_data_readme(*, data: dict[str, Any]) -> str:
     ]
     for q in queries:
         name = q.get("name", "unnamed")
+        # "unknown" is a defensive sentinel: expected_row_count_order is a
+        # REQUIRED PrimaryQuery field (schemas.RowCountOrder), so a validly
+        # serialized DataReport always carries a real member — this fallback
+        # renders only on malformed/partial input (O4 plan §1.6, Q5).
         row_order = q.get("expected_row_count_order", "unknown")
         purpose = q.get("purpose", "")
         lines.append(f"### `{name}`\n\n")
