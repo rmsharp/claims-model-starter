@@ -102,7 +102,7 @@ The soft and hard stops are independent signals. An agent that reaches question 
 
 ## 4. What the five required sections look like
 
-After the interview loop exits, `draft_report` asks the LLM to emit a full draft (`nodes.py` draft node + `anthropic_client.py:173-217`). The five sections are:
+After the interview loop exits, `draft_report` asks the LLM to emit a full draft (`nodes.py` draft node + `anthropic_client.py:147-177` for JSON-shape instructions, `222-234` for the method). The five sections are:
 
 ### 4.1 `business_problem` (prose)
 
@@ -242,7 +242,7 @@ Useful fixtures ship in `tests/fixtures/`:
 
 ### Web UI mode (Phase 3B, FastAPI)
 
-The FastAPI web UI in `src/model_project_constructor/ui/intake/` reuses the same compiled graph but supplies a live `AnthropicLLMClient` and a `SqliteSaver` checkpointer so interview state survives server restart. The UI is what `go/modelintake` points to in a deployed environment. Environment variables:
+The FastAPI web UI in `src/model_project_constructor/ui/intake/` reuses the same compiled graph but builds its LLM client via the provider factory `make_llm_client("anthropic")` and a `SqliteSaver` checkpointer so interview state survives server restart. The UI is what `go/modelintake` points to in a deployed environment. Environment variables:
 
 - `ANTHROPIC_API_KEY` (required)
 - `INTAKE_DB_PATH` (optional; defaults to `./intake_sessions.db`)
@@ -253,9 +253,9 @@ See [Monitoring and Operations](Monitoring-and-Operations) for deployment specif
 
 ```python
 from model_project_constructor.agents.intake import IntakeAgent
-from model_project_constructor.agents.intake.anthropic_client import AnthropicLLMClient
+from model_project_constructor.agents.intake.factory import make_llm_client
 
-agent = IntakeAgent(AnthropicLLMClient())
+agent = IntakeAgent(llm=make_llm_client("anthropic"))
 report = agent.run_scripted(
     stakeholder_id="jane@example.com",
     session_id="2026-04-16-001",

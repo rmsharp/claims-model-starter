@@ -13,6 +13,7 @@ Every secret and configuration parameter is read from the environment via `Orche
 | `ANTHROPIC_API_KEY` | For live LLM calls | -- | Claude API authentication |
 | `MPC_CHECKPOINT_DIR` | No | `./.orchestrator/checkpoints` | Checkpoint storage root |
 | `MPC_LOG_LEVEL` | No | `INFO` | Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL |
+| `MPC_NAMESPACE` | No | -- | Target group/org path (e.g. `rmsharp-modelpilot`); must be a path, not a URL |
 | `INTAKE_DB_PATH` | No | `./intake_sessions.db` | SQLite file for intake web UI sessions |
 
 Use `OrchestratorSettings.require_host_token()` / `require_anthropic_api_key()` inside runners that make HTTP calls. The settings object is constructable without secrets so tests and dry runs work without them.
@@ -57,10 +58,10 @@ See `OPERATIONS.md` §5 and the `scripts/run_pipeline.py` `--resume` flag for fu
 
 The orchestrator uses `make_logged_runner()` to wrap agent runners with structured logging. Log entries include:
 
-- Run ID and agent name
-- Start/end timestamps
+- Agent name + run_id + correlation_id
 - Status (COMPLETE / FAILED / etc.)
-- Error details for failures
+- Duration (milliseconds) of agent call
+- Error details for failures (type, message, duration)
 
 Set `MPC_LOG_LEVEL=DEBUG` for verbose output including handoff payloads.
 
@@ -68,9 +69,9 @@ Set `MPC_LOG_LEVEL=DEBUG` for verbose output including handoff payloads.
 
 `MetricsRegistry` + `make_measured_runner()` capture:
 
-- `run_count` per agent
+- `run_count` — total pipeline runs recorded (process-global, via `record_run(status)`)
+- `status_counts` — counts by status (COMPLETE, FAILED, etc.)
 - `agent_latency` (milliseconds) per agent — `count` / `mean_ms` / `max_ms` aggregates
-- Pipeline-level timing
 
 Access metrics programmatically:
 
@@ -90,9 +91,9 @@ The project's own CI (`.github/workflows/ci.yml`) runs four jobs:
 
 | Job | What it checks |
 |-----|---------------|
-| **Lint** | `ruff check src/ tests/ packages/` |
-| **Type check** | `mypy src/` (strict mode) |
-| **Tests** | `pytest -q` (440+ tests, >95% coverage) |
+| **Lint** | `ruff check src/ tests/ packages/ scripts/` |
+| **Type check** | `mypy` (strict mode, config-driven) |
+| **Tests** | `pytest -q` (~795 tests, >95% coverage) |
 | **Decoupling** | Data Agent has zero imports from intake schemas |
 
 CI runs on push to `master` and on pull requests.

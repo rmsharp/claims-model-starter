@@ -10,6 +10,39 @@ The repository is at version `0.2.0` (pre-1.0, pilot-ready). Release tags `v0.1.
 
 ## [Unreleased]
 
+### LLM provider abstraction, stage-driver decomposition, host-vocabulary single-source, and prompt-enumeration derivation (Sessions 115-133)
+
+Four architectural overhauls landed across Sessions 115-133: E4 decouples LLM-provider choice, O3 consolidates host configuration into a registry, O1 centralizes pipeline stage metadata, and O4 derives prompt enumerations from their schema Literals to prevent vocabulary drift.
+
+#### E4 - LLM provider factory (Sessions 132-133)
+
+- **Added:** `--provider` CLI flag (default `anthropic`) on both `scripts/run_pipeline.py` and the Data Agent; routes through `make_llm_client(provider)` factories in both the Intake and Data agents.
+- **Added:** `IntakeLLMClient` and `LLMClient` protocols define the seam; `make_llm_client` factory in `src/model_project_constructor/agents/intake/factory.py` and `packages/data-agent/src/model_project_constructor_data_agent/factory.py`.
+- **Added:** `LLMProvider = Literal["anthropic"]` (single-sourced via `typing.get_args()` in both agents); unknown-provider errors derive the list automatically, preventing drift.
+- **Changed:** Every LLM-client construction now routes through the factory instead of hardwiring `AnthropicLLMClient()`. Lazy imports inside the factory keep both seams anthropic-free at import time.
+
+#### O3 - Repository platform registry (Sessions 115-118)
+
+- **Added:** `REPO_PLATFORMS` registry in `src/model_project_constructor/orchestrator/config.py` - single source of truth for host vocabulary, per-host API URLs, token env vars, and adapter factories.
+- **Added:** `PlatformSpec` dataclass carrying `default_api_url`, `token_env_var`, and `adapter_factory: Callable[..., RepoClient]` for each host (GitLab, GitHub).
+- **Added:** `adapter_factory` field to each platform spec - each host's factory lazy-imports its SDK (`python-gitlab` / `PyGithub`) only when an adapter is actually constructed, keeping the registry import-time SDK-free.
+- **Changed:** Both live entry points (`scripts/run_pipeline.py` and `agents/website/cli.py`) now build the adapter via `REPO_PLATFORMS[host].adapter_factory(host_url=..., private_token=...)` - no hand-written `--host` branch dispatch.
+- **Added:** Import-time drift guard `assert_vocab_parity(REPO_PLATFORMS.keys(), HostLiteral)` - fails the build if a host is added to one but not the other.
+- **Changed:** `cli.VALID_HOSTS` and the pipeline argparse `choices` are now derived from `REPO_PLATFORMS.keys()`, so they auto-update when a host is registered.
+
+#### O1 - Pipeline stage-order single-source (Sessions 120-122)
+
+- **Added:** `STAGE_ORDER: tuple[Stage, ...]` descriptor in `src/model_project_constructor/orchestrator/pipeline.py` - the single source of truth for pipeline stage sequence, metadata, halt-condition mapping, and resume-point naming.
+- **Added:** `Stage` dataclass with fields `name` (ResumePoint), `payload_type`, `target_agent`, `has_runner`, `halt_status`, `result_field`, `always_runs`, `terminal_result`.
+- **Changed:** Resume gates, the CLI banner, and the decomposed helpers (`_save_stage`, `_run_or_load_stage`, `_halt`) all derive stage order from `STAGE_ORDER` instead of hand-threading stage names - impossible to drift.
+- **Changed:** `run_pipeline` decomposed into four helpers: `_save_stage()`, `_run_or_load_stage()`, `_halt()`, and `_derive_data_request()` - the orchestrator is now readable and its control flow matches the architecture plan's design.
+
+#### O4 - Prompt enumeration derivation (Sessions 127-130)
+
+- **Added:** Six intake prompt enumerations derived at module load via `typing.get_args()` on their schema Literals: `CycleTime`, `RiskTier`, `ModelType` (from `schemas/v1/common.py`) and three others from intake-specific Literals.
+- **Added:** Data Agent's `expected_row_count_order` prompt enumeration similarly derived from its Literal in the data-agent wheel (single-sourced, decoupling-safe).
+- **Changed:** Prompt-enumeration values are no longer hand-listed in prose or system prompts - they are derived at runtime from the schema's Literal source of truth, so a vocabulary edit updates both the schema and the prompt in one place.
+
 ## [0.2.0] - 2026-06-04
 
 ### Documentation accuracy + v0.2.0 release (Session 111, 2026-06-04)

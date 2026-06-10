@@ -63,7 +63,7 @@ Use case: insert an agent between existing stages (e.g., a dedicated *feature-en
 | 3 | `src/model_project_constructor/schemas/registry.py:26-32` | Add a tuple entry `("<PayloadType>", "1.0.0"): v1.<PayloadType>`. |
 | 4 | `src/model_project_constructor/schemas/envelope.py:27-28` | If the new agent needs to be named in envelopes, add its string to the `source_agent` and/or `target_agent` `Literal[...]` union. |
 | 5 | `src/model_project_constructor/agents/<new>/` | Implement the agent. Follow the existing package structure: `agent.py` (public entry point), `state.py` (LangGraph state), `nodes.py` (graph nodes), plus any auxiliary modules. |
-| 6 | `src/model_project_constructor/orchestrator/pipeline.py:48-50` | Declare the runner type alias alongside the existing ones. Existing runners: `IntakeRunner = Callable[[], IntakeReport]`, `DataRunner = Callable[[DataRequest], DataReport]`, `WebsiteRunner = Callable[[IntakeReport, DataReport, RepoTarget], RepoProjectResult]`. |
+| 6 | `src/model_project_constructor/orchestrator/pipeline.py:51-53` | Declare the runner type alias alongside the existing ones. Existing runners: `IntakeRunner = Callable[[], IntakeReport]`, `DataRunner = Callable[[DataRequest], DataReport]`, `WebsiteRunner = Callable[[IntakeReport, DataReport, RepoTarget], RepoProjectResult]`. |
 | 7 | `src/model_project_constructor/orchestrator/pipeline.py` | Thread the new runner through `run_pipeline(...)` with `FAILED_AT_<STAGE>` handling that mirrors the existing data/website halt paths. |
 | 8 | `tests/agents/<new>/` | Mirror the test layout of `tests/agents/intake/` or `tests/agents/data/`. Contract tests: (a) agent handles malformed input without raising uncaught exceptions, (b) output validates against the new schema, (c) one end-to-end happy-path test. |
 
@@ -71,7 +71,7 @@ Use case: insert an agent between existing stages (e.g., a dedicated *feature-en
 
 - **Every hop writes a checkpoint.** The orchestrator persists each agent's output via `CheckpointStore` before invoking the next stage (`orchestrator/pipeline.py`).
 - **No shared state.** The new agent receives only what is in the envelope — no global config, no module-level caches leaking between runs. See `tests/test_data_agent_decoupling.py`, which AST-walks the Data Agent package to enforce zero intake-schema imports.
-- **Status vocabulary.** Terminal statuses use `COMPLETE` / `FAILED_AT_<STAGE>` (see `PipelineStatus` at `pipeline.py:52-57`). A new stage adds a new `FAILED_AT_<NEW>` value.
+- **Status vocabulary.** Terminal statuses use `COMPLETE` / `FAILED_AT_<STAGE>` (see `PipelineStatus` at `pipeline.py:60-65`). A new stage adds a new `FAILED_AT_<NEW>` value.
 
 ---
 
@@ -137,7 +137,7 @@ Each class is roughly ~120 lines, implements exactly `create_project` and `commi
    - Constructor does no network I/O.
    - Exception classification — host-specific failures map to the right `Repo*Error` subclass.
    - `MagicMock`-based happy path for `create_project` and `commit_files`.
-5. **Generated-project CI template** in `src/model_project_constructor/agents/website/governance_templates.py` — if the new host has a distinct CI system, add a `render_<host>_ci()` function alongside `render_gitlab_ci()` and `render_github_actions_ci()`, and widen the `ci_platform` dispatch at `governance_templates.py:801-804`.
+5. **Generated-project CI template** in `src/model_project_constructor/agents/website/governance_templates.py` — if the new host has a distinct CI system, add a `render_<host>_ci()` function alongside `render_gitlab_ci()` and `render_github_actions_ci()`, and widen the `ci_platform` dispatch at `governance_templates.py:834-837`.
 
 ### Wiring and selection
 
@@ -155,7 +155,7 @@ Use case: your organization needs an artifact type that isn't currently emitted 
 
 ### How tier gating works
 
-`src/model_project_constructor/agents/website/governance_templates.py:770-853` — the `build_governance_files` function reads:
+`src/model_project_constructor/agents/website/governance_templates.py:803-886` — the `build_governance_files` function reads:
 
 ```python
 governance = intake.get("governance") or {}
@@ -172,13 +172,13 @@ Artifacts are emitted in nested blocks by tier severity (lower number = more sev
 - **Consumer-facing** (`affects_consumers=true`): `governance/eu_ai_act_compliance.md`.
 - **Protected attributes** (`uses_protected_attributes=true`): `build_analysis_files` and `build_test_files` add `analysis/fairness_audit.qmd`, `src/<slug>/fairness/__init__.py`, `src/<slug>/fairness/audit.py`, `tests/test_fairness.py`.
 
-The severity comparison uses `_tier_at_least(risk_tier, threshold)` at `governance_templates.py:47-54`, which maps tier strings to ordinal severities.
+The severity comparison uses `_tier_at_least(risk_tier, threshold)` at `governance_templates.py:72-79`, which maps tier strings to ordinal severities.
 
 ### Files to add or edit
 
 1. **Write the renderer** in `src/model_project_constructor/agents/website/governance_templates.py`. Convention: `render_<artifact_name>(*, intake: dict[str, Any], ...) -> str` returning the markdown body.
-2. **Wire into `build_governance_files`** at the correct tier block (`:725-784`). Choose the narrowest gate that correctly describes when the artifact is required.
-3. **Update `is_governance_artifact`** at `governance_templates.py:905-927` so the classifier recognizes the new file path. This is the single source of truth for `GovernanceManifest.artifacts_created` — do not also record the path in state.
+2. **Wire into `build_governance_files`** at the correct tier block (`:820-886`). Choose the narrowest gate that correctly describes when the artifact is required.
+3. **Update `is_governance_artifact`** at `governance_templates.py:938-959` so the classifier recognizes the new file path. This is the single source of truth for `GovernanceManifest.artifacts_created` — do not also record the path in state.
 4. **Add a positive *and* negative test** in `tests/agents/website/test_governance.py`. Per this project's learning #5: assert the artifact appears at the intended tier *and* does not appear at lower tiers. A positive-only test passes silently if a tier starts emitting the wrong artifact.
 5. **If the artifact is a `.qmd` narrative** that needs to be rendered into the project, add it to `build_analysis_files` instead of `build_governance_files` and wire its emission to the appropriate governance flag.
 
@@ -194,7 +194,7 @@ Use case: your jurisdiction requires a framework not currently supported (e.g., 
 
 ### Current framework registry
 
-`src/model_project_constructor/agents/website/governance_templates.py:77-111`:
+`src/model_project_constructor/agents/website/governance_templates.py:110-144`:
 
 ```python
 _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
@@ -313,7 +313,7 @@ Several extension surfaces have mechanical guards that will fail CI if the contr
 | Invariant | Test | What it checks |
 |---|---|---|
 | Data Agent has zero intake-schema imports | `tests/test_data_agent_decoupling.py` | AST-walks the standalone data-agent package and the main-package shims; asserts no imports reference the intake schema (architecture-plan §7, constraint C4). |
-| Every schema in `REGISTRY` round-trips | `tests/schemas/test_registry.py` | For each `(payload_type, version)` key, constructs an envelope, calls `load_payload`, and asserts equality. |
+| Every schema in `REGISTRY` round-trips | `tests/schemas/test_envelope_and_registry.py` | For each `(payload_type, version)` key, constructs an envelope, calls `load_payload`, and asserts equality. |
 | Every governance artifact path is classified | `tests/agents/website/test_governance.py` | Asserts `is_governance_artifact` returns `True` for every path emitted by `build_governance_files` / `build_analysis_files` / `build_test_files` across all tier/flag combinations. |
 | Tier gating is positive *and* negative | `tests/agents/website/test_governance.py` | Per-tier fan-out asserts both `"governance/<artifact>.md" in files` for the correct tier *and* `... not in files` for lower tiers. |
 

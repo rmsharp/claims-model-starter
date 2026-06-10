@@ -12,7 +12,7 @@ Key design choices and their rationale. For the full architecture plan, see `doc
 
 **Decision:** Use LangGraph (v0.2) as the agent framework, with direct Anthropic SDK calls.
 
-**Rationale:** LangGraph provides built-in checkpointing for long-lived conversations (essential for the intake interview, which may span multiple user sessions). The Anthropic SDK is used directly rather than through LangChain's model abstraction because the project only uses Claude -- the abstraction would add complexity without benefit.
+**Rationale:** LangGraph provides built-in checkpointing for long-lived conversations (essential for the intake interview, which may span multiple user sessions). The Anthropic SDK is used directly rather than through LangChain's model abstraction. As of E4 (Sessions 132-133), LLM client construction is abstracted via provider factories in both agents (src/.../agents/intake/factory.py and packages/data-agent/.../factory.py), each wired to a LangGraph-agnostic protocol (`IntakeLLMClient` and `LLMClient`). This allows backend swapping via the CLI `--provider` flag without modifying the agent logic.
 
 ## AD-3: Pydantic schemas, not JSON Schema or protobuf
 
@@ -30,7 +30,7 @@ Key design choices and their rationale. For the full architecture plan, see `doc
 
 **Decision:** Use a Python protocol (`RepoClient`) with adapter implementations (`PythonGitLabAdapter`, `PyGithubAdapter`, `FakeRepoClient`).
 
-**Rationale:** The Website Agent should not know or care whether the target is GitLab or GitHub. The protocol defines two operations: `create_project()` and `commit_files()`. Each adapter wraps a host-specific library. `FakeRepoClient` enables testing without network calls. Adding a new host (e.g., Bitbucket) requires only a new adapter -- no changes to the agent.
+**Rationale:** The Website Agent should not know or care whether the target is GitLab or GitHub. The protocol defines two operations: `create_project()` and `commit_files()`. Each adapter wraps a host-specific library. `FakeRepoClient` enables testing without network calls. Adding a new host (e.g., Bitbucket) requires a new `PlatformSpec` entry in the `REPO_PLATFORMS` registry (with `default_api_url`, `token_env_var`, and `adapter_factory`), plus a member in the `HostLiteral` type alias — the adapter factory and registry dispatch handle the rest.
 
 ## AD-6: Data Agent decoupled from Intake Agent
 
@@ -60,4 +60,4 @@ Key design choices and their rationale. For the full architecture plan, see `doc
 
 **Decision:** All generated files are committed in a single `commit_files()` call, not as a series of commits.
 
-**Rationale:** A single commit means the generated project is always in a consistent state. There is no window where the repository has a partial scaffold (e.g., source modules without tests, or tests without CI). The commit message (`feat: scaffold model project`) clearly marks the machine-generated baseline for the data science team.
+**Rationale:** A single commit means the generated project is always in a consistent state. There is no window where the repository has a partial scaffold (e.g., source modules without tests, or tests without CI). The commit message (`feat: scaffold model project (intake + data + governance)`) clearly marks the machine-generated baseline for the data science team.

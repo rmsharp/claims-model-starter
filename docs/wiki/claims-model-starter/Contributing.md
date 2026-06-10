@@ -58,8 +58,8 @@ Configuration at `pyproject.toml:83-92`:
 Run locally:
 
 ```bash
-uv run ruff check src/ tests/ packages/
-uv run ruff format src/ tests/ packages/   # apply formatting
+uv run ruff check src/ tests/ packages/ scripts/
+uv run ruff format src/ tests/ packages/ scripts/   # apply formatting
 ```
 
 ### 2.2 Type check (`mypy --strict`)
@@ -74,7 +74,7 @@ Configuration at `pyproject.toml:94-98`:
 Run locally:
 
 ```bash
-uv run mypy src/
+uv run mypy
 ```
 
 ### 2.3 Tests (`pytest --cov`)
@@ -117,7 +117,7 @@ This test AST-walks the standalone `packages/data-agent/` package and asserts ze
 
 There is **no** `.pre-commit-config.yaml` or equivalent git-hook configuration in the repository. Contributors are expected to run `ruff` and `pytest` locally before pushing. The CI pipeline is the enforcement boundary; hooks are a convenience, not a requirement.
 
-If you want local hooks, the recommended pattern is a personal `.git/hooks/pre-push` script that runs `uv run ruff check src/ tests/ packages/ && uv run mypy src/ && uv run pytest -q`. Do not commit a project-wide hook configuration without first proposing it as a separate design change.
+If you want local hooks, the recommended pattern is a personal `.git/hooks/pre-push` script that runs `uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy && uv run pytest -q`. Do not commit a project-wide hook configuration without first proposing it as a separate design change.
 
 ---
 
@@ -171,7 +171,7 @@ Machine-generated commits use a `Co-Authored-By:` trailer naming the assistant m
 Some existing tests are **structural guards** that fail CI if a contract is broken:
 
 - `tests/test_data_agent_decoupling.py` — AST-walks for forbidden imports (see §2.4).
-- `tests/schemas/test_registry.py` — every `REGISTRY` entry round-trips through `HandoffEnvelope` → `load_payload`.
+- `tests/schemas/test_envelope_and_registry.py` — every `REGISTRY` entry round-trips through `HandoffEnvelope` → `load_payload`.
 - `tests/agents/website/test_governance.py` — per-tier fan-out asserts both **positive** (`artifact in files`) *and* **negative** (`artifact not in files`) for each tier × consumer × protected-attributes combination. A positive-only assertion will pass silently if a tier starts emitting the wrong artifact (see [Extending the Pipeline](Extending-the-Pipeline) §4).
 
 When adding a new contract, add a structural guard alongside it. CI enforcement beats code review for long-lived invariants.
@@ -208,8 +208,8 @@ These aren't style preferences — they are documented responses to specific pas
 1. **Fork and branch.** Branch from `master`. Use a descriptive name (`feat-bitbucket-adapter`, `fix-envelope-correlation-id`, not `patch-1`).
 2. **Run the four CI gates locally** before pushing:
    ```bash
-   uv run ruff check src/ tests/ packages/
-   uv run mypy src/
+   uv run ruff check src/ tests/ packages/ scripts/
+   uv run mypy
    uv run pytest -q
    uv run pytest tests/test_data_agent_decoupling.py -v --no-cov
    ```

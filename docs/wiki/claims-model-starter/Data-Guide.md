@@ -104,7 +104,8 @@ The Data Agent is designed to be reusable beyond the pipeline. Analyst teams can
 
 ```bash
 # CLI
-model-data-agent run --request request.json --output report.json
+model-data-agent run --request request.json --output report.json \
+    --db-url sqlite:///claims.db --provider anthropic --model claude-sonnet-4-6
 
 # Python API
 from model_project_constructor_data_agent import DataAgent, make_llm_client
@@ -113,15 +114,20 @@ report = DataAgent(llm=make_llm_client("anthropic")).run(data_request)
 
 The Data Agent accepts a `DataRequest` (target, granularity, features, population, time range) and produces a `DataReport` without any dependency on the Intake Agent or its schemas. This decoupling is enforced by an AST-based CI test.
 
+## LLM provider selection
+
+Both `run` and `discover` subcommands accept a `--provider` flag (default `anthropic`) to select the LLM backend. The known-provider list is single-sourced via `factory.make_llm_client`, so adding a new provider requires one new client module plus one factory branch. Today only `anthropic` is available; the seam exists for future extensibility.
+
 ## Providing a data source inventory
 
 `DataRequest` accepts an optional `data_source_inventory: DataSourceInventory | None` field. When populated, the Data Agent renders a summarized block into the query-generation prompt, nudging the LLM to prefer inventory-named tables over inventing ones. Each generated `PrimaryQuery` records the inventory entries it referenced under `inventory_entries_used`, giving auditors a provenance trail.
 
-Three producer classes can populate an inventory today:
+The `producer_type` enum supports four values:
 
 - **Curated** — a team-maintained JSON file following `DataSourceInventory`. See `tests/fixtures/sample_curated_inventory.json`.
 - **Automated** — probe a live database's `information_schema` via `probe_information_schema` or the `model-data-agent discover` CLI.
 - **Interview** — convert stakeholder-named systems from an `IntakeReport`'s `qa_pairs` (shipped Phase 4 as `intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`; engaged via `scripts/run_pipeline.py --inventory-from-intake`).
+- **External catalog** — external data catalog systems (reserved for future integration).
 
 ```python
 import json

@@ -76,7 +76,7 @@ The orchestrator (`orchestrator/pipeline.py`) calls each agent's runner function
 2. **DATA** -- adapts `IntakeReport` to `DataRequest` (optionally deriving a `DataSourceInventory` from `IntakeReport.qa_pairs` when `--inventory-from-intake` is set, via `intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`), produces `DataReport`
 3. **WEBSITE** -- combines both reports with `RepoTarget`, produces `RepoProjectResult`
 
-If any agent returns a non-`COMPLETE` status, the pipeline halts. Checkpoints are persisted after each successful step, so a failed run can be inspected and (in future) resumed.
+If any agent returns a non-`COMPLETE` status, the pipeline halts. Checkpoints are persisted after each successful step, so a failed run can be inspected and resumed. Pass `--resume <run_id>` to reload from the checkpoint and re-execute from the first incomplete stage.
 
 ## Error handling
 

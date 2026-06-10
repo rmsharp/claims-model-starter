@@ -33,7 +33,9 @@ Source of truth: `initial_state` (`src/model_project_constructor/agents/intake/s
 
 ```
 IntakeReport
-  status:           "COMPLETE" | "DRAFT_INCOMPLETE"
+  schema_version:    "1.0.0"
+  status:            "COMPLETE" | "DRAFT_INCOMPLETE"
+  missing_fields:    list[str]
   business_problem:  str
   proposed_solution: str
   model_solution:    ModelSolution
@@ -57,14 +59,19 @@ IntakeReport
     implementation_cost_band_usd_high: float | None
     payback_months:                    int | None
     value_drivers:                     list[str]
+  value_measurement_plan: ValueMeasurementPlan | None
   governance:        GovernanceMetadata
     cycle_time:                CycleTime
     risk_tier:                 RiskTier
     regulatory_frameworks:     list[str]
     affects_consumers:         bool
     uses_protected_attributes: bool
+  stakeholder_id:    str
+  session_id:        str
+  created_at:        datetime
   questions_asked:   int  (tracked against 20-question cap)
   revision_cycles:   int
+  qa_pairs:          list[QAPair] = Field(default_factory=list)
 ```
 
 ### Behavior
@@ -121,8 +128,10 @@ DataRequest
 
 ```
 DataReport
-  status:                "COMPLETE" | "INCOMPLETE_REQUEST" | "EXECUTION_FAILED"
-  primary_queries:       list[PrimaryQuery]
+  schema_version:           "1.0.0"
+  status:                   "COMPLETE" | "INCOMPLETE_REQUEST" | "EXECUTION_FAILED"
+  request:                  DataRequest  (echoed from input)
+  primary_queries:          list[PrimaryQuery]
     name:                    str
     sql:                     str
     purpose:                 str
@@ -136,9 +145,12 @@ DataReport
       raw_result:        dict | None
     datasheet:               Datasheet  (Gebru 2021)
     inventory_entries_used:  list[str]
+  summary:                  str  (natural-language summary)
   confirmed_expectations:   list[str]
   unconfirmed_expectations: list[str]
   data_quality_concerns:    list[str]
+  created_at:               datetime
+  baseline_snapshot:        BaselineSnapshot | None
 ```
 
 ### Behavior
@@ -153,8 +165,9 @@ DataReport
 
 | Interface | Command |
 |-----------|---------|
-| CLI | `model-data-agent run --request request.json --output report.json` |
-| Python | `DataAgent().run(data_request)` |
+| CLI (run) | `model-data-agent run --request request.json --output report.json` |
+| CLI (discover) | `model-data-agent discover --db-url <url> --output inventory.json` (probes information_schema into a DataSourceInventory) |
+| Python | `DataAgent(llm=make_llm_client()).run(data_request)` |
 | Pipeline | Called by orchestrator with adapted `DataRequest` |
 
 ### Failure modes
@@ -201,6 +214,7 @@ RepoProjectResult
     risk_tier:             RiskTier
     cycle_time:            CycleTime
     regulatory_mapping:    dict[str, list[str]]
+  failure_reason:      str | None  (populated when status is "PARTIAL" or "FAILED")
 ```
 
 ### Behavior
@@ -210,6 +224,13 @@ RepoProjectResult
 - Creates the repository via `RepoClient.create_project()`
 - Commits all files in a single atomic operation via `RepoClient.commit_files()`
 - Retries on name conflicts with `-v2`, `-v3`, ... suffixes (up to 5 attempts)
+
+### Interfaces
+
+| Interface | Command |
+|-----------|----------|
+| CLI | `python -m model_project_constructor.agents.website --intake <intake.json> --data <data.json> --host gitlab` |
+| Python | `WebsiteAgent(repo_client).run(intake_report, data_report, repo_target)` |
 
 ### Host adapters
 

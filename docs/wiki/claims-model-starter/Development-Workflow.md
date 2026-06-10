@@ -11,7 +11,7 @@ When the pipeline completes, your team gets a repository containing:
 - **SQL queries** (`queries/`) for data collection and quality checks
 - **Tests** (`tests/`) with scaffolded test stubs
 - **Governance artifacts** (`governance/`) proportional to model risk
-- **CI pipeline** that runs lint, tests, and governance schema validation
+- **CI pipeline** that runs lint, tests, and governance JSON well-formedness checks
 
 ## Getting started
 
@@ -88,15 +88,15 @@ The test stubs validate that imports work and stubs raise `NotImplementedError`.
 uv run pytest
 ```
 
-The CI pipeline runs `ruff check`, `pytest`, and governance schema validation on every push.
+The CI pipeline runs `ruff check`, `pytest`, and governance JSON well-formedness checks on every push.
 
 ## Code quality standards
 
 The generated project includes:
 
-- **ruff** -- Linting and formatting. Rules: E (pycodestyle errors), F (pyflakes), I (isort), UP (pyupgrade), B (bugbear), SIM (simplification).
+- **ruff** -- Linting and formatting (with default rules: E, F, I, UP, B, SIM).
 - **pytest** -- Testing framework with coverage reporting.
-- **Pre-commit hooks** -- ruff lint + format, model registry schema validation.
+- **Pre-commit hooks** -- ruff lint + format, model registry JSON well-formedness check.
 
 Install the hooks:
 

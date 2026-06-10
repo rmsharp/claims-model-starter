@@ -104,7 +104,7 @@ Each module contains function stubs that raise `NotImplementedError`. The data s
 
 | Module | Purpose | Key function |
 |--------|---------|-------------|
-| `data_loading.py` | Execute Data Agent SQL queries | `load_primary()` |
+| `data_loading.py` | Execute Data Agent SQL queries | `read_sql()`, `load_primary()` |
 | `features.py` | Feature engineering | `build_feature_matrix()` |
 | `models.py` | Model training and inference | `train()`, `predict()` |
 | `evaluation.py` | Evaluation metrics | `evaluate()` |
@@ -121,7 +121,7 @@ Seven `.qmd` files (Quarto markdown, YAML header with `format: html`). Each narr
 | `03_eda` | Scaffolded EDA narrative with stub code |
 | `04_feature_engineering` | References `features.py`, shows import pattern |
 | `05_initial_models` | References `models.py` and `evaluation.py` |
-| `06_implementation_plan` | Annual impact estimate, confidence, assumptions |
+| `06_implementation_plan` | Annual impact estimate, confidence, assumptions, and full Production Measurement Plan (baseline, counterfactual design, attribution method, evaluation horizon, logging requirements, review cadence, success criteria, decision rights) |
 | `99_extensions` | Candidate extensions (additional features, alternative models) |
 
 ### Queries

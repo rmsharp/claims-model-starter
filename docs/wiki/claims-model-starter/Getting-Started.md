@@ -31,7 +31,7 @@ uv sync --extra agents --extra ui --extra dev
 uv run pytest -q
 ```
 
-You should see 440+ tests pass with ~97% coverage.
+You should see 795+ tests pass with ~97% coverage.
 
 ## First dry run (no API keys needed)
 
@@ -56,18 +56,40 @@ This runs all three agents in sequence using fixture data and a fake repository 
 ### 4. Inspect the output
 
 ```bash
-ls .orchestrator/checkpoints/
+ls .orchestrator/checkpoints/<run_id>/
+```
+
+where `<run_id>` is the run identifier shown in the pipeline output (or passed via `--run-id`). For example:
+
+```bash
+ls .orchestrator/checkpoints/run_a1b2c3d4/
 ```
 
 Each checkpoint file is a JSON envelope containing the handoff between agents. The final `RepoProjectResult.result.json` lists every file the website agent would have committed.
 
 ## Live run (with API keys)
 
+The pipeline has two independent dimensions: where the generated repository is pushed (fake vs. real host) and which LLM to use (fixture data vs. real API calls). By default, only the website stage's target is configurable; the intake and data agents use fixture data.
+
+### Live repository host
+
 ```bash
 cp .env.example .env
 # Edit .env with your keys
 uv run python scripts/run_pipeline.py --live --host github
 ```
+
+This pushes the generated project to a real GitHub/GitLab host, but the Intake and Data agents still use fixture data (no Anthropic API cost). You still need `GITLAB_TOKEN` or `GITHUB_TOKEN` in `.env`.
+
+### Real LLM calls (Intake + Data agents)
+
+To run the Intake and Data agents against the real Anthropic API, add `--llm=both` (or `--llm=data` for just the Data agent) and supply `--intake-fixture` for the interview answers:
+
+```bash
+uv run python scripts/run_pipeline.py --live --host github --llm both --intake-fixture tests/fixtures/subrogation.yaml
+```
+
+This requires `ANTHROPIC_API_KEY` in `.env` in addition to the repo host token. See the script's help (`uv run python scripts/run_pipeline.py --help`) for all LLM mode options and the `--provider` flag to swap the LLM backend.
 
 See [Monitoring and Operations](Monitoring-and-Operations) for environment variable details.
 

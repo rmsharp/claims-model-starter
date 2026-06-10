@@ -51,9 +51,16 @@ This SBOM covers both the **Model Project Constructor** (the tool) and the **gen
 |---------|-----------|---------|
 | pytest | >=8 | Testing framework |
 | pytest-asyncio | >=0.23 | Async test support for LangGraph nodes |
-| pytest-cov | >=5 | Coverage reporting (94% minimum) |
+| pytest-cov | >=5 | Coverage reporting (95% minimum) |
 | mypy | >=1.10 | Static type checking (strict mode) |
 | ruff | >=0.5 | Linting: E, F, I, UP, B, SIM rule sets |
+
+### Documentation tools (`--extra docs`)
+
+| Package | Constraint | Purpose |
+|---------|-----------|----------|
+| mkdocs | >=1.5 | Static site generator for wiki |
+| mkdocs-material | >=9.0 | Material Design theme for mkdocs |
 
 ### Data Agent subpackage (`packages/data-agent/`)
 

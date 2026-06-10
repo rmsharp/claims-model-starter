@@ -14,7 +14,7 @@ There are **5 registered payload schemas** plus the **HandoffEnvelope** transpor
 
 | Schema | Purpose | Writer | Reader(s) | File |
 |---|---|---|---|---|
-| `IntakeReport` | Interview output | Intake Agent | Orchestrator, Website Agent | `schemas/v1/intake.py:86-105` |
+| `IntakeReport` | Interview output | Intake Agent | Orchestrator, Website Agent | `schemas/v1/intake.py:97-116` |
 | `DataRequest` | What the Data Agent needs | Orchestrator (adapted from intake) or user (standalone) | Data Agent | `packages/data-agent/.../schemas.py:46-68` |
 | `DataReport` | Queries + quality checks + summary | Data Agent | Orchestrator, Website Agent | `packages/data-agent/.../schemas.py:113-123` |
 | `RepoTarget` | Destination repo config | Orchestrator (from user config) | Website Agent | `schemas/v1/repo.py:12-17` |
@@ -30,7 +30,7 @@ The Data Agent schemas live in a **separate package** (`packages/data-agent/`) t
 Every schema in this project derives from `StrictBase`:
 
 ```python
-# src/model_project_constructor/schemas/v1/common.py:12-23
+# src/model_project_constructor/schemas/v1/common.py:10-21
 class StrictBase(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 ```
@@ -50,7 +50,7 @@ The envelope is the only schema that inherits directly from `BaseModel` rather t
 
 The schemas/v1/common module defines three Literal-string enums reused across reports:
 
-### `CycleTime` (line 25)
+### `CycleTime` (line 23)
 
 ```python
 CycleTime = Literal["strategic", "tactical", "operational", "continuous"]
@@ -61,7 +61,7 @@ CycleTime = Literal["strategic", "tactical", "operational", "continuous"]
 - `operational` — days to hours (e.g., daily batch scoring).
 - `continuous` — sub-minute / event-driven (e.g., real-time fraud triage).
 
-### `RiskTier` (lines 27-32)
+### `RiskTier` (lines 25-30)
 
 ```python
 RiskTier = Literal[
@@ -79,7 +79,7 @@ RiskTier = Literal[
 
 See [Governance Framework](Governance-Framework) for the artifact inventory per tier.
 
-### `ModelType` (lines 34-42)
+### `ModelType` (lines 32-40)
 
 ```python
 ModelType = Literal[
@@ -125,6 +125,24 @@ class ModelSolution(StrictBase):
 
 `target_variable` is `str | None` with **no default** — the `None` must be explicit. This forces unsupervised modelers to stop and decide rather than silently omit the field.
 
+### Literal aliases for value and measurement fields
+
+Three Literal enums used in this schema family are named for clarity:
+
+```python
+Confidence = Literal["low", "medium", "high"]
+
+CounterfactualDesign = Literal[
+    "champion_challenger", "ab_test", "geographic_split",
+    "historical_baseline_with_detrending", "synthetic_control",
+    "regression_discontinuity", "none_declared",
+]
+
+ReviewCadence = Literal["weekly", "monthly", "quarterly", "ad_hoc"]
+```
+
+These aliases are defined in `src/model_project_constructor/schemas/v1/intake.py` (lines 24, 25–33, 34) and used by the intake prompt to derive its enumerations from the same Literal the validator uses — an O4 single-sourcing pattern (Overhaul O4, Sessions 127-130) that keeps the prompt and schema synchronized automatically rather than hand-listing members in prose.
+
 ### `EstimatedValue`
 
 ```python
@@ -132,7 +150,7 @@ class EstimatedValue(StrictBase):
     narrative: str
     annual_impact_usd_low: float | None
     annual_impact_usd_high: float | None
-    confidence: Literal["low", "medium", "high"]
+    confidence: Confidence
     assumptions: list[str]
 
     # Pre-construction business-case fields
@@ -158,17 +176,13 @@ class ValueMeasurementPlan(StrictBase):
     baseline_metric_definition: str | None = None       # formula or SQL-derivable spec
     baseline_measurement_window: str | None = None      # e.g. "trailing 12 months"
 
-    counterfactual_design: Literal[
-        "champion_challenger", "ab_test", "geographic_split",
-        "historical_baseline_with_detrending", "synthetic_control",
-        "regression_discontinuity", "none_declared",
-    ] | None = None
+    counterfactual_design: CounterfactualDesign | None = None
     counterfactual_rationale: str | None = None
     attribution_method_narrative: str | None = None
 
     evaluation_horizon_months: int | None = None
     logging_requirements: list[str] = Field(default_factory=list)
-    review_cadence: Literal["weekly", "monthly", "quarterly", "ad_hoc"] | None = None
+    review_cadence: ReviewCadence | None = None
     success_criteria: list[str] = Field(default_factory=list)
     decision_rights: str | None = None                  # Advisory, no enforcement
 ```

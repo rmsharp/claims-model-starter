@@ -17,7 +17,7 @@ This page is for anyone doing a security review of the Model Project Constructor
 
 ### 1.1 Every secret comes from the environment
 
-There are **no hardcoded credentials anywhere in the source tree**. The orchestrator reads secrets exclusively via `OrchestratorSettings.from_env()` at `src/model_project_constructor/orchestrator/config.py:78-129`. Module docstring (`config.py:3-6`):
+There are **no hardcoded credentials anywhere in the source tree**. The orchestrator reads secrets exclusively via `OrchestratorSettings.from_env()` at `src/model_project_constructor/orchestrator/config.py:165-220`. Module docstring (`config.py:1-19`):
 
 > every secret and every deployment-variable parameter must come from the environment (or a `.env` file loaded into the environment by the caller). There are no hardcoded credentials or hostnames anywhere in the codebase.
 
@@ -31,6 +31,7 @@ Defined in `.env.example` and documented in `OPERATIONS.md:11-30`:
 |---|---|---|---|
 | `MPC_HOST` | no | `gitlab` | `gitlab` or `github` |
 | `MPC_HOST_URL` | no | host-specific public URL | API base URL; override for enterprise / self-hosted |
+| `MPC_NAMESPACE` | no | host-specific default (GitLab: `data-science/model-drafts`; GitHub: `my-org`) | Target group/org path for generated project (git-host scoped) |
 | `GITLAB_TOKEN` | yes (live GitLab) | — | PAT with `api` scope + create_project permission |
 | `GITHUB_TOKEN` | yes (live GitHub) | — | PAT with `repo` scope |
 | `ANTHROPIC_API_KEY` | yes (any LLM call) | — | Intake, Data Agent QC generation |
@@ -40,8 +41,8 @@ Defined in `.env.example` and documented in `OPERATIONS.md:11-30`:
 
 Only two places outside `config.py` read env vars directly:
 
-- `src/model_project_constructor/ui/intake/app.py:75` — `INTAKE_DB_PATH` for the FastAPI web UI.
-- `scripts/run_pipeline.py:114-119` — demo script convenience defaults.
+- `src/model_project_constructor/ui/intake/app.py:77` — `INTAKE_DB_PATH` for the FastAPI web UI.
+- `scripts/run_pipeline.py:119, 123, 126, 290` — demo script convenience defaults (MPC_HOST_URL, MPC_NAMESPACE, MPC_HOST, and host-specific token).
 
 The adapters consume tokens via the settings object; their `__init__` signatures take `private_token: str` as a parameter (`src/model_project_constructor/agents/website/gitlab_adapter.py:56-65`, `github_adapter.py:66-72`), so a caller must decide how to get the value to them. The example in the docstring shows `os.environ["GITLAB_TOKEN"]`, but the adapter itself has no opinion on where the token came from — a secret manager, a vault agent, or a keychain all work.
 
@@ -50,11 +51,20 @@ The adapters consume tokens via the settings object; their `__init__` signatures
 `OrchestratorSettings` is constructable without credentials so tests and preview runs can build a settings object unconditionally. Runners that actually make HTTP calls must guard against missing tokens by calling the require helpers:
 
 ```python
-# src/model_project_constructor/orchestrator/config.py:131-149
+# src/model_project_constructor/orchestrator/config.py:222-240
 def require_host_token(self) -> str:
+    """Return the host API token, raising if it is missing.
+
+    Agent runners that actually make HTTP calls to a live host call
+    this; test code constructing :class:`OrchestratorSettings`
+    without a token does not.
+    """
+
     if not self.host_token:
-        var = "GITLAB_TOKEN" if self.host == "gitlab" else "GITHUB_TOKEN"
-        raise ConfigError(f"{var} is required for host={self.host!r} but was not set")
+        var = REPO_PLATFORMS[self.host].token_env_var
+        raise ConfigError(
+            f"{var} is required for host={self.host!r} but was not set"
+        )
     return self.host_token
 
 def require_anthropic_api_key(self) -> str:
@@ -81,10 +91,12 @@ Both agents that use an LLM call Anthropic's Claude API:
 
 | Caller | File | Model (default) |
 |---|---|---|
-| Intake Agent | `src/model_project_constructor/agents/intake/anthropic_client.py:32, 134-146` | `claude-sonnet-4-6` |
-| Data Agent | `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:52, 99-111` | `claude-sonnet-4-6` |
+| Intake Agent | `src/model_project_constructor/agents/intake/anthropic_client.py:39, 110` | `claude-sonnet-4-6` |
+| Data Agent | `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:53, 106` | `claude-sonnet-4-6` |
 
 Both construct `anthropic.Anthropic()` with no explicit args — the SDK picks up `ANTHROPIC_API_KEY` from the environment. Both accept an injected `client` argument so tests can pass a mock. Both default to `claude-sonnet-4-6` and expose a `model` argument for override.
+
+LLM client construction is routed through factory functions (`src/model_project_constructor/agents/intake/factory.py:35-64` for Intake; `packages/data-agent/src/model_project_constructor_data_agent/factory.py:31-64` for Data Agent) so the provider is named explicitly by callers, and a second LLM backend becomes one new client module plus one branch in the factory — no changes at the call sites. The known-provider list is single-sourced via `Literal` + `get_args`, so unknown-provider errors cannot drift from reality. Currently only `"anthropic"` is implemented; the seam (E4 overhaul) exists for future providers.
 
 **Which agents call Claude (and which do not):**
 
@@ -151,7 +163,7 @@ Implication for operators: if the interview may contain policyholder-identifying
 
 ### 3.2 Data Agent
 
-Prompts sent to Anthropic (`packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:113-235`):
+Prompts sent to Anthropic (six methods in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:123-364` — `generate_primary_queries`, `generate_quality_checks`, `summarize`, `generate_datasheet`, `generate_baseline_query`, `rank_candidate_tables`):
 
 - The full `DataRequest` JSON — which includes the `target_description`, `required_features`, `population_filter`, `time_range`, and `database_hint`.
 - The generated SQL and quality-check SQL (for the `summarize` and `generate_datasheet` calls).
@@ -262,7 +274,7 @@ Default level is `INFO` via `MPC_LOG_LEVEL`. `DEBUG` is safe — there is no DEB
 The project's GitHub Actions workflow (`.github/workflows/ci.yml`) has **no secrets references** — no `${{ secrets.* }}` expressions anywhere. Jobs:
 
 1. `lint` — `uv sync --extra dev && uv run ruff check`.
-2. `typecheck` — `uv sync --extra agents --extra ui --extra dev && uv run mypy src/`.
+2. `typecheck` — `uv sync --extra agents --extra ui --extra dev && uv run mypy` (config-driven; `[tool.mypy]` pins the checked packages).
 3. `test` — same install plus `uv run pytest -q`.
 4. `decoupling` — verifies the Data Agent package does not import from the main package.
 

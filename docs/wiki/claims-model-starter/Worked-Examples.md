@@ -169,7 +169,7 @@ The Website Agent scaffolds a project named `subrogation-model` (slug `subrogati
 - `queries/quality/subrogation_training_set/row_count_sanity.sql`
 - `queries/quality/subrogation_training_set/target_nullability.sql`
 
-**Governance artifacts (Phase 4B, tier-3 moderate with `affects_consumers=true`)** — emitted by `build_governance_files` in `src/model_project_constructor/agents/website/governance_templates.py:770-853`:
+**Governance artifacts (Phase 4B, tier-3 moderate with `affects_consumers=true`)** — emitted by `build_governance_files` in `src/model_project_constructor/agents/website/governance_templates.py:803-886`:
 
 Always-emitted:
 
@@ -180,13 +180,13 @@ Always-emitted:
 - `.pre-commit-config.yaml`
 - `data/datasheet_subrogation_training_set.md` (one per primary query)
 
-Tier-3+ (`governance_templates.py:812-823`):
+Tier-3+ (`governance_templates.py:846-855`):
 
 - `governance/three_pillar_validation.md`
 - `governance/ongoing_monitoring.md`
 - `governance/deployment_gates.md`
 
-Consumer-facing (`governance_templates.py:847-851`):
+Consumer-facing (`governance_templates.py:881-884`):
 
 - `governance/eu_ai_act_compliance.md`
 
@@ -251,17 +251,17 @@ Personal auto policy renewals are currently decided by a rules engine that over-
 
 Because this intake is **tier-1**, **consumer-facing**, and **uses protected attributes**, `build_governance_files`, `build_analysis_files`, and `build_test_files` in `governance_templates.py` add:
 
-Tier-2+ (`governance_templates.py:824-841`):
+Tier-2+ (`governance_templates.py:858-873`):
 
 - `governance/impact_assessment.md`
 - `governance/regulatory_mapping.md` (maps each declared framework to the emitted artifact list via `build_regulatory_mapping`)
 
-Tier-1 only (`governance_templates.py:842-846`):
+Tier-1 only (`governance_templates.py:876-878`):
 
 - `governance/lcp_integration.md`
 - `governance/audit_log/README.md`
 
-Fairness scaffolds (`governance_templates.py:856-904`, triggered by `uses_protected_attributes=true`):
+Fairness scaffolds (`build_analysis_files` at `governance_templates.py:889-909` and `build_test_files` at `governance_templates.py:912-930`, triggered by `uses_protected_attributes=true`):
 
 - `analysis/fairness_audit.qmd`
 - `src/renewal_profitability_model/fairness/__init__.py`
