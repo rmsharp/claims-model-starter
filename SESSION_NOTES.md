@@ -6,11 +6,64 @@
 
 ## ACTIVE TASK
 
-**Task:** Session 137 — operator-directed: **(1)** fix `README.md:128` stale test count (`440+` → `795`); **(2) primary deliverable** — write the **Audit §8 recurrence-prevention plan** (drifted `file:line` citations → grep-locatable **symbol references**, approach operator-chosen via `AskUserQuestion`) to `docs/planning/`, with an evidence-based grep inventory of all **116 citations across 8 wiki pages**, per-phase completion criteria, verification commands, and STOP points. PLANNING deliverable — implementation is a separate session (FM #18/#19). (IN PROGRESS)
+**Task:** Session 137 — operator-directed: **(1)** fix `README.md:128` stale test count (`440+` → `795`); **(2) primary deliverable** — write the **Audit §8 recurrence-prevention plan** (drifted `file:line` citations → grep-locatable **symbol references**, approach operator-chosen via `AskUserQuestion`) to `docs/planning/`, with an evidence-based inventory of every citation across the affected wiki pages, per-phase completion criteria, verification commands, and STOP points. PLANNING deliverable — implementation is a separate session (FM #18/#19). (**COMPLETE** — README fixed (`b318dbe`, count verified 795 via `pytest --collect-only`); plan written to `docs/planning/wiki-citation-symbol-references-plan.md` (`9d35ad9`), 410 lines, built on a read-only adversarially-verified inventory of **166 citation occurrences across 8 pages** (105 clean / 24 multi / 37 non_symbol; 43 verify-flagged, 31 needing real correction, 13 already mis-pointing). Doc-only — no code touched, no wiki publish (plan is in `docs/planning/`, not `docs/wiki/`); gate baseline inherited. `master` is **3 commits ahead of origin** after this close-out — NOT pushed (Learning #40).)
 
-**Started:** 2026-06-10.
+**Started / Completed:** 2026-06-10.
 
-**Status:** Session claimed. README prelude fix first, then build the plan (read-only inventory workflow → synthesize). Approach locked to **symbol references** via `AskUserQuestion` (Learning #40).
+**Status:** **COMPLETE.** Approach **symbol references** locked via `AskUserQuestion` (Learning #40) over publish-time generation / hybrid. Built a read-only `inventory → adversarial-verify` pipeline (`wf_22ad61bd-50b`, 16 `Explore` agents — tool-restricted per Candidate #102, so the stages physically could not mutate the tree). The verifier did real work: **43/166 flagged**, including **13 citations that already mis-point at the wrong construct** *despite* the S134–136 audit remediation (e.g. `intake/anthropic_client.py:150-162` cited as `next_question` is actually `_DRAFT_REPORT_INSTRUCTIONS`; `:121-128` cited as `SYSTEM_GOVERNANCE` is `GOVERNANCE_FRAMEWORKS`; Schema-Reference classes off by 9/19/43). This is the plan's headline evidence that line citations are fragile even at rest and symbol refs are self-correcting. Appendix A (the mandatory migration inventory) generated programmatically from the verified JSON — no transcription. Held scope: **plan only, no migration started** (FM #18). Self-corrected my pre-flight grep undercount (116 → real 166) → **Candidate #104**.
+
+### Session 136 Handoff Evaluation (by Session 137)
+
+**Score: 9/10.** Near-turnkey, and its hard-won process learnings paid off directly.
+
+- **What helped (the +):** (a) **§8 pre-named as "its own session"** with *both* audit options spelled out — this is exactly why I treated it as a PLANNING deliverable and surfaced the approach fork via `AskUserQuestion` instead of inferring "implement." (b) The **README fix pre-specified** (`440+ → 795`, flagged trivial/out-of-wiki-scope) — I did precisely that, with live verification. (c) **Candidate #102 (tool-restrict read-only stages with `Explore`)** — applied from the first run; **zero contamination this session** (S136 paid a full re-run to learn this; I inherited it for free). (d) **Candidate #103 (adversarial necessary-not-sufficient; the audit's *fix pointers* can be wrong)** — shaped my design (adversarial verify stage) and is baked into the plan as a hard executor rule ("re-derive from live code"). (e) Baseline, candidate roster, learnings-home (`PROJECT_LEARNINGS.md`), and Learning #40 push-discipline all reproduced and applied.
+- **What was wrong / the −1:** the handoff's inherited invocation `.venv/bin/python -m pytest` (Learning #51) is **stale for this checkout — there is no `.venv`**; the project uses `uv run pytest`. Cost a few minutes of discovery. Minor but a real inaccuracy in a "inherit, don't re-run" field.
+- **What was missing:** nothing material. The "63/79 findings remediated" framing was accurate.
+- **ROI:** very high — #102 alone saved a contaminated re-run.
+
+### What Session 137 Did
+
+**Deliverables:** (1) README test-count fix; (2) the **§8 recurrence-prevention plan**. **COMPLETE.** Commits `fd91292` (claim), `b318dbe` (README), `9d35ad9` (plan).
+
+- **Orientation + claim (Phase 0/1B):** SAFEGUARDS (full) → SESSION_NOTES top (S136) → SESSION_RUNNER (full) → `gh issue list` empty → git (on `master`, clean, even with origin; ghost-check clean — HEAD `7bab300` = S136) → dashboard (MPC **96/100**) → reported, waited. Read audit §8 + README:128 to scope; locked the approach via `AskUserQuestion`; wrote the Phase-1B stub.
+- **README fix:** verified the real count with `uv run pytest --collect-only -q` → **795 collected** → `440+ → 795` (did not write the number from the handoff alone — FM #11). Committed `b318dbe`.
+- **Plan (the deliverable):** ran the read-only inventory workflow → synthesized `docs/planning/wiki-citation-symbol-references-plan.md`. Sections: problem+root-cause (with the 31-already-wrong evidence), the chosen-approach decision + rejected alternatives, the citation convention (incl. non-symbol anchors: TOML table path / CI job name / test-module path / doc §section / module docstring), the evidence-based inventory summary, here-be-dragons (Security bare-path ambiguity; **Evolution deferred** per its no-auto-rewrite banner + a now-absent `GITLAB_DEFAULT_HOST_URL`; Contributing all-config), a **6-phase execution plan** (each: DONE / verification / STOP), a **CI recurrence-guard** test design (`tests/test_wiki_no_line_citations.py` + transition allowlist), verification-command reference, risks, and **Appendix A** (full 166-row inventory, machine-generated). Committed `9d35ad9`.
+- **Discipline:** plan is in `docs/planning/` → **no wiki auto-publish** triggered. Doc-only → gate baseline inherited (not re-run). Did **not** push `master`→`origin` (Learning #40). Did **not** begin migrating (FM #18 — plan is the deliverable).
+
+### Phase 3B: Self-assess — Session 137 — 9/10
+
+- **The + :** Correctly read a terse two-item request as **README-fix + a PLANNING deliverable** (not "implement §8"), honoring FM #18/#19 even though the operator said neither "plan" nor "implement." Asked the **one** genuinely-unresolvable question (architecture) via `AskUserQuestion` with concrete before/after previews — neither guessed nor over-asked. **Applied the predecessor's #102/#103 the first time** — tool-restricted `Explore` stages, zero contamination, adversarial verify built in. Produced a **real** evidence base (166 occurrences, every one adversarially checked) — the mandatory migration inventory done to standard, and the verifier's 31-already-wrong finding became the plan's strongest argument. **Verified the README number against live code**, not the handoff. **Generated Appendix A programmatically** (no transcription errors — Candidate #103-adjacent). Held scope cleanly.
+- **The − :** (1) my pre-flight `grep` undercounted occurrences (116 vs the real 166 — a 43% miss); the `AskUserQuestion` framing said "116." The fork didn't depend on the exact count and the plan corrects it, but I should have trusted a per-file read over a one-shot regex (→ Candidate #104). (2) The plan is long (410 lines); justified for a migration plan per the workstream, but it leans on the executor to re-derive — I flag this as a hard rule, yet it remains real work pushed downstream.
+- **Quality bar:** meets/exceeds prior planning sessions — evidence-based inventory (mandatory), per-phase DONE/verification/STOP, here-be-dragons, recurrence guard; and it *consumed* the predecessor's process learnings rather than rediscovering them.
+
+### Phase 3C: Learnings — Session 137
+
+**Candidate #104 — 1st instance.** *A surface `grep` over docs **undercounts** code-citation occurrences versus a per-file agent read — here 116 (regex sweep) vs 166 (live read), a ~30% miss. Citations split across prose vs. tables, and bare-filename forms, evade a single regex.* **When to apply:** for any docs/code **migration inventory** where completeness matters, treat a `grep` sweep as a **lower bound / sanity check**, not the count — derive the authoritative inventory by reading each file (or fanning out one agent per file). A special case of Learning #6 (read implementations, don't estimate from a sweep) applied to inventories. Now at **1 instance.**
+
+**No promotions** — #104 new at 1; no candidate at the 3× threshold. **Learnings home:** `PROJECT_LEARNINGS.md` (51 promoted rows), unchanged this session; candidates tracked here in the handoff roster.
+
+**Applied:** #10 (oriented + reported + waited); #40 (locked approach via `AskUserQuestion`; did NOT push `master`→`origin`); #45 (every proposed symbol re-verified against code — the adversarial stage; and the plan mandates the executor re-derive); #46/#49 (adversarial multi-agent fan-out — the inventory workflow); #5 (the plan is an actionable, executable artifact, not a critique — exact phases, verification commands, Appendix-A checklist); #51 (gate baseline inherited, not re-run — doc-only; but corrected the stale `.venv` invocation to `uv run`); #43/FM #18/#19 (held scope — plan only, no migration); **#102** (tool-restricted `Explore` read-only stages — no contamination); **#103** (adversarial pass + programmatic generation to avoid transcription error). New: **#104** (grep undercounts migration inventories).
+
+### Phase 3D: Handoff to Session 138
+
+**The §8 plan is written and committed (DRAFT — not implemented).** The README test-count drift is fixed. Implementation of the plan is the next body of work, one phase per session.
+
+**⚠ State you will inherit:**
+1. **`master` is 3 commits AHEAD of `origin/master`** (`fd91292` claim, `b318dbe` README, `9d35ad9` plan) **+ this close-out commit = 4 ahead** once committed. **NOT pushed** (Learning #40 — needs explicit operator "push it").
+2. **No wiki publish this session** — the plan lives in `docs/planning/`, not `docs/wiki/`, so the `post-commit` hook did not fire. The live wiki is unchanged (still fully current from S135/S136).
+3. **Baseline UNCHANGED (doc-only):** **795 passed @ 97.28%**, mypy 0/64, ruff clean — inherited, not re-run. **⚠ CORRECTED invocations (Learning #51): the project uses `uv run`, NOT `.venv/bin/python` (there is no `.venv`):** `uv run pytest -q`; `uv run pytest --collect-only -q` (795 collected); `uv run mypy`; `uv run ruff check src/ tests/ packages/ scripts/`.
+
+**What's next (operator's call):**
+1. **Execute the plan, Phase 1:** migrate `Schema-Reference.md` + `Changelog.md` + `Extending-the-Pipeline.md` (clean code symbols; ~69 occurrences). See `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 1. **⚠ This phase EDITS `docs/wiki/` → the auto-publish hook will publish live — confirm publish intent first (Learning #40), exactly as S135/S136 did.** A migration phase MAY reuse the S136-style read-only-`Explore` author→verify→apply workflow (Candidate #102), but **re-derive every symbol from live code** (Appendix A's line numbers are a snapshot; 31 are already wrong — §1/§9 of the plan).
+2. Subsequent phases (one session each): Phase 2 (Intake-Interview-Design + Worked-Examples), Phase 3 (Security — the hot spot, dedicated session), Phase 4 (Contributing — config anchors), Phase 5 (Evolution — DEFERRED per its banner), Phase 6 (the CI recurrence-guard test). Do not bundle phases (FM #18).
+3. **Push `master`→`origin`** if desired (will be 4 commits — re-confirm, Learning #40).
+4. **Still pending (unchanged):** GitHub Release v0.2.0 (S133); standing micros (Learning #43 — DO NOT auto-fix): `adapters.py` magic-string branch; `governance_templates.py` `_assert_vocab_parity` → shared `_vocab_guard`; data-agent prompt `measurement_unit` wording; untracked `.claude/` not in `.gitignore`.
+
+**Important considerations for Session 138:**
+1. **The plan is the source of truth for the migration**; read it before executing. Appendix A is the per-occurrence checklist, but **re-derive symbols from live code** (the convention §3 drops the line number entirely — so a stale line number does no harm, but a wrong symbol does). See plan §3 hard rule, §9 caveats.
+2. **Read-only workflow stages MUST use `Explore`/`Plan` agentType** (Candidate #102) — proven again this session (zero contamination). **Adversarial pass is necessary but not sufficient** (Candidate #103) — diff-review before publish.
+3. **Evolution.md must NOT be mechanically migrated** (its no-auto-rewrite banner; audit §8 caveat) — plan Phase 5 defers it.
+4. **Candidate roster:** **#104 at 1** (grep undercounts migration inventories — NEW), **#103 at 1**, **#102 at 1**, **#101 at 1**, **#100 at 1**, **#99 at 1**, **#98/#96/#97/#95 at 1**, **#88/#89/#92 at 2**, **#90/#94 at 1**. Next candidate = **#105** (all-time max now 104). No candidate at 3× → no promotion due.
 
 ---
 
