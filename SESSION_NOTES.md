@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 138 — operator-directed: **Execute the §8 plan, Phase 1** — migrate the wiki `file:line` citations → grep-locatable **symbol references** on the three clean-code-symbol pages: `Schema-Reference.md` (29 occ), `Changelog.md` (2 occ), `Extending-the-Pipeline.md` (38 occ) = **69 occurrences**. Follows `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 1 + §3 convention. DEVELOPMENT execution against a written plan; ONE "1-and-done" deliverable — **NOT** Phase 2+ (FM #18). **(IN PROGRESS)**
+
+**Started:** 2026-06-10.
+
+**Status:** Session claimed (Phase 1B). Phase 0 orientation complete (SAFEGUARDS full → SESSION_NOTES top → SESSION_RUNNER full → dashboard MPC 96/100 → reported, waited); plan + DEVELOPMENT_WORKSTREAM read in full. Publish intent to be confirmed via `AskUserQuestion` (Learning #40 — this phase edits `docs/wiki/` → the `post-commit` auto-publish hook fires live). Execution design: read-only **re-derive → adversarial-verify** workflow (Candidate #102 — tool-restricted `Explore`, physically cannot write), then **personal diff-review against live code** before commit (Candidate #103). **HARD RULE: re-derive every symbol from live code** — Appendix A line numbers are a 2026-06-10 snapshot, 31 already wrong.
+
+---
+
+**(Session 137 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 137 — operator-directed: **(1)** fix `README.md:128` stale test count (`440+` → `795`); **(2) primary deliverable** — write the **Audit §8 recurrence-prevention plan** (drifted `file:line` citations → grep-locatable **symbol references**, approach operator-chosen via `AskUserQuestion`) to `docs/planning/`, with an evidence-based inventory of every citation across the affected wiki pages, per-phase completion criteria, verification commands, and STOP points. PLANNING deliverable — implementation is a separate session (FM #18/#19). (**COMPLETE** — README fixed (`b318dbe`, count verified 795 via `pytest --collect-only`); plan written to `docs/planning/wiki-citation-symbol-references-plan.md` (`9d35ad9`), 410 lines, built on a read-only adversarially-verified inventory of **166 citation occurrences across 8 pages** (105 clean / 24 multi / 37 non_symbol; 43 verify-flagged, 31 needing real correction, 13 already mis-pointing). Doc-only — no code touched, no wiki publish (plan is in `docs/planning/`, not `docs/wiki/`); gate baseline inherited. `master` is **3 commits ahead of origin** after this close-out — NOT pushed (Learning #40).)
 
 **Started / Completed:** 2026-06-10.
