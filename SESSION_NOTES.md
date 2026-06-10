@@ -6,6 +6,16 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 136 — operator-directed: **Wiki refresh — Session B** — execute audit §7 steps 4–10, the **63 medium/low findings** (Appendix A of `docs/audits/2026-06-10-wiki-vs-code-accuracy-audit.md`; the 79 total minus the 16 high-severity S135 fixed) across **19 wiki pages**, plus the deferred medium `DataAgent().run` row. DEVELOPMENT execution against the audit's fix plan; ONE "1-and-done" deliverable. (IN PROGRESS)
+
+**Started:** 2026-06-10.
+
+**Status:** Session claimed. Decisions locked via `AskUserQuestion` (Learning #40): **(1) publish live** (let the `post-commit` hook sync the live GitHub Wiki); **(2) all 63 in one session** (full refresh in one verified pass — doc-only, git-recoverable); **(3) fix drifted `file:line` citations in place** (NOT symbol-ref migration — that is a separate recurrence-prevention task per audit §8). Approach: re-verify each fix against live code before applying (Learning #45 / Candidate #100 — verify the rendered markdown junction, not just the string), via an adversarially-checked read-only workflow (the S135 pattern). Work beginning.
+
+---
+
+**(Session 135 — COMPLETE, archived below.)**
+
 **Task:** Session 135 — operator-directed: **Fix the high-severity wiki findings** from the Session 134 wiki↔code accuracy audit (`docs/audits/2026-06-10-wiki-vs-code-accuracy-audit.md`) — the 16 high-severity contradictions in §4 (audit remediation §7 steps 1–3 **plus** the H10 5th-extension-surface fix, which §7 groups under step 4). DEVELOPMENT execution against the audit's fix plan; ONE "1-and-done" deliverable. (**COMPLETE** — all 16 fixed across 8 wiki pages, each re-verified against live code via an adversarially-checked 32-agent read-only workflow before applying; committed `6e4e3ff` and **live-published** to the GitHub Wiki by the auto-publish hook — wiki repo advanced `24029b0 → e340d71`, source↔clone parity confirmed 0-drift. Doc-only — no code touched, gate baseline inherited. `master` is ahead of `origin/master` but was **NOT pushed** (Learning #40 — the operator authorized the *wiki publish*, not a `master`→`origin` push). The broader E4 docs + medium/low long tail remain Session B.)
 
 **Started / Completed:** 2026-06-10.
