@@ -12,6 +12,11 @@ Public API:
 from __future__ import annotations
 
 from model_project_constructor.agents.intake.agent import IntakeAgent
+from model_project_constructor.agents.intake.factory import (
+    KNOWN_PROVIDERS,
+    LLMProvider,
+    make_llm_client,
+)
 from model_project_constructor.agents.intake.fixture import (
     FIXTURE_SCHEMA,
     FixtureLLMClient,
@@ -51,4 +56,7 @@ __all__ = [
     "initial_state",
     "MAX_QUESTIONS",
     "MAX_REVISIONS",
+    "make_llm_client",
+    "LLMProvider",
+    "KNOWN_PROVIDERS",
 ]

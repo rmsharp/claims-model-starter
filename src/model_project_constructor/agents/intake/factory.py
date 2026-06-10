@@ -1,0 +1,59 @@
+"""Provider seam for the Intake Agent's LLM client.
+
+The Intake Agent talks to its LLM only through the :class:`IntakeLLMClient`
+protocol (``protocol.py``). Until now every call site hardwired the one
+concrete implementation (:class:`AnthropicLLMClient`) and the provider choice
+was implicit in *which symbol you imported*. This factory makes the choice
+explicit: callers name a provider and get back an :class:`IntakeLLMClient`,
+so a second provider becomes one new client module plus one branch here — no
+edits at the call sites.
+
+This mirrors the Data Agent's ``factory.py`` but is kept **separate on
+purpose**: the intake and data-agent clients share no methods and live in
+different packages (see ``protocol.py`` and the data-agent decoupling
+boundary). The two factories are parallel, not shared.
+
+The known-provider list is single-sourced from the :data:`LLMProvider`
+``Literal`` via :func:`typing.get_args`, so the unknown-provider error cannot
+drift from the set of providers the factory actually handles.
+"""
+
+from __future__ import annotations
+
+from typing import Literal, get_args
+
+from model_project_constructor.agents.intake.anthropic_client import (
+    DEFAULT_MODEL,
+    AnthropicLLMClient,
+)
+from model_project_constructor.agents.intake.protocol import IntakeLLMClient
+
+#: Providers this factory can construct. Add a member here (and a branch in
+#: :func:`make_llm_client`) when wiring a new backend; the unknown-provider
+#: error derives its list from this.
+LLMProvider = Literal["anthropic"]
+
+KNOWN_PROVIDERS: tuple[str, ...] = get_args(LLMProvider)
+
+
+def make_llm_client(
+    provider: str = "anthropic",
+    *,
+    model: str = DEFAULT_MODEL,
+) -> IntakeLLMClient:
+    """Construct the concrete :class:`IntakeLLMClient` for ``provider``.
+
+    ``provider`` is typed as ``str`` (not :data:`LLMProvider`) because the
+    value usually arrives from a CLI flag; unknown values raise
+    :class:`ValueError` listing the providers this factory handles, rather
+    than failing later inside the concrete client.
+
+    ``model`` is forwarded to the concrete client and defaults to that
+    provider's default model.
+    """
+    if provider == "anthropic":
+        return AnthropicLLMClient(model=model)
+    raise ValueError(
+        f"Unknown LLM provider {provider!r}. "
+        f"Known providers: {', '.join(KNOWN_PROVIDERS)}."
+    )
