@@ -16,6 +16,11 @@ the data schemas from this package so existing pipeline code can still write
 from model_project_constructor_data_agent.agent import DataAgent
 from model_project_constructor_data_agent.db import DBConnectionError, ReadOnlyDB
 from model_project_constructor_data_agent.discovery import probe_information_schema
+from model_project_constructor_data_agent.factory import (
+    KNOWN_PROVIDERS,
+    LLMProvider,
+    make_llm_client,
+)
 from model_project_constructor_data_agent.llm import (
     LLMClient,
     PrimaryQuerySpec,
@@ -48,7 +53,9 @@ __all__ = [
     "DataSourceInventory",
     "Datasheet",
     "DBConnectionError",
+    "KNOWN_PROVIDERS",
     "LLMClient",
+    "LLMProvider",
     "PrimaryQuery",
     "PrimaryQuerySpec",
     "ProducerMetadata",
@@ -57,5 +64,6 @@ __all__ = [
     "ReadOnlyDB",
     "SummaryResult",
     "TableRanking",
+    "make_llm_client",
     "probe_information_schema",
 ]
