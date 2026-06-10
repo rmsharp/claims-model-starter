@@ -26,7 +26,7 @@ Four architectural overhauls landed across Sessions 115-133: E4 decouples LLM-pr
 - **Added:** `REPO_PLATFORMS` registry in `src/model_project_constructor/orchestrator/config.py` - single source of truth for host vocabulary, per-host API URLs, token env vars, and adapter factories.
 - **Added:** `PlatformSpec` dataclass carrying `default_api_url`, `token_env_var`, and `adapter_factory: Callable[..., RepoClient]` for each host (GitLab, GitHub).
 - **Added:** `adapter_factory` field to each platform spec - each host's factory lazy-imports its SDK (`python-gitlab` / `PyGithub`) only when an adapter is actually constructed, keeping the registry import-time SDK-free.
-- **Changed:** Both live entry points (`scripts/run_pipeline.py` and `agents/website/cli.py`) now build the adapter via `REPO_PLATFORMS[host].adapter_factory(host_url=..., private_token=...)` - no hand-written `--host` branch dispatch.
+- **Changed:** Both live entry points (`scripts/run_pipeline.py` and `src/model_project_constructor/agents/website/cli.py`) now build the adapter via `REPO_PLATFORMS[host].adapter_factory(host_url=..., private_token=...)` - no hand-written `--host` branch dispatch.
 - **Added:** Import-time drift guard `assert_vocab_parity(REPO_PLATFORMS.keys(), HostLiteral)` - fails the build if a host is added to one but not the other.
 - **Changed:** `cli.VALID_HOSTS` and the pipeline argparse `choices` are now derived from `REPO_PLATFORMS.keys()`, so they auto-update when a host is registered.
 
@@ -39,7 +39,7 @@ Four architectural overhauls landed across Sessions 115-133: E4 decouples LLM-pr
 
 #### O4 - Prompt enumeration derivation (Sessions 127-130)
 
-- **Added:** Six intake prompt enumerations derived at module load via `typing.get_args()` on their schema Literals: `CycleTime`, `RiskTier`, `ModelType` (from `schemas/v1/common.py`) and three others from intake-specific Literals.
+- **Added:** Six intake prompt enumerations derived at module load via `typing.get_args()` on their schema Literals: `CycleTime`, `RiskTier`, `ModelType` (from `src/model_project_constructor/schemas/v1/common.py`) and three others from intake-specific Literals.
 - **Added:** Data Agent's `expected_row_count_order` prompt enumeration similarly derived from its Literal in the data-agent wheel (single-sourced, decoupling-safe).
 - **Changed:** Prompt-enumeration values are no longer hand-listed in prose or system prompts - they are derived at runtime from the schema's Literal source of truth, so a vocabulary edit updates both the schema and the prompt in one place.
 
@@ -134,7 +134,7 @@ Phased rename from a GitLab-specific Website Agent to a host-neutral one.
 - **Added:** `src/model_project_constructor/agents/intake/` — LangGraph flow with eight nodes (draft question → ask → collect → evaluate → propose → review → revise → finalize) (`64b8a99`).
 - **Added:** Two system prompts (interviewer + governance classifier) verbatim in `anthropic_client.py` (`64b8a99`).
 - **Added:** `MAX_QUESTIONS=10` and `MAX_REVISIONS=3` budgets (`64b8a99`).
-- **Added:** Six accept tokens for terminal review (`nodes.py:35`).
+- **Added:** Six accept tokens for terminal review (`REVIEW_ACCEPT_TOKENS` in `src/model_project_constructor/agents/intake/nodes.py`).
 - **Added:** Fixture-driven CLI mode for test and replay scenarios (`64b8a99`).
 
 ### Phase 2B — Data Agent polish (Session 5)
@@ -200,7 +200,7 @@ Pilot-readiness fixes (Session 17, `17f661d` + `d62efc2` + `b8d8d7e`):
 
 ## Versioning policy
 
-The project is currently pre-1.0. Schema versioning is intentionally minimal — every payload is `1.0.0` and there is no migration machinery yet. The registry contract at `src/model_project_constructor/schemas/registry.py:7-13` keys on `(payload_type, schema_version)`, so multiple versions *can* coexist once a second is introduced:
+The project is currently pre-1.0. Schema versioning is intentionally minimal — every payload is `1.0.0` and there is no migration machinery yet. The registry contract (`REGISTRY` in `src/model_project_constructor/schemas/registry.py`) keys on `(payload_type, schema_version)`, so multiple versions *can* coexist once a second is introduced:
 
 - **Minor bump** (1.0.0 → 1.1.0, backwards-compatible additions): register the new class under its new version key; keep 1.0.0.
 - **Major bump** (1.0.0 → 2.0.0): register v2 and keep v1 for at least two major releases; add whatever migration the change needs at that point. There is no `schemas/migrations/` package today.

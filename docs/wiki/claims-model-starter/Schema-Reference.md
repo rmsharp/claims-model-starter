@@ -14,14 +14,14 @@ There are **5 registered payload schemas** plus the **HandoffEnvelope** transpor
 
 | Schema | Purpose | Writer | Reader(s) | File |
 |---|---|---|---|---|
-| `IntakeReport` | Interview output | Intake Agent | Orchestrator, Website Agent | `schemas/v1/intake.py:97-116` |
-| `DataRequest` | What the Data Agent needs | Orchestrator (adapted from intake) or user (standalone) | Data Agent | `packages/data-agent/.../schemas.py:46-68` |
-| `DataReport` | Queries + quality checks + summary | Data Agent | Orchestrator, Website Agent | `packages/data-agent/.../schemas.py:113-123` |
-| `RepoTarget` | Destination repo config | Orchestrator (from user config) | Website Agent | `schemas/v1/repo.py:12-17` |
-| `RepoProjectResult` | Generated repo metadata | Website Agent | Orchestrator | `schemas/v1/repo.py:28-37` |
-| `HandoffEnvelope` | Transport wrapper | All senders | All receivers | `schemas/envelope.py:20-34` |
+| `IntakeReport` | Interview output | Intake Agent | Orchestrator, Website Agent | `src/model_project_constructor/schemas/v1/intake.py` |
+| `DataRequest` | What the Data Agent needs | Orchestrator (adapted from intake) or user (standalone) | Data Agent | `packages/data-agent/src/model_project_constructor_data_agent/schemas.py` |
+| `DataReport` | Queries + quality checks + summary | Data Agent | Orchestrator, Website Agent | `packages/data-agent/src/model_project_constructor_data_agent/schemas.py` |
+| `RepoTarget` | Destination repo config | Orchestrator (from user config) | Website Agent | `src/model_project_constructor/schemas/v1/repo.py` |
+| `RepoProjectResult` | Generated repo metadata | Website Agent | Orchestrator | `src/model_project_constructor/schemas/v1/repo.py` |
+| `HandoffEnvelope` | Transport wrapper | All senders | All receivers | `src/model_project_constructor/schemas/envelope.py` |
 
-The Data Agent schemas live in a **separate package** (`packages/data-agent/`) to keep the standalone analyst use-case viable. The main package re-exports them from `schemas/v1/data.py` so pipeline callers import from one place, but `DataRequest` / `DataReport` never import `IntakeReport` — enforced by `tests/test_data_agent_decoupling.py`.
+The Data Agent schemas live in a **separate package** (`packages/data-agent/`) to keep the standalone analyst use-case viable. The main package re-exports them from `src/model_project_constructor/schemas/v1/data.py` so pipeline callers import from one place, but `DataRequest` / `DataReport` never import `IntakeReport` — enforced by `tests/test_data_agent_decoupling.py`.
 
 ---
 
@@ -30,7 +30,7 @@ The Data Agent schemas live in a **separate package** (`packages/data-agent/`) t
 Every schema in this project derives from `StrictBase`:
 
 ```python
-# src/model_project_constructor/schemas/v1/common.py:10-21
+# src/model_project_constructor/schemas/v1/common.py
 class StrictBase(BaseModel):
     model_config = ConfigDict(extra="forbid", protected_namespaces=())
 ```
@@ -40,17 +40,17 @@ Two non-negotiables:
 - **`extra="forbid"`** — any unknown field raises `ValidationError`. This catches silent version drift.
 - **`protected_namespaces=()`** — lets us use field names like `model_solution` and `model_type` (Pydantic v2 otherwise warns on the `model_` prefix).
 
-The Data Agent package (`packages/data-agent/.../schemas.py:29-38`) defines its own `StrictBase` with the same configuration — deliberately duplicated to avoid coupling the standalone package to the main orchestrator.
+The Data Agent package (`StrictBase` in `packages/data-agent/src/model_project_constructor_data_agent/schemas.py`) defines its own `StrictBase` with the same configuration — deliberately duplicated to avoid coupling the standalone package to the main orchestrator.
 
 The envelope is the only schema that inherits directly from `BaseModel` rather than `StrictBase`. It still uses `extra="forbid"`.
 
 ---
 
-## 3. Shared types (`schemas/v1/common.py`)
+## 3. Shared types (`src/model_project_constructor/schemas/v1/common.py`)
 
 The schemas/v1/common module defines three Literal-string enums reused across reports:
 
-### `CycleTime` (line 23)
+### `CycleTime`
 
 ```python
 CycleTime = Literal["strategic", "tactical", "operational", "continuous"]
@@ -61,7 +61,7 @@ CycleTime = Literal["strategic", "tactical", "operational", "continuous"]
 - `operational` — days to hours (e.g., daily batch scoring).
 - `continuous` — sub-minute / event-driven (e.g., real-time fraud triage).
 
-### `RiskTier` (lines 25-30)
+### `RiskTier`
 
 ```python
 RiskTier = Literal[
@@ -79,7 +79,7 @@ RiskTier = Literal[
 
 See [Governance Framework](Governance-Framework) for the artifact inventory per tier.
 
-### `ModelType` (lines 32-40)
+### `ModelType`
 
 ```python
 ModelType = Literal[
@@ -93,7 +93,7 @@ ModelType = Literal[
 ]
 ```
 
-The orchestrator's `infer_target_granularity` adapter branches on `model_type`: `time_series` maps to a monthly grain, everything else maps to `event` grain with `unit="claim"` (`orchestrator/adapters.py:55`).
+The orchestrator's `infer_target_granularity` adapter branches on `model_type`: `time_series` maps to a monthly grain, everything else maps to `event` grain with `unit="claim"` (`infer_target_granularity` in `src/model_project_constructor/orchestrator/adapters.py`).
 
 ### Version field
 
@@ -111,7 +111,7 @@ schema_version: Literal["1.0.0"] = "1.0.0"   # declared on each payload, e.g. in
 
 The Intake Agent writes this; the Orchestrator validates it; the Website Agent reads it to scaffold the project.
 
-### `ModelSolution` (lines 18-25)
+### `ModelSolution`
 
 ```python
 class ModelSolution(StrictBase):
@@ -141,7 +141,7 @@ CounterfactualDesign = Literal[
 ReviewCadence = Literal["weekly", "monthly", "quarterly", "ad_hoc"]
 ```
 
-These aliases are defined in `src/model_project_constructor/schemas/v1/intake.py` (lines 24, 25–33, 34) and used by the intake prompt to derive its enumerations from the same Literal the validator uses — an O4 single-sourcing pattern (Overhaul O4, Sessions 127-130) that keeps the prompt and schema synchronized automatically rather than hand-listing members in prose.
+These aliases are defined in `src/model_project_constructor/schemas/v1/intake.py` and used by the intake prompt to derive its enumerations from the same Literal the validator uses — an O4 single-sourcing pattern (Overhaul O4, Sessions 127-130) that keeps the prompt and schema synchronized automatically rather than hand-listing members in prose.
 
 ### `EstimatedValue`
 
@@ -189,7 +189,7 @@ class ValueMeasurementPlan(StrictBase):
 
 Captured at intake (Phase 2 extension); consumed by the data agent (Phase 3 baseline collection) and surfaced on the generated website's `06_implementation_plan.qmd` (Phase 5). All fields are optional at the schema level — required combinations are enforced by the intake `finalize` node (`COMPLETE` status requires at least `baseline_metric_name` and `evaluation_horizon_months`).
 
-### `GovernanceMetadata` (lines 35-43)
+### `GovernanceMetadata`
 
 ```python
 class GovernanceMetadata(StrictBase):
@@ -233,7 +233,7 @@ class IntakeReport(StrictBase):
 - `missing_fields`: adds `"questions_cap_reached"` or `"revision_cap_reached"` when applicable — see [Intake Interview Design §7](Intake-Interview-Design).
 - `questions_asked`: required (no default) — the report must record how many questions were actually asked.
 - `created_at`: tz-aware `datetime` — UTC in practice.
-- `qa_pairs`: optional (defaults to empty); the raw question/answer transcript of the interview, scanned by the interview-derived `DataSourceInventory` producer (`intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`) rather than relying on the synthesized report prose.
+- `qa_pairs`: optional (defaults to empty); the raw question/answer transcript of the interview, scanned by the interview-derived `DataSourceInventory` producer (`intake_qa_pairs_to_inventory` in `src/model_project_constructor/orchestrator/adapters.py`) rather than relying on the synthesized report prose.
 
 **Example fixture:** `tests/fixtures/subrogation_intake.json`.
 
@@ -245,7 +245,7 @@ class QAPair(StrictBase):
     answer: str
 ```
 
-A single interview exchange. Carried in `IntakeReport.qa_pairs` so downstream consumers (notably `intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`) can scan the raw transcript.
+A single interview exchange. Carried in `IntakeReport.qa_pairs` so downstream consumers (notably `intake_qa_pairs_to_inventory` in `src/model_project_constructor/orchestrator/adapters.py`) can scan the raw transcript.
 
 ---
 
@@ -255,7 +255,7 @@ A single interview exchange. Carried in `IntakeReport.qa_pairs` so downstream co
 
 These schemas are deliberately self-contained — the Data Agent package does not import anything from the main project. An analyst can install `model-project-constructor-data-agent` alone and use the schemas for a standalone query-writing session.
 
-### `DataGranularity` (lines 41-43)
+### `DataGranularity`
 
 ```python
 class DataGranularity(StrictBase):
@@ -373,7 +373,7 @@ Top-level container. A cross-field validator (`_producer_ids_resolve`) runs at c
 
 **Example fixture:** `tests/fixtures/sample_curated_inventory.json`.
 
-### `QualityCheck` (lines 62-68)
+### `QualityCheck`
 
 ```python
 class QualityCheck(StrictBase):
@@ -387,7 +387,7 @@ class QualityCheck(StrictBase):
 
 `execution_status="NOT_EXECUTED"` is used when the Data Agent runs without a database connection — quality checks are generated but not run. The report still carries `status="COMPLETE"` in that case.
 
-### `Datasheet` (lines 71-80)
+### `Datasheet`
 
 ```python
 class Datasheet(StrictBase):
@@ -466,7 +466,7 @@ class DataReport(StrictBase):
 
 **File:** `src/model_project_constructor/schemas/v1/repo.py`
 
-### `RepoTarget` (lines 12-17)
+### `RepoTarget`
 
 ```python
 class RepoTarget(StrictBase):
@@ -477,9 +477,9 @@ class RepoTarget(StrictBase):
     visibility: Literal["private", "internal", "public"] = "private"
 ```
 
-Default visibility is `"private"`. GitHub does not support nested namespaces — the GitHub adapter raises `RepoClientError` if `namespace` contains a `/` (`github_adapter.py:85-89`).
+Default visibility is `"private"`. GitHub does not support nested namespaces — the GitHub adapter raises `RepoClientError` if `namespace` contains a `/` (`PyGithubAdapter.create_project` in `src/model_project_constructor/agents/website/github_adapter.py`).
 
-### `GovernanceManifest` (lines 20-25)
+### `GovernanceManifest`
 
 ```python
 class GovernanceManifest(StrictBase):
@@ -493,7 +493,7 @@ class GovernanceManifest(StrictBase):
 - `model_registry_entry` is an escape hatch for the full registry row; see [Governance Framework](Governance-Framework) for its shape.
 - `regulatory_mapping` maps a framework name (e.g., `"SR_11_7"`) to the list of artifact paths that satisfy it — a reviewer-friendly index into the generated project.
 
-### `RepoProjectResult` (lines 28-37)
+### `RepoProjectResult`
 
 ```python
 class RepoProjectResult(StrictBase):
@@ -507,7 +507,7 @@ class RepoProjectResult(StrictBase):
     failure_reason: str | None = None                   # populated when status="FAILED"
 ```
 
-`project_id` is **host-opaque**. The adapters (`github_adapter.py`, `gitlab_adapter.py`) decide the format; downstream consumers should treat it as a bag of bytes and pass it back to the adapter for subsequent calls.
+`project_id` is **host-opaque**. The adapters (`src/model_project_constructor/agents/website/github_adapter.py`, `src/model_project_constructor/agents/website/gitlab_adapter.py`) decide the format; downstream consumers should treat it as a bag of bytes and pass it back to the adapter for subsequent calls.
 
 The orchestrator persists this as a **terminal result**, not an envelope — see §8 below.
 
@@ -518,7 +518,7 @@ The orchestrator persists this as a **terminal result**, not an envelope — see
 **File:** `src/model_project_constructor/schemas/envelope.py`
 
 ```python
-# lines 20-34
+# src/model_project_constructor/schemas/envelope.py
 class HandoffEnvelope(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -545,12 +545,12 @@ The original design tried to widen `target_agent` to include `"orchestrator"` so
 
 ---
 
-## 8. Schema registry (`schemas/registry.py`)
+## 8. Schema registry (`src/model_project_constructor/schemas/registry.py`)
 
 The registry is the single source of truth mapping `(payload_type, schema_version)` → Pydantic class. Agents **never import each other's schemas directly**; they resolve via `load_payload`.
 
 ```python
-# lines 26-32
+# src/model_project_constructor/schemas/registry.py
 SchemaKey = tuple[str, str]
 
 REGISTRY: dict[SchemaKey, type[BaseModel]] = {
@@ -565,7 +565,7 @@ REGISTRY: dict[SchemaKey, type[BaseModel]] = {
 ### `load_payload(envelope) -> BaseModel`
 
 ```python
-# lines 39-58 (abbreviated)
+# src/model_project_constructor/schemas/registry.py (abbreviated)
 def load_payload(envelope: HandoffEnvelope) -> BaseModel:
     key = (envelope.payload_type, envelope.payload_schema_version)
     try:
@@ -588,7 +588,7 @@ Both are caught and surfaced by the orchestrator as pipeline halt conditions.
 
 ## 9. Checkpoint storage layout
 
-The `CheckpointStore` in `orchestrator/checkpoints.py` persists every handoff. A single run produces this layout:
+The `CheckpointStore` in `src/model_project_constructor/orchestrator/checkpoints.py` persists every handoff. A single run produces this layout:
 
 ```
 <MPC_CHECKPOINT_DIR>/<run_id>/

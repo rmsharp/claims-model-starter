@@ -8,7 +8,7 @@ This page documents the shape of each change, the files to edit, and the tests t
 
 ## 1. The envelope contract
 
-Every extension ultimately flows through the same transport: the `HandoffEnvelope`. From `src/model_project_constructor/schemas/envelope.py:20-33`:
+Every extension ultimately flows through the same transport: the `HandoffEnvelope`. From `HandoffEnvelope` in `src/model_project_constructor/schemas/envelope.py`:
 
 ```python
 class HandoffEnvelope(BaseModel):
@@ -29,7 +29,7 @@ The `envelope_version` evolves independently from payload schemas. Payloads are 
 
 ### The schema registry
 
-`src/model_project_constructor/schemas/registry.py:26-32`:
+`REGISTRY` in `src/model_project_constructor/schemas/registry.py`:
 
 ```python
 REGISTRY: dict[SchemaKey, type[BaseModel]] = {
@@ -41,9 +41,9 @@ REGISTRY: dict[SchemaKey, type[BaseModel]] = {
 }
 ```
 
-`load_payload(envelope)` at `registry.py:39-58` looks up `(payload_type, payload_schema_version)` and validates `envelope.payload` against the matching class. Unknown keys raise `UnknownPayloadError`.
+`load_payload(envelope)` in `src/model_project_constructor/schemas/registry.py` looks up `(payload_type, payload_schema_version)` and validates `envelope.payload` against the matching class. Unknown keys raise `UnknownPayloadError`.
 
-The registry docstring (`registry.py:7-13`) codifies the versioning policy. Versioning is intentionally minimal today — only `1.0.0` exists and there is no migration machinery — but the registry keys on `(payload_type, schema_version)`, so versions can coexist once a second is added:
+The registry module docstring (in `src/model_project_constructor/schemas/registry.py`) codifies the versioning policy. Versioning is intentionally minimal today — only `1.0.0` exists and there is no migration machinery — but the registry keys on `(payload_type, schema_version)`, so versions can coexist once a second is added:
 
 - **Minor bump** (1.0.0 → 1.1.0, backwards-compatible additions): register the new class under its new version and keep 1.0.0.
 - **Major bump** (1.0.0 → 2.0.0): register v2, keep v1 for at least two major releases, and add whatever migration the change needs at that point. There is no `schemas/migrations/` package today.
@@ -60,18 +60,18 @@ Use case: insert an agent between existing stages (e.g., a dedicated *feature-en
 |---|---|---|
 | 1 | `src/model_project_constructor/schemas/v1/<new>.py` | Define the payload Pydantic class. Include `schema_version: Literal["1.0.0"]`, set `model_config = ConfigDict(extra="forbid", protected_namespaces=())`. |
 | 2 | `src/model_project_constructor/schemas/v1/__init__.py` | Export the new class. |
-| 3 | `src/model_project_constructor/schemas/registry.py:26-32` | Add a tuple entry `("<PayloadType>", "1.0.0"): v1.<PayloadType>`. |
-| 4 | `src/model_project_constructor/schemas/envelope.py:27-28` | If the new agent needs to be named in envelopes, add its string to the `source_agent` and/or `target_agent` `Literal[...]` union. |
+| 3 | `REGISTRY` in `src/model_project_constructor/schemas/registry.py` | Add a tuple entry `("<PayloadType>", "1.0.0"): v1.<PayloadType>`. |
+| 4 | `HandoffEnvelope.source_agent` / `target_agent` in `src/model_project_constructor/schemas/envelope.py` | If the new agent needs to be named in envelopes, add its string to the `source_agent` and/or `target_agent` `Literal[...]` union. |
 | 5 | `src/model_project_constructor/agents/<new>/` | Implement the agent. Follow the existing package structure: `agent.py` (public entry point), `state.py` (LangGraph state), `nodes.py` (graph nodes), plus any auxiliary modules. |
-| 6 | `src/model_project_constructor/orchestrator/pipeline.py:51-53` | Declare the runner type alias alongside the existing ones. Existing runners: `IntakeRunner = Callable[[], IntakeReport]`, `DataRunner = Callable[[DataRequest], DataReport]`, `WebsiteRunner = Callable[[IntakeReport, DataReport, RepoTarget], RepoProjectResult]`. |
+| 6 | `IntakeRunner` / `DataRunner` / `WebsiteRunner` in `src/model_project_constructor/orchestrator/pipeline.py` | Declare the runner type alias alongside the existing ones. Existing runners: `IntakeRunner = Callable[[], IntakeReport]`, `DataRunner = Callable[[DataRequest], DataReport]`, `WebsiteRunner = Callable[[IntakeReport, DataReport, RepoTarget], RepoProjectResult]`. |
 | 7 | `src/model_project_constructor/orchestrator/pipeline.py` | Thread the new runner through `run_pipeline(...)` with `FAILED_AT_<STAGE>` handling that mirrors the existing data/website halt paths. |
 | 8 | `tests/agents/<new>/` | Mirror the test layout of `tests/agents/intake/` or `tests/agents/data/`. Contract tests: (a) agent handles malformed input without raising uncaught exceptions, (b) output validates against the new schema, (c) one end-to-end happy-path test. |
 
 ### Key invariants to preserve
 
-- **Every hop writes a checkpoint.** The orchestrator persists each agent's output via `CheckpointStore` before invoking the next stage (`orchestrator/pipeline.py`).
+- **Every hop writes a checkpoint.** The orchestrator persists each agent's output via `CheckpointStore` in `src/model_project_constructor/orchestrator/checkpoints.py` before invoking the next stage.
 - **No shared state.** The new agent receives only what is in the envelope — no global config, no module-level caches leaking between runs. See `tests/test_data_agent_decoupling.py`, which AST-walks the Data Agent package to enforce zero intake-schema imports.
-- **Status vocabulary.** Terminal statuses use `COMPLETE` / `FAILED_AT_<STAGE>` (see `PipelineStatus` at `pipeline.py:60-65`). A new stage adds a new `FAILED_AT_<NEW>` value.
+- **Status vocabulary.** Terminal statuses use `COMPLETE` / `FAILED_AT_<STAGE>` (see `PipelineStatus` in `src/model_project_constructor/orchestrator/pipeline.py`). A new stage adds a new `FAILED_AT_<NEW>` value.
 
 ---
 
@@ -81,7 +81,7 @@ Use case: support a third forge (e.g., Bitbucket, Gitea, self-hosted Forgejo). T
 
 ### The protocol
 
-`src/model_project_constructor/agents/website/protocol.py:42-66`:
+`RepoClient` in `src/model_project_constructor/agents/website/protocol.py`:
 
 ```python
 class RepoClient(Protocol):
@@ -103,13 +103,13 @@ class RepoClient(Protocol):
     ) -> CommitInfo: ...
 ```
 
-`ProjectInfo` (`protocol.py:19-31`) carries `id: str`, `url: str`, `default_branch: str`. The `id` is host-opaque — GitLab uses a stringified integer, GitHub uses `"owner/name"`. Callers treat it as a token and pass it back unchanged.
+`ProjectInfo` (`src/model_project_constructor/agents/website/protocol.py`) carries `id: str`, `url: str`, `default_branch: str`. The `id` is host-opaque — GitLab uses a stringified integer, GitHub uses `"owner/name"`. Callers treat it as a token and pass it back unchanged.
 
-`CommitInfo` (`protocol.py:34-39`) carries `sha: str` and `files_committed: list[str]`.
+`CommitInfo` (`src/model_project_constructor/agents/website/protocol.py`) carries `sha: str` and `files_committed: list[str]`.
 
 ### Error contract
 
-`protocol.py:69-78`:
+`RepoClientError` / `RepoNameConflictError` in `src/model_project_constructor/agents/website/protocol.py`:
 
 - `RepoClientError` — base class for any host-side failure the agent handles.
 - `RepoNameConflictError` — **must** be raised when `create_project` collides with an existing project name. The Website Agent's graph handles this explicitly (retries with a mangled slug up to the retry budget).
@@ -132,20 +132,20 @@ Each class is roughly ~120 lines, implements exactly `create_project` and `commi
 1. **New module** `src/model_project_constructor/agents/website/<host>_adapter.py` — implement `create_project` and `commit_files`, translate host exceptions.
 2. **Re-export** in `src/model_project_constructor/agents/website/__init__.py` — mirror the existing `PythonGitLabAdapter` / `PyGithubAdapter` re-export.
 3. **Optional dependency** in the top-level `pyproject.toml` under the `agents` extra — add the host's Python SDK (e.g., `atlassian-python-api` for Bitbucket).
-4. **Tests** in `tests/agents/website/test_<host>_adapter.py` — follow the pattern of `test_github_adapter.py` and `test_gitlab_adapter.py`:
+4. **Tests** in `tests/agents/website/test_<host>_adapter.py` — follow the pattern of `tests/agents/website/test_github_adapter.py` and `tests/agents/website/test_gitlab_adapter.py`:
    - Import-level check (module loads, class has both Protocol methods).
    - Constructor does no network I/O.
    - Exception classification — host-specific failures map to the right `Repo*Error` subclass.
    - `MagicMock`-based happy path for `create_project` and `commit_files`.
-5. **Generated-project CI template** in `src/model_project_constructor/agents/website/governance_templates.py` — if the new host has a distinct CI system, add a `render_<host>_ci()` function alongside `render_gitlab_ci()` and `render_github_actions_ci()`, and widen the `ci_platform` dispatch at `governance_templates.py:834-837`.
+5. **Generated-project CI template** in `src/model_project_constructor/agents/website/governance_templates.py` — if the new host has a distinct CI system, add a `render_<host>_ci()` function alongside `render_gitlab_ci()` and `render_github_actions_ci()`, and widen the `ci_platform` dispatch in `build_governance_files` (`src/model_project_constructor/agents/website/governance_templates.py`).
 
 ### Wiring and selection
 
-Adapter selection is driven by the `REPO_PLATFORMS` registry in `src/model_project_constructor/orchestrator/config.py`. Each `PlatformSpec` carries an `adapter_factory: Callable[..., RepoClient]` (`config.py:56`) that lazy-imports its SDK and constructs the adapter via the uniform `(*, host_url, private_token)` signature. Both live entry points build the client the same way — `client = REPO_PLATFORMS[host].adapter_factory(host_url=..., private_token=...)` (`scripts/run_pipeline.py:295` and `agents/website/cli.py:177`); there is no if/elif `--host` dispatch.
+Adapter selection is driven by the `REPO_PLATFORMS` registry in `src/model_project_constructor/orchestrator/config.py`. Each `PlatformSpec` carries an `adapter_factory: Callable[..., RepoClient]` (in `src/model_project_constructor/orchestrator/config.py`) that lazy-imports its SDK and constructs the adapter via the uniform `(*, host_url, private_token)` signature. Both live entry points build the client the same way — `client = REPO_PLATFORMS[host].adapter_factory(host_url=..., private_token=...)` (`build_website_runner` in `scripts/run_pipeline.py` and the `run` command in `src/model_project_constructor/agents/website/cli.py`); there is no if/elif `--host` dispatch.
 
-To add a host you do **not** edit a selection code path: add one `PlatformSpec` entry to `REPO_PLATFORMS` (with `default_api_url`, `token_env_var`, and a `_make_<host>_adapter` factory) and add the host string to the `HostLiteral` alias (the import-time `assert_vocab_parity` guard at `config.py:109` pins the two together). `cli.VALID_HOSTS` (`cli.py:44`) and the pipeline argparse `choices` (`run_pipeline.py:406`) are already derived from `REPO_PLATFORMS`, so they update automatically. The Website Agent still receives the constructed `RepoClient` directly from its caller — see `agents/website/agent.py`.
+To add a host you do **not** edit a selection code path: add one `PlatformSpec` entry to `REPO_PLATFORMS` (with `default_api_url`, `token_env_var`, and a `_make_<host>_adapter` factory) and add the host string to the `HostLiteral` alias (the import-time `assert_vocab_parity` guard in `src/model_project_constructor/orchestrator/config.py` pins the two together). `VALID_HOSTS` (in `src/model_project_constructor/agents/website/cli.py`) and the pipeline argparse `choices` (the `main` function in `scripts/run_pipeline.py`) are already derived from `REPO_PLATFORMS`, so they update automatically. The Website Agent still receives the constructed `RepoClient` directly from its caller — see `src/model_project_constructor/agents/website/agent.py`.
 
-> Note: `run_pipeline.build_repo_target` retains a `host == "github"` branch (`run_pipeline.py:122`), but that selects the default *namespace* (deployment policy), not the adapter.
+> Note: `run_pipeline.build_repo_target` retains a `host == "github"` branch (in `scripts/run_pipeline.py`), but that selects the default *namespace* (deployment policy), not the adapter.
 
 ---
 
@@ -155,7 +155,7 @@ Use case: your organization needs an artifact type that isn't currently emitted 
 
 ### How tier gating works
 
-`src/model_project_constructor/agents/website/governance_templates.py:803-886` — the `build_governance_files` function reads:
+The `build_governance_files` function in `src/model_project_constructor/agents/website/governance_templates.py` reads:
 
 ```python
 governance = intake.get("governance") or {}
@@ -172,13 +172,13 @@ Artifacts are emitted in nested blocks by tier severity (lower number = more sev
 - **Consumer-facing** (`affects_consumers=true`): `governance/eu_ai_act_compliance.md`.
 - **Protected attributes** (`uses_protected_attributes=true`): `build_analysis_files` and `build_test_files` add `analysis/fairness_audit.qmd`, `src/<slug>/fairness/__init__.py`, `src/<slug>/fairness/audit.py`, `tests/test_fairness.py`.
 
-The severity comparison uses `_tier_at_least(risk_tier, threshold)` at `governance_templates.py:72-79`, which maps tier strings to ordinal severities.
+The severity comparison uses `_tier_at_least` in `src/model_project_constructor/agents/website/governance_templates.py`, which maps tier strings to ordinal severities.
 
 ### Files to add or edit
 
 1. **Write the renderer** in `src/model_project_constructor/agents/website/governance_templates.py`. Convention: `render_<artifact_name>(*, intake: dict[str, Any], ...) -> str` returning the markdown body.
-2. **Wire into `build_governance_files`** at the correct tier block (`:820-886`). Choose the narrowest gate that correctly describes when the artifact is required.
-3. **Update `is_governance_artifact`** at `governance_templates.py:938-959` so the classifier recognizes the new file path. This is the single source of truth for `GovernanceManifest.artifacts_created` — do not also record the path in state.
+2. **Wire into `build_governance_files`** at the correct tier block (in `src/model_project_constructor/agents/website/governance_templates.py`). Choose the narrowest gate that correctly describes when the artifact is required.
+3. **Update `is_governance_artifact`** in `src/model_project_constructor/agents/website/governance_templates.py` so the classifier recognizes the new file path. This is the single source of truth for `GovernanceManifest.artifacts_created` — do not also record the path in state.
 4. **Add a positive *and* negative test** in `tests/agents/website/test_governance.py`. Per this project's learning #5: assert the artifact appears at the intended tier *and* does not appear at lower tiers. A positive-only test passes silently if a tier starts emitting the wrong artifact.
 5. **If the artifact is a `.qmd` narrative** that needs to be rendered into the project, add it to `build_analysis_files` instead of `build_governance_files` and wire its emission to the appropriate governance flag.
 
@@ -194,7 +194,7 @@ Use case: your jurisdiction requires a framework not currently supported (e.g., 
 
 ### Current framework registry
 
-`src/model_project_constructor/agents/website/governance_templates.py:110-144`:
+`_FRAMEWORK_ARTIFACTS` in `src/model_project_constructor/agents/website/governance_templates.py`:
 
 ```python
 _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
@@ -227,7 +227,7 @@ _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
 }
 ```
 
-At render time, `build_regulatory_mapping(frameworks, emitted_paths)` (`governance_templates.py:114-129`) intersects each declared framework's artifact list with the actually-emitted paths for this run — so the `regulatory_mapping.md` content only claims coverage for artifacts that were in fact generated.
+At render time, `build_regulatory_mapping` in `src/model_project_constructor/agents/website/governance_templates.py` intersects each declared framework's artifact list with the actually-emitted paths for this run — so the `regulatory_mapping.md` content only claims coverage for artifacts that were in fact generated.
 
 ### Files to add or edit
 
@@ -254,8 +254,8 @@ There are **two** `make_llm_client` factories — one per agent — and they are
 
 | Agent | Factory module | Protocol it returns |
 |---|---|---|
-| Intake | `src/model_project_constructor/agents/intake/factory.py` | `IntakeLLMClient` (`agents/intake/protocol.py:75-93`) |
-| Data | `packages/data-agent/src/model_project_constructor_data_agent/factory.py` | `LLMClient` (`model_project_constructor_data_agent/llm.py`) |
+| Intake | `src/model_project_constructor/agents/intake/factory.py` | `IntakeLLMClient` (`src/model_project_constructor/agents/intake/protocol.py`) |
+| Data | `packages/data-agent/src/model_project_constructor_data_agent/factory.py` | `LLMClient` (`packages/data-agent/src/model_project_constructor_data_agent/llm.py`) |
 
 Both factories have the same shape:
 
@@ -292,7 +292,7 @@ Two conventions make this surface safe:
 
 Adding a provider is the same three-step recipe applied independently to each agent:
 
-1. **New client module** implementing the agent's protocol — `IntakeLLMClient` for intake (mirror `agents/intake/anthropic_client.py`) and `LLMClient` for the data agent (mirror `model_project_constructor_data_agent/anthropic_client.py`). Expose a `DEFAULT_MODEL` constant and accept `model=` as a keyword argument, as the existing Anthropic clients do.
+1. **New client module** implementing the agent's protocol — `IntakeLLMClient` for intake (mirror `src/model_project_constructor/agents/intake/anthropic_client.py`) and `LLMClient` for the data agent (mirror `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py`). Expose a `DEFAULT_MODEL` constant and accept `model=` as a keyword argument, as the existing Anthropic clients do.
 2. **One branch** in that package's `make_llm_client`, lazy-importing the new client.
 3. **One member** in that package's `LLMProvider` `Literal` (which automatically updates `KNOWN_PROVIDERS`, the error message, and the data-agent CLI help).
 
@@ -300,8 +300,8 @@ Adding a provider is the same three-step recipe applied independently to each ag
 
 The `--provider` flag is exposed in two places, both defaulting to `anthropic`:
 
-- **`scripts/run_pipeline.py`** (`--provider`, `run_pipeline.py:447-455`) — applies to the intake **and** data agents when `--llm` is `data` or `both` (ignored when `--llm=none`); it routes through each agent's `make_llm_client` factory.
-- **The data-agent CLI** (`model-data-agent`, `cli.py:106-110` on `run` and `:175-178` on `discover`) — `--provider` whose help text is `_PROVIDER_HELP`, generated from `KNOWN_PROVIDERS`.
+- **`scripts/run_pipeline.py`** (`--provider`, in `main` of `scripts/run_pipeline.py`) — applies to the intake **and** data agents when `--llm` is `data` or `both` (ignored when `--llm=none`); it routes through each agent's `make_llm_client` factory.
+- **The data-agent CLI** (`model-data-agent`, the `run` and `discover` commands in `packages/data-agent/src/model_project_constructor_data_agent/cli.py`) — `--provider` whose help text is `_PROVIDER_HELP`, generated from `KNOWN_PROVIDERS`.
 
 
 ---
