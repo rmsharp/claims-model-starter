@@ -46,7 +46,7 @@ A schema registry maps `(payload_type, schema_version)` to the Pydantic class fo
 
 ### Intake Agent
 
-- **Input:** `InterviewSessionConfig` (user ID, session ID, initial problem statement)
+- **Input:** seeded via `initial_state` with stakeholder ID, session ID, domain, and initial problem (no config object)
 - **Output:** `IntakeReport`
 - **Behavior:** Asks one question at a time (max 20), drives toward five sections (business problem, proposed solution, model solution, estimated value, and a value measurement plan) plus governance metadata. Presents a draft for stakeholder review with up to 3 revision cycles.
 - **Interfaces:** Web UI (`go/modelintake`), CLI (`model-intake-agent`), Python API

@@ -211,14 +211,27 @@ class IntakeReport(StrictBase):
     created_at: datetime
     questions_asked: int
     revision_cycles: int = 0
+
+    qa_pairs: list[QAPair] = Field(default_factory=list)
 ```
 
 - `status`: `"COMPLETE"` only if the stakeholder accepted AND no cap tripped. Otherwise `"DRAFT_INCOMPLETE"`.
 - `missing_fields`: adds `"questions_cap_reached"` or `"revision_cap_reached"` when applicable — see [Intake Interview Design §7](Intake-Interview-Design).
 - `questions_asked`: required (no default) — the report must record how many questions were actually asked.
 - `created_at`: tz-aware `datetime` — UTC in practice.
+- `qa_pairs`: optional (defaults to empty); the raw question/answer transcript of the interview, scanned by the interview-derived `DataSourceInventory` producer (`intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`) rather than relying on the synthesized report prose.
 
 **Example fixture:** `tests/fixtures/subrogation_intake.json`.
+
+#### `QAPair`
+
+```python
+class QAPair(StrictBase):
+    question: str
+    answer: str
+```
+
+A single interview exchange. Carried in `IntakeReport.qa_pairs` so downstream consumers (notably `intake_qa_pairs_to_inventory` in `orchestrator/adapters.py`) can scan the raw transcript.
 
 ---
 
@@ -252,6 +265,12 @@ class DataRequest(StrictBase):
     database_hint: str | None = None
     data_quality_concerns: list[str] = Field(default_factory=list)
     data_source_inventory: DataSourceInventory | None = None
+    # Baseline-metric projection from upstream IntakeReport.value_measurement_plan
+    # (architecture plan §3.2 invariant: intake defines, data agent executes).
+    # All three present together or all three None.
+    baseline_metric_name: str | None = None
+    baseline_metric_definition: str | None = None
+    baseline_measurement_window: str | None = None
     source: Literal["pipeline", "standalone"]
     source_ref: str                              # run_id if pipeline; user_id if standalone
 ```
@@ -259,6 +278,7 @@ class DataRequest(StrictBase):
 - `source` distinguishes the two usage modes. In pipeline mode the orchestrator constructs it from the `IntakeReport`; in standalone mode the analyst hand-writes it.
 - `database_hint` is an optional steer — `None` means "no preference."
 - `data_source_inventory` is an optional structured catalog of candidate tables / views / datasets (see `DataSourceInventory` below). When set, the Data Agent renders a summarized block into the query-generation prompt so the LLM prefers inventory-named tables. When both `database_hint` and `data_source_inventory` are set, the inventory wins (richer signal). An inventory with `entries=[]` is treated identically to `None`.
+- `baseline_metric_name` / `baseline_metric_definition` / `baseline_measurement_window` are the request-side carrier for baseline projection: the orchestrator adapter copies them from the upstream [`ValueMeasurementPlan`](#valuemeasurementplan) (the data-agent module must not import `IntakeReport`). They drive the data agent's baseline-collection path, which produces [`DataReport.baseline_snapshot`](#baselinesnapshot). The architecture-plan §3.2 invariant holds: all three present together, or all three `None`.
 
 **Example fixture:** `tests/fixtures/sample_request.json`.
 
@@ -638,7 +658,7 @@ Datetime fields serialize as ISO 8601 with timezone. Nested models survive intac
 | File | Contents |
 |---|---|
 | `src/model_project_constructor/schemas/v1/common.py` | `StrictBase`, `CycleTime`, `RiskTier`, `ModelType` |
-| `src/model_project_constructor/schemas/v1/intake.py` | `IntakeReport`, `ModelSolution`, `EstimatedValue`, `GovernanceMetadata` |
+| `src/model_project_constructor/schemas/v1/intake.py` | `IntakeReport`, `ModelSolution`, `EstimatedValue`, `GovernanceMetadata`, `QAPair` |
 | `src/model_project_constructor/schemas/v1/data.py` | Re-export surface for Data Agent schemas |
 | `src/model_project_constructor/schemas/v1/repo.py` | `RepoTarget`, `GovernanceManifest`, `RepoProjectResult` |
 | `src/model_project_constructor/schemas/envelope.py` | `HandoffEnvelope` |

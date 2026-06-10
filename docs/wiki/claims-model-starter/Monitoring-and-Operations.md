@@ -45,7 +45,11 @@ Which files are present tells you exactly how far the run got:
 
 ### Re-running
 
-Re-run with the same `run_id` to load existing checkpoints and resume from the next agent. A fresh `run_id` starts from scratch.
+Resuming is **not** automatic on `run_id` reuse. Re-running with the same `run_id` and no `--resume` flag re-executes every stage and **overwrites** the existing checkpoints — you lose prior work.
+
+To resume an interrupted run, pass `--resume <run_id>`: the CLI reads `<checkpoint_dir>/<run_id>/`, finds the first missing or incomplete envelope via `determine_resume_point`, loads the completed predecessor stages, and re-executes from there. `--resume` overrides `--run-id`, and it rejects when the checkpoint directory is missing or the run is already complete. A fresh `run_id` (the auto-generated default) always starts from scratch.
+
+See `OPERATIONS.md` §5 and the `scripts/run_pipeline.py` `--resume` flag for full details.
 
 ## Observability
 
@@ -65,7 +69,7 @@ Set `MPC_LOG_LEVEL=DEBUG` for verbose output including handoff payloads.
 `MetricsRegistry` + `make_measured_runner()` capture:
 
 - `run_count` per agent
-- `agent_latency` (seconds) per agent
+- `agent_latency` (milliseconds) per agent — `count` / `mean_ms` / `max_ms` aggregates
 - Pipeline-level timing
 
 Access metrics programmatically:
@@ -135,7 +139,7 @@ Common issues:
 
 | Symptom | Likely cause | Resolution |
 |---------|-------------|-----------|
-| `MPC_HOST_TOKEN not set` | Missing env var | Set `GITLAB_TOKEN` or `GITHUB_TOKEN` |
+| `ConfigError: GITLAB_TOKEN is required for host='gitlab' but was not set` (or `GITHUB_TOKEN` for `host='github'`) | Missing host API token | Set `GITLAB_TOKEN` or `GITHUB_TOKEN` |
 | `RepoNameConflictError` after 5 retries | Project name taken on host | Choose a different name or namespace |
 | Checkpoint directory not writable | Permissions | Check `MPC_CHECKPOINT_DIR` path and permissions |
 | Data Agent returns `EXECUTION_FAILED` | No database connection | Expected in dry-run mode; queries are still usable |

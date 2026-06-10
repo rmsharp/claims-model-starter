@@ -107,8 +107,8 @@ The Data Agent is designed to be reusable beyond the pipeline. Analyst teams can
 model-data-agent run --request request.json --output report.json
 
 # Python API
-from model_project_constructor_data_agent import DataAgent
-report = DataAgent().run(data_request)
+from model_project_constructor_data_agent import DataAgent, make_llm_client
+report = DataAgent(llm=make_llm_client("anthropic")).run(data_request)
 ```
 
 The Data Agent accepts a `DataRequest` (target, granularity, features, population, time range) and produces a `DataReport` without any dependency on the Intake Agent or its schemas. This decoupling is enforced by an AST-based CI test.

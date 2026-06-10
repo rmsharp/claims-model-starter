@@ -95,7 +95,11 @@ uv run pytest tests/agents/intake/  # one subdir
 uv run pytest -k "test_envelope"    # by name pattern
 ```
 
-Current snapshot: **131 test functions** across `tests/` subdirectories (`agents/intake/`, `agents/data/`, `agents/website/`, `orchestrator/`, `schemas/`, `ui/intake/`, `data_agent_package/`, `fixtures/`, `scripts/`, plus the top-level `test_data_agent_decoupling.py`).
+Current snapshot: **705 test functions** across `tests/` subdirectories (`orchestrator/` 201, `agents/website/` 137, `data_agent_package/` 135, `agents/intake/` 83, `schemas/` 81, `ui/intake/` 22, `scripts/` 17, `agents/data/` 16), plus 13 across the top-level files `test_data_agent_decoupling.py`, `test_llm_json_parity.py`, and `test_vocab_guard.py`. This number drifts as tests are added; recompute it with:
+
+```bash
+grep -rhE '^\s*(async )?def test_' tests/ | wc -l   # 705 at time of writing
+```
 
 ### 2.4 Data-agent decoupling
 

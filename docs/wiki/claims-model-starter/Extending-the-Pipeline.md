@@ -1,6 +1,6 @@
 # Extending the Pipeline
 
-The pipeline has four designed extension surfaces: **adding a new agent**, **adding a new repository-host adapter**, **adding a new governance artifact**, and **adding a new regulatory framework**. Each surface has an explicit boundary — a `Protocol`, a registry, or a tier-gate function — so extensions don't require re-reading the entire codebase.
+The pipeline has five designed extension surfaces: **adding a new agent**, **adding a new repository-host adapter**, **adding a new governance artifact**, **adding a new regulatory framework**, and **adding a new LLM provider**. Each surface has an explicit boundary — a `Protocol`, a registry, a tier-gate function, or a provider factory — so extensions don't require re-reading the entire codebase.
 
 This page documents the shape of each change, the files to edit, and the tests that enforce the contract.
 
@@ -141,7 +141,11 @@ Each class is roughly ~120 lines, implements exactly `create_project` and `commi
 
 ### Wiring and selection
 
-There is no adapter factory. The Website Agent receives the `RepoClient` instance directly from its caller — see `agents/website/agent.py`. The `scripts/run_pipeline.py` entry point selects the adapter via the `--host` flag. A new host value requires updating that selection code path.
+Adapter selection is driven by the `REPO_PLATFORMS` registry in `src/model_project_constructor/orchestrator/config.py`. Each `PlatformSpec` carries an `adapter_factory: Callable[..., RepoClient]` (`config.py:56`) that lazy-imports its SDK and constructs the adapter via the uniform `(*, host_url, private_token)` signature. Both live entry points build the client the same way — `client = REPO_PLATFORMS[host].adapter_factory(host_url=..., private_token=...)` (`scripts/run_pipeline.py:295` and `agents/website/cli.py:177`); there is no if/elif `--host` dispatch.
+
+To add a host you do **not** edit a selection code path: add one `PlatformSpec` entry to `REPO_PLATFORMS` (with `default_api_url`, `token_env_var`, and a `_make_<host>_adapter` factory) and add the host string to the `HostLiteral` alias (the import-time `assert_vocab_parity` guard at `config.py:109` pins the two together). `cli.VALID_HOSTS` (`cli.py:44`) and the pipeline argparse `choices` (`run_pipeline.py:406`) are already derived from `REPO_PLATFORMS`, so they update automatically. The Website Agent still receives the constructed `RepoClient` directly from its caller — see `agents/website/agent.py`.
+
+> Note: `run_pipeline.build_repo_target` retains a `host == "github"` branch (`run_pipeline.py:122`), but that selects the default *namespace* (deployment policy), not the adapter.
 
 ---
 
@@ -237,6 +241,68 @@ At render time, `build_regulatory_mapping(frameworks, emitted_paths)` (`governan
 ### No adapter or pipeline changes required
 
 Framework additions are pure content. They flow through `IntakeReport.governance.regulatory_frameworks` → `build_regulatory_mapping` → `governance/regulatory_mapping.md` in the generated project. Nothing in the orchestrator, the envelope, or the adapter layer needs to change.
+
+---
+
+## 6. Extension surface: adding a new LLM provider
+
+Use case: route the agents to a second LLM backend (e.g., an OpenAI-compatible endpoint, a self-hosted model) without editing any call site. Each agent talks to its LLM only through a `Protocol`, and the provider choice flows through a small **factory** — a `Protocol` + factory boundary, analogous to (but separate from) the `RepoClient` `Protocol` used for repo-host adapters in §3.
+
+### Two parallel factories (not shared)
+
+There are **two** `make_llm_client` factories — one per agent — and they are deliberately kept separate because the intake and data-agent clients share no methods and live in different packages (the data agent ships as a standalone wheel with a decoupling boundary, enforced by `tests/test_data_agent_decoupling.py`):
+
+| Agent | Factory module | Protocol it returns |
+|---|---|---|
+| Intake | `src/model_project_constructor/agents/intake/factory.py` | `IntakeLLMClient` (`agents/intake/protocol.py:75-93`) |
+| Data | `packages/data-agent/src/model_project_constructor_data_agent/factory.py` | `LLMClient` (`model_project_constructor_data_agent/llm.py`) |
+
+Both factories have the same shape:
+
+```python
+# agents/intake/factory.py (the data-agent factory mirrors this)
+LLMProvider = Literal["anthropic"]
+KNOWN_PROVIDERS: tuple[str, ...] = get_args(LLMProvider)
+
+def make_llm_client(
+    provider: str = "anthropic",
+    *,
+    model: str | None = None,
+) -> IntakeLLMClient:
+    if provider == "anthropic":
+        # Lazy import keeps this module — and anything that re-exports it —
+        # free of the anthropic SDK at import time.
+        from model_project_constructor.agents.intake.anthropic_client import (
+            DEFAULT_MODEL,
+            AnthropicLLMClient,
+        )
+        return AnthropicLLMClient(model=DEFAULT_MODEL if model is None else model)
+    raise ValueError(
+        f"Unknown LLM provider {provider!r}. "
+        f"Known providers: {', '.join(KNOWN_PROVIDERS)}."
+    )
+```
+
+Two conventions make this surface safe:
+
+- **The known-provider list is single-sourced.** `KNOWN_PROVIDERS` is derived from the `LLMProvider` `Literal` via `typing.get_args`, so the unknown-provider `ValueError` (and the data-agent CLI's `--provider` help) cannot drift from the set the factory actually handles. `provider` is typed `str`, not `LLMProvider`, because the value usually arrives from a CLI flag.
+- **The concrete client is lazy-imported inside the branch.** Importing the factory (or the package `__init__` that re-exports it) never pulls in the `anthropic` SDK; the SDK is imported only when a real client is constructed. A new provider's client module must follow the same lazy-import convention.
+
+### Files to add or edit (in BOTH packages)
+
+Adding a provider is the same three-step recipe applied independently to each agent:
+
+1. **New client module** implementing the agent's protocol — `IntakeLLMClient` for intake (mirror `agents/intake/anthropic_client.py`) and `LLMClient` for the data agent (mirror `model_project_constructor_data_agent/anthropic_client.py`). Expose a `DEFAULT_MODEL` constant and accept `model=` as a keyword argument, as the existing Anthropic clients do.
+2. **One branch** in that package's `make_llm_client`, lazy-importing the new client.
+3. **One member** in that package's `LLMProvider` `Literal` (which automatically updates `KNOWN_PROVIDERS`, the error message, and the data-agent CLI help).
+
+### CLI surfaces
+
+The `--provider` flag is exposed in two places, both defaulting to `anthropic`:
+
+- **`scripts/run_pipeline.py`** (`--provider`, `run_pipeline.py:447-455`) — applies to the intake **and** data agents when `--llm` is `data` or `both` (ignored when `--llm=none`); it routes through each agent's `make_llm_client` factory.
+- **The data-agent CLI** (`model-data-agent`, `cli.py:106-110` on `run` and `:175-178` on `discover`) — `--provider` whose help text is `_PROVIDER_HELP`, generated from `KNOWN_PROVIDERS`.
+
 
 ---
 

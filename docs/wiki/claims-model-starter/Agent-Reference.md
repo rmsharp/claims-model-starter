@@ -10,12 +10,24 @@ Conducts a guided interview with a business stakeholder to capture the business 
 
 ### Input schema
 
+The intake graph has no single config object. The headless facade `IntakeAgent.run_scripted` / `run_with_fixture` seeds the graph state via `initial_state(...)`:
+
 ```
-InterviewSessionConfig
-  user_id:         str
-  session_id:      str
-  problem_statement: str  (stakeholder's initial description)
+initial_state
+  stakeholder_id:  str         # session identity (NOT user_id)
+  session_id:      str         # LangGraph thread_id
+  domain:          str = "pc_claims"
+  initial_problem: str | None  # stakeholder's initial description
 ```
+
+`run_scripted` additionally takes:
+
+```
+interview_answers: list[str]
+review_responses:  list[str]
+```
+
+Source of truth: `initial_state` (`src/model_project_constructor/agents/intake/state.py`) and `run_scripted` (`src/model_project_constructor/agents/intake/agent.py`).
 
 ### Output schema
 
@@ -32,10 +44,19 @@ IntakeReport
     evaluation_metrics:   list[str]
     is_supervised:        bool
   estimated_value:   EstimatedValue
-    low_estimate:   float
-    high_estimate:  float
-    confidence:     str
-    assumptions:    list[str]
+    narrative:              str
+    annual_impact_usd_low:  float | None
+    annual_impact_usd_high: float | None
+    confidence:             "low" | "medium" | "high"
+    assumptions:            list[str]
+    # optional extension fields:
+    cost_of_inaction_narrative:        str | None
+    annual_cost_of_inaction_usd_low:   float | None
+    annual_cost_of_inaction_usd_high:  float | None
+    implementation_cost_band_usd_low:  float | None
+    implementation_cost_band_usd_high: float | None
+    payback_months:                    int | None
+    value_drivers:                     list[str]
   governance:        GovernanceMetadata
     cycle_time:                CycleTime
     risk_tier:                 RiskTier
@@ -60,7 +81,7 @@ IntakeReport
 |-----------|--------------|
 | Web UI | `go/modelintake` (FastAPI + SSE + HTMX) |
 | CLI | `model-intake-agent --fixture <file.yaml>` |
-| Python | `IntakeAgent().run(config)` |
+| Python | `IntakeAgent(llm=make_llm_client()).run_with_fixture("interview.yaml")` (lower-level: `run_scripted(stakeholder_id=, session_id=, interview_answers=, review_responses=)`) |
 
 ### Failure modes
 
@@ -80,13 +101,19 @@ Generates SQL queries to collect relevant data, writes quality-check queries, an
 
 ```
 DataRequest
-  target_variable:  str
-  target_definition: str
-  granularity:      str  (e.g., "claim-level", "policy-level")
-  features:         list[str]
-  population:       str  (e.g., "auto claims closed in 2020-2024")
-  time_range:       str
+  schema_version:      "1.0.0"
+  target_description:  str
+  target_granularity:  DataGranularity { unit: str; time_grain: "event" | "daily" | "weekly" | "monthly" | "quarterly" | "annual" }
+  required_features:   list[str]
+  population_filter:   str  (e.g., "auto claims closed in 2020-2024")
+  time_range:          str
+  source:              "pipeline" | "standalone"   (required)
+  source_ref:          str                         (required)
+  # optional: database_hint, data_quality_concerns, data_source_inventory,
+  #           baseline_metric_name / baseline_metric_definition / baseline_measurement_window
 ```
+
+**Note:** Every Data Agent schema extends a `StrictBase` configured with `extra="forbid"`, so unknown or legacy field names (e.g. `target_variable`, `granularity`, `features`, `population`) raise a validation error rather than being silently ignored.
 
 **Note:** The Data Agent has no dependency on `IntakeReport`. The orchestrator adapts the intake report into a `DataRequest` at the boundary. This is enforced by a CI test.
 
@@ -96,13 +123,19 @@ DataRequest
 DataReport
   status:                "COMPLETE" | "INCOMPLETE_REQUEST" | "EXECUTION_FAILED"
   primary_queries:       list[PrimaryQuery]
-    name:                str
-    sql:                 str
-    quality_checks:      list[QualityCheck]
-      name:              str
-      sql:               str
-      expected_result:   str
-    datasheet:           Datasheet  (Gebru 2021)
+    name:                    str
+    sql:                     str
+    purpose:                 str
+    expected_row_count_order: "tens" | "hundreds" | "thousands" | "millions"
+    quality_checks:          list[QualityCheck]
+      check_name:        str
+      check_sql:         str
+      expectation:       str
+      execution_status:  "PASSED" | "FAILED" | "ERROR" | "NOT_EXECUTED"
+      result_summary:    str
+      raw_result:        dict | None
+    datasheet:               Datasheet  (Gebru 2021)
+    inventory_entries_used:  list[str]
   confirmed_expectations:   list[str]
   unconfirmed_expectations: list[str]
   data_quality_concerns:    list[str]
@@ -144,12 +177,14 @@ Takes both reports and scaffolds a complete repository project on GitLab or GitH
 IntakeReport     (from Intake Agent)
 DataReport       (from Data Agent)
 RepoTarget
-  host:          "gitlab" | "github"
-  namespace:     str  (GitLab group path or GitHub org/owner)
-  project_name:  str
-  visibility:    "private" | "internal" | "public"
-  host_url:      str | None  (override for self-hosted)
+  schema_version:    "1.0.0"
+  host_url:          str  (required; API base URL -- defaults resolved by the CLI from the REPO_PLATFORMS registry)
+  namespace:         str  (GitLab group path or GitHub org/owner)
+  project_name_hint: str
+  visibility:        "private" | "internal" | "public"  (default "private")
 ```
+
+Host selection is **not** a `RepoTarget` field. The target host is chosen with the CLI `--host` flag (`"gitlab"` | `"github"`), validated against the `REPO_PLATFORMS` registry in `orchestrator/config.py`, which also supplies the default `host_url` for that host.
 
 ### Output schema
 
