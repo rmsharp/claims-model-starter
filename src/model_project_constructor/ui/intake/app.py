@@ -16,8 +16,10 @@ This module owns the HTTP surface:
 The graph and session store live in ``runner.py``. This module never
 touches the graph directly — it only drives the store.
 
-For production, the app uses :class:`AnthropicLLMClient`. For tests,
-``create_app`` accepts an ``llm_factory`` so fixtures can be plugged in.
+For production, the app builds its client via
+:func:`agents.intake.factory.make_llm_client` (default provider
+``anthropic``). For tests, ``create_app`` accepts an ``llm_factory`` so
+fixtures can be plugged in.
 """
 
 from __future__ import annotations
@@ -47,17 +49,17 @@ DEFAULT_DB_PATH = "intake_sessions.db"
 
 
 def _default_llm_factory(_session_id: str) -> IntakeLLMClient:
-    """Production LLM factory: construct an ``AnthropicLLMClient``.
+    """Production LLM factory: construct the default-provider client.
 
-    Imported lazily so the app can be constructed (e.g. for unit tests)
-    without triggering ``anthropic`` package import.
+    Routes through :func:`agents.intake.factory.make_llm_client` so the
+    provider seam (E4) is honored here too. Imported lazily so the app can
+    be constructed (e.g. for unit tests) without triggering the ``anthropic``
+    package import.
     """
 
-    from model_project_constructor.agents.intake.anthropic_client import (
-        AnthropicLLMClient,
-    )
+    from model_project_constructor.agents.intake.factory import make_llm_client
 
-    return AnthropicLLMClient()
+    return make_llm_client("anthropic")
 
 
 def create_app(

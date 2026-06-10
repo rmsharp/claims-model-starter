@@ -81,10 +81,13 @@ def test_build_intake_runner_catches_runtime_error(run_pipeline_module, monkeypa
             pass
 
     import model_project_constructor.agents.intake.agent as agent_mod
-    import model_project_constructor.agents.intake.anthropic_client as ac_mod
+    import model_project_constructor.agents.intake.factory as factory_mod
 
     monkeypatch.setattr(agent_mod, "IntakeAgent", _RaisingAgent)
-    monkeypatch.setattr(ac_mod, "AnthropicLLMClient", _StubLLM)
+    # build_intake_runner now constructs its client via the factory's
+    # make_llm_client, which resolves AnthropicLLMClient from the factory
+    # module's namespace — so the stub is patched there, not on anthropic_client.
+    monkeypatch.setattr(factory_mod, "AnthropicLLMClient", _StubLLM)
 
     fixture_path = (
         Path(__file__).resolve().parents[1]
@@ -95,6 +98,7 @@ def test_build_intake_runner_catches_runtime_error(run_pipeline_module, monkeypa
         llm_mode="both",
         fixture_path=str(fixture_path),
         model="claude-opus-4-7",
+        provider="anthropic",
     )
     report = runner()
     assert report.status == "DRAFT_INCOMPLETE"
@@ -108,6 +112,7 @@ def test_build_intake_runner_none_mode_uses_fixture(run_pipeline_module):
         llm_mode="none",
         fixture_path=None,
         model="claude-opus-4-7",
+        provider="anthropic",
     )
     report = runner()
     assert report.status == "COMPLETE"
@@ -120,6 +125,7 @@ def test_build_intake_runner_both_requires_fixture(run_pipeline_module):
             llm_mode="both",
             fixture_path=None,
             model="claude-opus-4-7",
+            provider="anthropic",
         )
 
 

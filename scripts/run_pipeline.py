@@ -39,6 +39,10 @@ Options:
     --model ID         Claude model used by BOTH the intake and data
                        stages when --llm is "data" or "both" (default:
                        claude-opus-4-7). Ignored when --llm=none.
+    --provider NAME    LLM provider for BOTH stages when --llm is "data" or
+                       "both" (default: anthropic). Routes through each
+                       agent's make_llm_client factory. Ignored when
+                       --llm=none.
     --db-url URL       SQLAlchemy URL for the data agent's read-only DB.
                        When omitted, data quality checks are generated but
                        not executed. Ignored when --llm=none.
@@ -130,26 +134,24 @@ def build_repo_target(host: str) -> RepoTarget:
     )
 
 
-def build_data_runner(*, llm_mode: str, db_url: str | None, model: str):
+def build_data_runner(*, llm_mode: str, db_url: str | None, model: str, provider: str):
     """Return a DataRunner callable.
 
     In "none" mode, returns a closure that serves the fixture DataReport
     regardless of the request — preserves Scope A behavior.
     In "data" or "both" mode, binds a real
-    ``DataAgent(AnthropicLLMClient(...), db)`` to its ``.run`` method,
-    which already matches the ``DataRunner`` shape.
+    ``DataAgent(make_llm_client(provider, model=model), db)`` to its ``.run``
+    method, which already matches the ``DataRunner`` shape.
     """
     if llm_mode == "none":
         data = load_data_fixture()
         return lambda _req: data
 
     from model_project_constructor_data_agent.agent import DataAgent
-    from model_project_constructor_data_agent.anthropic_client import (
-        AnthropicLLMClient,
-    )
     from model_project_constructor_data_agent.db import ReadOnlyDB
+    from model_project_constructor_data_agent.factory import make_llm_client
 
-    llm = AnthropicLLMClient(model=model)
+    llm = make_llm_client(provider, model=model)
     db = ReadOnlyDB(db_url) if db_url else None
     return DataAgent(llm=llm, db=db).run
 
@@ -214,7 +216,9 @@ def _draft_incomplete_from_exception(
     )
 
 
-def build_intake_runner(*, llm_mode: str, fixture_path: str | None, model: str):
+def build_intake_runner(
+    *, llm_mode: str, fixture_path: str | None, model: str, provider: str
+):
     """Return an IntakeRunner callable.
 
     In "none" or "data" mode, serves the fixture IntakeReport — intake
@@ -233,9 +237,7 @@ def build_intake_runner(*, llm_mode: str, fixture_path: str | None, model: str):
         raise SystemExit("--llm both requires --intake-fixture")
 
     from model_project_constructor.agents.intake.agent import IntakeAgent
-    from model_project_constructor.agents.intake.anthropic_client import (
-        AnthropicLLMClient,
-    )
+    from model_project_constructor.agents.intake.factory import make_llm_client
     from model_project_constructor.agents.intake.fixture import (
         answers_from_fixture,
         load_fixture,
@@ -243,7 +245,7 @@ def build_intake_runner(*, llm_mode: str, fixture_path: str | None, model: str):
     )
 
     fixture = load_fixture(fixture_path)
-    llm = AnthropicLLMClient(model=model)
+    llm = make_llm_client(provider, model=model)
     agent = IntakeAgent(llm=llm)
     stakeholder_id = fixture["stakeholder_id"]
     session_id = fixture["session_id"]
@@ -443,6 +445,15 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--provider",
+        default="anthropic",
+        help=(
+            "LLM provider for the intake AND data agents when --llm is "
+            "'data' or 'both' (default: anthropic; ignored when --llm=none). "
+            "Routes through each agent's make_llm_client factory."
+        ),
+    )
+    parser.add_argument(
         "--db-url",
         default=None,
         help=(
@@ -565,12 +576,16 @@ def main() -> None:
             llm_mode=args.llm,
             fixture_path=args.intake_fixture,
             model=args.model,
+            provider=args.provider,
         ),
         name="intake", config=config, metrics=metrics,
     )
     data_runner = instrument(
         build_data_runner(
-            llm_mode=args.llm, db_url=args.db_url, model=args.model,
+            llm_mode=args.llm,
+            db_url=args.db_url,
+            model=args.model,
+            provider=args.provider,
         ),
         name="data", config=config, metrics=metrics,
     )

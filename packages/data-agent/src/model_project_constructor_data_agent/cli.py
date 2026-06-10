@@ -14,6 +14,10 @@ described in architecture-plan.md §4.2).
 ``--model`` overrides the default Claude model
 (:data:`anthropic_client.DEFAULT_MODEL`).
 
+``--provider`` selects the LLM backend (default ``anthropic``); it routes
+through :func:`factory.make_llm_client`. Only ``anthropic`` exists today, but
+the seam means a new backend is one client module plus one factory branch.
+
 ``--fake-llm`` substitutes a deterministic fake client. It exists so CI can
 exercise the CLI end-to-end without a real API key; analyst users should
 leave it off and set ``ANTHROPIC_API_KEY`` in their environment.
@@ -28,12 +32,13 @@ from typing import Any
 import typer
 
 from model_project_constructor_data_agent.agent import DataAgent
-from model_project_constructor_data_agent.anthropic_client import (
-    DEFAULT_MODEL,
-    AnthropicLLMClient,
-)
+from model_project_constructor_data_agent.anthropic_client import DEFAULT_MODEL
 from model_project_constructor_data_agent.db import ReadOnlyDB
 from model_project_constructor_data_agent.discovery import probe_information_schema
+from model_project_constructor_data_agent.factory import (
+    KNOWN_PROVIDERS,
+    make_llm_client,
+)
 from model_project_constructor_data_agent.llm import (
     BaselineQuerySpec,
     LLMClient,
@@ -55,6 +60,10 @@ app = typer.Typer(
     help="Standalone Data Agent — generate SQL, run QC, produce DataReport.",
     no_args_is_help=True,
 )
+
+# Single-sourced from the factory's LLMProvider Literal so --help cannot drift
+# from the providers make_llm_client actually handles.
+_PROVIDER_HELP = f"LLM provider. One of: {', '.join(KNOWN_PROVIDERS)}."
 
 
 @app.callback()
@@ -94,6 +103,11 @@ def run(
         "--model",
         help="Claude model name for the Anthropic client.",
     ),
+    provider: str = typer.Option(
+        "anthropic",
+        "--provider",
+        help=_PROVIDER_HELP,
+    ),
     fake_llm: bool = typer.Option(
         False,
         "--fake-llm",
@@ -103,7 +117,7 @@ def run(
 ) -> None:
     """Run the Data Agent end-to-end on a request and write a DataReport."""
     request_obj = _load_request(request)
-    llm = _build_llm(fake_llm=fake_llm, model=model)
+    llm = _build_llm(fake_llm=fake_llm, provider=provider, model=model)
     db = ReadOnlyDB(db_url) if db_url else None
 
     try:
@@ -158,6 +172,11 @@ def discover(
         "--model",
         help="Claude model for --rank-with-llm.",
     ),
+    provider: str = typer.Option(
+        "anthropic",
+        "--provider",
+        help=_PROVIDER_HELP,
+    ),
     fake_llm: bool = typer.Option(
         False,
         "--fake-llm",
@@ -169,7 +188,9 @@ def discover(
     db.connect()
     try:
         llm = (
-            _build_llm(fake_llm=fake_llm, model=model) if rank_with_llm else None
+            _build_llm(fake_llm=fake_llm, provider=provider, model=model)
+            if rank_with_llm
+            else None
         )
         inventory = probe_information_schema(
             db,
@@ -189,10 +210,10 @@ def _load_request(path: Path) -> DataRequest:
     return DataRequest.model_validate(data)
 
 
-def _build_llm(*, fake_llm: bool, model: str) -> LLMClient:
+def _build_llm(*, fake_llm: bool, provider: str, model: str) -> LLMClient:
     if fake_llm:
         return _FakeCLIClient()
-    return AnthropicLLMClient(model=model)
+    return make_llm_client(provider, model=model)
 
 
 class _FakeCLIClient:

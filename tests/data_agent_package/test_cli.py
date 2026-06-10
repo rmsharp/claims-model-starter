@@ -92,6 +92,53 @@ def test_cli_smoke_fake_llm_with_sqlite(runner: CliRunner, tmp_path: Path) -> No
         assert qc.execution_status == "PASSED"
 
 
+def test_cli_run_unknown_provider_errors(runner: CliRunner, tmp_path: Path) -> None:
+    """``run --provider <unknown>`` (real client path) fails via make_llm_client.
+
+    The factory raises ValueError before constructing any SDK, so the command
+    exits non-zero and writes no output.
+    """
+    out = tmp_path / "report.json"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--request",
+            str(FIXTURE_REQUEST),
+            "--output",
+            str(out),
+            "--provider",
+            "openai",
+        ],
+    )
+    assert result.exit_code != 0
+    assert isinstance(result.exception, ValueError)
+    assert "openai" in str(result.exception)
+    assert not out.exists()
+
+
+def test_cli_run_fake_llm_short_circuits_provider(
+    runner: CliRunner, tmp_path: Path
+) -> None:
+    """``--fake-llm`` wins over ``--provider``: the fake client bypasses the factory."""
+    out = tmp_path / "report.json"
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--request",
+            str(FIXTURE_REQUEST),
+            "--output",
+            str(out),
+            "--provider",
+            "not-a-real-provider",
+            "--fake-llm",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "COMPLETE" in result.output
+
+
 def test_cli_missing_request_file_errors(runner: CliRunner, tmp_path: Path) -> None:
     out = tmp_path / "report.json"
     result = runner.invoke(
