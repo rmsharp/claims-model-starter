@@ -477,7 +477,7 @@ uv run python scripts/run_pipeline.py \
 
 What changes vs. `--live` alone:
 
-- The data runner is now `DataAgent(AnthropicLLMClient(model=...)).run`, not a lambda serving the fixture `sample_datareport.json`.
+- The data runner is now `DataAgent(make_llm_client(provider, model=...)).run`, not a lambda serving the fixture `sample_datareport.json`.
 - Claude generates primary queries, quality checks, a summary, and one datasheet per primary query.
 - Cost: ~$0.10–$0.50 per run depending on model (see §6c).
 - Runtime: adds 30–90 s vs. the fake run.
@@ -516,6 +516,8 @@ Override the default with `--model`:
 
 For production, tune by running each model on a representative request and inspecting the generated SQL. For the first pilot run, `claude-opus-4-7` removes "was it the model?" as a confounding variable when judging output quality.
 
+**Provider selection (`--provider`).** `--provider` (default `anthropic`) selects the LLM backend and, like `--model`, applies to **both** stages. Construction routes through each agent's `make_llm_client` factory. Only `anthropic` exists today — the flag is the forward-looking seam (audit §E4): a future backend is one new client module plus one factory branch, with no change at the call sites. An unknown provider fails fast (`ValueError`) before any API call. The flag is also exposed on the standalone data-agent CLI (`model-data-agent run`/`discover --provider`).
+
 ### 6d: Optional: connect a read-only database
 
 By default `--db-url` is omitted and the data agent **generates** quality checks but does not **execute** them. To execute:
@@ -543,7 +545,7 @@ uv run python scripts/run_pipeline.py \
 
 How it differs from `--llm data`:
 
-- The intake runner is `IntakeAgent(AnthropicLLMClient(model=...)).run_scripted(...)`. Claude asks its own questions, decides when to flip `believe_enough_info`, drafts the four required sections, and classifies governance.
+- The intake runner is `IntakeAgent(make_llm_client(provider, model=...)).run_scripted(...)`. Claude asks its own questions, decides when to flip `believe_enough_info`, drafts the four required sections, and classifies governance.
 - The fixture's `draft_after` field is a **no-op** in this mode — only the LLM decides when to stop interviewing. The fixture just supplies answers. Provide at least as many `qa_pairs` as `MAX_QUESTIONS` (see `src/model_project_constructor/agents/intake/state.py:57`) to guarantee the graph terminates.
 - `--model` applies to **both** stages. Mixed-model runs (e.g. haiku for intake, opus for data) are not supported.
 - Cost: ~$0.15–$0.75 per run (intake ~5–12 Claude calls + data as before).
