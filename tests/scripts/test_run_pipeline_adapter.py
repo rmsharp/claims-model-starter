@@ -81,13 +81,13 @@ def test_build_intake_runner_catches_runtime_error(run_pipeline_module, monkeypa
             pass
 
     import model_project_constructor.agents.intake.agent as agent_mod
-    import model_project_constructor.agents.intake.factory as factory_mod
+    import model_project_constructor.agents.intake.anthropic_client as ac_mod
 
     monkeypatch.setattr(agent_mod, "IntakeAgent", _RaisingAgent)
-    # build_intake_runner now constructs its client via the factory's
-    # make_llm_client, which resolves AnthropicLLMClient from the factory
-    # module's namespace — so the stub is patched there, not on anthropic_client.
-    monkeypatch.setattr(factory_mod, "AnthropicLLMClient", _StubLLM)
+    # build_intake_runner builds its client via make_llm_client, which
+    # lazily does `from ...anthropic_client import AnthropicLLMClient` at call
+    # time — so the stub is patched on anthropic_client (the resolution source).
+    monkeypatch.setattr(ac_mod, "AnthropicLLMClient", _StubLLM)
 
     fixture_path = (
         Path(__file__).resolve().parents[1]
@@ -142,9 +142,11 @@ def test_build_data_runner_data_mode_routes_through_factory(
         def __init__(self, **kwargs):
             type(self).last_model = kwargs.get("model")
 
-    import model_project_constructor_data_agent.factory as factory_mod
+    import model_project_constructor_data_agent.anthropic_client as ac_mod
 
-    monkeypatch.setattr(factory_mod, "AnthropicLLMClient", _RecordingDataLLM)
+    # make_llm_client lazily imports AnthropicLLMClient from anthropic_client at
+    # call time, so the recording stub is patched on that source module.
+    monkeypatch.setattr(ac_mod, "AnthropicLLMClient", _RecordingDataLLM)
 
     runner = run_pipeline_module.build_data_runner(
         llm_mode="data",

@@ -41,6 +41,19 @@ def test_explicit_anthropic_returns_anthropic_client(_stub_anthropic: object) ->
     assert isinstance(make_llm_client("anthropic"), AnthropicLLMClient)
 
 
+def test_returned_client_has_intake_protocol_methods(_stub_anthropic: object) -> None:
+    # IntakeLLMClient is a plain (non-runtime_checkable) Protocol, so isinstance
+    # against it raises; assert the four protocol methods are present instead.
+    client = make_llm_client("anthropic")
+    for method in (
+        "next_question",
+        "draft_report",
+        "classify_governance",
+        "revise_report",
+    ):
+        assert callable(getattr(client, method)), method
+
+
 def test_default_model_is_provider_default(_stub_anthropic: object) -> None:
     client = make_llm_client("anthropic")
     assert client._model == DEFAULT_MODEL
@@ -77,3 +90,35 @@ def test_unknown_provider_does_not_construct_sdk(
     monkeypatch.setattr(anthropic, "Anthropic", _boom)
     with pytest.raises(ValueError):
         make_llm_client("not-a-provider")
+
+
+def test_factory_import_does_not_load_anthropic() -> None:
+    """Importing the factory module — and the package __init__ that re-exports
+    it — must NOT import the anthropic SDK. This is the lazy-construction
+    property that lets the intake web app be built without anthropic
+    (ui/intake/app.py). Run in a fresh interpreter because sys.modules is
+    process-global and other tests have already imported anthropic.
+    """
+    import subprocess
+    import sys
+    import textwrap
+
+    code = textwrap.dedent(
+        """
+        import sys
+        # Triggers agents/intake/__init__.py, which re-exports the factory.
+        import model_project_constructor.agents.intake  # noqa: F401
+        import model_project_constructor.agents.intake.factory  # noqa: F401
+        from model_project_constructor.ui.intake.app import create_app
+        create_app()
+        assert "anthropic" not in sys.modules, sorted(
+            m for m in sys.modules if m.startswith("anthropic")
+        )
+        print("anthropic-free")
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    assert "anthropic-free" in result.stdout

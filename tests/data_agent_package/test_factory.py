@@ -88,3 +88,31 @@ def test_unknown_provider_does_not_construct_sdk(
     monkeypatch.setattr(anthropic, "Anthropic", _boom)
     with pytest.raises(ValueError):
         make_llm_client("not-a-provider")
+
+
+def test_factory_import_does_not_load_anthropic() -> None:
+    """Importing the factory module — and the standalone package __init__ that
+    re-exports it — must NOT import the anthropic SDK at load time. The wheel
+    imports anthropic only when a real client is constructed. Run in a fresh
+    interpreter because sys.modules is process-global.
+    """
+    import subprocess
+    import sys
+    import textwrap
+
+    code = textwrap.dedent(
+        """
+        import sys
+        import model_project_constructor_data_agent  # noqa: F401  (runs __init__)
+        import model_project_constructor_data_agent.factory  # noqa: F401
+        assert "anthropic" not in sys.modules, sorted(
+            m for m in sys.modules if m.startswith("anthropic")
+        )
+        print("anthropic-free")
+        """
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    assert "anthropic-free" in result.stdout

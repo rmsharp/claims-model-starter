@@ -23,10 +23,6 @@ from __future__ import annotations
 
 from typing import Literal, get_args
 
-from model_project_constructor_data_agent.anthropic_client import (
-    DEFAULT_MODEL,
-    AnthropicLLMClient,
-)
 from model_project_constructor_data_agent.llm import LLMClient
 
 #: Providers this factory can construct. Add a member here (and a branch in
@@ -40,7 +36,7 @@ KNOWN_PROVIDERS: tuple[str, ...] = get_args(LLMProvider)
 def make_llm_client(
     provider: str = "anthropic",
     *,
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
 ) -> LLMClient:
     """Construct the concrete :class:`LLMClient` for ``provider``.
 
@@ -49,11 +45,19 @@ def make_llm_client(
     :class:`ValueError` listing the providers this factory handles, rather
     than failing later inside the concrete client.
 
-    ``model`` is forwarded to the concrete client and defaults to that
-    provider's default model.
+    ``model`` is forwarded to the concrete client; when ``None`` (the default)
+    the provider's own default model is used.
     """
     if provider == "anthropic":
-        return AnthropicLLMClient(model=model)
+        # Lazy import so this module — and the package __init__ that re-exports
+        # it — stays free of the anthropic SDK at import time. The standalone
+        # wheel otherwise imports anthropic only when a real client is built.
+        from model_project_constructor_data_agent.anthropic_client import (
+            DEFAULT_MODEL,
+            AnthropicLLMClient,
+        )
+
+        return AnthropicLLMClient(model=DEFAULT_MODEL if model is None else model)
     raise ValueError(
         f"Unknown LLM provider {provider!r}. "
         f"Known providers: {', '.join(KNOWN_PROVIDERS)}."

@@ -288,6 +288,36 @@ def test_cli_discover_include_schemas_filter(
     assert len(inv_empty.producers) == 1
 
 
+def test_cli_discover_unknown_provider_errors(runner: CliRunner, tmp_path: Path) -> None:
+    """``discover --rank-with-llm --provider <unknown>`` surfaces the factory error.
+
+    The DB connects, then make_llm_client raises ValueError for the unknown
+    provider before any ranking happens, so the command exits non-zero and
+    writes no inventory.
+    """
+    db_url = _seed_discover_db(tmp_path / "discover.db", with_policies=False)
+    out = tmp_path / "inv.json"
+    result = runner.invoke(
+        app,
+        [
+            "discover",
+            "--db-url",
+            db_url,
+            "--output",
+            str(out),
+            "--rank-with-llm",
+            "--provider",
+            "openai",
+            "--request-context",
+            "subrogation recovery",
+        ],
+    )
+    assert result.exit_code != 0
+    assert isinstance(result.exception, ValueError)
+    assert "openai" in str(result.exception)
+    assert not out.exists()
+
+
 def test_cli_discover_unreachable_db_errors(runner: CliRunner, tmp_path: Path) -> None:
     """discover against an unreachable DB exits non-zero (connect failure)."""
     out = tmp_path / "inv.json"
