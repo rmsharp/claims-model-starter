@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 137 — operator-directed: **(1)** fix `README.md:128` stale test count (`440+` → `795`); **(2) primary deliverable** — write the **Audit §8 recurrence-prevention plan** (drifted `file:line` citations → grep-locatable **symbol references**, approach operator-chosen via `AskUserQuestion`) to `docs/planning/`, with an evidence-based grep inventory of all **116 citations across 8 wiki pages**, per-phase completion criteria, verification commands, and STOP points. PLANNING deliverable — implementation is a separate session (FM #18/#19). (IN PROGRESS)
+
+**Started:** 2026-06-10.
+
+**Status:** Session claimed. README prelude fix first, then build the plan (read-only inventory workflow → synthesize). Approach locked to **symbol references** via `AskUserQuestion` (Learning #40).
+
+---
+
+**(Session 136 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 136 — operator-directed: **Wiki refresh — Session B** — execute audit §7 steps 4–10, the **63 medium/low findings** (Appendix A of `docs/audits/2026-06-10-wiki-vs-code-accuracy-audit.md`; the 79 total minus the 16 high-severity S135 fixed) across **19 wiki pages**, plus the deferred medium `DataAgent().run` row. DEVELOPMENT execution against the audit's fix plan; ONE "1-and-done" deliverable. (**COMPLETE** — all 63 findings fixed via **75 edits across 19 pages**, each re-derived from live code and personally diff-reviewed before publish; committed `e88d1fb` and **live-published** to the GitHub Wiki by the auto-publish hook — wiki repo advanced `e340d71 → f1b56d7`, source↔clone parity confirmed **0-drift** (`diff -rq` empty; `publish_wiki.sh` re-run = "no changes to publish"). With S135's Session A, **all 79 audit findings are now remediated and live** — the wiki is current with code. Doc-only — no code touched, gate baseline inherited. `master` was then **pushed to `origin/master`** on the operator's explicit follow-up "push it" (`a430c03..6efa784`; Learning #40 honored — a source push is a separate, explicit authorization, given here, not auto-extended from the wiki publish).)
 
 **Started / Completed:** 2026-06-10.
