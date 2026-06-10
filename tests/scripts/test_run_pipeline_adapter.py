@@ -129,6 +129,44 @@ def test_build_intake_runner_both_requires_fixture(run_pipeline_module):
         )
 
 
+def test_build_data_runner_data_mode_routes_through_factory(
+    run_pipeline_module, monkeypatch
+):
+    """build_data_runner's real-LLM path builds the client via the data-agent
+    factory's make_llm_client and plumbs both provider and model through.
+    """
+
+    class _RecordingDataLLM:
+        last_model: str | None = None
+
+        def __init__(self, **kwargs):
+            type(self).last_model = kwargs.get("model")
+
+    import model_project_constructor_data_agent.factory as factory_mod
+
+    monkeypatch.setattr(factory_mod, "AnthropicLLMClient", _RecordingDataLLM)
+
+    runner = run_pipeline_module.build_data_runner(
+        llm_mode="data",
+        db_url=None,
+        model="claude-test-model",
+        provider="anthropic",
+    )
+    assert callable(runner)
+    assert _RecordingDataLLM.last_model == "claude-test-model"
+
+
+def test_build_data_runner_unknown_provider_raises(run_pipeline_module):
+    """An unknown --provider surfaces the factory's ValueError (proves routing)."""
+    with pytest.raises(ValueError, match="bogus"):
+        run_pipeline_module.build_data_runner(
+            llm_mode="data",
+            db_url=None,
+            model="claude-opus-4-7",
+            provider="bogus",
+        )
+
+
 # ---------------------------------------------------------------------------
 # build_website_runner — live-mode adapter construction (Session 30)
 #
