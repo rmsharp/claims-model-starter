@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 143 — operator-directed: **Push master, then execute the §8 plan, Phase 5** — full Evolution.md rewrite. Operator locked path (a) **full rewrite** + **publish-live** via `AskUserQuestion` (Learning #40) before claim. Scope per `PROJECT_CONVENTIONS.md` §4 + plan §5.2: from-scratch rewrite covering Sessions 46–142 (CHANGELOG-as-checklist, SESSION_NOTES-as-rationale, code-as-authority), migrate/drop all 28 fragile citations within it (§3 anchors), flag/replace stale `GITLAB_DEFAULT_HOST_URL`, remove `Evolution.md` from `ALLOWLIST` in `tests/test_wiki_no_line_citations.py`. **Review gate (§4.7): draft presented to operator BEFORE commit.** ONE deliverable (IN PROGRESS).
+
+**Started:** 2026-06-11.
+
+**Status:** Session claimed. `master` pushed to `origin` (`e006880..3288d99`, 6 commits) per explicit operator instruction before claim. Work beginning.
+
+---
+
+**(Session 142 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 142 — operator-directed: **Execute the §8 plan, Phase 6** — the recurrence guard: add `tests/test_wiki_no_line_citations.py` per `docs/planning/wiki-citation-symbol-references-plan.md` §6, allowlist = `{Evolution.md}` only. First CODE change of the campaign. ONE deliverable — **NOT** Phase 5 (FM #18); no wiki-file commits (hook will not fire). (**COMPLETE** — guard test added with **3 fragile-form patterns**: `path.ext:N[-M]` for `py|toml|ya?ml|json|md` (core §6 regex **widened** with `json`+`md` under Learning #53 — both forms occurred on pre-migration pages per Appendix A; a broad-regex sweep `[\w./-]+\.[a-z]{1,5}:[0-9]+` confirmed NO other extension form exists outside Evolution, so the widening introduces zero failures), prose `(line N)`/`(lines N-M)`, and `(N lines)` file-length counts. **Plus a companion stale-allowlist test** (`test_allowlist_entries_are_still_needed`): an allowlisted page with no remaining matches fails with an actionable "remove it" message, so the allowlist shrinks monotonically to empty per §6. **Proven red BOTH ways** (injected `foo.py:10` into Home.md → `Home.md:60: 'foo.py:10'`, reverted; temporarily allowlisted clean Home.md → "no fragile citations remain", reverted). Pre-change baseline re-established green (795 @ 97.28%, mypy 0/64, ruff clean), post-change full gate green: **797 passed @ 97.28%, mypy 0/64, ruff clean**. **2-round read-only `Explore` adversarial workflow (`wf_f10ae893-467`, 6 agents, #108 survival clause in every prompt) → 0 problems, 0 flags to adjudicate** — cleanest outcome of the campaign. Personal full review + every docstring claim empirically verified (incl. zero bare backticked `:N` remaining). No CI YAML change (existing `test` job collects it). Deliverable commit `7955bb7` (touches only `tests/` — hook did NOT fire; wiki unpublished/untouched). `master` now **6 commits ahead of `origin`** — **NOT pushed** (Learning #40). §8 campaign now COMPLETE except deferred Phase 5.)
 
 **Started / Completed:** 2026-06-11.
