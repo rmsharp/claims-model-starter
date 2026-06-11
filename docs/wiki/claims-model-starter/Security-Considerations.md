@@ -181,9 +181,9 @@ Does not call an LLM. It deterministically templates files from the `IntakeRepor
 
 ### 4.1 Read-only is enforced at the credential layer, not in code
 
-`ReadOnlyDB` (in `packages/data-agent/src/model_project_constructor_data_agent/db.py`) does not parse incoming SQL or attempt to reject mutating statements. Its module docstring is explicit:
+`ReadOnlyDB` (in `packages/data-agent/src/model_project_constructor_data_agent/db.py`) does not parse incoming SQL or attempt to reject mutating statements. Its module docstring is explicit (the `§9.1` and `§10` it cites are sections of `docs/architecture-history/architecture-plan.md`, not of this page):
 
-> Read-only enforcement is a database-credential concern in production (§9.1). This wrapper deliberately does not attempt to parse or reject mutating SQL — the Data Agent's LLM is prompted to emit SELECTs, and the pipeline is configured with a SELECT-only role at deployment time. The wrapper's sole job is to surface a clean `DBConnectionError` on connect failure so the graph can take the SKIP_EXECUTION off-ramp.
+> Read-only enforcement is a database-credential concern in production (§9.1). This wrapper deliberately does not attempt to parse or reject mutating SQL — the Data Agent's LLM is prompted to emit SELECTs, and the pipeline is configured with a SELECT-only role at deployment time. The wrapper's sole job is to surface a clean `DBConnectionError` on connect failure so the graph can take the SKIP_EXECUTION off-ramp described in §10.
 
 **Operator responsibility:** the DB URL passed to `ReadOnlyDB` must be a role/account with `SELECT`-only privileges (and `USAGE` on the relevant schemas). If the LLM misbehaves and generates a `DROP TABLE`, an unrestricted role will execute it. A correctly restricted role will have the statement rejected by the DB. This is a deliberate design choice — defense-in-depth via DB roles is more trustworthy than in-process SQL parsing.
 
@@ -273,7 +273,7 @@ Default level is `INFO` via `MPC_LOG_LEVEL`. `DEBUG` is safe — there is no DEB
 
 The project's GitHub Actions workflow (`.github/workflows/ci.yml`) has **no secrets references** — no `${{ secrets.* }}` expressions anywhere. Jobs:
 
-1. `lint` — `uv sync --extra dev && uv run ruff check`.
+1. `lint` — `uv sync --extra dev && uv run ruff check src/ tests/ packages/ scripts/`.
 2. `typecheck` — `uv sync --extra agents --extra ui --extra dev && uv run mypy` (config-driven; `[tool.mypy]` pins the checked packages).
 3. `test` — same install plus `uv run pytest -q`.
 4. `decoupling` — verifies the Data Agent package does not import from the main package.
@@ -329,7 +329,7 @@ These are explicit design decisions, not bugs.
 2. **No PII redaction before LLM calls.** The deployment must satisfy its own data-handling contract with Anthropic. This is a policy problem, not a code problem.
 3. **No auth on the intake web UI.** `src/model_project_constructor/ui/intake/app.py` serves routes without authentication or authorization middleware. The app is designed to be run behind a reverse proxy that handles auth (corporate SSO, OAuth proxy, etc.). Running it as-is on a public interface would expose the interview surface to anyone who can reach it.
 4. **No rate limiting** on adapter calls or LLM calls. The SDKs will surface provider-side rate limit errors; this project does not add its own limiter.
-5. **No retry budget for network calls.** The Website Agent's LangGraph has a bounded retry loop for commit failures (`RETRY_BACKOFF`), but neither the adapters nor the LLM clients retry on their own. Transient failures bubble up as halt conditions.
+5. **No retry budget for network calls.** The Website Agent's LangGraph has a bounded retry loop for commit failures (the `RETRY_BACKOFF` self-loop off `INITIAL_COMMITS`, bounded by `MAX_COMMIT_ATTEMPTS` and `RETRY_BASE_DELAY_SECONDS` in `src/model_project_constructor/agents/website/state.py`), but neither the adapters nor the LLM clients retry on their own. Transient failures bubble up as halt conditions.
 6. **No audit log.** Logging is observability, not immutable audit. If you need a compliance-grade audit trail, ship the structured log events to a WORM-capable store; do not rely on in-process logging alone.
 7. **Checkpoint files are world-readable by default.** Filesystem permissions are not managed by the code. If `$MPC_CHECKPOINT_DIR` sits on a shared filesystem, apply group/mode restrictions before running production interviews.
 8. **LLM model ID is unverified at construction.** The default `claude-sonnet-4-6` is chosen from the session-time model family list (the module docstring in `src/model_project_constructor/agents/intake/anthropic_client.py`). First live invocation will raise from the Anthropic SDK if the ID is wrong — this is a deliberate trade-off to avoid coupling the import path to a network probe.

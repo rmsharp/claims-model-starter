@@ -21,7 +21,7 @@ cd claims-model-starter
 uv sync --extra agents --extra ui --extra dev
 ```
 
-That single `uv sync` resolves every runtime and development dependency into `.venv/`. Subsequent runs use the cached resolution.
+That single `uv sync` resolves every runtime and development dependency into `.venv/`; only the optional `docs` extra (the MkDocs tutorial-site toolchain) is omitted — add `--extra docs` when building the documentation site. Subsequent runs use the cached resolution.
 
 ### Optional-dependency groups
 
@@ -32,6 +32,7 @@ From the `[project.optional-dependencies]` table in `pyproject.toml`:
 | `agents` | `langgraph`, `anthropic`, `sqlparse`, `sqlalchemy`, `python-gitlab`, `PyGithub`, `typer` | Agent runtimes and host adapters |
 | `ui` | `fastapi`, `uvicorn`, `sse-starlette`, `langgraph-checkpoint-sqlite`, `python-multipart` | Intake web UI |
 | `dev` | `pytest`, `pytest-asyncio`, `pytest-cov`, `mypy`, `ruff` | Developer toolchain |
+| `docs` | `mkdocs`, `mkdocs-material` | MkDocs tutorial-site build (`mkdocs.yml` at the repository root) |
 
 A minimal install (`uv sync` with no extras) is only useful for consumers of the schema package — it does not include the agents themselves.
 
@@ -95,10 +96,10 @@ uv run pytest tests/agents/intake/  # one subdir
 uv run pytest -k "test_envelope"    # by name pattern
 ```
 
-Current snapshot: **705 test functions** across `tests/` subdirectories (`orchestrator/` 201, `agents/website/` 137, `data_agent_package/` 135, `agents/intake/` 83, `schemas/` 81, `ui/intake/` 22, `scripts/` 17, `agents/data/` 16), plus 13 across the top-level files `test_data_agent_decoupling.py`, `test_llm_json_parity.py`, and `test_vocab_guard.py`. This number drifts as tests are added; recompute it with:
+Current snapshot: **707 test functions** across `tests/` subdirectories (`orchestrator/` 201, `agents/website/` 137, `data_agent_package/` 135, `agents/intake/` 83, `schemas/` 81, `ui/intake/` 22, `scripts/` 17, `agents/data/` 16), plus 15 across the top-level files `test_data_agent_decoupling.py`, `test_llm_json_parity.py`, `test_vocab_guard.py`, and `test_wiki_no_line_citations.py`. This number drifts as tests are added; recompute it with:
 
 ```bash
-grep -rhE '^\s*(async )?def test_' tests/ | wc -l   # 705 at time of writing
+grep -rhE '^\s*(async )?def test_' tests/ | wc -l   # 707 at time of writing
 ```
 
 ### 2.4 Data-agent decoupling

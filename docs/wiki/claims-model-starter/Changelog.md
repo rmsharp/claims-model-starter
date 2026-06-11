@@ -38,8 +38,8 @@ Four architectural overhauls landed across Sessions 115-133: E4 decouples LLM-pr
 
 - **Added:** `STAGE_ORDER: tuple[Stage, ...]` descriptor in `src/model_project_constructor/orchestrator/pipeline.py` - the single source of truth for pipeline stage sequence, metadata, halt-condition mapping, and resume-point naming.
 - **Added:** `Stage` dataclass with fields `name` (ResumePoint), `payload_type`, `target_agent`, `has_runner`, `halt_status`, `result_field`, `always_runs`, `terminal_result`.
-- **Changed:** Resume gates, the CLI banner, and the decomposed helpers (`_save_stage`, `_run_or_load_stage`, `_halt`) all derive stage order from `STAGE_ORDER` instead of hand-threading stage names - impossible to drift.
-- **Changed:** `run_pipeline` decomposed into four helpers: `_save_stage()`, `_run_or_load_stage()`, `_halt()`, and `_derive_data_request()` - the orchestrator is now readable and its control flow matches the architecture plan's design.
+- **Changed:** Resume gates, the CLI banner, and the decomposed helpers (`_save`, `_run_or_load_stage`, `_halt`) all derive stage order from `STAGE_ORDER` instead of hand-threading stage names - impossible to drift.
+- **Changed:** `run_pipeline` decomposed into four helpers: `_save()`, `_run_or_load_stage()`, `_halt()`, and `_derive_data_request()` - the orchestrator is now readable and its control flow matches the architecture plan's design.
 
 #### O4 - Prompt enumeration derivation (Sessions 127-130)
 
