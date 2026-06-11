@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 146 — operator-directed ("1 then 4" from the S145 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`c18fb1d..ef5fcf6`, 3 commits, explicit instruction); (2) **ROADMAP.md staleness fix** — re-derive the "445 tests at 97.26%" claim (live baseline 797 @ 97.28% as of S145) and the "6 decoupling invariants" claim against the live tree, fix what's stale (AUDIT workstream, S145 micro-audit pattern; root file — no wiki publish involved). (IN PROGRESS)
+
+**Started:** 2026-06-11.
+
+**Status:** Session claimed. Work beginning.
+
+---
+
+**(Session 145 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 145 — operator-directed (“1 then 2” from the S144 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`667b92c..c18fb1d`, 3 commits, explicit instruction); (2) **wiki-accuracy micro-audit** (Learning #43 accumulations, AUDIT workstream). (**COMPLETE** — **11 edits across 3 wiki pages**, live-published. Contributing: `docs` extra added to the extras table + setup-prose clarifier (`mkdocs`/`mkdocs-material`, `mkdocs.yml` at root); test snapshot **705 → 707** (top-level files 13 → 15, `test_wiki_no_line_citations.py` added; per-subdir counts re-verified unchanged) + the fence-comment recompute baseline. Changelog: `_save_stage` → `_save` ×2 in the [Unreleased] O1 entry — **the inherited S138 finding (“only 3 helpers exist”) was REFUTED at execution time per #45**: commit `b2e174b` + the live tree prove a four-helper decomposition (`_save`/`_run_or_load_stage`/`_halt`/`_derive_data_request`); the right fix was a name swap, not a count fix. Security-Considerations: db.py-blockquote lead-in clarifier (its `§9.1`/`§10` cite `docs/architecture-history/architecture-plan.md` — §9.1 Core pins the read-only credential, §10 hosts the SKIP_EXECUTION diagram, both confirmed at source) + the verbatim tail “described in §10” restored; `RETRY_BACKOFF` clarified as the `INITIAL_COMMITS` self-loop bounded by `MAX_COMMIT_ATTEMPTS`/`RETRY_BASE_DELAY_SECONDS` in `src/model_project_constructor/agents/website/state.py`; lint-job command completed with its explicit live targets (the audit fan-out’s ONE new finding, adjudicated-accepted per #55 with a direct grep of `ci.yml`). **Adjudicated leave-unchanged:** Changelog Phase-3A `MAX_QUESTIONS=10` (historical record, true as of `64b8a99`; page policy + Learning #32) and Evolution’s stale “awaits a rename” prose (banner-anchored — handed off to the next Evolution refresh). **Audit coverage: 139 claims verified by a 3-agent read-only `Explore` fan-out (one per page, `wf_b37ff0d7-978`) → 1 finding.** Sole-writer count-asserted apply script: 11/11 first try. Gate fresh pre+post: **797 @ 97.28%, mypy 0/64, ruff clean.** 2-round adversarial verification (R1 `wf_f51d0100-c18` 54 checks, R2 `wf_4a9ab1e9-4cd` 83 checks, 6 `Explore` agents, #56 survival clause): **0 problems BOTH rounds.** Deliverable commit `f3f41b3`; hook **live-published** (wiki `b08c657 → 301e577`); parity re-run **“no changes to publish”**. The Learning #43 accumulation list is now CLEAR except the Evolution fold-in note.)
 
 **Started / Completed:** 2026-06-11.
