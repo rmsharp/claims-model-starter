@@ -13,11 +13,11 @@ For the full agent entry-point reference (CLI, fixture mode, programmatic use) s
 
 The interviewer is prompted as **"an expert data scientist, business analyst, and consultant focused on a claims organization within a property & casualty insurance company that sells auto and property policies."** It is not a transcription bot — it brings domain framing to the conversation and drives toward a defensible draft.
 
-The opening of the interviewer system prompt (`SYSTEM_INTERVIEWER`). The assembled prompt the agent sends is `SYSTEM_INTERVIEWER = _INTERVIEWER_BASE + _STATISTICAL_TERMS_NOTE` (`anthropic_client.py:110`), where `_INTERVIEWER_BASE` is lines 42-71 and `_STATISTICAL_TERMS_NOTE` is lines 80-108. The block quoted below is only the opening excerpt (`anthropic_client.py:42-58`):
+The opening of the interviewer system prompt (`SYSTEM_INTERVIEWER`). The assembled prompt the agent sends is `SYSTEM_INTERVIEWER = _INTERVIEWER_BASE + _STATISTICAL_TERMS_NOTE` (`SYSTEM_INTERVIEWER` in `src/model_project_constructor/agents/intake/anthropic_client.py`), concatenating the `_INTERVIEWER_BASE` and `_STATISTICAL_TERMS_NOTE` constants defined in the same module. The block quoted below is only the opening excerpt of `_INTERVIEWER_BASE`:
 
 > You are an expert data scientist, business analyst, and consultant focused on a claims organization within a property & casualty insurance company that sells auto and property policies. You are interviewing a business stakeholder to draft an intake document covering FIVE required sections: business problem, proposed solution, model solution (target and inputs), estimated value, and value measurement plan (how downstream success will be demonstrated). Ask ONE question at a time. Drive toward the five required sections and toward a defensible governance classification (cycle time + risk tier). Reserve roughly 3-4 of your question budget for the value measurement plan: the baseline metric the business uses today, its definition and measurement window, the counterfactual design that will attribute outcomes to the model, the evaluation horizon, the logging requirements, the review cadence, success criteria, and decision rights for retire/retrain.
 
-The full prompt continues past this excerpt. `_INTERVIEWER_BASE` (`anthropic_client.py:59-70`) adds a data-source-discovery probing block that tells the interviewer to push for *concrete, named* data sources rather than vague "we have the data" answers, and to walk the stakeholder through the systems typically present in a P&C claims organization — claims admin (e.g. Guidewire ClaimCenter, Duck Creek Claims), policy admin, billing and collections, subrogation recovery tools, fraud / SIU scoring, agent and customer CRM, and any enterprise data warehouse or data lake — surfacing the owning team and refresh cadence where they bear on feasibility. This is the part that makes intake feed the Data Agent. `SYSTEM_INTERVIEWER` then appends `_STATISTICAL_TERMS_NOTE` (`anthropic_client.py:80-108`), a statistical-terminology glossary (probability vs likelihood, statistical vs practical significance, the two senses of bias, the P&C senses of risk, accuracy vs precision, overfitting, class imbalance) so drafts use precise terminology natively instead of relying on review-time correction.
+The full prompt continues past this excerpt. `_INTERVIEWER_BASE` (in `src/model_project_constructor/agents/intake/anthropic_client.py`) adds a data-source-discovery probing block that tells the interviewer to push for *concrete, named* data sources rather than vague "we have the data" answers, and to walk the stakeholder through the systems typically present in a P&C claims organization — claims admin (e.g. Guidewire ClaimCenter, Duck Creek Claims), policy admin, billing and collections, subrogation recovery tools, fraud / SIU scoring, agent and customer CRM, and any enterprise data warehouse or data lake — surfacing the owning team and refresh cadence where they bear on feasibility. This is the part that makes intake feed the Data Agent. `SYSTEM_INTERVIEWER` then appends `_STATISTICAL_TERMS_NOTE` (in `src/model_project_constructor/agents/intake/anthropic_client.py`), a statistical-terminology glossary (probability vs likelihood, statistical vs practical significance, the two senses of bias, the P&C senses of risk, accuracy vs precision, overfitting, class imbalance) so drafts use precise terminology natively instead of relying on review-time correction.
 
 Three rules are load-bearing and worth flagging:
 
@@ -25,7 +25,7 @@ Three rules are load-bearing and worth flagging:
 - **Drive toward five sections.** Every question should move the conversation closer to completing `business_problem`, `proposed_solution`, `model_solution`, `estimated_value`, or `value_measurement_plan` — plus a governance classification. Exploratory small talk is out of scope.
 - **Roughly 3-4 questions for the measurement plan.** Within the hard 20-question cap, the agent reserves about 3-4 questions for measurement-plan probes (baseline metric, counterfactual, evaluation horizon, decision rights). The split is a soft target — the LLM allocates dynamically based on what the stakeholder has already covered.
 
-A second system prompt covers governance classification (`SYSTEM_GOVERNANCE`, `anthropic_client.py:128-135`):
+A second system prompt covers governance classification (`SYSTEM_GOVERNANCE` in `src/model_project_constructor/agents/intake/anthropic_client.py`):
 
 > You classify model projects against an internal governance matrix. cycle_time ∈ {strategic, tactical, operational, continuous}. risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. Regulatory frameworks include SR_11_7, NAIC_AIS, EU_AI_ACT_ART_9, GDPR_ART_22, ASOP_56. Be conservative: if in doubt, pick the stricter tier.
 
@@ -63,8 +63,8 @@ Two phases, two budgets:
 
 | Phase | Loop | Cap | Constant |
 |---|---|---|---|
-| **Interview** | `plan_next_question → ask_user → evaluate_interview` | 20 questions | `MAX_QUESTIONS = 20` in `state.py:57` |
-| **Review** | `await_review → revise → await_review` | 3 revisions | `MAX_REVISIONS = 3` in `state.py:58` |
+| **Interview** | `plan_next_question → ask_user → evaluate_interview` | 20 questions | `MAX_QUESTIONS = 20` in `src/model_project_constructor/agents/intake/state.py` |
+| **Review** | `await_review → revise → await_review` | 3 revisions | `MAX_REVISIONS = 3` in `src/model_project_constructor/agents/intake/state.py` |
 
 Caps are hard — the agent will always stop at them, whether or not the stakeholder is satisfied. When a cap is hit without a clean finish, the report is emitted with `status="DRAFT_INCOMPLETE"` and a `missing_fields` entry documenting which cap tripped (`questions_cap_reached` or `revision_cap_reached`).
 
@@ -72,19 +72,19 @@ Caps are hard — the agent will always stop at them, whether or not the stakeho
 
 ## 3. How the agent decides what to ask next
 
-Every turn, the agent calls `next_question(context)` on its LLM client (`nodes.py:52-57`). The context it receives contains:
+Every turn, the agent calls `next_question(context)` on its LLM client (from `plan_next_question` in `src/model_project_constructor/agents/intake/nodes.py`). The context it receives contains:
 
 - The `domain` (defaults to `"pc_claims"`).
 - The `initial_problem` statement from the session opener (optional).
 - Every question and answer so far (the full `qa_pairs` list).
 - The current `questions_asked` count.
 
-The LLM returns two fields (`NextQuestionResult` in `protocol.py:30-39`):
+The LLM returns two fields (`NextQuestionResult` in `src/model_project_constructor/agents/intake/protocol.py`):
 
 - `question: str` — the next single question to ask, or `""` if none.
 - `believe_enough_info: bool` — the agent's own judgment that it now has enough to draft all five required sections (including the value measurement plan) *and* classify governance.
 
-`evaluate_interview` then decides whether to loop or drop through (`nodes.py:80-84`):
+`evaluate_interview` then decides whether to loop or drop through (in `src/model_project_constructor/agents/intake/nodes.py`):
 
 ```python
 complete = enough or asked >= MAX_QUESTIONS
@@ -102,7 +102,7 @@ The soft and hard stops are independent signals. An agent that reaches question 
 
 ## 4. What the five required sections look like
 
-After the interview loop exits, `draft_report` asks the LLM to emit a full draft (`nodes.py` draft node + `anthropic_client.py:147-177` for JSON-shape instructions, `222-234` for the method). The five sections are:
+After the interview loop exits, the draft node (`draft_report_node` in `src/model_project_constructor/agents/intake/nodes.py`) calls the LLM client's `draft_report` method to emit a full draft, driven by `_DRAFT_REPORT_INSTRUCTIONS` for the JSON-shape instructions (both `draft_report` and `_DRAFT_REPORT_INSTRUCTIONS` are in `src/model_project_constructor/agents/intake/anthropic_client.py`). The five sections are:
 
 ### 4.1 `business_problem` (prose)
 
@@ -146,7 +146,7 @@ Full field definitions are in the [Schema Reference](Schema-Reference).
 
 ## 5. Governance classification
 
-Right after the draft, `classify_governance` asks the LLM to classify the project on the governance matrix (`nodes.py:90-94` + `anthropic_client.py:121-128`). This produces:
+Right after the draft, the `classify_governance_node` in `src/model_project_constructor/agents/intake/nodes.py` asks the LLM to classify the project on the governance matrix, using the `SYSTEM_GOVERNANCE` prompt in `src/model_project_constructor/agents/intake/anthropic_client.py`. This produces:
 
 - **`cycle_time`** — `strategic` (months/quarters), `tactical` (weeks), `operational` (days/hours), or `continuous` (real-time).
 - **`risk_tier`** — `tier_1_critical`, `tier_2_high`, `tier_3_moderate`, or `tier_4_low`.
@@ -156,15 +156,15 @@ Right after the draft, `classify_governance` asks the LLM to classify the projec
 
 Each classification carries a `_rationale` string explaining the choice. Those rationales survive into the final `GovernanceMetadata` on the report and downstream into the generated project's `model_registry.json`, so they must be defensible — not filler.
 
-**Governance is recomputed on every revision.** If a stakeholder says "actually this will affect consumers," the revised draft triggers a fresh governance pass (`nodes.py:110-121`). The agent cannot end up with a revised draft that disagrees with its own governance classification.
+**Governance is recomputed on every revision.** If a stakeholder says "actually this will affect consumers," the revised draft triggers a fresh governance pass (`revise_node` in `src/model_project_constructor/agents/intake/nodes.py`). The agent cannot end up with a revised draft that disagrees with its own governance classification.
 
 ---
 
 ## 6. The review loop
 
-After the classification, the draft and governance are handed to the stakeholder for review (`await_review`, `nodes.py:96-108`). The stakeholder responds with either an **accept token** or a **revision request**.
+After the classification, the draft and governance are handed to the stakeholder for review (`await_review` in `src/model_project_constructor/agents/intake/nodes.py`). The stakeholder responds with either an **accept token** or a **revision request**.
 
-Accept tokens (case-insensitive, whitespace-trimmed; `nodes.py:37`):
+Accept tokens (case-insensitive, whitespace-trimmed; `REVIEW_ACCEPT_TOKENS` in `src/model_project_constructor/agents/intake/nodes.py`):
 
 ```
 accept | yes | approve | approved | ok | looks good
@@ -178,7 +178,7 @@ After three revisions without an accept, the loop exits with `status="DRAFT_INCO
 
 ## 7. Terminal status rules
 
-`finalize` computes the final status (`nodes.py:123-163`):
+`finalize_node` computes the final status (in `src/model_project_constructor/agents/intake/nodes.py`):
 
 | Accepted? | At questions cap? | At revisions cap? | Plan: `baseline_metric_name` & `evaluation_horizon_months` populated? | Status | `missing_fields` additions |
 |---|---|---|---|---|---|
@@ -222,7 +222,7 @@ The orchestrator halts on `DRAFT_INCOMPLETE` — the pipeline does not proceed t
 
 ### Fixture mode (Phase 3A, shipped)
 
-The shipped CLI replays canned answers from a YAML fixture — it does not call an LLM or take live input. This is the CI path and the recommended smoke test (`cli.py:30-60`):
+The shipped CLI replays canned answers from a YAML fixture — it does not call an LLM or take live input. This is the CI path and the recommended smoke test (the `run` command in `src/model_project_constructor/agents/intake/cli.py`):
 
 ```bash
 uv run python -m model_project_constructor.agents.intake \
@@ -264,7 +264,7 @@ report = agent.run_scripted(
 )
 ```
 
-The `IntakeLLMClient` is a `Protocol` (`protocol.py:75-93`), so you can swap in a different LLM provider by implementing `next_question`, `draft_report`, `classify_governance`, and `revise_report`. You do **not** edit the call sites: the provider is selected through `make_llm_client` in `agents/intake/factory.py` (one new client module + one branch + one `LLMProvider` member). See [Extending the Pipeline §6](Extending-the-Pipeline) for the full provider-factory recipe.
+The `IntakeLLMClient` is a `Protocol` (in `src/model_project_constructor/agents/intake/protocol.py`), so you can swap in a different LLM provider by implementing `next_question`, `draft_report`, `classify_governance`, and `revise_report`. You do **not** edit the call sites: the provider is selected through `make_llm_client` in `src/model_project_constructor/agents/intake/factory.py` (one new client module + one branch + one `LLMProvider` member). See [Extending the Pipeline §6](Extending-the-Pipeline) for the full provider-factory recipe.
 
 ---
 
@@ -272,10 +272,10 @@ The `IntakeLLMClient` is a `Protocol` (`protocol.py:75-93`), so you can swap in 
 
 Four extension points, ordered by effort:
 
-1. **Swap the LLM provider** — implement `IntakeLLMClient` (4 methods) in a new client module, add one branch in `make_llm_client` and one member to the `LLMProvider` `Literal` in `agents/intake/factory.py`, then select it with `--provider`. Do not modify the nodes or the call sites; they are provider-agnostic. See [Extending the Pipeline §6](Extending-the-Pipeline).
-2. **Change the caps** — edit `MAX_QUESTIONS` / `MAX_REVISIONS` in `state.py:57-58`. These are hard-coded by design; changing them is a deliberate policy decision.
-3. **Add governance dimensions** — extend `GovernanceClassification` in `protocol.py:63-72` and `GovernanceMetadata` in `schemas/v1/intake.py:67-75`. Update the classification prompt in `anthropic_client.py:121-128` and the classification node in `nodes.py`. Downstream governance artifact templates in `governance_templates.py` may also need updates.
-4. **Add a new interview phase** — add a node, wire edges in `graph.py`, extend `IntakeState` in `state.py`. This is the largest change and should go through a planning session — the current two-phase shape (interview → review) is load-bearing for the CLI, the web UI, and the fixture format.
+1. **Swap the LLM provider** — implement `IntakeLLMClient` (4 methods) in a new client module, add one branch in `make_llm_client` and one member to the `LLMProvider` `Literal` in `src/model_project_constructor/agents/intake/factory.py`, then select it with `--provider`. Do not modify the nodes or the call sites; they are provider-agnostic. See [Extending the Pipeline §6](Extending-the-Pipeline).
+2. **Change the caps** — edit `MAX_QUESTIONS` / `MAX_REVISIONS` in `src/model_project_constructor/agents/intake/state.py`. These are hard-coded by design; changing them is a deliberate policy decision.
+3. **Add governance dimensions** — extend `GovernanceClassification` in `src/model_project_constructor/agents/intake/protocol.py` and `GovernanceMetadata` in `src/model_project_constructor/schemas/v1/intake.py`. Update the `SYSTEM_GOVERNANCE` classification prompt in `src/model_project_constructor/agents/intake/anthropic_client.py` and the `classify_governance_node` in `src/model_project_constructor/agents/intake/nodes.py`. Downstream governance artifact templates in `src/model_project_constructor/agents/website/governance_templates.py` may also need updates.
+4. **Add a new interview phase** — add a node, wire edges in `src/model_project_constructor/agents/intake/graph.py`, extend `IntakeState` in `src/model_project_constructor/agents/intake/state.py`. This is the largest change and should go through a planning session — the current two-phase shape (interview → review) is load-bearing for the CLI, the web UI, and the fixture format.
 
 ---
 

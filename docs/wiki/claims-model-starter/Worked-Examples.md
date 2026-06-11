@@ -33,15 +33,15 @@ The pre-captured interview is at `tests/fixtures/subrogation.yaml`. Top-level ke
 
 Running the intake agent against this fixture produces `tests/fixtures/subrogation_intake.json`. Key fields:
 
-**Business problem** (`tests/fixtures/subrogation_intake.json:5`):
+**Business problem** (`business_problem` in `tests/fixtures/subrogation_intake.json`):
 
 > Subrogation recovery dropped ~20% since deployment of a new claims system, primarily because adjusters no longer capture evidence required to pursue recovery (police reports, third-party insurer, fault evidence). There is no adjuster KPI tying performance to subrogation outcomes and the new UI deprioritizes the relevant intake fields.
 
-**Proposed solution** (`:6`):
+**Proposed solution** (`proposed_solution` in `tests/fixtures/subrogation_intake.json`):
 
 > Embed structured prompts in the claims workflow so adjusters capture the required evidence during intake, and surface a per-claim subrogation probability score so claims likely to recover are prioritized. Success is measured on subrogation recovery rate over a 12-month rolling window.
 
-**Model solution** (`:7-25`):
+**Model solution** (`model_solution` in `tests/fixtures/subrogation_intake.json`):
 
 - `target_variable: "successful_subrogation"`
 - `target_definition: "Binary outcome: 1 if a claim resulted in a non-zero subrogation recovery within 18 months of first notice of loss, 0 otherwise."`
@@ -49,16 +49,16 @@ Running the intake agent against this fixture produces `tests/fixtures/subrogati
 - `candidate_features:` information_completeness_score, adjuster_tenure_years, claim_type, time_from_incident_to_filing_days, damage_amount_usd, fault_evidence_level
 - `evaluation_metrics: ["AUC", "precision_at_top_decile", "recall"]`
 
-**Estimated value** (`:26-47`): a 10% lift on a ~$30M annual subrogation recovery yields roughly $3M/year. Low/high bracket: **$2,000,000 / $4,000,000**. Confidence: medium. The Phase-1 business-case fields are populated alongside the narrative:
+**Estimated value** (`estimated_value` in `tests/fixtures/subrogation_intake.json`): a 10% lift on a ~$30M annual subrogation recovery yields roughly $3M/year. Low/high bracket: **$2,000,000 / $4,000,000**. Confidence: medium. The Phase-1 business-case fields are populated alongside the narrative:
 
 - `cost_of_inaction_narrative` — continuing without prompts and a recovery-likelihood score leaves ~$3M/year on the table indefinitely; `annual_cost_of_inaction_usd_low/high`: **$2,000,000 / $4,000,000**
 - `implementation_cost_band_usd_low/high`: **$250,000 / $500,000**
 - `payback_months`: **4**
 - `value_drivers`: `improved_subrogation_recovery_rate`, `adjuster_evidence_capture_compliance`, `prioritized_pursuit_of_high_likelihood_claims`
 
-**Value measurement plan** (`:48-71`): baseline metric `subrogation_recovery_rate` (trailing-12-month dollars recovered ÷ dollars identified); counterfactual design `champion_challenger` (adjusters randomly assigned to model-assisted vs control queues); evaluation horizon 6 months; review cadence monthly; decision rights — Claims VP + Data Science lead jointly review monthly, with a retire/retrain gate when treatment-control lift stays below 2pp for two consecutive reviews.
+**Value measurement plan** (`value_measurement_plan` in `tests/fixtures/subrogation_intake.json`): baseline metric `subrogation_recovery_rate` (trailing-12-month dollars recovered ÷ dollars identified); counterfactual design `champion_challenger` (adjusters randomly assigned to model-assisted vs control queues); evaluation horizon 6 months; review cadence monthly; decision rights — Claims VP + Data Science lead jointly review monthly, with a retire/retrain gate when treatment-control lift stays below 2pp for two consecutive reviews.
 
-**Governance classification** (`:72-83`):
+**Governance classification** (`governance` in `tests/fixtures/subrogation_intake.json`):
 
 - `risk_tier: "tier_3_moderate"` — advisory recommendation only; humans decide; moderate financial exposure
 - `cycle_time: "tactical"` — scores consumed at intake, workflows change weekly
@@ -104,7 +104,7 @@ With the inventory attached, a run against a real Claude model would produce a `
 
 #### Optional: deriving an inventory from the intake interview
 
-Phase 4 added an alternative producer that derives a `DataSourceInventory` directly from the `IntakeReport.qa_pairs` collected by the Intake Agent. Stakeholder-named systems (Guidewire, Duck Creek, ClaimsCenter, etc.) become `DataSourceEntry` records with `producer_type="interview"`. This is the only producer class that crosses the agent boundary — it lives in `orchestrator/adapters.py` rather than the data-agent package (the decoupling guarantee).
+Phase 4 added an alternative producer that derives a `DataSourceInventory` directly from the `IntakeReport.qa_pairs` collected by the Intake Agent. Stakeholder-named systems (Guidewire, Duck Creek, ClaimsCenter, etc.) become `DataSourceEntry` records with `producer_type="interview"`. This is the only producer class that crosses the agent boundary — it lives in `src/model_project_constructor/orchestrator/adapters.py` rather than the data-agent package (the decoupling guarantee).
 
 Pipeline-mode invocation:
 
@@ -112,7 +112,7 @@ Pipeline-mode invocation:
 uv run python scripts/run_pipeline.py --host gitlab --inventory-from-intake
 ```
 
-The converter is `intake_qa_pairs_to_inventory` at `src/model_project_constructor/orchestrator/adapters.py:133`; the flag is wired in `scripts/run_pipeline.py:477`. When `--inventory-from-intake` is combined with `--curated-inventory <path>`, the curated entries win on duplicate `fully_qualified_name` (richer, hand-maintained signal) and interview-derived entries enrich the remainder.
+The converter is `intake_qa_pairs_to_inventory` in `src/model_project_constructor/orchestrator/adapters.py`; the `--inventory-from-intake` flag is wired in `scripts/run_pipeline.py`. When `--inventory-from-intake` is combined with `--curated-inventory <path>`, the curated entries win on duplicate `fully_qualified_name` (richer, hand-maintained signal) and interview-derived entries enrich the remainder.
 
 ### Step 4 — DataReport output
 
@@ -127,7 +127,7 @@ The Data Agent produces `tests/fixtures/sample_datareport.json`:
 
 ### Step 5 — Generated repository
 
-The Website Agent scaffolds a project named `subrogation-model` (slug `subrogation_model`). The Phase 4A baseline file set is enumerated in `tests/agents/website/test_templates.py:294-341`:
+The Website Agent scaffolds a project named `subrogation-model` (slug `subrogation_model`). The Phase 4A baseline file set is enumerated in `TestBuildBaseFiles.test_returns_expected_file_set` in `tests/agents/website/test_templates.py`:
 
 **Root and configuration**
 
@@ -169,7 +169,7 @@ The Website Agent scaffolds a project named `subrogation-model` (slug `subrogati
 - `queries/quality/subrogation_training_set/row_count_sanity.sql`
 - `queries/quality/subrogation_training_set/target_nullability.sql`
 
-**Governance artifacts (Phase 4B, tier-3 moderate with `affects_consumers=true`)** — emitted by `build_governance_files` in `src/model_project_constructor/agents/website/governance_templates.py:803-886`:
+**Governance artifacts (Phase 4B, tier-3 moderate with `affects_consumers=true`)** — emitted by `build_governance_files` in `src/model_project_constructor/agents/website/governance_templates.py`:
 
 Always-emitted:
 
@@ -180,13 +180,13 @@ Always-emitted:
 - `.pre-commit-config.yaml`
 - `data/datasheet_subrogation_training_set.md` (one per primary query)
 
-Tier-3+ (`governance_templates.py:846-855`):
+Tier-3+ (in `build_governance_files`, `src/model_project_constructor/agents/website/governance_templates.py`):
 
 - `governance/three_pillar_validation.md`
 - `governance/ongoing_monitoring.md`
 - `governance/deployment_gates.md`
 
-Consumer-facing (`governance_templates.py:881-884`):
+Consumer-facing (in `build_governance_files`, `src/model_project_constructor/agents/website/governance_templates.py`):
 
 - `governance/eu_ai_act_compliance.md`
 
@@ -249,19 +249,19 @@ Personal auto policy renewals are currently decided by a rules engine that over-
 
 ### Generated repository — additional artifacts beyond Example 1
 
-Because this intake is **tier-1**, **consumer-facing**, and **uses protected attributes**, `build_governance_files`, `build_analysis_files`, and `build_test_files` in `governance_templates.py` add:
+Because this intake is **tier-1**, **consumer-facing**, and **uses protected attributes**, `build_governance_files`, `build_analysis_files`, and `build_test_files` in `src/model_project_constructor/agents/website/governance_templates.py` add:
 
-Tier-2+ (`governance_templates.py:858-873`):
+Tier-2+ (in `build_governance_files`, `src/model_project_constructor/agents/website/governance_templates.py`):
 
 - `governance/impact_assessment.md`
 - `governance/regulatory_mapping.md` (maps each declared framework to the emitted artifact list via `build_regulatory_mapping`)
 
-Tier-1 only (`governance_templates.py:876-878`):
+Tier-1 only (in `build_governance_files`, `src/model_project_constructor/agents/website/governance_templates.py`):
 
 - `governance/lcp_integration.md`
 - `governance/audit_log/README.md`
 
-Fairness scaffolds (`build_analysis_files` at `governance_templates.py:889-909` and `build_test_files` at `governance_templates.py:912-930`, triggered by `uses_protected_attributes=true`):
+Fairness scaffolds (`build_analysis_files` in `src/model_project_constructor/agents/website/governance_templates.py` and `build_test_files` in `src/model_project_constructor/agents/website/governance_templates.py`, triggered by `uses_protected_attributes=true`):
 
 - `analysis/fairness_audit.qmd`
 - `src/renewal_profitability_model/fairness/__init__.py`
