@@ -22,10 +22,11 @@ backticked ``:N`` references (historical Worked-Examples fixture form) are
 NOT guarded — zero remain and the false-positive surface in inline code
 spans is too large.
 
-ALLOWLIST: ``Evolution.md`` is deferred by design (plan §5.2 / Phase 5) —
-it is a user-triggered full-rewrite page; its citations migrate inside that
-rewrite. A stale entry (an allowlisted page with no matches left) fails the
-companion test so the allowlist shrinks to empty as pages are cleaned.
+ALLOWLIST: empty since the Session 143 Evolution.md rewrite (plan §5.2 /
+Phase 5) — the invariant is now enforced on every page. The set remains so
+a future deliberate exception has a documented mechanism; a stale entry (an
+allowlisted page with no matches left) fails the companion test so the
+allowlist shrinks back to empty.
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ import re
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 WIKI_DIR = REPO_ROOT / "docs" / "wiki" / "claims-model-starter"
 
-ALLOWLIST = frozenset({"Evolution.md"})
+ALLOWLIST: frozenset[str] = frozenset()
 
 FRAGILE_PATTERNS = (
     re.compile(r"[A-Za-z0-9_./-]+\.(?:py|toml|ya?ml|json|md):[0-9]+(?:-[0-9]+)?"),
