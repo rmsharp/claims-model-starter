@@ -2,13 +2,11 @@
 
 ## Current State
 
-**All 5 planned build milestones complete** (per `docs/architecture-history/architecture-plan.md` §14). Scope A of "First live end-to-end run" (Session 22) + Scope B-1 real data agent (Session 24) + Scope B-2 scripted-answers intake (Sessions 26-27) have shipped — real LLM-backed intake + data agents are wired into `scripts/run_pipeline.py --live`.
+**All 5 planned build milestones complete** (per `docs/architecture-history/architecture-plan.md` §14). Scope A of "First live end-to-end run" (Session 22) + Scope B-1 real data agent (Session 24) + Scope B-2 scripted-answers intake (Sessions 26-27) have shipped — real LLM-backed intake + data agents are wired into `scripts/run_pipeline.py` via `--llm data|both` (`--live` separately selects a real repo host instead of the in-memory `FakeRepoClient`).
 
-The codebase has **445 tests at 97.26% coverage**; CI gates lint (ruff), typecheck (mypy), test suite, and the 6 decoupling invariants.
+The codebase has **797 tests at 97.28% coverage** (Session 146 baseline); CI gates lint (ruff), typecheck (mypy), test suite, and the Data Agent decoupling test (2 AST tests enforcing the architecture plan's §7 decoupling invariant).
 
-Remaining work (tracked in `BACKLOG.md`):
-- Optional Scope B-3 (Web UI bridge — deferred unless production-shape demo is wanted).
-- Post-pilot operator-experience / doc-freshness improvements (wiki sweep, tutorial UX, terminology glossary, resume-from-checkpoint).
+Remaining work (tracked in `BACKLOG.md`): **none open** — Session 70 closed the last item. The post-pilot operator-experience / doc-freshness improvements once listed here have shipped (wiki + tutorial doc-freshness work, the terminology Glossary wiki page, resume-from-checkpoint via `scripts/run_pipeline.py --resume`), and the optional Scope B-3 Web UI bridge was superseded by the resume flow (`docs/planning/resume-from-checkpoint-plan.md` §1.3) — its optional Phase 4 (intake UI writes the `IntakeReport.json` envelope) remains deferred.
 
 ### Pipeline Overview (6 Steps)
 
