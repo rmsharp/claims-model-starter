@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 147 — operator-directed ("1 then 4" from the S146 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`ef5fcf6..437c39a`, 3 commits, explicit instruction); (2) **plan-archive** — move `docs/planning/wiki-citation-symbol-references-plan.md` and `docs/planning/evolution-page-plan.md` → `docs/architecture-history/` with archival banners per PROJECT_CONVENTIONS §3 (AUDIT/maintenance workstream). (IN PROGRESS)
+
+**Started:** 2026-06-11.
+
+**Status:** Session claimed. Work beginning — researching PROJECT_CONVENTIONS §3 banner format + grep inventory of all references to the two plan files before moving.
+
+---
+
+**(Session 146 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 146 — operator-directed ("1 then 4" from the S145 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`c18fb1d..ef5fcf6`, 3 commits, explicit instruction); (2) **ROADMAP.md staleness fix** — re-derive the "445 tests at 97.26%" and "6 decoupling invariants" claims against the live tree, fix what's stale (AUDIT workstream, S145 micro-audit pattern; root file — no wiki publish involved). (**COMPLETE** — **4 edits, all in §Current State**: E1 test count "445 @ 97.26%" → "**797 @ 97.28%** (Session 146 baseline)" (fresh `uv run pytest -q` twice, both matching the S145 handoff exactly); E2 "the 6 decoupling invariants" → "the Data Agent decoupling test (2 AST tests enforcing the architecture plan's §7 decoupling invariant)" — **the "6" was wrong AT BIRTH**: at its origin commit (`b74d3ff`, Session 33) the decoupling test file already had exactly 2 test functions, and the plan's Hard Constraints number C1–C8, so "6" matches nothing in the tree then or now; sibling docs (Evolution, CHANGELOG) consistently say "the §7 decoupling invariant," singular; E3 "wired into `scripts/run_pipeline.py --live`" → "via `--llm data|both` (`--live` separately selects a real repo host instead of the in-memory `FakeRepoClient`)" — `--live` never gated LLM use; E4 the stale "Remaining work" bullets (B-3 deferred + post-pilot list) → accurate paragraph: BACKLOG **empty since Session 70**, the post-pilot items SHIPPED (wiki/tutorial freshness via MkDocs, Glossary wiki page, resume-from-checkpoint via `--resume`), B-3 **superseded** per `docs/planning/resume-from-checkpoint-plan.md` §1.3 (read at source), its optional Phase 4 (intake UI writes the `IntakeReport.json` envelope) deferred. **Audit coverage: 53 claims verified by a 3-agent read-only `Explore` fan-out (`wf_c528a753-9d0`, one per page section) → 3 findings; E4 was caught by MY direct derivation, not the fan-out, despite the prompt explicitly directing Agent A at it (→ Candidate #114).** Sole-writer count-asserted apply: 4/4 first try, post-conditions clean. Gate fresh pre+post: **797 @ 97.28%, mypy 0/64, ruff clean.** 2-round adversarial verification (R1 `wf_672b0891-341` 31 checks, R2 `wf_c7c4a1cd-602` 93 checks, 6 `Explore` agents, #56 survival clause): **0 problems BOTH rounds** — incl. R2's reader-precision lens explicitly tasked with my own `--llm data|both` misparse doubt (self-refuted; adjudicated leave-as-is per #55: union reading correct, per-scope flags spelled out in the same page's "First live end-to-end run" section). Deliverable commit `aa25f74`. Wiki untouched — no publish involved.)
 
 **Started / Completed:** 2026-06-11.
