@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 141 — operator-directed: **Execute the §8 plan, Phase 4** — migrate `Contributing.md`'s fragile `file:line` citations → §3 *non-symbol anchors* (TOML table paths, CI job names, test-module paths), per `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 4 + §3. DEVELOPMENT execution against a written plan; ONE deliverable — **NOT** Phase 5/6 (FM #18). (IN PROGRESS)
+
+**Started:** 2026-06-11.
+
+**Status:** Session claimed. Work beginning. Publish-intent gate (Learning #40) to be locked via `AskUserQuestion` before any wiki-touching commit.
+
+---
+
+**(Session 140 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 140 — operator-directed: **Execute the §8 plan, Phase 3** — migrate fragile `file:line` wiki citations → grep-locatable **symbol references** on `Security-Considerations.md` (the hot-spot page), per `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 3 + §3 (convention) + §5.1 (here-be-dragons). DEVELOPMENT execution against a written plan; ONE deliverable — **NOT** Phase 4+ (FM #18). (**COMPLETE** — **37 edits** migrated to full-path symbol references: every `path:line` citation, every prose `(line N)`/`(lines N-M)` ref, every bare-filename and ellipsis/partial *source* path. Every symbol re-derived from live code (direct grep); the two stale mis-points fixed by **naming not pinning** — `SYSTEM_GOVERNANCE` (was `:121-128`, lives at 128) and `AnthropicLLMClient.next_question` (was `:150-162`, lives at 199). Every bare filename **disambiguated** to its correct package (`cli.py`→data-agent, `pipeline.py`→orchestrator, `logging.py`/`metrics.py`→orchestrator, `db.py`/`sql_validation.py`→data-agent) — the §5.1 hazard. **Sole-writer apply script** with per-edit count-assertions (no agent ever held Edit/Write — #102); **2-round read-only `Explore` adversarial workflow** (`wf_d5b418bf-a72`, 6 agents, symbol-existence/path-disambiguation/convention lenses) — **0 real problems**; its 2 "blocker" flags both **adjudicated and rejected** against live code (`RETRY_BACKOFF` IS a real graph-edge name; the db.py `§9.1` blockquote is an unchanged verbatim quote — #103/#45). Personal full-diff review. **Grep gate clean** (0 `path:line`, 0 prose line refs, 0 ellipsis), fences balanced (4). Committed `9d6915f` and **live-published** by the auto-publish hook — wiki repo `1b2676b → bd6e8b7`, parity re-run "no changes to publish" (**0-drift**). Doc-only — no code touched, gate baseline inherited. `master` is **12 commits ahead of `origin`** — **NOT pushed** (Learning #40).)
 
 **Started / Completed:** 2026-06-10.
