@@ -354,9 +354,9 @@ class TestBuildRepoProjectResult:
 
         # Regulatory mapping is computed against the committed governance set
         mapping = result.governance_manifest.regulatory_mapping
-        assert "SR_11_7" in mapping
-        # three_pillar_validation WAS committed, so SR_11_7 gets it
-        assert "governance/three_pillar_validation.md" in mapping["SR_11_7"]
+        assert "SR_26_2" in mapping
+        # three_pillar_validation WAS committed, so SR_26_2 gets it
+        assert "governance/three_pillar_validation.md" in mapping["SR_26_2"]
 
     def test_failed_state_defaults_governance(self) -> None:
         state = {

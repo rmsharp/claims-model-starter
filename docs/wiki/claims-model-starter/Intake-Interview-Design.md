@@ -27,7 +27,7 @@ Three rules are load-bearing and worth flagging:
 
 A second system prompt covers governance classification (`SYSTEM_GOVERNANCE` in `src/model_project_constructor/agents/intake/anthropic_client.py`):
 
-> You classify model projects against an internal governance matrix. cycle_time ∈ {strategic, tactical, operational, continuous}. risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. Regulatory frameworks include SR_11_7, NAIC_AIS, EU_AI_ACT_ART_9, GDPR_ART_22, ASOP_56. Be conservative: if in doubt, pick the stricter tier.
+> You classify model projects against an internal governance matrix. cycle_time ∈ {strategic, tactical, operational, continuous}. risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. Regulatory frameworks include SR_26_2, NAIC_AIS, EU_AI_ACT_ART_9, GDPR_ART_22, ASOP_56. Be conservative: if in doubt, pick the stricter tier.
 
 The conservative-bias heuristic is deliberate. Under-classifying a model's risk produces downstream governance gaps that are expensive to detect. Over-classifying only costs some extra documentation.
 
@@ -150,7 +150,7 @@ Right after the draft, the `classify_governance_node` in `src/model_project_cons
 
 - **`cycle_time`** — `strategic` (months/quarters), `tactical` (weeks), `operational` (days/hours), or `continuous` (real-time).
 - **`risk_tier`** — `tier_1_critical`, `tier_2_high`, `tier_3_moderate`, or `tier_4_low`.
-- **`regulatory_frameworks`** — a list (e.g., `["SR_11_7", "NAIC_AIS"]` for US prudential/insurance; `EU_AI_ACT_ART_9`, `GDPR_ART_22` for EU).
+- **`regulatory_frameworks`** — a list (e.g., `["SR_26_2", "NAIC_AIS"]` for US prudential/insurance; `EU_AI_ACT_ART_9`, `GDPR_ART_22` for EU).
 - **`affects_consumers`** — does the output shape a decision that touches an end consumer?
 - **`uses_protected_attributes`** — are protected-class attributes in the feature set?
 

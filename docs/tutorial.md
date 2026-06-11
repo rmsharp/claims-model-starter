@@ -200,7 +200,7 @@ governance:
     Advisory recommendation system only; humans make the subrogation
     decision. No direct consumer-facing impact. Moderate financial exposure.
   regulatory_frameworks:
-    - SR_11_7
+    - SR_26_2
     - NAIC_AIS
   affects_consumers: true
   uses_protected_attributes: false

@@ -129,10 +129,10 @@ class TestWebsiteAgentRun:
         assert "governance/model_card.md" in result.governance_manifest.artifacts_created
         # Regulatory mapping exposes declared frameworks
         mapping = result.governance_manifest.regulatory_mapping
-        assert "SR_11_7" in mapping
+        assert "SR_26_2" in mapping
         assert "NAIC_AIS" in mapping
-        # SR_11_7 should bind to model_card + three_pillar + ongoing_monitoring
-        assert "governance/model_card.md" in mapping["SR_11_7"]
+        # SR_26_2 should bind to model_card + three_pillar + ongoing_monitoring
+        assert "governance/model_card.md" in mapping["SR_26_2"]
 
     def test_files_persisted_in_fake_client(
         self,

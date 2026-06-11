@@ -118,7 +118,7 @@ SYSTEM_INTERVIEWER = _INTERVIEWER_BASE + _STATISTICAL_TERMS_NOTE
 # ``tests/agents/website/test_governance.py`` (``set(GOVERNANCE_FRAMEWORKS) ==
 # set(_FRAMEWORK_ARTIFACTS)``); add a framework here only alongside its mapping.
 GOVERNANCE_FRAMEWORKS: tuple[str, ...] = (
-    "SR_11_7",
+    "SR_26_2",
     "NAIC_AIS",
     "EU_AI_ACT_ART_9",
     "GDPR_ART_22",

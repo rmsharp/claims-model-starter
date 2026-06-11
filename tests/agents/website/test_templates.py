@@ -259,7 +259,7 @@ class TestIndividualRenderers:
         out = render_reports_intake_md(intake=intake)
         assert "tier_3_moderate" in out
         assert "tactical" in out
-        assert "SR_11_7" in out
+        assert "SR_26_2" in out
 
     def test_intake_report_md_renders_business_case(
         self, intake_report: IntakeReport

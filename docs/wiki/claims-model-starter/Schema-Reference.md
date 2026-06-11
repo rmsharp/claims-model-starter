@@ -197,7 +197,7 @@ class GovernanceMetadata(StrictBase):
     cycle_time_rationale: str
     risk_tier: RiskTier
     risk_tier_rationale: str
-    regulatory_frameworks: list[str]          # e.g., ["SR_11_7", "NAIC_AIS"]
+    regulatory_frameworks: list[str]          # e.g., ["SR_26_2", "NAIC_AIS"]
     affects_consumers: bool
     uses_protected_attributes: bool
 ```
@@ -491,7 +491,7 @@ class GovernanceManifest(StrictBase):
 ```
 
 - `model_registry_entry` is an escape hatch for the full registry row; see [Governance Framework](Governance-Framework) for its shape.
-- `regulatory_mapping` maps a framework name (e.g., `"SR_11_7"`) to the list of artifact paths that satisfy it — a reviewer-friendly index into the generated project.
+- `regulatory_mapping` maps a framework name (e.g., `"SR_26_2"`) to the list of artifact paths that satisfy it — a reviewer-friendly index into the generated project.
 
 ### `RepoProjectResult`
 

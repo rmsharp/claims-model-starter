@@ -118,7 +118,7 @@ governance:
     facing, adverse-action-adjacent, and subject to insurance fraud
     statutes. Requires the strictest governance tier.
   regulatory_frameworks:
-    - SR_11_7
+    - SR_26_2
     - NAIC_AIS
     - EU_AI_ACT_ART_9
   affects_consumers: true

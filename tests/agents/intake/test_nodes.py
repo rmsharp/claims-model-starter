@@ -116,7 +116,7 @@ def _sample_governance() -> GovernanceClassification:
         cycle_time_rationale="r",
         risk_tier="tier_3_moderate",
         risk_tier_rationale="r",
-        regulatory_frameworks=["SR_11_7"],
+        regulatory_frameworks=["SR_26_2"],
         affects_consumers=True,
         uses_protected_attributes=False,
     )
@@ -185,7 +185,7 @@ def test_classify_governance_merges_into_state() -> None:
     draft_state = _state(draft_fields=nodes["draft_report"](_state())["draft_fields"])
     delta = nodes["classify_governance"](draft_state)
     assert delta["governance_fields"]["risk_tier"] == "tier_3_moderate"
-    assert delta["governance_fields"]["regulatory_frameworks"] == ["SR_11_7"]
+    assert delta["governance_fields"]["regulatory_frameworks"] == ["SR_26_2"]
 
 
 def test_revise_increments_cycles_and_recomputes_governance() -> None:

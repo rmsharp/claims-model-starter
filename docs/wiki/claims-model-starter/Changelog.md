@@ -10,6 +10,10 @@ The repository is at version `0.2.0` (pre-1.0, pilot-ready). Release tags `v0.1.
 
 ## [Unreleased]
 
+### SR 11-7 → SR 26-2 regulatory-citation rename (Session 144)
+
+- **Changed:** the governance-framework vocabulary token `SR_11_7` is now `SR_26_2` — across the intake agent's `GOVERNANCE_FRAMEWORKS` prompt enumeration, the website agent's `_FRAMEWORK_ARTIFACTS` registry, test fixtures, the tutorial, and this wiki. The Federal Reserve superseded SR 11-7 with SR 26-2 in 2026; for this pipeline the supersession is a citation-level change (no artifact-set or behavior changes). Generated projects' `regulatory_mapping.md` and `model_registry.json` entries now cite the new name. Historical entries below keep the old name as records of what shipped at the time.
+
 ### LLM provider abstraction, stage-driver decomposition, host-vocabulary single-source, and prompt-enumeration derivation (Sessions 115-133)
 
 Four architectural overhauls landed across Sessions 115-133: E4 decouples LLM-provider choice, O3 consolidates host configuration into a registry, O1 centralizes pipeline stage metadata, and O4 derives prompt enumerations from their schema Literals to prevent vocabulary drift.

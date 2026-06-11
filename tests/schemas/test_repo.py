@@ -42,7 +42,7 @@ class TestGovernanceManifest:
     def test_happy_path(self) -> None:
         m = make_governance_manifest()
         assert m.risk_tier == "tier_3_moderate"
-        assert "SR_11_7" in m.regulatory_mapping
+        assert "SR_26_2" in m.regulatory_mapping
 
     def test_regulatory_mapping_defaults_to_empty_dict(self) -> None:
         m = make_governance_manifest(regulatory_mapping={})
@@ -63,7 +63,7 @@ class TestGovernanceManifest:
             risk_tier="tier_4_low",
             cycle_time="strategic",
         )
-        a.regulatory_mapping["SR_11_7"] = ["governance/model_card.md"]
+        a.regulatory_mapping["SR_26_2"] = ["governance/model_card.md"]
         assert b.regulatory_mapping == {}
 
 

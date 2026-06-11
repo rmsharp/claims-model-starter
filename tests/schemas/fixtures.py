@@ -128,7 +128,7 @@ def make_governance_metadata(**overrides: Any) -> GovernanceMetadata:
         cycle_time_rationale="Quarterly adjuster retraining cadence.",
         risk_tier="tier_3_moderate",
         risk_tier_rationale="Adjuster-in-the-loop decision; reversible.",
-        regulatory_frameworks=["SR_11_7", "NAIC_AIS"],
+        regulatory_frameworks=["SR_26_2", "NAIC_AIS"],
         affects_consumers=False,
         uses_protected_attributes=False,
     )
@@ -238,7 +238,7 @@ def make_governance_manifest(**overrides: Any) -> GovernanceManifest:
         artifacts_created=["governance/model_card.md", "governance/model_registry.json"],
         risk_tier="tier_3_moderate",
         cycle_time="tactical",
-        regulatory_mapping={"SR_11_7": ["governance/model_card.md"]},
+        regulatory_mapping={"SR_26_2": ["governance/model_card.md"]},
     )
     defaults.update(overrides)
     return GovernanceManifest(**defaults)

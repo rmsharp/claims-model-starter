@@ -67,7 +67,7 @@ def _make_intake(
             cycle_time_rationale="monthly feedback loop",
             risk_tier="tier_3_moderate",
             risk_tier_rationale="advisory only",
-            regulatory_frameworks=["SR_11_7"],
+            regulatory_frameworks=["SR_26_2"],
             affects_consumers=True,
             uses_protected_attributes=False,
         ),

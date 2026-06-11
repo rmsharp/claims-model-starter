@@ -38,7 +38,7 @@
     "risk_tier": "tier_1_critical",
     "risk_tier_rationale": "Active regulatory scrutiny, direct consumer impact on auto insurance renewal pricing, and a standing fairness audit requirement. Critical tier is unambiguous.",
     "regulatory_frameworks": [
-      "SR_11_7",
+      "SR_26_2",
       "NAIC_AIS",
       "EU_AI_ACT_ART_9",
       "ASOP_56"

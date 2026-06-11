@@ -108,7 +108,7 @@ _assert_vocab_parity(set(_CYCLE_CADENCE), CycleTime, name="_CYCLE_CADENCE")
 # actually emitted for this project are retained in the final manifest.
 
 _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
-    "SR_11_7": [
+    "SR_26_2": [
         "governance/model_card.md",
         "governance/three_pillar_validation.md",
         "governance/ongoing_monitoring.md",

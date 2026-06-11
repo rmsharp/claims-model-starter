@@ -121,7 +121,7 @@ governance:
     rate filings. High business and regulatory exposure; auto-decisioned
     but with rate-cap guardrails.
   regulatory_frameworks:
-    - SR_11_7
+    - SR_26_2
     - NAIC_AIS
   affects_consumers: true
   uses_protected_attributes: false

@@ -130,17 +130,17 @@ class TestTier1Critical:
 
         # All 4 declared frameworks appear in the mapping
         frameworks = set(manifest.regulatory_mapping.keys())
-        assert {"SR_11_7", "NAIC_AIS", "EU_AI_ACT_ART_9", "ASOP_56"} <= frameworks
+        assert {"SR_26_2", "NAIC_AIS", "EU_AI_ACT_ART_9", "ASOP_56"} <= frameworks
 
         # EU_AI_ACT_ART_9 binds to eu_ai_act_compliance.md (committed at tier 1)
         assert (
             "governance/eu_ai_act_compliance.md"
             in manifest.regulatory_mapping["EU_AI_ACT_ART_9"]
         )
-        # SR_11_7 binds to three_pillar_validation.md (tier 3+)
+        # SR_26_2 binds to three_pillar_validation.md (tier 3+)
         assert (
             "governance/three_pillar_validation.md"
-            in manifest.regulatory_mapping["SR_11_7"]
+            in manifest.regulatory_mapping["SR_26_2"]
         )
         # NAIC_AIS binds to impact_assessment.md (tier 2+)
         assert (
@@ -169,7 +169,7 @@ class TestTier1Critical:
         assert entry["affects_consumers"] is True
         assert entry["uses_protected_attributes"] is True
         assert entry["intake_session_id"] == "intake_renewals_001"
-        assert "SR_11_7" in entry["regulatory_frameworks"]
+        assert "SR_26_2" in entry["regulatory_frameworks"]
 
 
 # ---------------------------------------------------------------------------
@@ -208,8 +208,8 @@ class TestTier2High:
         result, _ = _run_agent(tier2_intake, data_report)
         mapping = result.governance_manifest.regulatory_mapping
 
-        # Tier 2 fixture declares exactly SR_11_7 + ASOP_56
-        assert set(mapping.keys()) == {"SR_11_7", "ASOP_56"}
+        # Tier 2 fixture declares exactly SR_26_2 + ASOP_56
+        assert set(mapping.keys()) == {"SR_26_2", "ASOP_56"}
         # EU_AI_ACT_ART_9 is NOT declared and NOT in the mapping
         assert "EU_AI_ACT_ART_9" not in mapping
 
@@ -417,10 +417,10 @@ class TestBuildGovernanceFilesUnit:
         )
 
         mapping = build_regulatory_mapping(
-            frameworks=["SR_11_7", "UNKNOWN_FRAMEWORK"],
+            frameworks=["SR_26_2", "UNKNOWN_FRAMEWORK"],
             emitted_paths={"governance/model_card.md"},
         )
-        assert mapping["SR_11_7"] == ["governance/model_card.md"]
+        assert mapping["SR_26_2"] == ["governance/model_card.md"]
         # Unknown framework appears with an empty list so it's visible
         assert mapping["UNKNOWN_FRAMEWORK"] == []
 
@@ -450,7 +450,7 @@ class TestBuildGovernanceFilesUnit:
         )
 
         intake = {
-            "governance": {"regulatory_frameworks": ["SR_11_7"]},
+            "governance": {"regulatory_frameworks": ["SR_26_2"]},
             "estimated_value": {
                 "narrative": "A 10% lift yields ~$3M annually.",
                 "annual_cost_of_inaction_usd_low": 2000000.0,

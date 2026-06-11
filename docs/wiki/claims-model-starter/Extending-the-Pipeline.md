@@ -198,7 +198,7 @@ Use case: your jurisdiction requires a framework not currently supported (e.g., 
 
 ```python
 _FRAMEWORK_ARTIFACTS: dict[str, list[str]] = {
-    "SR_11_7": [
+    "SR_26_2": [
         "governance/model_card.md",
         "governance/three_pillar_validation.md",
         "governance/ongoing_monitoring.md",

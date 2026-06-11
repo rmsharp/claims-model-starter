@@ -116,7 +116,7 @@ def _gov_payload() -> dict[str, Any]:
         "cycle_time_rationale": "r",
         "risk_tier": "tier_3_moderate",
         "risk_tier_rationale": "r",
-        "regulatory_frameworks": ["SR_11_7"],
+        "regulatory_frameworks": ["SR_26_2"],
         "affects_consumers": True,
         "uses_protected_attributes": False,
     }
@@ -203,7 +203,7 @@ def test_classify_governance_parses_ok() -> None:
     draft = DraftReportResult(**_draft_payload())
     gov = client.classify_governance(draft)
     assert gov.risk_tier == "tier_3_moderate"
-    assert gov.regulatory_frameworks == ["SR_11_7"]
+    assert gov.regulatory_frameworks == ["SR_26_2"]
 
 
 def test_classify_governance_missing_key_raises() -> None:

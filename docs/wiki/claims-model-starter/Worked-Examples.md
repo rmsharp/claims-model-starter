@@ -62,7 +62,7 @@ Running the intake agent against this fixture produces `tests/fixtures/subrogati
 
 - `risk_tier: "tier_3_moderate"` — advisory recommendation only; humans decide; moderate financial exposure
 - `cycle_time: "tactical"` — scores consumed at intake, workflows change weekly
-- `regulatory_frameworks: ["SR_11_7", "NAIC_AIS"]`
+- `regulatory_frameworks: ["SR_26_2", "NAIC_AIS"]`
 - `affects_consumers: true` — downstream claims decisioning can affect the claimant
 - `uses_protected_attributes: false`
 
@@ -243,7 +243,7 @@ Personal auto policy renewals are currently decided by a rules engine that over-
 - `estimated_value`: $8M–$12M annual on a $400M book, *primarily compliance-driven*
 - `governance.risk_tier: "tier_1_critical"`
 - `governance.cycle_time: "continuous"` — nightly scoring + near-real-time drift/fairness monitoring
-- `governance.regulatory_frameworks: ["SR_11_7", "NAIC_AIS", "EU_AI_ACT_ART_9", "ASOP_56"]`
+- `governance.regulatory_frameworks: ["SR_26_2", "NAIC_AIS", "EU_AI_ACT_ART_9", "ASOP_56"]`
 - `governance.affects_consumers: true`
 - **`governance.uses_protected_attributes: true`** — triggers fairness scaffolds
 

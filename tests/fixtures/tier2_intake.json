@@ -39,7 +39,7 @@
     "risk_tier": "tier_2_high",
     "risk_tier_rationale": "Material financial exposure ($250k+ reserves), but humans make every decision and the model is advisory. High but not critical.",
     "regulatory_frameworks": [
-      "SR_11_7",
+      "SR_26_2",
       "ASOP_56"
     ],
     "affects_consumers": false,

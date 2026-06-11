@@ -49,7 +49,7 @@
 
 | Framework | Full name | Scope |
 |-----------|-----------|-------|
-| **SR 11-7** | Federal Reserve Supervisory Letter 11-7 | Guidance on Model Risk Management. Applies to banking organizations. Requires model validation, documentation, and governance. |
+| **SR 26-2** | Federal Reserve Supervisory Letter 26-2 | Guidance on Model Risk Management (superseded SR 11-7 in 2026). Applies to banking organizations. Requires model validation, documentation, and governance. |
 | **NAIC AIS** | NAIC Model Bulletin on Artificial Intelligence Systems | National Association of Insurance Commissioners guidance on AI/ML in insurance. |
 | **EU AI Act** | European Union Artificial Intelligence Act | Regulation on AI systems. Articles 9-15 cover risk management, data governance, transparency, human oversight. |
 | **ASOP 56** | Actuarial Standard of Practice No. 56 | Modeling standard for actuaries. Covers model selection, implementation, and communication of results. |
