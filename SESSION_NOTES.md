@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 144 — operator-directed ("1 and then 2" from the S143 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`3288d99..667b92c`, 3 commits, explicit instruction); then (2) **SR_11_7 → SR_26_2 citation rename** (operator-ruled mechanical, citation-level only per persistent memory — do not re-litigate): code — `GOVERNANCE_FRAMEWORKS` in `src/model_project_constructor/agents/intake/anthropic_client.py` + `_FRAMEWORK_ARTIFACTS` in `src/model_project_constructor/agents/website/governance_templates.py` (S108 parity test forces lockstep; sweep generated-artifact prose for "SR 11-7" too) — plus 7 wiki pages (Changelog, Intake-Interview-Design, Glossary, Worked-Examples, Governance-Framework, Extending-the-Pipeline, Schema-Reference). Publish intent locked **publish-live** via `AskUserQuestion` before claim. (IN PROGRESS)
+
+**Started:** 2026-06-11.
+
+**Status:** Session claimed. Work beginning.
+
+---
+
+**(Session 143 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 143 — operator-directed: **Push master, then execute the §8 plan, Phase 5** — full Evolution.md rewrite. Operator locked path (a) **full rewrite** + **publish-live** via `AskUserQuestion` before claim. (**COMPLETE** — `master` pushed first (`e006880..3288d99`, 6 commits, explicit instruction). Then the rewrite per `PROJECT_CONVENTIONS.md` §4: **395-line page covering Sessions 0–143** (banner: 2026-06-11, `3288d99`, after Session 142), built from CHANGELOG-as-checklist for S46–113 **plus git-log/SESSION_NOTES for S114–142 after discovering `CHANGELOG.md` has NO entries for Sessions 114–142** (newest = S113; gap now documented on the page's §11 + References and in this handoff). All **144 sessions accounted for exactly once** (index rows/ranges + 6-row deliberately-omitted appendix). Citations migrated within the rewrite (§3 full-path symbol anchors; all 3 guard regexes 0 hits incl. the fenced snippet; every cited symbol grep-confirmed at apply time). `GITLAB_DEFAULT_HOST_URL` resolved in §6 (historical, live successor `REPO_PLATFORMS["gitlab"].default_api_url`). **`ALLOWLIST` in `tests/test_wiki_no_line_citations.py` now EMPTY** — invariant enforced wiki-wide; companion test proven red on a stale entry, reverted green. **SR 11-7 → SR 26-2** noted citation-level per operator ruling (memory written). **Review gate (§4.7) honored**: pandoc/GFM render opened in Safari; 2 operator feedback rounds (SR 26-2 supersession → calibrated to citation-swap framing); operator approved rev 3. Deliverable commit `03a0a54`; hook **live-published** (wiki `21e2976 → 18fa598`); parity re-run **"no changes to publish"**. Full gate **797 @ 97.28%, mypy 0/64, ruff clean** (fresh pre- AND post-change). 2-round read-only `Explore` adversarial verification (R1 `wf_9437f2a0-841`, R2 `wf_e8a80ad7-1e9`, 6 agents, #56 survival clause): **R1 = 2 real findings fixed in-session** (inherited first-edition accept-token list wrong vs `REVIEW_ACCEPT_TOKENS`; my invented "frozen archive" line-count claim) **+ 1 flag adjudicated and REJECTED** (banner convention per §4.4 + first-edition precedent); **R2 = 0 problems across all 3 lenses**. **The §8 citation campaign is now COMPLETE — all six phases.**)
 
 **Started / Completed:** 2026-06-11.
