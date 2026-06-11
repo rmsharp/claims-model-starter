@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 142 — operator-directed: **Execute the §8 plan, Phase 6** — the recurrence guard: add `tests/test_wiki_no_line_citations.py` per `docs/planning/wiki-citation-symbol-references-plan.md` §6, allowlist = `{Evolution.md}` only. DONE = targeted test green (`uv run pytest tests/test_wiki_no_line_citations.py -q`), guard proven red on an injected fake `foo.py:10` (then reverted), full gate green (`uv run pytest -q`, mypy, ruff). First CODE change of the campaign. ONE deliverable — **NOT** Phase 5 (FM #18); no wiki-file commits (hook will not fire).
+
+**Started:** 2026-06-11.
+
+**Status:** Session claimed. Work beginning.
+
+---
+
+**(Session 141 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 141 — operator-directed: **Execute the §8 plan, Phase 4** — migrate `Contributing.md`'s fragile `file:line` citations → §3 *non-symbol anchors* (TOML table paths, CI job names, test-module paths), per `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 4 + §3. DEVELOPMENT execution against a written plan; ONE deliverable — **NOT** Phase 5/6 (FM #18). (**COMPLETE** — **13 edits**: the 8 Appendix-A gate citations → §3 non-symbol anchors (TOML table paths incl. `[tool.ruff.lint.per-file-ignores]`, the `on:` trigger, the `decoupling` job), **+5 Learning-#52 sweep additions** beyond Appendix A: 2 partial `architecture-plan.md` doc refs expanded to `docs/architecture-history/architecture-plan.md` (§7/C4 and §14 both re-confirmed hosted there at apply time — #54) and 3 stale `(N lines)` parentheticals **dropped** (2 of 3 already wrong: SESSION_RUNNER 321→live 304, CLAUDE 61→live 83; dropped not updated, so they can't re-drift — #53). Every anchor re-derived from the live `pyproject.toml`/`ci.yml` (direct read). **Sole-writer apply script** (`/tmp/mpc_phase4_migrate.py`, per-edit count-assertions, all 13 passed first try, dry-run then `--apply`); **2-round read-only `Explore` adversarial workflow** (`wf_efa155bb-5cd`, 6 agents) — **0 real problems**; all flags adjudicated and rejected per #107 (the 3 "blocker" labels self-concluded "no error"; the `requires-python = ">=3.11"` style flag is Appendix A's own sanctioned form AND pre-existing prose my diff never touched). Personal full-diff review. **Grep gate clean** (0 `path:line`, 0 `(N lines)`), fences balanced (16). Committed `6be86d2`, **live-published** by the hook — wiki repo `bd6e8b7 → 21e2976`, parity re-run "no changes to publish" (**0-drift**). **Whole-wiki residual = 12, all on `Evolution.md`** (the §6 allowlist page) — Phases 1-4 fully landed. Doc-only — gate baseline inherited. `master` is **3 commits ahead of `origin`** — **NOT pushed** (Learning #40).)
 
 **Started / Completed:** 2026-06-11.
