@@ -9,7 +9,7 @@ This page is for anyone doing a security review of the Model Project Constructor
 - what gets written to disk, and
 - known sharp edges.
 
-**Claim standard:** every factual statement has a file:line citation. Where the code enforces something, the citation is to the enforcement site. Where something is *only documented* (not enforced), the page says so explicitly.
+**Claim standard:** every factual statement names a grep-locatable code symbol (class, function, method, or module constant) in its full-path defining file. Where the code enforces something, the reference is to the enforcement site. Where something is *only documented* (not enforced), the page says so explicitly.
 
 ---
 
@@ -17,15 +17,15 @@ This page is for anyone doing a security review of the Model Project Constructor
 
 ### 1.1 Every secret comes from the environment
 
-There are **no hardcoded credentials anywhere in the source tree**. The orchestrator reads secrets exclusively via `OrchestratorSettings.from_env()` at `src/model_project_constructor/orchestrator/config.py:165-220`. Module docstring (`config.py:1-19`):
+There are **no hardcoded credentials anywhere in the source tree**. The orchestrator reads secrets exclusively via `OrchestratorSettings.from_env` in `src/model_project_constructor/orchestrator/config.py`. Module docstring (in `src/model_project_constructor/orchestrator/config.py`):
 
 > every secret and every deployment-variable parameter must come from the environment (or a `.env` file loaded into the environment by the caller). There are no hardcoded credentials or hostnames anywhere in the codebase.
 
-Loading a `.env` file is the caller's responsibility — `config.py` only reads `os.environ`. Use `python-dotenv`, `direnv`, or your orchestration layer's secret injection.
+Loading a `.env` file is the caller's responsibility — `src/model_project_constructor/orchestrator/config.py` only reads `os.environ`. Use `python-dotenv`, `direnv`, or your orchestration layer's secret injection.
 
 ### 1.2 The complete env-var matrix
 
-Defined in `.env.example` and documented in `OPERATIONS.md:11-30`:
+Defined in `.env.example` and documented in `OPERATIONS.md` §1:
 
 | Variable | Required | Default | Used for |
 |---|---|---|---|
@@ -39,19 +39,19 @@ Defined in `.env.example` and documented in `OPERATIONS.md:11-30`:
 | `MPC_LOG_LEVEL` | no | `INFO` | `DEBUG` through `CRITICAL` |
 | `INTAKE_DB_PATH` | no | `./intake_sessions.db` | SQLite for live intake web UI sessions |
 
-Only two places outside `config.py` read env vars directly:
+Only two places outside `src/model_project_constructor/orchestrator/config.py` read env vars directly:
 
-- `src/model_project_constructor/ui/intake/app.py:77` — `INTAKE_DB_PATH` for the FastAPI web UI.
-- `scripts/run_pipeline.py:119, 123, 126, 290` — demo script convenience defaults (MPC_HOST_URL, MPC_NAMESPACE, MPC_HOST, and host-specific token).
+- `create_app` in `src/model_project_constructor/ui/intake/app.py` — `INTAKE_DB_PATH` for the FastAPI web UI.
+- `build_repo_target` and `build_website_runner` in `scripts/run_pipeline.py` — demo script convenience defaults (MPC_HOST_URL, MPC_NAMESPACE, MPC_HOST, and host-specific token).
 
-The adapters consume tokens via the settings object; their `__init__` signatures take `private_token: str` as a parameter (`src/model_project_constructor/agents/website/gitlab_adapter.py:56-65`, `github_adapter.py:66-72`), so a caller must decide how to get the value to them. The example in the docstring shows `os.environ["GITLAB_TOKEN"]`, but the adapter itself has no opinion on where the token came from — a secret manager, a vault agent, or a keychain all work.
+The adapters consume tokens via the settings object; their `__init__` signatures take `private_token: str` as a parameter (`PythonGitLabAdapter.__init__` in `src/model_project_constructor/agents/website/gitlab_adapter.py`, `PyGithubAdapter.__init__` in `src/model_project_constructor/agents/website/github_adapter.py`), so a caller must decide how to get the value to them. The example in the docstring shows `os.environ["GITLAB_TOKEN"]`, but the adapter itself has no opinion on where the token came from — a secret manager, a vault agent, or a keychain all work.
 
 ### 1.3 Fail-loud helpers
 
 `OrchestratorSettings` is constructable without credentials so tests and preview runs can build a settings object unconditionally. Runners that actually make HTTP calls must guard against missing tokens by calling the require helpers:
 
 ```python
-# src/model_project_constructor/orchestrator/config.py:222-240
+# src/model_project_constructor/orchestrator/config.py
 def require_host_token(self) -> str:
     """Return the host API token, raising if it is missing.
 
@@ -91,12 +91,12 @@ Both agents that use an LLM call Anthropic's Claude API:
 
 | Caller | File | Model (default) |
 |---|---|---|
-| Intake Agent | `src/model_project_constructor/agents/intake/anthropic_client.py:39, 110` | `claude-sonnet-4-6` |
-| Data Agent | `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:53, 106` | `claude-sonnet-4-6` |
+| Intake Agent | `DEFAULT_MODEL` in `src/model_project_constructor/agents/intake/anthropic_client.py` | `claude-sonnet-4-6` |
+| Data Agent | `DEFAULT_MODEL` in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` | `claude-sonnet-4-6` |
 
 Both construct `anthropic.Anthropic()` with no explicit args — the SDK picks up `ANTHROPIC_API_KEY` from the environment. Both accept an injected `client` argument so tests can pass a mock. Both default to `claude-sonnet-4-6` and expose a `model` argument for override.
 
-LLM client construction is routed through factory functions (`src/model_project_constructor/agents/intake/factory.py:35-64` for Intake; `packages/data-agent/src/model_project_constructor_data_agent/factory.py:31-64` for Data Agent) so the provider is named explicitly by callers, and a second LLM backend becomes one new client module plus one branch in the factory — no changes at the call sites. The known-provider list is single-sourced via `Literal` + `get_args`, so unknown-provider errors cannot drift from reality. Currently only `"anthropic"` is implemented; the seam (E4 overhaul) exists for future providers.
+LLM client construction is routed through factory functions (`make_llm_client` in `src/model_project_constructor/agents/intake/factory.py` for Intake; `make_llm_client` in `packages/data-agent/src/model_project_constructor_data_agent/factory.py` for Data Agent) so the provider is named explicitly by callers, and a second LLM backend becomes one new client module plus one branch in the factory — no changes at the call sites. The known-provider list is single-sourced via `Literal` + `get_args`, so unknown-provider errors cannot drift from reality. Currently only `"anthropic"` is implemented; the seam (E4 overhaul) exists for future providers.
 
 **Which agents call Claude (and which do not):**
 
@@ -112,9 +112,9 @@ The Anthropic SDK's default endpoint is `https://api.anthropic.com`. Self-hostin
 
 ### 2.2 GitLab (`PythonGitLabAdapter`)
 
-`src/model_project_constructor/agents/website/gitlab_adapter.py:41-155`. Calls:
+`PythonGitLabAdapter` in `src/model_project_constructor/agents/website/gitlab_adapter.py`. Calls:
 
-- `gitlab.Gitlab(url, private_token=..., ssl_verify=True)` (line 63-65) — the SDK client. `ssl_verify=True` is the default and not overridden for live runs.
+- `gitlab.Gitlab(url, private_token=..., ssl_verify=True)` (constructed in `PythonGitLabAdapter.__init__`) — the SDK client. `ssl_verify=True` is the default and not overridden for live runs.
 - `gl.groups.get(namespace)` — group resolution.
 - `gl.projects.create(...)` — project creation.
 - `project.commits.create(...)` — multi-file commit.
@@ -123,9 +123,9 @@ Target host is whatever `host_url` the caller provides (public `https://gitlab.c
 
 ### 2.3 GitHub (`PyGithubAdapter`)
 
-`src/model_project_constructor/agents/website/github_adapter.py:48-161`. Calls:
+`PyGithubAdapter` in `src/model_project_constructor/agents/website/github_adapter.py`. Calls:
 
-- `Github(auth=Auth.Token(...), base_url=host_url)` (line 72) — SDK client.
+- `Github(auth=Auth.Token(...), base_url=host_url)` (constructed in `PyGithubAdapter.__init__`) — SDK client.
 - `get_organization(namespace)` → falls back to `get_user(namespace)` — owner resolution.
 - `owner.create_repo(...)` — repo creation (maps visibility to `private` boolean).
 - `get_git_ref`, `create_git_blob`, `create_git_tree`, `create_git_commit`, `ref.edit` — git data API walk for a single atomic commit.
@@ -134,17 +134,17 @@ Target host is `https://api.github.com` by default; GitHub Enterprise via `MPC_H
 
 ### 2.4 Database (Data Agent, optional)
 
-`ReadOnlyDB.connect()` at `packages/data-agent/src/model_project_constructor_data_agent/db.py:29-37` calls `sqlalchemy.create_engine(url)`. The URL is whatever the operator passes to `--db-url` (CLI) or configures at deployment. This is the only DB connection in the project.
+`ReadOnlyDB.connect` in `packages/data-agent/src/model_project_constructor_data_agent/db.py` calls `sqlalchemy.create_engine(url)`. The URL is whatever the operator passes to `--db-url` (CLI) or configures at deployment. This is the only DB connection in the project.
 
-If no DB URL is configured, quality checks are generated but not executed — all marked `NOT_EXECUTED`. The DataReport still carries `status="COMPLETE"` with a data-quality concern noting the unreachable database (`cli.py:10-13`).
+If no DB URL is configured, quality checks are generated but not executed — all marked `NOT_EXECUTED`. The DataReport still carries `status="COMPLETE"` with a data-quality concern noting the unreachable database (the module docstring in `packages/data-agent/src/model_project_constructor_data_agent/cli.py`).
 
 ### 2.5 What does *not* make network calls
 
-- The intake fixture CLI (`intake/cli.py`) — replays canned answers, calls no LLM.
-- The orchestrator's `pipeline.py` — pure dispatcher; no I/O of its own.
+- The intake fixture CLI (`src/model_project_constructor/agents/intake/cli.py`) — replays canned answers, calls no LLM.
+- The orchestrator's `src/model_project_constructor/orchestrator/pipeline.py` — pure dispatcher; no I/O of its own.
 - `CheckpointStore` — writes to local disk only.
 - `FakeRepoClient` — in-memory test double.
-- Observability modules (`orchestrator/logging.py`, `orchestrator/metrics.py`) — stdlib logging + in-memory counters.
+- Observability modules (`src/model_project_constructor/orchestrator/logging.py`, `src/model_project_constructor/orchestrator/metrics.py`) — stdlib logging + in-memory counters.
 
 ---
 
@@ -154,8 +154,8 @@ If no DB URL is configured, quality checks are generated but not executed — al
 
 Every LLM call sends:
 
-- One of two system prompts (`anthropic_client.py:35-66` for the interviewer, 121-128 for governance classification).
-- A user message containing: the domain, the optional `initial_problem`, the full `qa_pairs` history, and the `questions_asked` counter (`src/model_project_constructor/agents/intake/anthropic_client.py:150-162`).
+- One of two system prompts (`SYSTEM_INTERVIEWER` for the interviewer, `SYSTEM_GOVERNANCE` for governance classification, both in `src/model_project_constructor/agents/intake/anthropic_client.py`).
+- A user message containing: the domain, the optional `initial_problem`, the full `qa_pairs` history, and the `questions_asked` counter (assembled in `AnthropicLLMClient.next_question` in `src/model_project_constructor/agents/intake/anthropic_client.py`).
 
 **The stakeholder's answers are forwarded verbatim to Anthropic.** Any PII or confidential claim details included in an answer are transmitted as-is. There is **no redaction, scrubbing, or PII filter in this codebase** — grep for `redact|pii|scrub|mask|sanitize` in `src/` returns zero hits.
 
@@ -163,17 +163,17 @@ Implication for operators: if the interview may contain policyholder-identifying
 
 ### 3.2 Data Agent
 
-Prompts sent to Anthropic (six methods in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:123-364` — `generate_primary_queries`, `generate_quality_checks`, `summarize`, `generate_datasheet`, `generate_baseline_query`, `rank_candidate_tables`):
+Prompts sent to Anthropic (six `AnthropicLLMClient` methods in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` — `generate_primary_queries`, `generate_quality_checks`, `summarize`, `generate_datasheet`, `generate_baseline_query`, `rank_candidate_tables`):
 
 - The full `DataRequest` JSON — which includes the `target_description`, `required_features`, `population_filter`, `time_range`, and `database_hint`.
 - The generated SQL and quality-check SQL (for the `summarize` and `generate_datasheet` calls).
 - **No actual data rows.** The Data Agent asks Claude to *generate* SQL; it does not feed query results back into the LLM.
 
-Observed rule: **`raw_result` (the executed query output) is never sent to Claude.** The `summarize` call receives only quality-check status summaries (`_dump_qc_status` at `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:449-460` formats `check_name: execution_status — result_summary`), not row-level data. This is a significant security property — deployments can safely execute queries against sensitive tables knowing the rows themselves never reach the LLM.
+Observed rule: **`raw_result` (the executed query output) is never sent to Claude.** The `summarize` call receives only quality-check status summaries (`_dump_qc_status` in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` formats `check_name: execution_status — result_summary`), not row-level data. This is a significant security property — deployments can safely execute queries against sensitive tables knowing the rows themselves never reach the LLM.
 
 ### 3.3 Website Agent
 
-Does not call an LLM. It deterministically templates files from the `IntakeReport` and `DataReport` payloads (`src/model_project_constructor/agents/website/templates.py`, `governance_templates.py`). Payload field content (business problem prose, SQL text, etc.) is interpolated into the generated files and committed to the target repo.
+Does not call an LLM. It deterministically templates files from the `IntakeReport` and `DataReport` payloads (`src/model_project_constructor/agents/website/templates.py`, `src/model_project_constructor/agents/website/governance_templates.py`). Payload field content (business problem prose, SQL text, etc.) is interpolated into the generated files and committed to the target repo.
 
 ---
 
@@ -181,7 +181,7 @@ Does not call an LLM. It deterministically templates files from the `IntakeRepor
 
 ### 4.1 Read-only is enforced at the credential layer, not in code
 
-`ReadOnlyDB` (`db.py:22-45`) does not parse incoming SQL or attempt to reject mutating statements. Its module docstring is explicit (lines 4-8):
+`ReadOnlyDB` (in `packages/data-agent/src/model_project_constructor_data_agent/db.py`) does not parse incoming SQL or attempt to reject mutating statements. Its module docstring is explicit:
 
 > Read-only enforcement is a database-credential concern in production (§9.1). This wrapper deliberately does not attempt to parse or reject mutating SQL — the Data Agent's LLM is prompted to emit SELECTs, and the pipeline is configured with a SELECT-only role at deployment time. The wrapper's sole job is to surface a clean `DBConnectionError` on connect failure so the graph can take the SKIP_EXECUTION off-ramp.
 
@@ -189,13 +189,13 @@ Does not call an LLM. It deterministically templates files from the `IntakeRepor
 
 ### 4.2 SQL parse-level validation
 
-`packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py:16-29` runs `sqlparse.parse(sql)` and rejects:
+`validate_sql` in `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py` runs `sqlparse.parse(sql)` and rejects:
 
 - Empty / whitespace strings.
 - Inputs `sqlparse` classifies as `"UNKNOWN"`.
 - Inputs `sqlparse` fails to tokenize.
 
-This is a **coarse well-formedness check**, not a security filter. It will not catch a well-formed `DROP TABLE` or a SQL-injection-style concatenation. Module docstring (lines 1-8) is explicit about this.
+This is a **coarse well-formedness check**, not a security filter. It will not catch a well-formed `DROP TABLE` or a SQL-injection-style concatenation. The module docstring in `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py` is explicit about this.
 
 ### 4.3 What the Data Agent does when DB is unreachable
 
@@ -247,7 +247,7 @@ Filesystem permissions on `$MPC_CHECKPOINT_DIR` are the operator's responsibilit
 
 ### 6.1 What gets logged
 
-`orchestrator/logging.py` emits three event types per agent call (`make_logged_runner` at `logging.py:58-117`):
+`src/model_project_constructor/orchestrator/logging.py` emits three event types per agent call (`make_logged_runner` in `src/model_project_constructor/orchestrator/logging.py`):
 
 | Event | Level | Context fields |
 |---|---|---|
@@ -263,9 +263,9 @@ No field in the context dict carries credentials. `agent`, `run_id`, and `correl
 
 ### 6.3 Log format
 
-The module uses stdlib `logging`. Structured fields land on the record's `extra={"context": ...}` dict. To produce JSON logs, operators install a JSON formatter on the `model_project_constructor.orchestrator` logger namespace (see `OPERATIONS.md:81-107` for a `python-json-logger` snippet).
+The module uses stdlib `logging`. Structured fields land on the record's `extra={"context": ...}` dict. To produce JSON logs, operators install a JSON formatter on the `model_project_constructor.orchestrator` logger namespace (see `OPERATIONS.md` §3.1 for a `python-json-logger` snippet).
 
-Default level is `INFO` via `MPC_LOG_LEVEL`. `DEBUG` is safe — there is no DEBUG-level log that prints tokens or payloads. (Verified by reading every call site in `logging.py` and `metrics.py`.)
+Default level is `INFO` via `MPC_LOG_LEVEL`. `DEBUG` is safe — there is no DEBUG-level log that prints tokens or payloads. (Verified by reading every call site in `src/model_project_constructor/orchestrator/logging.py` and `src/model_project_constructor/orchestrator/metrics.py`.)
 
 ---
 
@@ -325,14 +325,14 @@ Full dependency tree including transitives and locked versions is in the [SBOM](
 
 These are explicit design decisions, not bugs.
 
-1. **No in-process SQL filtering.** The Data Agent prompts for SELECTs; safety is a DB-role concern. If you need defense-in-depth, add a proxy that rejects non-SELECTs — do not patch `sql_validation.py`.
+1. **No in-process SQL filtering.** The Data Agent prompts for SELECTs; safety is a DB-role concern. If you need defense-in-depth, add a proxy that rejects non-SELECTs — do not patch `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py`.
 2. **No PII redaction before LLM calls.** The deployment must satisfy its own data-handling contract with Anthropic. This is a policy problem, not a code problem.
 3. **No auth on the intake web UI.** `src/model_project_constructor/ui/intake/app.py` serves routes without authentication or authorization middleware. The app is designed to be run behind a reverse proxy that handles auth (corporate SSO, OAuth proxy, etc.). Running it as-is on a public interface would expose the interview surface to anyone who can reach it.
 4. **No rate limiting** on adapter calls or LLM calls. The SDKs will surface provider-side rate limit errors; this project does not add its own limiter.
 5. **No retry budget for network calls.** The Website Agent's LangGraph has a bounded retry loop for commit failures (`RETRY_BACKOFF`), but neither the adapters nor the LLM clients retry on their own. Transient failures bubble up as halt conditions.
 6. **No audit log.** Logging is observability, not immutable audit. If you need a compliance-grade audit trail, ship the structured log events to a WORM-capable store; do not rely on in-process logging alone.
 7. **Checkpoint files are world-readable by default.** Filesystem permissions are not managed by the code. If `$MPC_CHECKPOINT_DIR` sits on a shared filesystem, apply group/mode restrictions before running production interviews.
-8. **LLM model ID is unverified at construction.** The default `claude-sonnet-4-6` is chosen from the session-time model family list (`intake/anthropic_client.py:8-12` module docstring). First live invocation will raise from the Anthropic SDK if the ID is wrong — this is a deliberate trade-off to avoid coupling the import path to a network probe.
+8. **LLM model ID is unverified at construction.** The default `claude-sonnet-4-6` is chosen from the session-time model family list (the module docstring in `src/model_project_constructor/agents/intake/anthropic_client.py`). First live invocation will raise from the Anthropic SDK if the ID is wrong — this is a deliberate trade-off to avoid coupling the import path to a network probe.
 
 ---
 
@@ -358,11 +358,11 @@ These are explicit design decisions, not bugs.
 | `.env.example` | Complete env-var template |
 | `OPERATIONS.md` | Env-var reference, deployment recipes |
 | `src/model_project_constructor/agents/intake/anthropic_client.py` | Intake LLM prompts + SDK construction |
-| `packages/data-agent/.../anthropic_client.py` | Data Agent LLM prompts + SDK construction |
+| `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` | Data Agent LLM prompts + SDK construction |
 | `src/model_project_constructor/agents/website/gitlab_adapter.py` | GitLab network boundary |
 | `src/model_project_constructor/agents/website/github_adapter.py` | GitHub network boundary |
-| `packages/data-agent/.../db.py` | Database connection layer + read-only contract |
-| `packages/data-agent/.../sql_validation.py` | SQL parse-level check (not a security filter) |
+| `packages/data-agent/src/model_project_constructor_data_agent/db.py` | Database connection layer + read-only contract |
+| `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py` | SQL parse-level check (not a security filter) |
 | `src/model_project_constructor/orchestrator/logging.py` | Structured log events |
 | `src/model_project_constructor/orchestrator/checkpoints.py` | On-disk envelope storage |
 | `.github/workflows/ci.yml` | CI pipeline (no secrets) |
