@@ -10,8 +10,8 @@ The project is MIT-licensed (see `LICENSE` at the repository root). External con
 
 ### Prerequisites
 
-- **Python ≥ 3.11** — `requires-python = ">=3.11"` in `pyproject.toml:6`.
-- **[uv](https://docs.astral.sh/uv/)** — the project is a `uv` workspace (`pyproject.toml:49-50`). The root `pyproject.toml` declares `packages/*` as workspace members and resolves `model-project-constructor-data-agent` from the workspace rather than PyPI.
+- **Python ≥ 3.11** — `requires-python = ">=3.11"` in `pyproject.toml` (under `[project]`).
+- **[uv](https://docs.astral.sh/uv/)** — the project is a `uv` workspace (the `[tool.uv.workspace]` table in `pyproject.toml`). The root `pyproject.toml` declares `packages/*` as workspace members and resolves `model-project-constructor-data-agent` from the workspace rather than PyPI.
 
 ### First-time setup
 
@@ -25,7 +25,7 @@ That single `uv sync` resolves every runtime and development dependency into `.v
 
 ### Optional-dependency groups
 
-From `pyproject.toml:17-40`:
+From the `[project.optional-dependencies]` table in `pyproject.toml`:
 
 | Extra | Installs | Why |
 |---|---|---|
@@ -39,11 +39,11 @@ A minimal install (`uv sync` with no extras) is only useful for consumers of the
 
 ## 2. Code-quality gates
 
-All four gates run in CI on every push and every pull request to `master` (`.github/workflows/ci.yml:3-7`). A change that fails any gate cannot merge.
+All four gates run in CI on every push and every pull request to `master` (the `on:` trigger in `.github/workflows/ci.yml`). A change that fails any gate cannot merge.
 
 ### 2.1 Lint (`ruff`)
 
-Configuration at `pyproject.toml:83-92`:
+Configuration in the `[tool.ruff]`, `[tool.ruff.lint]`, and `[tool.ruff.lint.per-file-ignores]` tables in `pyproject.toml`:
 
 - `target-version = "py311"`
 - `line-length = 100`
@@ -64,7 +64,7 @@ uv run ruff format src/ tests/ packages/ scripts/   # apply formatting
 
 ### 2.2 Type check (`mypy --strict`)
 
-Configuration at `pyproject.toml:94-98`:
+Configuration in the `[tool.mypy]` table in `pyproject.toml`:
 
 - `python_version = "3.11"`
 - **`strict = true`** — enables every strictness flag (no-implicit-optional, check-untyped-defs, disallow-untyped-defs, disallow-incomplete-defs, warn-redundant-casts, warn-unused-ignores, etc.)
@@ -79,7 +79,7 @@ uv run mypy
 
 ### 2.3 Tests (`pytest --cov`)
 
-Configuration at `pyproject.toml:58-77`:
+Configuration in the `[tool.pytest.ini_options]`, `[tool.coverage.run]`, and `[tool.coverage.report]` tables in `pyproject.toml`:
 
 - `testpaths = ["tests"]`
 - `pythonpath = ["src", "packages/data-agent/src"]`
@@ -103,13 +103,13 @@ grep -rhE '^\s*(async )?def test_' tests/ | wc -l   # 705 at time of writing
 
 ### 2.4 Data-agent decoupling
 
-Configuration at `.github/workflows/ci.yml:54-63`. A standalone CI job invokes `tests/test_data_agent_decoupling.py` with `--no-cov`:
+Configuration: the `decoupling` job in `.github/workflows/ci.yml`. A standalone CI job invokes `tests/test_data_agent_decoupling.py` with `--no-cov`:
 
 ```bash
 uv run pytest tests/test_data_agent_decoupling.py -v --no-cov
 ```
 
-This test AST-walks the standalone `packages/data-agent/` package and asserts zero imports of `IntakeReport` or any intake-schema module. It enforces architecture-plan §7 / constraint C4: the Data Agent is reusable outside the full pipeline. A contribution that adds such an import will fail this job even if coverage and types are clean.
+This test AST-walks the standalone `packages/data-agent/` package and asserts zero imports of `IntakeReport` or any intake-schema module. It enforces `docs/architecture-history/architecture-plan.md` §7 / constraint C4: the Data Agent is reusable outside the full pipeline. A contribution that adds such an import will fail this job even if coverage and types are clean.
 
 ---
 
@@ -142,7 +142,7 @@ Observed from `git log --oneline -50`, the project uses the **Conventional Commi
 
 ### Scope conventions
 
-- **`(phase-N)` / `(phase-X)`** — implementation phases from `architecture-plan.md` §14 (e.g., `phase-1`, `phase-4b`, `phase-a`).
+- **`(phase-N)` / `(phase-X)`** — implementation phases from `docs/architecture-history/architecture-plan.md` §14 (e.g., `phase-1`, `phase-4b`, `phase-a`).
 - **`(session-N)`** — documentation commits that land at the end of a session; pairs with the session stub in `SESSION_NOTES.md`.
 - **`(ci)` / `(lint)` / `(coverage)` / `(docs)` / `(backlog)` / `(readme)`** — area tags for maintenance commits.
 
@@ -188,9 +188,9 @@ When adding a new contract, add a structural guard alongside it. CI enforcement 
 
 Non-trivial changes (anything touching more than ~5 files, any refactor, any new agent, any schema change) should follow the session protocol documented at:
 
-- `SESSION_RUNNER.md` (321 lines) — operating procedure: orient → execute → close out.
-- `SAFEGUARDS.md` (183 lines) — commit discipline, blast-radius limits, mode-switching rules.
-- `CLAUDE.md` (61 lines) — project overview and session protocol reference.
+- `SESSION_RUNNER.md` — operating procedure: orient → execute → close out.
+- `SAFEGUARDS.md` — commit discipline, blast-radius limits, mode-switching rules.
+- `CLAUDE.md` — project overview and session protocol reference.
 
 Key rules that apply to human contributors as well:
 
