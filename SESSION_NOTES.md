@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 140 — operator-directed: **Execute the §8 plan, Phase 3** — migrate fragile `file:line` wiki citations → grep-locatable **symbol references** on `Security-Considerations.md` (the hot-spot page, ~29 citations), per `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 3 + §3 (convention) + §5.1 (here-be-dragons). DEVELOPMENT execution against a written plan; ONE deliverable — **NOT** Phase 4+ (FM #18).
+
+**Started:** 2026-06-10.
+
+**Status:** Session claimed. Work beginning. Publish intent to be locked via `AskUserQuestion` (Learning #40) before any wiki commit. Disambiguate every bare filename (`cli.py`/`db.py`/`logging.py`/`github_adapter.py` resolve to different files across intake/data-agent/website — plan §5.1) by grep BEFORE naming the symbol; leave the inline `grep -R "ghp_|glpat_|…"` secret-scan example alone (not a citation, §3).
+
+---
+
+**(Session 139 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 139 — operator-directed: **Execute the §8 plan, Phase 2** — migrate fragile `file:line` wiki citations → grep-locatable **symbol references** on the two pages `Intake-Interview-Design.md` + `Worked-Examples.md`, per `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 2 + §3. DEVELOPMENT execution against a written plan; ONE deliverable — **NOT** Phase 3+ (FM #18). (**COMPLETE** — **40 replacements across the 2 pages** migrated to full-path symbol references: every `path:line` citation, every bare-`(:N)` JSON-key line ref (Worked-Examples L40–61), and every partial *source* path in prose. Every symbol re-derived from live code (direct grep — the `121-128`→`SYSTEM_GOVERNANCE` and `67-75`→`GovernanceMetadata` mis-points self-corrected by dropping the line and re-deriving). **Sole-writer apply script** with per-edit count-assertions (no agent ever held Edit/Write — #102/#46); **2-round read-only `Explore` adversarial workflow** (`wf_e396aa32-967`, R1: 24+15 citations / R2: 32+13, **0 problems both rounds**); personal full-diff review. **Grep gate clean** (0 `path.ext:line`, 0 bare `:N`), fences balanced (10/8). Committed `15f6ef8` and **live-published** by the auto-publish hook — wiki repo `568095d → 1b2676b`, parity re-run "no changes to publish" (**0-drift**). Doc-only — no code touched, gate baseline inherited. `master` is **9 commits ahead of `origin`** — **NOT pushed** (Learning #40).)
 
 **Started / Completed:** 2026-06-10.
