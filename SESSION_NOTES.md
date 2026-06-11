@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 145 — operator-directed (“1 then 2” from the S144 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`667b92c..c18fb1d`, 3 commits, explicit instruction); (2) **wiki-accuracy micro-audit** (Learning #43 accumulations, AUDIT workstream): verify against the live tree, then fix — Contributing (`docs`-extra missing from extras table; stale “705 test functions” snapshot), Changelog (S138 items: `_save_stage`, historical `MAX_QUESTIONS`), Security-Considerations (S140 items: `db.py` docstring §9.1 blockquote, `RETRY_BACKOFF`). Evolution’s stale “awaits a rename” prose NOTED-not-edited per the handoff. Publish intent locked **publish-live** via `AskUserQuestion` pre-claim. (IN PROGRESS)
+
+**Started:** 2026-06-11
+
+**Status:** Session claimed. Work beginning.
+
+---
+
+**(Session 144 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 144 — operator-directed ("1 and then 2" from the S143 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`3288d99..667b92c`, 3 commits, explicit instruction); then (2) **SR_11_7 → SR_26_2 citation rename** (operator-ruled mechanical, citation-level only per persistent memory — not re-litigated). (**COMPLETE** — **26 files, 50/46 lines**: the vocabulary token in `GOVERNANCE_FRAMEWORKS` (`src/model_project_constructor/agents/intake/anthropic_client.py`) + `_FRAMEWORK_ARTIFACTS` (`src/model_project_constructor/agents/website/governance_templates.py`) — S108 parity lockstep held, artifact lists byte-identical, tuple order preserved — plus **9 test files, 7 fixtures** (incl. 2 stakeholder-prose "SR 11-7"→"SR 26-2" sites in `tests/fixtures/subrogation_b2.yaml`), **`docs/tutorial.md`, and 7 wiki pages**: 6 token/row swaps with supersession provenance notes ("superseded SR 11-7 in 2026") on Glossary + Governance-Framework, plus a **new `[Unreleased]` entry on the wiki Changelog** (its Phase 4B historical line untouched per Learning #32). Historical records (root `CHANGELOG.md`, `SESSION_NOTES.md`, `docs/architecture-history/`, `docs/audits/`, banner-anchored `Evolution.md`) deliberately retain the old name. **Sole-writer apply script** with per-edit count asserts — all 26 passed the first dry-run; the script's own blanket "zero old-token remains" post-condition correctly FAILED against the self-documenting Changelog entry, fixed with a per-file allowance map before anything was written (→ Candidate #112). Full gate fresh pre- AND post-change: **797 @ 97.28%, mypy 0/64, ruff clean**. **2-round read-only `Explore` adversarial verification (R1 `wf_d105fbef-1aa`, R2 `wf_cbca3d61-df4`, 6 agents, #56 survival clause): 0 problems in BOTH rounds** — zero flags to adjudicate; one lens-summary misquote ("SR 26_2") grep-refuted per #45/#110. Deliverable commit `bfd9f36`; hook **live-published** (wiki `18fa598 → b08c657`); parity re-run **"no changes to publish"**. The first R1 attempt lost all 3 agents to a session limit at spawn (zero tokens spent); relaunched after the reset.)
 
 **Started / Completed:** 2026-06-11.
