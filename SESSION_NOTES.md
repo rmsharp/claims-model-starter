@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 139 — operator-directed: **Execute the §8 plan, Phase 2** — migrate fragile `file:line` wiki citations → grep-locatable **symbol references** on the two pages `Intake-Interview-Design.md` (29 Appendix-A rows) + `Worked-Examples.md` (19 rows), per `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 2 + §3. DEVELOPMENT execution against a written plan; ONE deliverable — **NOT** Phase 3+ (FM #18). (IN PROGRESS)
+
+**Started:** 2026-06-10.
+
+**Status:** Session claimed. Publish intent locked **publish-live** via `AskUserQuestion` (Learning #40). Work beginning: read both target pages in full → ground-truth every symbol from live code (Appendix A is a lower bound — Candidate #104; several rows flagged FIX) → reviewed sole-writer apply script (no agent holds Edit/Write — #102) → read-only `Explore` adversarial verification (2 rounds, #103) → personal diff-review → commit → auto-publish → verify source↔clone parity 0-drift. Treat the live page as authoritative: grep BOTH pages for ALL line-pin forms AND expand partial source paths to full per §3 (Candidate #105), not just the Appendix-A rows; re-confirm each path actually hosts the named symbol after expanding (Candidate #106).
+
+---
+
+**(Session 138 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 138 — operator-directed: **Execute the §8 plan, Phase 1** — migrate fragile `file:line` wiki citations → grep-locatable **symbol references** on the three clean-code-symbol pages (`Schema-Reference.md`, `Changelog.md`, `Extending-the-Pipeline.md`), per `docs/planning/wiki-citation-symbol-references-plan.md` §7 Phase 1 + §3. DEVELOPMENT execution against a written plan; ONE deliverable — **NOT** Phase 2+ (FM #18). (**COMPLETE** — **55 line-pinned citations migrated + 16 partial source-paths expanded to full repo-relative** (§3) across the 3 pages; every symbol re-derived from live code; **2-round read-only adversarial verification** (Explore agents) confirms every migrated symbol exists at its cited full path, **Schema-Reference `all_clean`**; **0 `path.py:line` remain**, fences balanced. Committed `2851ef2` and **live-published** by the auto-publish hook — wiki repo `f1b56d7 → 568095d`, parity re-run "no changes to publish" (**0-drift**). Doc-only — no code touched, gate baseline inherited. `master` is **6 commits ahead of `origin`** — **NOT pushed** (Learning #40).)
 
 **Started / Completed:** 2026-06-10.
