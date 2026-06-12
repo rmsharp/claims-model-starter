@@ -1,3 +1,5 @@
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-12 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+
 # O2 — Shared `llm_json` Helper: Drift-Guard Plan
 
 > **Status:** Draft for executor review (Session 102 of project, planning/architecture workstream).

@@ -1,3 +1,5 @@
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-12 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+
 # Business Value Capture — Multi-Phase Documentation & Schema Plan
 
 **Status:** DRAFT — authored Session 85 (2026-05-21). Implementation begins Session 86 at Phase 1.

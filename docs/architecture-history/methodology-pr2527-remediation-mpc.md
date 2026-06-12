@@ -1,3 +1,5 @@
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-12 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+
 # model_project_constructor — Methodology PR #25 + PR #27 Remediation (execution brief)
 
 *Generated 2026-06-07 from the methodology-repo master plan (`~/Development/methodology/docs/planning/adopter-pr25-27-remediation-plan.md`, project #2/§3). Wording below is captured **verbatim** from the PR-25 branch (`fix/3c-learnings-destination`) — do not improvise.*

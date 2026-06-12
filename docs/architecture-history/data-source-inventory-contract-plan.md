@@ -1,3 +1,5 @@
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-12 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+
 # Data Source Inventory Contract — Architectural Plan
 
 **Status:** DRAFT — authored Session 57 (2026-04-19). Phase 1 implementation is Session 58's deliverable.

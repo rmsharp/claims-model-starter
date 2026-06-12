@@ -1,3 +1,5 @@
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-12 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+
 # Tutorial Renderer Migration — MkDocs + GitHub Pages
 
 **Provenance:** Planning session (Session 65, 2026-04-20). Consumes BACKLOG item 2 ("Tutorial renderer: migrate to MkDocs"). Operator decisions captured in §3; technical claims in §4 were verified against live MkDocs + Material documentation at plan-write time (see §11 References).

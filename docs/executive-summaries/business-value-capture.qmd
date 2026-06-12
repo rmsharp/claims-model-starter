@@ -111,4 +111,4 @@ The work was completed in the spring of 2026 across six coordinated changes to t
 
 ---
 
-*This document is the executive summary of a capability captured in the project's planning and change-history records. For the technical implementation plan, the engineering team can refer to `docs/planning/business-value-capture-plan.md` and the corresponding entries in `CHANGELOG.md`.*
+*This document is the executive summary of a capability captured in the project's planning and change-history records. For the technical implementation plan, the engineering team can refer to `docs/architecture-history/business-value-capture-plan.md` and the corresponding entries in `CHANGELOG.md`.*

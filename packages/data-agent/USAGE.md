@@ -286,7 +286,7 @@ Precedence rules when both `database_hint` and `data_source_inventory` are
 set: the inventory wins (richer signal subsumes the hint); the hint is still
 passed as context. An inventory with `entries=[]` is treated identically to
 `data_source_inventory=None`. See
-`docs/planning/data-source-inventory-contract-plan.md` §6.3 for the full
+`docs/architecture-history/data-source-inventory-contract-plan.md` §6.3 for the full
 table.
 
 Large inventories are truncated in the prompt: entries are sorted by
@@ -358,7 +358,7 @@ see Example 5. Phase 4 (shipped) wires the orchestrator's
 inventory from `IntakeReport.qa_pairs` (orchestrator-side; see the wiki
 Pipeline-Overview for the pipeline-mode flow). Callers who do not set the
 field continue to work unchanged. See
-`docs/planning/data-source-inventory-contract-plan.md` for the full plan
+`docs/architecture-history/data-source-inventory-contract-plan.md` for the full plan
 and `tests/fixtures/sample_curated_inventory.json` for a valid
 curated-producer example.
 
