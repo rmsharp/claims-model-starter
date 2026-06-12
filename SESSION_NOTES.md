@@ -6,11 +6,74 @@
 
 ## ACTIVE TASK
 
-**Task:** Session 150 — operator-directed ("1 then 2" from the S149 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`c4d7a38..286bc60`, 3 S149 commits, operator "1 then 2"); (2) **`CLAUDE.md` staleness micro** — correct the institutional-memory line "54 learnings, Sessions 9–140" → "58 learnings, Sessions 9–147" (ground-truthed at source: `PROJECT_LEARNINGS.md` holds 58 rows, highest promoted in S147). (IN PROGRESS)
+**Task:** Session 150 — operator-directed ("1 then 2" from the S149 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`c4d7a38..286bc60`, 3 S149 commits, operator "1 then 2"); (2) **`CLAUDE.md` staleness micro** — correct the institutional-memory line "54 learnings, Sessions 9–140" → "58 learnings, Sessions 9–147". (**COMPLETE** — deliverable commit `dab2cff`. The `CLAUDE.md` §"Project-specific Learnings" receptacle line had drifted: it advertised "54 learnings, Sessions 9–140" while `PROJECT_LEARNINGS.md` has grown to 58 rows. Ground-truthed the two replacement numbers four independent ways before editing — (a) read row `#58` directly + corroborated by the pipe-line count (59 `| `-prefixed lines = 1 header + 58 data rows); (b) highest contributing session = **147** via row 58's "Promoted Session 147" (S148/S149 added candidates but no promotions); (c) re-derived the receptacle CONVENTION — count = number of rows, endpoint = the session that promoted the highest-numbered row — and confirmed it by noting the *old* "54 / 9–140" matched row 54 having been promoted in S140; (d) cross-checked against the live-published **Evolution wiki page**, which already says "58 promoted learnings" ×3 (S148 refresh) — so the fix lands `CLAUDE.md` in agreement with the published surface rather than fixing one and leaving the other to drift. Drift-class sweep (Learning #31) across all tracked files: the stale "54 learnings / 9–140" string survives ONLY in SESSION_NOTES.md historical handoff prose + two archived artifacts (`methodology-pr2527-remediation-mpc.md:101` "46 learnings, Sessions 92–110"; `evolution-page-plan.md:327` "31 learnings") — all append-only historical records, correctly NOT touched (Learnings #32/#43). Docs-only deliverable; **no src/tests touched** (gates unchanged 797 @ 97.28%, not re-run — zero code/test files in the diff); wiki hook did NOT fire (no `docs/wiki/` change).)
 
-**Started:** 2026-06-12
+**Started / Completed:** 2026-06-12.
 
-**Status:** Session claimed. Work beginning. Item 1 (push) DONE pre-claim; item 2 (`CLAUDE.md` fix) is the deliverable.
+**Status:** **COMPLETE.** Execution: oriented (clean tree, 3 ahead of origin; ghost-check clean — every recent commit maps to a documented session; dashboard MPC 96/100) → reported, waited → operator "1 then 2" → **pushed item 1** (`c4d7a38..286bc60`, the 3 pre-existing S149 commits; explicit authorization) → claim stub + commit `c2dbb27` before technical work → **ground-truthed item 2 at source** (read all 58 rows of `PROJECT_LEARNINGS.md`; confirmed 58 rows + highest-promoted = S147 + the count/endpoint convention; cross-checked the Evolution wiki page) → applied the 1-line `CLAUDE.md` edit (54→58, 9–140→9–147) → drift-class sweep confirmed sole live stale surface (all other hits historical/archived, left untouched) → confirmed working-tree diff = exactly that one line → committed deliverable `dab2cff` → close-out. Held scope: only `CLAUDE.md` changed (deliverable) + `SESSION_NOTES.md` (procedural claim/close-out); no code, no tests, no other doc; new commits NOT pushed (Learning #40 — the operator's "1 then 2" authorized pushing S149's 3 commits, not the 3 new S150 commits). Proportionality call: ultracode is ON, but a two-number correction already ground-truthed four ways is the documented "trivial / already-verified" exception — verified solo rather than spawning a disproportionate Workflow fan-out.
+
+### Session 149 Handoff Evaluation (by Session 150)
+
+**Score: 9/10.** A precise, accurate, low-friction handoff — both items pre-named with exact targets, and every inherited fact held at source.
+
+- **What helped (the +):** (a) "What's next" pre-named BOTH items verbatim — item 1 "Push `master` → `origin` (3 new commits — re-confirm, Learning #40)" and item 2 "its '54 learnings, Sessions 9–140' line is stale — `PROJECT_LEARNINGS.md` holds 58 rows (Sessions 9–147). Sensitive file — operator-directed." So when the operator said "1 then 2," I knew exactly what each meant without a clarification round. (b) The handoff *handed me the answer* (58 / 9–147) AND the exact stale string — I treated it as a claim to verify (Learning #45) rather than trust, and it was correct, so verification was a clean confirmation. (c) Flagging `CLAUDE.md` as a "sensitive file — operator-directed" correctly framed it as a deliverable requiring the operator's explicit go-ahead, which "1 then 2" provided. (d) The fresh baseline (797 @ 97.28%) + the standing-micros list + the candidate roster (next = #119) let me populate the close-out without re-deriving. (e) Learning #40 was pre-cited against the push, scoping it correctly to S149's 3 commits.
+- **What was missing (the −):** one minor gap — the handoff stated "58 rows (Sessions 9–147)" but did not show the *derivation* of the 147 endpoint (= the session that promoted the highest-numbered row). A reader trusting blindly might wonder whether the endpoint should advance to 149; I re-derived the convention myself (cheap, and Learning #45 mandates it anyway). Arguably appropriate to leave to the executor.
+- **What was wrong:** nothing — 58 rows, the 147 endpoint, the push target, and the baseline all held at source.
+- **ROI:** very high — both deliverables and their exact targets were pre-named; the only cost was the (mandatory) source re-derivation, which confirmed every claim.
+
+### What Session 150 Did
+
+**Deliverable:** `CLAUDE.md` learnings-count staleness micro (S149-handoff item 2). **COMPLETE.** Commits `c2dbb27` (claim), `dab2cff` (deliverable), this close-out. Plus the operator-authorized push of S149's 3 commits (`c4d7a38..286bc60`).
+
+- **Research before creation:** read all 58 rows of `PROJECT_LEARNINGS.md`; verified the row count (58) and highest contributing session (147) directly; re-derived the receptacle convention (count=rows, endpoint=last-promoted-session); cross-checked against the live-published Evolution wiki page.
+- **The work (1 deliverable line):** `CLAUDE.md:79` — "54 learnings, Sessions 9–140" → "58 learnings, Sessions 9–147".
+- **Verification:** four independent ground-truths of the two numbers (direct row read + pipe-count; row-58 promotion session; convention back-check against the old values; Evolution-page consistency) + a full drift-class sweep confirming `CLAUDE.md` was the sole live stale surface.
+- **Discipline:** orient/report/wait; push exactly per "1 then 2"; claim `c2dbb27` before technical work; sole writer (no subagents needed); only the intended files changed; historical/archived occurrences of the stale string deliberately left untouched (Learnings #32/#43); new commits NOT pushed (Learning #40). Under the S149 §2 cadence rule, this doc-only session correctly earns **no** `CHANGELOG.md` entry — self-consistent.
+
+### Phase 3B: Self-assess — Session 150 — 9/10
+
+- **The + :** Full protocol intact (orient/report/wait; push exactly the authorized commits; claim-before-work; auto-close). Treated the handoff's gift answer as a claim to verify, not trust (Learning #45/#113/#58) — and verified it four ways, including re-deriving the count/endpoint *convention* so the "147 vs 149" choice was reasoned, not guessed. Ran the drift-class sweep (Learning #31) and correctly distinguished the one live stale surface from the historical/archived occurrences that must NOT be edited (Learnings #32/#43). Added value the handoff didn't ask for but that completeness demanded: cross-checking the new count against the live-published Evolution page so the two surfaces agree. Made and documented a proportionality judgment — declined a disproportionate Workflow fan-out for an already-quadruple-verified two-number fix.
+- **The − :** (1) The deliverable was genuinely small — it exercised scope discipline and ground-truthing but not the harder design/implementation muscles, so there's a ceiling on what this session can claim. (2) Nothing went wrong to recover from, which is good but means no hard-won lesson. A 9, not a 10, because a trivial micro executed cleanly is the expected bar, not an exceptional one.
+- **Quality bar:** meets S140–S149 — research-first, full-source ground-truthing, multi-surface consistency, sole-writer discipline, correct historical-record handling — applied to a small doc-accuracy micro.
+
+### Phase 3C: Learnings — Session 150
+
+**No new candidate coined.** This session was a clean application of existing learnings; coining a candidate from a trivial two-number fix would be learning-inflation. Applications:
+
+- **#45 / #113 / #58 — applied:** re-derived the handoff's gift answer (58 / 9–147) at source rather than trusting it; verified the *convention* behind the endpoint, not just the number; the carried "stale count" status re-confirmed against the live tree before acting.
+- **#31 — applied:** drift-class sweep across all tracked files (`54 learnings`, `9–140`, `[0-9]+ learnings`); classified every hit drift / historical / canonical; only the single live receptacle was "drift."
+- **#32 / #43 — applied:** the stale string in SESSION_NOTES.md historical prose + the archived brief/plan are append-only historical records and a separate-artifact scope — surfaced, not touched.
+- **#40 — applied:** pushed only S149's 3 authorized commits; the 3 new S150 commits are NOT pushed.
+- **#10 / 1B — applied:** Phase 0 report-and-wait even though the task was implicit in the handoff; claim stub committed before technical work.
+- **Proportionality (Workflow exception):** with ultracode ON, the "use a workflow by default" guidance still yields to the explicit "trivial / already-verified" exception — a single-fact correction ground-truthed four ways does not warrant a fan-out. Documented rather than coined (it restates the tool's own rule).
+
+Candidate roster unchanged: **#118 at 1** (next = **#119**); #117 at 1; #116 at 1; #115 at 1; #114 at 1; #112 at 2; #110 at 2; #111 at 1; carried at 2: #88/#89/#92; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. `PROJECT_LEARNINGS.md` holds **58 rows** (unchanged — no promotion this session).
+
+### Phase 3D: Handoff to Session 151
+
+**The `CLAUDE.md` staleness micro is DONE.** `CLAUDE.md:79` now reads "58 learnings, Sessions 9–147", consistent with `PROJECT_LEARNINGS.md` (58 rows) and the live-published Evolution wiki page. Deliverable committed `dab2cff`. Docs-only — no code touched, gates unchanged, wiki not republished.
+
+**⚠ State you will inherit:**
+1. **`master` is 3 commits AHEAD of `origin/master`** (`c2dbb27` claim, `dab2cff` deliverable, this close-out). **NOT pushed** (Learning #40 — the operator's "1 then 2" authorized pushing S149's 3 commits, which I did; these 3 new ones are unauthorized for push).
+2. **Baseline UNCHANGED: 797 passed @ 97.28%, mypy 0/64, ruff clean.** This session touched only `CLAUDE.md` + `SESSION_NOTES.md` (docs) — gates were not at risk and I did NOT re-run them (zero code/test files in the diff; no test count cited in any permanent artifact this session). If you need to re-confirm: `uv run pytest -q`; `uv run mypy`; `uv run ruff check src/ tests/ packages/ scripts/`. Single-file runs need `--no-cov` (Learning #57).
+3. **The stale "54 learnings / 9–140" string still appears in SESSION_NOTES.md historical handoff prose (lines ~72/146/204/224/717) + two archived artifacts** (`docs/planning/methodology-pr2527-remediation-mpc.md:101` = "46 learnings, Sessions 92–110"; `docs/architecture-history/evolution-page-plan.md:327` = "31 learnings"). **These are intentional append-only historical records — do NOT "fix" them** (Learnings #32/#43). The micro is complete; do not re-flag it.
+4. **The learnings-count convention (now load-bearing for future updates):** the `CLAUDE.md` receptacle count = the number of data rows in `PROJECT_LEARNINGS.md`; the endpoint session = the session that promoted the highest-numbered row (currently row 58, promoted S147). When a future session promotes a new learning, bump BOTH the count and the endpoint. A doc-only session that adds no promotion changes neither (which is why S148/S149/S150 did not move it).
+
+**What's next (operator's call) — S149's list minus this session's item:**
+1. **Push `master` → `origin`** (3 new commits — re-confirm, Learning #40).
+2. **Optional publish-hook citation warning** (plan §6, lower priority; the CI guard is primary).
+3. **Possible archive-sweep** of `docs/planning/resume-from-checkpoint-plan.md` / `scope-b-plan.md` (each needs the #113/#58 re-derivation against the live tree + a README/Evolution reference re-check before moving).
+
+**Important considerations for Session 151:**
+1. **Candidate roster (unchanged this session):** #118 NEW at 1 (producer/drafter fan-out output is draft-grade — fact-check counts/status against source); #117 at 1; #116 at 1; #115 at 1; #114 at 1; #112 at 2; #110 at 2; #111 at 1; at 2: #88/#89/#92; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. Next candidate = **#119.**
+2. **`PROJECT_LEARNINGS.md` holds 58 rows** (no promotion this session).
+3. **Standing micros (Learning #43 — DO NOT auto-fix):** GitHub Release v0.2.0 (S133); `adapters.py` magic-string branch; `governance_templates.py` `_assert_vocab_parity` → shared `_vocab_guard` (the O3 backlog entry records this was deliberately left out-of-scope in S116); data-agent prompt `measurement_unit` wording; untracked `.claude/` not in `.gitignore`.
+4. **CHANGELOG reconstruction toolkit (reusable, from S149):** drafting + verify workflow scripts under `…/workflows/scripts/` — see the S149 archived handoff consideration #3 if another ledger gap is ever found.
+
+**Key files (full paths):**
+- `CLAUDE.md:79` — institutional-memory receptacle line, now "58 learnings, Sessions 9–147".
+- `PROJECT_LEARNINGS.md` — 58 data rows; source of truth for the count (row 58 = #113, promoted S147).
+- `docs/wiki/claims-model-starter/Evolution.md` — cites "58 promoted learnings" ×3 (lines 216/260/396); the published surface the `CLAUDE.md` line must agree with.
 
 ---
 
