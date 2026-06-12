@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 153 Did
+**Deliverable:** Full `docs/wiki/claims-model-starter/Evolution.md` rewrite (S152-handoff item 2; operator-triggered per `PROJECT_CONVENTIONS.md` §4.1) — absorb the accumulated S147/S151/S152 archive-sweep staleness (the `:388` "Active-era plans" list is 100% stale, `:291` timeline row, `:261` characterization of `docs/planning/` as holding open plans; `docs/planning/` now holds zero tracked files). Full rewrite, NOT incremental edits (§4.2); sources per §4.3: `CHANGELOG.md` + `SESSION_NOTES.md` + live tree. Wiki auto-publish hook will fire on commit (`.githooks/post-commit` → `scripts/publish_wiki.sh`). (IN PROGRESS)
+**Started:** 2026-06-12.
+**Status:** Session claimed (operator-directed: "1 then 2" = S152-handoff items 1+2). Item 1 (push of S152's 3 commits) completed pre-claim this conversation (`d1b2519..b513842`, operator-authorized). Work beginning.
+
+---
+
+**(Session 152 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 152 — operator-directed ("3" = S151-handoff item 3): follow-on archive-sweep of ALL 9 remaining `docs/planning/` residents. (**COMPLETE** — deliverable commit `df29061`. Eligibility re-derived for all 9 against the LIVE tree via a 9-assessor read-only Workflow (`wf_28583046-0ff`, one `Explore` agent per plan, **179 evidence checks**, 9/9 **eligible** at high confidence) — every plan's self-status banner still said "Draft" (the #113 trap, now 9-for-9): o1 (O1-1/2/3 shipped `ac9d383`/`623b833`/`b2e174b`; generic-loop collapse = §11 out-of-scope), o2 (parity test `0373ba4`; §5.4 backstop optional), o3 (O3-1/2/3 shipped `6b078ea`/`89d9c3a`/`bb03aa8`; 3 deferred items all §11 YAGNI), o4 (O4-1/2 shipped `6d68380`/`b767122`, landed S130), business-value-capture (Phases 1–6, S86–91), data-source-inventory-contract (Phases 1–3 mandatory + optional Phase 4 ALSO shipped `4154227` S70), tutorial-renderer-migration (Phases 1–2, live site verified HTTP 200), methodology-pr2527-remediation-mpc (1-and-done `ae67b9d` S124), wiki-inventory-delta (Sessions A+B `931cd23`/`13e3e3a`). `git mv` ×9 (renames, history preserved) + §3 banner ×9 (2026-06-12 move date, byte-identical to S151's) + 4 live repoints scoped per precedent diffs (#119): `packages/data-agent/USAGE.md:289`+`:361`, `docs/executive-summaries/business-value-capture.qmd:114`, `README.md:113` (archive count → "17 others" — **also corrects pre-existing S151 staleness**: the count had been "6 others" since `4b17ab2` and S151's +2 move never bumped it; arithmetic back-checked against `4b17ab2`'s 1+6+1=8 convention, `.pdf` counted). `docs/planning/` now holds **zero tracked files** (stays the canonical active-plan location per §3; untracked `.claude/settings.local.json` keeps the dir on disk). Docs-only; **no .py touched** (gates unaffected 797 @ 97.28% — not re-run), **no docs/wiki/ change** (hook did not fire). Verified: deterministic (9/9 banners byte-identical; 9/9 renames; 0 stale live-surface refs; fence parity — 1 pre-existing orphan fence in o1 plan, frozen, left) + 4-lens read-only adversarial Workflow (`wf_577efcb8-547`, **94 checks**, 4/4 survived, **1 blocker finding adjudicated and REFUTED deterministically** — the convention lens claimed "16 others", having excluded the `.pdf`; `git ls-tree` at `4b17ab2` proves the convention counts it: 8 files = 1+6+1).)
 
 **Started / Completed:** 2026-06-12.
