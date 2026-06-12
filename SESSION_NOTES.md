@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 152 Did
+**Deliverable:** Follow-on archive-sweep (S151-handoff item 3) — assess the O-plans (`o1-stage-driver-plan.md`, `o2-shared-llm-json-plan.md`, `o3-repo-platforms-plan.md`, `o4-controlled-vocabulary-plan.md`) plus the other `docs/planning/` residents (`business-value-capture-plan.md`, `data-source-inventory-contract-plan.md`, `tutorial-renderer-migration-plan.md`, `methodology-pr2527-remediation-mpc.md`, `wiki-inventory-delta.md`) for `PROJECT_CONVENTIONS.md` §3 archive-eligibility via live-tree re-derivation (#113/#58, NOT self-status banners), with reference-update scope derived from the precedent archive diffs (#119: `4b17ab2`, `f09ea57`, `e1bf7c2`); `git mv` eligible plans to `docs/architecture-history/` + §3 banner (dated move date) + live root-doc reference repoints. Ineligible/deferred residents documented with reasons. (IN PROGRESS)
+**Started:** 2026-06-12.
+**Status:** Session claimed (operator-directed: "3" = S151-handoff item 3). Work beginning. Handoff item 1 (push of S151's 3 commits) was operator-authorized ("push") and completed pre-orientation this conversation (`f0eedf9..d1b2519`).
+
+---
+
+**(Session 151 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 151 — operator-directed (sequential: "1 and explain 2" → "explain [item 3]" → "explain [standing micros] and then perform archive-sweep of resume-from-checkpoint-plan.md / scope-b-plan.md"): (1) push `master`→`origin` — **DONE** (`286bc60..f0eedf9`, the 3 S150 commits, operator "1"); (2/3/micros) **explained** the publish-hook citation warning, the archive-sweep meaning, and the 4 standing micros (informational, no session claimed for those); (4) **archive-sweep** — move `docs/planning/resume-from-checkpoint-plan.md` + `scope-b-plan.md` to `docs/architecture-history/` per `PROJECT_CONVENTIONS.md` §3. (**COMPLETE** — deliverable commit `e1bf7c2`. Both plans' PRIMARY scope is delivered (re-derived against the LIVE tree, NOT their self-status banners — which both still said "Draft for executor review," the exact #113 stale-self-status trap S147 hit): resume-from-checkpoint — `--resume` shipped (Phases 1–3, S49–52: `scripts/run_pipeline.py --resume` + `pipeline.py` `resume_from`/`resume_point`), only optional Phase 4 deferred; scope-b — B1+B2 shipped (`build_intake_runner`/`build_data_runner`, `--llm data|both`), B3 superseded by the resume flow (resume plan §1.3). §3 tiebreaker: optional/deferred/descoped follow-ups don't block archiving → both eligible. `git mv` both + prepend the §3 archive banner (dated 2026-06-12, the MOVE date) + repoint the **4 live root-doc references**: `OPERATIONS.md:369`, `ROADMAP.md:9` + `:79`, `docs/tutorial.md:593` → `docs/architecture-history/`. **Scope of reference-updating derived from the precedent archive commits' actual diffs** (`git show --stat 4b17ab2` [S147 2-plan] + `f09ea57` [5-plan]), NOT from first-principles reading of §3 prose → Candidate #119. Docs-only; **no src/tests/scripts/packages or wiki touched** (gates unaffected 797 @ 97.28% — not re-run, zero code/test in diff; wiki hook did NOT fire). Verified: 4-lens read-only adversarial Workflow (`wf_36114073-dd8`, **63 checks** 12+20+19+12, **0 lenses died, 0 findings** — #115 guard genuine-clean).)
 
 **Started / Completed:** 2026-06-12.
