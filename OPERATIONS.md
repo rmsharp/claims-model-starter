@@ -366,7 +366,7 @@ on the resumed run; if the operator deliberately re-points to a
 different host between runs, that is the active intent (plan §6.4).
 
 The truth table that drives the `(point, skipped, re-executed)` mapping
-lives in `docs/planning/resume-from-checkpoint-plan.md` §5.
+lives in `docs/architecture-history/resume-from-checkpoint-plan.md` §5.
 
 ### 5.2 Manual fallback (unusual cases)
 

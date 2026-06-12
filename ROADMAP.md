@@ -6,7 +6,7 @@
 
 The codebase has **797 tests at 97.28% coverage** (Session 146 baseline); CI gates lint (ruff), typecheck (mypy), test suite, and the Data Agent decoupling test (2 AST tests enforcing the architecture plan's §7 decoupling invariant).
 
-Remaining work (tracked in `BACKLOG.md`): **none open** — Session 70 closed the last item. The post-pilot operator-experience / doc-freshness improvements once listed here have shipped (wiki + tutorial doc-freshness work, the terminology Glossary wiki page, resume-from-checkpoint via `scripts/run_pipeline.py --resume`), and the optional Scope B-3 Web UI bridge was superseded by the resume flow (`docs/planning/resume-from-checkpoint-plan.md` §1.3) — its optional Phase 4 (intake UI writes the `IntakeReport.json` envelope) remains deferred.
+Remaining work (tracked in `BACKLOG.md`): **none open** — Session 70 closed the last item. The post-pilot operator-experience / doc-freshness improvements once listed here have shipped (wiki + tutorial doc-freshness work, the terminology Glossary wiki page, resume-from-checkpoint via `scripts/run_pipeline.py --resume`), and the optional Scope B-3 Web UI bridge was superseded by the resume flow (`docs/architecture-history/resume-from-checkpoint-plan.md` §1.3) — its optional Phase 4 (intake UI writes the `IntakeReport.json` envelope) remains deferred.
 
 ### Pipeline Overview (6 Steps)
 
@@ -76,7 +76,7 @@ All agents operate within the context of a **claims organization in a property &
 - `BACKLOG.md` — Open work items (only).
 - `CHANGELOG.md` — Chronological, session-numbered record of completed work.
 - `docs/architecture-history/architecture-plan.md` — Authoritative design document (archived); §14 phase plan.
-- `docs/planning/scope-b-plan.md` — Scope B (real LLM-backed pipeline) plan.
+- `docs/architecture-history/scope-b-plan.md` — Scope B (real LLM-backed pipeline) plan (archived; B1+B2 shipped, B3 superseded).
 - `docs/architecture-history/github-gitlab-abstraction-plan.md` — GitHub/GitLab abstraction plan (Phases A-D, complete; archived).
 - `SESSION_RUNNER.md` — Session operating procedure.
 - `SAFEGUARDS.md` — Commit discipline, blast-radius limits, mode-switching rules.

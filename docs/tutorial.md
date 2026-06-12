@@ -590,7 +590,7 @@ For the full case-by-case behavior (what counts as "already complete",
 how to retry a `FAILED` website stage, how to recover from manual
 checkpoint-dir mutation) see `OPERATIONS.md` §5. The truth table that
 drives the resume-point decision lives in
-`docs/planning/resume-from-checkpoint-plan.md` §5.
+`docs/architecture-history/resume-from-checkpoint-plan.md` §5.
 
 ---
 
