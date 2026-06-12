@@ -6,10 +6,76 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 153 — operator-directed ("1 then 2" = S152-handoff items 1+2): (1) push `master`→`origin` — **DONE pre-claim** (`d1b2519..b513842`, the 3 S152 commits, operator-authorized); (2) **full Evolution.md rewrite** (`PROJECT_CONVENTIONS.md` §4.1 operator-triggered, §4.2 full-rewrite, §4.3 sources, §4.7 review gate). (**COMPLETE** — **deliverable commit `74f5b11`, live-published** wiki `fd4efc2 → 674e4b0` via the post-commit hook. The new edition absorbs Sessions 149–152: ① **CHANGELOG-gap open thread RETIRED** — §11 now narrates it closed by S149 (cadence behavior-gated in `PROJECT_CONVENTIONS.md` §2 + 6 shipped-code entries backfilled, Sessions 116–144, 15 hashes), mirroring how the S148 edition retired the SR-rename thread; ② **archive-completion folded in** — §10 window extended 144–148 → 144–153 (S149 ledger reconciliation + S151/S152 archive sweeps narrated: 11 delivered plans moved, `docs/planning/` empty for the first time since the archive was created); §11 repo-structure bullet updated; References gained **11 new archived-plan bullets** (each with delivered-sessions + archive-session) and the 100%-stale "Active-era plans (still in `docs/planning/`)" paragraph replaced with the planning-dir-empty statement; ③ **index/appendix contract maintained** — rows 149, 151–152, 153 added; S150 routed to the Deliberately-omitted appendix; row 23's `docs/planning/scope-b-plan.md` path fixed; **pre-existing row-143 "This rewrite" duplication (left by S148) fixed** so only row 153 claims it; ④ **banner stamped `(commit b513842, after Session 152)`** per the S148-established convention (previous session's close-out sha + previous session number — self-referential sha impossible); ⑤ counts ground-truthed FRESH at source: **gates re-run** (797 @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2, citation guard green), 153 sessions, 58 learnings, 21 wiki pages + sidebar, 19 archived files, `git ls-files docs/planning/` empty. Diff: **27 ins / 12 del, Evolution.md only** — surgical in-place integration per the S148 operator-approved precedent (arc §1–§9 untouched). Verified: deterministic pass (0 stale `docs/planning/` implications; fence parity; "This rewrite" unique; citation guard 2/2) + **4-lens read-only adversarial Workflow (`wf_10d0094e-323`, 86 checks, 0 lenses died)** → 2 lenses returned the SAME blocker, **adjudicated and REFUTED deterministically** (#114, 3rd instance): the lenses demanded a self-referential banner sha (`3f68120`) and claimed "Session 153 made no edits" — both false (banner convention is precedent-ruled; the draft was uncommitted BY DESIGN under the §4.7 gate, and the lenses only inspected committed history). **§4.7 review gate honored: draft → verify → STOPPED → operator "approve" → commit + auto-publish.**)
+
+**Started / Completed:** 2026-06-12.
+
+**Status:** **COMPLETE.** Execution: oriented (clean tree, 3 ahead; ghost-check clean; dashboard MPC 96/100) → reported, waited → operator "1 then 2" → pushed item 1 (`d1b2519..b513842`) → claim stub + commit `3f68120` before technical work → research (PROJECT_CONVENTIONS §4 in full; prior edition end-to-end per §4.6; CHANGELOG `[Unreleased]` top; SESSION_NOTES S148–S152 close-outs; S148's banner-convention archaeology recovered from its archived Task entry) → live-tree ground-truthing (gates re-run fresh; ls-files counts) → 12 surgical edits → deterministic verification → 4-lens adversarial Workflow (86 checks; double false-blocker refuted with precedent + working-tree evidence) → **§4.7 STOP** → operator approved → committed `74f5b11`, hook live-published `fd4efc2..674e4b0` → close-out. Held scope: only Evolution.md (deliverable) + SESSION_NOTES.md (procedural); sole writer (all 4 verifiers read-only `Explore`; `git status` clean post-commit); per the S149 §2 cadence this docs-only session earns **no** `CHANGELOG.md` entry; S153's commits NOT pushed (#40 — the operator's "1" covered only S152's 3).
+
+### Session 152 Handoff Evaluation (by Session 153)
+
+**Score: 9/10.** A precise handoff whose staleness inventory WAS the deliverable's work order.
+
+- **What helped (the +):** (a) "What's next" item 2 pre-named the deliverable with its governing convention (§4.1 trigger, §4.3 sources) AND the exact staleness inventory (`Evolution.md:261`/`:291`/`:388`, the "100% stale Active-era list") — every flagged line checked out at source and the rewrite's §10/§11/References scope flowed directly from it. (b) Item 1's push scope (#40, exact 3-commit list) was unambiguous. (c) The gotcha block ("11 code-docstring refs deliberately LEFT — do NOT re-flag") kept the rewrite from mis-narrating those as open drift. (d) Consideration #5 (README archive-count convention, 19 = "17 others" + 2) cross-checked the References work. (e) Baseline + roster + next-candidate number let close-out populate without re-derivation.
+- **What was missing (the −):** the **banner convention** (previous session's close-out sha + previous session number, established at S148's review gate) wasn't mentioned — I recovered it from S148's archived Task entry, and it then became load-bearing twice (the stamp itself + refuting the verifier's false blocker). One pointer line would have saved the archaeology. Also unflagged: row 143 of the index still said "This rewrite" (pre-existing S148 leftover) — found by grep, fixed in the edition.
+- **What was wrong:** nothing — every inherited claim (staleness lines, planning-dir emptiness, baseline, roster) held at source.
+- **ROI:** very high — orientation-to-draft was nearly mechanical thanks to the inventory; the only self-derived pieces were the banner convention and the verification design.
+
 ### What Session 153 Did
-**Deliverable:** Full `docs/wiki/claims-model-starter/Evolution.md` rewrite (S152-handoff item 2; operator-triggered per `PROJECT_CONVENTIONS.md` §4.1) — absorb the accumulated S147/S151/S152 archive-sweep staleness (the `:388` "Active-era plans" list is 100% stale, `:291` timeline row, `:261` characterization of `docs/planning/` as holding open plans; `docs/planning/` now holds zero tracked files). Full rewrite, NOT incremental edits (§4.2); sources per §4.3: `CHANGELOG.md` + `SESSION_NOTES.md` + live tree. Wiki auto-publish hook will fire on commit (`.githooks/post-commit` → `scripts/publish_wiki.sh`). (IN PROGRESS)
-**Started:** 2026-06-12.
-**Status:** Session claimed (operator-directed: "1 then 2" = S152-handoff items 1+2). Item 1 (push of S152's 3 commits) completed pre-claim this conversation (`d1b2519..b513842`, operator-authorized). Work beginning.
+
+**Deliverable:** Full Evolution.md rewrite (the page's 5th-edition refresh window: prior edition S148). **COMPLETE.** Commits `3f68120` (claim), `74f5b11` (deliverable, live-published), this close-out.
+
+- **Research before creation:** §4 read in full; prior edition read end-to-end (§4.6); S148–S152 close-outs as rationale source; banner convention recovered from S148 precedent (#119); all outward-facing numbers ground-truthed fresh (gates re-run, not inherited).
+- **The work (1 file, 27/12):** banner; §10 window 144→153 with S149 ledger + S151/152 archive narration; §11 sessions/structure/open-threads; §12 rows 149/151–152/153 + 143/148 re-labels + row-23 path; appendix +150; References +11 bullets + planning-dir-empty statement + CHANGELOG-bullet cadence update.
+- **Verification:** deterministic pass + 4-lens adversarial Workflow (86 checks, 0 died); 2 same-blocker findings refuted deterministically; 2 note-level items left (accurate per the lenses themselves; minimal-diff discipline).
+- **Discipline:** §4.7 gate honored (STOPPED pre-commit; operator approved); sole writer; docs-only; commits not pushed.
+
+### Phase 3B: Self-assess — Session 153 — 9/10
+
+- **The + :** Full protocol intact including the project's only review-gated session type. Defining moves: (1) **double false-blocker adjudication** — two independent lenses converged on the same wrong blocker; refuted with precedent (banner convention) + working-tree evidence (uncommitted-by-design), not deference and not dismissal (#114, sharpest form yet: convergent false positives). (2) **#119 applied to a rewrite** — banner stamp AND surgical-integration approach both derived from the S148 precedent (operator-approved surgical diff over literal retype), not first-principles §4.2 literalism. (3) Caught and fixed the predecessor edition's own leftover (row-143 "This rewrite") — the complete job (FM #13). (4) Outward-facing numbers re-grounded by re-running all gates rather than citing the inherited baseline.
+- **The − :** (1) The two false blockers were **induced by my own verification prompt** — it told lenses to inspect git history but not that the draft was uncommitted by design, nor the banner convention. Pre-arming the COMMON preamble with the artifact's lifecycle state + governing conventions would have prevented both (→ Candidate #120). Cost: adjudication time, zero damage. (2) Synthesis/housekeeping rather than design — the strong-expected bar.
+- **Quality bar:** meets S140–S152 — precedent-grounded, live-tree re-derivation, multi-lens adversarial verification with #115 guard AND a survived double-adjudication, sole-writer, review-gate discipline — applied to the project's highest-visibility outward surface.
+
+### Phase 3C: Learnings — Session 153
+
+**Candidate #120 — NEW, 1st instance.** *Verification-lens prompts must state the artifact's **lifecycle state** (e.g. "uncommitted working-tree draft under a pre-commit review gate") and the **governing conventions** (e.g. banner = previous close-out sha) — otherwise skeptical lenses reason from committed history and first principles and manufacture confident false blockers.* This session: 2 of 4 lenses independently produced the same wrong blocker for exactly these two omissions. Producer-side complement to #114 (adjudicate findings) and #118 (fact-check drafters): #114 governs consuming verifier output; #120 governs constructing the verifier's context. **When to apply:** any adversarial fan-out over a gated draft, an uncommitted tree, or a convention-stamped artifact — name the state and the convention in the shared preamble. Now at **1.** Next candidate = **#121.**
+
+- **#114 — 3rd instance (now at 3, standard threshold MET).** Convergent false blockers from 2 independent lenses, refuted deterministically (precedent commit + `git diff` working-tree evidence). Instances: S151 (applied), S152 (false blocker on README count), S153 (double false blocker on banner/authorship). **Promotion-eligible at the project's standard 3-instance threshold — flagged for operator review, not self-promoted.**
+- **#119 — 3rd instance (now at 3, standard threshold MET).** Banner convention + surgical-integration scope derived from the S148 precedent (its archived Task entry), not from §4.2's "from scratch" prose; also load-bearing in the false-blocker refutation. **Likewise promotion-eligible — flagged.**
+- **#113 / #58 — applied:** every claimed-stale line re-verified at the live file before editing; outward numbers re-derived (gates re-run), not inherited.
+- **#115 — applied:** Workflow surfaced 86 checks, 4/4 lenses ran, 0 died — genuine coverage, two findings being false ≠ silent under-coverage.
+- **#46 / #56 — applied:** all 4 lenses `agentType: 'Explore'` read-only; sole writer confirmed by `git status` after the fan-out and post-commit.
+- **#40 — applied:** pushed only S152's authorized 3; S153's commits NOT pushed.
+
+Candidate roster: **#120 NEW at 1** (next = **#121**); **#114 at 3** and **#119 at 3** (both at standard threshold — promotion review is an operator call); #118/#117/#116/#115/#111 at 1; #112/#110 at 2; carried at 2: #88/#89/#92; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. `PROJECT_LEARNINGS.md` holds **58 rows** (no promotion this session).
+
+### Phase 3D: Handoff to Session 154
+
+**The Evolution rewrite is DONE and LIVE.** New edition committed `74f5b11`, auto-published to the live GitHub Wiki (`fd4efc2 → 674e4b0`). The S147/S151/S152 archive staleness debt on the page is **cleared** — `:261`/`:291`/`:388` all resolved in the new edition. Docs-only — gates unchanged (re-confirmed fresh this session).
+
+**⚠ State you will inherit:**
+1. **`master` is 3 commits AHEAD of `origin/master`** (`3f68120` claim, `74f5b11` deliverable, this close-out). **NOT pushed** (#40 — the operator's "1" authorized S152's 3 commits, pushed pre-claim as `d1b2519..b513842`; these 3 are new). `origin/master` is at `b513842`. Note the **wiki repo IS published** (the hook pushes the wiki clone independently of the source repo).
+2. **Baseline RE-CONFIRMED FRESH this session: 797 passed @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2, citation guard green.** Re-run only if code changes: `uv run pytest -q`; `uv run mypy`; `uv run ruff check src/ tests/ packages/ scripts/`. Single-file runs need `--no-cov` (#57).
+3. **Evolution.md banner convention (load-bearing for the NEXT rewrite):** stamp = previous session's close-out sha + previous session number (S148 ruling, applied again S153: `b513842`, after Session 152). A verifier demanding a self-referential sha is WRONG — refute with this precedent.
+4. **11 code-docstring refs** to `docs/planning/<archived-plan>` in src/tests/packages remain deliberately LEFT (point-in-time provenance; §3 banners cover them). Do NOT re-flag as drift.
+5. **`docs/planning/` still empty of tracked files** — canonical location for future active plans; nothing to fix.
+
+**What's next (operator's call):**
+1. **Push `master` → `origin`** (3 new S153 commits — re-confirm, #40).
+2. **Candidate promotion review — #114 and #119 are both at 3 instances (standard threshold MET).** If promoted: append rows to `PROJECT_LEARNINGS.md` (→ 59/60 rows) and bump the `CLAUDE.md` receptacle line per the S150 convention (count = rows; endpoint = promoting session).
+3. **Standing micros (#43 — DO NOT auto-fix):** GitHub Release v0.2.0 (tags exist, no `gh` Release cut); `adapters.py:65` magic-string branch; `governance_templates.py:35` `_assert_vocab_parity` → shared `_vocab_guard`; data-agent prompt `measurement_unit` wording (`anthropic_client.py:302`); untracked `.claude/` not in `.gitignore`.
+4. **Optional publish-hook citation warning** — unchanged recommendation: **LEAVE** (explained S151).
+
+**Important considerations for Session 154:**
+1. **Candidate roster:** #120 NEW at 1 (pre-arm verifier prompts with lifecycle state + conventions); #114 at 3 + #119 at 3 (promotion-eligible); #118/#117/#116/#115/#111 at 1; #112/#110 at 2; at 2: #88/#89/#92; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. Next candidate = **#121.**
+2. **`PROJECT_LEARNINGS.md` holds 58 rows** (no promotion this session).
+3. **Evolution rewrite precedents (for the next §4.1 trigger):** S148 (`582c9df`, 21/12 surgical) and S153 (`74f5b11`, 27/12 surgical) — both operator-approved surgical integration over literal retype when the arc is unchanged; both honored §4.7. `git show` them per #119 before the next rewrite.
+4. **The omitted-appendix/index contract:** every session number must appear in exactly one of §12 or the appendix — maintained 0–153 as of this edition.
+
+**Key files (full paths):**
+- `docs/wiki/claims-model-starter/Evolution.md` — the new edition (banner `b513842`/S152; §10 window 144–153; §11 current state; §12 through row 153; References with 18 archived-plan bullets).
+- `docs/methodology/PROJECT_CONVENTIONS.md` §4 — the rewrite discipline (§4.7 review gate honored this session).
+- Verification Workflow run: `wf_10d0094e-323` (4 lenses, 86 checks, transcript under the session directory).
 
 ---
 
