@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 151 Did
+**Deliverable:** Archive-sweep — move `docs/planning/resume-from-checkpoint-plan.md` + `docs/planning/scope-b-plan.md` to `docs/architecture-history/` per `PROJECT_CONVENTIONS.md` §3 (git mv + §3 archive banner + live link updates), gated on a live-tree eligibility re-derivation (#113/#58) and a full reference re-check (live refs updated; append-only logs left untouched per #32/#43). (IN PROGRESS)
+**Started:** 2026-06-12.
+**Status:** Session claimed (operator-directed: "perform archive-sweep of resume-from-checkpoint-plan.md / scope-b-plan.md"). Work beginning. Items 1 (push) + 2/3/micros (explain) already handled this turn before the claim.
+
+---
+
+**(Session 150 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 150 — operator-directed ("1 then 2" from the S149 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`c4d7a38..286bc60`, 3 S149 commits, operator "1 then 2"); (2) **`CLAUDE.md` staleness micro** — correct the institutional-memory line "54 learnings, Sessions 9–140" → "58 learnings, Sessions 9–147". (**COMPLETE** — deliverable commit `dab2cff`. The `CLAUDE.md` §"Project-specific Learnings" receptacle line had drifted: it advertised "54 learnings, Sessions 9–140" while `PROJECT_LEARNINGS.md` has grown to 58 rows. Ground-truthed the two replacement numbers four independent ways before editing — (a) read row `#58` directly + corroborated by the pipe-line count (59 `| `-prefixed lines = 1 header + 58 data rows); (b) highest contributing session = **147** via row 58's "Promoted Session 147" (S148/S149 added candidates but no promotions); (c) re-derived the receptacle CONVENTION — count = number of rows, endpoint = the session that promoted the highest-numbered row — and confirmed it by noting the *old* "54 / 9–140" matched row 54 having been promoted in S140; (d) cross-checked against the live-published **Evolution wiki page**, which already says "58 promoted learnings" ×3 (S148 refresh) — so the fix lands `CLAUDE.md` in agreement with the published surface rather than fixing one and leaving the other to drift. Drift-class sweep (Learning #31) across all tracked files: the stale "54 learnings / 9–140" string survives ONLY in SESSION_NOTES.md historical handoff prose + two archived artifacts (`methodology-pr2527-remediation-mpc.md:101` "46 learnings, Sessions 92–110"; `evolution-page-plan.md:327` "31 learnings") — all append-only historical records, correctly NOT touched (Learnings #32/#43). Docs-only deliverable; **no src/tests touched** (gates unchanged 797 @ 97.28%, not re-run — zero code/test files in the diff); wiki hook did NOT fire (no `docs/wiki/` change).)
 
 **Started / Completed:** 2026-06-12.
