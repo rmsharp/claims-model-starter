@@ -1,6 +1,6 @@
 # Evolution
 
-> *Last updated: 2026-06-11 (commit `3288d99`, after Session 142). This page is a full-rewrite synthesis — not continuously updated. For commits since this date, see `CHANGELOG.md` (maintainer) or `git log`.*
+> *Last updated: 2026-06-12 (commit `293a777`, after Session 147). This page is a full-rewrite synthesis — not continuously updated. For commits since this date, see `CHANGELOG.md` (maintainer) or `git log`.*
 
 > *Design-decision arc from concept to current state. For the maintainer commit-linked ledger, see `CHANGELOG.md` at the repository root. For the user-facing release summary, see the [Changelog](Changelog) wiki page.*
 
@@ -34,7 +34,7 @@ Three pieces of that brief became architectural constraints that held throughout
 
 **§7 — Decoupling invariant.** *The data agent has zero imports from the intake agent. All cross-agent communication goes through the orchestrator adapter.* This is enforced by an AST-walk decoupling test (`tests/test_data_agent_decoupling.py`) that parses the standalone package under `packages/data-agent/` and fails the build if any import chain reaches the intake agent. The invariant exists because the data agent was explicitly designed to be reusable as a standalone query-writing tool (see §4 below), and coupling to intake-specific types would make that reuse impossible. The decoupling test is the structural guarantor — it catches drift that code review would miss — and it earned its own CI job (the `decoupling` job in `.github/workflows/ci.yml`).
 
-**§8 — Governance artifact framework.** Artifacts are emitted proportional to `risk_tier` ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low} and `cycle_time` ∈ {strategic, tactical, operational, continuous}, with explicit regulatory mapping (SR 11-7, NAIC AIS). A 2026 note: the Federal Reserve has since superseded SR 11-7 with **SR 26-2**, whose general intent is unchanged for this pipeline — so the framework vocabulary's `SR_11_7` name awaits a citation-level rename (§11). The most critical tier (`tier_1_critical`) produces the full artifact set — datasheets, model card, monitoring plan, risk register, regulator-facing summary — while `tier_4_low` produces only the minimal scaffolding. The tier derivation happens inside the intake agent (on every revision cycle, via `GovernanceMetadata`) so that what the website agent produces is a direct function of what the stakeholder described.
+**§8 — Governance artifact framework.** Artifacts are emitted proportional to `risk_tier` ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low} and `cycle_time` ∈ {strategic, tactical, operational, continuous}, with explicit regulatory mapping (SR 26-2, NAIC AIS). A 2026 note: the Federal Reserve superseded SR 11-7 with **SR 26-2** in 2026, with general intent unchanged for this pipeline; **Session 144 (2026-06-11) renamed the framework vocabulary token `SR_11_7` → `SR_26_2`** across the intake prompt enumeration, the website artifact map, the test fixtures, the tutorial, and the wiki — a citation-level change with no artifact-set or behavior change, the framework-parity guard (§5) holding the intake prompt and the artifact map byte-identical through the swap. Historical records (root `CHANGELOG.md`, the archived plans, the Session-22 live-run note in §6) retain the old name as a record of what shipped at the time. The most critical tier (`tier_1_critical`) produces the full artifact set — datasheets, model card, monitoring plan, risk register, regulator-facing summary — while `tier_4_low` produces only the minimal scaffolding. The tier derivation happens inside the intake agent (on every revision cycle, via `GovernanceMetadata`) so that what the website agent produces is a direct function of what the stakeholder described.
 
 Schemas live under `src/model_project_constructor/schemas/`, each tagged with a `schema_version` field. The `HandoffEnvelope` in `src/model_project_constructor/schemas/envelope.py` wraps them with versioning metadata so future schema evolution can stay backwards-compatible: an envelope says "I'm carrying an `IntakeReport` at `schemas.v1.intake`," the consumer looks that up in `REGISTRY` in `src/model_project_constructor/schemas/registry.py`, and if the version is unknown the pipeline halts with a typed error rather than failing later with a validation mismatch. This matters because the three agents are deployed together today but the design allows them to evolve at different schema cadences tomorrow. (A dead `SCHEMA_VERSION` module constant and a docstring describing a migrations workflow that never existed were deleted in Session 113 — the honest-versioning cleanup; the per-payload `schema_version` fields are the real mechanism.)
 
@@ -138,7 +138,7 @@ The website agent initially assumed GitLab. Sessions 10–14 generalized it to a
 
 **Phase D — Host selection CLI (Session 14).** `--host gitlab|github` on the website CLI. Dual-adapter selection at invocation time. Coverage floor raised 90% → 93%.
 
-**Session 22 — First live end-to-end smoke (2026-04-16)** ran the full pipeline against a real GitLab project for the first time. The smoke test surfaced a bug that none of the structural tests had caught: the pipeline script passed a keyword argument the adapter constructor did not accept, so `--live --host gitlab` had never successfully run. A two-character fix unblocked the path, and a real project was created with 38 files, 10 tier-3-moderate governance artifacts, and regulatory mapping on `SR_11_7` + `NAIC_AIS`. The session filed five additional findings covering CI scope gaps, namespace validation, GitHub host-url wiring, and operations-doc drift. *This is the session that revealed how much latent bit-rot accumulates in paths that are structurally tested but never exercised end-to-end.*
+**Session 22 — First live end-to-end smoke (2026-04-16)** ran the full pipeline against a real GitLab project for the first time. The smoke test surfaced a bug that none of the structural tests had caught: the pipeline script passed a keyword argument the adapter constructor did not accept, so `--live --host gitlab` had never successfully run. A two-character fix unblocked the path, and a real project was created with 38 files, 10 tier-3-moderate governance artifacts, and regulatory mapping on `SR_11_7` + `NAIC_AIS` (that token became `SR_26_2` in Session 144 — §2; the April run shipped the old name). The session filed five additional findings covering CI scope gaps, namespace validation, GitHub host-url wiring, and operations-doc drift. *This is the session that revealed how much latent bit-rot accumulates in paths that are structurally tested but never exercised end-to-end.*
 
 **Session 28 — `validate_namespace` fail-fast (2026-04-17)** closed one of those findings. `MPC_NAMESPACE` takes a group path, not a URL — but a URL-form value had surfaced as a generic "group lookup failed: 404" from the GitLab adapter. The module-level `validate_namespace` helper in `src/model_project_constructor/orchestrator/config.py` now raises a typed `ConfigError` on URL-prefixed values before any agent runs, naming the received value and the expected form. *Validate at the config boundary, halt with a typed message* — the same shape as the orchestrator's `FAILED_AT_*` states.
 
@@ -213,7 +213,7 @@ Two execution disciplines from this program are visible in the git history. Firs
 
 ## 10. Methodology arc
 
-The methodology framework itself evolved across the project. Every session is governed by `SESSION_RUNNER.md` and `SAFEGUARDS.md`; failures teach the framework something the next session inherits. Project-specific institutional memory now lives in `PROJECT_LEARNINGS.md` at the repository root — 54 promoted learnings at the time of this rewrite — after **Sessions 124–126 (2026-06-07/08)** migrated the project's learnings table out of the synced framework file (so the upstream `SESSION_RUNNER.md` can be updated without merge conflicts) into a project-owned home. The promotion pipeline has its own discipline: a candidate learning must recur across three sessions before it hardens into a row, and **Session 112's** audit of the candidate roster found (and fixed the process behind) silently-reused candidate numbers.
+The methodology framework itself evolved across the project. Every session is governed by `SESSION_RUNNER.md` and `SAFEGUARDS.md`; failures teach the framework something the next session inherits. Project-specific institutional memory now lives in `PROJECT_LEARNINGS.md` at the repository root — 58 promoted learnings at the time of this rewrite — after **Sessions 124–126 (2026-06-07/08)** migrated the project's learnings table out of the synced framework file (so the upstream `SESSION_RUNNER.md` can be updated without merge conflicts) into a project-owned home. The promotion pipeline has its own discipline: a candidate learning must recur across three sessions before it hardens into a row, and **Session 112's** audit of the candidate roster found (and fixed the process behind) silently-reused candidate numbers.
 
 **Session 17 — Pilot readiness (2026-04-15)** worked through every one of architecture-plan §14's 46 acceptance criteria and declared the pilot gate met. The `[0.1.0 — Pilot Ready]` tag in `CHANGELOG.md` dates from this session: 422 tests at the time, both platform adapters passing structural + integration tests, CI green across all four jobs.
 
@@ -225,7 +225,7 @@ The methodology framework itself evolved across the project. Every session is go
 
 **The tutorial renderer (Sessions 54–55, 65–67).** The tutorial was first rendered to standalone HTML by a pandoc wrapper script (Session 54), with multi-command code blocks split for copy-paste ergonomics (Session 55). Sessions 65–67 replaced that with MkDocs + Material — chosen for its native per-block copy button, the exact UX gap the splits had worked around — building locally with a strict whitelist and publishing via a dedicated GitHub Actions workflow (`.github/workflows/publish-tutorial.yml`) to GitHub Pages. The pandoc script was retired.
 
-### Documentation-accuracy thread (Sessions 38–45, 63–64, 84, 111, 134–143)
+### Documentation-accuracy thread (Sessions 38–45, 63–64, 84, 111, 134–148)
 
 The methodology arc's largest sub-thread is the long campaign to make outward-facing documentation *stay* true, which ran from simple freshness sweeps to a CI-enforced citation convention.
 
@@ -239,11 +239,13 @@ The methodology arc's largest sub-thread is the long campaign to make outward-fa
 
 **Kill the citation drift class (Sessions 137–143).** The audit's recurrence-prevention analysis identified hardcoded `file:line` citations as the single largest drift channel — a citation goes stale the moment the cited file gains a line above it, and a fresh inventory found dozens already mis-pointing *days* after remediation. The chosen fix (over publish-time line-number generation, which would have broken the parity model): migrate every citation to **grep-locatable symbol references with full repository paths** — the convention this page now follows. Sessions 138–141 migrated the seven mechanically-migratable cited pages; **Session 142** added the CI recurrence guard, `tests/test_wiki_no_line_citations.py`, which fails the build if any fragile line-citation form reappears on any wiki page; and **Session 143** closed the campaign with this page's rewrite — the last allowlisted page, now clean, with the guard's allowlist empty and the invariant enforced wiki-wide.
 
+**Post-campaign accuracy maintenance (Sessions 144–148).** With the citation drift class structurally closed, the documentation work shifted from building enforcement to routine upkeep. **Session 144 (2026-06-11)** executed the SR 11-7 → SR 26-2 regulatory-citation rename the §2 note had anticipated — a 26-file sole-writer change touching the governance vocabulary in code, nine test files and seven fixtures, the tutorial, and seven wiki pages, with the Session-108 framework-parity guard (§5) proving the intake prompt and the artifact map stayed byte-identical; the operator ruled it citation-level only, so the artifact sets and behavior are unchanged and the historical records keep the old name. The remaining sessions of this window were operational and are listed in the [Deliberately omitted](#deliberately-omitted) appendix: a wiki-accuracy micro-audit that worked the standing-corrections list down (Session 145), a `ROADMAP.md` staleness fix on the inward maintainer surface (Session 146), and another application of the planning-doc archive convention (designed in Sessions 43–46) — two delivered plans moved into `docs/architecture-history/` (Session 147, see [References](#references)). **Session 148** is this rewrite, which retired the SR-rename open thread and folded the window in.
+
 ---
 
 ## 11. Current state
 
-Today (2026-06-11, 143 sessions in, version **v0.2.0**) the pipeline runs end-to-end in three modes: Scope A (all fixtures), Scope B-1 (real Anthropic data agent, fixture intake), Scope B-2 (real Anthropic on both intake and data, scripted answers) — plus `--resume <run_id>` recovery from any checkpoint, status-aware so failed stages re-execute. Live runs against real GitLab and real GitHub — including GitHub Enterprise — produce complete scaffolded projects with governance artifacts proportional to the risk tier the intake agent derived, business-case and value-measurement sections populated from the interview, and a collected pre-model baseline. 797 tests pass at 97.28% coverage against a 95% floor; CI is green across the `lint`, `typecheck`, `test`, and `decoupling` jobs; `BACKLOG.md` is empty.
+Today (2026-06-12, 148 sessions in, version **v0.2.0**) the pipeline runs end-to-end in three modes: Scope A (all fixtures), Scope B-1 (real Anthropic data agent, fixture intake), Scope B-2 (real Anthropic on both intake and data, scripted answers) — plus `--resume <run_id>` recovery from any checkpoint, status-aware so failed stages re-execute. Live runs against real GitLab and real GitHub — including GitHub Enterprise — produce complete scaffolded projects with governance artifacts proportional to the risk tier the intake agent derived, business-case and value-measurement sections populated from the interview, and a collected pre-model baseline. 797 tests pass at 97.28% coverage against a 95% floor; CI is green across the `lint`, `typecheck`, `test`, and `decoupling` jobs; `BACKLOG.md` is empty.
 
 The codebase is structured as:
 
@@ -255,11 +257,11 @@ The codebase is structured as:
 - `src/model_project_constructor/schemas/` — v1 payload schemas with `HandoffEnvelope` versioning and the registry; data-side schemas re-exported from the wheel.
 - `src/model_project_constructor/_vocab_guard.py` — the shared single-source utilities (`assert_vocab_parity`, `join_members`) that keep every controlled vocabulary honest.
 - `docs/wiki/claims-model-starter/` — 21 outward-facing wiki pages plus the sidebar, auto-published to the live GitHub Wiki by the tracked `post-commit` hook, with the no-line-citation invariant CI-enforced.
-- `docs/methodology/` + `PROJECT_LEARNINGS.md` — the imported framework, project-local conventions, and 54 promoted learnings.
-- `docs/architecture-history/` — archived concept-era plans with dated banners; `docs/planning/` — plans whose scope completed recently or remains open; `docs/audits/` — the two 2026-06 audits.
+- `docs/methodology/` + `PROJECT_LEARNINGS.md` — the imported framework, project-local conventions, and 58 promoted learnings.
+- `docs/architecture-history/` — archived plans (concept-era and recently-delivered) with dated banners; `docs/planning/` — plans still open or delivered-but-not-yet-archived; `docs/audits/` — the two 2026-06 audits.
 - `scripts/` — `scripts/run_pipeline.py` (the end-to-end driver) and `scripts/publish_wiki.sh` (the idempotent wiki publisher).
 
-Open threads at the time of this rewrite: the optional publish-hook citation warning (the CI guard is the primary mechanism), a standing wiki-accuracy micro-audit list (small content corrections accumulated since Session 136), the `CHANGELOG.md` entry gap for Sessions 114 onward (session records for that range live in `SESSION_NOTES.md` and the per-session close-out commits), and the **SR 11-7 → SR 26-2 citation swap** — the Federal Reserve superseded SR 11-7 in 2026 with no change of intent material to this pipeline; the `SR_11_7` name in the governance-framework vocabulary and on several wiki pages awaits a mechanical rename (the framework-parity guard keeps the intake prompt and the artifact map in lockstep when it lands).
+Open threads at the time of this rewrite: the optional publish-hook citation warning (the CI guard is the primary mechanism), the `CHANGELOG.md` entry gap for Sessions 114 onward (session records for that range live in `SESSION_NOTES.md` and the per-session close-out commits), and a standing list of small code-and-doc maintenance items tracked in the session handoffs (a few governance/adapter refactors and doc-accuracy micros). The **SR 11-7 → SR 26-2 citation swap** that earlier editions carried as open is now closed — it landed in Session 144 (§2), so the governance-framework vocabulary and the wiki cite the current name.
 
 ---
 
@@ -348,6 +350,8 @@ The narrative above is thematic. This table is chronological for readers who wan
 | 138–141 | 2026-06-10/11 | Methodology (doc-reorg) | Citation migration Phases 1–4 — seven pages to symbol/anchor references, live-published |
 | 142 | 2026-06-11 | CI / quality gates | Recurrence guard — `tests/test_wiki_no_line_citations.py` + stale-allowlist companion |
 | 143 | 2026-06-11 | Methodology (doc-reorg) | This rewrite — citation campaign Phase 5; guard allowlist now empty |
+| 144 | 2026-06-11 | Methodology (doc-reorg) | SR 11-7 → SR 26-2 regulatory-citation rename across vocab, tests, fixtures, tutorial, 7 wiki pages; parity guard held |
+| 148 | 2026-06-12 | Methodology (doc-reorg) | This rewrite — Evolution refresh: SR-rename open thread retired; Sessions 144–147 accounted for |
 
 ---
 
@@ -363,20 +367,25 @@ The sessions below are intentionally excluded from the arc above. Each is operat
 | 95 | 2026-05-26 | Backfilled two research-synthesis pieces (Claude-usage table, cost framing) into existing wiki pages | Targeted wiki backfill; no new design decision |
 | 96 | 2026-06-01 | Refreshed the vendored `docs/methodology/` framework files to canonical parity | Framework sync; the methodology-ownership story is carried by Sessions 124–126 |
 | 105 | 2026-06-03 | Fixed two stale "10-question" test docstrings | Tail end of the Session 27 drift class, narrated in §3 |
+| 145 | 2026-06-11 | Wiki-accuracy micro-audit — 11 corrections across Contributing, Changelog, Security-Considerations | Operational upkeep; the wiki-accuracy campaign is carried by Sessions 134–136 and §10 |
+| 146 | 2026-06-11 | `ROADMAP.md` staleness fix — test count, decoupling-invariant phrasing, `--llm` wiring, remaining-work block | Inward (maintainer-facing) doc accuracy; the outward documentation-accuracy thread is §10 |
+| 147 | 2026-06-12 | Archived two delivered plans (`evolution-page-plan.md`, `wiki-citation-symbol-references-plan.md`) into `docs/architecture-history/` per the planning-doc archive convention | Operational archive move; the archive convention is narrated with Sessions 43–46, and the plans now appear in [References](#references) |
 
 ---
 
 ## References
 
-Archived concept-era plans live at `docs/architecture-history/`:
+Archived plans live at `docs/architecture-history/`:
 
 - `docs/architecture-history/initial_purpose.txt` — Original brief. Subrogation worked example; 6-step pipeline vision; expert-data-scientist persona for the intake agent; value argument.
 - `docs/architecture-history/architecture-approaches.md` — Session 1 exploration of four architectural alternatives with pros/cons.
 - `docs/architecture-history/architecture-plan.md` — Session 2 canonical 14-phase plan. §7 decoupling invariant; §8 governance-artifact framework; §14 acceptance criteria (all verified in Session 17).
 - `docs/architecture-history/github-gitlab-abstraction-plan.md` — Session 10 four-phase plan for platform abstraction.
 - `docs/architecture-history/pilot-readiness-audit.md` — Session 17 verification of all §14 acceptance criteria, with PILOT-READY declaration.
+- `docs/architecture-history/evolution-page-plan.md` — Session 43 design plan for this page and the documentation conventions (§10); delivered, archived in Session 147.
+- `docs/architecture-history/wiki-citation-symbol-references-plan.md` — the citation→symbol-reference migration plan (§10); delivered, archived in Session 147.
 
-Active-era plans referenced by this page: `docs/planning/resume-from-checkpoint-plan.md`, `docs/planning/data-source-inventory-contract-plan.md`, `docs/planning/business-value-capture-plan.md`, `docs/planning/o1-stage-driver-plan.md`, `docs/planning/o2-shared-llm-json-plan.md`, `docs/planning/o3-repo-platforms-plan.md`, `docs/planning/o4-controlled-vocabulary-plan.md`, `docs/planning/tutorial-renderer-migration-plan.md`, `docs/planning/wiki-citation-symbol-references-plan.md`, `docs/planning/evolution-page-plan.md`.
+Active-era plans (still in `docs/planning/`) referenced by this page: `docs/planning/resume-from-checkpoint-plan.md`, `docs/planning/data-source-inventory-contract-plan.md`, `docs/planning/business-value-capture-plan.md`, `docs/planning/o1-stage-driver-plan.md`, `docs/planning/o2-shared-llm-json-plan.md`, `docs/planning/o3-repo-platforms-plan.md`, `docs/planning/o4-controlled-vocabulary-plan.md`, `docs/planning/tutorial-renderer-migration-plan.md`. The citation-migration and Evolution-page plans moved to `docs/architecture-history/` in Session 147 (listed above).
 
 Audits live at `docs/audits/`: the 2026-06-01 technical-debt audit (spawned the §9 program) and the 2026-06-10 wiki-vs-code accuracy audit (spawned the §10 citation campaign).
 
@@ -384,7 +393,7 @@ Current maintainer-facing sources:
 
 - `CHANGELOG.md` (repo root) — per-session commit-linked ledger through Session 113; later sessions are recorded in `SESSION_NOTES.md` and per-session close-out commits in `git log`.
 - `SESSION_NOTES.md` (repo root) — per-session narrative; the rationale source this page draws on.
-- `PROJECT_LEARNINGS.md` (repo root) — the project's 54 promoted institutional learnings.
+- `PROJECT_LEARNINGS.md` (repo root) — the project's 58 promoted institutional learnings.
 - `docs/methodology/PROJECT_CONVENTIONS.md` — inward/outward convention, three-surface split, archive convention, and this page's update discipline including the explicit review gate.
 
 Related wiki pages:
