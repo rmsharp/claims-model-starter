@@ -1,6 +1,6 @@
 # Evolution
 
-> *Last updated: 2026-06-12 (commit `293a777`, after Session 147). This page is a full-rewrite synthesis — not continuously updated. For commits since this date, see `CHANGELOG.md` (maintainer) or `git log`.*
+> *Last updated: 2026-06-12 (commit `b513842`, after Session 152). This page is a full-rewrite synthesis — not continuously updated. For commits since this date, see `CHANGELOG.md` (maintainer) or `git log`.*
 
 > *Design-decision arc from concept to current state. For the maintainer commit-linked ledger, see `CHANGELOG.md` at the repository root. For the user-facing release summary, see the [Changelog](Changelog) wiki page.*
 
@@ -225,7 +225,7 @@ The methodology framework itself evolved across the project. Every session is go
 
 **The tutorial renderer (Sessions 54–55, 65–67).** The tutorial was first rendered to standalone HTML by a pandoc wrapper script (Session 54), with multi-command code blocks split for copy-paste ergonomics (Session 55). Sessions 65–67 replaced that with MkDocs + Material — chosen for its native per-block copy button, the exact UX gap the splits had worked around — building locally with a strict whitelist and publishing via a dedicated GitHub Actions workflow (`.github/workflows/publish-tutorial.yml`) to GitHub Pages. The pandoc script was retired.
 
-### Documentation-accuracy thread (Sessions 38–45, 63–64, 84, 111, 134–148)
+### Documentation-accuracy thread (Sessions 38–45, 63–64, 84, 111, 134–153)
 
 The methodology arc's largest sub-thread is the long campaign to make outward-facing documentation *stay* true, which ran from simple freshness sweeps to a CI-enforced citation convention.
 
@@ -239,13 +239,13 @@ The methodology arc's largest sub-thread is the long campaign to make outward-fa
 
 **Kill the citation drift class (Sessions 137–143).** The audit's recurrence-prevention analysis identified hardcoded `file:line` citations as the single largest drift channel — a citation goes stale the moment the cited file gains a line above it, and a fresh inventory found dozens already mis-pointing *days* after remediation. The chosen fix (over publish-time line-number generation, which would have broken the parity model): migrate every citation to **grep-locatable symbol references with full repository paths** — the convention this page now follows. Sessions 138–141 migrated the seven mechanically-migratable cited pages; **Session 142** added the CI recurrence guard, `tests/test_wiki_no_line_citations.py`, which fails the build if any fragile line-citation form reappears on any wiki page; and **Session 143** closed the campaign with this page's rewrite — the last allowlisted page, now clean, with the guard's allowlist empty and the invariant enforced wiki-wide.
 
-**Post-campaign accuracy maintenance (Sessions 144–148).** With the citation drift class structurally closed, the documentation work shifted from building enforcement to routine upkeep. **Session 144 (2026-06-11)** executed the SR 11-7 → SR 26-2 regulatory-citation rename the §2 note had anticipated — a 26-file sole-writer change touching the governance vocabulary in code, nine test files and seven fixtures, the tutorial, and seven wiki pages, with the Session-108 framework-parity guard (§5) proving the intake prompt and the artifact map stayed byte-identical; the operator ruled it citation-level only, so the artifact sets and behavior are unchanged and the historical records keep the old name. The remaining sessions of this window were operational and are listed in the [Deliberately omitted](#deliberately-omitted) appendix: a wiki-accuracy micro-audit that worked the standing-corrections list down (Session 145), a `ROADMAP.md` staleness fix on the inward maintainer surface (Session 146), and another application of the planning-doc archive convention (designed in Sessions 43–46) — two delivered plans moved into `docs/architecture-history/` (Session 147, see [References](#references)). **Session 148** is this rewrite, which retired the SR-rename open thread and folded the window in.
+**Post-campaign accuracy maintenance (Sessions 144–153).** With the citation drift class structurally closed, the documentation work shifted from building enforcement to routine upkeep. **Session 144 (2026-06-11)** executed the SR 11-7 → SR 26-2 regulatory-citation rename the §2 note had anticipated — a 26-file sole-writer change touching the governance vocabulary in code, nine test files and seven fixtures, the tutorial, and seven wiki pages, with the Session-108 framework-parity guard (§5) proving the intake prompt and the artifact map stayed byte-identical; the operator ruled it citation-level only, so the artifact sets and behavior are unchanged and the historical records keep the old name. The purely operational sessions of this window are listed in the [Deliberately omitted](#deliberately-omitted) appendix: a wiki-accuracy micro-audit that worked the standing-corrections list down (Session 145), a `ROADMAP.md` staleness fix on the inward maintainer surface (Session 146), the first of the window's planning-doc archive moves — two delivered plans into `docs/architecture-history/` (Session 147, see [References](#references)) — and a single-line refresh of the `CLAUDE.md` institutional-memory count (Session 150). **Session 148** rewrote this page, retiring the SR-rename open thread. **Session 149 (2026-06-12)** turned to the maintainer ledger itself: `CHANGELOG.md`'s last entry was Session 113, and the gap to Session 148 contained substantial shipped code — the O1/O3/O4 overhauls, the E4 provider factory, the SR rename. Rather than backfill under a rule the project had visibly outgrown, the session did both halves: it refined the cadence convention in `docs/methodology/PROJECT_CONVENTIONS.md` so that a `CHANGELOG.md` entry is earned by shipped-code changes rather than by every session (documentation-only sessions are recorded in `SESSION_NOTES.md` alone), and backfilled the six missing shipped-code entries (Sessions 116–144, fifteen commit hashes, every gate number re-verified at source). **Sessions 151–152 (2026-06-12)** then completed the planning-doc archive arc that Sessions 43–46 designed: eleven delivered plans — among them resume-from-checkpoint, Scope B, the four O-overhaul plans, business-value-capture, and the inventory contract — moved into `docs/architecture-history/` with dated banners, leaving `docs/planning/` empty for the first time since the archive was created (see [References](#references)). **Session 153** is this rewrite, which retired the CHANGELOG-gap open thread and folded the window in.
 
 ---
 
 ## 11. Current state
 
-Today (2026-06-12, 148 sessions in, version **v0.2.0**) the pipeline runs end-to-end in three modes: Scope A (all fixtures), Scope B-1 (real Anthropic data agent, fixture intake), Scope B-2 (real Anthropic on both intake and data, scripted answers) — plus `--resume <run_id>` recovery from any checkpoint, status-aware so failed stages re-execute. Live runs against real GitLab and real GitHub — including GitHub Enterprise — produce complete scaffolded projects with governance artifacts proportional to the risk tier the intake agent derived, business-case and value-measurement sections populated from the interview, and a collected pre-model baseline. 797 tests pass at 97.28% coverage against a 95% floor; CI is green across the `lint`, `typecheck`, `test`, and `decoupling` jobs; `BACKLOG.md` is empty.
+Today (2026-06-12, 153 sessions in, version **v0.2.0**) the pipeline runs end-to-end in three modes: Scope A (all fixtures), Scope B-1 (real Anthropic data agent, fixture intake), Scope B-2 (real Anthropic on both intake and data, scripted answers) — plus `--resume <run_id>` recovery from any checkpoint, status-aware so failed stages re-execute. Live runs against real GitLab and real GitHub — including GitHub Enterprise — produce complete scaffolded projects with governance artifacts proportional to the risk tier the intake agent derived, business-case and value-measurement sections populated from the interview, and a collected pre-model baseline. 797 tests pass at 97.28% coverage against a 95% floor; CI is green across the `lint`, `typecheck`, `test`, and `decoupling` jobs; `BACKLOG.md` is empty.
 
 The codebase is structured as:
 
@@ -258,10 +258,10 @@ The codebase is structured as:
 - `src/model_project_constructor/_vocab_guard.py` — the shared single-source utilities (`assert_vocab_parity`, `join_members`) that keep every controlled vocabulary honest.
 - `docs/wiki/claims-model-starter/` — 21 outward-facing wiki pages plus the sidebar, auto-published to the live GitHub Wiki by the tracked `post-commit` hook, with the no-line-citation invariant CI-enforced.
 - `docs/methodology/` + `PROJECT_LEARNINGS.md` — the imported framework, project-local conventions, and 58 promoted learnings.
-- `docs/architecture-history/` — archived plans (concept-era and recently-delivered) with dated banners; `docs/planning/` — plans still open or delivered-but-not-yet-archived; `docs/audits/` — the two 2026-06 audits.
+- `docs/architecture-history/` — every archived plan, concept-era and delivered, with dated banners; as of Session 152 all delivered plans have been archived, so `docs/planning/` (the canonical home for active plans) is currently empty; `docs/audits/` — the two 2026-06 audits.
 - `scripts/` — `scripts/run_pipeline.py` (the end-to-end driver) and `scripts/publish_wiki.sh` (the idempotent wiki publisher).
 
-Open threads at the time of this rewrite: the optional publish-hook citation warning (the CI guard is the primary mechanism), the `CHANGELOG.md` entry gap for Sessions 114 onward (session records for that range live in `SESSION_NOTES.md` and the per-session close-out commits), and a standing list of small code-and-doc maintenance items tracked in the session handoffs (a few governance/adapter refactors and doc-accuracy micros). The **SR 11-7 → SR 26-2 citation swap** that earlier editions carried as open is now closed — it landed in Session 144 (§2), so the governance-framework vocabulary and the wiki cite the current name.
+Open threads at the time of this rewrite: the optional publish-hook citation warning (the CI guard is the primary mechanism) and a standing list of small code-and-doc maintenance items tracked in the session handoffs (a few governance/adapter refactors and doc-accuracy micros). The **`CHANGELOG.md` entry gap for Sessions 114 onward** that the previous edition carried as open is now closed — Session 149 refined the changelog cadence convention to gate on shipped-code changes and backfilled the six missing shipped-code entries (Sessions 116–144), so the maintainer ledger is complete under the refined rule (§10).
 
 ---
 
@@ -288,7 +288,7 @@ The narrative above is thematic. This table is chronological for readers who wan
 | 19–20B | 2026-04-16 | Methodology | Wiki expansion (21 pages + sidebar); license → MIT |
 | 21 | 2026-04-16 | Methodology (doc-reorg) | First documentation-hygiene session — `CHANGELOG.md` stub → authoritative history |
 | 22 | 2026-04-16 | Platform abstraction | First live end-to-end smoke; adapter-kwarg fix; 5 latent findings filed |
-| 23 | 2026-04-16 | Methodology (planning) | `docs/planning/scope-b-plan.md` written (Scope B real-LLM intake + data plan) |
+| 23 | 2026-04-16 | Methodology (planning) | `scope-b-plan.md` written — Scope B real-LLM intake + data plan (now at `docs/architecture-history/`) |
 | 24 | 2026-04-16 | Data agent | Scope B-1 real Anthropic data agent — `--llm {none,data}`, `--model`, `--db-url` |
 | 25 | 2026-04-16 | Methodology | CI ruff scope extended to `scripts/` |
 | 26 | 2026-04-16 | Intake agent | Scope B-2 — `--llm both`, `run_scripted`, `_draft_incomplete_from_exception` adapter |
@@ -349,9 +349,12 @@ The narrative above is thematic. This table is chronological for readers who wan
 | 137 | 2026-06-10 | Methodology (doc-reorg) | Citation→symbol-reference migration plan (+ README test-count fix) |
 | 138–141 | 2026-06-10/11 | Methodology (doc-reorg) | Citation migration Phases 1–4 — seven pages to symbol/anchor references, live-published |
 | 142 | 2026-06-11 | CI / quality gates | Recurrence guard — `tests/test_wiki_no_line_citations.py` + stale-allowlist companion |
-| 143 | 2026-06-11 | Methodology (doc-reorg) | This rewrite — citation campaign Phase 5; guard allowlist now empty |
+| 143 | 2026-06-11 | Methodology (doc-reorg) | Evolution rewrite — citation campaign Phase 5; guard allowlist now empty |
 | 144 | 2026-06-11 | Methodology (doc-reorg) | SR 11-7 → SR 26-2 regulatory-citation rename across vocab, tests, fixtures, tutorial, 7 wiki pages; parity guard held |
-| 148 | 2026-06-12 | Methodology (doc-reorg) | This rewrite — Evolution refresh: SR-rename open thread retired; Sessions 144–147 accounted for |
+| 148 | 2026-06-12 | Methodology (doc-reorg) | Evolution refresh — SR-rename open thread retired; Sessions 144–147 accounted for |
+| 149 | 2026-06-12 | Methodology (doc-reorg) | CHANGELOG cadence behavior-gated (`docs/methodology/PROJECT_CONVENTIONS.md`) + six shipped-code entries backfilled (Sessions 116–144) |
+| 151–152 | 2026-06-12 | Methodology (doc-reorg) | Planning-doc archive completed — 11 delivered plans moved to `docs/architecture-history/`; `docs/planning/` emptied |
+| 153 | 2026-06-12 | Methodology (doc-reorg) | This rewrite — CHANGELOG-gap thread retired; Sessions 149–152 accounted for |
 
 ---
 
@@ -370,6 +373,7 @@ The sessions below are intentionally excluded from the arc above. Each is operat
 | 145 | 2026-06-11 | Wiki-accuracy micro-audit — 11 corrections across Contributing, Changelog, Security-Considerations | Operational upkeep; the wiki-accuracy campaign is carried by Sessions 134–136 and §10 |
 | 146 | 2026-06-11 | `ROADMAP.md` staleness fix — test count, decoupling-invariant phrasing, `--llm` wiring, remaining-work block | Inward (maintainer-facing) doc accuracy; the outward documentation-accuracy thread is §10 |
 | 147 | 2026-06-12 | Archived two delivered plans (`evolution-page-plan.md`, `wiki-citation-symbol-references-plan.md`) into `docs/architecture-history/` per the planning-doc archive convention | Operational archive move; the archive convention is narrated with Sessions 43–46, and the plans now appear in [References](#references) |
+| 150 | 2026-06-12 | Refreshed the stale `CLAUDE.md` institutional-memory count (54 → 58 learnings, endpoint Session 147) to match `PROJECT_LEARNINGS.md` | Single-line inward staleness fix; the learnings-promotion discipline is narrated in §10 |
 
 ---
 
@@ -384,14 +388,25 @@ Archived plans live at `docs/architecture-history/`:
 - `docs/architecture-history/pilot-readiness-audit.md` — Session 17 verification of all §14 acceptance criteria, with PILOT-READY declaration.
 - `docs/architecture-history/evolution-page-plan.md` — Session 43 design plan for this page and the documentation conventions (§10); delivered, archived in Session 147.
 - `docs/architecture-history/wiki-citation-symbol-references-plan.md` — the citation→symbol-reference migration plan (§10); delivered, archived in Session 147.
+- `docs/architecture-history/resume-from-checkpoint-plan.md` — the resume feature plan with its resume truth table (§7); delivered Sessions 49–52, archived in Session 151.
+- `docs/architecture-history/scope-b-plan.md` — Session 23 Scope B real-LLM plan (§4, §3); B-1/B-2 delivered, B-3 superseded by resume; archived in Session 151.
+- `docs/architecture-history/business-value-capture-plan.md` — the six-phase business-value arc plan (§8); delivered Sessions 86–91, archived in Session 152.
+- `docs/architecture-history/data-source-inventory-contract-plan.md` — the inventory-contract plan (§4); delivered Sessions 58–60 and 70, archived in Session 152.
+- `docs/architecture-history/o1-stage-driver-plan.md` — the O1 stage-table overhaul plan (§9); delivered Sessions 120–122, archived in Session 152.
+- `docs/architecture-history/o2-shared-llm-json-plan.md` — the O2 twin-parser parity-guard plan (§9); delivered Sessions 102–103, archived in Session 152.
+- `docs/architecture-history/o3-repo-platforms-plan.md` — the O3 `REPO_PLATFORMS` registry plan (§6); delivered Sessions 116–118, archived in Session 152.
+- `docs/architecture-history/o4-controlled-vocabulary-plan.md` — the O4 vocabulary single-sourcing plan (§9); delivered Sessions 127–130, archived in Session 152.
+- `docs/architecture-history/tutorial-renderer-migration-plan.md` — the MkDocs tutorial-renderer migration plan (§10); delivered Sessions 65–67, archived in Session 152.
+- `docs/architecture-history/methodology-pr2527-remediation-mpc.md` — the Session 124 execution brief for migrating the learnings table into `PROJECT_LEARNINGS.md` (§10); archived in Session 152.
+- `docs/architecture-history/wiki-inventory-delta.md` — the Sessions 75–77 documentation-sweep plan for the inventory-contract phases; archived in Session 152.
 
-Active-era plans (still in `docs/planning/`) referenced by this page: `docs/planning/resume-from-checkpoint-plan.md`, `docs/planning/data-source-inventory-contract-plan.md`, `docs/planning/business-value-capture-plan.md`, `docs/planning/o1-stage-driver-plan.md`, `docs/planning/o2-shared-llm-json-plan.md`, `docs/planning/o3-repo-platforms-plan.md`, `docs/planning/o4-controlled-vocabulary-plan.md`, `docs/planning/tutorial-renderer-migration-plan.md`. The citation-migration and Evolution-page plans moved to `docs/architecture-history/` in Session 147 (listed above).
+`docs/planning/` — the canonical location for active plans — is empty at the time of this rewrite: Sessions 147, 151, and 152 moved every delivered plan into `docs/architecture-history/`, each with a dated banner per the planning-doc archive convention in `docs/methodology/PROJECT_CONVENTIONS.md`.
 
 Audits live at `docs/audits/`: the 2026-06-01 technical-debt audit (spawned the §9 program) and the 2026-06-10 wiki-vs-code accuracy audit (spawned the §10 citation campaign).
 
 Current maintainer-facing sources:
 
-- `CHANGELOG.md` (repo root) — per-session commit-linked ledger through Session 113; later sessions are recorded in `SESSION_NOTES.md` and per-session close-out commits in `git log`.
+- `CHANGELOG.md` (repo root) — commit-linked ledger of shipped-code changes (cadence behavior-gated since Session 149, which also backfilled the Sessions 116–144 entries); documentation-only sessions are recorded in `SESSION_NOTES.md` and per-session close-out commits in `git log`.
 - `SESSION_NOTES.md` (repo root) — per-session narrative; the rationale source this page draws on.
 - `PROJECT_LEARNINGS.md` (repo root) — the project's 58 promoted institutional learnings.
 - `docs/methodology/PROJECT_CONVENTIONS.md` — inward/outward convention, three-surface split, archive convention, and this page's update discipline including the explicit review gate.
