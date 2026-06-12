@@ -20,11 +20,13 @@ Three files answer three different questions. Each file carries a per-file opene
 
 | File | Audience | Cadence | Purpose |
 |---|---|---|---|
-| `CHANGELOG.md` (repo root) | Maintainer | Per session | Commit-linked ledger. Every completed session adds an entry here. Authoritative; when any summary disagrees, this file wins. |
+| `CHANGELOG.md` (repo root) | Maintainer | Per behavior change | Commit-linked ledger. A session adds an entry when it changes shipped code or test logic (see "CHANGELOG cadence" below). Authoritative; when any summary disagrees, this file wins. |
 | `docs/wiki/claims-model-starter/Changelog.md` | Users and implementers | Release-shaped (episodic) | Audience-facing release summary. Grouped by implementation phase, not by session. Tone may evolve; detail level is curated. |
 | `docs/wiki/claims-model-starter/Evolution.md` | Onboarding readers, code-sharing context | User-requested only | Decision-arc narrative — "how the application grew from original concept to current state." Full rewrite each time; see §4. |
 
 **Why three surfaces.** `CHANGELOG.md` answers *"what was committed?"*; `wiki/Changelog.md` answers *"what's new for me?"*; `wiki/Evolution.md` answers *"why is it like this?"*. A reader joining the project has no digestible narrative in the first two — the session log is too raw, the user changelog is too summary. Evolution fills that gap without polluting the other two.
+
+**CHANGELOG cadence.** A session earns a `CHANGELOG.md` entry when it changes shipped code — `src/`, `packages/`, `scripts/` — or adds/changes `tests/` test logic. Documentation-only sessions (the wiki, the rest of `docs/`, the methodology framework, and project-state files such as `SESSION_NOTES.md`, `BACKLOG.md`, `ROADMAP.md`), and sessions whose only code-tree touch is non-behavioral (fixture data, docstring or path strings), are recorded in `SESSION_NOTES.md` and — where user-relevant — surfaced through the wiki `Changelog`/`Evolution`; they do not get a `CHANGELOG.md` entry. A multi-session feature or overhaul may be recorded as a single entry spanning its sessions, dated by its completion/landing commit. *(This refined the earlier "every completed session adds an entry" rule in Session 149: Sessions 114–148 had drifted under the per-session rule — the shipped-code work in that span was backfilled to `CHANGELOG.md` and the documentation-only sessions were left in `SESSION_NOTES.md` per this gate.)*
 
 ---
 
