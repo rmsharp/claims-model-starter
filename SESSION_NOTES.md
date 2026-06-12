@@ -6,10 +6,78 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 154 — operator-directed ("2" = S153-handoff item 2): **promote candidates #114 and #119 to `PROJECT_LEARNINGS.md`** (58 → 60 rows, both at the standard 3-instance threshold) + the `CLAUDE.md` receptacle-line bump per the S150 convention. (**COMPLETE** — deliverable commits **`db79d09`** (rows 59–60) + **`312775a`** (CLAUDE.md 58→60 / 9–147→9–154). **Provenance adjudicated at source before writing (#58 applied to the promotion's own inputs):** the S153 close-out's instance list for #114 ("S151, S152, S153") was WRONG — the coinage is **S146** ("Candidate #114 — NEW, 1st instance", the audit-Agent-A silence on defect E4), S151 was a non-incrementing application (S151's own roster kept "#114 at 1"), S152 says "2nd instance" — so the true history is S146 (1st) → S152 (2nd) → S153 (3rd); count of 3 holds; row 59 records the corrected history with the S151 application noted. **Row 59 synthesizes BOTH #114 facets** — the S146 coinage (directed-area silence = unresolved; low claims_checked is the tell) AND the S152/S153 extension (false blockers, including convergent ones, adjudicated deterministically) — into one thesis: fan-out output is a claim to adjudicate against your own primary derivation, in both directions; extends rows #55/#56. **Row 60 (#119):** repeatable convention-driven operations get blast radius AND form from precedent-instance diffs (`git show --stat`), which double as a verification checklist; distinct from #58 (state vs. operation-scope). **#119 was applied reflexively to the promotion itself:** commit shape, file scope, and message format derived from the promotion precedents `764500e` (S131, `docs(learnings):` rows commit), `dab2cff` (S150, `docs(claude-md):` receptacle commit), `293a777` (S147, row-58 format). No raw pipes in the new cells (rows 31/32/39/42/55 embedded-pipe anomalies are pre-existing, frozen). Verified: deterministic pass (62 pipe-lines = 60 rows + header/sep; 5 pipes per new row; numbering sequential to 60; "Promoted Session 154" ×2; 2-file diff only) + **4-lens read-only adversarial Workflow (`wf_0a81b6c9-230`, 65 checks, 4/4 survived, 0 blockers, 0 warnings)** — provenance lens traced every row claim to source and independently confirmed the S146-vs-S151 adjudication; consistency lens swept all count-stating surfaces (only CLAUDE.md is live; Evolution.md "58" mentions deliberately left per §4.2) and confirmed no candidate at threshold was silently skipped; semantic lens confirmed distinctness from rows 55/56/58. **Candidate #120 applied as designed with differential outcome evidence: the preamble stated lifecycle state (uncommitted-by-design draft) + governing conventions → ZERO false blockers, vs. 1 (S152) and 2 convergent (S153) in un-armed fan-outs.** Docs-only; wiki untouched (hook did not fire); commits NOT pushed (#40).)
+
+**Started / Completed:** 2026-06-12.
+
+**Status:** **COMPLETE.** Execution: oriented (clean tree, in sync with origin — S153's 3 commits operator-pushed between sessions, `b513842..616b4db`, so S153-handoff item 1 was already done; ghost-check clean; dashboard MPC 96/100) → reported, waited → operator "2" → claim stub + commit `3b26546` before technical work → research (row format from rows 55–58 + the `293a777` row-58 diff; promotion-commit shape from `764500e`; receptacle convention from `dab2cff`; #114/#119 instance histories re-derived from the SESSION_NOTES record at source — catching the S153 instance-list error; guard-test sweep: none cover PROJECT_LEARNINGS/CLAUDE counts; count-surface sweep: Evolution.md's "58" ×4 deliberately left per §4.2) → 2 edits (rows 59–60 appended; CLAUDE.md line 79) → deterministic verification → 4-lens adversarial Workflow (65 checks, clean) → sole-writer check (`git status` scope unchanged) → committed `db79d09` + `312775a` → close-out. Held scope: PROJECT_LEARNINGS.md + CLAUDE.md (deliverable) + SESSION_NOTES.md (procedural); per the S149 §2 cadence this docs-only session earns **no** `CHANGELOG.md` entry; S154's commits NOT pushed (#40).
+
+### Session 153 Handoff Evaluation (by Session 154)
+
+**Score: 8/10.** Precise on the what/how of the deliverable; docked for one affirmative factual error in the load-bearing item.
+
+- **What helped (the +):** (a) "What's next" item 2 pre-named the deliverable with its mechanics — target file, resulting row numbers (59/60), AND the S150 receptacle convention spelled out ("count = rows; endpoint = promoting session") — so scope needed zero derivation. (b) The gotcha block's banner-convention note and "11 code-docstring refs deliberately LEFT" pre-empted misclassifications in the count-surface sweep. (c) Baseline re-confirmed-fresh (797 @ 97.28%) meant no gate anxiety for a docs-only session. (d) The roster line gave the full candidate field, which let the consistency lens verify no at-threshold candidate was skipped. (e) Consideration 3's pointer to the S148/S153 rewrite precedents transferred the #119 habit directly to this session's own operation.
+- **What was wrong (the −):** the 3C line "**Instances: S151 (applied), S152 (...), S153 (...)**" for #114 misstates the history — the 1st instance is **S146** (coinage, "Candidate #114 — NEW"), and S151's own roster kept "#114 at 1" (non-incrementing). Trusted as written, the error would have hardened into permanent row 59. Caught by re-deriving at source (#58); cost ~3 greps. The count of 3 was right, so the promotion eligibility itself was unaffected.
+- **What was missing:** no pointer to the S146 coinage's DIFFERENT facet (directed-area silence vs. the recent false-blocker facet) — the synthesis duty fell to this session undocumented. One line ("coinage S146 ~line 584, silence facet — row must merge both") would have saved the archaeology.
+- **ROI:** high — everything except the #114 history was load-bearing and correct.
+
 ### What Session 154 Did
-**Deliverable:** Promote candidate learnings **#114** (adjudicate verifier findings against ground truth before acting) and **#119** (derive scope from precedent diffs) to `PROJECT_LEARNINGS.md` (58 → 60 rows) — both at 3 instances, the standard promotion threshold, operator-approved this conversation ("2" = S153-handoff item 2). Includes the `CLAUDE.md` receptacle-line bump per the S150 convention (count = rows; endpoint = promoting session). (IN PROGRESS)
-**Started:** 2026-06-12.
-**Status:** Session claimed. Work beginning. Note: S153's 3 commits were pushed to origin between sessions (operator push, `b513842..616b4db`) — S153-handoff item 1 is already done.
+
+**Deliverable:** Candidates #114 → **Learning #59** and #119 → **Learning #60** in `PROJECT_LEARNINGS.md` (58 → 60 rows) + `CLAUDE.md` receptacle bump (60 learnings, Sessions 9–154). **COMPLETE.** Commits `3b26546` (claim), `db79d09` (rows), `312775a` (CLAUDE.md), this close-out.
+
+- **Research before creation:** row format from rows 55–58 and the `293a777` diff; commit shape from `764500e`/`dab2cff` (#119 reflexively applied); both instance histories re-derived at source, catching and correcting the predecessor's #114 instance-list error (#58).
+- **The work (2 files, 3 lines):** rows 59–60 appended (no raw pipes; both theses synthesized across ALL instances, not just the recent facet); CLAUDE.md:79 single-line bump.
+- **Verification:** deterministic pass + 4-lens read-only adversarial Workflow (`wf_0a81b6c9-230`, 65 checks, 4/4 survived, 0 findings above note level); sole-writer confirmed.
+- **Discipline:** orient/report/wait; claim before work; docs-only; wiki untouched; not pushed (#40).
+
+### Phase 3B: Self-assess — Session 154 — 9/10
+
+- **The + :** (1) **Caught a predecessor error before it hardened into the permanent record** — the #114 instance-list adjudication is exactly what the just-promoted row 59 prescribes, applied to the promotion's own inputs. (2) **Synthesis over recency** — row 59 merges the S146 silence facet with the S152/S153 false-blocker facet instead of promoting only the facet the recent sessions remembered; the permanent row is the candidate's full arc. (3) **#119 applied reflexively** — the promotion operation itself was scoped from its own precedent diffs (`764500e`/`dab2cff`/`293a777`): two commits, exact file scope, message shapes mirrored. (4) **#120's first armed outcome** — lifecycle state + conventions in the verifier preamble produced 0 false blockers vs. 1 (S152) and 2 (S153) un-armed; differential evidence the pattern works. (5) Zero scope creep: row 55's pre-existing embedded pipe and Evolution.md's now-stale "58" mentions surfaced, classified, LEFT.
+- **The − :** (1) Synthesis/housekeeping, not design — the strong-expected bar. (2) The Workflow result needed a second read due to output truncation (no consequence; extraction discipline could be tighter).
+- **Quality bar:** meets S150–S153 — precedent-grounded scoping, source-adjudicated provenance, multi-lens adversarial verification with the #115 guard, sole-writer, correct historical-record handling — applied to the project's permanent institutional-memory surface.
+
+### Phase 3C: Learnings — Session 154
+
+**No new candidate coined** (S150 anti-inflation rule: this session's novelties are applications of existing items — the instance-history adjudication is promoted-#58 applied; the preamble effect is #120's design working). Increments:
+
+- **#120 — 2nd instance (now at 2).** Applied as designed: the verification preamble named the artifact's lifecycle state ("uncommitted working-tree draft; claim `3b26546` committed; deliverable uncommitted BY DESIGN") and the governing conventions (S150 receptacle rule; candidate# ≠ row#; Evolution.md deliberately-left; append-only SESSION_NOTES; frozen pipe anomalies) — and the fan-out returned **zero false blockers**, against 1 (S152) and 2 convergent (S153) in the un-armed predecessors. Increment per the S152-#119 precedent: applied-as-designed WITH outcome evidence counts; routine application without evidence (the #114-S151 case) does not.
+- **Learning #58 (promoted row) — applied:** both candidates' instance histories re-derived at the SESSION_NOTES record, not trusted from the handoff; caught the S153 #114 instance-list error.
+- **Learning #60 (né #119) — applied reflexively:** the promotion's own commit shape/scope/message format derived from `764500e` + `dab2cff` + `293a777` diffs.
+- **#115 — applied:** 65 checks surfaced per-lens (25/7/25/8), 4/4 survived, 0 died — genuine coverage.
+- **#46 / #56 — applied:** all 4 verifiers `agentType: 'Explore'` read-only with the survival clause; sole writer confirmed by `git status` after the fan-out.
+- **#40 — applied:** S154's commits NOT pushed.
+
+Candidate roster: **#114 and #119 PROMOTED (→ rows 59/60) — leave the roster.** **#120 at 2**; #118/#117/#116/#115/#111 at 1; #112/#110 at 2; carried at 2: #88/#89/#92; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. Next candidate = **#121.** `PROJECT_LEARNINGS.md` holds **60 rows**.
+
+### Phase 3D: Handoff to Session 155
+
+**The promotion is DONE.** Learnings #59 (#114: adjudicate fan-out output both directions) and #60 (#119: precedent-diff scope derivation) are permanent rows; `CLAUDE.md` says "60 learnings, Sessions 9–154". Docs-only — gates unchanged (last fresh confirm: S153).
+
+**⚠ State you will inherit:**
+1. **`master` is 4 commits AHEAD of `origin/master`** (`3b26546` claim, `db79d09` rows, `312775a` CLAUDE.md, this close-out). **NOT pushed** (#40 — no push authorization given this session). `origin/master` is at `616b4db`.
+2. **Baseline (from S153, docs-only since): 797 passed @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2, citation guard green.** Re-run only if code changes: `uv run pytest -q`; `uv run mypy`; `uv run ruff check src/ tests/ packages/ scripts/`. Single-file runs need `--no-cov` (#57).
+3. **Evolution.md now carries NEW deliberate staleness:** its "58 promoted learnings" mentions (`:216`, `:260`, `:411`) and row 376's "54 → 58" narration predate this promotion. Point-in-time accurate for the S153 edition (banner `b513842`/S152); **deferred to the next operator-triggered full rewrite per §4.2 — do NOT incrementally edit.**
+4. **Do not re-propagate the S153 #114 instance-list error:** #114's 1st instance is **S146** (coinage), not S151 — row 59's Source column is now the corrected reference.
+5. **Candidate numbers ≠ row numbers** (#114→row 59, #119→row 60; row 58 holds #113). Future close-outs should cite "Learning #59/#60" for the promoted patterns and retire the candidate numbers.
+6. `PROJECT_LEARNINGS.md` rows 31/32/39/42/55 have pre-existing embedded-pipe cell anomalies — frozen archaeology, surfaced twice now (S154 verified rows 59/60 clean), LEFT.
+
+**What's next (operator's call):**
+1. **Push `master` → `origin`** (4 new S154 commits — re-confirm the list, #40).
+2. **No candidate is at the 3-instance threshold.** Closest: #120/#112/#110/#88/#89/#92 at 2. Nothing promotion-eligible.
+3. **Standing micros (#43 — DO NOT auto-fix):** GitHub Release v0.2.0 (tags exist, no `gh` Release cut); `adapters.py:65` magic-string branch; `governance_templates.py:35` `_assert_vocab_parity` → shared `_vocab_guard`; data-agent prompt `measurement_unit` wording (`anthropic_client.py:302`); untracked `.claude/` not in `.gitignore`.
+4. **Optional publish-hook citation warning** — unchanged recommendation: **LEAVE** (explained S151).
+
+**Important considerations for Session 155:**
+1. **Candidate roster:** #120 at 2 (pre-arm verifier preambles with lifecycle state + conventions — now with differential outcome evidence); #112/#110 at 2; #88/#89/#92 at 2; #118/#117/#116/#115/#111 at 1; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. Next candidate = **#121.**
+2. **`PROJECT_LEARNINGS.md` holds 60 rows** (rows 59–60 promoted this session, commit `db79d09`).
+3. **Receptacle convention (for the next promotion):** `CLAUDE.md` line = (count = rows, endpoint = promoting session); precedent commits `dab2cff` (S150) and `312775a` (S154). Promotion-commit shape: `docs(learnings):` rows-only commit + `docs(claude-md):` receptacle commit; format precedents `764500e`/`293a777`/`db79d09`.
+4. **Evolution rewrite precedents (unchanged):** S148 (`582c9df`) and S153 (`74f5b11`) — surgical integration, §4.7 gate, banner = previous close-out sha + previous session number.
+
+**Key files (full paths):**
+- `PROJECT_LEARNINGS.md` — rows 59–60 at the table tail (the new permanent learnings; full provenance in their Source columns).
+- `CLAUDE.md:79` — the receptacle line (60 learnings, Sessions 9–154).
+- `docs/wiki/claims-model-starter/Evolution.md:216/:260/:411` — deliberately-left "58" staleness for the next rewrite.
+- Verification Workflow run: `wf_0a81b6c9-230` (4 lenses, 65 checks, transcript under the session directory).
 
 ---
 
