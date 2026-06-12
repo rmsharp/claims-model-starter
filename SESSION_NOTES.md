@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 150 — operator-directed ("1 then 2" from the S149 handoff): (1) push `master`→`origin` — **DONE pre-claim** (`c4d7a38..286bc60`, 3 S149 commits, operator "1 then 2"); (2) **`CLAUDE.md` staleness micro** — correct the institutional-memory line "54 learnings, Sessions 9–140" → "58 learnings, Sessions 9–147" (ground-truthed at source: `PROJECT_LEARNINGS.md` holds 58 rows, highest promoted in S147). (IN PROGRESS)
+
+**Started:** 2026-06-12
+
+**Status:** Session claimed. Work beginning. Item 1 (push) DONE pre-claim; item 2 (`CLAUDE.md` fix) is the deliverable.
+
+---
+
+**(Session 149 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 149 — operator-directed (sequential micro-instructions: "push" → "explain CHANGELOG S114+ gap" → "amend §2 then backfill the code sessions"): (1) push `master`→`origin` — **DONE** (`293a777..c4d7a38`, 3 S148 commits, operator "push"); (2) **CHANGELOG reconciliation** — amend `PROJECT_CONVENTIONS.md` §2 cadence (strictly-per-session → behavior-gated) + backfill `CHANGELOG.md` for the shipped-code sessions in the S114–148 gap. (**COMPLETE** — deliverable commit `e8d86a0`. The last `CHANGELOG.md` entry was Session 113; Sessions 114–148 had drifted with NO entries despite the §2 "every completed session adds an entry" rule, and the gap included substantial shipped code — O1/O3/O4 single-sourcing overhauls, the E4 provider factory, the SR rename — not just docs. Resolution = both: ① **§2 amended** — cadence cell `Per session` → `Per behavior change` + a new "CHANGELOG cadence" prose note (entry required when a session changes `src/`/`packages/`/`scripts/` or `tests/` test *logic*; doc-only sessions + non-behavioral code-tree touches recorded in `SESSION_NOTES.md` only; a multi-session overhaul may be one entry). ② **6 entries backfilled** into `[Unreleased]`, newest-first, + a provenance note: SR_11_7→SR_26_2 rename (S144, `bfd9f36`), wiki citation guard (S142, `7955bb7`), E4 provider factory (S132–133, 5 commits), O4 (S127–129, `6d68380`/`b767122`), O1 (S120–122, `ac9d383`/`623b833`/`b2e174b`), O3 (S116–118, `6b078ea`/`89d9c3a`/`bb03aa8`). **15 commit hashes, every gate number ground-truthed against `SESSION_NOTES.md` at source.** **Deliberately EXCLUDED** (tests/ touched but non-behavioral, per the new rule): S143 (`03a0a54` — empties an allowlist *fixture*; substance is a wiki rewrite) and S147 (`4b17ab2` — docstring/path *strings*, not test logic) — verified non-behavioral by the scope lens. Docs-only deliverable; **no src/tests touched** (gates unchanged 797 @ 97.28%); wiki hook did NOT fire.)
 
 **Started / Completed:** 2026-06-12.
