@@ -109,8 +109,8 @@ tests/
   fixtures/tier2_intake.json            # tier 2 high + strategic cycle (Phase 4B)
   fixtures/sample_datareport.json       # serialized DataReport for website agent input
   test_data_agent_decoupling.py         # structural decoupling guarantee (2 tests)
-docs/planning/                          # active plans: evolution-page-plan.md, scope-b-plan.md
-docs/architecture-history/              # archived concept-era plans: architecture-plan.md + 4 others + initial_purpose.txt
+docs/planning/                          # active (not-yet-archived) plans
+docs/architecture-history/              # archived concept-era plans: architecture-plan.md + 6 others + initial_purpose.txt
 SESSION_RUNNER.md                       # per-session operating procedure
 SAFEGUARDS.md                           # commit discipline and blast-radius rules
 SESSION_NOTES.md                        # session-by-session continuity log

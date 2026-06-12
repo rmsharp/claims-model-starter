@@ -1,3 +1,5 @@
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-11 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+
 # Plan: Migrate wiki `file:line` citations to grep-locatable symbol references
 
 **Status:** DRAFT — this is a **planning deliverable**. It is not implemented. Implementation happens in separate sessions, one phase each (FM #18/#19).

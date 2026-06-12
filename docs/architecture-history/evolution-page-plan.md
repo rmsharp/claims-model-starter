@@ -1,3 +1,5 @@
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-11 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+
 # Evolution Page + Documentation Convention Plan
 
 **Session 43 — 2026-04-18 — Planning deliverable.** Evidence-based implementation plan for (a) the project-local maintainer/user documentation convention, (b) `wiki/Evolution.md` initial write + update discipline, (c) `docs/planning/` → archive-directory move with in-file banners, and (d) refinements to CHANGELOG.md and wiki/Changelog.md.

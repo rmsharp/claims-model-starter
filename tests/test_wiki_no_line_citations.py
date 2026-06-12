@@ -1,4 +1,4 @@
-"""Enforce §6 of docs/planning/wiki-citation-symbol-references-plan.md: no
+"""Enforce §6 of docs/architecture-history/wiki-citation-symbol-references-plan.md: no
 fragile line-number citations in the wiki.
 
 Sessions 138-141 migrated every ``file:line`` citation on the wiki pages to
@@ -73,7 +73,7 @@ def test_wiki_has_no_fragile_line_citations() -> None:
         "Fragile line-number citation(s) found on wiki page(s) — these drift "
         "as the cited files change. Replace each with a grep-locatable "
         "symbol/anchor reference per "
-        "docs/planning/wiki-citation-symbol-references-plan.md §3:\n  - "
+        "docs/architecture-history/wiki-citation-symbol-references-plan.md §3:\n  - "
         + "\n  - ".join(offenders)
     )
 
