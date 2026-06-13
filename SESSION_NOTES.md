@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 156 Did
+**Deliverable:** Operator-directed ("1, 2, and then work on 3" over the S155 handoff): (1) push the 7 unpushed S155 commits to `origin`; (2) promote **Candidate #120** → `PROJECT_LEARNINGS.md` row 61 (3-instance threshold met — re-derived at source: S153 coinage / S154 + S155 applied-with-evidence) + bump `CLAUDE.md` receptacle to "61 learnings, Sessions 9–156"; (3) cut **GitHub Release v0.1.0** from the existing tag (notes from CHANGELOG `[0.1.0]`; NOT marked Latest — v0.2.0 stays Latest). The rows commit also repoints row 59's stale `(Candidate #120)` cross-ref → `(Learning #61)` per Learning #49. (IN PROGRESS)
+**Started:** 2026-06-13.
+**Status:** Session claimed. Work beginning. Push authorization is active this session (operator directed item 1 = push).
+
+---
+
+**(Session 155 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 155 — operator-directed ("Do 2-5 and then 1. Multiple sessions are fine if needed." over the S154-handoff `#43` standing-micros list). Five micros: (2) `orchestrator/adapters.py:65` bare `"time_series"` magic-string branch → `Final[ModelType]` constant so mypy fails on schema-Literal drift; (3) `agents/website/governance_templates.py:35` local `_assert_vocab_parity` → shared `_vocab_guard.assert_vocab_parity`; (4) data-agent `measurement_unit` prompt's self-contradictory "one of …/or free-form" wording (`anthropic_client.py:302`) → free-form-with-examples; (5) `.claude/` runtime state → repo `.gitignore`; then (1) cut **GitHub Release v0.2.0** from the existing annotated tag. (**COMPLETE** — deliverable commits **`16f4c1f`** (item 2), **`6a5292e`** (item 3), **`038c59b`** (item 4), **`41c853a`** (item 5), **`f2afb18`** (CHANGELOG), plus the **live GitHub Release v0.2.0** (<https://github.com/rmsharp/claims-model-starter/releases/tag/v0.2.0>, marked Latest, cut via `gh release create --verify-tag` from the 2026-06-04/S111 tag — no code changed in the cut). **Items 2 & 3 are root-cause structural fixes with mutation proofs:** item 2 — a non-member assignment to `_TIME_SERIES` errors under mypy (`Incompatible types in assignment`); item 3 — renaming a `_TIER_SEVERITY` key raises `AssertionError` at import with the reconcile hint. Both reverted byte-clean. Item 3 deleted the Audit #2 local copy and re-pointed `TestVocabularyDriftGuards` to the shared guard; `get_args`/`Any`/`Final` import hygiene confirmed by ruff + mypy. Item 4 honors the schema's free-form-by-design contract (O4 §1.5; "Do not close this set"); no test pins the prompt text. Item 5 uses `.claude/*` + `!.claude/settings.json` so shared config stays committable — empirically verified both directions. **Per `PROJECT_CONVENTIONS.md` §2 the shipped-code changes earn a `CHANGELOG.md` entry** (`f2afb18`, `[Unreleased]`). Verified: full gates green (797 @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2) + per-item mutation/empirical proofs + **3-lens read-only adversarial Workflow (`wf_b12babd7-fc8`, 3/3 PASS, 0 blockers, 0 warnings, 6 affirmative notes)**; the **#120-armed preamble** (landed-commits + uncommitted-by-design CHANGELOG + retroactive-release shape + #40-not-pushed, plus §2/decoupling/free-form conventions) yielded **0 false blockers** — #120's 3rd clean armed outcome. Sole writer confirmed (all 3 verifiers `agentType: 'Explore'`; HEAD unchanged through verification). Commits NOT pushed (#40).)
 
 **Started / Completed:** 2026-06-12 / 2026-06-13.
