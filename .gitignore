@@ -23,3 +23,11 @@ my_intake_report.json
 # Executive-summary render artifacts — .qmd is the source of truth, renders are reproducible on demand
 docs/executive-summaries/*.html
 docs/executive-summaries/*.pdf
+
+# Claude Code local/runtime state — per-machine, never committed (settings.local.json,
+# scheduled_tasks.json, worktrees/, checkpoints/, etc.). Previously caught only by the
+# user's global ignore + per-clone .git/info/exclude, so a fresh clone surfaced these as
+# untracked noise. Shared project config (.claude/settings.json) stays committable via the
+# negation — ignore the directory's contents, not the directory itself, so the negation works.
+.claude/*
+!.claude/settings.json
