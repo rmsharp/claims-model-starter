@@ -25,34 +25,13 @@ composition entry point; everything else is private.
 from __future__ import annotations
 
 import json
-from typing import Any, Literal, get_args
+from typing import Any, Literal
 
+from model_project_constructor._vocab_guard import assert_vocab_parity
 from model_project_constructor.schemas.v1.common import CycleTime, RiskTier
 
 CIPlatform = Literal["gitlab", "github"]
 
-
-def _assert_vocab_parity(members: set[str], literal: Any, *, name: str) -> None:
-    """Fail loudly at import time when a consumer enumeration drifts from its
-    schema ``Literal`` producer (Audit #2).
-
-    The governance dicts below re-list ``RiskTier`` / ``CycleTime`` members and
-    look them up with silent ``.get(..., default)`` fallbacks, so an added or
-    renamed Literal member would rank least-severe / default-cadence and
-    silently skip tier-gated governance artifacts. A real ``raise`` (not a bare
-    ``assert``, which ``python -O`` strips) keeps the guard live in optimized
-    runs.
-    """
-
-    expected = set(get_args(literal))
-    if members != expected:
-        missing = sorted(expected - members)
-        extra = sorted(members - expected)
-        raise AssertionError(
-            f"{name} has drifted from its schema Literal: "
-            f"missing {missing}, extra {extra}. Reconcile the dict with the "
-            "Literal in schemas/v1/common.py."
-        )
 
 # ---------------------------------------------------------------------------
 # Tier ordering helpers
@@ -94,9 +73,23 @@ _CYCLE_CADENCE = {
 # --- Import-time drift guards (Audit #2) -----------------------------------
 # Tie the consumer dicts above to their schema-Literal producers so a new
 # RiskTier / CycleTime member fails the build instead of silently degrading
-# (an unknown tier would rank least-severe and skip tier-gated artifacts).
-_assert_vocab_parity(set(_TIER_SEVERITY), RiskTier, name="_TIER_SEVERITY")
-_assert_vocab_parity(set(_CYCLE_CADENCE), CycleTime, name="_CYCLE_CADENCE")
+# (an unknown tier would rank least-severe and skip tier-gated artifacts —
+# the dicts' .get(..., default) lookups would otherwise swallow the drift).
+# The guard is the shared model_project_constructor._vocab_guard; the
+# original Audit #2 copy lived in this module until it was consolidated.
+_VOCAB_RECONCILE_HINT = "Reconcile the dict with the Literal in schemas/v1/common.py."
+assert_vocab_parity(
+    set(_TIER_SEVERITY),
+    RiskTier,
+    name="_TIER_SEVERITY",
+    reconcile_hint=_VOCAB_RECONCILE_HINT,
+)
+assert_vocab_parity(
+    set(_CYCLE_CADENCE),
+    CycleTime,
+    name="_CYCLE_CADENCE",
+    reconcile_hint=_VOCAB_RECONCILE_HINT,
+)
 
 
 # ---------------------------------------------------------------------------

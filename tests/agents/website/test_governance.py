@@ -582,6 +582,8 @@ class TestVocabularyDriftGuards:
     added critical tier would skip every tier-gated governance artifact — a
     silent compliance gap. An import-time guard ties each dict to
     ``get_args(<Literal>)`` so an added/renamed member fails the build loudly.
+    The guard is the shared ``model_project_constructor._vocab_guard``
+    ``assert_vocab_parity`` (the original local copy was consolidated there).
     These tests pin the live parity AND prove the guard raises on drift (so the
     parity pins are not vacuous behind the import-time assert)."""
 
@@ -606,38 +608,37 @@ class TestVocabularyDriftGuards:
         assert set(_CYCLE_CADENCE) == set(get_args(CycleTime))
 
     def test_guard_raises_on_missing_member(self) -> None:
-        # The real guard function, fed a member set MISSING a Literal value,
-        # must raise — proving drift is caught, not silently tolerated.
-        from model_project_constructor.agents.website.governance_templates import (
-            _assert_vocab_parity,
-        )
+        # The real guard function (the shared one the import-time guards
+        # call), fed a member set MISSING a Literal value, must raise —
+        # proving drift is caught, not silently tolerated.
+        from model_project_constructor._vocab_guard import assert_vocab_parity
         from model_project_constructor.schemas.v1.common import RiskTier
 
         with pytest.raises(AssertionError, match="drifted"):
-            _assert_vocab_parity({"tier_1_critical"}, RiskTier, name="_TEST")
+            assert_vocab_parity(
+                {"tier_1_critical"}, RiskTier, name="_TEST", reconcile_hint="test"
+            )
 
     def test_guard_raises_on_extra_member(self) -> None:
         from typing import get_args
 
-        from model_project_constructor.agents.website.governance_templates import (
-            _assert_vocab_parity,
-        )
+        from model_project_constructor._vocab_guard import assert_vocab_parity
         from model_project_constructor.schemas.v1.common import CycleTime
 
         drifted = set(get_args(CycleTime)) | {"biweekly"}
         with pytest.raises(AssertionError, match="drifted"):
-            _assert_vocab_parity(drifted, CycleTime, name="_TEST")
+            assert_vocab_parity(drifted, CycleTime, name="_TEST", reconcile_hint="test")
 
     def test_guard_passes_on_exact_match(self) -> None:
         from typing import get_args
 
-        from model_project_constructor.agents.website.governance_templates import (
-            _assert_vocab_parity,
-        )
+        from model_project_constructor._vocab_guard import assert_vocab_parity
         from model_project_constructor.schemas.v1.common import RiskTier
 
         # Exact parity returns None (no raise).
         assert (
-            _assert_vocab_parity(set(get_args(RiskTier)), RiskTier, name="_TEST")
+            assert_vocab_parity(
+                set(get_args(RiskTier)), RiskTier, name="_TEST", reconcile_hint="test"
+            )
             is None
         )
