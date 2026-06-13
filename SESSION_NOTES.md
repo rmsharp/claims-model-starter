@@ -57,7 +57,7 @@
 **All three operator-directed items are DONE.** S155 pushed; Candidate #120 is permanent Learning #61; GitHub Release v0.1.0 is live. Both `#43` release micros (v0.1.0 + v0.2.0) are now **cleared**; only the publish-hook citation warning remains on the `#43` list (standing rec: LEAVE). No code touched — gates unchanged since S155.
 
 **⚠ State you will inherit:**
-1. **Push state of the 3 new S156 commits is operator-gated (#40).** Item 1 already synced the 7 S155 commits + the S156 claim to `origin` (`56d098c`). The **rows commit `4127f21`, the CLAUDE.md commit `d3f75a3`, and this close-out** were [pushed / NOT pushed — see the S156 close-out report]: at close-out I asked the operator whether item 1's push authorization extends to the new S156 commits. If they were NOT pushed, `master` is 3 commits ahead of `origin` (`4127f21`, `d3f75a3`, close-out); re-confirm with `git rev-list --left-right --count origin/master...master`.
+1. **`origin/master` is FULLY SYNCED (ahead/behind 0/0) at `ed1f364`.** All S156 commits were pushed: item 1 synced the 7 S155 commits + the S156 claim (`56d098c`), and at close-out the operator authorized pushing the 3 new S156 commits (`56d098c..ed1f364`: `4127f21` rows, `d3f75a3` receptacle, `ed1f364` close-out). Nothing is unpushed. (The close-out commit `ed1f364` itself predates this push and recorded the push as operator-gated/pending — this state line is the resolved truth, set by a follow-up correction commit.)
 2. **GitHub Releases: v0.2.0 = Latest, v0.1.0 = NOT Latest** — both live, both `draft=false`. v0.1.0: <https://github.com/rmsharp/claims-model-starter/releases/tag/v0.1.0> (created=tag date 2026-05-13 UTC, published=2026-06-13). The two release micros are cleared.
 3. **Baseline UNCHANGED (docs-only session)** — last fresh confirm S155: **797 passed @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2.** Re-run only if S157 changes code: `uv run pytest -q`; `uv run mypy`; `uv run ruff check src/ tests/ packages/ scripts/`. Single-file runs need `--no-cov` (#57).
 4. **Evolution.md staleness DEEPENED:** its "58 promoted learnings" mentions (`:216`, `:260`, `:411`) now predate **TWO** promotions (S154 → 60, S156 → 61). Still deferred to the next operator-triggered full rewrite per §4.2 — do NOT incrementally edit. The gap is now 3 (58 vs 61) — increasingly worth a rewrite.
@@ -65,7 +65,7 @@
 6. `PROJECT_LEARNINGS.md` rows 31/32/39/42/55 carry pre-existing embedded-pipe cell anomalies — frozen archaeology, LEFT (row 61 verified clean: 5 pipes, 0 internal).
 
 **What's next (operator's call):**
-1. **Push the 3 new S156 commits → `origin`** if not already done at S156 close-out (`4127f21`, `d3f75a3`, close-out — re-confirm the list, #40).
+1. **No push pending — `origin` is synced at `ed1f364`** (the operator authorized the S156 push at close-out). Nothing to push unless S157 adds commits.
 2. **No candidate is at the 3-instance threshold.** Closest: #112/#110/#88/#89/#92 at 2; #121 at 1. Nothing promotion-eligible.
 3. **Remaining `#43` standing micro (DO NOT auto-fix):** only the **publish-hook citation warning** is left (standing recommendation: **LEAVE**, explained S151). The code micros (S155) and both release micros (v0.1.0 + v0.2.0) are cleared — the `#43` list is nearly empty.
 4. **Evolution.md full rewrite is increasingly overdue** (now 2 promotions / 3 counts stale). An operator-triggered §4.2 rewrite would refresh "58" → "61". Precedents: S148 (`582c9df`), S153 (`74f5b11`) — surgical integration, §4.7 gate, banner = previous close-out sha + previous session number.
