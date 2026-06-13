@@ -299,9 +299,9 @@ class AnthropicLLMClient:
             f"Measurement window: {measurement_window}\n\n"
             'Return a JSON object with keys: "metric_name" (echo back), '
             '"sql" (a SELECT statement whose first column of the first row '
-            'is the scalar baseline value), "measurement_unit" (one of '
-            '"percent", "USD", "count", "ratio", "days", or another short '
-            "free-form unit string). Return ONLY the JSON object, no prose."
+            'is the scalar baseline value), "measurement_unit" (a short '
+            'free-form unit string, e.g. "percent", "USD", "count", "ratio", '
+            'or "days"). Return ONLY the JSON object, no prose.'
         )
         raw = self._call_claude(system, user)
         parsed = _extract_json(raw)
