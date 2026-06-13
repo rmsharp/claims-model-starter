@@ -18,7 +18,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Final
 
+from model_project_constructor.schemas.v1.common import ModelType
 from model_project_constructor.schemas.v1.data import (
     DataGranularity,
     DataRequest,
@@ -30,6 +32,11 @@ from model_project_constructor.schemas.v1.intake import IntakeReport
 
 _DEFAULT_TIME_RANGE = "last 5 calendar years of historical records"
 _DEFAULT_UNIT = "claim"
+
+# Annotated with the schema Literal so mypy fails the build if the
+# "time_series" member is renamed or removed from ModelType — the branch in
+# infer_target_granularity cannot silently drift from the schema vocabulary.
+_TIME_SERIES: Final[ModelType] = "time_series"
 
 # Canonical P&C claims systems probed by the intake interviewer
 # (see ``agents/intake/anthropic_client.py:47-53`` SYSTEM_INTERVIEWER prose).
@@ -62,7 +69,7 @@ def infer_target_granularity(intake: IntakeReport) -> DataGranularity:
     """
 
     model_type = intake.model_solution.model_type
-    if model_type == "time_series":
+    if model_type == _TIME_SERIES:
         return DataGranularity(unit=_DEFAULT_UNIT, time_grain="monthly")
     return DataGranularity(unit=_DEFAULT_UNIT, time_grain="event")
 
