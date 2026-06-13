@@ -6,10 +6,82 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 155 — operator-directed ("Do 2-5 and then 1. Multiple sessions are fine if needed." over the S154-handoff `#43` standing-micros list). Five micros: (2) `orchestrator/adapters.py:65` bare `"time_series"` magic-string branch → `Final[ModelType]` constant so mypy fails on schema-Literal drift; (3) `agents/website/governance_templates.py:35` local `_assert_vocab_parity` → shared `_vocab_guard.assert_vocab_parity`; (4) data-agent `measurement_unit` prompt's self-contradictory "one of …/or free-form" wording (`anthropic_client.py:302`) → free-form-with-examples; (5) `.claude/` runtime state → repo `.gitignore`; then (1) cut **GitHub Release v0.2.0** from the existing annotated tag. (**COMPLETE** — deliverable commits **`16f4c1f`** (item 2), **`6a5292e`** (item 3), **`038c59b`** (item 4), **`41c853a`** (item 5), **`f2afb18`** (CHANGELOG), plus the **live GitHub Release v0.2.0** (<https://github.com/rmsharp/claims-model-starter/releases/tag/v0.2.0>, marked Latest, cut via `gh release create --verify-tag` from the 2026-06-04/S111 tag — no code changed in the cut). **Items 2 & 3 are root-cause structural fixes with mutation proofs:** item 2 — a non-member assignment to `_TIME_SERIES` errors under mypy (`Incompatible types in assignment`); item 3 — renaming a `_TIER_SEVERITY` key raises `AssertionError` at import with the reconcile hint. Both reverted byte-clean. Item 3 deleted the Audit #2 local copy and re-pointed `TestVocabularyDriftGuards` to the shared guard; `get_args`/`Any`/`Final` import hygiene confirmed by ruff + mypy. Item 4 honors the schema's free-form-by-design contract (O4 §1.5; "Do not close this set"); no test pins the prompt text. Item 5 uses `.claude/*` + `!.claude/settings.json` so shared config stays committable — empirically verified both directions. **Per `PROJECT_CONVENTIONS.md` §2 the shipped-code changes earn a `CHANGELOG.md` entry** (`f2afb18`, `[Unreleased]`). Verified: full gates green (797 @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2) + per-item mutation/empirical proofs + **3-lens read-only adversarial Workflow (`wf_b12babd7-fc8`, 3/3 PASS, 0 blockers, 0 warnings, 6 affirmative notes)**; the **#120-armed preamble** (landed-commits + uncommitted-by-design CHANGELOG + retroactive-release shape + #40-not-pushed, plus §2/decoupling/free-form conventions) yielded **0 false blockers** — #120's 3rd clean armed outcome. Sole writer confirmed (all 3 verifiers `agentType: 'Explore'`; HEAD unchanged through verification). Commits NOT pushed (#40).)
+
+**Started / Completed:** 2026-06-12 / 2026-06-13.
+
+**Status:** **COMPLETE.** Execution: oriented (clean tree, in sync with origin — S154's 4 commits operator-pushed between sessions, origin at `7424d07`, so S154-handoff "what's next" item 1 was already done; ghost-check clean; dashboard MPC 96/100) → reported, waited → operator "Do 2-5 and then 1" → claim stub + commit `8621f1c` before technical work → per-item research (read each fix site + its tests; ModelType/RiskTier/CycleTime Literal defs; PROJECT_CONVENTIONS §2/§3; confirmed no test pins the data-agent prompt) → 4 atomic one-fix-one-commit changes with mutation/empirical proofs → full gate re-run (code changed) → GitHub Release cut + verified via `gh release view` → CHANGELOG entry (§2) → 3-lens adversarial Workflow → sole-writer check → committed `f2afb18` → close-out. Held scope (Learning #43): did NOT fix other Literal-comparison sites the completeness lens probed (none found, but the bar was "don't expand"), did NOT cut the v0.1.0 Release (operator named only v0.2.0), did NOT touch the publish-hook citation warning. Per §2 this code-changing session earns its `CHANGELOG.md` entry; commits NOT pushed (#40).
+
+### Session 154 Handoff Evaluation (by Session 155)
+
+**Score: 8/10.** A precise standing-options handoff whose `#43` micro-list doubled as this session's work-list — docked only because the literal top "what's next" item was already done by operator action.
+
+- **What helped (the +):** (a) "What's next" item 3 named all five `#43` micros with **exact file:line** (`adapters.py:65`, `governance_templates.py:35`, `anthropic_client.py:302`, the `.claude/` gitignore item, the v0.2.0 Release) — every one still valid at its stated line, so locating the work cost zero discovery. (b) The **Learning #43 "DO NOT auto-fix"** framing correctly marked them as operator-gated standing options, which is exactly how the operator engaged them ("Do 2-5 and then 1"). (c) The `governance_templates.py:35 → shared _vocab_guard` pointer was a precise work-order — the consolidation *target* was named, not just the problem. (d) The baseline (797 @ 97.28%, mypy 0/64) made the no-regression confirmation a clean comparison. (e) The "tags exist, no `gh` Release cut" note pre-stated the exact release state, so item 1 was a single `gh release create --verify-tag`.
+- **What was stale, not wrong (the −):** "What's next" item 1 (push the 4 S154 commits) was **already done by the operator between sessions** — detected at orientation (origin at `7424d07`). Not S154's error (it couldn't foresee the push), but the literal top recommendation was moot on arrival.
+- **What was missing (minor):** the micro one-liners gave *location* but not *fix design* — I read each site to design the remedy (`adapters.py` "magic-string branch" → I derived the `Final[ModelType]` tie; the data-agent "wording" micro → I diagnosed the "one of…/or" contradiction). Appropriate for a standing-options list, not a turnkey order; noted only for completeness.
+- **ROI:** high — file:line precision + the #43 framing meant the only self-derived work was fix design and verification strategy.
+
 ### What Session 155 Did
-**Deliverable:** Standing-micros batch (operator-directed "Do 2-5 and then 1. Multiple sessions are fine if needed." over the S154-handoff #43 list): (2) `orchestrator/adapters.py:65` magic-string `"time_series"` branch → schema-vocabulary-tied comparison; (3) `agents/website/governance_templates.py:35` local `_assert_vocab_parity` → shared `_vocab_guard`; (4) data-agent `measurement_unit` prompt self-contradictory wording (`anthropic_client.py:302`); (5) `.claude/` added to repo `.gitignore`; then (1) cut GitHub Release v0.2.0 from the existing tag. (IN PROGRESS)
-**Started:** 2026-06-12.
-**Status:** Session claimed. Work beginning. Note: S154's 4 commits were pushed to origin between sessions (operator push — origin now at `7424d07`) — S154-handoff "what's next" item 1 is already done.
+
+**Deliverable:** Standing-micros batch (items 2–5) + GitHub Release v0.2.0 (item 1). **COMPLETE.** Commits `8621f1c` (claim), `16f4c1f`/`6a5292e`/`038c59b`/`41c853a` (items 2–5), `f2afb18` (CHANGELOG), this close-out; Release v0.2.0 live.
+
+- **Research before creation:** read each of the four fix sites and their tests; confirmed the `ModelType`/`RiskTier`/`CycleTime` Literal definitions; confirmed no test pins the data-agent prompt string; read `PROJECT_CONVENTIONS.md` §2 (CHANGELOG cadence) before deciding the entry was earned.
+- **The work (one fix, one commit ×4):** item 2 — `Final[ModelType]` constant, mutation-proven via mypy; item 3 — delete the local guard, route both import-time guards through shared `assert_vocab_parity` with the verbatim reconcile hint, mutation-proven via import-time `AssertionError`, tests re-pointed; item 4 — prose reword aligning the prompt with the free-form-by-design schema; item 5 — `.claude/*` + negation, empirically verified.
+- **Release:** `gh release create v0.2.0 --verify-tag` from the existing annotated tag; verified Latest/not-draft via `gh release view`; notes sourced from the `[0.2.0]` CHANGELOG section.
+- **Verification:** full gates + per-item mutation/empirical proofs + 3-lens read-only adversarial Workflow (`wf_b12babd7-fc8`, 3/3 PASS, 0 findings above note level); sole-writer confirmed.
+- **Discipline:** orient/report/wait; claim before work; one-fix-one-commit; read-only verifiers; CHANGELOG per §2; not pushed (#40).
+
+### Phase 3B: Self-assess — Session 155 — 9/10
+
+- **The + :** (1) **Root-cause, not point-patch:** item 2 turns a future schema rename into a mypy *build failure* (the string-compare would have silently mis-routed); item 3 *removes* the duplicate guard rather than keeping two copies in sync — both fix the structural cause (DEVELOPMENT_WORKSTREAM §149/§160). (2) **Mutation proofs for both structural changes** (mypy rejects a non-member; import raises on a key rename) — non-vacuous per DEVELOPMENT anti-pattern #3. (3) **Item 5 reasoned past the surface ask** — diagnosed that `.claude/` was clean only via global-ignore + per-clone `.git/info/exclude` (neither travels with the repo), chose the contents-ignore-plus-negation form so a shared `settings.json` stays committable, and empirically verified both directions. (4) **One-fix-one-commit** throughout — four atomic, independently revertible commits. (5) **#120-armed preamble → 0 false blockers** (3rd clean armed outcome), and the completeness lens confirmed the CHANGELOG's scope is honestly stated (no other Literal-comparison left implied-fixed). (6) Held scope (Learning #43): did not expand to other comparison sites, the v0.1.0 release, or the publish-hook warning.
+- **The − :** (1) **Two procedural slips with chained `sed` mutate-restore one-liners** (items 2 and 3): each left the tracked file mutated because the restore link didn't run, and the call's empty output masked the bad state — both caught immediately by an explicit grep/import re-check and reverted byte-clean (zero damage, ~2 extra verify cycles). The cleaner mechanism is the Edit tool for mutate/restore, or always re-checking file state after the chain → **Candidate #121.** (2) Maintenance/bug-fix work, not design — the strong-expected bar.
+- **Quality bar:** meets S140–S154 — root-cause fixes with mutation proofs, multi-lens read-only adversarial verification with the #120-armed preamble, sole-writer, honest CHANGELOG scoping, one-fix-one-commit — across orchestrator/website/data-agent surfaces plus an outward-facing release.
+
+### Phase 3C: Learnings — Session 155
+
+**Candidate #121 — NEW, 1st instance.** *For mutate-verify-restore proofs on **tracked** files (mypy / import-time guard mutation proofs), drive the mutate and restore steps with the **Edit tool**, not a chained `sed -i '' …mutate… && <test> && sed -i '' …restore…` one-liner.* The chained form can leave the file mutated if any link doesn't run as expected — observed **2×** this session (the restore `sed` silently didn't run, leaving `"bogus_member"` / `"tier_1_renamed"` in tracked source), and the no-output return masks the bad state. Edit makes each step explicit and confirmable, and the harness tracks file state. **At minimum, always re-verify with `grep`/`git diff` after the chain before trusting the restore** (which is what caught both slips here). **When to apply:** any time you mutate a tracked file to prove a guard fires, then restore it. Now at **1.** Next candidate = **#122.**
+
+**Increments:**
+- **#120 — 3rd instance (now at 3, PROMOTION-ELIGIBLE).** Applied as designed *with* outcome evidence: the verifier preamble stated the artifact's lifecycle state (4 landed commits; CHANGELOG uncommitted-by-design; retroactive-release created-vs-published shape; #40-not-pushed) and the governing conventions (§2 cadence; the data-agent decoupling guarantee; `measurement_unit` free-form-by-design), and the 3-lens fan-out returned **0 false blockers** — where an un-armed lens could plausibly have flagged the uncommitted CHANGELOG, the past release `created` date, or the unpushed commits as discrepancies. Counts per the S152-#119 / S154-#120 precedent (applied-as-designed *with* outcome evidence increments; routine application without evidence does not). **Threshold (3) now met — promotion to a `PROJECT_LEARNINGS.md` row is the lead standing option for S156.**
+- **Learning #43 — applied (the session's spine):** the whole deliverable was the operator-directed clearance of the #43 standing-options list; scope held against the three temptations above.
+- **Learnings #46 / #56 — applied:** 3 verifiers `agentType: 'Explore'` read-only; sole writer confirmed by `git status` + HEAD-unchanged after the fan-out.
+- **#115 — applied:** lenses surfaced specific per-claim evidence (file:line, re-run gates) — genuine coverage, not a vacuous PASS.
+- **DEVELOPMENT anti-pattern #3 — applied:** both structural changes mutation-proven (mypy / import-time raise).
+- **#40 — applied:** S155's commits NOT pushed. **#57 — applied:** single-file pytest runs used `--no-cov`.
+
+**Candidate roster:** **#120 at 3 (PROMOTION-ELIGIBLE)**; **#121 NEW at 1**; #112/#110 at 2; #88/#89/#92 at 2; #118/#117/#116/#115/#111 at 1; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. Next candidate = **#122.** `PROJECT_LEARNINGS.md` holds **60 rows** (unchanged this session).
+
+### Phase 3D: Handoff to Session 156
+
+**The batch is DONE.** Four code/config micros fixed (root-cause, mutation-proven) and the v0.2.0 GitHub Release is live. The `#43` list's named code micros + v0.2.0 release are **cleared**; two items remain on it (see "What's next" #3). Gates re-confirmed FRESH this session (code changed): **797 passed @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2.**
+
+**⚠ State you will inherit:**
+1. **`master` is 7 commits AHEAD of `origin/master`** (`8621f1c` claim, `16f4c1f`, `6a5292e`, `038c59b`, `41c853a`, `f2afb18` CHANGELOG, this close-out). **NOT pushed** (#40 — no push authorization this session). `origin/master` is at `7424d07`.
+2. **GitHub Release v0.2.0 is now LIVE** (Latest): <https://github.com/rmsharp/claims-model-starter/releases/tag/v0.2.0>. The **v0.1.0 tag still has NO GitHub Release** — deliberately not cut (operator named only v0.2.0; a retroactive v0.1.0 cut is a separate judgment call). Now a standing micro (see #3).
+3. **Baseline is fresh** (above) — re-run only if S156 changes code: `uv run pytest -q`; `uv run mypy`; `uv run ruff check src/ tests/ packages/ scripts/`. Single-file runs need `--no-cov` (#57).
+4. **Evolution.md staleness UNCHANGED from S154:** its "58 promoted learnings" mentions (`:216`, `:260`, `:411`) still predate the S154 promotion — deferred to the next operator-triggered full rewrite per §4.2; do NOT incrementally edit.
+5. **Candidate numbers ≠ row numbers** (#114→row 59, #119→row 60; row 58 holds #113). Cite "Learning #59/#60" for those promoted patterns.
+6. `PROJECT_LEARNINGS.md` rows 31/32/39/42/55 carry pre-existing embedded-pipe cell anomalies — frozen archaeology, LEFT.
+
+**What's next (operator's call):**
+1. **Push `master` → `origin`** (7 new S155 commits — re-confirm the list, #40).
+2. **Promote Candidate #120 → `PROJECT_LEARNINGS.md` row 61** — it reached the 3-instance threshold this session (S153 coinage, S154 + S155 applied-with-evidence). Pattern: *pre-arm verifier-lens preambles with the artifact's lifecycle state + governing conventions.* Receptacle convention: `CLAUDE.md` line = (count = rows, endpoint = promoting session); precedents `dab2cff` (S150), `312775a` (S154). Promotion-commit shape: `docs(learnings):` rows-only + `docs(claude-md):` receptacle; format precedents `764500e`/`293a777`/`db79d09`. **This is the lead methodology option.**
+3. **Remaining `#43` standing micros (DO NOT auto-fix):** **GitHub Release v0.1.0** (NEW — tag exists, no Release; the exact analogue of the v0.2.0 micro just cleared — notes would come from CHANGELOG `[0.1.0]`); the **publish-hook citation warning** (standing recommendation: **LEAVE**, explained S151).
+4. **New Candidate #121** (mutate-restore via Edit not chained `sed`) at 1 — apply when next proving a guard fires on a tracked file.
+
+**Important considerations for Session 156:**
+1. **Candidate roster:** **#120 at 3 (PROMOTION-ELIGIBLE)**; **#121 NEW at 1**; #112/#110 at 2; #88/#89/#92 at 2; #118/#117/#116/#115/#111 at 1; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. Next candidate = **#122.**
+2. **`PROJECT_LEARNINGS.md` holds 60 rows.** A #120 promotion would make it 61 and bump `CLAUDE.md`'s receptacle line to "61 learnings, Sessions 9–156".
+3. **Evolution rewrite precedents (unchanged):** S148 (`582c9df`), S153 (`74f5b11`) — surgical integration, §4.7 gate, banner = previous close-out sha + previous session number.
+
+**Key files (full paths):**
+- `CHANGELOG.md` — `[Unreleased]` Session 155 entry at the top (commit `f2afb18`).
+- `src/model_project_constructor/orchestrator/adapters.py:39,72` — `_TIME_SERIES: Final[ModelType]` constant + its use.
+- `src/model_project_constructor/agents/website/governance_templates.py:28-49` — now imports shared `assert_vocab_parity`; the two import-time guards live near the dict definitions.
+- `src/model_project_constructor/_vocab_guard.py` — the shared guard (docstring notes the consolidation).
+- `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:300-304` — reworded `measurement_unit` prompt.
+- `.gitignore:28-33` — the `.claude/` stanza.
+- Verification Workflow run: `wf_b12babd7-fc8` (3 lenses, transcript under the session directory).
 
 ---
 
