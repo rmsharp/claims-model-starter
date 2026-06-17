@@ -6,10 +6,98 @@
 
 ## ACTIVE TASK
 
-### What Session 158 Did
-**Deliverable:** Back-fill a `SESSION_NOTES.md` record for the undocumented ("ghost") **Session 157** — the AI Dependencies wiki page (merge `3a424d0`, PR #1, 2026-06-17). (IN PROGRESS)
-**Started:** 2026-06-17
-**Status:** Session claimed. Work beginning.
+**Task:** Session 158 — operator-directed ("Back-fill a session-notes record for the ghost session"). Reconstruct and document the undocumented **Session 157** (the AI Dependencies wiki page: branch `docs/ai-dependencies-wiki` → PR #1 → squash-merge `3a424d0` → live-wiki publish `0360bdb`, all 2026-06-17), built strictly from git/GitHub/wiki evidence and written into this file as a clearly-marked back-fill. (**COMPLETE** — the reconstructed S157 record is below this S158 close-out; deliverable = this close-out commit. **Findings:** S157 ran the git/PR side with clean discipline — feature branch off `master`, **PR #1** ("docs: add AI Dependencies wiki page", body included) **squash-merged** to `3a424d0` by `rmsharp` (co-author `Claude Opus 4.8 (1M context)`), then **published** to the live GitHub Wiki via `scripts/publish_wiki.sh` (wiki commit `0360bdb`, "sync … @3a424d0") — but left **zero** SESSION_NOTES trace: no claim stub, no orientation, no close-out. A **"git-clean ghost"** (→ Candidate #122). The deliverable `AI-Dependencies.md` is **194 lines**, +197/−0 with 3 nav wirings (`_Sidebar`/`Home`/`Content-Recommendations`); **source ↔ live wiki verified IDENTICAL** by this session. No code touched; docs-only edit to `SESSION_NOTES.md` → per `PROJECT_CONVENTIONS.md` §2 **no** `CHANGELOG.md` entry; receptacle deliberately **NOT** bumped (no promotion — endpoint stays S156). Verified: deterministic re-check of every hash/date/PR-field/line-count/parity claim against source + **read-only adversarial Workflow (`wf_e8877ebe-05c`, 4 lenses, 74 checks, 4/4 PASS, 0 blockers, 0 warnings)** with the shared preamble armed per Learning #61. Sole writer; commits NOT pushed pending operator authorization (#40).)
+
+**Started / Completed:** 2026-06-17.
+
+**Status:** **COMPLETE.** Execution: oriented (clean tree, origin synced at `3a424d0`; dashboard MPC 96/100; BACKLOG empty, 0 open GitHub issues; **ghost-check FLAGGED 1 undocumented session** — `3a424d0` dated 2026-06-17, four days after S156's 2026-06-13 close-out, with no SESSION_NOTES record) → **reported the ghost to the operator** → operator "Back-fill a session-notes record for the ghost session" → claim stub + commit `286f4d5` before technical work → evidence-gathering (`git show --stat 3a424d0` + per-file diff; `gh pr view 1 --json number,title,state,author,…,mergeCommit,headRefName,commits,additions,deletions,body` → branch/PR/merge/co-author/timestamps; `git -C <wiki-clone> log` after a shallow clone of the live wiki → publish provenance `0360bdb`; `diff` source↔live `AI-Dependencies.md` → IDENTICAL; section-header grep of the page) → wrote the back-filled S157 record + this close-out → verification (deterministic + adversarial Workflow `wf_e8877ebe-05c`) → committed close-out → STOP. Held scope: documented S157 only — did NOT re-touch its wiki page, did NOT republish (already in parity), did NOT bump the `CLAUDE.md` receptacle (correct: no promotion this session). Numbering call: the ghost = **Session 157** (S156 explicitly handed off "to Session 157", and the ghost is the next session chronologically — 2026-06-17); this back-fill = **Session 158**.
+
+### Session 157 Handoff Evaluation (by Session 158)
+
+**Score: 1/10 — no handoff exists.** Session 157 left zero SESSION_NOTES trace: no claim stub, no orientation record, no close-out, no handoff. This is **Failure Mode #14 (ghost session) realized for the first time in this project's history.** The score is definitional, not punitive — there was nothing to read.
+
+- **What helped:** nothing from S157 *itself*. What actually prepared me was (a) **Session 156's** handoff (read at orientation — it correctly anticipated "Session 157" and pinned the gates/roster/counts, so I established true state fast), and (b) S157's **git/GitHub/wiki trail** — feature branch, PR #1 with a full descriptive body, the squash-merge, and the publish-sync commit — unusually complete for a ghost, which made faithful reconstruction possible.
+- **What was missing:** the entire session record. A single claim stub (Phase 1B) would have made this back-fill unnecessary.
+- **What was wrong:** N/A — nothing to be wrong.
+- **ROI:** negative by construction — S157's omission cost a full session (this one) to repair. That is exactly the cost FM #14's claim-stub countermeasure exists to prevent.
+- **Note on S156:** the handoff I actually used (S156's) was 9/10-grade and accurately scoped to a Session 157 that then ignored the protocol. S156 did its part; the break was entirely on the entity that ran as 157.
+
+### Phase 3B: Self-assess — Session 158 — 9/10
+
+- **The + :** (1) **Caught the ghost at orientation** via SESSION_RUNNER step 6 — by comparing the commit *date/author* against documented close-outs, not assuming clean git ⇒ documented — and reported it before touching anything. (2) **Reconstructed S157 entirely from primary evidence:** every hash, timestamp, branch name, PR number, line count, and the source↔live parity independently verified (`gh pr view --json`, wiki-clone `diff`), never inferred. (3) **Honest provenance:** the record is explicitly marked BACK-FILLED/reconstructed, states what S157 did **and** did not do, and claims no credit on S157's behalf (Evidence requirement / FM #16). (4) **Held scope** — documented the ghost without re-touching its artifact, republishing, or bumping the receptacle (correctly, since no learning was promoted). (5) **Adversarial verification** with the **#61-armed preamble** → 0 false blockers.
+- **The − :** (1) Continuity/documentation work, not design — the strong-expected bar. (2) **One judgment call without asking:** numbering the ghost 157 / myself 158 (justified by S156's explicit "to Session 157" + chronology; surfaced to the operator). (3) **No precedent to lean on** — first ghost back-fill in-repo, so the record's shape is my own design (#60 precedent-derivation could not apply); I designed the BACK-FILLED-marker + reconstruction-basis + did/did-not-do template to be reusable.
+- **Quality bar:** meets S150–S156 — evidence-adjudicated facts, honest scoping, read-only adversarial verification with the #61-armed preamble, sole-writer — on a continuity-repair surface.
+
+### Phase 3C: Learnings — Session 158
+
+- **FM #14 (ghost session) fired for the FIRST time in project history** — and detection worked: SESSION_RUNNER step 6 surfaced it at orientation despite a clean tree and synced origin.
+- **Candidate #122 — NEW, 1st instance — the "git-clean ghost."** A ghost session need not be traceless. S157 left a *complete* git/GitHub/wiki trail (feature branch → PR #1 with full body → squash-merge `3a424d0` → publish-sync `0360bdb`, source↔live in parity) yet **zero** SESSION_NOTES record. This **refines FM #14's stated premise** ("ends without writing ANY notes … leave zero trace"): the trace can be git-complete while the *session* trace is absent. Two consequences — (a) the claim-stub countermeasure (Phase 1B) only protects sessions that *engage* the protocol; a session driven entirely through git/PR tooling bypasses it, so **orientation-time ghost detection (step 6), not the claim stub, is the real backstop**; (b) ghost detection must key on commit **dates/authors vs documented close-outs**, never on "git is clean ⇒ documented." **When to apply:** run step 6 at every orientation even when `git status` is clean and origin is synced. Now at **1.** Next candidate = **#123.**
+- **Learning #61 — applied:** the verification fan-out's shared preamble was armed with this artifact's lifecycle — SESSION_NOTES.md is edited-in-working-tree-by-design at verify time; the record is a **S158 back-fill ABOUT ghost S157** (so "S158 claims S157's wiki page" is the wrong reading and must not be flagged); the receptacle is deliberately NOT bumped → **0 false blockers**.
+- **Learnings #46 / #56 — applied:** verifiers read-only `Explore`; sole writer confirmed (`git status` scope unchanged through the fan-out).
+- **§2 (behavior-gated CHANGELOG, S149) — applied:** docs-only S158 → no CHANGELOG entry; **S157 also correctly earns none** (its change was docs/wiki-only, non-behavioral).
+- **Anti-inflation (S150):** no other candidate coined — the back-fill itself is captured as #122's first instance.
+- **Candidate roster:** **#122 NEW at 1** (git-clean ghost); #121 at 1; #112/#110 at 2; #88/#89/#92 at 2; #118/#117/#116/#115/#111 at 1; at 1: #101/#100/#99/#98/#96/#97/#95/#90/#94. Next = **#123.** `PROJECT_LEARNINGS.md` holds **61 rows** (unchanged).
+
+### Phase 3D: Handoff to Session 159
+
+**Session 157 is now documented (back-filled immediately below this block).** The ghost is repaired: SESSION_NOTES.md now contains a reconstructed Session 157 record + this Session 158 close-out, so future ghost-checks reconcile (`3a424d0`/PR #1 ↦ documented S157). No code touched; gates unchanged since S155/S156.
+
+**⚠ State you will inherit:**
+1. **`origin/master` is at `3a424d0` (S157's merge); S158's commits are UNPUSHED** (`286f4d5` claim + this close-out) pending operator authorization (#40). Push only if the operator says so.
+2. **The S157 wiki page (AI-Dependencies) is LIVE and in parity** — source↔live `AI-Dependencies.md` verified IDENTICAL (publish `0360bdb`). Nothing to republish.
+3. **Baseline UNCHANGED** (docs-only S157 + S158): **797 passed @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2** (last fresh confirm S155). Re-run only if S159 changes code: `uv run pytest -q`; `uv run mypy`; `uv run ruff check src/ tests/ packages/ scripts/`. Single-file runs need `--no-cov` (#57).
+4. **Evolution.md staleness:** still says "58 promoted learnings" — now predates **TWO** promotions (60 @ S154, 61 @ S156); count gap = 3. Deferred to the next operator-triggered §4.2 full rewrite — do NOT incrementally edit.
+5. **Receptacle:** `CLAUDE.md:79` = "61 learnings, Sessions 9–156" — **correctly NOT bumped** by S157/S158 (no promotion; endpoint = last promoting session = S156). Bump only on the next promotion.
+6. **Candidate numbers ≠ row numbers:** #120→row 61, #119→row 60, #114→row 59; row 58 holds #113. Next candidate = **#123** (#122 = git-clean ghost, coined this session at 1).
+
+**What's next (operator's call):**
+1. **Push S158's commits** (`286f4d5` + this close-out) if desired — currently unpushed (#40).
+2. **No candidate at the 3-instance threshold.** Closest: #112/#110/#88/#89/#92 at 2; #122/#121 at 1. Nothing promotion-eligible.
+3. **Remaining `#43` standing micro (DO NOT auto-fix):** only the **publish-hook citation warning** is left (standing recommendation: **LEAVE**, S151).
+4. **Evolution.md full rewrite increasingly overdue** (now 3 counts stale: "58" vs 61). Precedents: S148 (`582c9df`), S153 (`74f5b11`) — surgical in-place integration, §4.7 gate, banner = previous close-out sha + previous session number.
+5. **Process (new):** consider whether FM #14 / SESSION_RUNNER step 6 should explicitly name the "git-clean ghost" case. **The synced `SESSION_RUNNER.md` is byte-frozen** — any such note belongs in `CLAUDE.md` → *Project-specific Failure Modes*, not the synced file. Candidate #122 holds the observation pending a decision.
+
+**Important considerations for Session 159:**
+1. **Candidate roster:** #122 at 1 (git-clean ghost — apply when another ghost leaves a full git/PR trail but no session notes); #121 at 1; #112/#110 at 2; #88/#89/#92 at 2; rest at 1. Next = **#123.**
+2. **`PROJECT_LEARNINGS.md` = 61 rows; `CLAUDE.md` receptacle = "61 learnings, Sessions 9–156".**
+3. **This session set the FIRST ghost-back-fill precedent.** Its record shape (BACK-FILLED marker → reconstruction basis → evidence-attested production → honest did/did-not-do) is the template if another git-clean ghost is ever found.
+
+**Key files (full paths):**
+- `SESSION_NOTES.md` — ACTIVE TASK = this S158 close-out; the back-filled **S157 record is the next block below**; S156 archived under its marker.
+- `docs/wiki/claims-model-starter/AI-Dependencies.md` (194 lines) — S157's deliverable; live on the GitHub Wiki and in parity with source.
+- PR #1: <https://github.com/rmsharp/claims-model-starter/pull/1> (MERGED; squash → `3a424d0`; head `docs/ai-dependencies-wiki`).
+- Live wiki page: <https://github.com/rmsharp/claims-model-starter/wiki/AI-Dependencies> (publish-sync commit `0360bdb`).
+- Verification Workflow run: `wf_e8877ebe-05c` (read-only `Explore` lenses; script + transcript under the session directory).
+
+---
+
+**(Session 157 — BACK-FILLED by Session 158; reconstructed from evidence — see basis note. COMPLETE, archived below.)**
+
+---
+
+### Session 157 (BACK-FILLED by Session 158 — reconstructed from git/GitHub/wiki evidence; NO contemporaneous session notes exist)
+
+**⚠ Reconstruction basis (read first):** Session 157 ran the git/PR side of its work but left **no** SESSION_NOTES record — no claim stub, no orientation report, no close-out. It was detected as a **ghost** at Session 158's orientation (SESSION_RUNNER step 6) because squash-merge commit `3a424d0` is dated **2026-06-17**, four days after Session 156's 2026-06-13 close-out, with no matching session notes. Everything below is reconstructed from primary evidence — `git show 3a424d0`, `gh pr view 1 --json …`, a shallow clone of the live wiki repo (`git log` + source↔live `diff`) — and is an **attested reconstruction, not a contemporaneous record.** Claims about S157's *intent or internal process* beyond what the git/PR/wiki trail proves are explicitly NOT made.
+
+**Task (inferred from the deliverable):** Author a new **AI Dependencies** wiki page documenting the pipeline's AI/LLM dependencies, how each is used, and the risks they pose; wire it into the wiki navigation; publish to the live GitHub Wiki. (**COMPLETE** — PR #1 MERGED; page live and in parity.)
+
+**Dates/times:** branch commit `76ec6c1` authored 2026-06-17 **20:18 UTC**; **PR #1** opened **20:30 UTC**; **squash-merged 20:31 UTC** by `rmsharp`; wiki publish-sync `0360bdb` **2026-06-17 15:37 CDT**. The session ran ≈ 15:18–15:37 CDT on 2026-06-17.
+
+**What Session 157 produced (evidence-attested):**
+- **New page** `docs/wiki/claims-model-starter/AI-Dependencies.md` — **194 lines**, +197/−0 across the PR. Structure: **§1** AI surface at a glance (Intake + Data agents call Claude; Website Agent is deterministic / no LLM; the *generated* downstream project has **zero AI runtime dependency**) · **§2** AI software dependencies (`anthropic`, `langgraph`, `langgraph-checkpoint-sqlite` + transitive `langchain-core`/`langsmith`/`tenacity`, with version pins + roles) · **§3** the model as a dependency (`claude-sonnet-4-6` default, the Anthropic endpoint, the single-provider seam `make_llm_client` / `LLMProvider = Literal["anthropic"]`) · **§4** how each is used (per-agent, grep-locatable code symbols) · **§5** what is **not** AI-dependent · **§6** risks: 6.1 non-determinism/non-reproducibility · 6.2 incorrect/hallucinated output (SQL / governance classification / value estimates) · 6.3 third-party data exposure & PII · 6.4 prompt injection · 6.5 model/version drift · 6.6 availability/rate-limits/cost · 6.7 single-provider concentration · 6.8 AI supply-chain surface (incl. **verified-dormant** LangSmith telemetry) — each pairing a cited mitigation with the residual operator responsibility · **§7** operator checklist · **§8** key files · Related pages.
+- **3 navigation wirings** (+1 line each): `Content-Recommendations.md` (Current-pages table), `Home.md` (Wiki-contents list), `_Sidebar.md` (Reference section).
+- **Git mechanics:** feature branch **`docs/ai-dependencies-wiki`** off `master`; single branch commit `76ec6c1`; **PR #1** ("docs: add AI Dependencies wiki page", base `master`, full descriptive body); **squash-merged** to `3a424d0` by `rmsharp`; co-author `Claude Opus 4.8 (1M context)`.
+- **Publish:** live GitHub Wiki synced via `scripts/publish_wiki.sh` → wiki commit `0360bdb` ("docs: sync wiki from model_project_constructor@3a424d0"). **Source ↔ live wiki verified IDENTICAL** by Session 158.
+
+**Protocol compliance (honest assessment):**
+- ✅ **Git discipline:** branched off `master`, opened a PR with a full body, squash-merged, published — clean and conventional.
+- ✅ **§2 CHANGELOG cadence:** correctly earned **no** CHANGELOG entry (docs/wiki-only is non-behavioral).
+- ❌ **Phase 1B** (claim stub): not written.
+- ❌ **Phase 0** orientation report: no record.
+- ❌ **Phase 3** close-out: no predecessor evaluation, self-assessment, learnings, or handoff.
+- **Net:** a **"git-clean ghost"** — full git/GitHub/wiki trail, zero session-notes trace (→ Session 158 Candidate #122).
+
+**Why this back-fill exists:** so future ghost-checks reconcile (the `3a424d0` / PR #1 work now maps to a documented **Session 157**), and so the AI-Dependencies page's provenance lives in the continuity record rather than only in git history.
 
 ---
 
