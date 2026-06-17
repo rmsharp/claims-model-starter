@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 158 Did
+**Deliverable:** Back-fill a `SESSION_NOTES.md` record for the undocumented ("ghost") **Session 157** — the AI Dependencies wiki page (merge `3a424d0`, PR #1, 2026-06-17). (IN PROGRESS)
+**Started:** 2026-06-17
+**Status:** Session claimed. Work beginning.
+
+---
+
+**(Session 156 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 156 — operator-directed ("1, 2, and then work on 3" over the S155 handoff): (1) push the unpushed S155 commits to `origin`; (2) promote **Candidate #120 → Learning #61** in `PROJECT_LEARNINGS.md` (60 → 61 rows) + bump the `CLAUDE.md` receptacle; (3) cut **GitHub Release v0.1.0** from the existing tag. (**COMPLETE** — **item 1:** pushed `7424d07..56d098c` (8 commits = the 7 S155 commits + the S156 claim `56d098c`), origin synced (ahead/behind 0/0). **item 2:** deliverable commits **`4127f21`** (row 61 appended + row 59 cross-ref repoint) + **`d3f75a3`** (CLAUDE.md 60→61 / 9–154→9–156). **item 3:** **live GitHub Release v0.1.0** (<https://github.com/rmsharp/claims-model-starter/releases/tag/v0.1.0>), `--latest=false` so **v0.2.0 stays Latest**, `draft=false`, cut via `gh release create --verify-tag --notes-file` from the 2026-05-12/S74 tag `b4c0dbb` — retroactive shape (created=tag date, published=now). **#120's instance history re-derived at source (#58):** coined Session 153 (1st — 2 of 4 lenses produced the SAME false blocker because the preamble named neither the uncommitted-by-design draft state nor the §4.7 banner convention), armed-with-evidence S154 (2nd, 0 false blockers) + S155 (3rd, 0 false blockers); count of 3 holds, and unlike the #114 case S154 caught, the S155 handoff attribution (S153/S154/S155) was **ACCURATE**. **Row 61 thesis:** the SHARED preamble of an adversarial fan-out must state the artifact's lifecycle state + governing conventions, or skeptical lenses manufacture confident (even cross-lens-convergent) false blockers — the producer-side complement to Learning #59. **Row 59's stale `(Candidate #120)` forward cross-ref repointed → `(Learning #61)` per Learning #49** — the promotion's own only consistency gap, since every other promoted-pattern cross-ref in the file uses `Learning #NN` while Source columns keep the original candidate number as provenance. Verified: deterministic pass (63 pipe-lines = 61 rows + header/sep; row 61 = 5 pipes, 0 internal; sequential 1..61; `(Candidate #120)` gone; 2-file diff) + **4-lens read-only adversarial Workflow (`wf_fcbcad3c-376`, 26 checks, 4/4 PASS, 0 blockers, 0 warnings, 0 notes)** whose SHARED preamble was pre-armed per **Learning #61 itself** (uncommitted-by-design draft state + the candidate#≠row#, Source-keeps-candidate-number, Evolution-deferred, frozen-pipe conventions) → **0 false blockers — #61's 4th clean armed outcome**. Sole writer confirmed (all 4 verifiers `agentType: 'Explore'`; HEAD unchanged through verification). The publish-hook citation warning LEFT per standing rec (#43, S151).)
 
 **Started / Completed:** 2026-06-13.
