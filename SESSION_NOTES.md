@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 159 Did
+**Deliverable:** Write the multi-provider-LLM PLAN — a *planning* document at `docs/planning/multi-provider-llm-plan.md` for adding a second (non-Anthropic) LLM provider. The plan IS the deliverable — NO implementation (Planning workstream; FM #18/#19; Learning #1). (IN PROGRESS)
+**Started:** 2026-06-17
+**Status:** Session claimed. Operator directed "push and then write the multi-provider LLM plan." Pushed S158's 3 commits (origin synced at `5ed4b87`, 0/0). Plan work beginning.
+
+---
+
+**(Session 158 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 158 — operator-directed ("Back-fill a session-notes record for the ghost session"). Reconstruct and document the undocumented **Session 157** (the AI Dependencies wiki page: branch `docs/ai-dependencies-wiki` → PR #1 → squash-merge `3a424d0` → live-wiki publish `0360bdb`, all 2026-06-17), built strictly from git/GitHub/wiki evidence and written into this file as a clearly-marked back-fill. (**COMPLETE** — the reconstructed S157 record is below this S158 close-out; deliverable = this close-out commit. **Findings:** S157 ran the git/PR side with clean discipline — feature branch off `master`, **PR #1** ("docs: add AI Dependencies wiki page", body included) **squash-merged** to `3a424d0` by `rmsharp` (co-author `Claude Opus 4.8 (1M context)`), then **published** to the live GitHub Wiki via `scripts/publish_wiki.sh` (wiki commit `0360bdb`, "sync … @3a424d0") — but left **zero** SESSION_NOTES trace: no claim stub, no orientation, no close-out. A **"git-clean ghost"** (→ Candidate #122). The deliverable `AI-Dependencies.md` is **194 lines**, +197/−0 with 3 nav wirings (`_Sidebar`/`Home`/`Content-Recommendations`); **source ↔ live wiki verified IDENTICAL** by this session. No code touched; docs-only edit to `SESSION_NOTES.md` → per `PROJECT_CONVENTIONS.md` §2 **no** `CHANGELOG.md` entry; receptacle deliberately **NOT** bumped (no promotion — endpoint stays S156). Verified: deterministic re-check of every hash/date/PR-field/line-count/parity claim against source + **read-only adversarial Workflow (`wf_e8877ebe-05c`, 4 lenses, 74 checks, 4/4 PASS, 0 blockers, 0 warnings)** with the shared preamble armed per Learning #61. Sole writer; commits NOT pushed pending operator authorization (#40).)
 
 **Started / Completed:** 2026-06-17.
