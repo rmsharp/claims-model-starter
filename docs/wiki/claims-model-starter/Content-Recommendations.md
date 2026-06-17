@@ -21,6 +21,7 @@ This page lists the wiki's current pages (with audiences) and known gaps where a
 | [Monitoring and Operations](Monitoring-and-Operations) | Operators | Deployment, checkpoints, troubleshooting |
 | [Security Considerations](Security-Considerations) | Security reviewers, compliance | Credentials, network boundaries, LLM data exposure, read-only DB |
 | [Software Bill of Materials](Software-Bill-of-Materials) | Security, compliance, operators | All dependencies and versions |
+| [AI Dependencies](AI-Dependencies) | Architects, security, compliance, operators | The AI/LLM dependencies, how each is used, and the risks they pose |
 | [Architecture Decisions](Architecture-Decisions) | Developers, architects | Key design choices and rationale |
 | [Evolution](Evolution) | Onboarding readers, code-sharing context | Design-decision arc from concept to current state |
 | [Changelog](Changelog) | Operators, developers | Phase-by-phase history of notable changes |

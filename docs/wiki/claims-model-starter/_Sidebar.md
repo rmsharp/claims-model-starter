@@ -27,6 +27,7 @@
 **Reference**
 - [Schema Reference](Schema-Reference)
 - [Software Bill of Materials](Software-Bill-of-Materials)
+- [AI Dependencies](AI-Dependencies)
 - [Architecture Decisions](Architecture-Decisions)
 - [Evolution](Evolution)
 - [Glossary](Glossary)

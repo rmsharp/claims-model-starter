@@ -51,6 +51,7 @@ See [Software Bill of Materials](Software-Bill-of-Materials) for full dependency
 - [Monitoring and Operations](Monitoring-and-Operations) -- Deployment, checkpoints, operations
 - [Security Considerations](Security-Considerations) -- Credentials, network boundaries, what the LLM sees
 - [Software Bill of Materials](Software-Bill-of-Materials) -- All dependencies, versions, and licenses
+- [AI Dependencies](AI-Dependencies) -- The AI/LLM dependencies, how each is used, and the risks they pose
 - [Architecture Decisions](Architecture-Decisions) -- Key design choices and rationale
 - [Evolution](Evolution) -- How the project grew from concept to current state
 - [Changelog](Changelog) -- Phase-by-phase history of notable changes
