@@ -17,9 +17,13 @@ The graph and session store live in ``runner.py``. This module never
 touches the graph directly — it only drives the store.
 
 For production, the app builds its client via
-:func:`agents.intake.factory.make_llm_client` (default provider
-``anthropic``). For tests, ``create_app`` accepts an ``llm_factory`` so
-fixtures can be plugged in.
+:func:`agents.intake.factory.make_llm_client`. The provider and model are
+selectable per deployment — a ``create_app`` argument, then the
+``INTAKE_LLM_PROVIDER`` / ``INTAKE_LLM_MODEL`` environment variables, then
+the defaults (``DEFAULT_LLM_PROVIDER`` — ``anthropic`` — and the provider's
+own default model). Any ``KNOWN_PROVIDERS`` member (e.g. ``bedrock``) is
+reachable. For tests, ``create_app`` accepts an ``llm_factory`` so fixtures
+can be plugged in, bypassing provider resolution entirely.
 """
 
 from __future__ import annotations
@@ -48,32 +52,95 @@ from model_project_constructor.ui.intake.runner import (
 DEFAULT_DB_PATH = "intake_sessions.db"
 
 
-def _default_llm_factory(_session_id: str) -> IntakeLLMClient:
-    """Production LLM factory: construct the default-provider client.
+def _resolve_provider(provider: str | None) -> str:
+    """Resolve the LLM provider for the production factory.
 
-    Routes through :func:`agents.intake.factory.make_llm_client` so the
-    provider seam (E4) is honored here too. Imported lazily so the app can
-    be constructed (e.g. for unit tests) without triggering the ``anthropic``
-    package import.
+    Precedence mirrors the ``db_path`` resolution in :func:`create_app`: an
+    explicit ``create_app(provider=...)`` argument, then the
+    ``INTAKE_LLM_PROVIDER`` environment variable, then the orchestrator
+    default (:data:`DEFAULT_LLM_PROVIDER`, currently ``"anthropic"``). The
+    resolved value is validated against the intake factory's
+    ``KNOWN_PROVIDERS`` so a misconfigured deployment fails here, at app
+    construction, with a clear message rather than at the first interview.
+
+    The two imports are intentionally local: both modules are SDK-free, so
+    this keeps building the app free of the provider SDK (the lazy-import
+    property pinned by ``test_factory_import_does_not_load_anthropic``).
     """
 
-    from model_project_constructor.agents.intake.factory import make_llm_client
+    from model_project_constructor.agents.intake.factory import KNOWN_PROVIDERS
+    from model_project_constructor.orchestrator.config import DEFAULT_LLM_PROVIDER
 
-    return make_llm_client("anthropic")
+    resolved = provider or os.environ.get("INTAKE_LLM_PROVIDER") or DEFAULT_LLM_PROVIDER
+    if resolved not in KNOWN_PROVIDERS:
+        raise ValueError(
+            f"Unknown LLM provider {resolved!r}. "
+            f"Known providers: {', '.join(KNOWN_PROVIDERS)}."
+        )
+    return resolved
+
+
+def _resolve_model(model: str | None) -> str | None:
+    """Resolve the optional model override for the production factory.
+
+    Precedence: an explicit ``create_app(model=...)`` argument, then the
+    ``INTAKE_LLM_MODEL`` environment variable, else ``None``. ``None`` is the
+    deliberate default: it lets :func:`make_llm_client` pick each provider's
+    own default model, so selecting ``bedrock`` yields the
+    ``anthropic.``-prefixed id rather than a first-party id that would 400 on
+    Bedrock (the cross-provider model-id gap documented in the plan's Phase C).
+    """
+
+    return model or os.environ.get("INTAKE_LLM_MODEL") or None
+
+
+def _make_default_llm_factory(provider: str, model: str | None) -> LLMFactory:
+    """Build the production LLM factory bound to ``provider`` / ``model``.
+
+    Returns an :data:`LLMFactory` closure: the provider/model are captured
+    once at app construction, while the concrete client is still built lazily,
+    per session, inside :meth:`IntakeSessionStore._get_graph`. Routing through
+    :func:`agents.intake.factory.make_llm_client` honors the provider seam
+    (E4); the import stays inside the closure so building the app never
+    triggers the provider SDK import.
+    """
+
+    def factory(_session_id: str) -> IntakeLLMClient:
+        from model_project_constructor.agents.intake.factory import make_llm_client
+
+        return make_llm_client(provider, model=model)
+
+    return factory
 
 
 def create_app(
     *,
     llm_factory: LLMFactory | None = None,
     db_path: str | Path | None = None,
+    provider: str | None = None,
+    model: str | None = None,
 ) -> FastAPI:
     """Build a FastAPI app with an isolated session store.
 
     Tests should call this with a fixture-backed ``llm_factory`` and a
     per-test ``db_path``. Production uses the module-level ``app`` below.
+
+    ``provider`` / ``model`` choose the LLM backend for the *production*
+    factory and are ignored when an explicit ``llm_factory`` is injected.
+    Each resolves from its argument, then an environment variable
+    (``INTAKE_LLM_PROVIDER`` / ``INTAKE_LLM_MODEL``), then a default — the
+    orchestrator's ``DEFAULT_LLM_PROVIDER`` (``anthropic``) for the provider
+    and the provider's own default model (``None``) for the model. Any
+    ``KNOWN_PROVIDERS`` member (e.g. ``bedrock``) is selectable; an unknown
+    provider raises ``ValueError`` here, before any session starts.
     """
 
-    resolved_factory: LLMFactory = llm_factory or _default_llm_factory
+    if llm_factory is not None:
+        resolved_factory: LLMFactory = llm_factory
+    else:
+        resolved_factory = _make_default_llm_factory(
+            _resolve_provider(provider), _resolve_model(model)
+        )
     resolved_db = str(db_path or os.environ.get("INTAKE_DB_PATH", DEFAULT_DB_PATH))
 
     store = IntakeSessionStore(db_path=resolved_db, llm_factory=resolved_factory)
@@ -204,5 +271,7 @@ def _snapshot_to_dict(snap: SessionSnapshot) -> dict[str, Any]:
 
 
 # Module-level app for ``uvicorn model_project_constructor.ui.intake:app``.
-# Uses the default (Anthropic) LLM factory + default SQLite path.
+# Resolves the provider/model from INTAKE_LLM_PROVIDER / INTAKE_LLM_MODEL (or
+# the DEFAULT_LLM_PROVIDER — anthropic — and the provider's own default model),
+# and the SQLite path from INTAKE_DB_PATH.
 app = create_app()
