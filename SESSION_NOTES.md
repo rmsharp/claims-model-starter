@@ -6,6 +6,13 @@
 
 ## ACTIVE TASK
 
+### What Session 170 Did
+**Deliverable:** ★ Measured live interview-convergence run — confirm gap #1c clears 95% live. DEVELOPMENT workstream, ONE deliverable. (IN PROGRESS)
+**Started:** 2026-06-18 17:26 CDT
+**Status:** Session claimed. Work beginning. Plan: source `.env` key inline → run `uv run pytest -m live tests/eval/test_eval_live.py::test_live_interview_converges -rs` (~80 min, ~N_SAMPLES×4 ≈ 20 samples via the new `interview_sweep.py` helper) → record the measured rate. If ≥95% → gap #1c fully closed (update PHASE_E gap list + CHANGELOG). If <95% → diagnose genuine-vs-stochastic, do NOT lower threshold (#129), hand off as SME corpus/threshold call. Also re-run `shadow_run.py` for fresh §3.4 table numbers.
+
+---
+
 ### What Session 169 Did
 **Deliverable:** gap #1c — live interview-convergence gate robustness. **(COMPLETE — the harness-statistics fix (N≥5 sampling + transient-vs-genuine disambiguation) is LANDED + deterministically verified (12 tests) + adversarially verified (4 PASS / 0 CONCERN). The live §3.4 gate is NOT re-measured — its live-green status is UNKNOWN and handed off (a ~80-min `-m live` run; the fix is necessary and correct but whether it clears 95% live depends on `reserving_adequacy`'s unmeasured true rate). Two commits: claim `b7c4486` + this close-out; all UNPUSHED (#40) — `origin/master` at `5ed4b87`, 30 local unpushed after close-out.)**
 
