@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 166 — operator-directed ("Fix interview-answer robustness"). The #1 harness-fix follow-up from S165's baseline: all 4 live interviews fail (`interview_convergence` 0%) because the live model asks more/different questions than the recorded scripted stakeholder answers supply. DEVELOPMENT workstream, ONE deliverable: build a robust stakeholder-answer strategy so live interviews can converge (then `interview_convergence` measures the model, not the corpus artifact). Held scope: interview robustness only — NOT the other harness fixes (governance refs, QC max_tokens, SQL exec — those stay handed off, FM #18).
+
+**Started:** 2026-06-18.
+
+**Status:** Session claimed (Phase 1B). Work beginning — reading DEVELOPMENT_WORKSTREAM + the live interview harness next.
+
+---
+
+**(Session 165 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 165 — operator-directed ("Run the Anthropic-only baseline now"). **EXECUTE** the live Phase E shadow run for the `anthropic` provider only (operator has `ANTHROPIC_API_KEY` in `.env`; no AWS creds → `bedrock` cases auto-skip via the provider-aware `conftest` built in S164). Operational/DEVELOPMENT workstream, ONE deliverable: measure Anthropic's per-capability pass-rates against the §3.4 thresholds, **calibrate the still-PROPOSED thresholds** (confirm or adjust to measured), and **fill `tests/eval/PHASE_E_AGREEMENT_REPORT.md`** with the baseline numbers (`bedrock` stays PENDING). Closes Phase B's deferred Anthropic baseline. Key source: `.env` (`ANTHROPIC_API_KEY` present + valid, sourced inline — never echoed). **(COMPLETE.** Three commits: claim stub **`8acb1a3`** + baseline+driver **`d4d1709`** + this close-out; all **UNPUSHED** (#40) — `origin/master` at `5ed4b87`, **20 local unpushed** after close-out.**)**
 
 **Started / Completed:** 2026-06-17 / 2026-06-18.
