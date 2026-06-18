@@ -39,7 +39,9 @@ from model_project_constructor.agents.intake.fixture import (
     review_sequence_from_fixture,
 )
 from model_project_constructor.agents.intake.protocol import IntakeLLMError
+from model_project_constructor.schemas.v1.intake import IntakeReport
 from tests.eval.eval_corpus import (
+    InterviewCase,
     load_governance_cases,
     load_interview_cases,
     load_sql_cases,
@@ -53,18 +55,14 @@ from tests.eval.eval_cutover import (
     render_agreement_report,
 )
 from tests.eval.eval_scoring import (
-    interview_converged,
     pass_rate,
-    premature_convergence,
     quality_checks_structural_ok,
     score_governance,
     sql_executes,
     sql_parse_valid,
 )
+from tests.eval.interview_sweep import N_SAMPLES, sweep_interview_convergence
 from tests.eval.stakeholder_sim import stakeholder_simulator_for
-
-#: Samples per governed case — §3.4 requires N≥5 to judge a pass-rate.
-_N_SAMPLES = 5
 
 
 def _warn(message: str) -> None:
@@ -73,7 +71,7 @@ def _warn(message: str) -> None:
 
 
 def measure_provider(
-    provider: str, db: ReadOnlyDB, *, n_samples: int = _N_SAMPLES
+    provider: str, db: ReadOnlyDB, *, n_samples: int = N_SAMPLES
 ) -> dict[str, float]:
     """Measure ``provider``'s §3.4 pass-rates over the Phase B corpus (live)."""
     intake = make_intake_client(provider)
@@ -121,33 +119,26 @@ def measure_provider(
             _warn(f"qc/{case.name}: {type(exc).__name__} on quality checks -> structural fail")
             qc_ok.append(False)
 
-    # interview convergence + premature-convergence count
-    interview_results: list[bool] = []
-    premature = 0
-    for case in load_interview_cases():
-        if not case.expect_complete:
-            continue
+    # interview convergence + premature-convergence count (gap #1c): sample each
+    # converging case N>=5 times and pool, and retry/exclude a transient API/sim
+    # blip rather than scoring it a non-convergence. A genuine non-convergence is
+    # a returned report carrying "questions_cap_reached"; a real harness/graph bug
+    # propagates (aborts the run) instead of being silently counted as a miss.
+    def _run_interview(case: InterviewCase) -> IntakeReport:
         fixture = load_fixture(case.fixture_path)
         agent = IntakeAgent(llm=make_intake_client(provider))
-        try:
-            report = agent.run_scripted(
-                stakeholder_id=fixture["stakeholder_id"],
-                session_id=f"shadow-{provider}-{fixture['session_id']}",
-                domain=fixture.get("domain", "pc_claims"),
-                initial_problem=fixture.get("initial_problem"),
-                answer_provider=stakeholder_simulator_for(fixture, provider=provider),
-                review_responses=review_sequence_from_fixture(fixture),
-            )
-        except RuntimeError as exc:
-            # A simulator/seam failure (IntakeLLMError or a stakeholder-sim error,
-            # both RuntimeError) is a non-convergence for this golden. The model
-            # can no longer "run out of answers" — the simulator answers whatever
-            # it asks — so a miss here reflects the model's interview behaviour.
-            _warn(f"interview/{case.case_id}: {type(exc).__name__} -> non-convergence")
-            interview_results.append(False)
-            continue
-        interview_results.append(interview_converged(report))
-        premature += int(premature_convergence(report))
+        return agent.run_scripted(
+            stakeholder_id=fixture["stakeholder_id"],
+            session_id=f"shadow-{provider}-{fixture['session_id']}",
+            domain=fixture.get("domain", "pc_claims"),
+            initial_problem=fixture.get("initial_problem"),
+            answer_provider=stakeholder_simulator_for(fixture, provider=provider),
+            review_responses=review_sequence_from_fixture(fixture),
+        )
+
+    sweep = sweep_interview_convergence(
+        load_interview_cases(), _run_interview, n_samples=n_samples, on_event=_warn
+    )
 
     return {
         # deterministic parity battery (test_llm_json_parity), not a live rate:
@@ -157,8 +148,8 @@ def measure_provider(
         "governance_agreement": pass_rate("governance", gov_matches).rate,
         "governance_laxer_miss": float(laxer),
         "qc_structural": pass_rate("qc", qc_ok).rate,
-        "interview_convergence": pass_rate("interview", interview_results).rate,
-        "interview_premature": float(premature),
+        "interview_convergence": pass_rate("interview", sweep.convergence_results).rate,
+        "interview_premature": float(sweep.premature_count),
     }
 
 

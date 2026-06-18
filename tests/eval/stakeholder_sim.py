@@ -36,6 +36,18 @@ from model_project_constructor.agents.intake.factory import (
 #: A short answer (1-4 sentences) never needs the full interview budget.
 _DEFAULT_MAX_TOKENS = 1024
 
+
+class StakeholderSimError(RuntimeError):
+    """A seam failure in the stakeholder simulator's own LLM call.
+
+    Raised when the simulator's model returns empty/non-text content for an
+    answer. It subclasses ``RuntimeError`` (so any existing ``except
+    RuntimeError`` still catches it), but the *type* lets the interview sweep
+    classify it as a **transient** API/seam artifact — retried then excluded —
+    rather than counting it as the interviewed model failing to converge (gap
+    #1c; see ``interview_sweep``).
+    """
+
 _STAKEHOLDER_SYSTEM = (
     "You are role-playing a BUSINESS STAKEHOLDER being interviewed by a data "
     "scientist about a potential modeling project at a property & casualty "
@@ -116,10 +128,11 @@ class StakeholderSimulator:
         return self._call_text(_STAKEHOLDER_SYSTEM, user)
 
     def _call_text(self, system: str, user: str) -> str:
-        """One plain-text turn. A seam failure raises ``RuntimeError`` so the
-        eval records it as a non-convergence (mirrors the intake client's
-        empty/non-text guards; the §3.4 driver counts the miss rather than
-        crashing)."""
+        """One plain-text turn. A seam failure raises :class:`StakeholderSimError`
+        (mirrors the intake client's empty/non-text guards). The §3.4 interview
+        sweep treats that typed error as a *transient* artifact of the
+        simulator's own call — retried then excluded — not as the interviewed
+        model failing to converge (gap #1c; see ``interview_sweep``)."""
         response = self._client.messages.create(
             model=self._model,
             max_tokens=self._max_tokens,
@@ -127,10 +140,10 @@ class StakeholderSimulator:
             messages=[{"role": "user", "content": user}],
         )
         if not response.content:
-            raise RuntimeError("stakeholder simulator: model returned empty content")
+            raise StakeholderSimError("stakeholder simulator: model returned empty content")
         text = getattr(response.content[0], "text", None)
         if not isinstance(text, str):
-            raise RuntimeError(
+            raise StakeholderSimError(
                 "stakeholder simulator: expected a text block, got "
                 f"{type(response.content[0]).__name__}"
             )

@@ -29,6 +29,9 @@ follow-ups that must land before a real cutover decision is meaningful.
 
 Measured single-run baseline (governance sampled N=5; the rest one pass) via
 [`tests/eval/shadow_run.py`](shadow_run.py); `bedrock` PENDING (no AWS creds).
+*Note: this table predates the Session-169 interview-sampling change (gap #1c) —
+`interview_convergence` is now sampled N≥5 per case, so re-measure for a current
+number (the S165 row below was a single pass).*
 
 <!-- Regenerate after a live run: feed the per-capability rates to
   eval_cutover.evaluate_cutover and render_agreement_report — see §"Filling this report". -->
@@ -90,8 +93,10 @@ same corpus with the §3.4 thresholds enforced as test assertions — useful as 
 pass/fail gate once the harness is trustworthy, but it does not emit the rates
 this report needs (use the driver for those).
 
-Each capability is sampled N ≥ 5 times (governance) and judged on a pass-*rate* +
-structural invariants (§3.4 non-determinism handling); `model=None` is passed so
+Each capability is sampled N ≥ 5 times (governance and interview; gap #1c) and
+judged on a pass-*rate* + structural invariants (§3.4 non-determinism handling);
+the interview sweep also retries/excludes a transient API/sim error rather than
+scoring it a non-convergence (`interview_sweep.py`). `model=None` is passed so
 each provider uses its native default id (Bedrock gets the `anthropic.`-prefixed
 default — no cross-provider 400).
 
@@ -212,16 +217,27 @@ see "Baseline findings" for the diagnosis), in rough priority:**
      one-fixture diagnostic on the failing case (`reserving_adequacy`, the 4th)
      showed it **converges in isolation** (`status=DRAFT_INCOMPLETE`,
      `questions_asked=9`, `questions_cap_reached` absent → scorer `True`), so the
-     residual is **not** that case being a hard non-converger. **NEW gap #1c — live
-     gate fragility (handed off):** with only 4 samples at a 95% bar, passing needs
-     **4/4**, and the live model is non-deterministic; additionally a transient seam
-     `RuntimeError` is scored as a non-convergence (`test_eval_live.py:144`), so one
-     API blip fails the gate. Robustness options for a future session (SME/operator
-     call; do **not** lower the threshold to chase a number, #129): repeat each case
-     N times and use a pass-*rate* per case (matching the governance tier's N≥5
-     sampling), distinguish a transient seam error from a true non-convergence, or
-     re-validate the 95%/4-sample design. This is a harness-statistics concern,
-     distinct from the scorer/metric mismatch resolved here.
+     residual is **not** that case being a hard non-converger. **gap #1c — live
+     gate fragility — RESOLVED (harness fix; Session 169):** the convergence gate
+     used to run each of the 4 fixtures *once* and `pass_rate` over 4 booleans at a
+     95% bar (so passing required **4/4**), and a transient seam `RuntimeError` was
+     scored as a non-convergence — so one stochastic miss or API blip failed the
+     gate. **Fix (operator chose A+B via `AskUserQuestion`):** a shared helper
+     `interview_sweep.sweep_interview_convergence` now (a) samples each converging
+     fixture `N_SAMPLES`≥5 times and pools the pass-rate, matching the governance
+     tier, and (b) classifies a transient API/sim error (`IntakeLLMError`,
+     `StakeholderSimError`) as retry-bounded/excluded rather than a non-convergence,
+     while a genuine non-convergence (a returned report carrying
+     `questions_cap_reached`) is still scored `False` and any other `RuntimeError`
+     (a real harness/graph bug) propagates loudly. Both call sites
+     (`test_eval_live.py`, `shadow_run.py`) go through the one helper; the **95%
+     threshold is unchanged** — a harness-statistics fix, **not** a #129 loosening
+     (4 adversarial read-only lenses confirmed). Pinned by 12 deterministic tests
+     (`test_interview_sweep.py`, no API key). **Still PENDING — a measured live run:**
+     the fix makes the gate statistically sound but whether it then clears 95% live
+     depends on `reserving_adequacy`'s true per-case rate (unmeasured; S168 saw
+     n=2). Run `pytest -m live tests/eval/test_eval_live.py::test_live_interview_converges`
+     (now ~`N_SAMPLES`×4 samples) to confirm.
 2. **Governance references + metric** — the rule-derived reference labels
    disagree with live-model output (0% exact agreement). SME-re-validate the
    references against live output, and reconsider the brittle "exact-both-labels"
