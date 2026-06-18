@@ -37,7 +37,19 @@ from model_project_constructor.schemas.v1.intake import (
 )
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
-DEFAULT_MAX_TOKENS = 4096
+# Output-token cap for every Claude round-trip. Raised from 4096 to 16384 in
+# Session 167 (gap #3): the large ``draft_report`` / ``revise_report`` JSON
+# (five sections + the value-measurement plan) and the data agent's
+# quality-check arrays exceeded 4096, so the response stopped with
+# ``stop_reason='max_tokens'`` mid-JSON → unclosed fence → ``IntakeLLMError``.
+# 16384 sits just under the Anthropic SDK's non-streaming guard (it refuses a
+# non-streaming ``messages.create`` it estimates will exceed ~10 minutes, the
+# documented ~16K ceiling) and was verified live in Session 166 to draft the
+# probed fixtures clean. ``claude-sonnet-4-6`` tops out at 64K output tokens,
+# but reaching that requires streaming; if a future payload still truncates at
+# 16384 the ``_call_json`` guard raises an actionable error (it does not
+# silently parse a partial JSON). Override per-client via ``max_tokens=``.
+DEFAULT_MAX_TOKENS = 16384
 
 _INTERVIEWER_BASE = (
     "You are an expert data scientist, business analyst, and consultant "
@@ -278,6 +290,22 @@ class AnthropicLLMClient(IntakeLLMClient):
             system=system,
             messages=[{"role": "user", "content": user}],
         )
+        # A response that stopped because it hit ``max_tokens`` is truncated
+        # mid-JSON: the closing brace / fence never arrived, so ``_extract_json``
+        # below would fail with a generic "non-JSON" error that hides the real
+        # cause. Detect the truncation explicitly and raise an actionable error
+        # naming the cap (Session 167 / gap #3). ``getattr`` tolerates fakes
+        # whose response object omits ``stop_reason``. No retry — the seam has no
+        # continuation path (Trap 5; and ``claude-sonnet-4-6`` rejects the
+        # assistant-prefill continuation pattern with a 400), so a truncation is
+        # surfaced, not patched over. The message is kept byte-identical to the
+        # data agent's twin guard (pinned by ``tests/test_llm_json_parity.py``).
+        if getattr(response, "stop_reason", None) == "max_tokens":
+            raise IntakeLLMError(
+                f"Claude response truncated at max_tokens={self._max_tokens} "
+                "(stop_reason='max_tokens'); the response is incomplete. "
+                "Raise max_tokens for this client."
+            )
         # The Anthropic SDK types ``response.content`` as a union that
         # includes non-text blocks (tool_use, thinking, …). We only request
         # plain text, but a live response could still lead with a non-text

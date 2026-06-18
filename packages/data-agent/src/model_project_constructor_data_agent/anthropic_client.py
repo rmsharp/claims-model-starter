@@ -51,7 +51,17 @@ from model_project_constructor_data_agent.schemas import (
 )
 
 DEFAULT_MODEL = "claude-sonnet-4-6"
-DEFAULT_MAX_TOKENS = 4096
+# Output-token cap for every Claude round-trip. Raised from 4096 to 16384 in
+# Session 167 (gap #3): the quality-check arrays for large requests (and the
+# intake agent's draft JSON) exceeded 4096, so the response stopped with
+# ``stop_reason='max_tokens'`` mid-output → unparseable → ``LLMParseError``.
+# 16384 sits just under the Anthropic SDK's non-streaming guard (it refuses a
+# non-streaming ``messages.create`` it estimates will exceed ~10 minutes, the
+# documented ~16K ceiling). ``claude-sonnet-4-6`` tops out at 64K output tokens,
+# but reaching that requires streaming; if a future payload still truncates at
+# 16384 the ``_call_claude`` guard raises an actionable error (it does not
+# silently parse partial output). Override per-client via ``max_tokens=``.
+DEFAULT_MAX_TOKENS = 16384
 
 MAX_INVENTORY_ENTRIES_IN_PROMPT = 20
 MAX_INVENTORY_FIELD_CHARS = 2000
@@ -370,6 +380,21 @@ class AnthropicLLMClient:
             system=system,
             messages=[{"role": "user", "content": user}],
         )
+        # A response that stopped because it hit ``max_tokens`` is truncated
+        # mid-output: the caller's ``_extract_json`` would fail with a generic
+        # "non-JSON" error that hides the real cause. Detect the truncation
+        # explicitly and raise an actionable error naming the cap (Session 167 /
+        # gap #3). ``getattr`` tolerates fakes whose response object omits
+        # ``stop_reason``. No retry — the seam has no continuation path (Trap 5;
+        # and ``claude-sonnet-4-6`` rejects the assistant-prefill continuation
+        # pattern with a 400). The message is kept byte-identical to the intake
+        # client's twin guard (pinned by ``tests/test_llm_json_parity.py``).
+        if getattr(response, "stop_reason", None) == "max_tokens":
+            raise LLMParseError(
+                f"Claude response truncated at max_tokens={self._max_tokens} "
+                "(stop_reason='max_tokens'); the response is incomplete. "
+                "Raise max_tokens for this client."
+            )
         if not response.content:
             raise LLMParseError("Claude returned an empty content list")
         block = response.content[0]

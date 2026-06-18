@@ -43,6 +43,10 @@ class _Response:
     # accepts them); typed ``list[Any]`` so the guard-rejection test can
     # inject a non-text block (see ``test_call_json_rejects_non_text_block``).
     content: list[Any]
+    # Mirrors the real ``anthropic.types.Message.stop_reason``. Defaults to
+    # ``None`` so the happy-path tests are unaffected; the max_tokens-truncation
+    # guard test (Session 167) sets it to ``"max_tokens"``.
+    stop_reason: str | None = None
 
 
 class _FakeMessages:
@@ -291,6 +295,30 @@ def test_call_json_rejects_empty_content() -> None:
     fake.messages.create = create  # type: ignore[method-assign]
     client = AnthropicLLMClient(client=fake)
     with pytest.raises(IntakeLLMError, match="empty content"):
+        client.next_question(_ctx())
+
+
+def test_call_json_detects_max_tokens_truncation() -> None:
+    """gap #3 (Session 167): a response that stopped at ``max_tokens`` is
+    truncated mid-JSON. Detect it via ``stop_reason`` and raise an actionable
+    ``IntakeLLMError`` naming the cap, instead of letting ``_extract_json`` fail
+    downstream with a generic "non-JSON" error that hides the real cause. The
+    content is valid JSON, so the guard must fire on ``stop_reason`` alone,
+    before parsing — proving it is the truncation, not the body, that trips it.
+    """
+    fake = _FakeAnthropic([])  # canned responses unused; create is overridden
+
+    def create(**kwargs: Any) -> _Response:
+        fake.messages.calls.append(kwargs)
+        body = '{"question": "Q", "believe_enough_info": false}'
+        return _Response(
+            content=[TextBlock(text=body, type="text")],
+            stop_reason="max_tokens",
+        )
+
+    fake.messages.create = create  # type: ignore[method-assign]
+    client = AnthropicLLMClient(client=fake)
+    with pytest.raises(IntakeLLMError, match="truncated at max_tokens"):
         client.next_question(_ctx())
 
 

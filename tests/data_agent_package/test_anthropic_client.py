@@ -118,6 +118,31 @@ def test_call_claude_rejects_empty_content(request_obj: DataRequest) -> None:
         client.generate_primary_queries(request_obj)
 
 
+def test_call_claude_detects_max_tokens_truncation(request_obj: DataRequest) -> None:
+    """gap #3 (Session 167): a response that stopped at ``max_tokens`` is
+    truncated mid-output. Detect it via ``stop_reason`` and raise an actionable
+    ``LLMParseError`` naming the cap, instead of returning a partial body the
+    caller's ``_extract_json`` then rejects with a generic error. The content is
+    valid JSON, so the guard fires on ``stop_reason`` alone — shared gap with
+    intake's ``_call_json`` (``test_call_json_detects_max_tokens_truncation``)."""
+    fake_msgs = _FakeMessages(canned=[], calls=[])
+
+    def create(**kwargs: Any) -> Any:
+        fake_msgs.calls.append(kwargs)
+        return type(
+            "R",
+            (),
+            {"content": [TextBlock(text="[]", type="text")], "stop_reason": "max_tokens"},
+        )()
+
+    fake_msgs.create = create  # type: ignore[method-assign]
+    fake = _FakeAnthropic(messages=fake_msgs)
+    client = AnthropicLLMClient(client=fake, model="fake-model")
+
+    with pytest.raises(LLMParseError, match="truncated at max_tokens"):
+        client.generate_primary_queries(request_obj)
+
+
 def test_generate_primary_queries_parses_json_array(
     request_obj: DataRequest,
 ) -> None:

@@ -54,6 +54,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import pytest
+from anthropic.types import TextBlock
 from model_project_constructor_data_agent import anthropic_client as da_client
 from model_project_constructor_data_agent.anthropic_client import LLMParseError
 
@@ -76,21 +77,26 @@ from model_project_constructor.agents.intake.protocol import IntakeLLMError
 @dataclass
 class _FakeResponse:
     content: list[Any]
+    # Mirrors the real ``anthropic.types.Message.stop_reason``. Defaults to
+    # ``None`` so the content/parse-guard tests below stay byte-identical; the
+    # max_tokens-truncation guard (Session 167) sets it to ``"max_tokens"``.
+    stop_reason: str | None = None
 
 
 class _FakeMessages:
-    def __init__(self, content: list[Any]) -> None:
+    def __init__(self, content: list[Any], stop_reason: str | None = None) -> None:
         self._content = content
+        self._stop_reason = stop_reason
         self.calls: list[dict[str, Any]] = []
 
     def create(self, **kwargs: Any) -> _FakeResponse:
         self.calls.append(kwargs)
-        return _FakeResponse(content=self._content)
+        return _FakeResponse(content=self._content, stop_reason=self._stop_reason)
 
 
 class _FakeAnthropic:
-    def __init__(self, content: list[Any]) -> None:
-        self.messages = _FakeMessages(content)
+    def __init__(self, content: list[Any], stop_reason: str | None = None) -> None:
+        self.messages = _FakeMessages(content, stop_reason)
 
 
 class _NotATextBlock:
@@ -99,12 +105,14 @@ class _NotATextBlock:
 
 def _client_pair(
     content: list[Any],
+    stop_reason: str | None = None,
 ) -> tuple[intake_client.AnthropicLLMClient, da_client.AnthropicLLMClient]:
     """Build one intake + one data-agent client, each over a fake returning
-    ``content`` as ``response.content``."""
+    ``content`` as ``response.content`` and ``stop_reason`` as
+    ``response.stop_reason``."""
     return (
-        intake_client.AnthropicLLMClient(client=_FakeAnthropic(content)),
-        da_client.AnthropicLLMClient(client=_FakeAnthropic(content)),
+        intake_client.AnthropicLLMClient(client=_FakeAnthropic(content, stop_reason)),
+        da_client.AnthropicLLMClient(client=_FakeAnthropic(content, stop_reason)),
     )
 
 
@@ -237,6 +245,26 @@ def test_guard_non_text_block_message_parity() -> None:
         da._call_claude("system", "user")
     assert str(intake_exc.value) == str(da_exc.value)
     assert str(intake_exc.value) == "expected TextBlock from Claude, got _NotATextBlock"
+
+
+def test_guard_max_tokens_truncation_message_parity() -> None:
+    """A ``stop_reason='max_tokens'`` response raises the same message (modulo
+    error class) from both ``_call_json`` and ``_call_claude`` (Session 167 /
+    gap #3). The content is *valid, parseable* JSON, so the guard must fire on
+    ``stop_reason`` alone — before parsing — in both clients; without the guard
+    each would happily return the (truncated-in-reality) text. Both clients
+    carry the default ``max_tokens`` (16384), so the cap in the message matches.
+    """
+    intake, da = _client_pair([TextBlock(text='{"a": 1}', type="text")], stop_reason="max_tokens")
+    with pytest.raises(IntakeLLMError) as intake_exc:
+        intake._call_json("system", "user")
+    with pytest.raises(LLMParseError) as da_exc:
+        da._call_claude("system", "user")
+    assert str(intake_exc.value) == str(da_exc.value)
+    assert str(intake_exc.value) == (
+        "Claude response truncated at max_tokens=16384 (stop_reason='max_tokens'); "
+        "the response is incomplete. Raise max_tokens for this client."
+    )
 
 
 # --- §2.3 the intentional error-class divergence -------------------------

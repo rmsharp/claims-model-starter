@@ -57,13 +57,27 @@ The split is what lets the gate exist without breaking CI hermeticity.
 > `missing_fields` list (governance/fairness/cost/baseline specifics the fixtures
 > don't pre-answer) → `DRAFT_INCOMPLETE`. Both are handed-off follow-ups, not
 > answer-robustness gaps. See `PHASE_E_AGREEMENT_REPORT.md` §"Gap list".
+>
+> **Status (Session 167) — the `max_tokens` truncation (gap #3) is fixed.**
+> `DEFAULT_MAX_TOKENS` is raised 4096→16384 in both `AnthropicLLMClient`s and a
+> `stop_reason='max_tokens'` guard now raises an actionable error instead of a
+> cryptic parse failure. Verified live at the new default: the intake
+> `draft_report` completes (no truncation — the draft is still `DRAFT_INCOMPLETE`
+> for the **separate** gap #1b reason) and `generate_quality_checks` on the large
+> `tx_auto_training` case returns 3 groups / 29 checks. This unblocks both
+> `qc_structural` and interview-convergence **Layer 2** — but `interview_convergence`
+> is **still not green**: gap #1b (the rigorous interviewer's populated
+> `missing_fields` vs fixture depth / metric strictness) remains the convergence
+> blocker. A fresh baseline run will re-measure `qc_structural`.
 
 The §3.4 thresholds below remain **proposed**: the first baseline measured the
 *harness*, not the providers, so it does **not** calibrate them — and they were
 deliberately **not** lowered to match a broken harness. Calibration becomes
-meaningful only once the harness fixes land (interview-answer robustness,
-governance-reference re-validation + a less brittle metric, QC `max_tokens`, SQL
-executability). Run the baseline with `uv run python tests/eval/shadow_run.py`;
+meaningful only once the remaining harness fixes land (interview convergence-metric
+calibration (gap #1b), governance-reference re-validation + a less brittle metric,
+SQL executability — interview-answer robustness landed S166 and the QC/draft
+`max_tokens` truncation landed S167). Run the baseline with
+`uv run python tests/eval/shadow_run.py`;
 then, **only** for a genuine "threshold too strict" miss, adjust
 `eval_thresholds.py` and note the change here.
 

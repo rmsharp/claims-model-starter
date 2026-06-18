@@ -58,15 +58,18 @@ artifact** (must be fixed before the metric is meaningful) or a **genuine signal
 | sql_exec | 60% FAIL | signal (needs diagnosis) | 3/5 generated queries execute on the seeded schema; 2 reference unavailable columns / shape. Could be model SQL *or* an incomplete seed schema — inspect which queries failed before judging. |
 | governance_agreement | 0% FAIL | **artifact** | `risk_tier` mismatched on all 4 cases, `cycle_time` on 2/4 → exact-both = 0. The rule-derived reference labels (single-SME-ratified, S161) **systematically disagree with live-model output**; the "exact match of *both* closed-vocab labels ≥ 90%" metric is unachievable even by the incumbent. Needs SME re-validation of the references against live output and/or a less brittle metric (score the two labels separately; credit stricter-direction mismatches). |
 | governance_laxer_miss | 5 FAIL | mixed | Driven by **one** case — `fraud_triage`: model `tier_2_high` vs ref `tier_1_critical` (laxer) × 5 samples. Either the model under-rates a critical case (genuine, concerning) or the reference is too strict — an SME call. The other 3 cases erred *stricter* (allowed). |
-| qc_structural | 66.7% FAIL | signal (fixable) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). Raise/handle max_tokens for large QC output, or chunk it. |
-| interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) the draft JSON truncates at `max_tokens` (the same root cause as qc_structural / gap #3 — `stop_reason=max_tokens` at 4096); (b) at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE`. See Gap list #1. |
+| qc_structural | 66.7% FAIL → fixed (S167) | signal (FIXED) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). **Session 167 fixed it** (gap #3): the default cap is raised to 16384 and a `stop_reason='max_tokens'` guard raises an actionable error instead of a cryptic parse failure. Verified live — `tx_auto_training` returns 3 groups / 29 checks, no truncation. A fresh baseline run will confirm the rate clears the threshold. |
+| interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) ~~the draft JSON truncates at `max_tokens`~~ **fixed S167 (gap #3)** — the draft now completes at the 16384 default (verified live, no truncation); (b) at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE` (gap #1b — the remaining convergence blocker). See Gap list #1b. |
 | interview_premature | 0 PASS | — | Trivially clean — none converged (so none converged *prematurely*). Only meaningful once convergence works. |
 
 **Bottom line:** before the §3.4 gate can drive a real cutover decision, the
-harness needs (in rough priority) a robust interview-answer strategy, SME
-re-validation of the governance references + a less brittle governance metric, a
-max_tokens fix for QC generation, and a look at the 2 non-executing SQL queries.
-Until then the baseline numbers measure the *harness*, not the *providers*.
+harness needs (in rough priority) the interview convergence-metric calibration
+(gap #1b), SME re-validation of the governance references + a less brittle
+governance metric, and a look at the 2 non-executing SQL queries.
+(Interview-answer robustness landed S166; the `max_tokens` truncation landed
+S167.) A fresh baseline run will re-measure `qc_structural` now that its
+truncation is fixed. Until then the baseline numbers measure the *harness*, not
+the *providers*.
 
 ## How to run the shadow run
 
@@ -174,8 +177,9 @@ see "Baseline findings" for the diagnosis), in rough priority:**
    the interviewer asks 9–10 questions vs the 7–10 recorded and never runs out.
    **Convergence is still 0%**, now blocked by two *new* (separately-tracked)
    follow-ups surfaced by the fix — neither an answer-robustness gap:
-   - **1a. Draft `max_tokens` truncation** — see #3 (it hits the intake
-     `draft_report` JSON, not only QC).
+   - **1a. Draft `max_tokens` truncation — DONE (Session 167, gap #3).** The
+     intake `draft_report` JSON now completes at the 16384 default (verified
+     live, no truncation). Only 1b remains on the convergence critical path.
    - **1b. Live-interviewer rigor vs. fixture depth / metric semantics** — at
      adequate `max_tokens` the model conducts a thorough ~10-question interview but
      drafts a populated `missing_fields` list (formal governance review, fairness
@@ -192,14 +196,20 @@ see "Baseline findings" for the diagnosis), in rough priority:**
    metric (score `cycle_time`/`risk_tier` separately; credit stricter-direction
    mismatches). The `fraud_triage` laxer-miss (`tier_2_high` vs ref
    `tier_1_critical`) needs an explicit SME ruling.
-3. **`max_tokens` truncation on large JSON output** — broader than first thought.
-   `generate_quality_checks` truncates for the large `tx_auto_training` case
-   (S165); and (Session 166) the intake `draft_report` truncates too — at
+3. **`max_tokens` truncation on large JSON output — DONE (Session 167).**
+   `generate_quality_checks` truncated for the large `tx_auto_training` case
+   (S165), and (Session 166) the intake `draft_report` truncated too — at
    `max_tokens=4096` the draft hit `stop_reason=max_tokens` (`output_tokens=4096`),
    leaving an unclosed ```json fence → `IntakeLLMError`, blocking every interview
-   from a parseable draft. Same root cause (no retry — Trap 5). Raise/handle
-   `max_tokens`, add a continuation/retry on truncation, or chunk the output. This
-   is now on the critical path for interview convergence (#1a).
+   from a parseable draft (same root cause; no retry — Trap 5). **Fixed:**
+   `DEFAULT_MAX_TOKENS` raised 4096→16384 in both `AnthropicLLMClient`s (bedrock
+   inherits) and an explicit `stop_reason=='max_tokens'` guard now raises an
+   actionable error *before* parsing — no silent partial-JSON parse, no retry,
+   and the prefill-continuation option is ruled out (`claude-sonnet-4-6` 400s on
+   last-assistant-turn prefills). Verified live at the new default: `draft_report`
+   completes (no truncation) and `generate_quality_checks` on `tx_auto_training`
+   returns 3 groups / 29 checks. Unblocked both `qc_structural` and the
+   interview-convergence Layer 2 (#1a).
 4. **SQL executability** — 2/5 generated queries don't execute on the seeded
    schema; inspect which (model SQL vs incomplete seed schema).
 
