@@ -63,6 +63,9 @@ packages = ["src/model_project_constructor"]
 testpaths = ["tests"]
 pythonpath = ["src", "packages/data-agent/src"]
 addopts = "-ra --cov=model_project_constructor --cov=model_project_constructor_data_agent --cov-report=term-missing --cov-fail-under=95"
+markers = [
+    "live: Phase B eval against a real LLM provider; requires ANTHROPIC_API_KEY and is deselected by default. Run the deterministic suite with -m 'not live' (CI default) and the live tier with -m live. See tests/eval/.",
+]
 
 [tool.coverage.run]
 source = [

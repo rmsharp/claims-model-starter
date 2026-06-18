@@ -1,0 +1,80 @@
+# Phase B eval — SQL / baseline corpus (multi-provider LLM plan §3.4 row 2).
+#
+# Each case carries a DataRequest (the input to the data agent's
+# generate_primary_queries / generate_baseline_query) and a human-authored
+# reference_sql that is parse-valid AND executes against the seeded P&C schema
+# (pc_schema.sql). The reference SQL is the oracle's self-test: the deterministic
+# tier asserts every reference_sql parses (100%) and executes (100%), proving the
+# corpus + the validate_sql / ReadOnlyDB oracle are sound. The live tier feeds the
+# same DataRequests to a real provider and measures the GENERATED SQL against the
+# parse-valid==100% / executable>=95% thresholds.
+#
+# SQLite-compatible SQL only (the seed DB is on-disk SQLite). `kind: primary`
+# cases map to generate_primary_queries; `kind: baseline` to generate_baseline_query.
+
+cases:
+  - name: tx_auto_training
+    kind: primary
+    request:
+      target_description: "successful subrogation recovery on TX auto claims"
+      target_granularity: { unit: claim, time_grain: event }
+      required_features: [paid_amount, subro_recovered, annual_premium, state]
+      population_filter: "auto claims in TX"
+      time_range: "2024-01-01 to 2024-12-31"
+      database_hint: claims
+    reference_sql: >-
+      SELECT c.claim_id, c.paid_amount, c.subro_recovered, p.annual_premium
+      FROM claims c JOIN policies p ON c.policy_id = p.policy_id
+      WHERE c.line_of_business = 'auto' AND c.state = 'TX'
+    expectation: "Returns one row per TX auto claim with recovery and premium features."
+
+  - name: property_severity
+    kind: primary
+    request:
+      target_description: "claim severity on property claims"
+      target_granularity: { unit: claim, time_grain: event }
+      required_features: [paid_amount, loss_date, state]
+      population_filter: "property claims, all states"
+      time_range: "2024-01-01 to 2024-12-31"
+      database_hint: claims
+    reference_sql: >-
+      SELECT claim_id, paid_amount, state, loss_date
+      FROM claims WHERE line_of_business = 'property'
+    expectation: "Returns property claims for a severity model."
+
+  - name: fnol_reporting_latency
+    kind: primary
+    request:
+      target_description: "FNOL reporting latency in days per claim"
+      target_granularity: { unit: claim, time_grain: event }
+      required_features: [loss_date, fnol_date]
+      population_filter: "all claims"
+      time_range: "2024-01-01 to 2024-12-31"
+      database_hint: claims
+    reference_sql: >-
+      SELECT claim_id,
+             (julianday(fnol_date) - julianday(loss_date)) AS fnol_latency_days
+      FROM claims
+    expectation: "Returns FNOL-minus-loss latency per claim (SQLite julianday)."
+
+  - name: subrogation_recovery_rate
+    kind: baseline
+    request:
+      target_description: "baseline subrogation recovery rate"
+      target_granularity: { unit: portfolio, time_grain: annual }
+      required_features: [subro_recovered, paid_amount]
+      population_filter: "subrogation-eligible claims"
+      time_range: "2024-01-01 to 2024-12-31"
+      database_hint: claims
+      baseline_metric_name: subrogation_recovery_rate
+      baseline_metric_definition: >-
+        Sum of subro_recovered divided by sum of paid_amount over
+        subrogation-eligible claims.
+      baseline_measurement_window: "trailing 12 months"
+    measurement_unit: ratio
+    reference_sql: >-
+      SELECT CASE WHEN SUM(paid_amount) = 0 THEN 0
+                  ELSE SUM(subro_recovered) * 1.0 / SUM(paid_amount) END
+             AS recovery_rate
+      FROM claims WHERE subro_eligible = 1
+    expectation: "Returns a single scalar recovery-rate row."

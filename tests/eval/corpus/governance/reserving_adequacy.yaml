@@ -1,0 +1,144 @@
+# Phase B eval — rule-derived governance reference case (NOT a project fixture).
+#
+# Provenance: AUTHORED for the eval corpus (multi-provider LLM plan §5 Phase B),
+# not reused from tests/fixtures/. The three reused fixtures (subrogation,
+# pricing_optimization, fraud_triage) already span tier_3 / tier_2 / tier_1; this
+# case completes the RiskTier vocabulary with a tier_4_low / operational example
+# and exercises the ASOP_56 framework. Labelled by applying the SYSTEM_GOVERNANCE
+# rule ("be conservative; if in doubt, pick the stricter tier") to the scenario,
+# with a per-field rationale. The operator is the blessing authority and may
+# override any field (see tests/eval/README.md §Governance reference labels).
+#
+# It is a complete intake_fixture/v1 fixture so the same loader path works and it
+# could double as a short interview golden.
+schema: intake_fixture/v1
+stakeholder_id: stakeholder_actuarial_001
+session_id: intake_reserving_001
+domain: pc_claims
+initial_problem: >-
+  We want a model that monitors case-reserve adequacy across open claims so
+  the reserving actuaries get an early signal where held reserves are likely
+  to be insufficient versus ultimate. It is an internal monitoring aid, not a
+  consumer-facing or automated-decision system.
+
+qa_pairs:
+  - question: "What business outcome are you trying to support?"
+    answer: >-
+      Faster, better-targeted reserve reviews. Today actuaries sample open
+      claims manually; we want a monthly signal flagging segments where case
+      reserves are trending inadequate so reviews focus where it matters.
+  - question: "Who consumes the output and how often?"
+    answer: >-
+      The reserving actuaries, as a routine step in the monthly reserving
+      close. It is a dashboard input, not something that pays or denies a
+      claim and nothing consumer-facing depends on it.
+  - question: "What is the target and what value would success create?"
+    answer: >-
+      A regression on the expected reserve-to-ultimate gap per open-claim
+      segment. Better-targeted reviews could tighten reserve adequacy and
+      reduce adverse development, but the model only informs an actuary.
+
+draft_after: 3
+
+draft:
+  business_problem: >-
+    Reserving actuaries sample open claims manually to find inadequate case
+    reserves, which is slow and uneven. There is no systematic monthly signal
+    pointing reviews at the segments most likely to develop adversely.
+  proposed_solution: >-
+    A monthly batch regression that scores each open-claim segment on its
+    expected reserve-to-ultimate gap and surfaces the largest likely shortfalls
+    on the reserving dashboard. The actuary retains full judgement; no reserve
+    is changed automatically and nothing is shown to claimants.
+  model_solution:
+    target_variable: reserve_to_ultimate_gap
+    target_definition: >-
+      Continuous: expected (ultimate_incurred - current_case_reserve) per
+      open-claim segment, estimated from historical development triangles.
+    candidate_features:
+      - claim_age_months
+      - line_of_business
+      - paid_to_incurred_ratio
+      - reopened_flag
+      - segment_development_factor
+    model_type: supervised_regression
+    evaluation_metrics:
+      - rmse
+      - mean_absolute_error
+      - calibration_by_segment
+    is_supervised: true
+  estimated_value:
+    narrative: >-
+      Better-targeted reserve reviews could reduce adverse development on a
+      held reserve base in the low hundreds of millions; even a small
+      improvement in review targeting is worth a few hundred thousand a year
+      in earlier, more accurate reserving.
+    annual_impact_usd_low: 250000
+    annual_impact_usd_high: 750000
+    confidence: low
+    assumptions:
+      - "Held case-reserve base across open claims is ~$300M."
+      - "Targeted reviews modestly reduce adverse development versus sampling."
+    cost_of_inaction_narrative: >-
+      Without a systematic signal, reserve reviews stay sample-driven and miss
+      adverse-developing segments until later quarters.
+    annual_cost_of_inaction_usd_low: 250000
+    annual_cost_of_inaction_usd_high: 750000
+    implementation_cost_band_usd_low: 150000
+    implementation_cost_band_usd_high: 400000
+    payback_months: 12
+    value_drivers:
+      - better_targeted_reserve_reviews
+      - earlier_detection_of_adverse_development
+  value_measurement_plan:
+    baseline_metric_name: reserve_adequacy_ratio
+    baseline_metric_definition: >-
+      Held_case_reserves divided by latest_estimated_ultimate for open claims,
+      computed at month-end from the reserving data mart.
+    baseline_measurement_window: trailing 12 months
+    counterfactual_design: historical_baseline_with_detrending
+    counterfactual_rationale: >-
+      Reserve-adequacy ratio and adverse development on reviewed segments are
+      compared against the historical sampling baseline, detrending for
+      development period, since a randomised holdout of reserve reviews is not
+      operationally feasible.
+    attribution_method_narrative: >-
+      Compare adverse development on flagged-and-reviewed segments against the
+      historical sampling baseline over equivalent development windows.
+    evaluation_horizon_months: 12
+    logging_requirements:
+      - segment_id
+      - predicted_reserve_to_ultimate_gap
+      - actuary_review_taken
+      - realised_development_at_12m
+    review_cadence: monthly
+    success_criteria:
+      - "Reserve-adequacy ratio variance narrows on reviewed segments at 12m."
+      - "No increase in late adverse development versus the sampling baseline."
+    decision_rights: >-
+      Chief Reserving Actuary owns the signal; it informs but never replaces
+      actuarial reserve judgement. Retire/retrain if calibration drifts for two
+      consecutive monthly closes.
+
+governance:
+  cycle_time: operational
+  cycle_time_rationale: >-
+    Runs as a routine step in the monthly reserving operational close — more
+    frequent than a strategic/annual model but not real-time. Tactical/strategic
+    would understate that it is part of ongoing operations; continuous would
+    overstate it (no streaming or real-time scoring).
+  risk_tier: tier_4_low
+  risk_tier_rationale: >-
+    Internal advisory monitoring only; reserving actuaries retain full
+    judgement and no reserve, payment, or consumer-facing decision is automated.
+    Low financial and regulatory exposure — the lowest tier. (If in doubt the
+    rule says pick the stricter tier, but nothing here is consumer-facing or
+    automated, so tier_4_low is the defensible floor.)
+  regulatory_frameworks:
+    - SR_26_2
+    - ASOP_56
+  affects_consumers: false
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT
