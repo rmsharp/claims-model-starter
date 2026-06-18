@@ -87,7 +87,7 @@ _CHECK_SPECS: tuple[_CheckSpec, ...] = (
     _CheckSpec(
         "json_parse",
         "Any JSON method",
-        "parse success via both _extract_json copies (test_llm_json_parity)",
+        "parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier)",
         thresholds.JSON_PARSE_MIN,
         "min",
     ),

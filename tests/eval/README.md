@@ -73,6 +73,12 @@ provider, side-by-side. The per-provider pass-rates feed the **cutover gate** in
 every §3.4 threshold. The §5 rule: **cutover only if the candidate meets every
 threshold**; an unmet *or unmeasured* threshold keeps `anthropic` primary.
 
+Seven of the eight gate metrics are live-tier pass-rates from `test_eval_live.py`;
+the eighth, `json_parse`, is the **deterministic** parity result
+(`test_llm_json_parity.py`, provider-parametrized in Phase B) — not a live-tier
+number. `PHASE_E_AGREEMENT_REPORT.md` §"Filling this report" gives the exact
+recipe for each.
+
 The committed decision, the run procedure, and the per-entrypoint cutover steps
 live in [`PHASE_E_AGREEMENT_REPORT.md`](PHASE_E_AGREEMENT_REPORT.md). **Current
 decision: NO-GO by default** — no credentials this session, so every threshold is

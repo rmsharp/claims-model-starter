@@ -32,7 +32,7 @@ A live run replaces each PENDING cell with `<rate> (PASS|FAIL)`. -->
 
 | Capability | Metric | Threshold | anthropic (baseline) | bedrock (candidate) |
 | --- | --- | --- | --- | --- |
-| Any JSON method | parse success via both _extract_json copies (test_llm_json_parity) | ≥ 99% | — (PENDING) | — (PENDING) |
+| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | — (PENDING) | — (PENDING) |
 | generate_primary_queries | SQL parse-valid | ≥ 100% | — (PENDING) | — (PENDING) |
 | generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | — (PENDING) | — (PENDING) |
 | classify_governance | exact label agreement (cycle_time AND risk_tier) vs reference | ≥ 90% | — (PENDING) | — (PENDING) |
@@ -69,24 +69,44 @@ default — no cross-provider 400).
 
 ### Filling this report from a live run
 
-1. Run the shadow run; read each capability's pass-rate / miss-count from the
-   `test_eval_live.py` output (the JSON-parse rate comes from
-   `test_llm_json_parity.py`).
-2. Build the decision and regenerate the table:
+The eight gate keys (`eval_cutover.CHECK_KEYS`) come from two sources:
 
-   ```python
-   from tests.eval.eval_cutover import evaluate_cutover, render_agreement_report
-   measured = {
-       "anthropic": {"json_parse": 0.99, "sql_parse": 1.0, "sql_exec": 0.97, ...},
-       "bedrock":   {"json_parse": 0.99, "sql_parse": 1.0, "sql_exec": 0.96, ...},
-   }
-   decisions = {p: evaluate_cutover(p, m) for p, m in measured.items()}
-   print(render_agreement_report(decisions))
-   ```
+- **Seven live-tier metrics** — `sql_parse`, `sql_exec`, `governance_agreement`,
+  `governance_laxer_miss`, `qc_structural`, `interview_convergence`,
+  `interview_premature`: read each provider's pass-rate / miss-count from the
+  `test_eval_live.py` shadow-run output.
+- **One deterministic metric** — `json_parse`: this is **not** a live-tier number.
+  §3.4's oracle for it is the provider-parametrized parity battery. Run
+  `uv run pytest tests/test_llm_json_parity.py -q` (it covers every registered
+  `(seam, provider)` parser, incl. `bedrock`); a green run means each provider's
+  `_extract_json` parsers handle the battery → record **`1.0`** for that provider.
+  A real-output parse failure would instead surface as a failure in the live
+  capability tests above (they raise on unparseable provider JSON).
 
-3. Paste the regenerated table above, record the measured `(provider, model)`,
-   and update the decision line. If the **baseline** fails its own threshold, the
-   threshold is miscalibrated — fix `eval_thresholds.py` and note it (§3.4).
+Then build the decision and regenerate the table:
+
+```python
+from tests.eval.eval_cutover import evaluate_cutover, render_agreement_report
+# Every CHECK_KEYS entry must be present (a missing key reads as PENDING):
+measured = {
+    "anthropic": {
+        "json_parse": 1.0, "sql_parse": 1.0, "sql_exec": 0.97,
+        "governance_agreement": 0.95, "governance_laxer_miss": 0,
+        "qc_structural": 1.0, "interview_convergence": 0.96, "interview_premature": 0,
+    },
+    "bedrock": {
+        "json_parse": 1.0, "sql_parse": 1.0, "sql_exec": 0.96,
+        "governance_agreement": 0.92, "governance_laxer_miss": 0,
+        "qc_structural": 1.0, "interview_convergence": 0.95, "interview_premature": 0,
+    },
+}
+decisions = {p: evaluate_cutover(p, m) for p, m in measured.items()}
+print(render_agreement_report(decisions))
+```
+
+Paste the regenerated table above, record the measured `(provider, model)`, and
+update the decision line. If the **baseline** fails its own threshold, the
+threshold is miscalibrated — fix `eval_thresholds.py` and note it (§3.4).
 
 ## Cutover procedure (only on a GO)
 
