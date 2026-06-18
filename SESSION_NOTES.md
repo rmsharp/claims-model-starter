@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 167 Did
+**Deliverable:** Fix `max_tokens` truncation (gap #3) — stop `draft_report`/QC generation from truncating when JSON output exceeds `max_tokens` (`stop_reason=max_tokens` → unclosed fence → `IntakeLLMError`). Touches both `AnthropicLLMClient`s (`src/` + `packages/`). DEVELOPMENT workstream, ONE deliverable. (IN PROGRESS)
+**Started:** 2026-06-18
+**Status:** Session claimed. Reading the implementation before settling on a design.
+
+---
+
+**(Session 166 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 166 — operator-directed ("Fix interview-answer robustness"). The #1 harness-fix follow-up from S165's baseline: live interviews scored `interview_convergence` 0% because the live model asks more/different questions than the recorded scripted stakeholder answers supply. DEVELOPMENT workstream, ONE deliverable: build a robust stakeholder-answer strategy so `interview_convergence` measures the model, not the scripted-replay corpus artifact. **(COMPLETE.** Four commits: claim **`c4f3fee`** + fix **`acd6e53`** + verify-triage **`9028f61`** + this close-out; all **UNPUSHED** (#40) — `origin/master` at `5ed4b87`, **24 local unpushed** after close-out.**)**
 
 **Started / Completed:** 2026-06-18 / 2026-06-18.
