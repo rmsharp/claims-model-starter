@@ -144,14 +144,20 @@ def test_factory_import_does_not_load_anthropic() -> None:
         import sys
         import model_project_constructor_data_agent  # noqa: F401  (runs __init__)
         import model_project_constructor_data_agent.factory  # noqa: F401
-        assert "anthropic" not in sys.modules, sorted(
-            m for m in sys.modules if m.startswith("anthropic")
+        # No LLM SDK at factory-import time: neither anthropic nor boto3 /
+        # botocore (the Bedrock transport pulled by the anthropic[bedrock]
+        # extra, Phase C). The Bedrock client is imported lazily inside the
+        # factory branch, so its top-level anthropic import never leaks here.
+        leaked = sorted(
+            m for m in sys.modules
+            if m.split(".")[0] in {"anthropic", "boto3", "botocore"}
         )
-        print("anthropic-free")
+        assert not leaked, leaked
+        print("sdk-free")
         """
     )
     result = subprocess.run(
         [sys.executable, "-c", code], capture_output=True, text=True
     )
     assert result.returncode == 0, result.stderr
-    assert "anthropic-free" in result.stdout
+    assert "sdk-free" in result.stdout

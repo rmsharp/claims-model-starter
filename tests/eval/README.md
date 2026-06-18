@@ -37,6 +37,17 @@ The split is what lets the gate exist without breaking CI hermeticity.
 > Anthropic baseline run is **deferred** (operator decision). The live tier is
 > wired and runnable; the measured Anthropic numbers and the resulting threshold
 > calibration are a **logged follow-up**, not silently skipped.
+>
+> **Status (Session 162) — Phase C added the AWS Bedrock-hosted Claude provider
+> (`"bedrock"`).** Its **live corpus run is also deferred** — no AWS credentials
+> this session (the operator is preparing for a future deployment). The Bedrock
+> client is constructible and unit-tested, and the deterministic tier proves the
+> harness; the candidate's live pass-rates are part of the deferred live
+> calibration. The live tier is currently keyed to first-party `ANTHROPIC_API_KEY`
+> (`anthropic` provider) — running the corpus against `bedrock` additionally
+> needs AWS credentials/region available to the boto3 chain and a provider-
+> parametrized live eval (Phase E shadow-run territory: §5 Phase E + the §3.4
+> threshold gate).
 
 Until the live tier is run, the §3.4 thresholds below are **proposed targets**,
 not yet confirmed against a measured Anthropic baseline. When a key is available:
