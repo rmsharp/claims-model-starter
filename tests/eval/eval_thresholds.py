@@ -4,10 +4,14 @@ These are the **proposed** pass thresholds for the provider-quality gate. The
 Anthropic baseline was measured in Session 165, but it did **not** calibrate them:
 the incumbent failed 5/8 on harness/corpus artifacts (fragile interview replay,
 governance references that disagree with live output, a QC max_tokens truncation),
-so the run measured the *harness*, not the providers. The thresholds were
-deliberately **not** lowered to match a broken harness; they stay proposed until
-the harness-fix follow-ups land (see ``PHASE_E_AGREEMENT_REPORT.md`` §"Baseline
-findings" and ``README.md`` §"Live baseline").
+so the run measured the *harness*, not the providers. Session 166 fixed the
+interview-replay artifact (a robust stakeholder simulator), but
+``interview_convergence`` stays sub-threshold for *other* reasons (a draft-JSON
+max_tokens truncation; the live interviewer's missing-field rigor vs. fixture
+depth) — so the harness is still not trustworthy. The thresholds were deliberately
+**not** lowered to match it; they stay proposed until the remaining harness-fix
+follow-ups land (see ``PHASE_E_AGREEMENT_REPORT.md`` §"Gap list" and ``README.md``
+§"Live baseline").
 
 The deterministic tier asserts the *scorers* behave correctly with respect to
 these constants (e.g. a laxer-tier prediction is caught); it does **not** assert

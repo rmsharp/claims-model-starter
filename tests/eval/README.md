@@ -45,6 +45,18 @@ The split is what lets the gate exist without breaking CI hermeticity.
 > labels disagree with live output (0% exact agreement); one QC output truncates
 > at `max_tokens`. See [`PHASE_E_AGREEMENT_REPORT.md`](PHASE_E_AGREEMENT_REPORT.md)
 > §"Baseline findings" for the per-metric diagnosis and the harness-fix follow-ups.
+>
+> **Status (Session 166) — the interview scripted-replay artifact (#21) is fixed.**
+> A robust [`StakeholderSimulator`](stakeholder_sim.py) now answers whatever the
+> live model asks (verified live: the interviewer asked 9–10 questions vs the 7–10
+> recorded; no more "ran out of answers"). `interview_convergence` now measures the
+> live model/corpus interaction, not the replay artifact. It is **still 0%** live,
+> now blocked by two *genuine* downstream factors: (a) a `max_tokens` truncation on
+> the large draft JSON (gap #3 — `stop_reason=max_tokens` at 4096); and (b) at
+> adequate `max_tokens`, the rigorous live interviewer drafts with a populated
+> `missing_fields` list (governance/fairness/cost/baseline specifics the fixtures
+> don't pre-answer) → `DRAFT_INCOMPLETE`. Both are handed-off follow-ups, not
+> answer-robustness gaps. See `PHASE_E_AGREEMENT_REPORT.md` §"Gap list".
 
 The §3.4 thresholds below remain **proposed**: the first baseline measured the
 *harness*, not the providers, so it does **not** calibrate them — and they were
@@ -139,11 +151,15 @@ exercised meaningfully.
 ## Caveats / follow-ups (logged, not silent)
 
 1. **Live baseline deferred** — see above. The single largest follow-up.
-2. **Interview live test** — `test_live_interview_converges` feeds the recorded
-   stakeholder answers to a real model that asks its own questions; if it asks
-   for more answers than the script supplies, that counts as a non-convergence
-   (`PROJECT_LEARNINGS` #21). A robust stakeholder-answer strategy (or padding)
-   is part of the deferred live calibration.
+2. **Interview live test** — `test_live_interview_converges` now drives the live
+   model with the [`StakeholderSimulator`](stakeholder_sim.py), which answers
+   whatever it asks (the scripted-replay artifact #21 is fixed; Session 166).
+   Remaining to reach a meaningful convergence *rate* (handed off): the gap-#3
+   `max_tokens` truncation on the draft JSON, and a calibration call on the live
+   interviewer's `missing_fields` rigor vs. fixture depth (and on the scorer,
+   which requires `status==COMPLETE` — stricter than the §3.4 metric text
+   "`believe_enough_info` within the cap"). Do **not** loosen the scorer to chase
+   a number (Candidate #129).
 3. **Framework coverage** — the corpus exercises `SR_26_2`, `NAIC_AIS`,
    `EU_AI_ACT_ART_9`, and `ASOP_56`; `GDPR_ART_22` is under-sampled. Add a
    GDPR-relevant scenario when the live baseline is calibrated.

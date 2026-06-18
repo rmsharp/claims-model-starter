@@ -59,7 +59,7 @@ artifact** (must be fixed before the metric is meaningful) or a **genuine signal
 | governance_agreement | 0% FAIL | **artifact** | `risk_tier` mismatched on all 4 cases, `cycle_time` on 2/4 → exact-both = 0. The rule-derived reference labels (single-SME-ratified, S161) **systematically disagree with live-model output**; the "exact match of *both* closed-vocab labels ≥ 90%" metric is unachievable even by the incumbent. Needs SME re-validation of the references against live output and/or a less brittle metric (score the two labels separately; credit stricter-direction mismatches). |
 | governance_laxer_miss | 5 FAIL | mixed | Driven by **one** case — `fraud_triage`: model `tier_2_high` vs ref `tier_1_critical` (laxer) × 5 samples. Either the model under-rates a critical case (genuine, concerning) or the reference is too strict — an SME call. The other 3 cases erred *stricter* (allowed). |
 | qc_structural | 66.7% FAIL | signal (fixable) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). Raise/handle max_tokens for large QC output, or chunk it. |
-| interview_convergence | 0% FAIL | **artifact** | **All four** raised "model asked for more answers than the script supplies" — the documented scripted-replay caveat (`PROJECT_LEARNINGS` #21). The live model asks different/more questions than when the fixtures were recorded. Needs a robust stakeholder-answer strategy before the number means anything. |
+| interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) the draft JSON truncates at `max_tokens` (the same root cause as qc_structural / gap #3 — `stop_reason=max_tokens` at 4096); (b) at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE`. See Gap list #1. |
 | interview_premature | 0 PASS | — | Trivially clean — none converged (so none converged *prematurely*). Only meaningful once convergence works. |
 
 **Bottom line:** before the §3.4 gate can drive a real cutover decision, the
@@ -167,17 +167,39 @@ any cutover.
 **Harness-trustworthiness fixes (must land before the gate can decide a cutover —
 see "Baseline findings" for the diagnosis), in rough priority:**
 
-1. **Interview-answer robustness** — all 4 interviews fail (model asks more
-   questions than the scripted answers supply). Build a robust stakeholder-answer
-   strategy so interviews can actually converge (`PROJECT_LEARNINGS` #21).
+1. **Interview-answer robustness — DONE (Session 166).** The scripted-replay
+   `StopIteration` artifact (#21) is fixed: `IntakeAgent.run_scripted` gained an
+   `answer_provider` seam, and `tests/eval/stakeholder_sim.py` answers whatever the
+   live model asks from the fixture's full knowledge. Verified live (anthropic):
+   the interviewer asks 9–10 questions vs the 7–10 recorded and never runs out.
+   **Convergence is still 0%**, now blocked by two *new* (separately-tracked)
+   follow-ups surfaced by the fix — neither an answer-robustness gap:
+   - **1a. Draft `max_tokens` truncation** — see #3 (it hits the intake
+     `draft_report` JSON, not only QC).
+   - **1b. Live-interviewer rigor vs. fixture depth / metric semantics** — at
+     adequate `max_tokens` the model conducts a thorough ~10-question interview but
+     drafts a populated `missing_fields` list (formal governance review, fairness
+     scope, exact baseline figures, implementation cost, IT feasibility, privacy
+     retention, EDW availability) the fixtures don't pre-answer → `DRAFT_INCOMPLETE`.
+     Note the scorer requires `status==COMPLETE`, **stricter** than the §3.4 metric
+     text ("`believe_enough_info` within the cap", which the model *did* satisfy at
+     q=10). Resolving the rate needs an SME/operator calibration call (richer
+     fixtures, simulator forthcomingness, and/or the convergence metric) — **do not
+     loosen the scorer to chase a number** (Candidate #129).
 2. **Governance references + metric** — the rule-derived reference labels
    disagree with live-model output (0% exact agreement). SME-re-validate the
    references against live output, and reconsider the brittle "exact-both-labels"
    metric (score `cycle_time`/`risk_tier` separately; credit stricter-direction
    mismatches). The `fraud_triage` laxer-miss (`tier_2_high` vs ref
    `tier_1_critical`) needs an explicit SME ruling.
-3. **QC `max_tokens` truncation** — `generate_quality_checks` truncates for the
-   large `tx_auto_training` case; raise/handle `max_tokens` or chunk the output.
+3. **`max_tokens` truncation on large JSON output** — broader than first thought.
+   `generate_quality_checks` truncates for the large `tx_auto_training` case
+   (S165); and (Session 166) the intake `draft_report` truncates too — at
+   `max_tokens=4096` the draft hit `stop_reason=max_tokens` (`output_tokens=4096`),
+   leaving an unclosed ```json fence → `IntakeLLMError`, blocking every interview
+   from a parseable draft. Same root cause (no retry — Trap 5). Raise/handle
+   `max_tokens`, add a continuation/retry on truncation, or chunk the output. This
+   is now on the critical path for interview convergence (#1a).
 4. **SQL executability** — 2/5 generated queries don't execute on the seeded
    schema; inspect which (model SQL vs incomplete seed schema).
 
