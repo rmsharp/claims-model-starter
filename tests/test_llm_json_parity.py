@@ -49,6 +49,7 @@ a package-source import and cannot affect the decoupling guarantee.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -107,6 +108,38 @@ def _client_pair(
     )
 
 
+# --- provider registry (the cross-PROVIDER extension point) --------------
+#
+# Each seam carries its OWN ``_extract_json`` copy and its OWN error class
+# (constraint C4 — see the module docstring); today both seams run a single
+# provider (``anthropic``). Phase C of the multi-provider LLM plan
+# (``docs/planning/multi-provider-llm-plan.md`` §5) adds a second provider by
+# appending one ``_Seam`` row per ``(seam, provider)`` — e.g.
+# ``_Seam("intake", "bedrock", intake_bedrock._extract_json, IntakeLLMError)`` —
+# after which the parity battery below asserts every provider's parser agrees on
+# the same inputs and raises its seam's error class. No test-body edits needed:
+# the parity notion generalises from "the two copies" to "every registered
+# (seam, provider) parser".
+
+
+@dataclass(frozen=True)
+class _Seam:
+    seam: str  # 'intake' | 'data_agent'
+    provider: str  # 'anthropic' (Phase C adds more)
+    extract_json: Callable[[str], Any]
+    error_cls: type[Exception]
+
+    @property
+    def label(self) -> str:
+        return f"{self.seam}:{self.provider}"
+
+
+_SEAMS: list[_Seam] = [
+    _Seam("intake", "anthropic", intake_client._extract_json, IntakeLLMError),
+    _Seam("data_agent", "anthropic", da_client._extract_json, LLMParseError),
+]
+
+
 # --- §5.1 parse parity ---------------------------------------------------
 
 PARSE_CASES: list[tuple[str, Any]] = [
@@ -135,12 +168,12 @@ PARSE_CASES: list[tuple[str, Any]] = [
 
 @pytest.mark.parametrize(("raw", "expected"), PARSE_CASES)
 def test_parse_parity(raw: str, expected: Any) -> None:
-    """An identical input parses to an identical result in both copies (and to
-    the pinned expected value)."""
-    intake_result = intake_client._extract_json(raw)
-    da_result = da_client._extract_json(raw)
-    assert intake_result == da_result
-    assert intake_result == expected
+    """An identical input parses to an identical result in every registered
+    seam/provider parser (and to the pinned expected value). Equality to a single
+    expected value across all parsers is what makes them mutually consistent."""
+    for seam in _SEAMS:
+        result = seam.extract_json(raw)
+        assert result == expected, f"{seam.label} parsed {result!r}, expected {expected!r}"
 
 
 # --- §5.2 raise parity ---------------------------------------------------
@@ -154,19 +187,21 @@ RAISE_CASES: list[str] = [
 
 @pytest.mark.parametrize("raw", RAISE_CASES)
 def test_raise_parity(raw: str) -> None:
-    """Malformed input is rejected by both copies, *each raising its OWN error
-    type* — the intentional ``IntakeLLMError`` vs ``LLMParseError`` divergence
-    is preserved — and the two messages are identical modulo that class.
+    """Malformed input is rejected by every registered parser, *each raising its
+    OWN seam error type* — the intentional ``IntakeLLMError`` vs ``LLMParseError``
+    divergence is preserved — and the messages are identical across parsers
+    modulo that class.
 
-    ``IntakeLLMError`` (RuntimeError) and ``LLMParseError`` (ValueError) live in
-    disjoint hierarchies, so ``pytest.raises(IntakeLLMError)`` would FAIL if the
-    intake copy ever started raising the data agent's type, and vice versa.
+    Each seam's error class lives in a disjoint hierarchy, so its
+    ``pytest.raises(seam.error_cls)`` guard would FAIL if that parser ever
+    started raising another seam's type.
     """
-    with pytest.raises(IntakeLLMError) as intake_exc:
-        intake_client._extract_json(raw)
-    with pytest.raises(LLMParseError) as da_exc:
-        da_client._extract_json(raw)
-    assert str(intake_exc.value) == str(da_exc.value)
+    messages: list[str] = []
+    for seam in _SEAMS:
+        with pytest.raises(seam.error_cls) as exc:
+            seam.extract_json(raw)
+        messages.append(str(exc.value))
+    assert len(set(messages)) == 1, f"parser messages diverged: {messages}"
 
 
 # --- §5.3 guard-message parity -------------------------------------------
@@ -213,3 +248,11 @@ def test_error_classes_are_intentionally_distinct() -> None:
     assert issubclass(LLMParseError, ValueError)
     assert not issubclass(IntakeLLMError, LLMParseError)
     assert not issubclass(LLMParseError, IntakeLLMError)
+    # Generalised over the registry: every pair of distinct seam error classes
+    # shares no ancestor below ``Exception``, so each seam's ``pytest.raises``
+    # guard stays disjoint as Phase C adds providers.
+    distinct_error_classes = {seam.error_cls for seam in _SEAMS}
+    for left in distinct_error_classes:
+        for right in distinct_error_classes:
+            if left is not right:
+                assert not issubclass(left, right)
