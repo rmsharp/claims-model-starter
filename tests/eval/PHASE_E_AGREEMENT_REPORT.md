@@ -59,7 +59,7 @@ artifact** (must be fixed before the metric is meaningful) or a **genuine signal
 | governance_agreement | 0% FAIL | **artifact** | `risk_tier` mismatched on all 4 cases, `cycle_time` on 2/4 → exact-both = 0. The rule-derived reference labels (single-SME-ratified, S161) **systematically disagree with live-model output**; the "exact match of *both* closed-vocab labels ≥ 90%" metric is unachievable even by the incumbent. Needs SME re-validation of the references against live output and/or a less brittle metric (score the two labels separately; credit stricter-direction mismatches). |
 | governance_laxer_miss | 5 FAIL | mixed | Driven by **one** case — `fraud_triage`: model `tier_2_high` vs ref `tier_1_critical` (laxer) × 5 samples. Either the model under-rates a critical case (genuine, concerning) or the reference is too strict — an SME call. The other 3 cases erred *stricter* (allowed). |
 | qc_structural | 66.7% FAIL → fixed (S167) | signal (FIXED) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). **Session 167 fixed it** (gap #3): the default cap is raised to 16384 and a `stop_reason='max_tokens'` guard raises an actionable error instead of a cryptic parse failure. Verified live — `tx_auto_training` returns 3 groups / 29 checks, no truncation. A fresh baseline run will confirm the rate clears the threshold. |
-| interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) ~~the draft JSON truncates at `max_tokens`~~ **fixed S167 (gap #3)** — the draft now completes at the 16384 default (verified live, no truncation); (b) at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE` (gap #1b — the remaining convergence blocker). See Gap list #1b. |
+| interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) ~~the draft JSON truncates at `max_tokens`~~ **fixed S167 (gap #3)** — the draft now completes at the 16384 default (verified live, no truncation); (b) ~~at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE`~~ **fixed S168 (gap #1b)** — the root cause was a scorer/metric mismatch (the scorer keyed on `status==COMPLETE`/report-finalization, stricter than the §3.4 text "`believe_enough_info` within the cap"); the scorer is now aligned to the metric text (`interview_converged` = `questions_cap_reached not in missing_fields`), a faithfulness fix, **not** a #129 loosening. **Measured live S168: 0% → 75%** (`[T,T,T,F]`, 3/4) — the fix unblocks convergence but the gate is **still RED** (3/4 < 95%); the one miss (`reserving_adequacy`) converges in isolation (q=9, no cap) so the residual is **gate fragility** (4 samples @ 95% needs 4/4; stochastic model + transient-seam-as-False), not a scorer/capability defect. See Gap list #1b. |
 | interview_premature | 0 PASS | — | Trivially clean — none converged (so none converged *prematurely*). Only meaningful once convergence works. |
 
 **Bottom line:** before the §3.4 gate can drive a real cutover decision, the
@@ -180,16 +180,48 @@ see "Baseline findings" for the diagnosis), in rough priority:**
    - **1a. Draft `max_tokens` truncation — DONE (Session 167, gap #3).** The
      intake `draft_report` JSON now completes at the 16384 default (verified
      live, no truncation). Only 1b remains on the convergence critical path.
-   - **1b. Live-interviewer rigor vs. fixture depth / metric semantics** — at
-     adequate `max_tokens` the model conducts a thorough ~10-question interview but
-     drafts a populated `missing_fields` list (formal governance review, fairness
-     scope, exact baseline figures, implementation cost, IT feasibility, privacy
-     retention, EDW availability) the fixtures don't pre-answer → `DRAFT_INCOMPLETE`.
-     Note the scorer requires `status==COMPLETE`, **stricter** than the §3.4 metric
-     text ("`believe_enough_info` within the cap", which the model *did* satisfy at
-     q=10). Resolving the rate needs an SME/operator calibration call (richer
-     fixtures, simulator forthcomingness, and/or the convergence metric) — **do not
-     loosen the scorer to chase a number** (Candidate #129).
+   - **1b. Scorer/metric faithfulness — RESOLVED; live gate still RED (Session 168).** Diagnosis (three
+     independent reads + an adversarial check) found the root cause was *not*
+     fixture depth but a **scorer/metric mismatch**: `interview_converged` keyed on
+     `report.status == "COMPLETE"` — i.e. *report finalization* (`finalize` sets
+     `COMPLETE` only when review is `accepted` **and** `missing_fields` is empty,
+     `nodes.py:154`) — while the §3.4 row is *defined* as "`believe_enough_info`
+     within the 20-question cap" (`eval_cutover.py:132`, `README.md:117`). The model
+     satisfied the metric (believed enough at q≈10) yet the report stayed
+     `DRAFT_INCOMPLETE` because it honestly drafted a populated `missing_fields` list
+     (formal governance review, fairness scope, exact baseline figures, cost, IT
+     feasibility, privacy retention, EDW availability) the fixtures don't pre-answer.
+     **Operator-chosen fix (AskUserQuestion): align the scorer to the metric text** —
+     `interview_converged` now returns `"questions_cap_reached" not in missing_fields`
+     (which exactly encodes "believed enough within the cap", since `finalize`
+     appends that marker iff the cap was hit *without* `believe_enough_info`), and
+     `premature_convergence` is reconciled to the **same** convergence signal so a
+     q=1 converge-and-bail can't slip past the guard. This is a **faithfulness fix,
+     not a #129 loosening** — the adversarial verdict confirmed the scorer was
+     *stricter than its own documented metric*; #129 forbids loosening a *faithful*
+     scorer, which this was not. The §3.4 metric text was already correct, so no
+     doc-text change was needed; report finalization remains a distinct concern (it
+     could become its own future §3.4 row). Pinned by 6 new deterministic scorer
+     tests (`test_eval_scoring.py`). *Note:* `accepted` defaults to `True` in
+     shadow/live runs (`review_sequence_from_fixture` → `["ACCEPT"]`,
+     `fixture.py:139`), so the prior handoff's "fixture enrichment" lever would also
+     have been viable, but the faithfulness fix is surgical and provider-independent.
+     **Measured live (anthropic, S168):** `test_live_interview_converges` moved
+     **0% → 75%** (`[T,T,T,F]`, 3/4) — the fix is confirmed to be what unblocks
+     convergence, but 3/4 < the 95% threshold so the gate is **still RED**. A
+     one-fixture diagnostic on the failing case (`reserving_adequacy`, the 4th)
+     showed it **converges in isolation** (`status=DRAFT_INCOMPLETE`,
+     `questions_asked=9`, `questions_cap_reached` absent → scorer `True`), so the
+     residual is **not** that case being a hard non-converger. **NEW gap #1c — live
+     gate fragility (handed off):** with only 4 samples at a 95% bar, passing needs
+     **4/4**, and the live model is non-deterministic; additionally a transient seam
+     `RuntimeError` is scored as a non-convergence (`test_eval_live.py:144`), so one
+     API blip fails the gate. Robustness options for a future session (SME/operator
+     call; do **not** lower the threshold to chase a number, #129): repeat each case
+     N times and use a pass-*rate* per case (matching the governance tier's N≥5
+     sampling), distinguish a transient seam error from a true non-convergence, or
+     re-validate the 95%/4-sample design. This is a harness-statistics concern,
+     distinct from the scorer/metric mismatch resolved here.
 2. **Governance references + metric** — the rule-derived reference labels
    disagree with live-model output (0% exact agreement). SME-re-validate the
    references against live output, and reconsider the brittle "exact-both-labels"

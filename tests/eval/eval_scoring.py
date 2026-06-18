@@ -90,20 +90,40 @@ def quality_checks_structural_ok(n_primary_queries: int, qc_lists: Sequence[Any]
 
 
 def interview_converged(report: IntakeReport) -> bool:
-    """Whether an interview converged cleanly (COMPLETE, not capped out)."""
-    return report.status == "COMPLETE" and "questions_cap_reached" not in report.missing_fields
+    """Whether an interview converged within the question cap (§3.4 metric).
+
+    The §3.4 intake metric is "``believe_enough_info`` within the 20-question
+    cap" — convergence is the model judging it had enough information *before*
+    the cap, NOT the report reaching a fully-finalized ``COMPLETE`` status.
+    ``finalize`` appends ``"questions_cap_reached"`` to ``missing_fields`` iff
+    the cap was hit *without* ``believe_enough_info`` (see intake ``nodes.py``),
+    so its absence is exactly "believed enough within the cap". Report
+    finalization (review accepted + zero missing fields) is a *separate*
+    concern: gating this capability metric on ``status == "COMPLETE"`` measured
+    report completeness, not interview convergence — the scorer was stricter
+    than its own §3.4 metric text (gap #1b). See :func:`premature_convergence`
+    for the same-signal early-convergence guard.
+    """
+    return "questions_cap_reached" not in report.missing_fields
 
 
 def premature_convergence(report: IntakeReport, min_questions: int = 2) -> bool:
     """Whether an interview converged suspiciously early.
 
-    The §3.4 interview metric requires "0 premature convergence". We flag a
-    COMPLETE interview that converged after fewer than ``min_questions`` answered
-    questions as premature — it claimed enough information before gathering a
-    plausible minimum. (A heuristic floor; the live tier may tune it against the
-    measured baseline.)
+    The §3.4 interview metric requires "0 premature convergence". We flag an
+    interview that converged (``believe_enough_info`` within the cap — i.e.
+    ``"questions_cap_reached"`` absent, the *same* signal
+    :func:`interview_converged` uses) after fewer than ``min_questions``
+    answered questions: it claimed enough information before gathering a
+    plausible minimum. Keying this guard on the convergence signal rather than
+    ``status == "COMPLETE"`` is what keeps it honest — otherwise an interview
+    could converge at q=1 yet never finalize and slip past the premature check.
+    (A heuristic floor; the live tier may tune it against the measured baseline.)
     """
-    return report.status == "COMPLETE" and report.questions_asked < min_questions
+    return (
+        "questions_cap_reached" not in report.missing_fields
+        and report.questions_asked < min_questions
+    )
 
 
 @dataclass(frozen=True)

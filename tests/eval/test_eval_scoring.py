@@ -13,16 +13,20 @@ from dataclasses import replace
 import pytest
 from model_project_constructor_data_agent.db import ReadOnlyDB
 
+from model_project_constructor.agents.intake.state import MAX_QUESTIONS
 from tests.eval import eval_thresholds as thresholds
 from tests.eval.eval_corpus import load_governance_cases
 from tests.eval.eval_scoring import (
+    interview_converged,
     is_laxer_tier,
     pass_rate,
+    premature_convergence,
     quality_checks_structural_ok,
     score_governance,
     sql_executes,
     sql_parse_valid,
 )
+from tests.schemas.fixtures import make_intake_report
 
 _CASES = {case.case_id: case for case in load_governance_cases()}
 
@@ -115,3 +119,65 @@ def test_pass_rate_and_threshold_check() -> None:
     assert rate.rate == pytest.approx(2 / 3)
     assert rate.meets(0.5) is True
     assert rate.meets(0.9) is False
+
+
+# --- interview convergence scorers (§3.4: believe_enough_info within cap) -----
+#
+# Convergence is "the model believed it had enough info within the 20-question
+# cap" — NOT "the report finalized COMPLETE". ``finalize`` marks
+# ``questions_cap_reached`` iff the cap was hit without that belief, so its
+# absence is the convergence signal. These tests pin that the scorer measures
+# the §3.4 metric text and not report finalization (gap #1b).
+
+
+def test_interview_converged_complete_report() -> None:
+    # The fully-finalized happy path still converges.
+    report = make_intake_report(status="COMPLETE", missing_fields=[], questions_asked=7)
+    assert interview_converged(report) is True
+
+
+def test_interview_converged_when_draft_incomplete_but_within_cap() -> None:
+    # gap #1b: the model believed it had enough (no cap marker) and drafted a
+    # report listing genuine missing_fields the fixtures don't pre-answer. Per
+    # the §3.4 metric text this DID converge — finalization is a separate metric.
+    report = make_intake_report(
+        status="DRAFT_INCOMPLETE",
+        missing_fields=["formal_governance_review", "exact_baseline_figures"],
+        questions_asked=10,
+    )
+    assert interview_converged(report) is True
+
+
+def test_interview_not_converged_when_cap_reached() -> None:
+    # Hitting the cap without believing enough is the one true non-convergence.
+    report = make_intake_report(
+        status="DRAFT_INCOMPLETE",
+        missing_fields=["questions_cap_reached"],
+        questions_asked=MAX_QUESTIONS,
+    )
+    assert interview_converged(report) is False
+
+
+def test_premature_convergence_flags_early_within_cap() -> None:
+    # Converged (no cap marker) after a single question → premature, even though
+    # the draft is incomplete: the guard tracks the same convergence signal so a
+    # q=1 converge-and-bail cannot slip past it.
+    report = make_intake_report(
+        status="DRAFT_INCOMPLETE", missing_fields=["x"], questions_asked=1
+    )
+    assert premature_convergence(report) is True
+
+
+def test_premature_convergence_not_flagged_at_cap() -> None:
+    # Hitting the cap is non-convergence, so it is never premature.
+    report = make_intake_report(
+        status="DRAFT_INCOMPLETE",
+        missing_fields=["questions_cap_reached"],
+        questions_asked=MAX_QUESTIONS,
+    )
+    assert premature_convergence(report) is False
+
+
+def test_premature_convergence_not_flagged_with_enough_questions() -> None:
+    report = make_intake_report(status="COMPLETE", missing_fields=[], questions_asked=7)
+    assert premature_convergence(report) is False
