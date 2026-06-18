@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 163 — operator-directed ("Phase D — parameterise the intake web UI so Bedrock is selectable"). Implement **Phase D** of `docs/planning/multi-provider-llm-plan.md` — thread `provider`/`model` through `ui/intake/app.py` `create_app` + `ui/intake/runner.py` so `_default_llm_factory` (`:62`) no longer hardcodes `"anthropic"` (Trap 3); the intake web UI can run any `KNOWN_PROVIDERS` member (notably `bedrock`), the default stays `anthropic` unless overridden, and the injectable `llm_factory` test seam is preserved. DEVELOPMENT workstream, ONE phase only (FM #18) — NO Phase E (shadow/cutover).
+
+**Started:** 2026-06-17.
+
+**Status:** **IN PROGRESS.** Session claimed; this stub committed BEFORE technical work (Phase 1B). Plan §5 Phase D + §2.5 Trap 3 + §4.8 read. Next: pre-flight read fan-out (read-only `Explore`) over `ui/intake/app.py`, `ui/intake/runner.py`, the UI tests, and the `--provider` precedent in `run_pipeline.py`/`data_agent/cli.py`; then implement as sole writer; then adversarially verify; then close out.
+
+---
+
+**(Session 162 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 162 — operator-directed ("Implement Phase C of the multi-provider LLM plan, building for running Claude on AWS"). Implement **Phase C** of `docs/planning/multi-provider-llm-plan.md` — add **one** second LLM provider, **AWS Bedrock-hosted Claude** (provider string `"bedrock"`), behind the existing protocol/factory seam in BOTH packages (intake + standalone data-agent wheel). DEVELOPMENT workstream, ONE phase only (FM #18) — NO Phase D (UI) or Phase E (cutover). **(COMPLETE.** Three commits: claim stub **`d58aebd`** + implementation **`cf40dc0`** + this close-out commit; all **UNPUSHED** pending operator authorization (#40), as are S159's 2 + S160's 2 + S161's 4 prior commits — `origin/master` is at `5ed4b87`.)**
 
 **Operator decisions captured (this session, via clarification dialogue):**
