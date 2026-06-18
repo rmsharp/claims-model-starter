@@ -1,9 +1,11 @@
 """Fixtures + collection hook for the Phase B eval tier.
 
 The ``pytest_collection_modifyitems`` hook auto-skips ``live``-marked tests when
-no ``ANTHROPIC_API_KEY`` is present, so the live tier is safe to collect locally
-and in CI without a key (CI also deselects it via ``-m 'not live'``). The skip is
-keyed on the ``live`` marker only, so non-eval tests are never affected.
+no ``ANTHROPIC_API_KEY`` is present. CI runs ``uv run pytest -q`` with **no key**
+(``.github/workflows/ci.yml``), so this hook — not a ``-m 'not live'`` flag — is
+what keeps the live tier out of CI; ``-m 'not live'`` is the explicit way to
+deselect it anywhere (e.g. locally with a key present). The skip is keyed on the
+``live`` marker only, so non-eval tests are never affected.
 """
 
 from __future__ import annotations
