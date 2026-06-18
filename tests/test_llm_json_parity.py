@@ -137,6 +137,14 @@ class _Seam:
 _SEAMS: list[_Seam] = [
     _Seam("intake", "anthropic", intake_client._extract_json, IntakeLLMError),
     _Seam("data_agent", "anthropic", da_client._extract_json, LLMParseError),
+    # Phase C — AWS Bedrock-hosted Claude. ``BedrockLLMClient`` *subclasses* each
+    # package's ``AnthropicLLMClient`` (the SDK's ``AnthropicBedrock`` is a
+    # drop-in with an identical Messages API), so it reuses that package's
+    # ``_extract_json`` and seam error class — there is no separate parser copy
+    # to drift. These rows document the (seam, provider) matrix and pin that the
+    # Bedrock provider parses + raises through its seam's error class.
+    _Seam("intake", "bedrock", intake_client._extract_json, IntakeLLMError),
+    _Seam("data_agent", "bedrock", da_client._extract_json, LLMParseError),
 ]
 
 

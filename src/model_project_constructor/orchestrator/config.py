@@ -139,23 +139,25 @@ class LLMProviderSpec:
     Phase A / Trap 4).
 
     Note: a provider may authenticate by a mechanism other than a single
-    env-var key (e.g. AWS Bedrock uses the boto3 credential chain). Such a
-    provider extends :meth:`OrchestratorSettings.require_llm_api_key` rather
-    than supplying an ``api_key_env_var`` — wired when the second provider
-    lands (plan Phase C).
+    env-var key. AWS Bedrock (``bedrock``, plan Phase C) authenticates via the
+    boto3 credential chain (env vars / shared profile / IAM role / instance
+    metadata), self-discovered by the SDK — so it carries
+    ``api_key_env_var=None`` and :meth:`OrchestratorSettings.require_llm_api_key`
+    rejects it with a clear message rather than inventing an env-var key.
     """
 
-    api_key_env_var: str
+    api_key_env_var: str | None = None
 
 
-#: The LLM-provider vocabulary the orchestrator knows how to resolve a
-#: credential for. Today only ``anthropic`` is wired; a second provider adds a
-#: member here (and the agent-side factory ``Literal`` + branch — plan Phase C).
-#: Kept parallel to, but separate from, the agent factories' ``LLMProvider``
+#: The LLM-provider vocabulary the orchestrator knows. ``anthropic`` resolves an
+#: env-var key (``ANTHROPIC_API_KEY``); ``bedrock`` (AWS Bedrock-hosted Claude,
+#: plan Phase C) authenticates via the boto3 credential chain and so carries no
+#: ``api_key_env_var``. Kept in lockstep with the agent factories' ``LLMProvider``
 #: ``Literal``s, which live in the decoupled agent packages and so cannot be
 #: parity-guarded from here the way ``REPO_PLATFORMS`` is against ``HostLiteral``.
 LLM_PROVIDERS: dict[str, LLMProviderSpec] = {
     "anthropic": LLMProviderSpec(api_key_env_var="ANTHROPIC_API_KEY"),
+    "bedrock": LLMProviderSpec(api_key_env_var=None),
 }
 
 #: The provider assumed when a caller does not name one. Matches the agent
@@ -257,11 +259,16 @@ class OrchestratorSettings:
                 f"MPC_LOG_LEVEL must be a stdlib logging level, got {log_level!r}"
             )
 
-        # Resolve each known provider's credential through the registry so the
-        # env-var name is written exactly once (per :data:`LLM_PROVIDERS`).
+        # Resolve each env-var-keyed provider's credential through the registry
+        # so the env-var name is written exactly once (per :data:`LLM_PROVIDERS`).
+        # Providers with no ``api_key_env_var`` (e.g. ``bedrock``, which uses the
+        # boto3 credential chain) are intentionally absent from this map — there
+        # is no env var to read, and ``source.get(None)`` would raise on
+        # ``os.environ``.
         llm_api_keys = {
             name: (source.get(spec.api_key_env_var) or None)
             for name, spec in LLM_PROVIDERS.items()
+            if spec.api_key_env_var is not None
         }
 
         namespace_raw = source.get("MPC_NAMESPACE", "").strip()
@@ -298,6 +305,9 @@ class OrchestratorSettings:
         The env var that carries each provider's key is single-sourced from
         :data:`LLM_PROVIDERS`. Unknown providers raise listing the known set;
         a registered provider whose key is unset raises naming its env var.
+        A provider that authenticates without an env-var key (``bedrock`` — the
+        boto3 credential chain) raises a clear message: there is no key to
+        return, and AWS credentials are self-discovered by the SDK at call time.
         Agent runners that actually call a provider use this; test code
         constructing settings without a key does not.
         """
@@ -307,6 +317,13 @@ class OrchestratorSettings:
             known = ", ".join(sorted(LLM_PROVIDERS))
             raise ConfigError(
                 f"Unknown LLM provider {provider!r}. Known providers: {known}."
+            )
+        if spec.api_key_env_var is None:
+            raise ConfigError(
+                f"Provider {provider!r} authenticates via the AWS credential "
+                f"chain (boto3), not an API-key env var, so require_llm_api_key "
+                f"does not apply. Ensure AWS credentials and region are available "
+                f"to the boto3 chain (e.g. AWS_REGION, an IAM role, or a profile)."
             )
         key = self.llm_api_keys.get(provider)
         if not key:

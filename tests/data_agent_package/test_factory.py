@@ -16,6 +16,12 @@ from model_project_constructor_data_agent.anthropic_client import (
     DEFAULT_MODEL,
     AnthropicLLMClient,
 )
+from model_project_constructor_data_agent.bedrock_client import (
+    DEFAULT_MODEL as BEDROCK_DEFAULT_MODEL,
+)
+from model_project_constructor_data_agent.bedrock_client import (
+    BedrockLLMClient,
+)
 from model_project_constructor_data_agent.factory import (
     KNOWN_PROVIDERS,
     LLMProvider,
@@ -31,6 +37,20 @@ def _stub_anthropic(monkeypatch: pytest.MonkeyPatch) -> object:
 
     sentinel = object()
     monkeypatch.setattr(anthropic, "Anthropic", lambda *a, **k: sentinel)
+    return sentinel
+
+
+@pytest.fixture
+def _stub_bedrock(monkeypatch: pytest.MonkeyPatch) -> object:
+    """Replace ``anthropic.AnthropicBedrock`` with a sentinel-returning ctor.
+
+    Bedrock's no-arg construction would otherwise build a live
+    ``anthropic.AnthropicBedrock`` (needs AWS credentials/region).
+    """
+    import anthropic
+
+    sentinel = object()
+    monkeypatch.setattr(anthropic, "AnthropicBedrock", lambda *a, **k: sentinel)
     return sentinel
 
 
@@ -61,6 +81,24 @@ def test_model_is_plumbed_through(_stub_anthropic: object) -> None:
     assert client._model == "claude-test-model"
 
 
+def test_bedrock_returns_bedrock_client(_stub_bedrock: object) -> None:
+    assert isinstance(make_llm_client("bedrock"), BedrockLLMClient)
+
+
+def test_bedrock_satisfies_llmclient_protocol(_stub_bedrock: object) -> None:
+    assert isinstance(make_llm_client("bedrock"), LLMClient)
+
+
+def test_bedrock_default_model_is_provider_default(_stub_bedrock: object) -> None:
+    client = make_llm_client("bedrock")
+    assert client._model == BEDROCK_DEFAULT_MODEL
+
+
+def test_bedrock_model_is_plumbed_through(_stub_bedrock: object) -> None:
+    client = make_llm_client("bedrock", model="anthropic.claude-test")
+    assert client._model == "anthropic.claude-test"
+
+
 def test_unknown_provider_raises_value_error() -> None:
     with pytest.raises(ValueError) as exc_info:
         make_llm_client("openai")
@@ -74,6 +112,7 @@ def test_unknown_provider_raises_value_error() -> None:
 def test_known_providers_derived_from_literal() -> None:
     assert get_args(LLMProvider) == KNOWN_PROVIDERS
     assert "anthropic" in KNOWN_PROVIDERS
+    assert "bedrock" in KNOWN_PROVIDERS
 
 
 def test_unknown_provider_does_not_construct_sdk(

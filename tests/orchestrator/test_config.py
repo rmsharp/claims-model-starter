@@ -172,10 +172,20 @@ class TestRequireLLMApiKey:
         with pytest.raises(ConfigError, match="ANTHROPIC_API_KEY"):
             s.require_llm_api_key("anthropic")
 
+    def test_bedrock_provider_raises_aws_credential_chain_message(self) -> None:
+        """Bedrock authenticates via the boto3 credential chain, not an env-var
+        key — the resolver rejects it with a clear, self-documenting message
+        rather than inventing a missing-env-var error (plan Phase C)."""
+        s = OrchestratorSettings.from_env({})
+        with pytest.raises(ConfigError, match="AWS credential chain"):
+            s.require_llm_api_key("bedrock")
+
     def test_llm_api_keys_mapping_is_populated_per_provider(self) -> None:
         s = OrchestratorSettings.from_env({"ANTHROPIC_API_KEY": "sk"})
-        # Keyed by provider name; unset providers map to None.
+        # Keyed by provider name; unset providers map to None. Providers with no
+        # env-var key (``bedrock`` — boto3 chain) are intentionally absent.
         assert s.llm_api_keys == {"anthropic": "sk"}
+        assert "bedrock" not in s.llm_api_keys
         empty = OrchestratorSettings.from_env({})
         assert empty.llm_api_keys == {"anthropic": None}
 
@@ -183,6 +193,12 @@ class TestRequireLLMApiKey:
 class TestLLMProvidersRegistry:
     def test_anthropic_env_var_single_sourced(self) -> None:
         assert LLM_PROVIDERS["anthropic"].api_key_env_var == "ANTHROPIC_API_KEY"
+
+    def test_bedrock_uses_aws_credential_chain_no_env_var(self) -> None:
+        """Bedrock carries no ``api_key_env_var`` — the SDK self-discovers AWS
+        credentials from the boto3 chain (plan Phase C)."""
+        assert "bedrock" in LLM_PROVIDERS
+        assert LLM_PROVIDERS["bedrock"].api_key_env_var is None
 
     def test_default_provider_is_registered(self) -> None:
         assert DEFAULT_LLM_PROVIDER in LLM_PROVIDERS

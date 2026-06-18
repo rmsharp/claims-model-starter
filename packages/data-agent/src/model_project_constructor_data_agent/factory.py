@@ -28,7 +28,9 @@ from model_project_constructor_data_agent.llm import LLMClient
 #: Providers this factory can construct. Add a member here (and a branch in
 #: :func:`make_llm_client`) when wiring a new backend; the CLI ``--provider``
 #: help and the unknown-provider error both derive their list from this.
-LLMProvider = Literal["anthropic"]
+#: ``bedrock`` is AWS Bedrock-hosted Claude (plan Phase C) — kept in lockstep
+#: with the intake factory's ``Literal`` and the orchestrator ``LLM_PROVIDERS``.
+LLMProvider = Literal["anthropic", "bedrock"]
 
 KNOWN_PROVIDERS: tuple[str, ...] = get_args(LLMProvider)
 
@@ -58,6 +60,16 @@ def make_llm_client(
         )
 
         return AnthropicLLMClient(model=DEFAULT_MODEL if model is None else model)
+    if provider == "bedrock":
+        # Lazy import (same rationale as the anthropic branch): keep this module
+        # SDK-free at import time. ``BedrockLLMClient`` is the anthropic client
+        # pointed at AWS Bedrock; AWS credentials are self-discovered by the SDK.
+        from model_project_constructor_data_agent.bedrock_client import (
+            DEFAULT_MODEL,
+            BedrockLLMClient,
+        )
+
+        return BedrockLLMClient(model=DEFAULT_MODEL if model is None else model)
     raise ValueError(
         f"Unknown LLM provider {provider!r}. "
         f"Known providers: {', '.join(KNOWN_PROVIDERS)}."
