@@ -153,14 +153,14 @@ uv run python -m model_project_constructor.agents.intake \
 
 This drives a synthetic interview via the real LangGraph interrupt/resume loop and writes a validated `IntakeReport` JSON document.
 
-To start the Intake Agent **web UI** (Phase 3B, requires `ANTHROPIC_API_KEY` to drive a real interview):
+To start the Intake Agent **web UI** (Phase 3B, requires credentials for the selected LLM provider to drive a real interview — `ANTHROPIC_API_KEY` for the default `anthropic`, or AWS credentials for `bedrock`):
 
 ```bash
 uv sync --extra agents --extra ui --extra dev
 uv run uvicorn model_project_constructor.ui.intake:app --reload
 ```
 
-Then open `http://localhost:8000/`. The UI is a minimal HTMX frontend over the same LangGraph flow used by the CLI; session state is checkpointed to a SQLite file (`intake_sessions.db` by default, override via `INTAKE_DB_PATH`) so interviews survive server restart. Resume via `GET /sessions/{session_id}`. A server-sent-events endpoint at `/sessions/{session_id}/events` emits the current phase snapshot for scripting/monitoring.
+Then open `http://localhost:8000/`. The UI is a minimal HTMX frontend over the same LangGraph flow used by the CLI; session state is checkpointed to a SQLite file (`intake_sessions.db` by default, override via `INTAKE_DB_PATH`) so interviews survive server restart. The LLM provider/model default to `anthropic` and the provider's own default model; select another backend (any factory provider, e.g. AWS Bedrock-hosted Claude) by exporting `INTAKE_LLM_PROVIDER=bedrock` (and optionally `INTAKE_LLM_MODEL=anthropic.claude-…`) before launch — an unknown provider is rejected at startup. Resume via `GET /sessions/{session_id}`. A server-sent-events endpoint at `/sessions/{session_id}/events` emits the current phase snapshot for scripting/monitoring.
 
 To run the Website Agent against seeded intake + data reports:
 

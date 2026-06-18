@@ -25,10 +25,12 @@ orchestration layer's secret injection) before running the pipeline.
 | `MPC_NAMESPACE` | no | host-specific (script-level) | Target group/org path where the Website Agent creates the project. **Must be a path, never a URL** — e.g. `rmsharp-modelpilot` or `data-science/model-drafts`, not `https://gitlab.com/rmsharp-modelpilot`. Rejected at config-load time (`ConfigError`) if it starts with `http://` or `https://`. |
 | `GITLAB_TOKEN` | yes (if `MPC_HOST=gitlab` and live) | — | Personal access token with `api` scope and create-project permission on the target namespace. |
 | `GITHUB_TOKEN` | yes (if `MPC_HOST=github` and live) | — | PAT with `repo` scope on the target owner/org. |
-| `ANTHROPIC_API_KEY` | yes (for any runner that calls Claude) | — | Required by the Intake Agent web UI, any live interview, and the Data Agent's QC generation. |
+| `ANTHROPIC_API_KEY` | yes (when calling first-party Claude) | — | Required by any live interview and the Data Agent's QC generation when the provider is `anthropic` (the default). The intake web UI needs it only when its provider resolves to `anthropic`; selecting `bedrock` uses the AWS credential chain instead. |
 | `MPC_CHECKPOINT_DIR` | no | `./.orchestrator/checkpoints` | Root for the `CheckpointStore`. Each run lands in a subdirectory named after its `run_id`. |
 | `MPC_LOG_LEVEL` | no | `INFO` | Stdlib level name: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. |
 | `INTAKE_DB_PATH` | no | `./intake_sessions.db` | SQLite file for the intake web UI's live session state. Only read by the UI. |
+| `INTAKE_LLM_PROVIDER` | no | `anthropic` (`DEFAULT_LLM_PROVIDER`) | LLM provider for the intake web UI. Any factory provider (`anthropic`, `bedrock`). An unknown value is rejected at app startup (`ValueError`). Only read by the UI; the CLIs use `--provider`. |
+| `INTAKE_LLM_MODEL` | no | provider default | Model id for the intake web UI. When unset, each provider's own default model is used (e.g. `claude-sonnet-4-6` for `anthropic`, `anthropic.claude-sonnet-4-6` for `bedrock`) — leave unset to keep the id provider-native. Only read by the UI. |
 
 Use `OrchestratorSettings.require_host_token()` /
 `require_anthropic_api_key()` inside runners that actually make HTTP

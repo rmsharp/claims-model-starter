@@ -153,6 +153,33 @@ def test_unknown_provider_from_env_rejected_at_create_app(
     assert "not-a-provider" in str(exc_info.value)
 
 
+def test_empty_string_env_falls_through_to_defaults(
+    build_app: Callable[..., FastAPI],
+    record_make_llm_client: list[tuple[str, str | None]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # An empty env var is falsy and must fall through the ``or`` chain rather
+    # than being treated as a (then-unknown) provider or a blank model id.
+    monkeypatch.setenv("INTAKE_LLM_PROVIDER", "")
+    monkeypatch.setenv("INTAKE_LLM_MODEL", "")
+    app = build_app()
+    app.state.store.llm_factory("sess-1")
+    assert record_make_llm_client == [("anthropic", None)]
+
+
+def test_env_provider_with_argument_model_combine(
+    build_app: Callable[..., FastAPI],
+    record_make_llm_client: list[tuple[str, str | None]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Provider and model resolve independently: an env provider composes with
+    # an explicit model argument.
+    monkeypatch.setenv("INTAKE_LLM_PROVIDER", "bedrock")
+    app = build_app(model="anthropic.claude-explicit")
+    app.state.store.llm_factory("sess-1")
+    assert record_make_llm_client == [("bedrock", "anthropic.claude-explicit")]
+
+
 def test_injected_llm_factory_bypasses_provider_resolution(
     build_app: Callable[..., FastAPI],
     record_make_llm_client: list[tuple[str, str | None]],
