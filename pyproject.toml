@@ -64,7 +64,7 @@ testpaths = ["tests"]
 pythonpath = ["src", "packages/data-agent/src"]
 addopts = "-ra --cov=model_project_constructor --cov=model_project_constructor_data_agent --cov-report=term-missing --cov-fail-under=95"
 markers = [
-    "live: Phase B eval against a real LLM provider; requires ANTHROPIC_API_KEY. Auto-skipped when no key is set (tests/eval/conftest.py), which is how CI ('uv run pytest -q', no key) stays hermetic. Run the live tier explicitly with -m live; deselect it anywhere with -m 'not live'. See tests/eval/.",
+    "live: eval a real LLM provider against the Phase B corpus (Phase E shadow run, parametrized over both providers). Each provider's cases are auto-skipped when its credentials are absent (anthropic -> ANTHROPIC_API_KEY; bedrock -> the AWS credential chain) via tests/eval/conftest.py, which is how CI ('uv run pytest -q', no creds) stays hermetic. Run the tier with -m live; deselect it anywhere with -m 'not live'. See tests/eval/.",
 ]
 
 [tool.coverage.run]

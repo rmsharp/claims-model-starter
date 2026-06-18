@@ -1,16 +1,31 @@
-"""Live tier — eval a real LLM provider against the Phase B corpus (§3.4 gate).
+"""Live tier — shadow run: eval each provider against the Phase B corpus (§3.4).
 
-**DEFERRED THIS SESSION.** No ``ANTHROPIC_API_KEY`` was available (operator
-decision, Session 161), so these tests are auto-skipped (``tests/eval/conftest``)
-and deselected by default (``-m 'not live'``). The measured Anthropic baseline and
-the threshold calibration are a logged follow-up — see
-``tests/eval/README.md`` §"Live baseline (deferred)". The battery is fully wired
-and runnable: ``ANTHROPIC_API_KEY=… uv run pytest -m live``.
+This is the **Phase E shadow run** (multi-provider LLM plan §5 Phase E): every
+test is parametrized over :data:`SHADOW_PROVIDERS` (``anthropic`` baseline +
+``bedrock`` candidate), so a single ``pytest -m live`` measures both providers
+side-by-side on the same corpus. The per-provider measurements feed the cutover
+gate (``eval_cutover``); the committed go/no-go is ``PHASE_E_AGREEMENT_REPORT.md``.
+
+**Per-provider skip (``tests/eval/conftest``).** Each provider's cases are
+auto-skipped when *that* provider's credentials are absent
+(``eval_cutover.provider_creds_available``): ``anthropic`` needs
+``ANTHROPIC_API_KEY``; ``bedrock`` needs the AWS credential chain. CI (no creds
+for any provider) skips the whole tier, staying hermetic; a Bedrock-only
+environment runs only the Bedrock half. ``-m 'not live'`` deselects the tier
+anywhere.
+
+**DEFERRED (Sessions 161–164).** No credentials available, so every case is
+skipped; the measured baseline + candidate pass-rates and the threshold
+calibration are a logged follow-up — see ``README.md`` §"Phase E" and
+``PHASE_E_AGREEMENT_REPORT.md``. The battery is fully wired and runnable:
+``ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run pytest -m live``.
 
 **Non-determinism (§3.4).** Each governed case is sampled ``_N_SAMPLES`` (≥5)
 times and judged on a pass-RATE plus structural/semantic invariants, never exact
 text. Claude-family models reject ``temperature``, so we sample and rely on the
-invariants rather than pinning ``temperature=0``.
+invariants rather than pinning ``temperature=0``. ``model=None`` is passed to
+every factory so each provider uses its own native default id (a ``bedrock``
+client gets the ``anthropic.``-prefixed default, never a bare first-party id).
 
 **Caveat — interview answers.** ``test_live_interview_converges`` feeds the
 recorded stakeholder answers to a real model that asks its own questions; if the
@@ -39,6 +54,7 @@ from tests.eval.eval_corpus import (
     load_sql_cases,
     pc_inventory_from_db,
 )
+from tests.eval.eval_cutover import SHADOW_PROVIDERS
 from tests.eval.eval_scoring import (
     interview_converged,
     pass_rate,
@@ -54,8 +70,9 @@ pytestmark = pytest.mark.live
 _N_SAMPLES = 5
 
 
-def test_live_governance_agreement_and_no_laxer_miss() -> None:
-    client = make_intake_client("anthropic")
+@pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
+def test_live_governance_agreement_and_no_laxer_miss(provider: str) -> None:
+    client = make_intake_client(provider)
     exact_matches: list[bool] = []
     laxer_misses = 0
     for case in load_governance_cases():
@@ -75,8 +92,9 @@ def test_live_governance_agreement_and_no_laxer_miss() -> None:
     )
 
 
-def test_live_primary_sql_parses_and_executes(seeded_pc_db: ReadOnlyDB) -> None:
-    client = make_data_client("anthropic")
+@pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
+def test_live_primary_sql_parses_and_executes(provider: str, seeded_pc_db: ReadOnlyDB) -> None:
+    client = make_data_client(provider)
     inventory = pc_inventory_from_db(seeded_pc_db)
     parse_results: list[bool] = []
     exec_results: list[bool] = []
@@ -91,8 +109,9 @@ def test_live_primary_sql_parses_and_executes(seeded_pc_db: ReadOnlyDB) -> None:
     assert pass_rate("sql_exec", exec_results).meets(thresholds.SQL_EXECUTABLE_MIN)
 
 
-def test_live_quality_checks_structural() -> None:
-    client = make_data_client("anthropic")
+@pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
+def test_live_quality_checks_structural(provider: str) -> None:
+    client = make_data_client(provider)
     ok: list[bool] = []
     for case in load_sql_cases():
         if case.kind != "primary":
@@ -103,13 +122,14 @@ def test_live_quality_checks_structural() -> None:
     assert pass_rate("qc_structural", ok).meets(thresholds.QUALITY_CHECKS_STRUCTURAL_MIN)
 
 
-def test_live_interview_converges() -> None:
+@pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
+def test_live_interview_converges(provider: str) -> None:
     results: list[bool] = []
     for case in load_interview_cases():
         if not case.expect_complete:
             continue
         fixture = load_fixture(case.fixture_path)
-        agent = IntakeAgent(llm=make_intake_client("anthropic"))
+        agent = IntakeAgent(llm=make_intake_client(provider))
         try:
             report = agent.run_scripted(
                 stakeholder_id=fixture["stakeholder_id"],

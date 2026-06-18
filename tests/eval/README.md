@@ -1,4 +1,4 @@
-# Phase B eval / parity harness
+# Eval / parity harness (Phase B corpus + Phase E cutover gate)
 
 The provider-quality gate for the [multi-provider LLM plan](../../docs/planning/multi-provider-llm-plan.md)
 (§5 Phase B). The factory seam makes *swapping* an LLM provider trivial; **all**
@@ -8,23 +8,25 @@ Phase E gate). It is deliberately the "here be dragons" phase.
 
 ## Two tiers
 
-| Tier | Files | Marker | Key | Runs |
-|------|-------|--------|-----|------|
-| **Deterministic** | `test_eval_corpus.py`, `test_eval_scoring.py` | *(none)* | not needed | every PR / CI, offline |
-| **Live** | `test_eval_live.py` | `@pytest.mark.live` | `ANTHROPIC_API_KEY` | periodic / pre-cutover |
+| Tier | Files | Marker | Credentials | Runs |
+|------|-------|--------|-------------|------|
+| **Deterministic** | `test_eval_corpus.py`, `test_eval_scoring.py`, `test_eval_cutover.py` | *(none)* | not needed | every PR / CI, offline |
+| **Live** | `test_eval_live.py` | `@pytest.mark.live` | per provider (`anthropic` → `ANTHROPIC_API_KEY`; `bedrock` → AWS chain) | periodic / pre-cutover (Phase E shadow run) |
 
 ```bash
-uv run pytest -m 'not live'                 # deterministic tier — explicit live-deselect
-ANTHROPIC_API_KEY=… uv run pytest -m live    # live tier — measures a real provider
+uv run pytest -m 'not live'                              # deterministic tier — explicit live-deselect
+ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run pytest -m live   # shadow run — measures both providers
 ```
 
 CI hermeticity is preserved **without** a `-m 'not live'` flag: the four
-`.github/workflows/ci.yml` jobs run `uv run pytest -q` with **no** key, and
-`tests/eval/conftest.py::pytest_collection_modifyitems` auto-skips every
-`live`-marked test when `ANTHROPIC_API_KEY` is unset — so CI skips the live tier
-via the no-key hook, and the tier is also safe to run locally without a key.
-`-m 'not live'` is the explicit deselect (useful locally when a key *is* present).
-The skip is keyed on the `live` marker only — non-eval tests are unaffected.
+`.github/workflows/ci.yml` jobs run `uv run pytest -q` with **no** credentials,
+and `tests/eval/conftest.py::pytest_collection_modifyitems` auto-skips each
+`live`-marked case when *its provider's* credentials are absent
+(`eval_cutover.provider_creds_available`: `anthropic` → `ANTHROPIC_API_KEY`,
+`bedrock` → the AWS chain). With no creds for any provider, CI skips the whole
+tier; a Bedrock-only environment runs only the Bedrock half. `-m 'not live'` is
+the explicit deselect (useful locally when creds *are* present). The skip is
+keyed on the `live` marker only — non-eval tests are unaffected.
 
 **The deterministic tier proves the *harness* measures correctly** (the scorers
 and oracles, fed reference / deliberately-perturbed data). **The live tier feeds
@@ -59,6 +61,22 @@ not yet confirmed against a measured Anthropic baseline. When a key is available
    table, and note the model/tier measured (e.g. `claude-sonnet-4-6`).
 3. Wire `test_live_interview_converges` to a robust stakeholder-answer strategy
    (see *Caveats* below) before trusting its convergence number.
+
+## Phase E — shadow run + cutover gate
+
+`test_eval_live.py` is parametrized over **both** providers
+(`eval_cutover.SHADOW_PROVIDERS` — `anthropic` baseline + `bedrock` candidate), so
+one `pytest -m live` runs the **shadow run**: the same corpus through each
+provider, side-by-side. The per-provider pass-rates feed the **cutover gate** in
+[`eval_cutover.py`](eval_cutover.py) — pure, deterministic logic
+(`test_eval_cutover.py` proves it offline, no key) that decides go/no-go against
+every §3.4 threshold. The §5 rule: **cutover only if the candidate meets every
+threshold**; an unmet *or unmeasured* threshold keeps `anthropic` primary.
+
+The committed decision, the run procedure, and the per-entrypoint cutover steps
+live in [`PHASE_E_AGREEMENT_REPORT.md`](PHASE_E_AGREEMENT_REPORT.md). **Current
+decision: NO-GO by default** — no credentials this session, so every threshold is
+`PENDING` and the gate keeps `anthropic` primary.
 
 ## Thresholds (§3.4 — proposed)
 

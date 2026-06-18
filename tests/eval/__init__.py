@@ -15,7 +15,12 @@ rather than mere parse success:
 See ``tests/eval/README.md`` for the methodology, the threshold table, and the
 governance reference-label provenance.
 
+Phase E (§5) adds the **shadow-run cutover gate**: ``test_eval_live.py`` is
+parametrized over both providers (the shadow run) and ``eval_cutover`` turns the
+per-provider pass-rates into a go/no-go against the §3.4 thresholds. The
+committed decision is ``PHASE_E_AGREEMENT_REPORT.md``.
+
 Non-test modules in this package (``eval_corpus``, ``eval_scoring``,
-``eval_thresholds``) are imported by the tests via ``from tests.eval.… import``;
-they are not collected (no ``test_`` prefix).
+``eval_thresholds``, ``eval_cutover``) are imported by the tests via
+``from tests.eval.… import``; they are not collected (no ``test_`` prefix).
 """
