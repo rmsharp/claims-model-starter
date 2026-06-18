@@ -120,6 +120,48 @@ DEFAULT_HOST: HostLiteral = "gitlab"
 # REPO_PLATFORMS keeps each URL written exactly once — inside the registry above.
 DEFAULT_GITLAB_URL = REPO_PLATFORMS["gitlab"].default_api_url
 DEFAULT_GITHUB_URL = REPO_PLATFORMS["github"].default_api_url
+
+
+@dataclass(frozen=True)
+class LLMProviderSpec:
+    """Per-provider configuration carried by the :data:`LLM_PROVIDERS` registry.
+
+    The LLM analogue of :class:`PlatformSpec`: it single-sources the env var
+    that carries each provider's API credential, so adding a provider is a
+    registry entry rather than an edit at the key-read site — mirroring how
+    ``REPO_PLATFORMS`` single-sources each host's ``token_env_var``.
+
+    The default *model* is deliberately **not** carried here. Each provider's
+    default model lives with its concrete client (``DEFAULT_MODEL``) and is
+    resolved by the agent factories (``model=None`` -> provider default), which
+    keeps this module free of the provider SDKs and writes each model literal
+    exactly once per client (see ``docs/planning/multi-provider-llm-plan.md``
+    Phase A / Trap 4).
+
+    Note: a provider may authenticate by a mechanism other than a single
+    env-var key (e.g. AWS Bedrock uses the boto3 credential chain). Such a
+    provider extends :meth:`OrchestratorSettings.require_llm_api_key` rather
+    than supplying an ``api_key_env_var`` — wired when the second provider
+    lands (plan Phase C).
+    """
+
+    api_key_env_var: str
+
+
+#: The LLM-provider vocabulary the orchestrator knows how to resolve a
+#: credential for. Today only ``anthropic`` is wired; a second provider adds a
+#: member here (and the agent-side factory ``Literal`` + branch — plan Phase C).
+#: Kept parallel to, but separate from, the agent factories' ``LLMProvider``
+#: ``Literal``s, which live in the decoupled agent packages and so cannot be
+#: parity-guarded from here the way ``REPO_PLATFORMS`` is against ``HostLiteral``.
+LLM_PROVIDERS: dict[str, LLMProviderSpec] = {
+    "anthropic": LLMProviderSpec(api_key_env_var="ANTHROPIC_API_KEY"),
+}
+
+#: The provider assumed when a caller does not name one. Matches the agent
+#: factories' ``make_llm_client`` default and the CLI ``--provider`` defaults.
+DEFAULT_LLM_PROVIDER = "anthropic"
+
 DEFAULT_LOG_LEVEL = "INFO"
 
 _TRUTHY = {"1", "true", "yes", "on"}
@@ -145,9 +187,11 @@ class OrchestratorSettings:
     - ``checkpoint_dir`` — root directory for :class:`CheckpointStore`.
       Defaults to ``./.orchestrator/checkpoints``.
     - ``log_level`` — stdlib logging level name. Defaults to ``INFO``.
-    - ``anthropic_api_key`` — credential for the Anthropic LLM gateway.
-      Optional because the orchestrator is LLM-agnostic; only required
-      by agent runners that actually call Anthropic.
+    - ``llm_api_keys`` — per-provider API credentials, keyed by provider
+      name (see :data:`LLM_PROVIDERS`). Each is optional because the
+      orchestrator is LLM-agnostic; a key is only required by agent runners
+      that actually call that provider. The :attr:`anthropic_api_key`
+      property exposes the ``anthropic`` entry for back-compatibility.
     - ``namespace`` — target group/org path for the Website Agent (read
       from ``MPC_NAMESPACE``). Must be a path like ``rmsharp-modelpilot``
       or ``data-science/model-drafts`` — never a URL. ``None`` when
@@ -159,8 +203,17 @@ class OrchestratorSettings:
     host_token: str | None
     checkpoint_dir: Path
     log_level: str
-    anthropic_api_key: str | None
+    llm_api_keys: Mapping[str, str | None]
     namespace: str | None
+
+    @property
+    def anthropic_api_key(self) -> str | None:
+        """The ``anthropic`` API key, or ``None`` if unset.
+
+        Back-compat accessor over :attr:`llm_api_keys` — preserves the
+        pre-multi-provider field name for existing callers and tests.
+        """
+        return self.llm_api_keys.get("anthropic")
 
     @classmethod
     def from_env(
@@ -204,7 +257,12 @@ class OrchestratorSettings:
                 f"MPC_LOG_LEVEL must be a stdlib logging level, got {log_level!r}"
             )
 
-        anthropic_api_key = source.get("ANTHROPIC_API_KEY") or None
+        # Resolve each known provider's credential through the registry so the
+        # env-var name is written exactly once (per :data:`LLM_PROVIDERS`).
+        llm_api_keys = {
+            name: (source.get(spec.api_key_env_var) or None)
+            for name, spec in LLM_PROVIDERS.items()
+        }
 
         namespace_raw = source.get("MPC_NAMESPACE", "").strip()
         namespace = validate_namespace(namespace_raw) if namespace_raw else None
@@ -215,7 +273,7 @@ class OrchestratorSettings:
             host_token=host_token,
             checkpoint_dir=checkpoint_dir,
             log_level=log_level,
-            anthropic_api_key=anthropic_api_key,
+            llm_api_keys=llm_api_keys,
             namespace=namespace,
         )
 
@@ -234,10 +292,31 @@ class OrchestratorSettings:
             )
         return self.host_token
 
+    def require_llm_api_key(self, provider: str = DEFAULT_LLM_PROVIDER) -> str:
+        """Return the API key for ``provider``, raising if it is missing.
+
+        The env var that carries each provider's key is single-sourced from
+        :data:`LLM_PROVIDERS`. Unknown providers raise listing the known set;
+        a registered provider whose key is unset raises naming its env var.
+        Agent runners that actually call a provider use this; test code
+        constructing settings without a key does not.
+        """
+
+        spec = LLM_PROVIDERS.get(provider)
+        if spec is None:
+            known = ", ".join(sorted(LLM_PROVIDERS))
+            raise ConfigError(
+                f"Unknown LLM provider {provider!r}. Known providers: {known}."
+            )
+        key = self.llm_api_keys.get(provider)
+        if not key:
+            raise ConfigError(f"{spec.api_key_env_var} is required but was not set")
+        return key
+
     def require_anthropic_api_key(self) -> str:
-        if not self.anthropic_api_key:
-            raise ConfigError("ANTHROPIC_API_KEY is required but was not set")
-        return self.anthropic_api_key
+        """Back-compat alias for ``require_llm_api_key('anthropic')``."""
+
+        return self.require_llm_api_key("anthropic")
 
 
 def parse_bool(raw: str) -> bool:
@@ -277,7 +356,10 @@ __all__ = [
     "DEFAULT_GITHUB_URL",
     "DEFAULT_GITLAB_URL",
     "DEFAULT_HOST",
+    "DEFAULT_LLM_PROVIDER",
     "DEFAULT_LOG_LEVEL",
+    "LLM_PROVIDERS",
+    "LLMProviderSpec",
     "REPO_PLATFORMS",
     "ConfigError",
     "HostLiteral",

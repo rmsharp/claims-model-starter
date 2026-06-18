@@ -14,6 +14,8 @@ from model_project_constructor.orchestrator.config import (
     DEFAULT_CHECKPOINT_DIR,
     DEFAULT_GITHUB_URL,
     DEFAULT_GITLAB_URL,
+    DEFAULT_LLM_PROVIDER,
+    LLM_PROVIDERS,
     ConfigError,
     OrchestratorSettings,
     parse_bool,
@@ -146,6 +148,44 @@ class TestRequireHelpers:
         s = OrchestratorSettings.from_env({})
         with pytest.raises(ConfigError, match="ANTHROPIC_API_KEY"):
             s.require_anthropic_api_key()
+
+
+class TestRequireLLMApiKey:
+    """The provider-keyed credential resolver (multi-provider plan, Phase A)."""
+
+    def test_default_provider_is_anthropic(self) -> None:
+        s = OrchestratorSettings.from_env({"ANTHROPIC_API_KEY": "sk"})
+        # No-arg call resolves the default provider's key.
+        assert s.require_llm_api_key() == "sk"
+
+    def test_explicit_anthropic_provider(self) -> None:
+        s = OrchestratorSettings.from_env({"ANTHROPIC_API_KEY": "sk"})
+        assert s.require_llm_api_key("anthropic") == "sk"
+
+    def test_unknown_provider_raises_listing_known(self) -> None:
+        s = OrchestratorSettings.from_env({"ANTHROPIC_API_KEY": "sk"})
+        with pytest.raises(ConfigError, match="Unknown LLM provider 'openai'"):
+            s.require_llm_api_key("openai")
+
+    def test_missing_key_raises_naming_env_var(self) -> None:
+        s = OrchestratorSettings.from_env({})
+        with pytest.raises(ConfigError, match="ANTHROPIC_API_KEY"):
+            s.require_llm_api_key("anthropic")
+
+    def test_llm_api_keys_mapping_is_populated_per_provider(self) -> None:
+        s = OrchestratorSettings.from_env({"ANTHROPIC_API_KEY": "sk"})
+        # Keyed by provider name; unset providers map to None.
+        assert s.llm_api_keys == {"anthropic": "sk"}
+        empty = OrchestratorSettings.from_env({})
+        assert empty.llm_api_keys == {"anthropic": None}
+
+
+class TestLLMProvidersRegistry:
+    def test_anthropic_env_var_single_sourced(self) -> None:
+        assert LLM_PROVIDERS["anthropic"].api_key_env_var == "ANTHROPIC_API_KEY"
+
+    def test_default_provider_is_registered(self) -> None:
+        assert DEFAULT_LLM_PROVIDER in LLM_PROVIDERS
 
 
 class TestFromEnvReadsOsEnviron:

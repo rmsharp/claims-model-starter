@@ -97,6 +97,16 @@ from model_project_constructor.schemas.v1.repo import RepoTarget  # noqa: E402
 
 FIXTURE_DIR = PROJECT_ROOT / "tests" / "fixtures"
 
+# The pilot entrypoint deliberately defaults to the highest-quality model for
+# first-impression runs, so "was it the model?" is never a confounding variable
+# when judging output (PROJECT_LEARNINGS.md #20, Session 24 — the operator
+# overrode a sonnet recommendation here). This is an *intentional* two-tier
+# default: this pilot script uses Opus, while the library/CLI clients default to
+# the cheaper Sonnet (their ``DEFAULT_MODEL``) for iteration. Single-sourced as a
+# named constant so the value is written exactly once and is not mistaken for an
+# accidental drift from the client defaults (multi-provider-llm-plan.md Trap 4).
+PILOT_DEFAULT_MODEL = "claude-opus-4-7"
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -437,11 +447,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--model",
-        default="claude-opus-4-7",
+        default=PILOT_DEFAULT_MODEL,
         help=(
             "Claude model for the intake AND data agents when --llm is "
-            "'data' or 'both' (default: claude-opus-4-7; ignored when "
-            "--llm=none)"
+            "'data' or 'both' (default: claude-opus-4-7, the pilot-quality "
+            "default; ignored when --llm=none)"
         ),
     )
     parser.add_argument(
