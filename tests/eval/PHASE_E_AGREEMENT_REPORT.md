@@ -11,79 +11,108 @@ on the Phase B golden corpus, side-by-side with the incumbent.
   production default.
 - **Candidate:** `bedrock` (AWS Bedrock-hosted Claude, Phase C).
 
-## Decision (Session 164): **NO-GO by default — keep `anthropic` primary**
+## Decision (Session 165): **NO-GO — keep `anthropic` primary; harness not yet trustworthy**
 
-**No live credentials were available this session** (`ANTHROPIC_API_KEY` unset; no
-AWS credential chain), so **no threshold has a measured number** — every cell
-below is `PENDING`. The §5 rule is that cutover requires the candidate to meet
-*every* threshold; an unmeasured threshold cannot certify a GO, so the gate
-resolves to **keep `anthropic` primary** until a shadow run fills the numbers.
-This is a deferral of the *measurement*, not of the gate: the harness and the
-decision logic are built, tested, and runnable (see "How to run" below).
+The **Anthropic baseline was measured for the first time** this session
+(`ANTHROPIC_API_KEY` from `.env`; `bedrock` skipped — no AWS creds). The decision
+is still **NO-GO**, for two reasons: (1) `bedrock` is unmeasured, so the candidate
+cannot be certified; and (2) more importantly, **the incumbent `anthropic` itself
+fails 5 of 8 thresholds** — and the failures are dominated by *harness/corpus*
+artifacts, not model quality. A first baseline whose own incumbent fails is the
+calibration signal doing its job: **the gate is structurally complete but not yet
+operationally trustworthy.** Thresholds therefore stay **proposed** — they were
+**not** lowered to match a broken harness (that would be calibrating to noise).
+See "Baseline findings" below for the per-metric diagnosis and the harness-fix
+follow-ups that must land before a real cutover decision is meaningful.
 
-This mirrors the Phase B (Session 161) and Phase C (Session 162) deferrals — the
-live run is a logged follow-up, not a silent skip.
+### Agreement table
 
-### Agreement table (reproduced from `eval_cutover.render_agreement_report`)
+Measured single-run baseline (governance sampled N=5; the rest one pass) via
+[`tests/eval/shadow_run.py`](shadow_run.py); `bedrock` PENDING (no AWS creds).
 
-<!-- Regenerate with:
-  uv run python -c "from tests.eval.eval_cutover import pending_decision, render_agreement_report, SHADOW_PROVIDERS as P; print(render_agreement_report({p: pending_decision(p) for p in P}))"
-A live run replaces each PENDING cell with `<rate> (PASS|FAIL)`. -->
+<!-- Regenerate after a live run: feed the per-capability rates to
+  eval_cutover.evaluate_cutover and render_agreement_report — see §"Filling this report". -->
 
 | Capability | Metric | Threshold | anthropic (baseline) | bedrock (candidate) |
 | --- | --- | --- | --- | --- |
-| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | — (PENDING) | — (PENDING) |
-| generate_primary_queries | SQL parse-valid | ≥ 100% | — (PENDING) | — (PENDING) |
-| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | — (PENDING) | — (PENDING) |
-| classify_governance | exact label agreement (cycle_time AND risk_tier) vs reference | ≥ 90% | — (PENDING) | — (PENDING) |
-| classify_governance | laxer-tier misses (predicted strictly less strict than reference) | ≤ 0 | — (PENDING) | — (PENDING) |
-| generate_quality_checks | outer array length == #primary queries | ≥ 100% | — (PENDING) | — (PENDING) |
-| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | — (PENDING) | — (PENDING) |
-| Intake interview | premature convergences | ≤ 0 | — (PENDING) | — (PENDING) |
+| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS) | — (PENDING) |
+| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS) | — (PENDING) |
+| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | 60.0% (FAIL) | — (PENDING) |
+| classify_governance | exact label agreement (cycle_time AND risk_tier) vs reference | ≥ 90% | 0.0% (FAIL) | — (PENDING) |
+| classify_governance | laxer-tier misses (predicted strictly less strict than reference) | ≤ 0 | 5 (FAIL) | — (PENDING) |
+| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 66.7% (FAIL) | — (PENDING) |
+| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 0.0% (FAIL) | — (PENDING) |
+| Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) |
 
-- **bedrock: PENDING** — Undecided — keep anthropic primary until measured. bedrock unmeasured: json_parse, sql_parse, sql_exec, governance_agreement, governance_laxer_miss, qc_structural, interview_convergence, interview_premature.
+- **bedrock: PENDING** — Undecided — keep anthropic primary until measured.
 
-The thresholds themselves are **proposed** (Phase B never measured a live
-Anthropic baseline either); the baseline column is `PENDING` for the same reason.
-See [`eval_thresholds.py`](eval_thresholds.py) and `README.md` §"Phase E".
+## Baseline findings (Session 165) — artifact vs signal
+
+The incumbent fails 5/8. Each failure is classified as a **harness/corpus
+artifact** (must be fixed before the metric is meaningful) or a **genuine signal**:
+
+| Metric | Result | Class | Diagnosis |
+| --- | --- | --- | --- |
+| json_parse | 100% PASS | — | Deterministic parity battery; the shared `_extract_json` parsers handle the corpus. Genuine pass. |
+| sql_parse | 100% PASS | — | All generated primary SQL parses. Genuine pass. |
+| sql_exec | 60% FAIL | signal (needs diagnosis) | 3/5 generated queries execute on the seeded schema; 2 reference unavailable columns / shape. Could be model SQL *or* an incomplete seed schema — inspect which queries failed before judging. |
+| governance_agreement | 0% FAIL | **artifact** | `risk_tier` mismatched on all 4 cases, `cycle_time` on 2/4 → exact-both = 0. The rule-derived reference labels (single-SME-ratified, S161) **systematically disagree with live-model output**; the "exact match of *both* closed-vocab labels ≥ 90%" metric is unachievable even by the incumbent. Needs SME re-validation of the references against live output and/or a less brittle metric (score the two labels separately; credit stricter-direction mismatches). |
+| governance_laxer_miss | 5 FAIL | mixed | Driven by **one** case — `fraud_triage`: model `tier_2_high` vs ref `tier_1_critical` (laxer) × 5 samples. Either the model under-rates a critical case (genuine, concerning) or the reference is too strict — an SME call. The other 3 cases erred *stricter* (allowed). |
+| qc_structural | 66.7% FAIL | signal (fixable) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). Raise/handle max_tokens for large QC output, or chunk it. |
+| interview_convergence | 0% FAIL | **artifact** | **All four** raised "model asked for more answers than the script supplies" — the documented scripted-replay caveat (`PROJECT_LEARNINGS` #21). The live model asks different/more questions than when the fixtures were recorded. Needs a robust stakeholder-answer strategy before the number means anything. |
+| interview_premature | 0 PASS | — | Trivially clean — none converged (so none converged *prematurely*). Only meaningful once convergence works. |
+
+**Bottom line:** before the §3.4 gate can drive a real cutover decision, the
+harness needs (in rough priority) a robust interview-answer strategy, SME
+re-validation of the governance references + a less brittle governance metric, a
+max_tokens fix for QC generation, and a look at the 2 non-executing SQL queries.
+Until then the baseline numbers measure the *harness*, not the *providers*.
 
 ## How to run the shadow run
 
-Both providers are measured by a single live run; each provider's cases skip
-automatically when its credentials are absent (`conftest.py` →
-`eval_cutover.provider_creds_available`):
+The **driver** [`tests/eval/shadow_run.py`](shadow_run.py) is the way to produce
+this report: it measures every provider whose credentials are present (the others
+skip), prints each provider's per-capability rates, and renders the agreement
+table directly. It *records* failures (a parse error counts as a missed rate)
+rather than asserting, so a sub-threshold result is data, not a crash:
 
 ```bash
-# Both halves of the shadow run (anthropic baseline + bedrock candidate):
-ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run pytest -m live tests/eval/ -rs
-
-# One provider at a time is also valid — the other half just skips:
-ANTHROPIC_API_KEY=…   uv run pytest -m live tests/eval/   # baseline only
-AWS_PROFILE=…         uv run pytest -m live tests/eval/   # candidate only
+# Measures whichever providers have creds; prints rates + the agreement table:
+ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run python tests/eval/shadow_run.py   # both
+ANTHROPIC_API_KEY=…                uv run python tests/eval/shadow_run.py   # baseline only
 ```
 
-Each capability is sampled N ≥ 5 times and judged on a pass-*rate* + structural
-invariants (§3.4 non-determinism handling); `model=None` is passed so each
-provider uses its native default id (Bedrock gets the `anthropic.`-prefixed
+The **assert-based** tier (`uv run pytest -m live tests/eval/ -rs`) is the
+same corpus with the §3.4 thresholds enforced as test assertions — useful as a
+pass/fail gate once the harness is trustworthy, but it does not emit the rates
+this report needs (use the driver for those).
+
+Each capability is sampled N ≥ 5 times (governance) and judged on a pass-*rate* +
+structural invariants (§3.4 non-determinism handling); `model=None` is passed so
+each provider uses its native default id (Bedrock gets the `anthropic.`-prefixed
 default — no cross-provider 400).
 
 ### Filling this report from a live run
 
-The eight gate keys (`eval_cutover.CHECK_KEYS`) come from two sources:
+`shadow_run.py` prints the measured rates **and** the rendered agreement table —
+paste its table into "Agreement table" above and record the measured
+`(provider, model)`. The eight gate keys (`eval_cutover.CHECK_KEYS`) come from two
+sources, which the driver already handles:
 
 - **Seven live-tier metrics** — `sql_parse`, `sql_exec`, `governance_agreement`,
   `governance_laxer_miss`, `qc_structural`, `interview_convergence`,
-  `interview_premature`: read each provider's pass-rate / miss-count from the
-  `test_eval_live.py` shadow-run output.
-- **One deterministic metric** — `json_parse`: this is **not** a live-tier number.
-  §3.4's oracle for it is the provider-parametrized parity battery. Run
-  `uv run pytest tests/test_llm_json_parity.py -q` (it covers every registered
-  `(seam, provider)` parser, incl. `bedrock`); a green run means each provider's
-  `_extract_json` parsers handle the battery → record **`1.0`** for that provider.
-  A real-output parse failure would instead surface as a failure in the live
-  capability tests above (they raise on unparseable provider JSON).
+  `interview_premature`: measured by the driver against the live provider.
+- **One deterministic metric** — `json_parse`: **not** a live rate. §3.4's oracle
+  is the provider-parametrized parity battery (`test_llm_json_parity.py`, which
+  covers every registered `(seam, provider)` parser incl. `bedrock`); the driver
+  records **`1.0`** since both providers reuse the shared `_extract_json` parsers
+  (confirm with `uv run pytest tests/test_llm_json_parity.py -q`). A real-output
+  parse failure surfaces instead as a *live-capability* miss (they raise on
+  unparseable provider JSON — and the driver counts that as a failed rate).
 
-Then build the decision and regenerate the table:
+If the **baseline** fails a threshold, do **not** reflexively lower it — first
+decide whether the failure is a harness/corpus artifact (see "Baseline findings")
+or a genuine signal. To assemble a decision from partial/edited numbers manually:
 
 ```python
 from tests.eval.eval_cutover import evaluate_cutover, render_agreement_report
@@ -104,9 +133,10 @@ decisions = {p: evaluate_cutover(p, m) for p, m in measured.items()}
 print(render_agreement_report(decisions))
 ```
 
-Paste the regenerated table above, record the measured `(provider, model)`, and
-update the decision line. If the **baseline** fails its own threshold, the
-threshold is miscalibrated — fix `eval_thresholds.py` and note it (§3.4).
+Paste the rendered table above and update the decision line. **Only** adjust a
+threshold in `eval_thresholds.py` once you've confirmed the baseline miss is a
+genuine "threshold too strict" (not a harness/corpus artifact per "Baseline
+findings") — and note the change and its rationale here.
 
 ## Cutover procedure (only on a GO)
 
@@ -134,16 +164,33 @@ any cutover.
 
 ## Gap list (carried into a future session)
 
-1. **No live measurement** — both providers' pass-rates are `PENDING` (no creds).
-   The single largest follow-up; everything below depends on a live run.
-2. **Thresholds still proposed** — never calibrated against a measured Anthropic
-   baseline (Phase B deferral). Confirm/adjust on the first live run.
-3. **Interview convergence robustness** — `test_live_interview_converges` counts
-   a model asking for more answers than the script supplies as a non-convergence;
-   a robust stakeholder-answer strategy is needed before its number is trusted
-   (`README.md` §Caveats, `PROJECT_LEARNINGS` #21).
-4. **`GDPR_ART_22` under-sampled** in the governance corpus (`README.md` §Caveats).
-5. **CLI provider defaults are hardcoded** — `run_pipeline.py` / data-agent
+**Harness-trustworthiness fixes (must land before the gate can decide a cutover —
+see "Baseline findings" for the diagnosis), in rough priority:**
+
+1. **Interview-answer robustness** — all 4 interviews fail (model asks more
+   questions than the scripted answers supply). Build a robust stakeholder-answer
+   strategy so interviews can actually converge (`PROJECT_LEARNINGS` #21).
+2. **Governance references + metric** — the rule-derived reference labels
+   disagree with live-model output (0% exact agreement). SME-re-validate the
+   references against live output, and reconsider the brittle "exact-both-labels"
+   metric (score `cycle_time`/`risk_tier` separately; credit stricter-direction
+   mismatches). The `fraud_triage` laxer-miss (`tier_2_high` vs ref
+   `tier_1_critical`) needs an explicit SME ruling.
+3. **QC `max_tokens` truncation** — `generate_quality_checks` truncates for the
+   large `tx_auto_training` case; raise/handle `max_tokens` or chunk the output.
+4. **SQL executability** — 2/5 generated queries don't execute on the seeded
+   schema; inspect which (model SQL vs incomplete seed schema).
+
+**Still open from earlier phases:**
+
+5. **`bedrock` candidate unmeasured** — no AWS creds; run the Bedrock half to
+   complete the comparison (the `anthropic` baseline is now measured).
+6. **Thresholds remain proposed** — the baseline did **not** calibrate them
+   (failures were harness artifacts, not too-strict thresholds). Re-run once the
+   harness fixes above land; only then is "Anthropic clears its own bar" a valid
+   calibration check.
+7. **`GDPR_ART_22` under-sampled** in the governance corpus (`README.md` §Caveats).
+8. **CLI provider defaults are hardcoded** — `run_pipeline.py` / data-agent
    `cli.py` do not read `DEFAULT_LLM_PROVIDER`; a cleaner cutover would route both
-   through it. Out of Phase E scope (no production edits); noted for a follow-up.
-6. **The model-id gap** (row above) remains open for `run_pipeline.py`.
+   through it. Out of scope here (no production edits); noted for a follow-up.
+9. **The model-id gap** (cutover table) remains open for `run_pipeline.py`.

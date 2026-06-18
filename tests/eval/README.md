@@ -33,34 +33,27 @@ and oracles, fed reference / deliberately-perturbed data). **The live tier feeds
 the same corpus + scorers a real provider's output** and checks the thresholds.
 The split is what lets the gate exist without breaking CI hermeticity.
 
-## Live baseline (deferred)
+## Live baseline (measured — harness not yet trustworthy)
 
-> **Status (Session 161):** no `ANTHROPIC_API_KEY` was available, so the live
-> Anthropic baseline run is **deferred** (operator decision). The live tier is
-> wired and runnable; the measured Anthropic numbers and the resulting threshold
-> calibration are a **logged follow-up**, not silently skipped.
+> **Status (Sessions 161–162):** the live Anthropic baseline and the Bedrock run
+> were deferred (no credentials).
 >
-> **Status (Session 162) — Phase C added the AWS Bedrock-hosted Claude provider
-> (`"bedrock"`).** Its **live corpus run is also deferred** — no AWS credentials
-> this session (the operator is preparing for a future deployment). The Bedrock
-> client is constructible and unit-tested, and the deterministic tier proves the
-> harness; the candidate's live pass-rates are part of the deferred live
-> calibration. The live tier is currently keyed to first-party `ANTHROPIC_API_KEY`
-> (`anthropic` provider) — running the corpus against `bedrock` additionally
-> needs AWS credentials/region available to the boto3 chain and a provider-
-> parametrized live eval (Phase E shadow-run territory: §5 Phase E + the §3.4
-> threshold gate).
+> **Status (Session 165) — the Anthropic baseline was measured** (`ANTHROPIC_API_KEY`
+> from `.env`; Bedrock still deferred — no AWS creds). **Result: the incumbent
+> `anthropic` fails 5 of 8 thresholds, dominated by harness/corpus artifacts** —
+> all interviews hit the scripted-replay caveat (#21); the governance reference
+> labels disagree with live output (0% exact agreement); one QC output truncates
+> at `max_tokens`. See [`PHASE_E_AGREEMENT_REPORT.md`](PHASE_E_AGREEMENT_REPORT.md)
+> §"Baseline findings" for the per-metric diagnosis and the harness-fix follow-ups.
 
-Until the live tier is run, the §3.4 thresholds below are **proposed targets**,
-not yet confirmed against a measured Anthropic baseline. When a key is available:
-
-1. `ANTHROPIC_API_KEY=… uv run pytest -m live` and record the per-capability
-   pass-rates (Anthropic is expected to clear its own thresholds; if it does
-   not, the thresholds are miscalibrated — fix them and note the change here).
-2. Replace "proposed" with the measured numbers in `eval_thresholds.py` + this
-   table, and note the model/tier measured (e.g. `claude-sonnet-4-6`).
-3. Wire `test_live_interview_converges` to a robust stakeholder-answer strategy
-   (see *Caveats* below) before trusting its convergence number.
+The §3.4 thresholds below remain **proposed**: the first baseline measured the
+*harness*, not the providers, so it does **not** calibrate them — and they were
+deliberately **not** lowered to match a broken harness. Calibration becomes
+meaningful only once the harness fixes land (interview-answer robustness,
+governance-reference re-validation + a less brittle metric, QC `max_tokens`, SQL
+executability). Run the baseline with `uv run python tests/eval/shadow_run.py`;
+then, **only** for a genuine "threshold too strict" miss, adjust
+`eval_thresholds.py` and note the change here.
 
 ## Phase E — shadow run + cutover gate
 
@@ -81,8 +74,9 @@ recipe for each.
 
 The committed decision, the run procedure, and the per-entrypoint cutover steps
 live in [`PHASE_E_AGREEMENT_REPORT.md`](PHASE_E_AGREEMENT_REPORT.md). **Current
-decision: NO-GO by default** — no credentials this session, so every threshold is
-`PENDING` and the gate keeps `anthropic` primary.
+decision: NO-GO** — the Anthropic baseline is measured (S165) but the incumbent
+fails 5/8 thresholds on harness/corpus artifacts (see §"Live baseline" above), and
+`bedrock` is still unmeasured; the gate keeps `anthropic` primary.
 
 ## Thresholds (§3.4 — proposed)
 

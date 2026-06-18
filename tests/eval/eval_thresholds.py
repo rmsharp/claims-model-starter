@@ -1,10 +1,13 @@
 """Phase B eval thresholds (multi-provider LLM plan §3.4).
 
 These are the **proposed** pass thresholds for the provider-quality gate. The
-live-tier run that would CALIBRATE them against measured Anthropic numbers is
-**deferred** (operator decision, Session 161 — no live key this session); see
-``tests/eval/README.md`` §"Live baseline (deferred)". Treat them as the gate's
-proposed bar, not yet confirmed against a live run.
+Anthropic baseline was measured in Session 165, but it did **not** calibrate them:
+the incumbent failed 5/8 on harness/corpus artifacts (fragile interview replay,
+governance references that disagree with live output, a QC max_tokens truncation),
+so the run measured the *harness*, not the providers. The thresholds were
+deliberately **not** lowered to match a broken harness; they stay proposed until
+the harness-fix follow-ups land (see ``PHASE_E_AGREEMENT_REPORT.md`` §"Baseline
+findings" and ``README.md`` §"Live baseline").
 
 The deterministic tier asserts the *scorers* behave correctly with respect to
 these constants (e.g. a laxer-tier prediction is caught); it does **not** assert
