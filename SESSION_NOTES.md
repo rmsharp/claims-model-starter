@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+**Task:** Session 165 — operator-directed ("Run the Anthropic-only baseline now"). **EXECUTE** the live Phase E shadow run for the `anthropic` provider only (operator has `ANTHROPIC_API_KEY` in `.env`; no AWS creds → `bedrock` cases auto-skip via the provider-aware `conftest` built in S164). Operational/DEVELOPMENT workstream, ONE deliverable: measure Anthropic's per-capability pass-rates against the §3.4 thresholds, **calibrate the still-PROPOSED thresholds** (confirm or adjust to measured), and **fill `tests/eval/PHASE_E_AGREEMENT_REPORT.md`** with the baseline numbers (`bedrock` stays PENDING). Closes Phase B's deferred Anthropic baseline. Key source: `.env` (`ANTHROPIC_API_KEY` present + valid, sourced inline — never echoed). **(IN PROGRESS.)**
+
+**Started:** 2026-06-17.
+
+**Status:** Session claimed (Phase 1B). Light orient — tree clean at S164 close-out `4bba572` (17 unpushed); `.env` key confirmed valid (`sk-ant-…`, 108 chars; not reachable as a bare env var, so sourced inline per run). Plan: surface live per-capability rates → cheap smoke call (validate key/connectivity) → run baseline (govern/sql/qc first, interview separately — it is the costly + caveated one) → calibrate thresholds → fill the agreement report → close out. Work beginning.
+
+---
+
+**(Session 164 — COMPLETE, archived below.)**
+
+---
+
 **Task:** Session 164 — operator-directed ("Implement Phase E — shadow run + cutover gate"). Implement **Phase E** of `docs/planning/multi-provider-llm-plan.md` — the shadow-run harness + cutover gate (the plan's final phase, the second "here be dragons"). DEVELOPMENT workstream, ONE phase only (FM #18) — **NO cutover flip** (operator-gated per §5). Per §4.8 this is **test-tree + docs only** (no production code changes). **Operator decision (this session, via AskUserQuestion):** no live credentials present for either provider (`ANTHROPIC_API_KEY` unset; no AWS env vars / `~/.aws/` profile or config) → **defer the live run** (the S161/S162/S163 honest-defer pattern). Constructible deliverable: (1) **provider-parametrize the shadow-run harness** — today `tests/eval/test_eval_live.py` is keyed to `ANTHROPIC_API_KEY`/`anthropic` only (S163 handoff item 5); make the `live` tier run BOTH providers side-by-side; (2) **cutover-gate decision logic** — deterministic, unit-tested: per-threshold pass/fail vs §3.4 + overall go/no-go (no cutover on any unmet threshold); (3) a **committed agreement report** under `tests/eval/` with every threshold cell **PENDING**, **no-go default** (keep Anthropic primary), and a reproducible run procedure. **(COMPLETE.** Three commits: claim stub **`3e9db6c`** + implementation **`067fc8f`** + this close-out commit; all **UNPUSHED** pending operator authorization (#40), as are S159×2 + S160×2 + S161×4 + S162×3 + S163×3 prior commits — `origin/master` is at `5ed4b87`, **17 local unpushed** after close-out.)**
 
 **Started:** 2026-06-17.
