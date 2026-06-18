@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 169 Did
+**Deliverable:** gap #1c — live interview-convergence gate robustness (IN PROGRESS)
+**Started:** 2026-06-18
+**Status:** Session claimed. Orienting on the gate mechanics; the gate-design fork (per-case N≥5 + pass-rate / transient-vs-genuine `RuntimeError` disambiguation / re-validate the 95%-of-4 design) to be put to the operator via AskUserQuestion after diagnosis. Do NOT lower the threshold (#129). DEVELOPMENT workstream, ONE deliverable.
+
+---
+
+**(Session 168 — COMPLETE, archived below.)**
+
+---
+
 ### What Session 168 Did
 **Deliverable:** Interview-convergence calibration (gap #1b). Diagnose the precise convergence-0% mechanism and implement the operator-chosen fix. DEVELOPMENT workstream, ONE deliverable. **(COMPLETE — the scorer/metric mismatch (the diagnosed root cause) is RESOLVED + tested + verified live; the live §3.4 gate is NOT green, blocked by a newly-surfaced, handed-off residual (gap #1c, gate fragility). Two commits: claim stub (uncommitted — folded into close-out) + this close-out; all UNPUSHED (#40) — `origin/master` at `5ed4b87`, 28 local unpushed after close-out.)**
 
