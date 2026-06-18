@@ -137,6 +137,22 @@ def test_run_scripted_requires_an_answer_source(
         )
 
 
+def test_run_scripted_rejects_both_answer_sources(
+    subrogation_fixture_path: Path,
+) -> None:
+    """The two answer sources are mutually exclusive — supplying both is a caller
+    bug (which one wins would be silent), so we fail loud."""
+    agent = _agent_from_fixture_path(subrogation_fixture_path)
+    with pytest.raises(ValueError, match="exactly one"):
+        agent.run_scripted(
+            stakeholder_id="x",
+            session_id="both-answer-sources",
+            interview_answers=["a"],
+            answer_provider=lambda *, question, question_number: "b",
+            review_responses=["ACCEPT"],
+        )
+
+
 def test_run_scripted_answer_provider_drives_convergence(
     subrogation_fixture_path: Path,
 ) -> None:

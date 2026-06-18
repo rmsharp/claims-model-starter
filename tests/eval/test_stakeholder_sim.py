@@ -73,6 +73,7 @@ def test_call_sends_question_and_returns_text() -> None:
     assert len(client.calls) == 1
     call = client.calls[0]
     assert call["model"] == "m-test"
+    assert call["max_tokens"] == 1024
     assert call["system"] == _STAKEHOLDER_SYSTEM
     user = call["messages"][0]["content"]
     assert "BRIEF BODY" in user

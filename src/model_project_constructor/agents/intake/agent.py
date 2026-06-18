@@ -92,9 +92,9 @@ class IntakeAgent:
         ``review_responses`` is always a fixed list (one per review interrupt).
         Stops as soon as ``finalize`` completes.
         """
-        if interview_answers is None and answer_provider is None:
+        if (interview_answers is None) == (answer_provider is None):
             raise ValueError(
-                "run_scripted needs interview_answers or answer_provider"
+                "run_scripted needs exactly one of interview_answers or answer_provider"
             )
 
         config = {"configurable": {"thread_id": session_id}}
