@@ -123,3 +123,68 @@ def test_run_scripted_review_accept_tokens_variants(
             review_responses=[accept_word],
         )
         assert report.status == "COMPLETE", accept_word
+
+
+def test_run_scripted_requires_an_answer_source(
+    subrogation_fixture_path: Path,
+) -> None:
+    agent = _agent_from_fixture_path(subrogation_fixture_path)
+    with pytest.raises(ValueError, match="interview_answers or answer_provider"):
+        agent.run_scripted(
+            stakeholder_id="x",
+            session_id="no-answer-source",
+            review_responses=["ACCEPT"],
+        )
+
+
+def test_run_scripted_answer_provider_drives_convergence(
+    subrogation_fixture_path: Path,
+) -> None:
+    """An ``answer_provider`` drives the interview to COMPLETE, receiving the
+    interviewer's real questions and never running out of answers."""
+    fixture = load_fixture(subrogation_fixture_path)
+    agent = IntakeAgent(llm=FixtureLLMClient(fixture))
+    seen: list[tuple[str, int]] = []
+
+    def provider(*, question: str, question_number: int) -> str:
+        seen.append((question, question_number))
+        return f"answer to question {question_number}"
+
+    report = agent.run_scripted(
+        stakeholder_id="x",
+        session_id="answer-provider-convergence",
+        answer_provider=provider,
+        review_responses=["ACCEPT"],
+    )
+    assert report.status == "COMPLETE"
+    assert report.questions_asked == 7
+    # The provider was consulted for every question — and could never run out,
+    # though no fixed interview_answers list was supplied.
+    assert [n for _, n in seen] == list(range(1, 8))
+    # It receives the interviewer's actual question text, not a canned answer.
+    assert seen[0][0] == fixture["qa_pairs"][0]["question"]
+
+
+def test_run_scripted_answer_provider_feeds_until_question_cap(
+    question_cap_fixture_path: Path,
+) -> None:
+    """The robustness property: a provider supplies every question up to the
+    20-question cap without exhausting (a fixed list would have run out)."""
+    fixture = load_fixture(question_cap_fixture_path)
+    agent = IntakeAgent(llm=FixtureLLMClient(fixture))
+    calls = 0
+
+    def provider(*, question: str, question_number: int) -> str:
+        nonlocal calls
+        calls += 1
+        return "ok"
+
+    report = agent.run_scripted(
+        stakeholder_id="x",
+        session_id="answer-provider-cap",
+        answer_provider=provider,
+        review_responses=["ACCEPT"],
+    )
+    assert report.status == "DRAFT_INCOMPLETE"
+    assert report.questions_asked == MAX_QUESTIONS
+    assert calls == MAX_QUESTIONS

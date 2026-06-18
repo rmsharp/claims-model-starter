@@ -35,7 +35,6 @@ from model_project_constructor_data_agent.factory import make_llm_client as make
 from model_project_constructor.agents.intake.agent import IntakeAgent
 from model_project_constructor.agents.intake.factory import make_llm_client as make_intake_client
 from model_project_constructor.agents.intake.fixture import (
-    answers_from_fixture,
     load_fixture,
     review_sequence_from_fixture,
 )
@@ -62,6 +61,7 @@ from tests.eval.eval_scoring import (
     sql_executes,
     sql_parse_valid,
 )
+from tests.eval.stakeholder_sim import stakeholder_simulator_for
 
 #: Samples per governed case — §3.4 requires N≥5 to judge a pass-rate.
 _N_SAMPLES = 5
@@ -135,13 +135,14 @@ def measure_provider(
                 session_id=f"shadow-{provider}-{fixture['session_id']}",
                 domain=fixture.get("domain", "pc_claims"),
                 initial_problem=fixture.get("initial_problem"),
-                interview_answers=answers_from_fixture(fixture),
+                answer_provider=stakeholder_simulator_for(fixture, provider=provider),
                 review_responses=review_sequence_from_fixture(fixture),
             )
         except RuntimeError as exc:
-            # Model asked for more answers than the script supplies, or raised
-            # IntakeLLMError (a RuntimeError) — a non-convergence for this golden
-            # (see test_eval_live module caveat). Recorded, not crashed.
+            # A simulator/seam failure (IntakeLLMError or a stakeholder-sim error,
+            # both RuntimeError) is a non-convergence for this golden. The model
+            # can no longer "run out of answers" — the simulator answers whatever
+            # it asks — so a miss here reflects the model's interview behaviour.
             _warn(f"interview/{case.case_id}: {type(exc).__name__} -> non-convergence")
             interview_results.append(False)
             continue

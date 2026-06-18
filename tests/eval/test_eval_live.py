@@ -27,11 +27,13 @@ invariants rather than pinning ``temperature=0``. ``model=None`` is passed to
 every factory so each provider uses its own native default id (a ``bedrock``
 client gets the ``anthropic.``-prefixed default, never a bare first-party id).
 
-**Caveat — interview answers.** ``test_live_interview_converges`` feeds the
-recorded stakeholder answers to a real model that asks its own questions; if the
-model asks for more answers than the script supplies, that counts as a
-non-convergence. A more robust stakeholder-answer strategy (or padding) is part
-of the deferred live calibration.
+**Interview answers — robust stakeholder simulator.** ``test_live_interview_
+converges`` drives the live interviewer with a :class:`StakeholderSimulator`
+(``stakeholder_sim.py``) rather than a fixed recorded list: the simulator answers
+whatever question the model actually asks, from the fixture's full knowledge, so
+the script can no longer "run out" (the ``interview_convergence`` artifact in
+``PHASE_E_AGREEMENT_REPORT.md`` / ``PROJECT_LEARNINGS`` #21). A sub-convergence
+now reflects the model's own interview behaviour, not a starved script.
 """
 
 from __future__ import annotations
@@ -43,7 +45,6 @@ from model_project_constructor_data_agent.factory import make_llm_client as make
 from model_project_constructor.agents.intake.agent import IntakeAgent
 from model_project_constructor.agents.intake.factory import make_llm_client as make_intake_client
 from model_project_constructor.agents.intake.fixture import (
-    answers_from_fixture,
     load_fixture,
     review_sequence_from_fixture,
 )
@@ -63,6 +64,7 @@ from tests.eval.eval_scoring import (
     sql_executes,
     sql_parse_valid,
 )
+from tests.eval.stakeholder_sim import stakeholder_simulator_for
 
 pytestmark = pytest.mark.live
 
@@ -136,12 +138,13 @@ def test_live_interview_converges(provider: str) -> None:
                 session_id=f"live-{fixture['session_id']}",
                 domain=fixture.get("domain", "pc_claims"),
                 initial_problem=fixture.get("initial_problem"),
-                interview_answers=answers_from_fixture(fixture),
+                answer_provider=stakeholder_simulator_for(fixture, provider=provider),
                 review_responses=review_sequence_from_fixture(fixture),
             )
         except RuntimeError:
-            # Model asked for more answers than the recorded script supplies —
-            # counts as a non-convergence for this golden (see module caveat).
+            # A simulator/seam failure (RuntimeError) is a non-convergence for
+            # this golden. The model can no longer run out of answers (the
+            # simulator answers whatever it asks); see module docstring.
             results.append(False)
             continue
         results.append(interview_converged(report))
