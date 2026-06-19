@@ -7,7 +7,7 @@
 ## ACTIVE TASK
 
 ### What Session 170 Did
-**Deliverable:** ★ Measured live interview-convergence run — confirm gap #1c clears 95% live. DEVELOPMENT workstream, ONE deliverable. **(COMPLETE — convergence is live-confirmed GREEN at 100% (20/20), measured twice; the §3.4 baseline is refreshed; a NEW transport-timeout robustness residual was surfaced + queued, not fixed. Measurement + docs only — NO `src/`/`tests/` changes. Three commits: claim `93f9a3e` + backlog `f93cd02` + this close-out; all UNPUSHED (#40) — `origin/master` at `5ed4b87`, 33 local unpushed after close-out.)**
+**Deliverable:** ★ Measured live interview-convergence run — confirm gap #1c clears 95% live. DEVELOPMENT workstream, ONE deliverable. **(COMPLETE — convergence is live-confirmed GREEN at 100% (20/20), measured twice; the §3.4 baseline is refreshed; a NEW transport-timeout robustness residual was surfaced + queued, not fixed. Measurement + docs only — NO `src/`/`tests/` changes. Three commits: claim `93f9a3e` + backlog `f93cd02` + close-out `d6ea1e7` — **PUSHED to `origin/master` at the operator's request immediately after close-out; tree synced (`origin/master` now at the post-close-out HEAD, 0 unpushed).**)**
 
 **Started / Completed:** 2026-06-18 17:26 / 2026-06-18 22:44 CDT.
 
@@ -45,7 +45,7 @@
 3. **Carried:** governance refs/metric (gap #2, measured 0% — SME call), SQL exec (gap #4, measured 60%), the **bedrock** half (no AWS creds), `run_pipeline.py` model-id gap, CLI `--provider` defaults; Evolution.md staleness ("58 promoted" vs 61).
 
 **⚠ State you will inherit:**
-1. **UNPUSHED: 33 local** (30 prior through S169 + claim `93f9a3e` + backlog `f93cd02` + this close-out); `origin/master` at `5ed4b87`. Push only if the operator says so (#40).
+1. **SYNCED — 0 unpushed.** The operator pushed immediately after close-out, so `origin/master` carries this session's 3 commits (`93f9a3e`, `f93cd02`, `d6ea1e7`) plus the 30 prior. (This note's own commit is the one exception until it too is pushed.) Going forward: still push only on operator say-so (#40).
 2. **Baseline UNCHANGED: 908 passed + 8 live skipped @ 97.39%.** This session changed **NO `src/` or `tests/` file** — measurement + docs only — so there are no new tests and no regression risk to re-verify. mypy/ruff status unchanged from S169. Single-file runs still need `--no-cov` (#57).
 3. **The §3.4 table in `PHASE_E_AGREEMENT_REPORT.md` is now the S170 live re-measurement** (anthropic): json 100%, sql_parse 100%, **sql_exec 60% (FAIL, gap #4)**, **governance 0% + 5 laxer (FAIL, gap #2)**, **qc_structural 100% (PASS)**, **interview_convergence 100% (PASS)**, premature 0. gap #1c marked **RESOLVED — live-GREEN**.
 4. **NEW residual — transport-timeout class not classified transient** (BACKLOG item #1). The gate can abort on a network blip (`anthropic.APITimeoutError` propagates raw past `_TRANSIENT_ERRORS`); a clean re-run passes. The convergence *capability* is unaffected — this is purely gate robustness.
