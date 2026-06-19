@@ -178,8 +178,14 @@ does not exist). Methodology (operator decision, Session 161):
 - **Session 175 closed the `cycle_time` gap** by defining the cadence vocabulary
   in `SYSTEM_GOVERNANCE` (still no reference change) → `cycle_time` agreement
   50%→100%. The `continuous` definition also lifted `fraud_triage` to
-  `tier_1_critical` (laxer 0), so governance now passes both metrics in the N=5
-  re-measure (confirm the `fraud_triage` result before formally closing — `BACKLOG.md`).
+  `tier_1_critical` (laxer 0), so governance now passes both metrics.
+- **Session 176 confirmed the `fraud_triage` `tier_1_critical` flip is stable**
+  (N=20/case live re-measure: `fraud_triage` 20/20 `tier_1_critical`, laxer 0;
+  whole gate `cycle_time` 80/80 = 100%, laxer 0; gate assert test PASS). Governance
+  is now fully GREEN on the **anthropic baseline** (both §3.4 metrics, zero observed
+  variance). Scope caveat: the 100% is corpus-validated — the `cycle_time`
+  definitions' over-fit (a separate open hardening item, `BACKLOG.md`) and `bedrock`
+  (unmeasured) are unaffected; overall Phase E stays NO-GO (`sql_exec` 60%).
 
 The four cases span all four `RiskTier` values
 (`test_governance_corpus_spans_all_risk_tiers`), so the laxer-miss logic is

@@ -17,6 +17,15 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 > *Sessions 116–144 below were backfilled in Session 149 (2026-06-12), when the `CHANGELOG.md` cadence convention was clarified to gate on shipped-code changes rather than strictly per-session (see `docs/methodology/PROJECT_CONVENTIONS.md` §2). The six entries cover the O3/O1/O4 single-sourcing overhauls, the E4 provider factory, the wiki citation guard, and the `SR_11_7`→`SR_26_2` rename. Documentation-only sessions in the same span are intentionally recorded in `SESSION_NOTES.md` only.*
 
+### 2026-06-19 — Confirm `fraud_triage` `tier_1_critical` is stable at N=20 → governance fully GREEN on the anthropic baseline (gap #2 residual, Session 176)
+
+The S175 `fraud_triage` `tier_2_high`→`tier_1_critical` flip (a side effect of defining `continuous`) was a single N=5 run, so the BACKLOG confirm-item held it open. Confirmed stable. **No code, test, or corpus change — eval-measurement + decision only.**
+
+- **Live re-measure (governance-only, anthropic, N=20/case, n=80):** `fraud_triage` classifies `tier_1_critical` **20/20 (100%), laxer 0** — the S174 under-rating did not recur in any of 20 samples. The whole gate re-confirms with zero observed variance: `cycle_time` agreement **80/80 = 100%**, `laxer` misses **0** (each of the four cases classifies its reference cadence exactly). The three non-fraud cases continue to err *stricter* than their references (subrog `tier_3`→`tier_2`, pricing `tier_2`→`tier_1`, reserving `tier_4`→`tier_2`) — the prompt-instructed conservative direction, credited (not laxer).
+- **Independently corroborated** by the gate assert test `test_live_governance_cycle_time_agreement_and_no_laxer_miss` (anthropic, PASS) — the real scorer + §3.4 thresholds end-to-end, not just the ad-hoc measurement script.
+- **Closed:** BACKLOG "confirm `fraud_triage`" item. The governance capability now passes **both** §3.4 metrics on the **anthropic baseline**. *Scope unchanged:* corpus-validated only (the `cycle_time` over-fit hardening remains an open BACKLOG item) and `bedrock` is still unmeasured (no AWS creds) → **overall Phase E stays NO-GO** (`sql_exec` 60%, gap #4).
+- **Docs:** `PHASE_E_AGREEMENT_REPORT.md` (S176 update note + §3.4 rows + baseline-findings row), `tests/eval/README.md` (governance-reference bullet). Do **NOT** lower thresholds (#129).
+
 ### 2026-06-19 — Define the `cycle_time` cadence vocabulary in `SYSTEM_GOVERNANCE` → governance now PASSES (gap #2, Session 175)
 
 The intake governance prompt listed the bare `cycle_time` vocabulary `{strategic, tactical, operational, continuous}` with **no definitions**, so the live model and the (operator-ratified) eval references used the words differently (S174: `cycle_time` agreement 50%). Added boundary definitions, grounded in the four reference rationales.
