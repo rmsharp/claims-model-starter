@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 171 Did
+**Deliverable:** Classify transport timeouts (`anthropic.APITimeoutError`/`APIConnectionError`) as transient in the interview-convergence sweep — gap #1c robustness residual surfaced S170. DEVELOPMENT workstream, ONE deliverable. **(IN PROGRESS)**
+**Started:** 2026-06-18 23:08 CDT
+**Status:** Session claimed. Work beginning. Deterministically testable (injected `run_one`) — NO live run needed. Decide tuple-add vs `_call_json` seam-wrap after reading source (FM #11); keep `_MAX_TRANSIENT_RETRIES`/threshold unchanged (#129); don't broaden the catch into swallowing real bugs (FM #18).
+
+---
+
+**(Session 170 — COMPLETE, archived below.)**
+
+---
+
 ### What Session 170 Did
 **Deliverable:** ★ Measured live interview-convergence run — confirm gap #1c clears 95% live. DEVELOPMENT workstream, ONE deliverable. **(COMPLETE — convergence is live-confirmed GREEN at 100% (20/20), measured twice; the §3.4 baseline is refreshed; a NEW transport-timeout robustness residual was surfaced + queued, not fixed. Measurement + docs only — NO `src/`/`tests/` changes. Three commits: claim `93f9a3e` + backlog `f93cd02` + close-out `d6ea1e7` — **PUSHED to `origin/master` at the operator's request immediately after close-out; tree synced (`origin/master` now at the post-close-out HEAD, 0 unpushed).**)**
 
