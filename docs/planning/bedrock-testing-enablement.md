@@ -62,22 +62,47 @@ of setup. This value becomes `AWS_REGION` / `AWS_DEFAULT_REGION` in step 4. Mode
 availability differs by region; confirm on the model's detail page in the Bedrock console
 (step 2).
 
-### 2. Request **model access** for Anthropic Claude (one-time, per region)
-**Get to the Bedrock console:** click the **search bar** at the top of the console, type
-**`Bedrock`**, and select **Amazon Bedrock** (or go directly to
-**https://console.aws.amazon.com/bedrock/**). **First confirm the region dropdown still
-shows the region you picked in step 1** — model access is granted *per-region*. Then in
-the Bedrock left-hand menu go to **Bedrock configurations → Model access → Modify model
-access** (direct link: **https://console.aws.amazon.com/bedrock/home#/modelaccess**),
-select the Anthropic Claude models → **Next**.
-- **First Anthropic use requires a one-time "use case details" form** (company name,
-  website, intended users, industry, use case). The console prompts for it. This is the
-  step you must not skip.
-- Current AWS docs say access is granted **immediately** on form submission, but it has
-  historically sometimes shown *"In progress"* for minutes–hours. **Don't schedule the
-  test run assuming instant** — verify with step 5 first.
+### 2. Make sure Claude is accessible (mostly automatic now — the console changed)
+> **The Bedrock console was redesigned (2025–2026).** If your console's left nav shows
+> **Projects / API keys / Models / Workbench** and a "bedrock-mantle endpoint" subtitle,
+> you have the new console — there is **no "Bedrock configurations → Model access" page**
+> like older guides describe. Don't go looking for it.
 
-### 3. Create an IAM identity + access keys (one-time)
+**Model access is now automatic** in commercial regions: AWS retired the Model-access page
+(Sept 2025) and **auto-enables** serverless foundation models on first use. So you mostly
+do **nothing** here. Two things still matter for *this project*:
+
+1. **The Anthropic one-time use-case (First-Time-Use) form** still applies, because the
+   project invokes Claude over the *classic* `bedrock-runtime` path (see the ⚠️ box below),
+   and that path is **not** exempted from the form. The old "Model access" page that used
+   to host it is gone, so submit it one of these ways:
+   - **Easiest — let the smoke test surface it.** Run step 5's `converse` probe; if the
+     account hasn't completed the form you'll get an access error that names the use-case
+     requirement. Submit it, then re-run. Access is granted **immediately** on submission.
+   - **Proactively in the console:** Amazon Bedrock → model catalog → select an Anthropic
+     Claude model → if prompted, **Submit use case details** (intended use + a website URL).
+   - **Proactively via CLI:** `aws bedrock put-use-case-for-model-access` (see AWS docs).
+2. **Account prerequisites** (normal on a standard account): a valid payment method + AWS
+   Marketplace permissions (`aws-marketplace:Subscribe`/`ViewSubscriptions`). The
+   background model subscription on first invoke can take **~15 min**.
+
+> The use-case form is **not** required if you call Claude through the *new*
+> `bedrock-mantle` endpoint + a Bedrock API key — but that path needs a **code change** and
+> doesn't work with the project as written. See the ⚠️ box and "Optional: the simpler
+> API-key path" below.
+
+> ### ⚠️ Do NOT create a Bedrock "API key" — it won't work with this project
+> The new console steers you to **Projects → API keys** (a bearer token in
+> `AWS_BEARER_TOKEN_BEDROCK`, used against the `bedrock-mantle` endpoint). **The project's
+> `AnthropicBedrock` client cannot use it.** That client authenticates **only** with AWS
+> SigV4 (IAM access key + secret) against the classic `bedrock-runtime` endpoint and
+> ignores the bearer token entirely — confirmed in the SDK's `lib/bedrock/_auth.py`
+> (`session.get_credentials()` + `SigV4Auth`), tracked as the unimplemented
+> anthropic-sdk-python issue #1079 (Nov 2025). Setting `AWS_BEARER_TOKEN_BEDROCK` with no
+> access key just makes `AnthropicBedrock()` fail to find credentials.
+> **→ Skip "API keys." Create an IAM user instead (step 3).**
+
+### 3. Create an IAM identity + access keys (one-time) — **this is the credential the project needs**
 **Get to the IAM console:** click the **search bar** at the top, type **`IAM`**, and
 select **IAM** (or go directly to **https://console.aws.amazon.com/iam/**). IAM is
 **global** — the region dropdown doesn't matter here. Then **Users → Create user** →
@@ -145,19 +170,35 @@ Only once a real invocation returns text should you run the eval suite.
 
 ## 💥 Here be dragons (read before spending)
 
-1. **Inference-profile-only models (highest risk).** Many Claude 4.x models on Bedrock
-   **cannot be invoked by the bare id** `anthropic.claude-sonnet-4-6` — they return
-   `ValidationException: ...on-demand throughput isn't supported. Retry with...an
-   inference profile.` The fix is the cross-region profile id `us.anthropic.claude-sonnet-4-6`.
-   **The project's `bedrock_client.py:56` uses the bare id.** If your region rejects it,
-   the bedrock tests will fail until the model id is adjusted — that's a **one-line code
-   change (a separate session)**, not an operator task. Step 5's `converse` probe tells
-   you which form your account needs *before* you spend a session on it.
-2. **Silent skip on missing export** (see step 4) — "all green" ≠ "ran."
-3. **Model-access delay** — may not be instant; verify with step 5.
-4. **Regional endpoint premium** — since the 4.5 generation, a *regional* endpoint
+1. **The "API key" trap (most likely to bite first).** The redesigned console pushes
+   **Projects → API keys** (bearer token / `AWS_BEARER_TOKEN_BEDROCK`). The project's
+   `AnthropicBedrock` client **cannot use it** — it's SigV4/IAM-only (see the ⚠️ box in
+   step 2). Use an **IAM access key + secret** (step 3), not a Bedrock API key.
+2. **Inference-profile-only models.** Many Claude 4.x models on Bedrock **cannot be invoked
+   by the bare id** `anthropic.claude-sonnet-4-6` — they return `ValidationException:
+   ...on-demand throughput isn't supported. Retry with...an inference profile.` The fix is
+   the cross-region profile id `us.anthropic.claude-sonnet-4-6`. **The project's
+   `bedrock_client.py:56` uses the bare id.** If your region rejects it, the bedrock tests
+   fail until the id is adjusted — a **one-line code change (separate session)**, not an
+   operator task. Step 5's `converse` probe tells you which form your account needs *before*
+   you spend a session on it.
+3. **Silent skip on missing export** (see step 4) — "all green" ≠ "ran."
+4. **Anthropic use-case form on the classic path** — still required for this project (step
+   2); the smoke test surfaces it if you skipped it. (Not needed on the mantle/API-key path
+   — which the project doesn't use.)
+5. **Regional endpoint premium** — since the 4.5 generation, a *regional* endpoint
    (what `AWS_REGION` gives you) costs ~10% more than the *global* inference profile.
    Folded into the high-cost bounds below.
+
+### Optional: the simpler API-key path (requires a code change, separate session)
+If the per-key, no-IAM, no-form simplicity of the new console is attractive, the project's
+bedrock client could be adapted to the **`bedrock-mantle` endpoint + a Bedrock API key**
+(`AWS_BEARER_TOKEN_BEDROCK`) — then the operator's setup collapses to "create a project →
+create an API key." But that means replacing/augmenting `AnthropicBedrock` (e.g. with
+`AnthropicBedrockMantle`, the OpenAI-compatible client pointed at the mantle endpoint, or
+raw boto3 `bedrock-runtime`) and re-running the eval harness against it. That's a
+**development decision for a future session**, not something the operator can do from the
+console today. For testing **now**, use the IAM path above.
 
 ---
 
