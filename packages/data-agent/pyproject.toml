@@ -13,7 +13,7 @@ dependencies = [
     "langgraph>=0.2,<0.3",
     "sqlparse>=0.5",
     "sqlalchemy>=2.0,<3",
-    "anthropic[bedrock]>=0.40",
+    "anthropic[bedrock]>=0.94",  # >=0.94 ships AnthropicBedrockMantle (bedrock-mantle endpoint + API key); see bedrock_client.py
     "typer>=0.12",
 ]
 

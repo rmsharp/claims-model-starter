@@ -41,15 +41,15 @@ def _stub_anthropic(monkeypatch: pytest.MonkeyPatch) -> object:
 
 @pytest.fixture
 def _stub_bedrock(monkeypatch: pytest.MonkeyPatch) -> object:
-    """Replace ``anthropic.AnthropicBedrock`` with a sentinel-returning ctor.
+    """Replace ``anthropic.AnthropicBedrockMantle`` with a sentinel-returning ctor.
 
     Bedrock's no-arg construction would otherwise build a live
-    ``anthropic.AnthropicBedrock`` (needs AWS credentials/region).
+    ``anthropic.AnthropicBedrockMantle`` (needs AWS credentials/region).
     """
     import anthropic
 
     sentinel = object()
-    monkeypatch.setattr(anthropic, "AnthropicBedrock", lambda *a, **k: sentinel)
+    monkeypatch.setattr(anthropic, "AnthropicBedrockMantle", lambda *a, **k: sentinel)
     return sentinel
 
 

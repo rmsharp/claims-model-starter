@@ -1,14 +1,15 @@
 """Tests for :class:`BedrockLLMClient` (intake agent, AWS Bedrock-hosted Claude).
 
 ``BedrockLLMClient`` subclasses :class:`AnthropicLLMClient` and overrides only
-construction (an ``anthropic.AnthropicBedrock`` client) and the Bedrock-prefixed
-default model — every interview method and the JSON parsing are inherited and
-already covered by ``test_anthropic_client.py`` and the cross-provider
-``tests/test_llm_json_parity.py`` battery. These tests pin the Bedrock-specific
-surface: the subclass relationship (so inheritance holds), the ``anthropic.``-
-prefixed default model, that an inherited method runs over an injected client
-and sends the Bedrock model id, and that the default constructor lazily builds
-``AnthropicBedrock`` (not ``Anthropic``) and forwards ``aws_region``.
+construction (an ``anthropic.AnthropicBedrockMantle`` client) and the
+Bedrock-prefixed default model — every interview method and the JSON parsing are
+inherited and already covered by ``test_anthropic_client.py`` and the
+cross-provider ``tests/test_llm_json_parity.py`` battery. These tests pin the
+Bedrock-specific surface: the subclass relationship (so inheritance holds), the
+``anthropic.``-prefixed default model, that an inherited method runs over an
+injected client and sends the Bedrock model id, and that the default constructor
+lazily builds ``AnthropicBedrockMantle`` (not ``Anthropic``) and forwards
+``aws_region``.
 """
 
 from __future__ import annotations
@@ -96,17 +97,18 @@ def test_has_intake_protocol_methods() -> None:
         assert callable(getattr(client, method)), method
 
 
-def test_default_constructor_builds_anthropic_bedrock(
+def test_default_constructor_builds_anthropic_bedrock_mantle(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """With no injected client, the default ctor lazily builds
-    ``anthropic.AnthropicBedrock`` (NOT ``anthropic.Anthropic``) and forwards
-    ``aws_region`` when given. AWS credentials are self-discovered by the SDK."""
+    ``anthropic.AnthropicBedrockMantle`` (NOT ``anthropic.Anthropic``) and
+    forwards ``aws_region`` when given. Auth (Bedrock API key / SigV4) is
+    self-discovered from the environment by the SDK."""
     import anthropic
 
     captured: dict[str, Any] = {}
 
-    class _FakeBedrock:
+    class _FakeMantle:
         def __init__(self, **kwargs: Any) -> None:
             captured["kwargs"] = kwargs
             self.messages = _FakeMessages(
@@ -116,7 +118,7 @@ def test_default_constructor_builds_anthropic_bedrock(
     def _boom(*_a: Any, **_k: Any) -> Any:
         raise AssertionError("Bedrock client must not build anthropic.Anthropic")
 
-    monkeypatch.setattr(anthropic, "AnthropicBedrock", _FakeBedrock)
+    monkeypatch.setattr(anthropic, "AnthropicBedrockMantle", _FakeMantle)
     monkeypatch.setattr(anthropic, "Anthropic", _boom)
 
     client = BedrockLLMClient(aws_region="us-east-1")
@@ -128,16 +130,16 @@ def test_default_constructor_omits_region_when_unset(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """When ``aws_region`` is not passed, no region kwarg is forwarded — the SDK
-    self-discovers it from the boto3 chain (e.g. ``AWS_REGION``)."""
+    self-discovers it from ``AWS_REGION`` / ``AWS_DEFAULT_REGION``."""
     import anthropic
 
     captured: dict[str, Any] = {}
 
-    class _FakeBedrock:
+    class _FakeMantle:
         def __init__(self, **kwargs: Any) -> None:
             captured["kwargs"] = kwargs
             self.messages = _FakeMessages([])
 
-    monkeypatch.setattr(anthropic, "AnthropicBedrock", _FakeBedrock)
+    monkeypatch.setattr(anthropic, "AnthropicBedrockMantle", _FakeMantle)
     BedrockLLMClient()
     assert captured["kwargs"] == {}

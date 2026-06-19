@@ -17,7 +17,7 @@ dependencies = [
 [project.optional-dependencies]
 agents = [
     "langgraph>=0.2,<0.3",
-    "anthropic[bedrock]>=0.40",
+    "anthropic[bedrock]>=0.94",  # >=0.94 ships AnthropicBedrockMantle (bedrock-mantle endpoint + API key); see agents/intake/bedrock_client.py
     "sqlparse>=0.5",
     "sqlalchemy>=2.0,<3",
     "python-gitlab>=4",

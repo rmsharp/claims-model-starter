@@ -1,13 +1,13 @@
 """AWS Bedrock-hosted Claude client for the Data Agent (standalone wheel).
 
 Bedrock-Claude speaks the **same Anthropic Messages API** as the first-party
-``anthropic.Anthropic`` client — ``AnthropicBedrock.messages.create`` is
+``anthropic.Anthropic`` client — ``AnthropicBedrockMantle.messages.create`` is
 signature-identical — so this client is the wheel's :class:`AnthropicLLMClient`
-*pointed at Bedrock*. It overrides only:
+*pointed at Bedrock via the bedrock-mantle endpoint*. It overrides only:
 
-1. **Construction** — an :class:`anthropic.AnthropicBedrock` client,
-   authenticated via the AWS / boto3 credential chain rather than
-   ``ANTHROPIC_API_KEY``.
+1. **Construction** — an :class:`anthropic.AnthropicBedrockMantle` client,
+   authenticated by a **Bedrock API key** (``AWS_BEARER_TOKEN_BEDROCK``) or, as a
+   fallback, SigV4 from the AWS credential chain — rather than ``ANTHROPIC_API_KEY``.
 2. **The default model id** — Bedrock model ids carry an ``anthropic.``
    provider prefix (e.g. ``anthropic.claude-sonnet-4-6``).
 
@@ -23,17 +23,23 @@ SDK — never the orchestrator (``tests/test_data_agent_decoupling.py``). It
 subclasses the wheel's own ``AnthropicLLMClient`` rather than a shared helper,
 so the one-way package dependency is preserved.
 
-**Why subclass rather than duplicate.** The SDK ships ``AnthropicBedrock`` as a
-drop-in for ``Anthropic``; a thin subclass expresses "the same Claude, reached
-via Bedrock" with zero parser/method drift surface (a deliberate as-built
-refinement of the plan's "one new client module" wording — see
-``docs/planning/multi-provider-llm-plan.md`` Phase C as-built note).
+**Why subclass rather than duplicate.** The SDK ships ``AnthropicBedrockMantle``
+as a drop-in for ``Anthropic``; a thin subclass expresses "the same Claude,
+reached via Bedrock" with zero parser/method drift surface (a deliberate
+as-built refinement of the plan's "one new client module" wording — see
+``docs/planning/multi-provider-llm-plan.md`` Phase C as-built note. Session 178
+switched this from ``AnthropicBedrock`` (SigV4-only, ``bedrock-runtime``) to
+``AnthropicBedrockMantle`` so a Bedrock API key can be used — see
+``docs/planning/bedrock-testing-enablement.md``.)
 
-**Auth.** ``AnthropicBedrock`` self-discovers AWS credentials and region from
-the boto3 credential chain, mirroring how ``anthropic.Anthropic()``
-self-discovers ``ANTHROPIC_API_KEY`` — so the wheel needs **no per-provider key
-resolver** (the Phase-A-deferred wheel resolver is a no-op for Bedrock). Pass
-``aws_region`` explicitly when ``AWS_REGION`` is not set in the environment.
+**Auth.** ``AnthropicBedrockMantle`` resolves auth from the environment: a
+Bedrock API key in ``AWS_BEARER_TOKEN_BEDROCK`` selects bearer-token mode,
+otherwise it falls back to SigV4 from the AWS credential chain — so the wheel
+needs **no per-provider key resolver** (the Phase-A-deferred wheel resolver is a
+no-op for Bedrock). Region comes from ``aws_region`` or, when unset, the
+``AWS_REGION`` / ``AWS_DEFAULT_REGION`` env var; the endpoint then defaults to
+``https://bedrock-mantle.{region}.api.aws/anthropic``. Pass ``aws_region``
+explicitly when ``AWS_REGION`` is not set.
 """
 
 from __future__ import annotations
@@ -54,7 +60,7 @@ class BedrockLLMClient(AnthropicLLMClient):
     """:class:`LLMClient` backed by AWS Bedrock-hosted Claude.
 
     Subclasses the wheel's :class:`AnthropicLLMClient`, overriding only
-    construction (build an ``anthropic.AnthropicBedrock`` client) and the
+    construction (build an ``anthropic.AnthropicBedrockMantle`` client) and the
     Bedrock-prefixed default model. All required + optional protocol methods
     and the JSON parsing are inherited (see the module docstring).
     """
@@ -69,13 +75,14 @@ class BedrockLLMClient(AnthropicLLMClient):
     ) -> None:
         if client is None:
             # Lazy import so the factory / package __init__ stay SDK-free at
-            # import time (test_factory_import_does_not_load_anthropic). The
-            # AWS credential chain is self-discovered by the SDK; region falls
-            # back to AWS_REGION when not passed explicitly.
+            # import time (test_factory_import_does_not_load_anthropic). Auth and
+            # region self-discover from the environment: a Bedrock API key in
+            # AWS_BEARER_TOKEN_BEDROCK (else SigV4 from the AWS chain); region
+            # falls back to AWS_REGION / AWS_DEFAULT_REGION when not passed.
             import anthropic
 
             kwargs: dict[str, Any] = {}
             if aws_region is not None:
                 kwargs["aws_region"] = aws_region
-            client = anthropic.AnthropicBedrock(**kwargs)
+            client = anthropic.AnthropicBedrockMantle(**kwargs)
         super().__init__(client=client, model=model, max_tokens=max_tokens)
