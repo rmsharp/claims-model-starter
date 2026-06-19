@@ -190,15 +190,44 @@ Only once a real invocation returns text should you run the eval suite.
    (what `AWS_REGION` gives you) costs ~10% more than the *global* inference profile.
    Folded into the high-cost bounds below.
 
-### Optional: the simpler API-key path (requires a code change, separate session)
-If the per-key, no-IAM, no-form simplicity of the new console is attractive, the project's
-bedrock client could be adapted to the **`bedrock-mantle` endpoint + a Bedrock API key**
-(`AWS_BEARER_TOKEN_BEDROCK`) — then the operator's setup collapses to "create a project →
-create an API key." But that means replacing/augmenting `AnthropicBedrock` (e.g. with
-`AnthropicBedrockMantle`, the OpenAI-compatible client pointed at the mantle endpoint, or
-raw boto3 `bedrock-runtime`) and re-running the eval harness against it. That's a
-**development decision for a future session**, not something the operator can do from the
-console today. For testing **now**, use the IAM path above.
+### Chosen path: Mantle + Bedrock API key (operator steps + the code change)
+*(Operator decision, Session 178. Wiring verified against AWS + Anthropic docs — see Sources.)*
+
+**Operator side (console — you can do this now):**
+1. Set your **Region** (top-right) first — **API keys are Region-scoped**.
+2. Left nav → **API keys**. You do **not** need to create a project or "enable" a model in
+   the catalog (the catalog is browse/compare-only; the **Workbench** is just the test
+   playground). Access comes from the key.
+   - **Long-term key** (dev/exploration): *Long-term API keys* tab → *Generate* → set an
+     expiration (e.g. 30 days) → *Generate*. Default policy `AmazonBedrockLimitedAccess`.
+   - **Short-term key** (≤12 h or session): *Short-term API keys* tab → *Generate*.
+3. **Copy the key once** (shown only once). Put it in `.env` as `AWS_BEARER_TOKEN_BEDROCK`.
+
+**Code change (one dev session — small, de-risked).** The Anthropic SDK ships a dedicated
+Mantle client, **`AnthropicBedrockMantle`**, that exposes the **identical
+`messages.create(...)` surface** as today's `AnthropicBedrock`, auto-targets the mantle
+Anthropic-Messages endpoint, and accepts **both** the Bedrock API key (reads
+`AWS_BEARER_TOKEN_BEDROCK`) and SigV4:
+```python
+from anthropic import AnthropicBedrockMantle           # pip install -U "anthropic[bedrock]"
+client = AnthropicBedrockMantle(aws_region="us-east-1") # reads AWS_BEARER_TOKEN_BEDROCK from env
+# client.messages.create(model="anthropic.claude-sonnet-4-6", ...)  — call sites UNCHANGED
+```
+- **Endpoint (automatic):** `https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages`
+  (CONFIRMED). **Do NOT** use the `/v1` OpenAI surface — that's for OpenAI-protocol models
+  and would force rewriting every call site.
+- **Model ids unchanged** — the project already uses the `anthropic.` prefix
+  (`anthropic.claude-sonnet-4-6`), so no id change, and this **retires the inference-
+  profile-id dragon** (that was an on-demand `bedrock-runtime` constraint, not a mantle one).
+- **`factory.py` change** = swap the client class + pass `aws_region`; the `LLMClient`
+  protocol is unaffected because the `messages.create` surface is identical.
+- **Bearer-only fallback** (skip the `[bedrock]` extra):
+  `anthropic.Anthropic(base_url="https://bedrock-mantle.{region}.api.aws/anthropic",
+  api_key=<key>)` — Anthropic-blessed; bearer-only (no SigV4), you manage token refresh.
+- **Region must match** between the API key and the endpoint `{region}`.
+
+> ℹ️ **Long-term keys are "dev/exploration only" per AWS.** Fine for this eval/testing use;
+> for anything production-facing, switch to short-term keys or IAM temporary credentials.
 
 ---
 
@@ -255,15 +284,15 @@ smoke test flushes out before any real spend.
   create a project + an API key in the console; no IAM user, no use-case form). ⚠️ **This
   path is NOT usable until a code change lands:** the project's `AnthropicBedrock`
   (SigV4/IAM) client must be replaced/augmented to call the mantle endpoint with the bearer
-  token (this is the "Optional: the simpler API-key path" section above — now the *chosen*
-  path, not optional). **Consequence: bedrock testing is blocked until that dev session
-  completes.** (IAM, steps 3–5, remains the only path that works with *today's* code, if
-  interim testing is wanted before the migration.) Open questions the code session must
-  resolve FIRST: (1) the exact mantle endpoint base URL; (2) which client consumes the
-  AWS-issued Bedrock API key — `AnthropicBedrockMantle(api_key=...)`, the OpenAI-compatible
-  SDK pointed at the mantle base_url, or raw boto3 `bedrock-runtime` (which honors
-  `AWS_BEARER_TOKEN_BEDROCK`); (3) how the chosen client slots into `factory.py`'s
-  `make_llm_client("bedrock")` and the `LLMClient` protocol.
+  token (this is the "Chosen path: Mantle + Bedrock API key" section above). **Consequence:
+  bedrock testing is blocked until that dev session lands** — though S178 research shows the
+  change is **small and de-risked.** (IAM, steps 3–5, still works with *today's* code if
+  interim testing is wanted.) **Open questions are now RESOLVED:** use
+  `AnthropicBedrockMantle` (a drop-in for `AnthropicBedrock` with the identical
+  `messages.create` surface; reads `AWS_BEARER_TOKEN_BEDROCK`; auto-targets
+  `/anthropic/v1/messages`); model ids unchanged (the `anthropic.` prefix is already in use —
+  this also retires the inference-profile-id dragon); the only `factory.py` change is the
+  client class + `aws_region`.
 - **Provide AWS creds at all?** If bedrock is out of scope for the foreseeable future,
   rule it out explicitly so future sessions stop carrying it as an open gap.
 - **Which tier to fund?** Smoke + governance (~$1) vs. full comparison (~$25–30).
