@@ -25,13 +25,33 @@ operationally trustworthy.** Thresholds therefore stay **proposed** — they wer
 See "Baseline findings" below for the per-metric diagnosis and the harness-fix
 follow-ups that must land before a real cutover decision is meaningful.
 
+**Update — Session 170 (2026-06-18): live re-measurement after the S167/S168/S169 fixes.**
+The Anthropic baseline was re-measured live this session. Two capabilities that
+were harness/corpus artifacts at S165 now measure **PASS**: `qc_structural`
+**66.7%→100%** (the gap #3 `max_tokens` truncation fix, S167) and
+`interview_convergence` **0%→100% (20/20)** (the gap #1b scorer fix S168 + the
+gap #1c N≥5-sampling fix S169) — convergence was confirmed twice, by `shadow_run`
+(100%, 0 premature) and by a clean `test_live_interview_converges` pass. The
+incumbent now fails **3/8** (was 5/8): `sql_exec` 60% (gap #4) and the two
+governance rows (gap #2). **The decision stays NO-GO** — `bedrock` is still
+unmeasured (no AWS creds) and the governance + SQL-exec gaps remain open.
+*Robustness residual surfaced:* one of three gate runs this session aborted on a
+network `anthropic.APITimeoutError` — a transport-timeout transient the gap #1c
+sweep does **not** classify (`_TRANSIENT_ERRORS` covers only `IntakeLLMError`/
+`StakeholderSimError`); the convergence rate is unaffected (a clean re-run
+passed), but the gate stays fragile to a network blip until that class is
+handled (follow-up; see Gap list / Backlog).
+
 ### Agreement table
 
-Measured single-run baseline (governance sampled N=5; the rest one pass) via
-[`tests/eval/shadow_run.py`](shadow_run.py); `bedrock` PENDING (no AWS creds).
-*Note: this table predates the Session-169 interview-sampling change (gap #1c) —
-`interview_convergence` is now sampled N≥5 per case, so re-measure for a current
-number (the S165 row below was a single pass).*
+Re-measured live **2026-06-18 (Session 170)** via [`tests/eval/shadow_run.py`](shadow_run.py)
+(governance and interview sampled N≥5 and pooled; SQL/QC one pass per case);
+`bedrock` PENDING (no AWS creds). This run lands the §3.4 numbers after the
+S167 (gap #3), S168 (gap #1b) and S169 (gap #1c) fixes: **`qc_structural`
+66.7%→100% and `interview_convergence` 0%→100% both flipped to PASS**, so the
+incumbent now fails **3/8** (was 5/8) — the three remaining failures are the
+pre-existing governance (gap #2) and SQL-exec (gap #4) gaps. (The prior S165
+single-pass baseline is preserved in "Baseline findings" below.)
 
 <!-- Regenerate after a live run: feed the per-capability rates to
   eval_cutover.evaluate_cutover and render_agreement_report — see §"Filling this report". -->
@@ -43,8 +63,8 @@ number (the S165 row below was a single pass).*
 | generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | 60.0% (FAIL) | — (PENDING) |
 | classify_governance | exact label agreement (cycle_time AND risk_tier) vs reference | ≥ 90% | 0.0% (FAIL) | — (PENDING) |
 | classify_governance | laxer-tier misses (predicted strictly less strict than reference) | ≤ 0 | 5 (FAIL) | — (PENDING) |
-| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 66.7% (FAIL) | — (PENDING) |
-| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 0.0% (FAIL) | — (PENDING) |
+| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS) | — (PENDING) |
+| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) |
 | Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) |
 
 - **bedrock: PENDING** — Undecided — keep anthropic primary until measured.
@@ -61,8 +81,8 @@ artifact** (must be fixed before the metric is meaningful) or a **genuine signal
 | sql_exec | 60% FAIL | signal (needs diagnosis) | 3/5 generated queries execute on the seeded schema; 2 reference unavailable columns / shape. Could be model SQL *or* an incomplete seed schema — inspect which queries failed before judging. |
 | governance_agreement | 0% FAIL | **artifact** | `risk_tier` mismatched on all 4 cases, `cycle_time` on 2/4 → exact-both = 0. The rule-derived reference labels (single-SME-ratified, S161) **systematically disagree with live-model output**; the "exact match of *both* closed-vocab labels ≥ 90%" metric is unachievable even by the incumbent. Needs SME re-validation of the references against live output and/or a less brittle metric (score the two labels separately; credit stricter-direction mismatches). |
 | governance_laxer_miss | 5 FAIL | mixed | Driven by **one** case — `fraud_triage`: model `tier_2_high` vs ref `tier_1_critical` (laxer) × 5 samples. Either the model under-rates a critical case (genuine, concerning) or the reference is too strict — an SME call. The other 3 cases erred *stricter* (allowed). |
-| qc_structural | 66.7% FAIL → fixed (S167) | signal (FIXED) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). **Session 167 fixed it** (gap #3): the default cap is raised to 16384 and a `stop_reason='max_tokens'` guard raises an actionable error instead of a cryptic parse failure. Verified live — `tx_auto_training` returns 3 groups / 29 checks, no truncation. A fresh baseline run will confirm the rate clears the threshold. |
-| interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) ~~the draft JSON truncates at `max_tokens`~~ **fixed S167 (gap #3)** — the draft now completes at the 16384 default (verified live, no truncation); (b) ~~at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE`~~ **fixed S168 (gap #1b)** — the root cause was a scorer/metric mismatch (the scorer keyed on `status==COMPLETE`/report-finalization, stricter than the §3.4 text "`believe_enough_info` within the cap"); the scorer is now aligned to the metric text (`interview_converged` = `questions_cap_reached not in missing_fields`), a faithfulness fix, **not** a #129 loosening. **Measured live S168: 0% → 75%** (`[T,T,T,F]`, 3/4) — the fix unblocks convergence but the gate is **still RED** (3/4 < 95%); the one miss (`reserving_adequacy`) converges in isolation (q=9, no cap) so the residual is **gate fragility** (4 samples @ 95% needs 4/4; stochastic model + transient-seam-as-False), not a scorer/capability defect. See Gap list #1b. |
+| qc_structural | 66.7% FAIL → fixed (S167) | signal (FIXED) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). **Session 167 fixed it** (gap #3): the default cap is raised to 16384 and a `stop_reason='max_tokens'` guard raises an actionable error instead of a cryptic parse failure. Verified live — `tx_auto_training` returns 3 groups / 29 checks, no truncation. **Confirmed live S170: 100% PASS** (re-measured shadow run). |
+| interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) ~~the draft JSON truncates at `max_tokens`~~ **fixed S167 (gap #3)** — the draft now completes at the 16384 default (verified live, no truncation); (b) ~~at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE`~~ **fixed S168 (gap #1b)** — the root cause was a scorer/metric mismatch (the scorer keyed on `status==COMPLETE`/report-finalization, stricter than the §3.4 text "`believe_enough_info` within the cap"); the scorer is now aligned to the metric text (`interview_converged` = `questions_cap_reached not in missing_fields`), a faithfulness fix, **not** a #129 loosening. **Measured live S168: 0% → 75%** (`[T,T,T,F]`, 3/4) — the fix unblocks convergence but the gate is **still RED** (3/4 < 95%); the one miss (`reserving_adequacy`) converges in isolation (q=9, no cap) so the residual is **gate fragility** (4 samples @ 95% needs 4/4; stochastic model + transient-seam-as-False), not a scorer/capability defect. **Session 169 fixed the fragility** (gap #1c: N≥5 sampling + transient-seam retry/exclude) and **Session 170 confirmed it live: 100% (20/20)** — both `shadow_run` and a clean `test_live_interview_converges` pass. See Gap list #1b/#1c. |
 | interview_premature | 0 PASS | — | Trivially clean — none converged (so none converged *prematurely*). Only meaningful once convergence works. |
 
 **Bottom line:** before the §3.4 gate can drive a real cutover decision, the
@@ -180,12 +200,14 @@ see "Baseline findings" for the diagnosis), in rough priority:**
    `answer_provider` seam, and `tests/eval/stakeholder_sim.py` answers whatever the
    live model asks from the fixture's full knowledge. Verified live (anthropic):
    the interviewer asks 9–10 questions vs the 7–10 recorded and never runs out.
-   **Convergence is still 0%**, now blocked by two *new* (separately-tracked)
-   follow-ups surfaced by the fix — neither an answer-robustness gap:
+   **Convergence was still 0% after this fix (at S166)**, then blocked by two
+   *new* (separately-tracked) follow-ups surfaced by the fix — neither an
+   answer-robustness gap, **both since RESOLVED (see 1a/1b); convergence is now
+   live-GREEN at 100% (20/20), Session 170**:
    - **1a. Draft `max_tokens` truncation — DONE (Session 167, gap #3).** The
      intake `draft_report` JSON now completes at the 16384 default (verified
      live, no truncation). Only 1b remains on the convergence critical path.
-   - **1b. Scorer/metric faithfulness — RESOLVED; live gate still RED (Session 168).** Diagnosis (three
+   - **1b. Scorer/metric faithfulness — RESOLVED (Session 168); live gate GREEN (Session 170, via gap #1c).** Diagnosis (three
      independent reads + an adversarial check) found the root cause was *not*
      fixture depth but a **scorer/metric mismatch**: `interview_converged` keyed on
      `report.status == "COMPLETE"` — i.e. *report finalization* (`finalize` sets
@@ -233,11 +255,20 @@ see "Baseline findings" for the diagnosis), in rough priority:**
      (`test_eval_live.py`, `shadow_run.py`) go through the one helper; the **95%
      threshold is unchanged** — a harness-statistics fix, **not** a #129 loosening
      (4 adversarial read-only lenses confirmed). Pinned by 12 deterministic tests
-     (`test_interview_sweep.py`, no API key). **Still PENDING — a measured live run:**
-     the fix makes the gate statistically sound but whether it then clears 95% live
-     depends on `reserving_adequacy`'s true per-case rate (unmeasured; S168 saw
-     n=2). Run `pytest -m live tests/eval/test_eval_live.py::test_live_interview_converges`
-     (now ~`N_SAMPLES`×4 samples) to confirm.
+     (`test_interview_sweep.py`, no API key). **Measured live — RESOLVED (Session
+     170):** `interview_convergence` clears the 95% bar at **100% (20/20)**,
+     confirmed twice — by `shadow_run.py` (100%, 0 premature) and by a clean
+     `test_live_interview_converges` pass. The 3 transient `IntakeLLMError` blips in
+     the shadow run were retried and recovered (0 exclusions), exactly as the fix
+     intends. **Residual (new, handed off):** one of three gate runs this session
+     aborted on a network `anthropic.APITimeoutError` — a transport-timeout transient
+     the sweep's `_TRANSIENT_ERRORS` (`IntakeLLMError`, `StakeholderSimError`) does
+     **not** classify, so it propagates raw (un-wrapped by `_call_json`,
+     `anthropic_client.py:286`) and fails the gate. The convergence rate is
+     unaffected (a clean re-run passed), but the gate stays fragile to a network blip
+     until transport timeouts (`anthropic.APITimeoutError`/`APIConnectionError`) are
+     classified transient — add them to `_TRANSIENT_ERRORS`, or wrap them in
+     `IntakeLLMError` at the `_call_json` seam. See Backlog.
 2. **Governance references + metric** — the rule-derived reference labels
    disagree with live-model output (0% exact agreement). SME-re-validate the
    references against live output, and reconsider the brittle "exact-both-labels"
