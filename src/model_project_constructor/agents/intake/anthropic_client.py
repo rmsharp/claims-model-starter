@@ -20,7 +20,11 @@ from typing import Any
 
 from anthropic.types import TextBlock
 
-from model_project_constructor._vocab_guard import join_members
+from model_project_constructor._vocab_guard import (
+    assert_vocab_parity,
+    join_members,
+    literal_members,
+)
 from model_project_constructor.agents.intake.protocol import (
     DraftReportResult,
     GovernanceClassification,
@@ -137,9 +141,57 @@ GOVERNANCE_FRAMEWORKS: tuple[str, ...] = (
     "ASOP_56",
 )
 
+# Boundary definitions for the cadence vocabulary. ``cycle_time`` is an
+# *unordered* descriptive label (unlike ``risk_tier``, whose "pick the stricter"
+# rule orders it), and the prompt previously listed the bare members with no
+# definitions — so the live model and the (operator-ratified) eval references
+# used the words differently (Session 174: cycle_time agreement 50%). These
+# one-line definitions, grounded in the four reference rationales, make the
+# references self-consistent and steer the model to the same boundaries.
+#
+# This dict is a controlled vocabulary keyed off ``CycleTime`` (Overhaul O4): a
+# member without a definition (or a definition for a non-member) fails the
+# import-time parity guard below, mirroring the governance-template guards.
+CYCLE_TIME_DEFINITIONS: dict[str, str] = {
+    "strategic": (
+        "tied to the business planning cycle (quarterly to annual), informing "
+        "strategy, pricing, or capital decisions on the business/regulatory calendar"
+    ),
+    "tactical": (
+        "workflow-embedded decision support for near-term, case-level decisions "
+        "(minutes-to-hours to days), paced by the workflow it informs rather than a "
+        "fixed institutional close"
+    ),
+    "operational": (
+        "a recurring scheduled step in a standing business process or close (e.g. a "
+        "daily/weekly/monthly batch) on a fixed periodic cadence, not real-time"
+    ),
+    "continuous": (
+        "real-time/streaming: scored per event as it arrives (e.g. at first notice of "
+        "loss) and updated as new signals arrive"
+    ),
+}
+
+assert_vocab_parity(
+    set(CYCLE_TIME_DEFINITIONS),
+    CycleTime,
+    name="CYCLE_TIME_DEFINITIONS",
+    reconcile_hint=(
+        "Add the new CycleTime member to CYCLE_TIME_DEFINITIONS in "
+        "agents/intake/anthropic_client.py — each cadence needs a one-line "
+        "governance definition for the SYSTEM_GOVERNANCE prompt."
+    ),
+)
+
+# Rendered in Literal definition order (O4: derives from ``CycleTime``, so it
+# cannot drift from the validator), e.g. "strategic = …; tactical = …; …".
+_CYCLE_TIME_GLOSSARY = "; ".join(
+    f"{member} = {CYCLE_TIME_DEFINITIONS[member]}" for member in literal_members(CycleTime)
+)
+
 SYSTEM_GOVERNANCE = (
     "You classify model projects against an internal governance matrix. "
-    f"cycle_time ∈ {{{join_members(CycleTime)}}}. "
+    f"cycle_time ∈ {{{join_members(CycleTime)}}}, where {_CYCLE_TIME_GLOSSARY}. "
     f"risk_tier ∈ {{{join_members(RiskTier)}}}. "
     "Regulatory frameworks include "
     + ", ".join(GOVERNANCE_FRAMEWORKS)

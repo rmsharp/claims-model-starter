@@ -16,6 +16,7 @@ from anthropic.types import TextBlock
 from model_project_constructor._vocab_guard import join_members
 from model_project_constructor.agents.intake.anthropic_client import (
     _DRAFT_REPORT_INSTRUCTIONS,
+    CYCLE_TIME_DEFINITIONS,
     DEFAULT_MAX_TOKENS,
     DEFAULT_MODEL,
     SYSTEM_GOVERNANCE,
@@ -512,6 +513,20 @@ def test_prompt_enumerates_all_literal_members(
     # Defense in depth: every member is individually present.
     for member in members:
         assert str(member) in prompt, f"member {member!r} missing from prompt"
+
+
+def test_cycle_time_definitions_cover_the_literal_and_render_into_prompt() -> None:
+    # The cadence glossary is a controlled vocabulary keyed off CycleTime (O4):
+    # every member has exactly one definition, and each is rendered into
+    # SYSTEM_GOVERNANCE so the model classifies against defined boundaries
+    # (Session 175 — the gap #2 cycle_time-agreement fix; the prompt previously
+    # listed the bare members with no definitions). Reversion-sensitive: editing
+    # a definition or the "member = definition" render format fails this.
+    assert set(CYCLE_TIME_DEFINITIONS) == set(get_args(CycleTime))
+    for member, definition in CYCLE_TIME_DEFINITIONS.items():
+        assert f"{member} = {definition}" in SYSTEM_GOVERNANCE, (
+            f"cycle_time definition for {member!r} missing from SYSTEM_GOVERNANCE"
+        )
 
 
 # --- default construction path (monkeypatch on anthropic.Anthropic) ------

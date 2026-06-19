@@ -174,7 +174,12 @@ does not exist). Methodology (operator decision, Session 161):
   errors: `fraud_triage` `tier_1_critical` is correct (the live model under-rates
   it `tier_2_high` — a model-quality signal), and the `cycle_time` disagreements
   are a prompt-definition gap (`SYSTEM_GOVERNANCE` lists the cadence vocab with no
-  definitions). Both are queued in `BACKLOG.md`; the references stand.
+  definitions). The references stand.
+- **Session 175 closed the `cycle_time` gap** by defining the cadence vocabulary
+  in `SYSTEM_GOVERNANCE` (still no reference change) → `cycle_time` agreement
+  50%→100%. The `continuous` definition also lifted `fraud_triage` to
+  `tier_1_critical` (laxer 0), so governance now passes both metrics in the N=5
+  re-measure (confirm the `fraud_triage` result before formally closing — `BACKLOG.md`).
 
 The four cases span all four `RiskTier` values
 (`test_governance_corpus_spans_all_risk_tiers`), so the laxer-miss logic is

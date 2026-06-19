@@ -27,7 +27,7 @@ Three rules are load-bearing and worth flagging:
 
 A second system prompt covers governance classification (`SYSTEM_GOVERNANCE` in `src/model_project_constructor/agents/intake/anthropic_client.py`):
 
-> You classify model projects against an internal governance matrix. cycle_time ∈ {strategic, tactical, operational, continuous}. risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. Regulatory frameworks include SR_26_2, NAIC_AIS, EU_AI_ACT_ART_9, GDPR_ART_22, ASOP_56. Be conservative: if in doubt, pick the stricter tier.
+> You classify model projects against an internal governance matrix. cycle_time ∈ {strategic, tactical, operational, continuous}, where strategic = tied to the business planning cycle (quarterly to annual), informing strategy, pricing, or capital decisions on the business/regulatory calendar; tactical = workflow-embedded decision support for near-term, case-level decisions (minutes-to-hours to days), paced by the workflow it informs rather than a fixed institutional close; operational = a recurring scheduled step in a standing business process or close (e.g. a daily/weekly/monthly batch) on a fixed periodic cadence, not real-time; continuous = real-time/streaming: scored per event as it arrives (e.g. at first notice of loss) and updated as new signals arrive. risk_tier ∈ {tier_1_critical, tier_2_high, tier_3_moderate, tier_4_low}. Regulatory frameworks include SR_26_2, NAIC_AIS, EU_AI_ACT_ART_9, GDPR_ART_22, ASOP_56. Be conservative: if in doubt, pick the stricter tier.
 
 The conservative-bias heuristic is deliberate. Under-classifying a model's risk produces downstream governance gaps that are expensive to detect. Over-classifying only costs some extra documentation.
 
@@ -148,7 +148,7 @@ Full field definitions are in the [Schema Reference](Schema-Reference).
 
 Right after the draft, the `classify_governance_node` in `src/model_project_constructor/agents/intake/nodes.py` asks the LLM to classify the project on the governance matrix, using the `SYSTEM_GOVERNANCE` prompt in `src/model_project_constructor/agents/intake/anthropic_client.py`. This produces:
 
-- **`cycle_time`** — `strategic` (months/quarters), `tactical` (weeks), `operational` (days/hours), or `continuous` (real-time).
+- **`cycle_time`** — `strategic` (planning cycle, quarterly–annual), `tactical` (workflow-paced decision support, minutes–days), `operational` (scheduled step in a standing close, periodic batch), or `continuous` (real-time/streaming, per event). Defined inline in the prompt so the model and the eval references share the same boundaries (the tactical↔operational line is by *role* — workflow decision-support vs scheduled close-step — not by frequency).
 - **`risk_tier`** — `tier_1_critical`, `tier_2_high`, `tier_3_moderate`, or `tier_4_low`.
 - **`regulatory_frameworks`** — a list (e.g., `["SR_26_2", "NAIC_AIS"]` for US prudential/insurance; `EU_AI_ACT_ART_9`, `GDPR_ART_22` for EU).
 - **`affects_consumers`** — does the output shape a decision that touches an end consumer?
@@ -213,7 +213,7 @@ The orchestrator halts on `DRAFT_INCOMPLETE` — the pipeline does not proceed t
 ### At review time
 
 - **One accept token ends the interview.** Don't type `"yes but also..."` — the first six characters already trip the accept match, and the rest is silently discarded.
-- **Revision feedback should be specific.** "Change cycle_time to operational because adjusters trigger the model on every new claim" works. "This is wrong" does not.
+- **Revision feedback should be specific.** "Change cycle_time to continuous because the model scores every claim in real time as it is filed" works. "This is wrong" does not.
 - **You have three revisions.** Plan accordingly — if the first draft is wildly off, the second should be recognizably closer, and the third should be a polish pass. If you're not converging by revision 2, the interview probably needed more questions.
 
 ---
