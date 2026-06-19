@@ -250,6 +250,10 @@ smoke test flushes out before any real spend.
 
 ## Decision points for the operator
 
+- **Auth path — DECIDED (Session 178): IAM.** The operator chose the **IAM access-key**
+  path (works with the current code, no code change). The simpler mantle + Bedrock-API-key
+  path was **not** adopted; revisit only if ongoing console setup friction becomes a
+  problem (it would require the code change in "Optional: the simpler API-key path").
 - **Provide AWS creds at all?** If bedrock is out of scope for the foreseeable future,
   rule it out explicitly so future sessions stop carrying it as an open gap.
 - **Which tier to fund?** Smoke + governance (~$1) vs. full comparison (~$25–30).
