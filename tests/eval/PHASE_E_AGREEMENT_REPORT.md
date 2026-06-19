@@ -46,6 +46,26 @@ gate; `APIStatusError` (4xx/5xx) is a sibling, not a subclass, so a real API
 error (bad model id, auth, rate limit) still propagates loudly. Pinned by 4
 deterministic tests (no live run).
 
+**Update — Session 174 (2026-06-19): governance re-measured under the faithful (S173) metric; references SME-ratified UNCHANGED.**
+A governance-only live re-measure (anthropic, N=5/case, n=20) under the faithful
+per-label metric: **cycle_time agreement 50% (FAIL ≥ 90%), risk_tier acceptable
+75%, laxer misses 5 (FAIL).** The faithfulness fix worked — it cleared the 3
+stricter-direction false-failures and isolated **two genuine signals**, which the
+operator (blessing authority) ruled on: (1) **`fraud_triage` laxer miss = a
+model-quality signal, NOT a reference defect** — the live model rates a
+consumer-facing fraud-routing model `tier_2_high` (citing the human-in-the-loop
+SIU gate) where the governance-correct tier is `tier_1_critical`; the reference is
+**kept** (the prompt's own "be conservative, pick the stricter tier" rule favours
+tier_1), so the model is **under-rating a critical case**. (2) **cycle_time 50% =
+a prompt-definition gap** — both misses (`fraud_triage` `operational` vs ref
+`continuous`; `reserving_adequacy` `tactical` vs ref `operational`) stem from
+`SYSTEM_GOVERNANCE` listing the bare `cycle_time` vocabulary with **no
+definitions**; the references are **kept** and a prompt-vocab-definition change is
+queued (`BACKLOG.md`, a separate `src/` deliverable). The systematic
+stricter-`risk_tier` disagreements (subrog/pricing/reserving) are credited by the
+faithful metric (informational; references kept). **All 4 references ratified
+unchanged; no corpus change.** Decision stays NO-GO.
+
 ### Agreement table
 
 Re-measured live **2026-06-18 (Session 170)** via [`tests/eval/shadow_run.py`](shadow_run.py)
@@ -65,8 +85,8 @@ single-pass baseline is preserved in "Baseline findings" below.)
 | Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS) | — (PENDING) |
 | generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS) | — (PENDING) |
 | generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | 60.0% (FAIL) | — (PENDING) |
-| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | — (PENDING — S173 re-measure) | — (PENDING) |
-| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 5 (FAIL) | — (PENDING) |
+| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 50.0% (FAIL, S174) | — (PENDING) |
+| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 5 (FAIL, S174) | — (PENDING) |
 | generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS) | — (PENDING) |
 | Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) |
 | Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) |
@@ -83,8 +103,8 @@ artifact** (must be fixed before the metric is meaningful) or a **genuine signal
 | json_parse | 100% PASS | — | Deterministic parity battery; the shared `_extract_json` parsers handle the corpus. Genuine pass. |
 | sql_parse | 100% PASS | — | All generated primary SQL parses. Genuine pass. |
 | sql_exec | 60% FAIL | signal (needs diagnosis) | 3/5 generated queries execute on the seeded schema; 2 reference unavailable columns / shape. Could be model SQL *or* an incomplete seed schema — inspect which queries failed before judging. |
-| governance_agreement | 0% FAIL → metric fixed (S173) | **artifact (metric half FIXED)** | `risk_tier` mismatched on all 4 cases but **3/4 erred *stricter*** (allowed by "pick the stricter tier if in doubt"); `cycle_time` on 2/4. The former "exact match of *both* labels ≥ 90%" metric counted the prompt-instructed stricter direction as disagreement → 0, unachievable even by the incumbent. **S173 made the metric faithful** (multi-provider plan §3.4): the two labels are scored *separately* — `cycle_time` on exact agreement (gated ≥ 90%), `risk_tier` on match-or-stricter with the zero-tolerance laxer-miss as its hard gate. Thresholds (0.90/0) unchanged — a faithfulness fix, not a #129 loosening. **Re-measure pending** under the faithful metric: the prose `cycle_time` 2/4 hint suggests cycle_time agreement may itself be sub-threshold — a *genuine* reference-vs-model signal for the SME reference-re-validation pass, no longer masked by the risk_tier artifact. |
-| governance_laxer_miss | 5 FAIL | signal (SME call) | Driven by **one** case — `fraud_triage`: model `tier_2_high` vs ref `tier_1_critical` (laxer) × 5 samples. Either the model under-rates a critical case (genuine, concerning) or the reference is too strict — an SME ruling. The other 3 cases erred *stricter* — now correctly credited as agreement by the S173 fix, not counted against the gate. This laxer miss is the genuine `risk_tier` residual the metric fix isolates. |
+| governance_cycle_time_agreement | 0%→**50%** (S173 fix + S174 re-measure) | **signal: prompt-vocab gap** | The former exact-*both* metric scored 0% (an artifact: it counted prompt-instructed stricter `risk_tier` as disagreement). **S173** made the metric faithful (score per-label; credit stricter `risk_tier`; thresholds 0.90/0 unchanged). **S174 re-measured live** (N=5/case): cycle_time agreement **50%** — the two misses (`fraud_triage` `operational` vs ref `continuous`; `reserving_adequacy` `tactical` vs ref `operational`) are a **prompt-definition gap**, not reference errors: `SYSTEM_GOVERNANCE` lists the bare `cycle_time` vocab with no definitions. Operator ratified the references **unchanged**; a prompt-vocab-definition change is queued (`BACKLOG`). |
+| governance_laxer_miss | 5 FAIL | **signal: model under-rates (SME-confirmed)** | Driven by **one** case — `fraud_triage`: model `tier_2_high` vs ref `tier_1_critical` (laxer) × 5. **S174 SME ruling: the reference is correct (kept `tier_1_critical`) — the model is under-rating a consumer-facing fraud model** (it cites the human-in-the-loop gate; the prompt's own "be conservative, pick the stricter tier" rule favours tier_1). A genuine **model-quality** signal (queued for investigation, `BACKLOG`), NOT a reference or metric defect. The other 3 cases erred *stricter* — credited by the S173 fix, not counted against the gate. |
 | qc_structural | 66.7% FAIL → fixed (S167) | signal (FIXED) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). **Session 167 fixed it** (gap #3): the default cap is raised to 16384 and a `stop_reason='max_tokens'` guard raises an actionable error instead of a cryptic parse failure. Verified live — `tx_auto_training` returns 3 groups / 29 checks, no truncation. **Confirmed live S170: 100% PASS** (re-measured shadow run). |
 | interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) ~~the draft JSON truncates at `max_tokens`~~ **fixed S167 (gap #3)** — the draft now completes at the 16384 default (verified live, no truncation); (b) ~~at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE`~~ **fixed S168 (gap #1b)** — the root cause was a scorer/metric mismatch (the scorer keyed on `status==COMPLETE`/report-finalization, stricter than the §3.4 text "`believe_enough_info` within the cap"); the scorer is now aligned to the metric text (`interview_converged` = `questions_cap_reached not in missing_fields`), a faithfulness fix, **not** a #129 loosening. **Measured live S168: 0% → 75%** (`[T,T,T,F]`, 3/4) — the fix unblocks convergence but the gate is **still RED** (3/4 < 95%); the one miss (`reserving_adequacy`) converges in isolation (q=9, no cap) so the residual is **gate fragility** (4 samples @ 95% needs 4/4; stochastic model + transient-seam-as-False), not a scorer/capability defect. **Session 169 fixed the fragility** (gap #1c: N≥5 sampling + transient-seam retry/exclude) and **Session 170 confirmed it live: 100% (20/20)** — both `shadow_run` and a clean `test_live_interview_converges` pass. See Gap list #1b/#1c. |
 | interview_premature | 0 PASS | — | Trivially clean — none converged (so none converged *prematurely*). Only meaningful once convergence works. |
@@ -281,17 +301,19 @@ see "Baseline findings" for the diagnosis), in rough priority:**
      could not be parsed) and only helps the data agent if its separate client is
      also touched (out of scope). Pinned by 4 new deterministic tests in
      `test_interview_sweep.py` (`_MAX_TRANSIENT_RETRIES`/threshold unchanged, #129).
-2. **Governance references + metric — metric half DONE (Session 173).** The
-   brittle "exact-both-labels" agreement metric counted the prompt-instructed
-   stricter `risk_tier` direction as disagreement, so even the incumbent scored
-   0% (an artifact). **S173 made it faithful:** `cycle_time` and `risk_tier` are
-   scored *separately* — `cycle_time` on exact agreement (gated ≥ 90%),
-   `risk_tier` on match-or-stricter with the zero-tolerance laxer-miss as its hard
-   gate (thresholds 0.90/0 unchanged; not a #129 loosening). **Still open (SME
-   call):** re-validate the references against live output — the `fraud_triage`
-   laxer-miss (`tier_2_high` vs ref `tier_1_critical`) needs an explicit SME
-   ruling, and the `cycle_time` disagreements (2/4 at S165) are now an unmasked
-   genuine signal. Re-measure the faithful metric live to refresh the rows above.
+2. **Governance references + metric — metric fixed (S173), references SME-ratified (S174).**
+   **S173** made the agreement metric faithful (score `cycle_time`/`risk_tier`
+   separately; credit stricter `risk_tier`; thresholds 0.90/0 unchanged — not a
+   #129 loosening). **S174** re-measured live under the faithful metric (cycle_time
+   50%, risk_tier acceptable 75%, laxer 5) and the operator (blessing authority)
+   **ratified all 4 references unchanged**, routing the two residuals to their
+   correct owners: (a) **`fraud_triage` laxer miss = model-quality signal** — the
+   model under-rates a consumer-facing fraud model `tier_2_high` vs the correct
+   `tier_1_critical` (kept); queued for investigation. (b) **cycle_time 50% =
+   prompt-definition gap** — `SYSTEM_GOVERNANCE` lists the bare cadence vocab with
+   no definitions; a prompt-vocab-definition change is queued. Both follow-ups in
+   `BACKLOG.md`. The systematic stricter-`risk_tier` disagreements are credited
+   (informational; references kept).
 3. **`max_tokens` truncation on large JSON output — DONE (Session 167).**
    `generate_quality_checks` truncated for the large `tx_auto_training` case
    (S165), and (Session 166) the intake `draft_report` truncated too — at

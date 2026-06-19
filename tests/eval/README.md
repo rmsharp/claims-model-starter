@@ -168,6 +168,13 @@ does not exist). Methodology (operator decision, Session 161):
   a per-field rationale in the fixture.
 - **The operator may override any label.** The reference is rule-derived but
   operator-ratified; this file is the record of that methodology.
+- **Re-validated live against the model (Session 174): all 4 references kept
+  unchanged.** A governance-only live re-measure under the faithful (S173) metric
+  surfaced two genuine residuals, which the operator ruled are NOT reference
+  errors: `fraud_triage` `tier_1_critical` is correct (the live model under-rates
+  it `tier_2_high` — a model-quality signal), and the `cycle_time` disagreements
+  are a prompt-definition gap (`SYSTEM_GOVERNANCE` lists the cadence vocab with no
+  definitions). Both are queued in `BACKLOG.md`; the references stand.
 
 The four cases span all four `RiskTier` values
 (`test_governance_corpus_spans_all_risk_tiers`), so the laxer-miss logic is

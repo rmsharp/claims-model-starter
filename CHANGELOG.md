@@ -17,6 +17,14 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 > *Sessions 116–144 below were backfilled in Session 149 (2026-06-12), when the `CHANGELOG.md` cadence convention was clarified to gate on shipped-code changes rather than strictly per-session (see `docs/methodology/PROJECT_CONVENTIONS.md` §2). The six entries cover the O3/O1/O4 single-sourcing overhauls, the E4 provider factory, the wiki citation guard, and the `SR_11_7`→`SR_26_2` rename. Documentation-only sessions in the same span are intentionally recorded in `SESSION_NOTES.md` only.*
 
+### 2026-06-19 — Governance references SME-ratified against fresh live output (gap #2 references half, Session 174)
+
+Re-validated the 4 governance reference labels against the live model under the now-faithful (S173) metric. **No code, test, or corpus change — eval-measurement + governance decision only.**
+
+- **Live re-measure (governance-only, anthropic, N=5/case, n=20):** `cycle_time` agreement **50%**, `risk_tier` acceptable (match-or-stricter) **75%**, `laxer_miss` **5**. The S173 faithfulness fix worked — it cleared the 3 stricter-direction false-failures and isolated two genuine, distinct-owner residuals.
+- **Operator (blessing authority) ruling — all 4 references kept unchanged:** (1) `fraud_triage` `tier_1_critical` is correct; the live model rates it `tier_2_high` (citing the human-in-the-loop SIU gate) — a **model-quality** signal (the classifier under-rates a consumer-facing fraud model), not a reference defect. (2) The `cycle_time` 50% is a **prompt-definition gap** — `SYSTEM_GOVERNANCE` lists the bare cadence vocab `{strategic, tactical, operational, continuous}` with no definitions, so the model and the references use the words differently. (3) The systematic stricter-`risk_tier` disagreements (subrog/pricing/reserving) are credited by the faithful metric (informational).
+- **Queued (`BACKLOG.md`, both `src/` deliverables):** define the `cycle_time` cadence vocabulary in `SYSTEM_GOVERNANCE`; investigate the `fraud_triage` governance under-rating. Recorded in `PHASE_E_AGREEMENT_REPORT.md` (S174 update + refreshed governance rows) and `tests/eval/README.md`. Do **NOT** lower thresholds (#129).
+
 ### 2026-06-19 — Governance metric made faithful: per-label scoring credits stricter `risk_tier` (gap #2 metric half, Session 173)
 
 The §3.4 `classify_governance` **agreement** metric was redesigned to be faithful to the governance prompt's rule "if in doubt, pick the stricter tier". **Test/eval-harness change only — no `src/` change; thresholds unchanged (not a #129 loosening).**
