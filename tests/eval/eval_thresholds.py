@@ -24,7 +24,14 @@ from __future__ import annotations
 JSON_PARSE_MIN = 0.99
 SQL_PARSE_VALID_MIN = 1.00
 SQL_EXECUTABLE_MIN = 0.95
-GOVERNANCE_AGREEMENT_MIN = 0.90
+# Governance is scored per-label (§3.4): ``cycle_time`` (descriptive, no safe
+# direction) is gated on EXACT agreement; ``risk_tier`` (ordered severity) is
+# gated solely by the zero-tolerance laxer-miss check below, because the prompt
+# instructs "pick the stricter tier if in doubt" so a stricter prediction is
+# intended, not a disagreement. The value is unchanged from the former combined
+# (cycle_time AND risk_tier) ``GOVERNANCE_AGREEMENT_MIN`` — only what it gates
+# narrowed to cycle_time (the S173 faithfulness fix, NOT a #129 loosening).
+GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN = 0.90
 GOVERNANCE_LAXER_MISSES_MAX = 0
 QUALITY_CHECKS_STRUCTURAL_MIN = 1.00
 INTERVIEW_CONVERGENCE_MIN = 0.95

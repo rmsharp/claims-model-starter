@@ -112,7 +112,7 @@ Single-sourced in [`eval_thresholds.py`](eval_thresholds.py).
 |------------|--------|-----------|
 | Any JSON method | parse success via both `_extract_json` copies | ≥ 99% |
 | `generate_primary_queries` / baseline | SQL parse-valid 100% **and** executable ≥ 95% on the seeded P&C schema | 100% / ≥ 95% |
-| `classify_governance` | exact label agreement (cycle_time **and** risk_tier) vs reference; **0 laxer-tier misses** | ≥ 90% / 0 |
+| `classify_governance` | per-label (S173): `cycle_time` exact agreement; `risk_tier` **0 laxer-tier misses** (stricter allowed) | ≥ 90% / 0 |
 | `generate_quality_checks` | outer array length == #primary queries | 100% |
 | Intake interview | `believe_enough_info` within the 20-question cap; 0 premature convergence | ≥ 95% / 0 |
 
@@ -121,6 +121,17 @@ reference. The prompt's rule is "if in doubt, pick the stricter tier", so erring
 stricter is allowed; erring laxer is the zero-tolerance failure. Strictness order
 (strictest → laxest): `tier_1_critical` → `tier_2_high` → `tier_3_moderate` →
 `tier_4_low` (`eval_thresholds.RISK_TIER_STRICTNESS`).
+
+**Per-label scoring (Session 173).** The two closed-vocab labels are scored
+*separately*, each by the metric its nature warrants: `cycle_time` (a descriptive
+cadence with no safe direction) on **exact** agreement, gated ≥ 90%; `risk_tier`
+(ordered severity) on **match-or-stricter** — a stricter prediction is the
+prompt-instructed direction, so its only gate is the zero-tolerance laxer-miss
+above (`score_governance.risk_tier_acceptable == not laxer_tier_miss`). This
+replaced a former exact-*both* agreement metric that counted the stricter
+direction as a disagreement and so scored even the incumbent 0% (a gap #2
+artifact). The 0.90 / 0 thresholds are unchanged — a faithfulness fix, not a
+threshold loosening (the S168 convergence-scorer precedent).
 
 **Non-determinism:** the live tier samples each governed case N ≥ 5 times and
 judges a pass-*rate* + structural/semantic invariants — never exact text.
@@ -141,8 +152,8 @@ Loaders live in [`eval_corpus.py`](eval_corpus.py); scorers in
 
 ### Governance reference labels
 
-The "human-blessed reference" the ≥ 90% agreement / 0-laxer-miss threshold is
-measured against is agreed by **single SME reviewer** — the operator is the
+The "human-blessed reference" the ≥ 90% cycle_time-agreement / 0-laxer-miss
+threshold is measured against is agreed by **single SME reviewer** — the operator is the
 blessing authority (a solo project; consensus presupposes a review panel that
 does not exist). Methodology (operator decision, Session 161):
 

@@ -25,17 +25,36 @@ from tests.eval.eval_thresholds import RISK_TIER_STRICTNESS
 
 @dataclass(frozen=True)
 class GovernanceScore:
-    """Field-by-field agreement of a predicted governance label vs reference."""
+    """Per-label agreement of a predicted governance label vs reference.
+
+    The two closed-vocab labels are scored **separately**, each by the metric
+    its nature warrants (multi-provider LLM plan §3.4):
+
+    * ``cycle_time`` is a descriptive cadence with no "safe" direction, so its
+      agreement is **exact match** (``cycle_time_match``).
+    * ``risk_tier`` is an *ordered* severity label, and ``SYSTEM_GOVERNANCE``
+      instructs "if in doubt, pick the stricter tier" — so a stricter-than-
+      reference prediction is the *intended* behaviour, not a disagreement. Its
+      faithful agreement is therefore **match-or-stricter**
+      (``risk_tier_acceptable``); the dangerous direction (laxer) is caught at
+      zero-tolerance by ``laxer_tier_miss``.
+
+    This replaces the former ``exact_label_match`` (cycle_time AND *exact*
+    risk_tier), which penalised the prompt-instructed stricter direction and so
+    contradicted its own companion 0-laxer-miss metric — the gap #2 "0% is an
+    artifact" finding (S173). Aligning the metric to the §3.4 rule is a
+    *faithfulness* fix, not a #129 change: the 0.90 / 0 thresholds are unchanged.
+    """
 
     case_id: str
-    cycle_time_match: bool
-    risk_tier_match: bool
+    cycle_time_match: bool  # exact cycle_time agreement (the gated calibration metric)
+    risk_tier_match: bool  # exact risk_tier agreement (diagnostic only)
+    risk_tier_acceptable: bool  # match OR stricter than reference (== not laxer)
     frameworks_match: bool
     affects_consumers_match: bool
     protected_match: bool
-    exact_label_match: bool  # both closed-vocab labels (cycle_time AND risk_tier)
-    laxer_tier_miss: bool  # predicted risk_tier strictly laxer than reference
-    field_agreement: float  # fraction of the 5 compared fields that match
+    laxer_tier_miss: bool  # predicted risk_tier strictly laxer than reference (zero-tolerance)
+    field_agreement: float  # fraction of the 5 compared fields that exactly match
 
 
 def is_laxer_tier(reference: str, predicted: str) -> bool:
@@ -51,6 +70,7 @@ def score_governance(
     """Score one predicted governance label against its reference."""
     cycle = reference.cycle_time == predicted.cycle_time
     tier = reference.risk_tier == predicted.risk_tier
+    laxer = is_laxer_tier(reference.risk_tier, predicted.risk_tier)
     frameworks = set(reference.regulatory_frameworks) == set(predicted.regulatory_frameworks)
     consumers = reference.affects_consumers == predicted.affects_consumers
     protected = reference.uses_protected_attributes == predicted.uses_protected_attributes
@@ -59,11 +79,13 @@ def score_governance(
         case_id=case_id,
         cycle_time_match=cycle,
         risk_tier_match=tier,
+        # match-or-stricter: a stricter tier is the prompt-instructed direction,
+        # so it counts as agreement; only a strictly laxer tier does not.
+        risk_tier_acceptable=not laxer,
         frameworks_match=frameworks,
         affects_consumers_match=consumers,
         protected_match=protected,
-        exact_label_match=cycle and tier,
-        laxer_tier_miss=is_laxer_tier(reference.risk_tier, predicted.risk_tier),
+        laxer_tier_miss=laxer,
         field_agreement=sum(fields) / len(fields),
     )
 

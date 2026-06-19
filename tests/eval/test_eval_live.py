@@ -79,24 +79,29 @@ pytestmark = pytest.mark.live
 
 
 @pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
-def test_live_governance_agreement_and_no_laxer_miss(provider: str) -> None:
+def test_live_governance_cycle_time_agreement_and_no_laxer_miss(provider: str) -> None:
+    # Governance is scored per-label (S173 faithfulness fix): cycle_time on EXACT
+    # agreement (the gated calibration metric), risk_tier on the zero-tolerance
+    # laxer-miss check — a stricter-than-reference tier is the prompt-instructed
+    # direction ("pick the stricter tier if in doubt"), so it is not a miss. See
+    # eval_scoring.GovernanceScore.
     client = make_intake_client(provider)
-    exact_matches: list[bool] = []
+    cycle_matches: list[bool] = []
     laxer_misses = 0
     for case in load_governance_cases():
         for _ in range(N_SAMPLES):
             predicted = client.classify_governance(case.draft)
             score = score_governance(case.case_id, case.reference, predicted)
-            exact_matches.append(score.exact_label_match)
+            cycle_matches.append(score.cycle_time_match)
             laxer_misses += int(score.laxer_tier_miss)
-    rate = pass_rate("governance", exact_matches)
-    # The zero-tolerance laxer-tier check is the load-bearing assertion.
+    rate = pass_rate("governance_cycle_time", cycle_matches)
+    # The zero-tolerance laxer-tier check is the load-bearing risk_tier assertion.
     assert laxer_misses <= thresholds.GOVERNANCE_LAXER_MISSES_MAX, (
         f"{laxer_misses} laxer-tier miss(es): a prediction was less strict than the reference"
     )
-    assert rate.meets(thresholds.GOVERNANCE_AGREEMENT_MIN), (
-        f"governance exact-label agreement {rate.rate:.1%} "
-        f"< {thresholds.GOVERNANCE_AGREEMENT_MIN:.0%}"
+    assert rate.meets(thresholds.GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN), (
+        f"governance cycle_time agreement {rate.rate:.1%} "
+        f"< {thresholds.GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN:.0%}"
     )
 
 

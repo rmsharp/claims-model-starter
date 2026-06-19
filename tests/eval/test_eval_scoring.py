@@ -31,13 +31,22 @@ from tests.schemas.fixtures import make_intake_report
 _CASES = {case.case_id: case for case in load_governance_cases()}
 
 
-# --- governance scorer ----------------------------------------------------
+# --- governance scorer (S173: labels scored separately; risk_tier credits stricter) ---
+#
+# Governance is scored per-label, each by the metric its nature warrants (§3.4):
+# cycle_time (descriptive cadence) on EXACT agreement — the gated calibration
+# metric — and risk_tier (ordered severity) on match-or-stricter, with the
+# dangerous laxer direction caught at zero-tolerance by laxer_tier_miss. This
+# replaces the former exact-BOTH ``exact_label_match``, which penalised the
+# prompt-instructed stricter direction (the gap #2 "0% is an artifact" finding).
 
 
 def test_governance_perfect_agreement_scores_one() -> None:
     for case in _CASES.values():
         score = score_governance(case.case_id, case.reference, case.reference)
-        assert score.exact_label_match is True
+        assert score.cycle_time_match is True
+        assert score.risk_tier_match is True
+        assert score.risk_tier_acceptable is True
         assert score.laxer_tier_miss is False
         assert score.field_agreement == 1.0
 
@@ -48,25 +57,48 @@ def test_governance_laxer_tier_prediction_is_a_miss() -> None:
     predicted = replace(ref, risk_tier="tier_4_low")
     score = score_governance("fraud_triage", ref, predicted)
     assert score.risk_tier_match is False
-    assert score.exact_label_match is False
+    assert score.risk_tier_acceptable is False  # laxer is NOT acceptable agreement
     assert score.laxer_tier_miss is True
+    assert score.cycle_time_match is True  # cycle_time is scored independently
 
 
-def test_governance_stricter_tier_prediction_is_not_a_miss() -> None:
+def test_governance_stricter_tier_counts_as_agreement() -> None:
+    # The faithfulness fix (gap #2): a stricter-than-reference risk_tier is the
+    # prompt-instructed direction ("pick the stricter tier if in doubt"), so it
+    # is ACCEPTABLE agreement — not a disagreement. The former exact-both metric
+    # scored this case 0; this test pins the corrected behaviour against reversion.
     ref = _CASES["subrogation"].reference  # tier_3_moderate
     assert ref.risk_tier == "tier_3_moderate"
     predicted = replace(ref, risk_tier="tier_1_critical")  # stricter than reference
     score = score_governance("subrogation", ref, predicted)
-    assert score.risk_tier_match is False
+    assert score.risk_tier_match is False  # not an EXACT match...
+    assert score.risk_tier_acceptable is True  # ...but match-or-stricter agrees
     assert score.laxer_tier_miss is False  # erring stricter is allowed by the rule
+    assert score.cycle_time_match is True
 
 
-def test_governance_single_field_diff_drops_agreement() -> None:
+def test_governance_cycle_time_scored_independently_of_risk_tier() -> None:
+    # No exact-BOTH conflation: a cycle_time miss does not depend on risk_tier and
+    # a stricter risk_tier does not drop the cycle_time agreement.
+    ref = _CASES["pricing_optimization"].reference  # strategic / tier_2_high
+    cycle_wrong = replace(ref, cycle_time="operational")  # cycle wrong, tier exact
+    s1 = score_governance("pricing_optimization", ref, cycle_wrong)
+    assert s1.cycle_time_match is False
+    assert s1.risk_tier_acceptable is True
+    tier_stricter = replace(ref, risk_tier="tier_1_critical")  # cycle exact, tier stricter
+    s2 = score_governance("pricing_optimization", ref, tier_stricter)
+    assert s2.cycle_time_match is True
+    assert s2.risk_tier_acceptable is True
+    assert s2.laxer_tier_miss is False
+
+
+def test_governance_single_field_diff_drops_field_agreement() -> None:
     ref = _CASES["pricing_optimization"].reference
     predicted = replace(ref, regulatory_frameworks=[*ref.regulatory_frameworks, "ASOP_56"])
     score = score_governance("pricing_optimization", ref, predicted)
     assert score.frameworks_match is False
-    assert score.exact_label_match is True  # the two tier labels still match
+    assert score.cycle_time_match is True  # the gated label is unaffected
+    assert score.risk_tier_acceptable is True
     assert score.field_agreement == pytest.approx(0.8)  # 4 of 5 fields match
 
 
@@ -84,12 +116,34 @@ def test_is_laxer_tier_ordering(reference: str, predicted: str, expected: bool) 
 
 
 def test_governance_corpus_self_agreement_meets_thresholds() -> None:
+    # The reference labels agree with themselves: cycle_time exact-agreement is
+    # 100% (>= 90%) and there are zero laxer misses. Gates the per-label metric,
+    # not the former exact-both aggregate.
     scores = [score_governance(c.case_id, c.reference, c.reference) for c in _CASES.values()]
-    agreement = pass_rate("governance", [s.exact_label_match for s in scores])
+    cycle_agreement = pass_rate("gov_cycle_time", [s.cycle_time_match for s in scores])
     laxer_misses = sum(1 for s in scores if s.laxer_tier_miss)
-    assert agreement.meets(thresholds.GOVERNANCE_AGREEMENT_MIN)
-    assert agreement.rate == 1.0
+    assert cycle_agreement.meets(thresholds.GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN)
+    assert cycle_agreement.rate == 1.0
     assert laxer_misses <= thresholds.GOVERNANCE_LAXER_MISSES_MAX
+
+
+def test_governance_all_stricter_risk_tiers_clear_the_gate() -> None:
+    # Whole-gate reversion test: if every case predicts the STRICTEST risk_tier
+    # (cycle_time unchanged), cycle_time agreement stays 100% and there are zero
+    # laxer misses, so the governance gate passes. Under the former exact-both
+    # metric every non-critical case scored 0 and the gate failed — this pins the
+    # artifact fix at the gate level, not just the per-score level.
+    scores = [
+        score_governance(
+            case.case_id, case.reference, replace(case.reference, risk_tier="tier_1_critical")
+        )
+        for case in _CASES.values()
+    ]
+    cycle_agreement = pass_rate("gov_cycle_time", [s.cycle_time_match for s in scores])
+    laxer_misses = sum(1 for s in scores if s.laxer_tier_miss)
+    assert cycle_agreement.rate == 1.0  # cycle_time untouched by the tier change
+    assert laxer_misses == 0  # stricter (or exact) is never a laxer miss
+    assert all(s.risk_tier_acceptable for s in scores)
 
 
 # --- SQL scorers ----------------------------------------------------------

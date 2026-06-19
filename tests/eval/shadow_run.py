@@ -78,20 +78,27 @@ def measure_provider(
     data = make_data_client(provider)
     inventory = pc_inventory_from_db(db)
 
-    # governance: sample N times per case; track exact-label agreement + laxer misses.
-    # A seam error (parse failure, no retry — Trap 5) is a measured non-match, not a crash.
-    gov_matches: list[bool] = []
+    # governance (S173 faithfulness fix): the two labels are scored separately.
+    # cycle_time agreement is EXACT (the gated calibration metric); risk_tier is
+    # gated by the zero-tolerance laxer-miss count, so its match-or-stricter rate
+    # is tracked as a diagnostic (a stricter tier is the prompt-instructed
+    # direction, not a disagreement). A seam error (parse failure, no retry —
+    # Trap 5) is a measured non-agreement, not a crash.
+    gov_cycle_matches: list[bool] = []
+    gov_risk_acceptable: list[bool] = []
     laxer = 0
     for case in load_governance_cases():
         for _ in range(n_samples):
             try:
                 predicted = intake.classify_governance(case.draft)
             except IntakeLLMError as exc:
-                _warn(f"governance/{case.case_id}: {type(exc).__name__} -> counted as non-match")
-                gov_matches.append(False)
+                _warn(f"governance/{case.case_id}: {type(exc).__name__} -> non-agreement")
+                gov_cycle_matches.append(False)
+                gov_risk_acceptable.append(False)
                 continue
             score = score_governance(case.case_id, case.reference, predicted)
-            gov_matches.append(score.exact_label_match)
+            gov_cycle_matches.append(score.cycle_time_match)
+            gov_risk_acceptable.append(score.risk_tier_acceptable)
             laxer += int(score.laxer_tier_miss)
 
     # SQL parse/exec + QC structural over the primary cases on the seeded schema
@@ -145,8 +152,11 @@ def measure_provider(
         "json_parse": 1.0,
         "sql_parse": pass_rate("sql_parse", parse_results).rate,
         "sql_exec": pass_rate("sql_exec", exec_results).rate,
-        "governance_agreement": pass_rate("governance", gov_matches).rate,
+        "governance_cycle_time_agreement": pass_rate("gov_cycle_time", gov_cycle_matches).rate,
         "governance_laxer_miss": float(laxer),
+        # diagnostic only (not a gate key — risk_tier is gated by laxer_miss):
+        # the risk_tier match-or-stricter rate, surfaced for the agreement report.
+        "governance_risk_tier_acceptable": pass_rate("gov_risk_tier", gov_risk_acceptable).rate,
         "qc_structural": pass_rate("qc", qc_ok).rate,
         "interview_convergence": pass_rate("interview", sweep.convergence_results).rate,
         "interview_premature": float(sweep.premature_count),

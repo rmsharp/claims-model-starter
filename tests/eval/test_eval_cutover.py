@@ -31,7 +31,7 @@ _ALL_PASS: dict[str, float] = {
     "json_parse": 1.0,
     "sql_parse": 1.0,
     "sql_exec": 0.97,
-    "governance_agreement": 0.95,
+    "governance_cycle_time_agreement": 0.95,
     "governance_laxer_miss": 0,
     "qc_structural": 1.0,
     "interview_convergence": 0.96,
@@ -46,7 +46,7 @@ def test_check_keys_match_all_threshold_constants() -> None:
         "json_parse",
         "sql_parse",
         "sql_exec",
-        "governance_agreement",
+        "governance_cycle_time_agreement",
         "governance_laxer_miss",
         "qc_structural",
         "interview_convergence",
@@ -57,7 +57,10 @@ def test_check_keys_match_all_threshold_constants() -> None:
     assert by_key["json_parse"].threshold == thresholds.JSON_PARSE_MIN
     assert by_key["sql_parse"].threshold == thresholds.SQL_PARSE_VALID_MIN
     assert by_key["sql_exec"].threshold == thresholds.SQL_EXECUTABLE_MIN
-    assert by_key["governance_agreement"].threshold == thresholds.GOVERNANCE_AGREEMENT_MIN
+    assert (
+        by_key["governance_cycle_time_agreement"].threshold
+        == thresholds.GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN
+    )
     assert by_key["governance_laxer_miss"].threshold == thresholds.GOVERNANCE_LAXER_MISSES_MAX
     assert by_key["qc_structural"].threshold == thresholds.QUALITY_CHECKS_STRUCTURAL_MIN
     assert by_key["interview_convergence"].threshold == thresholds.INTERVIEW_CONVERGENCE_MIN
@@ -74,14 +77,18 @@ def test_all_thresholds_met_is_go() -> None:
 
 
 def test_one_subthreshold_rate_is_no_go() -> None:
-    measured = {**_ALL_PASS, "governance_agreement": 0.80}  # below 0.90
+    measured = {**_ALL_PASS, "governance_cycle_time_agreement": 0.80}  # below 0.90
     decision = evaluate_cutover("bedrock", measured)
     assert decision.decision == "NO-GO"
-    assert [c.key for c in decision.failing] == ["governance_agreement"]
+    assert [c.key for c in decision.failing] == ["governance_cycle_time_agreement"]
     # Every other check still passes — only the one below threshold fails.
-    assert all(c.status == "PASS" for c in decision.checks if c.key != "governance_agreement")
+    assert all(
+        c.status == "PASS"
+        for c in decision.checks
+        if c.key != "governance_cycle_time_agreement"
+    )
     assert BASELINE_PROVIDER in decision.recommendation
-    assert "governance_agreement" in decision.recommendation
+    assert "governance_cycle_time_agreement" in decision.recommendation
 
 
 def test_laxer_tier_miss_is_zero_tolerance_no_go() -> None:
@@ -105,9 +112,9 @@ def test_max_check_exactly_at_threshold_passes() -> None:
 
 def test_min_check_exactly_at_threshold_passes() -> None:
     # A "min" check passes at the boundary (0.90 == ≥ 0.90).
-    decision = evaluate_cutover("bedrock", {**_ALL_PASS, "governance_agreement": 0.90})
+    decision = evaluate_cutover("bedrock", {**_ALL_PASS, "governance_cycle_time_agreement": 0.90})
     by_key = {c.key: c for c in decision.checks}
-    assert by_key["governance_agreement"].status == "PASS"
+    assert by_key["governance_cycle_time_agreement"].status == "PASS"
 
 
 def test_missing_or_none_measurement_is_pending_not_go() -> None:
@@ -123,7 +130,7 @@ def test_missing_or_none_measurement_is_pending_not_go() -> None:
 
 def test_fail_beats_pending_in_decision() -> None:
     # A hard FAIL outranks any PENDING — the verdict is NO-GO, not PENDING.
-    measured = {"governance_agreement": 0.10}  # one fail, the rest unmeasured
+    measured = {"governance_cycle_time_agreement": 0.10}  # one fail, the rest unmeasured
     decision = evaluate_cutover("bedrock", measured)
     assert decision.decision == "NO-GO"
 
@@ -193,7 +200,9 @@ def test_render_agreement_report_pending_state() -> None:
 def test_render_agreement_report_shows_pass_and_fail() -> None:
     decisions = {
         "anthropic": evaluate_cutover("anthropic", _ALL_PASS),
-        "bedrock": evaluate_cutover("bedrock", {**_ALL_PASS, "governance_agreement": 0.50}),
+        "bedrock": evaluate_cutover(
+            "bedrock", {**_ALL_PASS, "governance_cycle_time_agreement": 0.50}
+        ),
     }
     report = render_agreement_report(decisions)
     assert "(PASS)" in report

@@ -170,6 +170,15 @@ The factory seam makes *swapping* a provider trivial; **all** the risk is in **o
 | `generate_quality_checks` | outer array length == #primary queries | **100%** (hard structural contract) | shape assertion |
 | Intake interview | `believe_enough_info=true` within the 20-question cap; **0 premature convergence** | **≥ 95%** of golden interviews | `MAX_QUESTIONS`/`MAX_REVISIONS` (`state.py`), YAML fixture replay (`agents/intake/fixture.py`) |
 
+> **Refined in Session 173 (faithfulness fix, not a threshold change).**
+> `classify_governance`'s "exact label agreement" is scored **per-label**:
+> `cycle_time` on exact agreement (gated ≥ 90%), `risk_tier` on match-or-stricter
+> with the zero-tolerance laxer-miss as its hard gate. The original exact-*both*
+> metric counted the prompt-instructed stricter `risk_tier` direction as a
+> disagreement and so scored even the incumbent 0% (a gap #2 artifact). The
+> 0.90 / 0 thresholds are unchanged. See `tests/eval/README.md` §"Per-label
+> scoring" and `tests/eval/eval_scoring.py`.
+
 **Non-determinism handling:** `messages.create` is called with no `temperature` today (provider default applies). Eval assertions must **not** assert exact text — run each golden case **N ≥ 5** times and assert a **pass-rate** threshold + structural/semantic invariants (parses / label-in-vocab / SQL-executes). For the live tier, pin `temperature=0` *where the provider supports it* to shrink variance while still sampling N times. (Note: Claude Opus 4.7/4.8 and Fable 5 reject `temperature` — so "pin temperature=0" applies to providers that accept it; for Claude-family models, sample N times and rely on invariants.)
 
 **Error-class divergence is load-bearing and preserved per seam:** intake raises `IntakeLLMError(RuntimeError)`, data-agent raises `LLMParseError(ValueError)` (`o2-shared-llm-json-plan.md` §2.3; pinned by `test_llm_json_parity.py:202-215`). A new provider's client must raise the **same** class as its seam, so the cross-provider parity test asserts *error-class-by-seam*, not a unified error.
