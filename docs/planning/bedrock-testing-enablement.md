@@ -250,10 +250,20 @@ smoke test flushes out before any real spend.
 
 ## Decision points for the operator
 
-- **Auth path — DECIDED (Session 178): IAM.** The operator chose the **IAM access-key**
-  path (works with the current code, no code change). The simpler mantle + Bedrock-API-key
-  path was **not** adopted; revisit only if ongoing console setup friction becomes a
-  problem (it would require the code change in "Optional: the simpler API-key path").
+- **Auth path — DECIDED (Session 178, revised): Mantle + Bedrock API key.** The operator
+  chose the **`bedrock-mantle` endpoint + Bedrock API key** path (lighter operator setup —
+  create a project + an API key in the console; no IAM user, no use-case form). ⚠️ **This
+  path is NOT usable until a code change lands:** the project's `AnthropicBedrock`
+  (SigV4/IAM) client must be replaced/augmented to call the mantle endpoint with the bearer
+  token (this is the "Optional: the simpler API-key path" section above — now the *chosen*
+  path, not optional). **Consequence: bedrock testing is blocked until that dev session
+  completes.** (IAM, steps 3–5, remains the only path that works with *today's* code, if
+  interim testing is wanted before the migration.) Open questions the code session must
+  resolve FIRST: (1) the exact mantle endpoint base URL; (2) which client consumes the
+  AWS-issued Bedrock API key — `AnthropicBedrockMantle(api_key=...)`, the OpenAI-compatible
+  SDK pointed at the mantle base_url, or raw boto3 `bedrock-runtime` (which honors
+  `AWS_BEARER_TOKEN_BEDROCK`); (3) how the chosen client slots into `factory.py`'s
+  `make_llm_client("bedrock")` and the `LLMClient` protocol.
 - **Provide AWS creds at all?** If bedrock is out of scope for the foreseeable future,
   rule it out explicitly so future sessions stop carrying it as an open gap.
 - **Which tier to fund?** Smoke + governance (~$1) vs. full comparison (~$25–30).
