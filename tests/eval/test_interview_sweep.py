@@ -11,6 +11,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
+import anthropic
+import httpx
 import pytest
 
 from model_project_constructor.agents.intake.protocol import IntakeLLMError
@@ -68,6 +70,31 @@ def _raise_then(
         return report
 
     return behavior
+
+
+# --- transport-error factories (Anthropic SDK network errors) ---------------
+# Constructed with a throwaway httpx request/response so the deterministic suite
+# needs no API key. ``APITimeoutError`` is a subclass of ``APIConnectionError``;
+# ``APIStatusError`` (4xx/5xx) is a *sibling*, not a subclass.
+
+
+def _req() -> httpx.Request:
+    return httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+
+
+def _timeout() -> anthropic.APITimeoutError:
+    return anthropic.APITimeoutError(request=_req())
+
+
+def _conn_error() -> anthropic.APIConnectionError:
+    return anthropic.APIConnectionError(message="dropped", request=_req())
+
+
+def _status_error() -> anthropic.APIStatusError:
+    # a 4xx (e.g. bad model id / auth) — a real API error, NOT a transient blip.
+    return anthropic.APIStatusError(
+        "bad request", response=httpx.Response(400, request=_req()), body=None
+    )
 
 
 class _Runner:
@@ -188,7 +215,45 @@ def test_on_event_receives_transient_notes() -> None:
     assert any("excluded" in n for n in notes)
 
 
+# --- transport errors: SDK network blips, retried then excluded (gap #1c) ---
+
+
+def test_transport_timeout_retried_then_recovers() -> None:
+    # a network APITimeoutError once, then a converged report → recovered in-bound.
+    behaviors = {"a": _raise_then(_timeout, CONVERGED, times=1)}
+    result, runner = _sweep(behaviors, [_case("a")], n_samples=1, max_transient_retries=2)
+    assert result.convergence_results == [True]
+    assert result.excluded_transient == 0
+    assert runner.calls == ["a", "a"]  # one failed attempt + one success
+
+
+def test_persistent_transport_error_excluded() -> None:
+    # a connection error every attempt → excluded after the bound, never scored.
+    behaviors = {"a": _always_raise(_conn_error)}
+    result, runner = _sweep(behaviors, [_case("a")], n_samples=2, max_transient_retries=1)
+    assert result.convergence_results == []  # nothing scored
+    assert result.excluded_transient == 2  # both samples dropped after the bound
+    assert runner.calls == ["a"] * 4  # 2 samples × (1 try + 1 retry)
+
+
+def test_transport_timeout_subclass_is_caught_as_connection_error() -> None:
+    # APITimeoutError ⊂ APIConnectionError — both must be classified transient.
+    behaviors = {"a": _always_raise(_timeout)}
+    result, _ = _sweep(behaviors, [_case("a")], n_samples=2, max_transient_retries=0)
+    assert result.convergence_results == []
+    assert result.excluded_transient == 2
+
+
 # --- a genuine harness/graph bug propagates (must not be masked as a miss) ---
+
+
+def test_api_status_error_propagates() -> None:
+    # a 4xx/5xx (bad model id, auth, rate limit) is a real API error, NOT a
+    # transport blip — it is a sibling of APIConnectionError, not a subclass, so
+    # it must surface rather than be silently excluded (FM #18 boundary).
+    behaviors = {"a": _always_raise(_status_error)}
+    with pytest.raises(anthropic.APIStatusError):
+        _sweep(behaviors, [_case("a")], n_samples=1)
 
 
 def test_non_transient_runtime_error_propagates() -> None:

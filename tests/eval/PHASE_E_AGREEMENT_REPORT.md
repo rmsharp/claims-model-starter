@@ -35,12 +35,16 @@ gap #1c N≥5-sampling fix S169) — convergence was confirmed twice, by `shadow
 incumbent now fails **3/8** (was 5/8): `sql_exec` 60% (gap #4) and the two
 governance rows (gap #2). **The decision stays NO-GO** — `bedrock` is still
 unmeasured (no AWS creds) and the governance + SQL-exec gaps remain open.
-*Robustness residual surfaced:* one of three gate runs this session aborted on a
-network `anthropic.APITimeoutError` — a transport-timeout transient the gap #1c
-sweep does **not** classify (`_TRANSIENT_ERRORS` covers only `IntakeLLMError`/
-`StakeholderSimError`); the convergence rate is unaffected (a clean re-run
-passed), but the gate stays fragile to a network blip until that class is
-handled (follow-up; see Gap list / Backlog).
+*Robustness residual surfaced (S170) → **RESOLVED (Session 171)**:* one of three
+S170 gate runs aborted on a network `anthropic.APITimeoutError` — a
+transport-timeout transient the gap #1c sweep did **not** classify
+(`_TRANSIENT_ERRORS` then covered only `IntakeLLMError`/`StakeholderSimError`);
+the convergence rate was unaffected (a clean re-run passed). **Session 171 added
+`anthropic.APITimeoutError`/`APIConnectionError` to `_TRANSIENT_ERRORS`** so a
+network blip is retried-then-excluded like any seam blip rather than aborting the
+gate; `APIStatusError` (4xx/5xx) is a sibling, not a subclass, so a real API
+error (bad model id, auth, rate limit) still propagates loudly. Pinned by 4
+deterministic tests (no live run).
 
 ### Agreement table
 
@@ -260,15 +264,22 @@ see "Baseline findings" for the diagnosis), in rough priority:**
      confirmed twice — by `shadow_run.py` (100%, 0 premature) and by a clean
      `test_live_interview_converges` pass. The 3 transient `IntakeLLMError` blips in
      the shadow run were retried and recovered (0 exclusions), exactly as the fix
-     intends. **Residual (new, handed off):** one of three gate runs this session
-     aborted on a network `anthropic.APITimeoutError` — a transport-timeout transient
-     the sweep's `_TRANSIENT_ERRORS` (`IntakeLLMError`, `StakeholderSimError`) does
-     **not** classify, so it propagates raw (un-wrapped by `_call_json`,
-     `anthropic_client.py:286`) and fails the gate. The convergence rate is
-     unaffected (a clean re-run passed), but the gate stays fragile to a network blip
-     until transport timeouts (`anthropic.APITimeoutError`/`APIConnectionError`) are
-     classified transient — add them to `_TRANSIENT_ERRORS`, or wrap them in
-     `IntakeLLMError` at the `_call_json` seam. See Backlog.
+     intends. **Transport-timeout residual — RESOLVED (Session 171):** one of three
+     S170 gate runs aborted on a network `anthropic.APITimeoutError` — a
+     transport-timeout transient the sweep's `_TRANSIENT_ERRORS` (`IntakeLLMError`,
+     `StakeholderSimError`) did **not** classify, so it propagated raw (un-wrapped
+     by `_call_json`, `anthropic_client.py:286`) and aborted the gate. The
+     convergence rate was unaffected (a clean re-run passed). **Fix (Session 171,
+     tuple-add):** `anthropic.APITimeoutError`/`APIConnectionError` are now in
+     `_TRANSIENT_ERRORS`, so a network blip is retried (bounded) then **excluded**
+     with a note like any seam blip — it no longer aborts the gate. `APIStatusError`
+     (4xx/5xx — bad model id, auth, rate limit) is a *sibling* of
+     `APIConnectionError`, **not** a subclass, so a real API error still propagates
+     loudly (FM #18). The `_call_json` seam-wrap alternative was rejected: it would
+     conflate a transport error (no response) with `IntakeLLMError` (a response that
+     could not be parsed) and only helps the data agent if its separate client is
+     also touched (out of scope). Pinned by 4 new deterministic tests in
+     `test_interview_sweep.py` (`_MAX_TRANSIENT_RETRIES`/threshold unchanged, #129).
 2. **Governance references + metric** — the rule-derived reference labels
    disagree with live-model output (0% exact agreement). SME-re-validate the
    references against live output, and reconsider the brittle "exact-both-labels"

@@ -18,18 +18,26 @@ loosening):
   matching the governance live test's existing N>=5 discipline (the design the
   module docstring of ``test_eval_live`` documents for "each governed case").
   One transient miss is then 1/20, not 1/4.
-* **Disambiguate a transient LLM/seam error from a genuine non-convergence.** A
-  once-off truncated/empty/malformed response from the intake client
-  (``IntakeLLMError``) or the stakeholder simulator (``StakeholderSimError``) is
-  an API/seam artifact, not the model declining to converge — it is retried a
-  bounded number of times and, if still failing, **excluded** from the sample
-  with a logged note rather than scored as a non-convergence. A *genuine*
-  non-convergence is a returned report carrying ``"questions_cap_reached"`` (the
-  intake graph self-terminates at the cap with a report — it does not raise), so
-  it is scored ``False`` normally. Any *other* ``RuntimeError`` is a real
-  harness/graph bug (e.g. an unknown interrupt, a starved review script, or the
-  buggy-graph max-turns backstop) and is left to propagate loudly — silently
-  scoring it ``False`` is exactly what hid harness defects as model misses.
+* **Disambiguate a transient LLM/seam/transport error from a genuine
+  non-convergence.** A once-off truncated/empty/malformed response from the
+  intake client (``IntakeLLMError``) or the stakeholder simulator
+  (``StakeholderSimError``), or a network transport error from the Anthropic SDK
+  (``APITimeoutError``/``APIConnectionError``, raised only *after* the SDK
+  exhausts its own retries), is an API/seam/transport artifact — not the model
+  declining to converge. It is retried a bounded number of times and, if still
+  failing, **excluded** from the sample with a logged note rather than scored as
+  a non-convergence. (A transient classifier is only complete if it covers BOTH
+  application/seam errors AND transport errors: classifying the former but not
+  the latter leaves a hole exactly where networks fail — a live gate run aborted
+  on a raw ``APITimeoutError`` that propagated past this tuple; gap #1c residual,
+  Session 171.) A *genuine* non-convergence is a returned report carrying
+  ``"questions_cap_reached"`` (the intake graph self-terminates at the cap with a
+  report — it does not raise), so it is scored ``False`` normally. Any *other*
+  error — a non-transport ``APIStatusError`` (4xx/5xx: bad model id, auth, rate
+  limit), or a non-seam ``RuntimeError`` (an unknown interrupt, a starved review
+  script, the buggy-graph max-turns backstop) — is a real API/harness/graph bug
+  and is left to propagate loudly; silently scoring it ``False`` is exactly what
+  hid harness defects as model misses.
 
 The sweep itself calls **no LLM**: it receives a ``run_one`` callable that
 performs one live interview, so the sampling + classification logic is
@@ -41,6 +49,8 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+
+from anthropic import APIConnectionError, APITimeoutError
 
 from model_project_constructor.agents.intake.protocol import IntakeLLMError
 from model_project_constructor.schemas.v1.intake import IntakeReport
@@ -57,10 +67,24 @@ N_SAMPLES = 5
 #: excluded (with a logged note) rather than scored as a non-convergence.
 _MAX_TRANSIENT_RETRIES = 2
 
-#: Errors that are an LLM-call/seam artifact, NOT the interviewed model declining
-#: to converge. Both subclass ``RuntimeError``; everything else that raises is a
-#: genuine harness/graph bug and must surface (see the module docstring).
-_TRANSIENT_ERRORS: tuple[type[Exception], ...] = (IntakeLLMError, StakeholderSimError)
+#: Errors that are an LLM-call/seam/transport artifact, NOT the interviewed model
+#: declining to converge. Two families: (1) application/seam errors
+#: (``IntakeLLMError``, ``StakeholderSimError`` — both subclass ``RuntimeError``)
+#: from a truncated/empty/malformed response or an empty simulated answer; and
+#: (2) transport errors (``APITimeoutError`` is a subclass of
+#: ``APIConnectionError``) raised by the Anthropic SDK after it exhausts its own
+#: retries — a network blip (DNS, dropped connection, SSL-handshake timeout)
+#: during a ~90-min live sweep, not a model miss. ``APIStatusError`` (4xx/5xx —
+#: bad model id, auth, rate limit) is a *sibling* of ``APIConnectionError``, NOT
+#: a subclass, so it is deliberately NOT caught here: a real API error still
+#: surfaces loudly (FM #18). Everything else that raises is a genuine harness/
+#: graph bug and must propagate (see the module docstring).
+_TRANSIENT_ERRORS: tuple[type[Exception], ...] = (
+    IntakeLLMError,
+    StakeholderSimError,
+    APITimeoutError,
+    APIConnectionError,
+)
 
 #: Runs one live interview for a case to its terminal report. Injected so the
 #: sweep's statistics are testable without an API key.
