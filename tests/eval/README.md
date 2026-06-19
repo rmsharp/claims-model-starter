@@ -142,7 +142,7 @@ invariants rather than pinning `temperature=0`.
 
 | Capability | Source | Cases |
 |------------|--------|-------|
-| Governance | 3 reused project intake fixtures + 1 authored | `subrogation`, `pricing_optimization`, `fraud_triage`, `reserving_adequacy` |
+| Governance | 3 reused project intake fixtures + 2 authored | `subrogation`, `pricing_optimization`, `fraud_triage`, `reserving_adequacy`, `claim_workqueue_triage` |
 | SQL / baseline | [`corpus/sql_cases.yaml`](corpus/sql_cases.yaml) over [`corpus/pc_schema.sql`](corpus/pc_schema.sql) | 3 primary + 1 baseline |
 | Interview | the 4 governance scenarios + the question-cap fixture | 5 |
 | JSON parse | [`../test_llm_json_parity.py`](../test_llm_json_parity.py) battery (provider-parametrized `_SEAMS` registry) | 9 parse + 3 raise |
@@ -161,11 +161,16 @@ does not exist). Methodology (operator decision, Session 161):
   (`tests/fixtures/{subrogation,pricing_optimization,fraud_triage}.yaml`). Their
   `governance:` blocks are existing project goldens — the most defensible
   reference — and are single-sourced (not duplicated) into the corpus.
-- **One case (`reserving_adequacy`) is authored for the eval** to complete the
-  `RiskTier` vocabulary (a `tier_4_low` / `operational` example) and exercise the
-  `ASOP_56` framework. It is labelled by applying the `SYSTEM_GOVERNANCE` rule
-  ("be conservative; if in doubt, pick the stricter tier") to the scenario, with
-  a per-field rationale in the fixture.
+- **Two cases are authored for the eval.** `reserving_adequacy` completes the
+  `RiskTier` vocabulary (a `tier_4_low` / `operational` example) and exercises the
+  `ASOP_56` framework. `claim_workqueue_triage` (Session 177) tests the
+  `tactical`/`operational` boundary where **run frequency and output purpose
+  diverge** — it runs as a fixed nightly batch (an operational frequency cue) yet
+  is `tactical` because its output is per-case decision support; `reserving_adequacy`
+  is its batch-cadence `operational` foil (a portfolio/close artifact). Both are
+  labelled by applying the `SYSTEM_GOVERNANCE` rule ("be conservative; if in doubt,
+  pick the stricter tier") to the scenario, with a per-field rationale in the
+  fixture; `claim_workqueue_triage`'s `tactical` reference was operator-blessed.
 - **The operator may override any label.** The reference is rule-derived but
   operator-ratified; this file is the record of that methodology.
 - **Re-validated live against the model (Session 174): all 4 references kept
@@ -184,12 +189,26 @@ does not exist). Methodology (operator decision, Session 161):
   whole gate `cycle_time` 80/80 = 100%, laxer 0; gate assert test PASS). Governance
   is now fully GREEN on the **anthropic baseline** (both §3.4 metrics, zero observed
   variance). Scope caveat: the 100% is corpus-validated — the `cycle_time`
-  definitions' over-fit (a separate open hardening item, `BACKLOG.md`) and `bedrock`
-  (unmeasured) are unaffected; overall Phase E stays NO-GO (`sql_exec` 60%).
+  definitions' over-fit (a separate hardening item, `BACKLOG.md` — closed S177, see below)
+  and `bedrock` (unmeasured) are unaffected; overall Phase E stays NO-GO (`sql_exec` 60%).
+- **Session 177 hardened the `tactical`/`operational` boundary** to discriminate on
+  **output purpose** (per-case decision support vs a periodic institutional artifact),
+  not run frequency, and added the role≠frequency divergent case `claim_workqueue_triage`
+  (a nightly batch that feeds a per-claim work-queue → `tactical`) that the original four
+  never exercised (their cadence is co-linear with frequency, so a corpus green on them is
+  not evidence the boundary generalises). Live re-measure
+  (anthropic, N=12/case, n=60): `cycle_time` agreement **100%** across all 5 cases (the
+  divergent case 12/12 `tactical`), laxer 0; the gate assert test PASSes. `strategic` was
+  refined in the same pass to keep `pricing_optimization` correct (output feeds the rating
+  engine per-renewal but is set on the quarterly filing calendar → `strategic`). Closes
+  the over-fit item; still anthropic-only / corpus-validated, Phase E stays NO-GO.
 
-The four cases span all four `RiskTier` values
+The corpus spans all four `RiskTier` values
 (`test_governance_corpus_spans_all_risk_tiers`), so the laxer-miss logic is
-exercised meaningfully.
+exercised meaningfully, and includes a role≠frequency pair
+(`test_governance_corpus_exercises_role_not_frequency_boundary`) so the
+`tactical`/`operational` boundary is tested where cadence and output purpose
+diverge, not just where they are co-linear.
 
 ## Caveats / follow-ups (logged, not silent)
 

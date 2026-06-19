@@ -145,30 +145,55 @@ GOVERNANCE_FRAMEWORKS: tuple[str, ...] = (
 # *unordered* descriptive label (unlike ``risk_tier``, whose "pick the stricter"
 # rule orders it), and the prompt previously listed the bare members with no
 # definitions — so the live model and the (operator-ratified) eval references
-# used the words differently (Session 174: cycle_time agreement 50%). These
-# one-line definitions, grounded in the four reference rationales, make the
-# references self-consistent and steer the model to the same boundaries.
+# used the words differently (Session 174: cycle_time agreement 50%). Defining
+# the vocabulary (Session 175) closed that gap on the corpus.
+#
+# Session 177 hardened the ``tactical``/``operational`` boundary to discriminate
+# on OUTPUT PURPOSE, not run frequency: tactical = per-case decision support
+# (consumed to make individual near-term decisions), operational = a periodic
+# portfolio-/institutional-level artifact (a recurring scheduled close-step).
+# The earlier definitions led with frequency cues ("minutes-to-hours" vs
+# "daily/weekly/monthly batch") which are co-linear with the label across the
+# original four corpus cases — so a model classifying on frequency alone scored
+# 100% without ever drawing the intended role distinction (the over-fit the
+# S175 adversarial review flagged). The role≠frequency divergent corpus case
+# ``claim_workqueue_triage`` (an overnight batch that is nonetheless per-case
+# decision support → tactical) now exercises the boundary directly.
 #
 # This dict is a controlled vocabulary keyed off ``CycleTime`` (Overhaul O4): a
 # member without a definition (or a definition for a non-member) fails the
 # import-time parity guard below, mirroring the governance-template guards.
+# Keep each definition free of an internal ``;`` or ``=`` — the glossary renders
+# as "member = definition" entries joined by "; " (S175 fixed one such collision).
 CYCLE_TIME_DEFINITIONS: dict[str, str] = {
     "strategic": (
-        "tied to the business planning cycle (quarterly to annual), informing "
-        "strategy, pricing, or capital decisions on the business/regulatory calendar"
+        "its output informs enterprise- or portfolio-level strategy, pricing, or "
+        "capital decisions that are set and refreshed on the business/regulatory "
+        "planning calendar (typically quarterly to annual), such as a rating or "
+        "pricing strategy refreshed each filing cycle — even when that strategy is "
+        "then applied to individual transactions, the planning/refresh cadence and "
+        "enterprise scope (not how often the output is consumed) are what make it "
+        "strategic"
     ),
     "tactical": (
-        "workflow-embedded decision support for near-term, case-level decisions "
-        "(minutes-to-hours to days), paced by the workflow it informs rather than a "
-        "fixed institutional close"
+        "its output is per-case decision support — consumed to make near-term, "
+        "case-level operational decisions such as which individual claim to work or "
+        "how to handle one case — paced by the workflow it informs rather than by a "
+        "fixed institutional close, delivered on a workflow or overnight-batch "
+        "cadence (e.g. a nightly batch feeding the next shift's work-queue) rather "
+        "than streamed per event, so that output purpose and not run frequency is "
+        "what makes it tactical"
     ),
     "operational": (
+        "its output is a periodic portfolio- or process-level artifact produced as "
         "a recurring scheduled step in a standing business process or close (e.g. a "
-        "daily/weekly/monthly batch) on a fixed periodic cadence, not real-time"
+        "daily/weekly/monthly batch deliverable such as a reserving or close "
+        "dashboard), not per-case decision support and not real-time"
     ),
     "continuous": (
-        "real-time/streaming: scored per event as it arrives (e.g. at first notice of "
-        "loss) and updated as new signals arrive"
+        "real-time/streaming per-case scoring: each event is scored as it arrives "
+        "(e.g. at first notice of loss) and updated as new signals arrive, with no "
+        "batch or scheduled-run boundary"
     ),
 }
 

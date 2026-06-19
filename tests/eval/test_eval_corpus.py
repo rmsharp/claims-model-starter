@@ -73,6 +73,26 @@ def test_governance_corpus_spans_all_risk_tiers() -> None:
     assert tiers == set(get_args(RiskTier))  # laxer-miss logic is exercised across tiers
 
 
+def test_governance_corpus_exercises_role_not_frequency_boundary() -> None:
+    # Hardening (Session 177, gap #2): the tactical/operational boundary is by
+    # OUTPUT PURPOSE (per-case decision support vs periodic institutional
+    # artifact), NOT run frequency. The original four cases have cadence co-linear
+    # with frequency, so a model classifying on frequency alone scores 100%
+    # without ever drawing the role distinction (a corpus green on co-linear-cadence
+    # anchors is not evidence the boundary generalises).
+    # claim_workqueue_triage runs as a fixed nightly BATCH (an operational
+    # frequency cue) yet is tactical because its output is per-case decision
+    # support; reserving_adequacy is its batch-cadence operational foil. The two
+    # share a batch cadence and differ only in output purpose — exactly the
+    # boundary under test. Without this pair the corpus cannot detect a
+    # frequency-only classifier, so this guards the hardening against silent
+    # corpus regression.
+    cases = {c.case_id: c for c in load_governance_cases()}
+    assert "claim_workqueue_triage" in cases, "the role≠frequency divergent case is missing"
+    assert cases["claim_workqueue_triage"].reference.cycle_time == "tactical"
+    assert cases["reserving_adequacy"].reference.cycle_time == "operational"
+
+
 # --- SQL oracle soundness -------------------------------------------------
 
 

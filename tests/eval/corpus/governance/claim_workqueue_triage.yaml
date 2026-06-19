@@ -1,0 +1,177 @@
+# Phase B eval — role≠frequency governance reference case (NOT a project fixture).
+#
+# Provenance: AUTHORED for the eval corpus (Session 177, gap #2 robustness
+# follow-up). It exists to test the ``tactical``/``operational`` boundary where
+# RUN FREQUENCY and OUTPUT PURPOSE DIVERGE — the dimension the original four
+# corpus cases never exercise because their cadence is co-linear with frequency
+# (continuous=real-time, tactical=intraday, operational=monthly, strategic=annual).
+# A model that classifies ``cycle_time`` on frequency alone scores 100% on those
+# four without ever drawing the intended role distinction (the over-fit the S175
+# adversarial review flagged: a green on cases where cadence is co-linear with
+# frequency is not evidence the role boundary generalises).
+#
+# This case runs as a FIXED NIGHTLY BATCH (an operational-looking frequency cue)
+# yet produces PER-CASE decision support (a per-claim score each adjuster uses to
+# decide which individual claim to work next and how to handle it). Output purpose
+# governs → the blessed label is ``tactical``. Its operational foil is
+# ``reserving_adequacy``: also batch-scheduled, but a portfolio/institutional
+# artifact (a reserving-close dashboard) → ``operational``. The two share a batch
+# cadence and differ only in output purpose, which is exactly the boundary tested.
+#
+# Reference label blessed by the operator (single-SME authority, Session 177;
+# see tests/eval/README.md §Governance reference labels). Labelled by applying
+# the SYSTEM_GOVERNANCE rule with a per-field rationale. It is a complete
+# intake_fixture/v1 fixture so the same loader path works; it is loaded for the
+# GOVERNANCE corpus only (not the interview sweep).
+schema: intake_fixture/v1
+stakeholder_id: stakeholder_claims_ops_001
+session_id: intake_workqueue_001
+domain: pc_claims
+initial_problem: >-
+  Our adjusters open each day and triage their own claim queues by hand. High-
+  severity or fast-developing claims sometimes sit behind routine ones, so the
+  cases that most need early attention get worked late. We want a model that
+  scores open claims overnight and hands each adjuster a ranked work-queue the
+  next morning so they work the right claims first. It advises the adjuster; it
+  does not pay, deny, or reassign anything automatically.
+
+qa_pairs:
+  - question: "Who consumes the output and how is it used?"
+    answer: >-
+      Each adjuster, first thing in the morning. They open their queue and see
+      their assigned claims re-ranked by a priority/severity score, with the
+      claims most likely to need early action at the top. The adjuster decides
+      which individual claim to work next and how to handle it — the score just
+      orders their day. Nothing is shown to claimants and no claim decision is
+      automated.
+  - question: "How often does the model run, and why that cadence?"
+    answer: >-
+      Once a night, as a scheduled overnight batch over all open claims, so the
+      fresh ranking is waiting when adjusters log in. We don't need within-day
+      re-scoring — the morning queue is what drives the workday. So it runs on a
+      fixed daily batch even though what it produces is per-claim guidance for
+      individual case decisions, not a portfolio report.
+  - question: "What is the target and what value would success create?"
+    answer: >-
+      A projected-severity / handling-effort score per open claim, used to rank
+      the queue. Working high-need claims earlier should cut cycle time and
+      avoidable severity drift on those claims. The adjuster keeps full judgement
+      over every case.
+
+draft_after: 3
+
+draft:
+  business_problem: >-
+    Adjusters manually triage their own claim queues each morning, so high-
+    severity or fast-developing claims can wait behind routine ones and get
+    worked late. There is no systematic per-claim signal telling an adjuster
+    which of their open claims to work first.
+  proposed_solution: >-
+    An overnight batch model scores every open claim each night on projected
+    severity / handling need. The next morning each adjuster receives their own
+    work-queue re-ranked by that per-claim score, so they work the claims most
+    likely to need early attention first. The score is advisory per-case decision
+    support: the adjuster decides which claim to work and how to handle it, and
+    no claim is paid, denied, or reassigned automatically. Run cadence is a fixed
+    nightly batch; the output is per-case workflow guidance, not a portfolio or
+    close artifact.
+  model_solution:
+    target_variable: projected_claim_severity_score
+    target_definition: >-
+      Continuous: projected ultimate handling severity per open claim (a
+      ranking score), estimated from claim characteristics and early signals.
+    candidate_features:
+      - claim_age_days
+      - line_of_business
+      - reported_injury_flag
+      - litigation_indicator
+      - paid_to_incurred_ratio
+      - prior_reopen_count
+    model_type: supervised_regression
+    evaluation_metrics:
+      - spearman_rank_correlation
+      - ndcg_at_k
+      - mean_absolute_error
+    is_supervised: true
+  estimated_value:
+    narrative: >-
+      Working high-need claims earlier should reduce cycle time and avoidable
+      severity drift across a large open-claim inventory. Even a small reduction
+      in late-worked high-severity claims is worth a few hundred thousand to low
+      millions a year in reduced loss-adjustment expense and severity leakage.
+    annual_impact_usd_low: 400000
+    annual_impact_usd_high: 1500000
+    confidence: low
+    assumptions:
+      - "Adjusters follow the ranked queue most days."
+      - "Earlier attention modestly reduces severity drift on flagged claims."
+    cost_of_inaction_narrative: >-
+      Without a ranking signal, queue order stays manual and high-need claims
+      keep getting worked late, leaving avoidable severity and cycle-time cost
+      on the table.
+    annual_cost_of_inaction_usd_low: 400000
+    annual_cost_of_inaction_usd_high: 1500000
+    implementation_cost_band_usd_low: 200000
+    implementation_cost_band_usd_high: 500000
+    payback_months: 9
+    value_drivers:
+      - earlier_attention_to_high_severity_claims
+      - reduced_claim_cycle_time
+  value_measurement_plan:
+    baseline_metric_name: high_severity_time_to_first_substantive_action
+    baseline_metric_definition: >-
+      Median business days from claim open to first substantive adjuster action
+      on claims in the top severity decile, computed from claim-activity logs.
+    baseline_measurement_window: trailing 12 months
+    counterfactual_design: historical_baseline_with_detrending
+    counterfactual_rationale: >-
+      Time-to-action and severity outcomes on ranked-queue claims are compared
+      against the manual-triage historical baseline, detrending for claim mix,
+      since withholding the ranking from a random adjuster cohort is operationally
+      disruptive.
+    attribution_method_narrative: >-
+      Compare time-to-first-action and realised severity on high-rank claims
+      after rollout against the matched historical manual-triage baseline.
+    evaluation_horizon_months: 9
+    logging_requirements:
+      - claim_id
+      - adjuster_id
+      - predicted_severity_score
+      - queue_rank
+      - time_to_first_substantive_action
+    success_criteria:
+      - "Median time-to-first-action on top-decile claims falls versus baseline."
+      - "No increase in cycle time on lower-ranked claims."
+    decision_rights: >-
+      Claims Operations owns the ranking signal; it informs but never replaces
+      adjuster judgement. Retire/retrain if rank quality degrades for two
+      consecutive weeks.
+
+governance:
+  cycle_time: tactical
+  cycle_time_rationale: >-
+    Runs as a fixed overnight batch (a scheduled-run cadence that looks
+    operational), but its output is per-case decision support — a per-claim
+    score each adjuster uses to decide which individual claim to work next and
+    how to handle it. Output purpose, not run frequency, governs: case-level
+    workflow support makes it tactical. Operational would imply a periodic
+    portfolio/institutional artifact (e.g. a reserving or close dashboard),
+    which this is not; continuous would imply real-time streaming per event,
+    which a nightly batch is not.
+  risk_tier: tier_3_moderate
+  risk_tier_rationale: >-
+    Advisory prioritisation only; adjusters retain full authority over every
+    claim and nothing is paid, denied, or reassigned automatically. It re-orders
+    attention rather than making claim decisions, but queue order affects how
+    promptly individual claimants are served, so there is indirect consumer
+    impact. Moderate financial and regulatory exposure — stricter than tier_4
+    because it touches claim-handling order, not as high as tier_2 because no
+    decision is automated or consumer-facing.
+  regulatory_frameworks:
+    - SR_26_2
+    - NAIC_AIS
+  affects_consumers: true
+  uses_protected_attributes: false
+
+review_sequence:
+  - ACCEPT

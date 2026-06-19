@@ -192,9 +192,12 @@ draft:
 governance:
   cycle_time: tactical
   cycle_time_rationale: >-
-    Scores are consumed during claim intake (minutes-to-hours) and adjuster
-    workflows change on weekly cadence. Operational would imply streaming
-    auto-decisioning, which this system is not.
+    Per-case decision support: scores are consumed during claim intake
+    (minutes-to-hours) to guide the adjuster's handling of an individual claim,
+    paced by the workflow rather than a fixed institutional close. Operational
+    would imply a periodic portfolio/institutional artifact (a scheduled close-
+    step), which this is not; continuous would imply real-time streaming per
+    event, which it is not. Output purpose makes it tactical.
   risk_tier: tier_3_moderate
   risk_tier_rationale: >-
     Advisory recommendation system only; humans make the subrogation

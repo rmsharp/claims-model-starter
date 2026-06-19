@@ -96,6 +96,16 @@ _GOVERNANCE_SOURCES: list[tuple[str, Path, str]] = [
         _CORPUS_DIR / "governance" / "reserving_adequacy.yaml",
         "authored for eval",
     ),
+    # Role≠frequency case (Session 177): a fixed nightly BATCH (operational
+    # frequency cue) whose output is PER-CASE decision support → tactical. Tests
+    # the tactical/operational boundary where run frequency and output purpose
+    # diverge; reserving_adequacy is its batch-cadence operational foil. Loaded
+    # for governance only (deliberately not added to _INTERVIEW_SOURCES).
+    (
+        "claim_workqueue_triage",
+        _CORPUS_DIR / "governance" / "claim_workqueue_triage.yaml",
+        "authored for eval",
+    ),
 ]
 
 # Interview goldens: the four converging scenarios + the question-cap fixture,

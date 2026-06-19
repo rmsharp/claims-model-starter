@@ -86,7 +86,7 @@ Decision stays NO-GO (`sql_exec` + `bedrock` unmeasured). *Validation scope (S17
 adversarial review): the definitions are confirmed on the 4 corpus cases, where
 cadence is co-linear with frequency — so the intended `tactical`/`operational`
 role-distinction is not yet exercised by a role≠frequency case, and there is no
-member for event-driven (episodic) cadences. Queued to harden (`BACKLOG.md`).*
+member for event-driven (episodic) cadences. Queued to harden (`BACKLOG.md`). Closed S177 (see the S177 update below); the event-driven member was operator-deferred.*
 
 **Update — Session 176 (2026-06-19): `fraud_triage` `tier_1_critical` confirmed STABLE at N=20 → governance capability fully GREEN on the anthropic baseline.**
 The S175 side-effect flip (`fraud_triage` `tier_2_high`→`tier_1_critical`, from
@@ -109,6 +109,33 @@ anthropic baseline.** *Scope unchanged:* this is the **anthropic baseline only**
 is a separate OPEN hardening item (`BACKLOG.md`), untouched by this stability
 confirmation. **The overall Phase E decision stays NO-GO** (`sql_exec` 60%, gap #4
 + `bedrock` unmeasured).
+
+**Update — Session 177 (2026-06-19): `tactical`/`operational` boundary HARDENED to discriminate on output purpose (not run frequency); role≠frequency case `claim_workqueue_triage` added → the boundary is now EXERCISED by a divergent case; BACKLOG item closed (corpus-validated, anthropic-only).**
+The S175 over-fit (the 4 corpus cases have cadence **co-linear with frequency**, so the
+intended `tactical` vs `operational` *role* distinction was never *exercised* — and a
+green on co-linear anchors is not evidence the boundary generalises) is now addressed at
+one divergent point: the BACKLOG item is closed, but this is corpus coverage of the
+boundary, **not** a general-robustness claim. `CYCLE_TIME_DEFINITIONS` lead with **output
+purpose**: `tactical` = per-case decision support (consumed for individual near-term case
+decisions, on **any** run cadence including an overnight batch); `operational` = a periodic
+portfolio/process artifact from a scheduled close-step. A 5th governance case,
+`claim_workqueue_triage` (a fixed **nightly batch** that feeds adjusters a per-claim
+work-queue → `tactical`), tests the boundary where run frequency and output purpose
+**diverge**; `reserving_adequacy` (a monthly close dashboard → `operational`) is its
+batch-cadence foil. **Live re-measure (anthropic, N=12/case, n=60): cycle_time agreement
+60/60 = 100%, laxer 0** — every case classifies its reference cadence exactly, including
+the divergent case **12/12 `tactical`** and `pricing_optimization` **12/12 `strategic`**
+(the `strategic` definition was refined in the same pass: **applied alone, the output-purpose
+rewrite first regressed `pricing_optimization` to `continuous`/`operational` — 0/12 in a first
+live re-measure**, because its output feeds the rating engine per-renewal; re-anchoring
+`strategic` on the quarterly filing-calendar/enterprise scope is the compensating fix,
+re-verified to restore **12/12 `strategic`**). Independently corroborated by the gate assert test
+`test_live_governance_cycle_time_agreement_and_no_laxer_miss` (anthropic **PASS**, ~259s).
+The 5th case + a reversion pin raised the gate floor to **916 passed + 8 live-skipped @
+97.39%**. *Scope unchanged:* **anthropic baseline only** (`bedrock` PENDING, no AWS creds),
+and the 100% remains **corpus-validated**. **The overall Phase E decision stays NO-GO**
+(`sql_exec` 60% + `bedrock` unmeasured). With this, the gap #2 cadence-hardening item is
+CLOSED and `BACKLOG.md` is empty.
 
 ### Agreement table
 
@@ -147,7 +174,7 @@ artifact** (must be fixed before the metric is meaningful) or a **genuine signal
 | json_parse | 100% PASS | — | Deterministic parity battery; the shared `_extract_json` parsers handle the corpus. Genuine pass. |
 | sql_parse | 100% PASS | — | All generated primary SQL parses. Genuine pass. |
 | sql_exec | 60% FAIL | signal (needs diagnosis) | 3/5 generated queries execute on the seeded schema; 2 reference unavailable columns / shape. Could be model SQL *or* an incomplete seed schema — inspect which queries failed before judging. |
-| governance_cycle_time_agreement | 0%→50%→**100% PASS** (S173 fix → S174 re-measure → S175 vocab) | **FIXED (S175)** | The former exact-*both* metric scored 0% (an artifact: it counted prompt-instructed stricter `risk_tier` as disagreement). **S173** made the metric faithful; **S174** re-measured (50%) and traced the two misses (`fraud_triage`→`continuous`, `reserving_adequacy`→`operational`) to a **prompt-definition gap** (`SYSTEM_GOVERNANCE` listed the bare `cycle_time` vocab with no definitions; references ratified unchanged). **S175 defined the cadence vocab** (O4-compliant glossary + parity guard) → re-measure **100%** (all 4 cases classify their reference cadence exactly). **S176 re-confirmed at N=20: 80/80 = 100%** (gate assert test PASS). |
+| governance_cycle_time_agreement | 0%→50%→**100% PASS** (S173 fix → S174 re-measure → S175 vocab) | **FIXED (S175)** | The former exact-*both* metric scored 0% (an artifact: it counted prompt-instructed stricter `risk_tier` as disagreement). **S173** made the metric faithful; **S174** re-measured (50%) and traced the two misses (`fraud_triage`→`continuous`, `reserving_adequacy`→`operational`) to a **prompt-definition gap** (`SYSTEM_GOVERNANCE` listed the bare `cycle_time` vocab with no definitions; references ratified unchanged). **S175 defined the cadence vocab** (O4-compliant glossary + parity guard) → re-measure **100%** (all 4 cases classify their reference cadence exactly). **S176 re-confirmed at N=20: 80/80 = 100%** (gate assert test PASS). **S177 hardened the `tactical`/`operational` boundary (output-purpose, not run frequency) and added the role≠frequency case `claim_workqueue_triage` → 5-case re-measure 60/60 = 100%, gate assert PASS.** |
 | governance_laxer_miss | 5→**0 PASS** (S175) | **FIXED (side effect, S175)** | Was driven by **one** case — `fraud_triage`: model `tier_2_high` vs ref `tier_1_critical` (laxer) × 5; **S174 SME ruling: reference correct (kept `tier_1_critical`), the model under-rates a consumer-facing fraud model** — a model-quality signal. **S175 resolved it as a side effect:** defining `continuous` = real-time/streaming per-event at FNOL flipped `fraud_triage`'s tier `tier_2`→`tier_1` (laxer → 0) — the richer cadence context heightened the model's risk perception. **S176 confirmed stable at N=20** (`fraud_triage` `tier_1_critical` 20/20, laxer 0; gate assert test PASS) → the BACKLOG confirm-item is CLOSED. The other 3 cases erred *stricter* — credited by the S173 fix. |
 | qc_structural | 66.7% FAIL → fixed (S167) | signal (FIXED) | One case (`tx_auto_training`) hit `max_tokens=4096` → truncated, non-JSON, no retry (Trap 5). **Session 167 fixed it** (gap #3): the default cap is raised to 16384 and a `stop_reason='max_tokens'` guard raises an actionable error instead of a cryptic parse failure. Verified live — `tx_auto_training` returns 3 groups / 29 checks, no truncation. **Confirmed live S170: 100% PASS** (re-measured shadow run). |
 | interview_convergence | 0% FAIL | **artifact (fixed S166)** | S165: all four raised "model asked for more answers than the script supplies" — the scripted-replay caveat (`PROJECT_LEARNINGS` #21). **Session 166 fixed it** (a robust stakeholder simulator answers whatever the live model asks; verified live — the interviewer asks 9–10 questions vs the 7–10 recorded, no exhaustion). Still 0% live, but now for *downstream* reasons, not the replay artifact: (a) ~~the draft JSON truncates at `max_tokens`~~ **fixed S167 (gap #3)** — the draft now completes at the 16384 default (verified live, no truncation); (b) ~~at adequate `max_tokens`, the rigorous live interviewer drafts a non-empty `missing_fields` list the fixtures don't pre-answer → `DRAFT_INCOMPLETE`~~ **fixed S168 (gap #1b)** — the root cause was a scorer/metric mismatch (the scorer keyed on `status==COMPLETE`/report-finalization, stricter than the §3.4 text "`believe_enough_info` within the cap"); the scorer is now aligned to the metric text (`interview_converged` = `questions_cap_reached not in missing_fields`), a faithfulness fix, **not** a #129 loosening. **Measured live S168: 0% → 75%** (`[T,T,T,F]`, 3/4) — the fix unblocks convergence but the gate is **still RED** (3/4 < 95%); the one miss (`reserving_adequacy`) converges in isolation (q=9, no cap) so the residual is **gate fragility** (4 samples @ 95% needs 4/4; stochastic model + transient-seam-as-False), not a scorer/capability defect. **Session 169 fixed the fragility** (gap #1c: N≥5 sampling + transient-seam retry/exclude) and **Session 170 confirmed it live: 100% (20/20)** — both `shadow_run` and a clean `test_live_interview_converges` pass. See Gap list #1b/#1c. |
@@ -357,10 +384,13 @@ see "Baseline findings" for the diagnosis), in rough priority:**
    governance capability now passes both §3.4 metrics. **S176** confirmed the
    `fraud_triage` `tier_1` flip is stable at a larger sample (N=20/case: 20/20
    `tier_1_critical`, laxer 0; whole gate cycle_time 80/80 = 100%; gate assert test
-   PASS) → the BACKLOG confirm-item is CLOSED. **Remaining gap #2 work:** harden the
-   `cycle_time` definitions/corpus against the S175 over-fit (cadence co-linear with
-   frequency) — a separate open BACKLOG item; the 100% is corpus-validated only. The
-   overall Phase E decision is still NO-GO on `sql_exec` (#4) + unmeasured `bedrock`.
+   PASS) → the BACKLOG confirm-item is CLOSED. **S177** hardened the
+   `tactical`/`operational` boundary to discriminate on output purpose (not run
+   frequency) and added the role≠frequency case `claim_workqueue_triage` (live
+   re-measure cycle_time 60/60 = 100%, laxer 0; gate assert PASS) — closing the S175
+   over-fit item, so **gap #2 governance is now fully resolved on the anthropic
+   baseline (corpus-validated) and `BACKLOG.md` is empty.** The overall Phase E
+   decision is still NO-GO on `sql_exec` (#4) + unmeasured `bedrock`.
 3. **`max_tokens` truncation on large JSON output — DONE (Session 167).**
    `generate_quality_checks` truncated for the large `tx_auto_training` case
    (S165), and (Session 166) the intake `draft_report` truncated too — at
