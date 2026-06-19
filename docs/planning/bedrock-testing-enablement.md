@@ -37,17 +37,39 @@ must do to close it, and what it will cost.
 
 ## What you (the operator) must do
 
-These are **one-time** unless noted. Steps 1–4 are yours; step 5 is a verification you
-run before trusting any test result.
+These are **one-time** unless noted. Steps 0–4 are yours; step 5 is a verification you
+run before trusting any test result. Everything in steps 0–3 happens in the **AWS
+Management Console** (a web app) in your browser; step 4–5 are on your machine.
+
+### 0. Get into the AWS Management Console (do this first)
+- **No AWS account yet?** Go to **https://aws.amazon.com** → **Create an AWS Account**
+  (button, top-right). You'll need an email, a password, and a credit card. Bedrock model
+  inference is **pay-as-you-go with no free tier**, so expect the (small) charges in the
+  cost table below. New accounts can take a few minutes to activate.
+- **Already have an account?** Sign in to the console at
+  **https://console.aws.amazon.com/** — use the **root user** for this first-time setup,
+  or an admin IAM user if you already have one.
+- After sign-in you land on **Console Home**. Every step below is reached from here using
+  the **search bar at the top** of the page (type a service name like *Bedrock* or *IAM*)
+  and the **region dropdown** in the top-right of the navigation bar.
 
 ### 1. Pick a region (one-time)
 Choose a US region where Sonnet 4.x is offered — **`us-east-1`** is the safe default.
-This becomes `AWS_REGION` / `AWS_DEFAULT_REGION`. Model availability differs by region;
-confirm on the model's detail page in the Bedrock console.
+**How:** in the console's top navigation bar, click the **region dropdown** (top-right,
+near your account name — it shows the current region, e.g. *"N. Virginia"*) and select
+**US East (N. Virginia) us-east-1**. The console now operates in that region for the rest
+of setup. This value becomes `AWS_REGION` / `AWS_DEFAULT_REGION` in step 4. Model
+availability differs by region; confirm on the model's detail page in the Bedrock console
+(step 2).
 
 ### 2. Request **model access** for Anthropic Claude (one-time, per region)
-Bedrock console **in that region** → *Bedrock configurations → Model access → Modify
-model access* → select the Anthropic Claude models → Next.
+**Get to the Bedrock console:** click the **search bar** at the top of the console, type
+**`Bedrock`**, and select **Amazon Bedrock** (or go directly to
+**https://console.aws.amazon.com/bedrock/**). **First confirm the region dropdown still
+shows the region you picked in step 1** — model access is granted *per-region*. Then in
+the Bedrock left-hand menu go to **Bedrock configurations → Model access → Modify model
+access** (direct link: **https://console.aws.amazon.com/bedrock/home#/modelaccess**),
+select the Anthropic Claude models → **Next**.
 - **First Anthropic use requires a one-time "use case details" form** (company name,
   website, intended users, industry, use case). The console prompts for it. This is the
   step you must not skip.
@@ -56,9 +78,15 @@ model access* → select the Anthropic Claude models → Next.
   test run assuming instant** — verify with step 5 first.
 
 ### 3. Create an IAM identity + access keys (one-time)
-IAM → Users → create a programmatic-only user (e.g. `mpc-bedrock-invoker`). Attach the
-minimal policy below. Then *Security credentials → Create access key →* "Application
-running outside AWS". **Copy the secret immediately — it's shown once.**
+**Get to the IAM console:** click the **search bar** at the top, type **`IAM`**, and
+select **IAM** (or go directly to **https://console.aws.amazon.com/iam/**). IAM is
+**global** — the region dropdown doesn't matter here. Then **Users → Create user** →
+create a programmatic-only user (e.g. `mpc-bedrock-invoker`; you don't need to enable
+console access). Attach the minimal policy below — on the *Set permissions* step choose
+**Attach policies directly → Create policy**, paste the JSON, and attach it (or add it as
+an **inline policy** on the user afterward). Once the user exists, open it →
+**Security credentials → Create access key →** "Application running outside AWS".
+**Copy the secret immediately — it's shown once.**
 
 ```json
 {
