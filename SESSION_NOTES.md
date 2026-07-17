@@ -6,6 +6,70 @@
 
 ## ACTIVE TASK
 
+### What Session 179 Did
+**Deliverable:** Operator-directed detour within the Session-179 window — an evidence-based **plan to migrate the two Website-Agent repo adapters off their LGPL SDKs (`python-gitlab`, `PyGithub`) to direct `httpx`**. **(COMPLETE — wrote `docs/planning/httpx-adapter-migration.md` (308 lines): grep-based inventory, 3-phase plan (GitLab / GitHub / optional class-rename), 4 decision points, "here be dragons", honest licensing-scope note. Committed PATH-SCOPED as `85d8476` WITHOUT touching the co-resident mantle WIP. NO production code change.)** Also produced — **verbally, NOT persisted as a doc** — a licensing/audit advisory (MIT-certification badge landscape + external static-analysis/SAST stack), backed by 3 verification Workflows/agents.
+
+**⚠ SESSION NUMBERING / GHOST:** The bedrock **mantle migration IS "Session 179"** per the operator. It was started by an **undocumented ghost session** (~2026-06-19): commit `dadf514` `[WIP] feat(bedrock): migrate → AnthropicBedrockMantle` on branch `feat/bedrock-mantle-migration`, plus 4 uncommitted files. It is **STILL OPEN**; the operator explicitly deferred **"the remainder of session 179" (finishing the mantle migration) to the NEXT session.** This close-out documents the ghost state so it is no longer a ghost.
+
+**Started / Completed:** 2026-07-17.
+
+**Two threads, current status:**
+- **Thread A — bedrock mantle migration (Session 179 proper): OPEN / BLOCKED.** Ghost `dadf514` did the core swap (`AnthropicBedrock`→`AnthropicBedrockMantle` in both `bedrock_client.py`, docstrings, 6 tests, bumped `anthropic[bedrock]>=0.94`); its message claims LIVE-verified auth/endpoint/region, 54 unit tests pass, ruff+mypy clean. **Two blockers** (from the commit message): (1) **AWS account model access** — every Claude model returns 403 "not available for this account" (an AWS/operator enablement action, NOT code); (2) **default model** — the mantle catalog has NO Sonnet, so `DEFAULT_MODEL = "anthropic.claude-sonnet-4-6"` 404s. The **4 uncommitted files** resolve blocker 2: they flip `DEFAULT_MODEL` → `anthropic.claude-opus-4-8` in both clients + the 2 default-model assertion tests. **Uncommitted, unverified this session.**
+- **Thread B — httpx adapter migration PLAN: COMPLETE** (this session's actual deliverable, `85d8476`).
+
+### Session 178 Handoff Evaluation (by Session 179)
+
+**Score: 8/10.**
+- **What helped:** S178 scoping the mantle migration as "a well-scoped, small `AnthropicBedrockMantle` drop-in" (+ auto-memory `project_bedrock_auth_iam_path.md`) let me **instantly recognize the ghost `dadf514`** and read its two blockers correctly in Phase 0. The bedrock facts block (default model at `bedrock_client.py:56`, client class, env vars) matched the WIP diff. UNPUSHED state held.
+- **What was missing / stale (−2):** (a) S178 could not foresee that a **ghost session** would run the mantle migration between 178 and now, so its "state you will inherit" (baseline 916, clean tree) was **partially superseded** by `dadf514` + the uncommitted changes — not a fault, but I inherited a dirtier tree than described. (b) This session's actual work (licensing/httpx) was **operator-directed, entirely outside** S178's candidate list — unforeseeable, so its forward-pointers went unused.
+- **ROI:** positive — the mantle scoping paid off exactly at ghost-detection, which is where it mattered.
+
+### Phase 3B: Self-assess — Session 179 — 8/10
+
+- **The +:** (1) **Held SAFEGUARDS on the co-resident WIP** — never touched the 4 uncommitted mantle files; used **path-scoped `git add` + `git status --short` verify (`A` vs ` M`) + commit-without-`-a`** to land the plan doc in isolation (twice-confirmed the WIP stayed unstaged). (2) **Evidence-based plan** — every "files to change" line came from `grep`; confirmed the LGPL coupling is isolated to the 2 adapter files behind the `RepoClient` protocol + `config.py` factory. (3) **Verified the research** — 3 Workflows/agents confirmed the incumbents are LGPL, the replacement libs' licenses, and the exact REST surface; caught + re-ran a degenerate SAST agent. (4) **Honest scope** — flagged the swap yields a *permissive* tree, NOT "fully MIT" (certifi/MPL-2.0 unavoidable). (5) **Held FM #18** — wrote the PLAN, did not implement; did not start the mantle work the operator reserved.
+- **The −:** (1) The **licensing/SAST advisory is verbal-only** — cross-referenced in the httpx plan (§1.1, §7) but not persisted, so its full detail (badge snippets, tiered SAST stack) isn't inherited unless re-derived. (2) Did not run the full suite (correct — no code change — but the mantle WIP's opus-4-8 change is untested this session, left for next).
+- **Quality bar:** meets — evidence-grounded plan, verified facts, scope held, WIP preserved.
+
+### Phase 3C: Learnings — Session 179
+
+- **Candidate #143 — NEW, 1st instance — "To land a new deliverable while a previous session's uncommitted WIP must be preserved (SAFEGUARDS: don't touch prior WIP), commit PATH-SCOPED: `git add <only-the-new-file>`, verify with `git status --short` that the staged set is exactly that file (`A`) and the WIP stays unstaged (` M`), then `git commit` WITHOUT `-a`. Never `git add -A` / `git commit -a` when foreign WIP is resident. The `git status --short` check BETWEEN add and commit is the load-bearing step — it makes 'I didn't touch the WIP' a verified fact, not a hope."** Sibling of the SAFEGUARDS "uncommitted changes from a previous session — do not touch them" rule. **When to apply:** any commit made while the tree carries unrelated uncommitted changes to preserve. Now at **1.** Next candidate = **#144.**
+- **Reinforced:** **FM #18** (plan is the deliverable; did not implement or start the reserved mantle work). The **verification-Workflow-before-shipping** discipline (verified LGPL licenses + REST surface; re-ran a degenerate agent). **FM #6** (read the adapter implementations before estimating — confirmed isolated coupling). **Evidence-based grep inventory** for a migration plan.
+- **Candidate roster:** **#143 NEW at 1**; #142 at 1 (S178); #141 at 1 (S177); #140 at 1 (S176); #139 at 1 (S175); earlier per S178 roster. `PROJECT_LEARNINGS.md` = **61 rows** (no promotion). Next = **#144.**
+
+### Phase 3D: Handoff to Session 180 — COMPLETE THE REMAINDER OF THE MANTLE MIGRATION (Session 179)
+
+**PRIMARY TASK: finish the bedrock mantle migration** (operator explicitly reserved this). State on disk, branch `feat/bedrock-mantle-migration`:
+- Commit `dadf514` `[WIP]` = the core mantle swap (read its full message via `git show dadf514`). Live-verified auth/endpoint/region; 54 unit tests pass; ruff+mypy clean AT that commit.
+- **4 uncommitted files** flip `DEFAULT_MODEL` `anthropic.claude-sonnet-4-6` → `anthropic.claude-opus-4-8` (both `bedrock_client.py` + 2 assertion tests) — resolves blocker 2.
+
+**Next session's steps:**
+1. **Verify the uncommitted opus-4-8 change:** `uv run pytest -q tests/agents/intake/test_bedrock_client.py tests/data_agent_package/test_bedrock_client.py` (add `--no-cov` for single-file, #57), `uv run ruff check`, `uv run mypy`. `dadf514`'s tests pinned sonnet; the uncommitted changes flip them to opus — confirm consistent + green.
+2. **Blocker 1 (403 account model access)** is an **AWS/operator action** (enable Claude model access on the mantle account). If still not enabled the live path stays blocked, but the code migration + unit tests can be finalized regardless.
+3. **Finalize the WIP:** decide whether to amend/squash `dadf514` or add a follow-up commit that includes the opus-4-8 default + tests + any docstrings still referencing sonnet. Update `docs/planning/bedrock-testing-enablement.md` with any measured live facts.
+4. **Close out + document** (keep the ghost documented).
+
+**SECONDARY (operator's choice, not started):**
+- **Execute the httpx adapter migration plan** — `docs/planning/httpx-adapter-migration.md` (`85d8476`), per-phase. First open question is **DP1 (rename the adapter classes or keep the names)**. Phase 1 = GitLab, Phase 2 = GitHub.
+- **Action the licensing/SAST advisory** (verbal this session; only cross-referenced in the httpx plan) — wire the license-clean CI gate (`licensecheck`) + SAST/badge stack (SonarQube Cloud, CodeQL, OpenSSF Scorecard, Dependabot). Best written up as its own doc first.
+- S178's still-open candidates: `sql_exec` (gap #4, 60%, no creds); promote learnings #129/#139/#140 to `PROJECT_LEARNINGS.md`; carried micros.
+
+**⚠ State you will inherit:**
+1. **UNPUSHED.** Both `85d8476` (httpx plan) and the mantle WIP (`dadf514` + 4 uncommitted files) are local only. Branch `feat/bedrock-mantle-migration`; local `master` is 9 commits ahead of `origin/master`. Push on operator say-so (#40).
+2. **DIRTY tree, intentionally:** 4 modified files (the opus-4-8 default) — the mantle WIP; do NOT discard. Per SAFEGUARDS, if switching branches, stash/handle deliberately.
+3. **Wiki hook:** `85d8476` touched only `docs/planning/` → NO-OP. Future mantle/httpx doc edits under `docs/wiki/claims-model-starter/` WILL fire `scripts/publish_wiki.sh`.
+4. **Baseline caveat:** the S177/S178 baseline (916 passed @ 97.39%) PREDATES the mantle branch; `dadf514` + WIP changed `src/` + tests — re-run the full gate after finalizing, do NOT assume 916.
+5. **Next learning candidate = #144** (#143 coined at 1). `PROJECT_LEARNINGS.md` = 61 rows.
+
+**Key files (full paths):**
+- Mantle: `git show dadf514`; the 4 uncommitted files — `src/model_project_constructor/agents/intake/bedrock_client.py`, `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py`, `tests/agents/intake/test_bedrock_client.py`, `tests/data_agent_package/test_bedrock_client.py`; `bedrock_client.py:56` (`DEFAULT_MODEL`); `docs/planning/bedrock-testing-enablement.md`.
+- httpx plan: `docs/planning/httpx-adapter-migration.md` (`85d8476`); adapters `src/model_project_constructor/agents/website/{gitlab,github}_adapter.py`; factory `src/model_project_constructor/orchestrator/config.py:59-84`.
+
+---
+
+**(Session 178 — COMPLETE, archived below.)**
+
+---
+
 ### What Session 178 Did
 **Deliverable:** Operator-facing outline of the steps required of the operator to enable AWS Bedrock testing, with estimated costs (the "bedrock half" — S177 handoff candidate #2). **(COMPLETE — produced `docs/planning/bedrock-testing-enablement.md`: a 5-step operator runbook (region → Anthropic model-access form → IAM user + minimal `bedrock:InvokeModel` policy → creds in `.env` + the `set -a; . ./.env; set +a` export → pre-run `converse` probe) + a 3-tier cost table. Research ran via Workflow `wf_89c5ae3a-e49` (4 agents: codebase wiring / AWS setup / current Bedrock pricing / cost-arithmetic verify). The verify pass caught a ~4× UNDER-count in the first-pass full-sweep estimate (175 → ~731 calls) — each interview *turn* makes TWO LLM calls (interviewer `next_question` + stakeholder-sim reply), and there are 25 interviews not 20. Costs (Sonnet 4.6 default, N=5/case, a-priori — bedrock has NEVER run live here): smoke ~$0.03; governance gate ~$0.94 ($0.31–$2.23); full `shadow_run` sweep ~$25 ($4.76–$89). NO production code change. One commit (deliverable + close-out) — UNPUSHED (push on say-so #40).)**
 
