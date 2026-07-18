@@ -6,6 +6,68 @@
 
 ## ACTIVE TASK
 
+### What Session 180 Did
+**Deliverable:** Finish the bedrock mantle migration (the "remainder of Session 179" the operator reserved) — **verify** the inherited uncommitted opus-4-8 `DEFAULT_MODEL` change (pytest / ruff / mypy) and **finalize** it as a proper commit. **(COMPLETE — verified green at the unit level, then landed the 4 inherited files as follow-up commit `9e3f19b` `feat(bedrock): default the mantle client to opus-4-8 (no Sonnet in catalog)`. NO further production code beyond finalizing the inherited WIP.)**
+
+**Started / Completed:** 2026-07-17.
+
+**What was verified (all green):**
+- Targeted: `uv run pytest tests/agents/intake/test_bedrock_client.py tests/data_agent_package/test_bedrock_client.py --no-cov` → **13 passed**; the default-model assertions now pin `anthropic.claude-opus-4-8`.
+- Cross-check: `tests/ui/intake/test_provider_selection.py` → **10 passed**. (The one lingering `anthropic.claude-sonnet-4-6` reference lives here at `:105/:108` and is a **deliberate explicit-`INTAKE_LLM_MODEL`-override fixture** proving an arbitrary model flows through — NOT a default assertion; correctly left unchanged.)
+- Full gate: `uv run pytest -q` → **916 passed, 8 live-skipped @ 97.39%** — identical to the S177/S178 baseline, so **the mantle-branch changes (`dadf514` + opus flip) introduced ZERO regressions** (the S179 "do not assume 916" caveat checked out — it held).
+- `uv run ruff check` → All checks passed. `uv run mypy` → Success, no issues in 66 source files.
+- `grep` for `sonnet` across the 4 bedrock files → none remain (docstrings updated with the flip).
+
+**Finalization decision (amend vs follow-up):** chose a **forward follow-up commit**, not amend/squash of `dadf514`, because **`dadf514` is already PUSHED** (`git branch -r --contains dadf514` → `origin/feat/bedrock-mantle-migration`) — amending would rewrite public history + need a force-push — and interactive rebase is unavailable in this environment. Landed `9e3f19b` cleanly on top of `eb09852`. Path-scoped the commit (`git add` the 4 files only → `git status --short` verify → `git commit` WITHOUT `-a`) so the co-resident `SESSION_NOTES.md` stub stayed out of the code commit (learning #143, re-applied).
+
+**Migration status now:** the **CODE side of the mantle migration is COMPLETE** (client swapped to `AnthropicBedrockMantle` in `dadf514`; default resolved to opus-4-8 in `9e3f19b`; unit + type + lint all green). **What remains is NOT code:** **blocker 1 — AWS account model access** (every Claude model returns 403 "not available for this account") — an **operator/AWS enablement action**. Until that is done the **live bedrock path cannot be exercised**, so this change is **unit-verified only** (the live runtime hard-gate in DEVELOPMENT_WORKSTREAM is genuinely blocked by an external action, not skipped).
+
+### Session 179 Handoff Evaluation (by Session 180)
+
+**Score: 9/10.**
+- **What helped:** Pinpoint-actionable. Named the exact task, the exact verify commands (incl. the `--no-cov` #57 gotcha, which I used), the exact 4 files + `bedrock_client.py:56`, and — crucially — **correctly attributed the two blockers** (blocker 1 = operator/AWS 403; blocker 2 = the opus flip the 4 files resolve). The "**do not assume 916 — re-run the full gate**" caveat sent me to run it (it came back 916 — caveat well-placed). The amend-vs-follow-up choice was left open with the right framing.
+- **What was wrong (−1):** the "**⚠ UNPUSHED — both `85d8476` and the mantle WIP (`dadf514` + 4 files) are local only**" claim was **inaccurate for the commits**: `git status -sb` shows the feat branch **up to date with `origin/feat/bedrock-mantle-migration`**, and `dadf514`/`85d8476` are on the remote. Only the 4 *uncommitted* files were truly local. This mattered: had the handoff been right about push state, the amend-vs-follow-up decision was already forced (can't safely amend pushed history) — I had to discover that myself with `git branch -r --contains`.
+- **ROI:** strongly positive. The verify recipe + file map compressed the session to "run the gate → confirm → commit."
+
+### Phase 3B: Self-assess — Session 180 — 9/10
+
+- **The +:** (1) **Multi-level verification, not just the two named files** — targeted (13) + provider-selection cross-check (10) + full gate (916/97.39%) + ruff + mypy, confirming the baseline held and the branch is regression-free. (2) **Verified push state before choosing a commit strategy** (`git branch -r --contains dadf514`) → chose the follow-up commit and **avoided a force-push on pushed history**. (3) **Investigated the surviving `sonnet` grep hit** rather than blindly "cleaning" it — confirmed it's a deliberate override fixture and left it (a blind s/sonnet/opus/ would have weakened that test). (4) **Path-scoped the commit** and verified the staged set with `git status --short` between add and commit, keeping the notes stub out (learning #143). (5) **Held scope** — flagged the adjacent doc staleness (below) and advised rather than folding it in, per the operator's advise-don't-act preference.
+- **The −:** (1) **Live runtime verification impossible** (blocker 1 / AWS access) → the change is unit-verified only; the live bedrock path stays unproven this session (honest external block, not a skip). (2) **Left a known code/doc contradiction** (`bedrock-testing-enablement.md:30`) in place — deliberately, pending operator go-ahead — a documented loose end.
+- **Quality bar:** meets/exceeds — verified at multiple levels, safe commit strategy, scope held, WIP finalized.
+
+### Phase 3C: Learnings — Session 180
+
+- **Candidate #144 — NEW, 1st instance — "Before choosing amend/squash vs a forward follow-up commit to finalize an inherited WIP, VERIFY the WIP commit's push state directly (`git branch -r --contains <sha>` and `git status -sb`) — do NOT trust a handoff's 'UNPUSHED / local-only' claim. Push state, not the note, decides whether a history rewrite is safe: an already-pushed WIP means amend/squash rewrites public history and needs a force-push, so a forward follow-up commit is the only safe move. (S180: the S179 handoff said local-only; `dadf514` was in fact on `origin/feat/…`.) Interactive rebase being unavailable in this environment independently forces the same follow-up choice."** Sibling of learning #143 (path-scoped commit with foreign WIP resident) and of the SAFEGUARDS "verify before you rewrite" spirit. **When to apply:** any "finalize / amend / squash a prior WIP commit" task. Now at **1.** Next candidate = **#145.**
+- **Reinforced:** **#143** (path-scoped `git add` + `git status --short` verify + commit-without-`-a`, here to keep the `SESSION_NOTES.md` stub out of the code commit). **#57** (`--no-cov` for single/subset pytest runs). **FM #18 / advise-don't-act** (flagged the doc contradiction, did not expand scope). The **run-the-full-gate-before-declaring-green** discipline (confirmed baseline held rather than assuming).
+- **Candidate roster:** **#144 NEW at 1**; #143 at 1 (S179); #142 at 1 (S178); #141 at 1 (S177); #140 at 1 (S176); #139 at 1 (S175); earlier per S179 roster. `PROJECT_LEARNINGS.md` = **61 rows** (no promotion). Next = **#145.**
+
+### Phase 3D: Handoff to Session 181
+
+**The bedrock mantle migration's CODE is DONE (`9e3f19b`).** It is unit/lint/type verified but **NOT live-verified** — that is gated on an operator/AWS action, not a code session. The next session's deliverable is **operator's choice**; `BACKLOG.md` remains empty. Candidates, most-natural first:
+
+1. **Live-verify the mantle path once blocker 1 is cleared (operator/AWS).** After AWS account model access is enabled for the mantle account, run a bedrock smoke/live test (`set -a; . ./.env; set +a` then the `-m live` bedrock tier, or the `aws bedrock-runtime converse` probe in `docs/planning/bedrock-testing-enablement.md`). This is what turns "code complete" into "migration verified." **Blocked until the operator enables access** — a `ready-for-human` item.
+2. **Sync the stale planning doc** — `docs/planning/bedrock-testing-enablement.md:30` still states "Default model (bedrock) = `anthropic.claude-sonnet-4-6`" citing `bedrock_client.py:56`, which `9e3f19b` changed to opus-4-8. **This is a direct code↔doc contradiction introduced by `9e3f19b`.** S180 flagged it and advised rather than acting (operator advise-don't-act preference). A clean fix is a one-line table-row edit (+ optionally reconciling the classic-path inference-profile dragon narrative at `:161–:220`, which the mantle decision superseded — a larger, deliberate doc revision). **Recommend the operator green-light the line-30 fix at minimum.**
+3. **Execute the httpx adapter migration plan** — `docs/planning/httpx-adapter-migration.md` (`85d8476`), per-phase; DP1 (rename adapter classes or keep names) is the first open question. Phase 1 = GitLab, Phase 2 = GitHub.
+4. **Write up the licensing/SAST advisory** (verbal in S179; cross-referenced in the httpx plan §1.1/§7 but never persisted) as its own doc, then wire the license-clean CI gate + SAST/badge stack.
+5. **`sql_exec` (gap #4, ~60%)** — the last incumbent §3.4 capability failure; needs NO operator creds; a *diagnosis* call. Still the single largest remaining Phase E NO-GO gap.
+6. **Promote load-bearing candidate learnings** (#129 forward-only, #139/#140) to `PROJECT_LEARNINGS.md` so the `#NNN` citations resolve.
+
+**⚠ State you will inherit:**
+1. **Push state:** the feat branch `feat/bedrock-mantle-migration` **was up to date with its remote at session start**; `9e3f19b` is a NEW local commit on top → **push `9e3f19b` on operator say-so (#40)**. Local `master` is still 9 commits ahead of `origin/master`.
+2. **Tree is CLEAN** after this session's close-out commit (no lingering uncommitted WIP — the inherited 4 files are now committed in `9e3f19b`).
+3. **Baseline CONFIRMED: 916 passed + 8 live-skipped @ 97.39%**, ruff + mypy clean, on branch `feat/bedrock-mantle-migration` @ `9e3f19b`. This is now a *measured* baseline for this branch (S180 re-ran the gate), not an assumed one.
+4. **Wiki hook:** `9e3f19b` touched `src/`+`packages/`+`tests/` only → NO-OP. A doc edit under `docs/wiki/claims-model-starter/` would fire `scripts/publish_wiki.sh`; a `docs/planning/` edit (candidate #2) would NOT.
+5. **Bedrock default is now `anthropic.claude-opus-4-8`** in BOTH clients (`src/model_project_constructor/agents/intake/bedrock_client.py`, `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py`); first-party/anthropic client default stays Sonnet (intentional divergence — mantle catalog has no Sonnet).
+6. **Next learning candidate = #145** (#144 coined at 1). `PROJECT_LEARNINGS.md` = 61 rows.
+
+**Key files (full paths):**
+- Committed this session (`9e3f19b`): `src/model_project_constructor/agents/intake/bedrock_client.py` (`DEFAULT_MODEL`), `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py` (`DEFAULT_MODEL`), `tests/agents/intake/test_bedrock_client.py`, `tests/data_agent_package/test_bedrock_client.py`.
+- Ghost core swap: `git show dadf514` (`AnthropicBedrock` → `AnthropicBedrockMantle`).
+- Stale doc to sync (candidate #2): `docs/planning/bedrock-testing-enablement.md:30` (+ `:161–:220` dragon narrative).
+- httpx plan (candidate #3): `docs/planning/httpx-adapter-migration.md`.
+
+---
+
 ### What Session 179 Did
 **Deliverable:** Operator-directed detour within the Session-179 window — an evidence-based **plan to migrate the two Website-Agent repo adapters off their LGPL SDKs (`python-gitlab`, `PyGithub`) to direct `httpx`**. **(COMPLETE — wrote `docs/planning/httpx-adapter-migration.md` (308 lines): grep-based inventory, 3-phase plan (GitLab / GitHub / optional class-rename), 4 decision points, "here be dragons", honest licensing-scope note. Committed PATH-SCOPED as `85d8476` WITHOUT touching the co-resident mantle WIP. NO production code change.)** Also produced — **verbally, NOT persisted as a doc** — a licensing/audit advisory (MIT-certification badge landscape + external static-analysis/SAST stack), backed by 3 verification Workflows/agents.
 
