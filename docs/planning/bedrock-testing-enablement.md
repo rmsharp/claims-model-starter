@@ -1,312 +1,213 @@
 # Bedrock Testing Enablement — Operator Runbook & Cost Estimate
 
-**Session 178 · 2026-06-19 · Status: planning doc (no code change)**
-
-## Why this exists
-
-Every "GREEN" in this project's Phase E evaluation is **anthropic-only**. The eval
-harness is parametrized over two providers — `("anthropic", "bedrock")`
-(`tests/eval/eval_cutover.py:34-38`) — but the `bedrock` half has been **unmeasured
-since Session 161** because no AWS credentials are present. When creds are absent the
-live-tier collection hook (`tests/eval/conftest.py:47-60` →
-`eval_cutover.provider_creds_available("bedrock")`) **silently skips** every bedrock
-test. `PHASE_E_AGREEMENT_REPORT.md:413` records it: *"bedrock candidate unmeasured —
-no AWS creds; run the Bedrock half to complete the comparison."*
-
-Phase E stays **NO-GO** partly because of this gap. This doc is what the **operator**
-must do to close it, and what it will cost.
-
-> ⚠️ **Everything below is an a-priori estimate.** Bedrock has *never* run live in this
-> project, so there is no measured bedrock bill to anchor on. Numbers are modeled from
-> the code's call graph + current list pricing, with ranges.
+**Originally Session 178 (2026-06-19). Substantially revised Session 180 (2026-07-18):**
+the mantle migration **landed** and live enablement was **attempted end-to-end**. The
+pre-mantle IAM/SigV4 guidance in the original revision was **wrong for the current code**
+and has been corrected below. The real blocker is now **identified and confirmed live**.
 
 ---
 
-## How the project reaches Bedrock (verified from code)
+## ⛔ Current status (Session 180) — READ FIRST
+
+**The code migration is COMPLETE and unit-verified. Live bedrock testing is BLOCKED on an
+AWS-side action — not on code, not on anything the operator can self-serve.**
+
+- **Code (done):** the Bedrock client is now `AnthropicBedrockMantle` (commit `dadf514`),
+  default model `anthropic.claude-opus-4-8` (`9e3f19b`), authenticated by a **Bedrock API
+  key** (`AWS_BEARER_TOKEN_BEDROCK`) against the mantle Messages endpoint (SigV4 fallback if
+  the token is unset). Baseline **916 unit tests + ruff + mypy green**.
+- **The blocker (confirmed live — account `868785635769`, `us-east-1`, 2026-07-18):** every
+  current-generation Claude model returns
+  `403 permission_error: "anthropic.<model> is not available for this account. … contact AWS
+  Sales"` **at runtime** — reproduced in the console **Workbench** for both
+  `anthropic.claude-opus-4-8` **and** `anthropic.claude-haiku-4-5`. Non-Anthropic models
+  (GPT-5.5, Gemma) invoke fine in the same account/region.
+- **This is NOT** the Anthropic use-case form, NOT missing IAM/creds/payment, NOT a missing
+  model agreement, NOT the wrong region, NOT the inference-profile-id issue. All of those
+  are ruled out (see the diagnostic below).
+- **What it IS — the control-plane-vs-runtime split.**
+  `aws bedrock get-foundation-model-availability --model-id anthropic.claude-opus-4-8
+  --region us-east-1` returns **all green**
+  (`agreementAvailability=AVAILABLE`, `authorizationStatus=AUTHORIZED`,
+  `entitlementAvailability=AVAILABLE`, `regionAvailability=AVAILABLE`) — yet runtime 403s,
+  and the console model panel shows **Input TPM 0 (default 20M)**. AWS has **not provisioned
+  the backend per-model TPM (tokens-per-minute) runtime quota** for current-gen Claude on
+  this account. It is a **usage-history-gated gradual rollout** of the newest Claude models;
+  low-Bedrock-usage accounts get it last.
+- **The fix — an AWS-side request is the ONLY lever.** Open an AWS technical Support case, or
+  use the **"contact AWS Sales"** link the error itself gives
+  (`https://aws.amazon.com/contact-us/sales-support/`, accessible on any support plan), and
+  ask AWS to **provision the backend runtime entitlement / per-model TPM quota** for the
+  current-gen Anthropic Claude models in `us-east-1` on both the `bedrock-mantle` and
+  `bedrock-runtime` endpoints. Access also **auto-expands with Bedrock usage** over time.
+  **Do NOT run `create-foundation-model-agreement`** — the agreement already shows
+  `AVAILABLE`, so it is a no-op and will not clear the runtime gate.
+- **Status: `ready-for-human`.** The instant AWS provisions the quota, the existing code
+  works with **no further change** — nothing else to build or configure.
+
+### Ready-to-paste AWS request
+
+> **Account:** 868785635769 · **Region:** us-east-1
+> **Issue:** Amazon Bedrock returns `403 permission_error: "anthropic.claude-opus-4-8 is not
+> available for this account"` at **runtime** (console Workbench, SDK, and the mantle
+> endpoint), even though `get-foundation-model-availability` returns
+> `agreementAvailability=AVAILABLE, authorizationStatus=AUTHORIZED,
+> entitlementAvailability=AVAILABLE, regionAvailability=AVAILABLE`, and the model panel shows
+> **Input TPM = 0 (default 20M)**. Non-Anthropic models (GPT-5.5, Gemma) invoke fine.
+> **Request:** Please **provision the backend runtime entitlement / per-model TPM quota** for
+> the current-generation Anthropic Claude models (`anthropic.claude-opus-4-8`, and
+> `claude-sonnet-5` / `claude-opus-4-7` / `claude-haiku-4-5` if possible) for this account in
+> us-east-1, on both the **bedrock-mantle** and **bedrock-runtime** endpoints.
+
+> ⚠️ AWS Support's first auto-reply often says to "sign the Anthropic use-case form." That is
+> a **red herring** here — the agreement is already `AVAILABLE`. Push for **backend
+> TPM/runtime provisioning**.
+
+### The 2-minute diagnostic (how the above was established)
+
+No access keys needed — **AWS CloudShell** (the `>_` icon in the console top-nav) runs
+pre-authenticated as your console identity, even as root:
+
+```
+aws bedrock get-foundation-model-availability --model-id anthropic.claude-opus-4-8 --region us-east-1
+```
+- **All four fields `AVAILABLE`/`AUTHORIZED` but Workbench/runtime still 403s** → the runtime
+  TPM gate above → **AWS Support/Sales case** (self-service is exhausted).
+- **Any field `NOT_AVAILABLE`/`NOT_AUTHORIZED`** → the account genuinely lacks the Anthropic
+  agreement (a *different*, self-serviceable case) → run the agreement flow:
+  `list-foundation-model-agreement-offers --offer-type ALL` → grab `offers[0].offerToken` →
+  `create-foundation-model-agreement --model-id … --offer-token …` → re-check. **On this
+  account it was all-green**, so we are in the first case.
+
+*(Note: `get-foundation-model-availability` rejects the bare mantle id
+`anthropic.claude-haiku-4-5` with `ValidationException: invalid model identifier` — that
+classic control-plane API wants the version-suffixed runtime id; the bare form is mantle-only.
+Use `anthropic.claude-opus-4-8` for the availability probe.)*
+
+---
+
+## Why this doc exists (unchanged)
+
+Every "GREEN" in this project's Phase E evaluation is **anthropic-only**. The eval harness is
+parametrized over two providers — `("anthropic", "bedrock")`
+(`tests/eval/eval_cutover.py:34-38`) — but the `bedrock` half has been **unmeasured since
+Session 161** because no working Bedrock access is present. When creds/access are absent the
+live-tier collection hook (`tests/eval/conftest.py:47-60` →
+`eval_cutover.provider_creds_available("bedrock")`) **silently skips** every bedrock test.
+Phase E stays **NO-GO** partly because of this gap. As of Session 180 the gap's cause is
+**identified** (the AWS runtime-quota gate above), not merely "no creds."
+
+> ⚠️ **All cost numbers below are a-priori estimates.** Bedrock has *never* run live in this
+> project, so there is no measured bill to anchor on.
+
+---
+
+## How the project reaches Bedrock (verified from code, Session 180)
 
 | Fact | Value | Evidence |
 |------|-------|----------|
-| Bedrock client | `anthropic.AnthropicBedrock()` wrapper | `src/.../agents/intake/bedrock_client.py:83-86` |
-| Default model (bedrock) | **`anthropic.claude-opus-4-8`** ($5 in / $25 out per M tok) | `bedrock_client.py:62` |
-| Provider selection | explicit: `make_llm_client(provider="bedrock")` / `--provider bedrock` / `INTAKE_LLM_PROVIDER=bedrock`; default is `anthropic` | `factory.py:37-76` |
-| Env vars read | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` (+ `AWS_PROFILE` alt) | `bedrock_client.py:36,40` |
-| Region fallback | client falls back to `AWS_REGION`; boto3 itself reads `AWS_DEFAULT_REGION` | `bedrock_client.py:40` |
-| Why skipped today | creds absent → `provider_creds_available("bedrock")` false → live tests auto-skip | `conftest.py:47-60`, `eval_cutover.py:52-59` |
+| Bedrock client | **`anthropic.AnthropicBedrockMantle(aws_region=…)`** (mantle Messages endpoint) | `src/.../agents/intake/bedrock_client.py` (`dadf514`) |
+| Default model (bedrock) | **`anthropic.claude-opus-4-8`** ($5 in / $25 out per M tok) — mantle catalog has no Sonnet | `bedrock_client.py:62` (`9e3f19b`) |
+| Auth | **Bedrock API key** via `AWS_BEARER_TOKEN_BEDROCK`; **SigV4 fallback** from the AWS credential chain if unset | client docstring; `AnthropicBedrockMantle` |
+| Endpoint (automatic) | `https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages` | AWS Opus 4.8 model card |
+| Model-id format | bare `anthropic.` prefix, **no** version suffix, **no** `us.`/`global.` inference-profile prefix (mantle) | AWS model card |
+| Provider selection | explicit: `make_llm_client(provider="bedrock")` / `--provider bedrock` / `INTAKE_LLM_PROVIDER=bedrock`; model override via `INTAKE_LLM_MODEL`; default provider is `anthropic` | `factory.py:37-76` |
+| Why skipped today | access gated (403) → `provider_creds_available("bedrock")` / a live call fails → live tests auto-skip | `conftest.py:47-60`, `eval_cutover.py:52-59` |
 
 ---
 
-## What you (the operator) must do
+## Operator setup (the mantle + API-key path — matches the current code)
 
-These are **one-time** unless noted. Steps 0–4 are yours; step 5 is a verification you
-run before trusting any test result. Everything in steps 0–3 happens in the **AWS
-Management Console** (a web app) in your browser; step 4–5 are on your machine.
+> Everything here is the path the code actually uses. The earlier revision's IAM-user /
+> "do NOT create an API key" steps were for the **pre-mantle** `AnthropicBedrock` client and
+> are **obsolete** — do not follow them.
 
-### 0. Get into the AWS Management Console (do this first)
-- **No AWS account yet?** Go to **https://aws.amazon.com** → **Create an AWS Account**
-  (button, top-right). You'll need an email, a password, and a credit card. Bedrock model
-  inference is **pay-as-you-go with no free tier**, so expect the (small) charges in the
-  cost table below. New accounts can take a few minutes to activate.
-- **Already have an account?** Sign in to the console at
-  **https://console.aws.amazon.com/** — use the **root user** for this first-time setup,
-  or an admin IAM user if you already have one.
-- After sign-in you land on **Console Home**. Every step below is reached from here using
-  the **search bar at the top** of the page (type a service name like *Bedrock* or *IAM*)
-  and the **region dropdown** in the top-right of the navigation bar.
+**0. Region.** In the Bedrock console top-nav region dropdown, pick **US East (N. Virginia)
+`us-east-1`** (mantle-supported, in-Region Claude, Opus 4.8 available). API keys are
+Region-scoped.
 
-### 1. Pick a region (one-time)
-Choose a US region where Sonnet 4.x is offered — **`us-east-1`** is the safe default.
-**How:** in the console's top navigation bar, click the **region dropdown** (top-right,
-near your account name — it shows the current region, e.g. *"N. Virginia"*) and select
-**US East (N. Virginia) us-east-1**. The console now operates in that region for the rest
-of setup. This value becomes `AWS_REGION` / `AWS_DEFAULT_REGION` in step 4. Model
-availability differs by region; confirm on the model's detail page in the Bedrock console
-(step 2).
+**1. Generate a Bedrock API key.** Redesigned console → **ACCOUNT SCOPE → API keys**.
+- **Long-term** (dev/testing): *Long-term API keys* tab → *Generate* → 30-day expiry → keep
+  the default **`AmazonBedrockLimitedAccess`** policy (v8+ — it already grants
+  `bedrock-mantle:*` and the `aws-marketplace:*` subscribe actions) → *Generate*. **Copy
+  once.** (Long-term keys create an IAM user under the hood — that's the `MantleApiKey-*`
+  users you'll see in IAM.)
+- **Short-term** (production): *Short-term API keys* tab → *Generate* (≤12 h, inherits your
+  IAM permissions).
 
-### 2. Make sure Claude is accessible (mostly automatic now — the console changed)
-> **The Bedrock console was redesigned (2025–2026).** If your console's left nav shows
-> **Projects / API keys / Models / Workbench** and a "bedrock-mantle endpoint" subtitle,
-> you have the new console — there is **no "Bedrock configurations → Model access" page**
-> like older guides describe. Don't go looking for it.
-
-**Model access is now automatic** in commercial regions: AWS retired the Model-access page
-(Sept 2025) and **auto-enables** serverless foundation models on first use. So you mostly
-do **nothing** here. Two things still matter for *this project*:
-
-1. **The Anthropic one-time use-case (First-Time-Use) form** still applies, because the
-   project invokes Claude over the *classic* `bedrock-runtime` path (see the ⚠️ box below),
-   and that path is **not** exempted from the form. The old "Model access" page that used
-   to host it is gone, so submit it one of these ways:
-   - **Easiest — let the smoke test surface it.** Run step 5's `converse` probe; if the
-     account hasn't completed the form you'll get an access error that names the use-case
-     requirement. Submit it, then re-run. Access is granted **immediately** on submission.
-   - **Proactively in the console:** Amazon Bedrock → model catalog → select an Anthropic
-     Claude model → if prompted, **Submit use case details** (intended use + a website URL).
-   - **Proactively via CLI:** `aws bedrock put-use-case-for-model-access` (see AWS docs).
-2. **Account prerequisites** (normal on a standard account): a valid payment method + AWS
-   Marketplace permissions (`aws-marketplace:Subscribe`/`ViewSubscriptions`). The
-   background model subscription on first invoke can take **~15 min**.
-
-> The use-case form is **not** required if you call Claude through the *new*
-> `bedrock-mantle` endpoint + a Bedrock API key — but that path needs a **code change** and
-> doesn't work with the project as written. See the ⚠️ box and "Optional: the simpler
-> API-key path" below.
-
-> ### ⚠️ Do NOT create a Bedrock "API key" — it won't work with this project
-> The new console steers you to **Projects → API keys** (a bearer token in
-> `AWS_BEARER_TOKEN_BEDROCK`, used against the `bedrock-mantle` endpoint). **The project's
-> `AnthropicBedrock` client cannot use it.** That client authenticates **only** with AWS
-> SigV4 (IAM access key + secret) against the classic `bedrock-runtime` endpoint and
-> ignores the bearer token entirely — confirmed in the SDK's `lib/bedrock/_auth.py`
-> (`session.get_credentials()` + `SigV4Auth`), tracked as the unimplemented
-> anthropic-sdk-python issue #1079 (Nov 2025). Setting `AWS_BEARER_TOKEN_BEDROCK` with no
-> access key just makes `AnthropicBedrock()` fail to find credentials.
-> **→ Skip "API keys." Create an IAM user instead (step 3).**
-
-### 3. Create an IAM identity + access keys (one-time) — **this is the credential the project needs**
-**Get to the IAM console:** click the **search bar** at the top, type **`IAM`**, and
-select **IAM** (or go directly to **https://console.aws.amazon.com/iam/**). IAM is
-**global** — the region dropdown doesn't matter here. Then **Users → Create user** →
-create a programmatic-only user (e.g. `mpc-bedrock-invoker`; you don't need to enable
-console access). Attach the minimal policy below — on the *Set permissions* step choose
-**Attach policies directly → Create policy**, paste the JSON, and attach it (or add it as
-an **inline policy** on the user afterward). Once the user exists, open it →
-**Security credentials → Create access key →** "Application running outside AWS".
-**Copy the secret immediately — it's shown once.**
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "InvokeClaudeOnBedrock",
-      "Effect": "Allow",
-      "Action": [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
-      ],
-      "Resource": [
-        "arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
-        "arn:aws:bedrock:*:ACCOUNT_ID:inference-profile/us.anthropic.claude-*",
-        "arn:aws:bedrock:*:ACCOUNT_ID:inference-profile/global.anthropic.claude-*"
-      ]
-    }
-  ]
-}
+**2. Wire it into `.env`** (git-ignored):
 ```
-*(Replace `ACCOUNT_ID`. If scoping fights you, widen `Resource` to `"*"` for the two
-actions as a first step, then tighten. The first invocation may need the model enabled
-in the account via the console (step 2) — the minimal policy omits
-`aws-marketplace:Subscribe` on purpose.)*
-
-### 4. Put the creds in the project `.env` (per machine)
-Copy `.env.example` → `.env` (git-ignored) and add:
-```
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
+AWS_BEARER_TOKEN_BEDROCK=<key>
 AWS_REGION=us-east-1
 AWS_DEFAULT_REGION=us-east-1
 ```
-**Critical:** this project does **not** auto-load `.env` into pytest. Export it first:
+
+**3. Export before pytest** — the project does **not** auto-load `.env`:
 ```
 set -a; . ./.env; set +a
 ```
-If you skip this, every bedrock live test **silently skips** — a green run can mean
-"never ran," not "passed."
+Skip this and every bedrock live test **silently skips** — a green run can mean "never ran."
 
-### 5. Verify access *before* running the suite (each session)
-```
-set -a; . ./.env; set +a
-aws sts get-caller-identity                     # keys load?
-aws bedrock get-foundation-model-availability \  # access granted in region?
-  --model-id anthropic.claude-sonnet-4-6 --region us-east-1
-# real invocation (prefer the inference-profile id):
-aws bedrock-runtime converse --region us-east-1 \
-  --model-id us.anthropic.claude-sonnet-4-6 \
-  --messages '[{"role":"user","content":[{"text":"ping"}]}]'
-```
-Only once a real invocation returns text should you run the eval suite.
+**4. There is NO "Model access" page and NO use-case form on the mantle path.** Its absence
+in the redesigned console is **expected**, not a bug — mantle is exempt from the Anthropic
+First-Time-Use form. Account-level Claude access on mantle is governed by the runtime
+entitlement/quota discussed in *Current status* above.
+
+**5. Verify access before running the suite** (see the 2-minute diagnostic above, plus a real
+invoke once AWS has provisioned the quota). Only once a real invoke returns text should you
+run the eval suite.
 
 ---
 
-## 💥 Here be dragons (read before spending)
+## Cost estimates (moot until the AWS gate clears)
 
-1. **The "API key" trap (most likely to bite first).** The redesigned console pushes
-   **Projects → API keys** (bearer token / `AWS_BEARER_TOKEN_BEDROCK`). The project's
-   `AnthropicBedrock` client **cannot use it** — it's SigV4/IAM-only (see the ⚠️ box in
-   step 2). Use an **IAM access key + secret** (step 3), not a Bedrock API key.
-2. **Inference-profile-only models.** Many Claude 4.x models on Bedrock **cannot be invoked
-   by the bare id** `anthropic.claude-sonnet-4-6` — they return `ValidationException:
-   ...on-demand throughput isn't supported. Retry with...an inference profile.` The fix is
-   the cross-region profile id `us.anthropic.claude-sonnet-4-6`. **The project's
-   `bedrock_client.py:56` uses the bare id.** If your region rejects it, the bedrock tests
-   fail until the id is adjusted — a **one-line code change (separate session)**, not an
-   operator task. Step 5's `converse` probe tells you which form your account needs *before*
-   you spend a session on it.
-3. **Silent skip on missing export** (see step 4) — "all green" ≠ "ran."
-4. **Anthropic use-case form on the classic path** — still required for this project (step
-   2); the smoke test surfaces it if you skipped it. (Not needed on the mantle/API-key path
-   — which the project doesn't use.)
-5. **Regional endpoint premium** — since the 4.5 generation, a *regional* endpoint
-   (what `AWS_REGION` gives you) costs ~10% more than the *global* inference profile.
-   Folded into the high-cost bounds below.
+Three tiers, smallest to largest. **Point** figures below were modeled on the *old* Sonnet 4.6
+default ($3/$15 per M tok). **The current default is Opus 4.8 ($5/$25) — multiply the Point
+figures by ~1.7× for the real cost**, or override to a cheaper model with
+`INTAKE_LLM_MODEL=anthropic.claude-haiku-4-5` ($1/$5) once access is granted. All at the
+default **N=5 samples/case**; cost scales ~linearly with N.
 
-### Chosen path: Mantle + Bedrock API key (operator steps + the code change)
-*(Operator decision, Session 178. Wiring verified against AWS + Anthropic docs — see Sources.)*
-
-**Operator side (console — you can do this now):**
-1. Set your **Region** (top-right) first — **API keys are Region-scoped**.
-2. Left nav → **API keys**. You do **not** need to create a project or "enable" a model in
-   the catalog (the catalog is browse/compare-only; the **Workbench** is just the test
-   playground). Access comes from the key.
-   - **Long-term key** (dev/exploration): *Long-term API keys* tab → *Generate* → set an
-     expiration (e.g. 30 days) → *Generate*. Default policy `AmazonBedrockLimitedAccess`.
-   - **Short-term key** (≤12 h or session): *Short-term API keys* tab → *Generate*.
-3. **Copy the key once** (shown only once). Put it in `.env` as `AWS_BEARER_TOKEN_BEDROCK`.
-
-**Code change (one dev session — small, de-risked).** The Anthropic SDK ships a dedicated
-Mantle client, **`AnthropicBedrockMantle`**, that exposes the **identical
-`messages.create(...)` surface** as today's `AnthropicBedrock`, auto-targets the mantle
-Anthropic-Messages endpoint, and accepts **both** the Bedrock API key (reads
-`AWS_BEARER_TOKEN_BEDROCK`) and SigV4:
-```python
-from anthropic import AnthropicBedrockMantle           # pip install -U "anthropic[bedrock]"
-client = AnthropicBedrockMantle(aws_region="us-east-1") # reads AWS_BEARER_TOKEN_BEDROCK from env
-# client.messages.create(model="anthropic.claude-sonnet-4-6", ...)  — call sites UNCHANGED
-```
-- **Endpoint (automatic):** `https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages`
-  (CONFIRMED). **Do NOT** use the `/v1` OpenAI surface — that's for OpenAI-protocol models
-  and would force rewriting every call site.
-- **Model ids unchanged** — the project already uses the `anthropic.` prefix
-  (`anthropic.claude-sonnet-4-6`), so no id change, and this **retires the inference-
-  profile-id dragon** (that was an on-demand `bedrock-runtime` constraint, not a mantle one).
-- **`factory.py` change** = swap the client class + pass `aws_region`; the `LLMClient`
-  protocol is unaffected because the `messages.create` surface is identical.
-- **Bearer-only fallback** (skip the `[bedrock]` extra):
-  `anthropic.Anthropic(base_url="https://bedrock-mantle.{region}.api.aws/anthropic",
-  api_key=<key>)` — Anthropic-blessed; bearer-only (no SigV4), you manage token refresh.
-- **Region must match** between the API key and the endpoint `{region}`.
-
-> ℹ️ **Long-term keys are "dev/exploration only" per AWS.** Fine for this eval/testing use;
-> for anything production-facing, switch to short-term keys or IAM temporary credentials.
-
----
-
-## Cost estimates
-
-Three tiers, smallest to largest. **Point** = project default **Sonnet 4.6** ($3/$15
-per M tok — same list price on Bedrock as the first-party API). **Low** = Haiku 4.5
-($1/$5); **High** = Opus 4.8 ($5/$25) + regional premium + retries. All at the default
-**N=5 samples/case**; cost scales ~linearly with N.
-
-| Tier | What it does | Bedrock LLM calls | **Point (Sonnet)** | Range (low–high) |
-|------|--------------|------------------:|-------------------:|------------------|
-| **Smoke** | 1 classification round-trip — proves creds + model id work | 1 | **~$0.03** | $0.01 – $0.05 |
+| Tier | What it does | Bedrock LLM calls | **Point (Sonnet-modelled)** | Range (low–high) |
+|------|--------------|------------------:|----------------------------:|------------------|
+| **Smoke** | 1 classification round-trip — proves access + model id work | 1 | **~$0.03** | $0.01 – $0.05 |
 | **Governance gate** | The §3.4 metric: 5 cases × 5 samples | ~25 | **~$0.94** | $0.31 – $2.23 |
 | **Full shadow_run sweep** | Whole corpus: interviews + governance + SQL/QC; the real Phase E comparison | **~731** | **~$25** | $4.76 – $89 |
 
-**Commands**
-- Smoke: `uv run pytest tests/agents/intake/test_bedrock_client.py -v` (after step 5 probe)
+**Commands** (run only after the AWS quota is provisioned + `.env` exported):
+- Smoke: `uv run pytest tests/agents/intake/test_bedrock_client.py -v`
 - Governance gate: `uv run pytest -m live tests/eval/test_eval_live.py::test_live_governance_cycle_time_agreement_and_no_laxer_miss --provider bedrock --no-cov`
-- Full sweep: `uv run python tests/eval/shadow_run.py` (runs **both** providers; ~90 min wall-clock on anthropic — bedrock untested)
+- Full sweep: `uv run python tests/eval/shadow_run.py` (runs **both** providers; ~90 min on anthropic — bedrock untested)
 
-**Why the full sweep is ~$25, not the $/cents of the others:** it's dominated by
-**~731 calls**, because each interview *turn* makes **two** LLM calls — the interviewer's
-`next_question` **and** the stakeholder-simulator's reply — across 25 interviews of
-~10 turns each, plus draft/revise/classify per interview. (The first-pass research
-under-counted this at 175; the verify pass corrected it.) Per-turn token sizes are
-**not logged** anywhere in the codebase, so the $25 point is an order-of-magnitude
-estimate with a genuinely wide band, not an invoice.
-
----
-
-## Recommended path
-
-1. **Do steps 1–5** (one-time AWS setup, ~30–60 min of your time; ~$0 until you invoke).
-2. **Run the smoke test (~$0.03).** This is the real gate on the *inference-profile-id*
-   dragon. If it throws `ValidationException`, stop and open a session to switch
-   `bedrock_client.py` to the `us.` profile id — don't burn a sweep on a broken id.
-3. **Run the governance gate (~$1).** This alone closes the most-cited §3.4 bedrock gap
-   and is the cheapest meaningful comparison.
-4. **Run the full shadow_run sweep (~$25)** only when you want the complete Phase E
-   provider comparison. Budget ~$25–30 for one clean run; re-runs at higher N scale up.
-
-**Bottom line:** closing the headline bedrock gap costs **~$1 and an afternoon of AWS
-setup**; the *complete* Phase E comparison costs **~$25–30 one-time**. The binding risk
-is not money — it's the bare-vs-`us.`-prefixed model id (dragon #1), which the $0.03
-smoke test flushes out before any real spend.
+**Why the full sweep is ~$25:** ~731 calls, because each interview *turn* makes **two** LLM
+calls (interviewer `next_question` + stakeholder-sim reply) across 25 interviews × ~10 turns,
+plus draft/revise/classify per interview. Per-turn token sizes are **not logged**, so $25 is
+an order-of-magnitude estimate with a wide band, not an invoice.
 
 ---
 
 ## Decision points for the operator
 
-- **Auth path — DECIDED (Session 178, revised): Mantle + Bedrock API key.** The operator
-  chose the **`bedrock-mantle` endpoint + Bedrock API key** path (lighter operator setup —
-  create a project + an API key in the console; no IAM user, no use-case form). ⚠️ **This
-  path is NOT usable until a code change lands:** the project's `AnthropicBedrock`
-  (SigV4/IAM) client must be replaced/augmented to call the mantle endpoint with the bearer
-  token (this is the "Chosen path: Mantle + Bedrock API key" section above). **Consequence:
-  bedrock testing is blocked until that dev session lands** — though S178 research shows the
-  change is **small and de-risked.** (IAM, steps 3–5, still works with *today's* code if
-  interim testing is wanted.) **Open questions are now RESOLVED:** use
-  `AnthropicBedrockMantle` (a drop-in for `AnthropicBedrock` with the identical
-  `messages.create` surface; reads `AWS_BEARER_TOKEN_BEDROCK`; auto-targets
-  `/anthropic/v1/messages`); model ids unchanged (the `anthropic.` prefix is already in use —
-  this also retires the inference-profile-id dragon); the only `factory.py` change is the
-  client class + `aws_region`.
-- **Provide AWS creds at all?** If bedrock is out of scope for the foreseeable future,
-  rule it out explicitly so future sessions stop carrying it as an open gap.
-- **Which tier to fund?** Smoke + governance (~$1) vs. full comparison (~$25–30).
-- **Which model?** The default is Sonnet 4.6. If you want the bedrock comparison to
-  mirror the anthropic baseline exactly, keep the default (it already matches).
+- **Auth path — DONE.** Mantle + Bedrock API key; the code migration landed (`dadf514`,
+  `9e3f19b`). No further code needed.
+- **The only open action is the AWS quota request** (*Current status* above) — a
+  `ready-for-human` item. If bedrock is out of scope for now, rule it out explicitly so
+  future sessions stop carrying it as an open gap.
+- **Once access clears — which tier to fund?** Smoke + governance (~$1) vs. full comparison
+  (~$25–30, ~1.7× if kept on the opus-4-8 default; cheaper on a haiku override).
 
 ## Sources
-- Code: `bedrock_client.py`, `factory.py`, `conftest.py`, `eval_cutover.py`,
-  `shadow_run.py`, `interview_sweep.py`, `stakeholder_sim.py`, `eval_corpus.py`,
-  `PHASE_E_AGREEMENT_REPORT.md` (cited inline above).
-- AWS: model-access, cross-region-inference, inference-profiles user-guide pages;
-  Anthropic Claude on Bedrock model cards; `platform.claude.com/docs/.../pricing`
-  (authoritative for the per-token rates — Bedrock on-demand list = first-party list).
-- ⚠️ The AWS Bedrock pricing *page* did not render its 4.x rows to the research tool;
-  the 4.x Bedrock $ figures are corroborated via model cards + the Anthropic price table
-  + secondary trackers, **not** a direct quote from `aws.amazon.com/bedrock/pricing`.
-  Confirm exact numbers in the AWS console before any large run.
+
+- Code: `bedrock_client.py`, `factory.py`, `conftest.py`, `eval_cutover.py`, `shadow_run.py`,
+  `stakeholder_sim.py`, `PHASE_E_AGREEMENT_REPORT.md`.
+- AWS (Session-180 live verification): `docs.aws.amazon.com/bedrock/.../model-access.html`,
+  the Opus 4.8 model card, the redesigned-console announcement (June 2026), and AWS re:Post +
+  an expert-authored Accepted Answer documenting the control-plane-vs-runtime TPM gate on
+  current-gen Claude ("agreement AVAILABLE / authorization AUTHORIZED but runtime 403").
+- Anthropic: `code.claude.com/docs/en/amazon-bedrock` ("A 403 from the Mantle endpoint with
+  valid credentials means your AWS account has not been granted access… Contact your AWS
+  account team"); `platform.claude.com/docs/.../claude-in-amazon-bedrock` (mantle client,
+  model ids, pricing).
+- ⚠️ Two directly-relevant AWS re:Post threads are Cloudflare-protected (403 to automated
+  fetch); the "control-plane green / runtime gated → AWS Support case" resolution is drawn
+  from their titles + an expert Accepted Answer synthesis, corroborated by Anthropic's own
+  Bedrock docs — high substance-confidence, but confirm turnaround with AWS directly.
