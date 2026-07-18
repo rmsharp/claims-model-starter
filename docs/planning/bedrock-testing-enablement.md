@@ -27,7 +27,7 @@ must do to close it, and what it will cost.
 | Fact | Value | Evidence |
 |------|-------|----------|
 | Bedrock client | `anthropic.AnthropicBedrock()` wrapper | `src/.../agents/intake/bedrock_client.py:83-86` |
-| Default model (bedrock) | **`anthropic.claude-sonnet-4-6`** ($3 in / $15 out per M tok) | `bedrock_client.py:56` |
+| Default model (bedrock) | **`anthropic.claude-opus-4-8`** ($5 in / $25 out per M tok) | `bedrock_client.py:62` |
 | Provider selection | explicit: `make_llm_client(provider="bedrock")` / `--provider bedrock` / `INTAKE_LLM_PROVIDER=bedrock`; default is `anthropic` | `factory.py:37-76` |
 | Env vars read | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION` (+ `AWS_PROFILE` alt) | `bedrock_client.py:36,40` |
 | Region fallback | client falls back to `AWS_REGION`; boto3 itself reads `AWS_DEFAULT_REGION` | `bedrock_client.py:40` |
