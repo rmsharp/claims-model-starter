@@ -9,7 +9,7 @@ signature-identical — so this client is the wheel's :class:`AnthropicLLMClient
    authenticated by a **Bedrock API key** (``AWS_BEARER_TOKEN_BEDROCK``) or, as a
    fallback, SigV4 from the AWS credential chain — rather than ``ANTHROPIC_API_KEY``.
 2. **The default model id** — Bedrock model ids carry an ``anthropic.``
-   provider prefix (e.g. ``anthropic.claude-sonnet-4-6``).
+   provider prefix (e.g. ``anthropic.claude-opus-4-8``).
 
 The five required :class:`LLMClient` methods, the optional
 ``rank_candidate_tables``, ``_call_claude``, the per-caller fenced-text
@@ -51,9 +51,11 @@ from model_project_constructor_data_agent.anthropic_client import (
     AnthropicLLMClient,
 )
 
-#: Bedrock model ids carry an ``anthropic.`` provider prefix. The default tier
-#: mirrors the first-party client's Sonnet default (``claude-sonnet-4-6``).
-DEFAULT_MODEL = "anthropic.claude-sonnet-4-6"
+#: Bedrock model ids carry an ``anthropic.`` provider prefix. AWS Bedrock's mantle
+#: catalog offers **no Sonnet** tier, so the bedrock default is Opus 4.8 — it
+#: intentionally differs from the first-party/anthropic client's Sonnet default
+#: (Session 178; see ``docs/planning/bedrock-testing-enablement.md``).
+DEFAULT_MODEL = "anthropic.claude-opus-4-8"
 
 
 class BedrockLLMClient(AnthropicLLMClient):

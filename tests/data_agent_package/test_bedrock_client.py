@@ -46,7 +46,7 @@ class _FakeAnthropic:
 
 
 def test_default_model_is_bedrock_prefixed() -> None:
-    assert DEFAULT_MODEL == "anthropic.claude-sonnet-4-6"
+    assert DEFAULT_MODEL == "anthropic.claude-opus-4-8"
 
 
 def test_is_subclass_of_anthropic_client() -> None:

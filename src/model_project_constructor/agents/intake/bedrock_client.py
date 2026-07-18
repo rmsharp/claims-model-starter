@@ -10,7 +10,7 @@ It overrides only two things:
    authenticated by a **Bedrock API key** (``AWS_BEARER_TOKEN_BEDROCK``) or, as a
    fallback, SigV4 from the AWS credential chain — rather than ``ANTHROPIC_API_KEY``.
 2. **The default model id** — Bedrock model ids carry an ``anthropic.``
-   provider prefix (e.g. ``anthropic.claude-sonnet-4-6``).
+   provider prefix (e.g. ``anthropic.claude-opus-4-8``).
 
 Every interview method (``next_question`` / ``draft_report`` /
 ``classify_governance`` / ``revise_report``), the ``_call_json`` round-trip,
@@ -55,11 +55,11 @@ from model_project_constructor.agents.intake.anthropic_client import (
     AnthropicLLMClient,
 )
 
-#: Bedrock model ids carry an ``anthropic.`` provider prefix. The default tier
-#: mirrors the first-party client's Sonnet default (``claude-sonnet-4-6``); the
-#: pilot entrypoint still selects Opus first-party — the intentional two-tier
-#: default is preserved (Trap 4 / ``PROJECT_LEARNINGS`` #20).
-DEFAULT_MODEL = "anthropic.claude-sonnet-4-6"
+#: Bedrock model ids carry an ``anthropic.`` provider prefix. AWS Bedrock's mantle
+#: catalog offers **no Sonnet** tier, so the bedrock default is Opus 4.8 — it
+#: intentionally differs from the first-party/anthropic client's Sonnet default
+#: (Session 178; see ``docs/planning/bedrock-testing-enablement.md``).
+DEFAULT_MODEL = "anthropic.claude-opus-4-8"
 
 
 class BedrockLLMClient(AnthropicLLMClient):
