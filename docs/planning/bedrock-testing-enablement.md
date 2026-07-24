@@ -45,6 +45,33 @@ AWS-side action — not on code, not on anything the operator can self-serve.**
 - **Status: `ready-for-human`.** The instant AWS provisions the quota, the existing code
   works with **no further change** — nothing else to build or configure.
 
+### Update — 2026-07-23 (root cause CONFIRMED by AWS; requests filed)
+
+AWS's own **DevOps support agent** (opened via case `178440923600380` after a Developer-support
+upgrade) independently confirmed the diagnosis: control-plane entitlement is AUTHORIZED/AVAILABLE,
+but **every Opus 4.8 runtime throughput quota is Applied = 0**, while Opus 4.6 (3M TPM) and 4.5
+(2M TPM) are non-zero and work — a clean control group proving **model-specific under-provisioning**,
+not an account-wide problem. The self-service lever is the **adjustable** quotas; the
+**non-adjustable** ones require AWS.
+
+| Quota (Opus 4.8, us-east-1) | Code | Applied → Default | Adjustable | Filed 2026-07-23 |
+|---|---|---|---|---|
+| **[bedrock-mantle] Input TPM** | `L-8528F119` | 0 → 20,000,000 | Yes | ✅ Service Quotas request — **Pending** |
+| **[bedrock-mantle] Output TPM** | `L-37491D63` | 0 → 2,000,000 | Yes | ✅ Service Quotas request — **Pending** |
+| Cross-region TPM | `L-DB99DCDB` | 0 → 30,000,000 | Yes | (not needed for mantle) |
+| Global cross-region TPM | `L-4FCE27C7` | 0 → 30,000,000 | Yes | (not needed for mantle) |
+| Global cross-region tokens/day | `L-917CA0F1` | 0 → 43.2B | **No → AWS** | via case `178440923600380` |
+| On-demand max tokens/day | `L-AFE3B2BE` | 0 → 21.6B | **No → AWS** | via case `178440923600380` |
+
+The two **`[bedrock-mantle]` TPM** quotas are what gate this project's code (the mantle endpoint).
+Both self-serve requests are **Pending AWS service-team review** — a 0→default jump on a gated model
+does **not** auto-approve. Watch each quota's *Applied* value flip `0 → value` in the Service Quotas
+console; then re-test the Workbench (Opus 4.8 → `ping`) and run the smoke test. **Do not** re-submit
+(one open request per quota; account cap = 1), re-run `create-foundation-model-agreement` (no-op —
+agreement already AVAILABLE), or act on any AWS "sign the use-case form" reply (mantle-exempt red
+herring — insist on **backend TPM provisioning**). The self-serve requests are separate from the
+support case; the case additionally covers the two non-adjustable tokens/day caps.
+
 ### Ready-to-paste AWS request
 
 > **Account:** 868785635769 · **Region:** us-east-1
