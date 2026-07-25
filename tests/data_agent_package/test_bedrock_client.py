@@ -119,3 +119,59 @@ def test_default_constructor_omits_region_when_unset(
     monkeypatch.setattr(anthropic, "AnthropicBedrockMantle", _FakeMantle)
     BedrockLLMClient()
     assert captured["kwargs"] == {}
+
+
+def test_default_constructor_forwards_base_url_and_http_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``base_url`` (a PrivateLink VPCE / GovCloud host) and ``http_client``
+    (a forward proxy / corp CA bundle) are forwarded to ``AnthropicBedrockMantle``
+    so an enterprise can wire private connectivity without editing this client."""
+    import anthropic
+
+    captured: dict[str, Any] = {}
+
+    class _FakeMantle:
+        def __init__(self, **kwargs: Any) -> None:
+            captured["kwargs"] = kwargs
+            self.messages = _FakeMessages([])
+
+    monkeypatch.setattr(anthropic, "AnthropicBedrockMantle", _FakeMantle)
+    sentinel_http = object()
+    BedrockLLMClient(
+        aws_region="us-east-1",
+        base_url="https://vpce-abc.bedrock-mantle.us-east-1.vpce.amazonaws.com/anthropic",
+        http_client=sentinel_http,
+    )
+    assert captured["kwargs"] == {
+        "aws_region": "us-east-1",
+        "base_url": "https://vpce-abc.bedrock-mantle.us-east-1.vpce.amazonaws.com/anthropic",
+        "http_client": sentinel_http,
+    }
+
+
+def test_require_sigv4_rejects_stray_bearer_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``require_sigv4=True`` turns a stray ``AWS_BEARER_TOKEN_BEDROCK`` into a
+    hard error, so it cannot silently override role-based SigV4 in production."""
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "bedrock-api-key")
+    with pytest.raises(ValueError, match="AWS_BEARER_TOKEN_BEDROCK"):
+        BedrockLLMClient(require_sigv4=True)
+
+
+def test_require_sigv4_allows_construction_when_token_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``require_sigv4=True`` does not block the happy path (role SigV4) when no
+    bearer token is present."""
+    import anthropic
+
+    monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
+
+    class _FakeMantle:
+        def __init__(self, **kwargs: Any) -> None:
+            self.messages = _FakeMessages([])
+
+    monkeypatch.setattr(anthropic, "AnthropicBedrockMantle", _FakeMantle)
+    BedrockLLMClient(require_sigv4=True)  # must not raise
