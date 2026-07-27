@@ -10,9 +10,7 @@ The repository is at version `0.2.0` (pre-1.0, pilot-ready). Release tags `v0.1.
 
 ## [Unreleased]
 
-### Bedrock mantle migration + enterprise-deployment readiness (Sessions 179-180) — IN FLIGHT, NOT YET ON `master`
-
-> *This work lives on the `feat/bedrock-mantle-migration` branch and has not been merged to `master`. It is recorded here for visibility; it is not part of any release until the branch lands.*
+### Bedrock mantle migration + enterprise-deployment readiness (Sessions 179-180)
 
 - **Changed:** the Bedrock clients in both packages now construct `anthropic.AnthropicBedrockMantle` (was `anthropic.AnthropicBedrock`), targeting the `bedrock-mantle` endpoint and the native Anthropic Messages API. Auth resolves from the AWS credential chain (SigV4 via an IAM role) or, for development only, a Bedrock API key in `AWS_BEARER_TOKEN_BEDROCK`.
 - **Changed:** `BedrockLLMClient.DEFAULT_MODEL` is now `anthropic.claude-opus-4-8` (was `anthropic.claude-sonnet-4-6`) in both packages — the mantle catalog ships no Sonnet tier. The first-party `AnthropicLLMClient` default is deliberately unchanged at `claude-sonnet-4-6`; the two defaults diverge on purpose.

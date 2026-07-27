@@ -18,7 +18,7 @@ Every secret and configuration parameter is read from the environment — the or
 | `INTAKE_LLM_PROVIDER` | No | `anthropic` | LLM backend for the intake web UI: `anthropic` or `bedrock`. An unknown value is rejected at app startup. Read only by the UI; `scripts/run_pipeline.py` and the data-agent CLI use `--provider` instead. **`bedrock` is implemented and unit-tested but has never been exercised live** — every measured result in this project is `anthropic`-only; verify it in your own AWS account before depending on it. |
 | `INTAKE_LLM_MODEL` | No | Provider default | Model-id override for the intake web UI. Leave unset to get each provider's own default id (Bedrock ids carry an `anthropic.` prefix). Read only by the UI. |
 | `AWS_REGION` / `AWS_DEFAULT_REGION` | If provider is `bedrock` | -- | Region for the Bedrock-hosted Claude client, unless the region already resolves from an AWS profile or instance metadata. Bedrock authenticates through the AWS credential chain rather than `ANTHROPIC_API_KEY`. |
-| `AWS_BEARER_TOKEN_BEDROCK` | No (**dev only**) | -- | Short-term Bedrock API key. **Leave unset in production.** At the locked SDK version the Bedrock client switches to bearer auth when it is set — on `master` **and** on the unmerged branch — silently bypassing the IAM role. Only the branch ships a guard (`BedrockLLMClient(require_sigv4=True)`); see [Security Considerations](Security-Considerations) §1.2. |
+| `AWS_BEARER_TOKEN_BEDROCK` | No (**dev only**) | -- | Short-term Bedrock API key. **Leave unset in production.** At the locked SDK version the Bedrock client switches to bearer auth when it is set, silently bypassing the IAM role unless `BedrockLLMClient(require_sigv4=True)` is passed (default `False`); see [Security Considerations](Security-Considerations) §1.2. |
 
 Use `OrchestratorSettings.require_host_token()` / `require_llm_api_key(provider)` inside runners that make HTTP calls (`require_anthropic_api_key()` is kept as a back-compat alias for `require_llm_api_key("anthropic")`). There is deliberately no such checkpoint for `bedrock`: its `LLM_PROVIDERS` entry carries no key env var, so `require_llm_api_key("bedrock")` raises by design and missing or under-scoped AWS credentials surface only at the first live call — see [Security Considerations](Security-Considerations) §1.3. The settings object is constructable without secrets so tests and dry runs work without them.
 
@@ -97,7 +97,7 @@ The project's own CI (`.github/workflows/ci.yml`) runs four jobs:
 |-----|---------------|
 | **Lint** | `ruff check src/ tests/ packages/ scripts/` |
 | **Type check** | `mypy` (strict mode, config-driven) |
-| **Tests** | `pytest -q` (916 passing tests on `master`, >95% coverage; 922 on the unmerged `feat/bedrock-mantle-migration` branch, whose six extra tests cover the Bedrock enterprise hooks) |
+| **Tests** | `pytest -q` (923 passing tests at 97.41% coverage against a 95% floor, plus 8 credential-gated `live` evaluation tests that skip when no provider credentials are present — 931 collected total) |
 | **Decoupling** | Data Agent has zero imports from intake schemas |
 
 CI runs on push to `master` and on pull requests.

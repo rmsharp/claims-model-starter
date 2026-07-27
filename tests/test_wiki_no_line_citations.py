@@ -92,3 +92,20 @@ def test_allowlist_entries_are_still_needed() -> None:
         f"{pathlib.Path(__file__).name} — remove them so the no-line-citation "
         "invariant is enforced on these pages too:\n  - " + "\n  - ".join(stale)
     )
+
+
+def test_wiki_has_no_branch_name_literal() -> None:
+    """The wiki describes shipped, on-``master`` reality. A working-branch name
+    is itself a merge-status marker: it reads as current right up until the
+    branch lands, then goes stale silently with no automated signal. See
+    docs/planning/enterprise-migration.md §2.5 (Phase A2)."""
+    offenders: list[str] = []
+    for page in _wiki_pages():
+        for lineno, line in enumerate(page.read_text().splitlines(), start=1):
+            if "feat/bedrock-mantle-migration" in line:
+                offenders.append(f"{page.name}:{lineno}: {line.strip()!r}")
+    assert not offenders, (
+        "Literal branch name 'feat/bedrock-mantle-migration' found on wiki "
+        "page(s) — the wiki must describe merged reality, not in-flight "
+        "branch status:\n  - " + "\n  - ".join(offenders)
+    )

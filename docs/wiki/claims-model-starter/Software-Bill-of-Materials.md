@@ -28,7 +28,7 @@ This SBOM covers both the **Model Project Constructor** (the tool) and the **gen
 | Package | Constraint | Purpose |
 |---------|-----------|---------|
 | langgraph | >=0.2,<0.3 | Agent state machine and graph execution |
-| anthropic[bedrock] | >=0.40 | Claude API client (Intake and Data agents only — the Website Agent makes no LLM calls). The `[bedrock]` extra pulls in boto3/botocore for the AWS Bedrock provider. An unmerged branch raises the floor to >=0.94 |
+| anthropic[bedrock] | >=0.94 | Claude API client (Intake and Data agents only — the Website Agent makes no LLM calls). The `[bedrock]` extra pulls in boto3/botocore for the AWS Bedrock provider |
 | sqlparse | >=0.5 | SQL parsing and validation |
 | sqlalchemy | >=2.0,<3 | Database abstraction (Data Agent) |
 | python-gitlab | >=4 | GitLab API adapter (Website Agent) |
@@ -70,7 +70,7 @@ This SBOM covers both the **Model Project Constructor** (the tool) and the **gen
 | langgraph | >=0.2,<0.3 | Agent graph execution |
 | sqlparse | >=0.5 | SQL parsing and analysis |
 | sqlalchemy | >=2.0,<3 | Database abstraction |
-| anthropic[bedrock] | >=0.40 | Claude API client; the `[bedrock]` extra pulls in boto3/botocore for the AWS Bedrock provider. An unmerged branch raises the floor to >=0.94 |
+| anthropic[bedrock] | >=0.94 | Claude API client; the `[bedrock]` extra pulls in boto3/botocore for the AWS Bedrock provider |
 | typer | >=0.12 | CLI framework |
 
 ### Key transitive dependencies
@@ -175,7 +175,7 @@ The generated claims-model-starter repository has its own, much smaller dependen
 | `INTAKE_LLM_PROVIDER` | Intake web UI | LLM backend: `anthropic` (default) or `bedrock` |
 | `INTAKE_LLM_MODEL` | Intake web UI | Model-id override; when unset, each provider uses its own `DEFAULT_MODEL` |
 
-One more variable is honoured by the Bedrock SDK client on `master` **and** on the unmerged branch, but is only documented (in `.env.example`) and guarded (`require_sigv4`) on the branch:
+One more variable is honoured by the Bedrock SDK client, documented (in `.env.example`) and guardable via `require_sigv4=True` (default `False`):
 
 | Variable | Scope | Purpose |
 |----------|-------|---------|
