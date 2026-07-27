@@ -7,14 +7,17 @@ repo_name: rmsharp/claims-model-starter
 docs_dir: docs
 site_dir: site
 
-# docs/ contains non-site subdirs; exclude all except tutorial.md.
+# docs/ contains non-site subdirs. Fail-closed allowlist (gitignore-negation
+# form): exclude everything, then re-include only index.md and tutorial.md.
 # Pattern: .gitignore format (MkDocs >= 1.5).
 exclude_docs: |
-  /methodology/
-  /planning/
-  /architecture-history/
-  /style/
-  /wiki/
+  /*
+  !/index.md
+  !/tutorial.md
+
+validation:
+  links:
+    unrecognized_links: warn
 
 # index.md is a meta-refresh redirect from / to /tutorial/; keep it
 # built (so HTTP 200 at root) but out of the nav bar so the nav shows

@@ -10,6 +10,10 @@ on:
       - pyproject.toml
   workflow_dispatch:
 
+concurrency:
+  group: publish-tutorial
+  cancel-in-progress: false
+
 permissions:
   contents: write
 

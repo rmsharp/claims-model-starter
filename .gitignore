@@ -21,8 +21,8 @@ my_intake_report.json
 /site/
 
 # Executive-summary render artifacts — .qmd is the source of truth, renders are reproducible on demand
-docs/executive-summaries/*.html
-docs/executive-summaries/*.pdf
+executive-summaries/*.html
+executive-summaries/*.pdf
 
 # Claude Code local/runtime state — per-machine, never committed (settings.local.json,
 # scheduled_tasks.json, worktrees/, checkpoints/, etc.). Previously caught only by the

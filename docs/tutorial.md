@@ -50,7 +50,7 @@ The `agents` extra installs LangGraph, Anthropic SDK, GitLab/GitHub client libra
 uv run pytest -q
 ```
 
-You should see 422+ tests pass with 97%+ coverage.
+You should see the full test suite pass with high coverage.
 
 ---
 
@@ -215,7 +215,7 @@ review_sequence:
 The fixture has three sections:
 
 - **`qa_pairs`** -- The interview itself: seven question-answer pairs capturing the business problem, proposed solution, available data, estimated value, and governance considerations. This is what a business stakeholder provides.
-- **`draft`** -- The structured report the intake agent assembles from the answers. In a live run the LLM writes this; in a fixture run it is provided directly. The draft has **five required sections**: `business_problem`, `proposed_solution`, `model_solution`, `estimated_value` (extended with cost-of-inaction + implementation-cost band + payback + value drivers), and `value_measurement_plan` (baseline metric, counterfactual design, evaluation horizon, success criteria, decision rights — see [Intake Interview Design §4.5](Intake-Interview-Design)). For `status="COMPLETE"`, the plan's `baseline_metric_name` and `evaluation_horizon_months` must both be non-null.
+- **`draft`** -- The structured report the intake agent assembles from the answers. In a live run the LLM writes this; in a fixture run it is provided directly. The draft has **five required sections**: `business_problem`, `proposed_solution`, `model_solution`, `estimated_value` (extended with cost-of-inaction + implementation-cost band + payback + value drivers), and `value_measurement_plan` (baseline metric, counterfactual design, evaluation horizon, success criteria, decision rights — see [Intake Interview Design §4.5](https://github.com/rmsharp/claims-model-starter/wiki/Intake-Interview-Design)). For `status="COMPLETE"`, the plan's `baseline_metric_name` and `evaluation_horizon_months` must both be non-null.
 - **`governance`** and **`review_sequence`** -- Risk classification and whether the stakeholder accepts the draft on first review.
 
 ---
@@ -519,7 +519,7 @@ Override the default with `--model`:
 
 For production, tune by running each model on a representative request and inspecting the generated SQL. For the first pilot run, `claude-opus-4-7` removes "was it the model?" as a confounding variable when judging output quality.
 
-**Provider selection (`--provider`).** `--provider` (default `anthropic`) selects the LLM backend and, like `--model`, applies to **both** stages. Construction routes through each agent's `make_llm_client` factory. Only `anthropic` exists today — the flag is the forward-looking seam (audit §E4): a future backend is one new client module plus one factory branch, with no change at the call sites. An unknown provider fails fast (`ValueError`) before any API call. The flag is also exposed on the standalone data-agent CLI (`model-data-agent run`/`discover --provider`).
+**Provider selection (`--provider`).** `--provider` (default `anthropic`) selects the LLM backend and, like `--model`, applies to **both** stages. Construction routes through each agent's `make_llm_client` factory. Two providers ship today — `anthropic` and `bedrock` (Claude via AWS Bedrock) — proof that the factory's forward-looking seam (audit §E4) works: `bedrock` is one new client module plus one factory branch, with no change at the call sites. An unknown provider fails fast (`ValueError`) before any API call. The flag is also exposed on the standalone data-agent CLI (`model-data-agent run`/`discover --provider`).
 
 ### 6d: Optional: connect a read-only database
 

@@ -126,7 +126,7 @@ Split by "describes current architecture" (update) vs "historical record" (leave
 **Leave (historical record — do NOT edit):**
 - `CHANGELOG.md` existing entries, `SESSION_NOTES.md`, `docs/architecture-history/`,
   and the *historical* wiki pages `Changelog.md:32,111`, `Evolution.md:137,283`.
-- `docs/audits/2026-06-10-*.md:351` (a dated audit snapshot — historical).
+- `audits/2026-06-10-*.md:351` (a dated audit snapshot — historical).
 
 ---
 
