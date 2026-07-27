@@ -212,4 +212,4 @@ The `--fake` mode prints the full file tree that would be committed and dumps a 
 
 ## License
 
-Proprietary.
+MIT License. See [LICENSE](LICENSE).
