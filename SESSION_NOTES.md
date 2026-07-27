@@ -6,6 +6,192 @@
 
 ## ACTIVE TASK
 
+### What Session 186 Did
+**Deliverable:** Execute Phase A1 of `docs/planning/enterprise-migration.md` ("Contain the public
+exposure and correct the tutorial") — `mkdocs.yml` fail-closed allowlist, relocate `docs/audits/`
+(D7) + `docs/executive-summaries/` (D7 extension, Session 185), fix 3 `docs/tutorial.md` issues,
+add `publish-tutorial.yml` concurrency guard. **(COMPLETE — commit `b27cc98`. 11 files changed, 38
+insertions / 18 deletions.)**
+
+**Started / Completed:** 2026-07-27.
+
+**What changed:**
+1. `mkdocs.yml` — inverted `exclude_docs` from a denylist (already failed twice) to a fail-closed
+   gitignore-negation allowlist: `/*` then `!/index.md`, `!/tutorial.md`. Fixed the misleading
+   comment (it described allowlist behavior the old denylist code didn't implement). Added the
+   optional `validation.links.unrecognized_links: warn`.
+2. **D7:** `git mv docs/audits audits` (structural, per the plan's own reasoning — not a config a
+   future edit can undo). Updated the 5 live references in `Evolution.md` (lines 200, 244, 268,
+   335, 438) and 1 in `httpx-adapter-migration.md:129`. Added `audits/README.md` noting the former
+   location.
+3. **D7 extension (Session 185 operator decision, not in the plan's own written text):**
+   `git mv docs/executive-summaries executive-summaries`. This surfaced **2 live references the
+   plan/handoff did not name** — `Evolution.md:192` (business-value-capture's own origin sentence)
+   and `.gitignore:24-25` (render-artifact ignore patterns, now stale against the new path; without
+   this fix `git status` would have shown the moved `.html`/`.pdf` renders as untracked). Added
+   `executive-summaries/README.md` noting the former location, mirroring the audits precedent.
+4. `docs/tutorial.md` — 3 fixes: "Only `anthropic` exists today" → "Two providers ship today —
+   `anthropic` and `bedrock`" (verified against `packages/data-agent/.../factory.py:38-70`); the
+   hardcoded "422+ tests... 97%+ coverage" line **dropped entirely** rather than replaced with a
+   number — `README.md:128` says "795 tests... ≈97.2%" while the Session-181 gate baseline (carried
+   in this file's handoffs) says "922 passed + 8 live-skipped @ 97.41%." **These two numbers
+   disagree** and neither could be trusted as "the single-sourced number" the plan asked for, so I
+   used the plan's other named option — drop it — instead of encoding a guess. **Not fixed this
+   session** (out of A1's named scope; flagging for a future session, see below). The wiki-relative
+   link `[Intake Interview Design §4.5](Intake-Interview-Design)` (404s when MkDocs builds it,
+   since that syntax only resolves under GitHub's wiki router) → absolute
+   `https://github.com/rmsharp/claims-model-starter/wiki/Intake-Interview-Design`.
+5. `.github/workflows/publish-tutorial.yml` — added `concurrency: {group: publish-tutorial,
+   cancel-in-progress: false}` so overlapping deploys queue instead of racing two
+   `gh-deploy --force` jobs.
+
+**Method:** disarmed `.githooks` first per the standing rule (`git config --unset
+core.hooksPath` — this specific command was blocked by the auto-mode permission classifier; asked
+the operator via `AskUserQuestion`, who approved it on retry). Made every edit, then did a
+**repo-wide grep sweep** for the old `docs/audits` and `docs/executive-summaries` path strings
+before committing — this is what caught the 2 unnamed `executive-summaries` references (learning
+below). Confirmed the plan's `docs/architecture-history/*`, `SESSION_NOTES.md`, `CHANGELOG.md`
+occurrences are correctly left as historical record (per the plan's own §6), and confirmed
+`docs/methodology/README.md:241`'s `docs/audits/2026-05-02-mattpocock-skills-evaluation.md`
+reference is unrelated third-party synced content (governed by D1, not D7 — doesn't correspond to
+a real file in this repo's `docs/audits/`) and correctly left untouched. Committed (excluding this
+file), then ran the plan's exact verify block against a **clean `git archive`** of the new commit:
+output file list matched exactly (`404.html, index.html, search/search_index.json, sitemap.xml,
+sitemap.xml.gz, tutorial/index.html` — no `deployment/`, `audits/`, `executive-summaries/`,
+`explainers/`), the two stale-text greps returned 0, hook confirmed still disarmed. Also ran the
+handoff's named pre-flight curl
+(`https://rmsharp.github.io/claims-model-starter/executive-summaries/business-value-capture.qmd`)
+— still **200**, confirming the exposure this phase addresses was still live and unhandled going
+in (nothing else closed it in the interim).
+
+**One harmless side effect of the new `unrecognized_links: warn` validation:** it flagged
+`docs/index.md`'s own `[the tutorial](tutorial/)` link as "unrecognized" — a false positive; that
+link uses MkDocs' directory-URL form (`tutorial/`, not `tutorial.md`) and resolves correctly in the
+built site (`tutorial/index.html` exists in the verified output). Not a regression, not in A1's
+scope to silence; noting so a future session doesn't mistake it for new breakage.
+
+**Did not push.** `feat/bedrock-mantle-migration` now 7 commits ahead of its remote (was 6; the A1
+commit added 1). The site is still stale-and-wrong in public — correct intermediate state per the
+plan's own boundary note. Did not start A2; did not touch any other wiki page.
+
+### Session 185 Handoff Evaluation (by Session 186)
+
+**Score: 9/10.**
+- **What helped:** the single most load-bearing line in the handoff was the "⚠ Read this before
+  starting Phase A1" caveat — it explicitly named that the plan's own written item 2 does NOT cover
+  `business-value-capture.qmd`, and stated my actual scope as "the plan's written item 2, PLUS
+  remove/relocate `business-value-capture.qmd`." Without that flag I would have executed the plan
+  text literally and left a still-live, operator-ordered exposure unaddressed. It also pre-named
+  the exact confirmation curl (which I ran, still 200) and the standing-rule hook-disarm-first
+  requirement, both of which I needed and used verbatim.
+- **What was missing (−1):** the handoff scoped the business-value-capture extension as "remove/
+  relocate ... from the published surface" but didn't anticipate that the *directory move itself*
+  would need its own reference sweep the way `docs/audits/`'s move did — I had to discover
+  `Evolution.md:192` and the `.gitignore` patterns myself via a repo-wide grep, rather than being
+  pointed at them. This is a narrower version of the same gap Session 185 itself flagged in its
+  evaluation of Session 184 (a shared-gate D-item not individually named cost a rediscovery pass) —
+  here it's a shared-*pattern* (audits' 5-site sweep) not individually extended to the new target.
+- **ROI:** strongly net positive — the caveat alone was worth far more than the rediscovery cost of
+  the 2 missed references, which a repo-wide grep found in under a minute anyway.
+
+### Phase 3B: Self-assess — Session 186 — 9/10
+
+- **The +:** (1) Did the repo-wide grep sweep for old-path strings **before** committing, not
+  after — caught 2 live references (`Evolution.md:192`, `.gitignore`) that neither the plan text
+  nor the Session-185 handoff named, because they were consequences of the *unplanned* D7
+  extension, not the plan's own audits scope. (2) Correctly distinguished a look-alike reference
+  (`docs/methodology/README.md:241`) as out-of-scope third-party/D1 content rather than reflexively
+  "fixing" every grep hit. (3) When the hook-disarm command was blocked by the permission
+  classifier, stopped and asked via `AskUserQuestion` rather than working around it (e.g. trying
+  the `MPC_SKIP_WIKI_PUBLISH` single-command form unprompted, or editing `.git/config` directly)
+  — matches [[feedback_advice_not_action]]'s spirit of not taking unilateral action past a block.
+  (4) Ran the plan's exact verify block against a clean `git archive` of the actual commit, not the
+  working tree, and additionally ran the handoff's named pre-flight curl that I could have skipped
+  since the build check alone wouldn't have caught it. (5) On the "422+ tests" fix, discovered a
+  real numeric disagreement between `README.md` (795) and the carried gate baseline (922+8) and
+  chose the plan's documented fallback (drop the number) rather than picking one arbitrarily or
+  silently reconciling them (which would have been out-of-scope scope creep). (6) Did not start
+  Phase A2 despite finishing early in context budget — one deliverable, no bundling.
+- **The −:** (1) Did not proactively flag the README/baseline test-count discrepancy as its own
+  BACKLOG item or open question until now, in this write-up — it should probably become a short,
+  explicit next-session candidate rather than living only in this paragraph (added under Handoff
+  below). (2) Spent real time reading ~145 lines of grep output for `business-value-capture`
+  concept-mentions (Worked-Examples.md, Schema-Reference.md, architecture-plan.md, etc.) before
+  realizing only the literal *path* string mattered for this task, not every conceptual mention of
+  the capability — a more targeted first grep (path-only, which I did do second) would have saved
+  a read pass.
+- **Quality bar:** meets/exceeds — verify-script discipline, scope-boundary discipline (D1 vs D7,
+  historical-record files vs live files), and the unprompted-but-correctly-escalated permission
+  block all match or exceed the standard set by Sessions 183–185.
+
+### Phase 3C: Learnings — Session 186
+
+- **Candidate #152 — NEW, 1st instance — "When a D-item resolution extends an already-planned
+  structural action (here: D7's `docs/audits/` relocation) to a new, not-originally-scoped target
+  (here: `business-value-capture.qmd`), the new target needs its own fresh reference sweep — do not
+  assume the original target's reference list (the plan's 5 named `Evolution.md` sites for audits)
+  is exhaustive for the extension. Run a repo-wide grep for the new target's own path string before
+  committing; the extension can have live references the plan text never enumerated because the
+  plan was written before the extension existed."** Sibling of #151 (S185: an operator's answer can
+  exceed the plan's written scope for a D-item) — #151 is about *deciding* the extension exists,
+  #152 is about *executing* it completely once decided. **When to apply:** any session executing a
+  D-item resolution (or any plan action) that an earlier session extended beyond the plan's own
+  written text. Now at **1**.
+- **Candidate #153 — NEW, 1st instance — "A plan-mandated, reversible, safety-motivated git-config
+  change (e.g. `git config --unset core.hooksPath` to disarm an auto-publish hook before a wiki
+  edit) can still be blocked by the auto-mode permission classifier. Do not try to route around the
+  block (e.g. switching to the plan's own documented `MPC_SKIP_WIKI_PUBLISH` fallback, or editing
+  `.git/config` by other means) — stop and ask via `AskUserQuestion`, presenting the block as the
+  reason and the plan's own stated need as the justification."** **When to apply:** any session
+  executing a standing rule or plan step that mutates git/repo configuration (hook paths, remotes,
+  filters) rather than file content — expect a possible classifier block and budget for one
+  clarifying round-trip. Directly relevant to **A2 and A3**, which carry the same standing rule.
+  Now at **1**.
+- **Reinforced:** **The D2/§6 "historical record, do not edit" boundary** — held correctly across
+  `docs/architecture-history/*`, `SESSION_NOTES.md`, `CHANGELOG.md`, and (correctly extended by
+  judgment, not plan text) `docs/planning/enterprise-migration.md`'s own §2.3/D7 evidence prose,
+  which was left untouched as the frozen artifact it already was being treated as. **SAFEGUARDS.md
+  "commit before verifying"** — the plan's own "git archive reads the ref, not the worktree" note
+  was followed exactly. **feedback_advice_not_action** (operator memory) — asked rather than
+  routing around the classifier block.
+- **Candidate roster:** **#153 NEW at 1; #152 NEW at 1**; #151 at 1 (S185); #150 at 1 (S184); #149
+  at 1 (S183); #148 at 1 (S182); #147 at 1 (S182); #146 at 1 (S181); earlier per prior roster.
+  `PROJECT_LEARNINGS.md` = **61 rows** (no promotion this session). Next = **#154.**
+
+### Phase 3D: Handoff to Session 187
+
+**Phase A1 is COMPLETE and committed (`b27cc98`), not pushed. Phase A2 (wiki merge-status sweep,
+`enterprise-migration.md:555`) is the natural next deliverable** — same branch, same standing rule
+(disarm the hook first — **expect the same permission-classifier block Session 186 hit; ask via
+`AskUserQuestion` immediately rather than retrying blind**).
+
+**State you will inherit:**
+1. Tree is CLEAN after this close-out. Branch `feat/bedrock-mantle-migration`, **7 commits ahead**
+   of `origin/feat/bedrock-mantle-migration` (was 6; +1 this session, `b27cc98`) — nothing pushed.
+2. `core.hooksPath` is currently **unset** (disarmed) at the end of this session — Session 186 did
+   not re-arm it (correct: only A4 re-arms, per the plan). **Verify it's still unset before your
+   first wiki-touching commit** (`git config --get core.hooksPath` → expect empty); if the tree
+   was touched by anything else between sessions, re-verify rather than assume.
+3. D2, D6, D7 remain the three operator-answered D-items; none of A2's own scope needs a new
+   D-item. D1, D3–D5, D8–D16 still open, still gating only later phases (B1, A3, C1–C5).
+4. Baseline not re-measured this session (docs/config only, no `.py` touched). Last measured
+   Session 181: 922 passed + 8 live-skipped @ 97.41%, ruff+mypy clean.
+5. Next learning candidate = **#154**. `PROJECT_LEARNINGS.md` = 61 rows.
+6. **New open item for a future session (not A2, not urgent, not blocking):**
+   `README.md:128` claims "795 tests... ≈97.2%" while the carried gate baseline says "922 passed +
+   8 live-skipped @ 97.41%." These are two different numbers describing (presumably) the same test
+   suite at different points in time — `README.md`'s count is stale. Worth a one-line `README.md`
+   refresh in a future docs-accuracy pass; deliberately NOT fixed this session (outside A1's named
+   scope, and `README.md` isn't a file A1 touches).
+
+**Key files:**
+- `docs/planning/enterprise-migration.md:555` — Phase A2's scope start ("Wiki merge-status sweep").
+  `:560` on — canonical grep (§2.5), 3 mechanical value changes, 5 NO-EDIT traps, 2 blockquote
+  deletions with surrounding-sentence rewrites. `:472-492` — the standing rule (same hook-disarm
+  requirement, now with Session 186's classifier-block precedent attached).
+- `mkdocs.yml`, `.gitignore`, `audits/`, `executive-summaries/` — this session's structural moves;
+  no further action needed on these for A2.
+
 ### What Session 185 Did
 **Deliverable:** Resolve **D7** (`docs/planning/enterprise-migration.md:446`) — the operator-owned
 decision on whether to take down the already-public audits, and whether that extends to
