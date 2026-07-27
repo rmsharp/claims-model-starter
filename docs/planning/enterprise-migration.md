@@ -1,4 +1,4 @@
-# Plan: Land the branch work on `origin/master`, converge all three documentation surfaces, and prepare the repository + wiki for an enterprise environment
+# Plan: Land the branch work on `origin/master`, converge all three documentation surfaces, and provision a one-time enterprise clone of the repository + wiki
 
 **Status:** DRAFT plan (deliverable of Session 182, a planning session). **Not approved for
 execution.** Each phase below is a *separate* session. Nothing in this document was executed
@@ -9,6 +9,9 @@ while writing it — no merge, no push, no wiki publish, no MkDocs deploy.
 > *"In the next session, produce a plan to get all of the branch work in the remote master, the
 > wiki reflecting all of the updates, and anything else that needs to be done to move this wiki
 > and main repository into an enterprise environment."*
+
+**Note:** see §1.2 for the operator's 2026-07-27 clarification of what "move ... into an enterprise
+environment" means — a one-time clone/fork, not a relocation of the repo/wiki/site quoted above.
 
 **Evidence basis.** Every "files to change" list below comes from an executed search, not from
 architectural memory (per `SESSION_RUNNER.md` Phase 2 → Planning Sessions). Evidence was gathered
@@ -31,8 +34,8 @@ The operator named three goals. Their true shapes, after measurement:
 | # | Goal | Reality |
 |---|---|---|
 | 1 | All branch work into remote `master` | **25 commits**, not 24 — two stacked fast-forwards (9 + 16). Topologically trivial. What makes it non-trivial is that **pushing to `master` is publishing**: it fires a public GitHub Pages deploy that currently leaks documents nobody decided to publish. |
-| 2 | The wiki reflecting all updates | **Already published and byte-identical** — but published *from an unmerged branch*. The public wiki is ahead of the public `master`. The real work is a **merge-status sweep** across 6 pages and **re-pointing the publish machinery** at an enterprise host. |
-| 3 | Anything else needed to move to an enterprise environment | A licensing conflict that is a **hard legal gate**, a live public exposure, an unauthenticated web UI, an incomplete security guard, no deployment artifact at all, and a governance/CI surface that is essentially empty. |
+| 2 | The wiki reflecting all updates | **Already published and byte-identical** — but published *from an unmerged branch*. The public wiki is ahead of the public `master`. The real work is a **merge-status sweep** across 6 pages and **provisioning separate publish machinery for a one-time enterprise clone** — the original's publish machinery is untouched (see §1.2). |
+| 3 | Anything else needed to move to an enterprise environment | A licensing conflict that is a **hard legal gate**, a live public exposure, an unauthenticated web UI, an incomplete security guard, no deployment artifact at all, and a governance/CI surface that is essentially empty. **These gaps must be fixed on the original before Phase C4's one-time clone captures them (see §1.2)** — the destination is a non-syncing enterprise fork, not this repo's relocation. |
 
 **The single most important structural finding:** every push to `origin/master` triggers
 `mkdocs gh-deploy --force --clean`, which publishes the **entire non-excluded `docs/` tree** — and
@@ -60,6 +63,30 @@ The Session-181 handoff is the input to this plan. Four of its state facts are w
 
 > **Do not "fix" the historical record.** These corrections belong in this plan and in live docs.
 > Per project convention, the Session-178/180/181 narratives in `SESSION_NOTES.md` stay as written.
+
+### 1.2 Correction to Goal 3's shape (Session 183)
+
+The operator directive above reads as *"move … into an enterprise environment,"* and this plan's
+first draft — including its D6/D8/D9/D16 rows and Phases C4/C5 — treated that as
+**relocate-and-retire**: land the branch, then eventually decommission the public repo, wiki, and
+MkDocs site. **That reading is wrong.** Corrected by the operator, 2026-07-27, verbatim in
+substance:
+
+> The current public repo, wiki, and MkDocs/gh-pages site continue to exist, unchanged, publicly,
+> indefinitely. "Move into an enterprise environment" means prepare a **one-time clone/fork** that
+> becomes the proprietary enterprise instance. The fork does **not** sync from the original
+> afterward.
+
+**What this changes:** D6 (site fate), D8 (wiki destination), D9 (host target), and D16
+(post-cutover disposition) are re-scoped in §3 below — none of the public surfaces get
+decommissioned. Phase C4 becomes **fork provisioning**, not migration; Phase C5 becomes
+**fork-independence verification**, not decommission.
+
+**The load-bearing consequence of "one-time, no sync":** whatever is wrong in the public repo at
+the moment C4 clones it is **permanently baked into the proprietary copy** — there is no later sync
+to carry a fix over. This is why C4 is now gated on **A1–A4 and B1 complete**, not just its D-items
+(dragon #20). It is also why **`~/Development/claims-model-starter.wiki` must not be repurposed**
+for the clone (dragon #21) — it is the live publish target for the original, which keeps operating.
 
 ---
 
@@ -321,7 +348,10 @@ Against that, five real items:
   referred to here only as *the abandoned AWS account id* and *the abandoned support-case number*;
   find them with `git grep -nE '[0-9]{12}|1784409[0-9]+'` scoped to those files.
 - **Three live credentials sit in the local `.env`** (Anthropic key, GitLab PAT, Bedrock bearer
-  token) awaiting rotation when the personal account is decommissioned.
+  token) — rotate them so the enterprise clone never depends on personal dev credentials. This is
+  independent of the GitHub account hosting the public repo/wiki/site, which is **never** closed or
+  decommissioned (§1.2) — "the personal account" here means the personal Anthropic/GitLab/AWS dev
+  credentials, not that account.
 - **Three live GitLab pilot projects exist outside git**, recorded only in the gitignored
   checkpoint store. Invisible to every repo-scoped check.
 - **`.git` is 162 MB with 3148 loose objects and zero packs**, plus 8 unreachable dropped-stash
@@ -412,17 +442,17 @@ Phases are gated on these. **Owners are named because most are not engineering c
 | **D3** | IP disposition: assignment, work-for-hire, or third-party OSS intake? | **Legal** | Prepare **third-party OSS intake** as default. One human author = one signature. **Do not edit `LICENSE:3` until legal rules.** | B1 |
 | **D4** | Does the corporate host require signed commits / DCO? | **Operator → platform team** | Find out **before** migrating; push for "going forward only". A signed-history rewrite changes every SHA and breaks the provenance chain. A PR-button merge is host-signed, which may satisfy the policy with no local key setup. | C4 |
 | **D5** | Import history as-is, rewrite, or squash-import? | **Operator + platform team** | **Import as-is.** If an author-email allowlist blocks the push, prefer **squash-import + archived bundle** over `filter-repo` — it breaks SHA references honestly in one place instead of silently everywhere. | C4 |
-| **D6** | MkDocs/gh-pages site: refresh, retire, or relocate? | **Operator** | **Retire the public site** — after one corrected final deploy (A1/A4), then decommission in **C5**. | A1, C5 |
-| **D7** | Take down the already-public audits retroactively? | **Operator** | **Move `docs/audits/` out of `docs_dir`** (structural, not a config a future edit can undo), force a re-deploy so the URLs 404, then request search-index removal. They are in `sitemap.xml` with no `robots.txt`. | A1 |
-| **D8** | Where does the wiki live post-move; does auto-publish survive; **and what does the destination require of page naming, the sidebar file, and intra-wiki link syntax?** | **Operator + platform team** | Resolve the host first. Interim: **disarm the hook** (see the standing rule in §4). Target: **publish from CI**, not a local hook running under a developer's ambient credentials. Note `_Sidebar.md`/`Home.md` are GitHub-Wiki reserved names and **157 intra-wiki links are extensionless page slugs** that resolve only under GitHub's wiki router. | A2, C4 |
-| **D9** | Repo-host target: self-hosted GitLab or GHES? | **Operator** | Decide before security review. **GHES hard-rejects namespaces containing `/`** (`github_adapter.py:85-89`) — a contract change, not a config line. **If GitLab, all of `.github/workflows/` is dead and CI must be re-authored.** | C3, C4 |
+| **D6** | MkDocs/gh-pages site: refresh, retire, or relocate? | **Operator** | **ANSWERED (2026-07-27): refresh and keep public, indefinitely.** The site is not retired. A1's containment fixes (fail-closed `mkdocs.yml`, corrected tutorial) become standing maintenance for an ongoing public site, not one-time cleanup before shutdown. See §1.2. | A1 |
+| **D7** | Take down the already-public audits retroactively? | **Operator** | **Move `docs/audits/` out of `docs_dir`** (structural, not a config a future edit can undo), force a re-deploy so the URLs 404, then request search-index removal. They are in `sitemap.xml` with no `robots.txt`. **Unaffected by D6/§1.2** — the site staying public makes this more urgent, not less: there is no future decommission to eventually close the exposure if this is left unanswered. Also decide whether this extends to `/executive-summaries/business-value-capture.qmd` (200, link-discoverable, not in `sitemap.xml`) — as scoped, this action does not cover it. | A1 |
+| **D8** | Where does the wiki live **in the enterprise clone** (the original wiki keeps auto-publishing unchanged — D6, §1.2); does the clone's copy need auto-publish at all; **and what does the destination require of page naming, the sidebar file, and intra-wiki link syntax?** | **Operator + platform team** | Resolve the host first. **C4 delivers a hardened, fail-closed local-hook mechanism for the clone as the default** (parameterised `publish_wiki.sh`, no defaults, cannot resolve to the personal wiki) — do **not** reuse `~/Development/claims-model-starter.wiki` for it (dragon #21). Publishing from CI instead of a local hook is a further hardening step, not required for C4's DONE criteria; take it up in C3 if the platform team wants it. Note `_Sidebar.md`/`Home.md` are GitHub-Wiki reserved names and **157 intra-wiki links are extensionless page slugs** that resolve only under GitHub's wiki router. | C4 |
+| **D9** | Repo-host target **for the enterprise clone** (the original stays on GitHub, untouched — §1.2): self-hosted GitLab or GHES? | **Operator** | Decide before security review. **GHES hard-rejects namespaces containing `/`** (`github_adapter.py:85-89`) — a contract change, not a config line. **If GitLab, all of `.github/workflows/` is dead and CI must be re-authored** for the clone only — the original's `.github/workflows/` is unaffected. | C3, C4 |
 | **D10** | Bedrock endpoint: Regional or Global? | **Security + operator** | **Regional.** For P&C claims data, residency dominates the ~10% premium. | C1 |
 | **D11** | Run the LGPL removal before the corporate move? | **Operator + legal** | **Confirm the corporate copyleft policy first.** Many policies permit LGPL for unmodified, dynamically-imported libraries. If permitted, defer — it is a rewrite of the two least-tested modules immediately before their first live use. | B3 |
 | **D12** | Version/tag the landing? | **Operator** | **Bump to 0.3.0 and tag** in A3 — two `pyproject.toml` files, `README.md:3`, **and `uv lock`** (the lock pins both workspace members at `0.2.0`, `uv.lock:1109`, `:1175`). | A3 |
 | **D13** | Wire `http_client`/`require_sigv4` to app/env? | **Operator + platform team** | **Extend the `require_sigv4` guard to both env vars now** (2 lines × 2 files). Wire `require_sigv4` from env next. Wire `http_client` only if TLS inspection is confirmed. | C1, C2 |
 | **D14** | **Runtime shape: EKS+IRSA / ECS task role / EC2 instance profile / on-prem VM?** | **Operator + platform team** | Must be answered before C1 — **the IAM trust policy cannot be written without it**, and it also decides whether the live-test credential probe works at all. | C1, C2b |
 | **D15** | **Package resolution: internal index (Artifactory/Nexus/devpi) or proxied public PyPI?** | **Operator + platform team** | Decide early — `uv sync` is the first command in every documented workflow. | C2, C3 |
-| **D16** | **Disposition of the public repo, the public wiki, and the two GitHub Releases** after cutover: archive, make private, or leave with a pointer? | **Operator + legal** | Decide before C5. Note the MIT grant on published code is irrevocable either way. | C5 |
+| **D16** | **Disposition and access model of the enterprise CLONE** (repo + wiki + releases) — private from creation? who administers it? are the two GitHub Releases recreated on the clone, or left as a pointer to the public originals? *(The public originals get no disposition decision — they are unchanged; §1.2.)* | **Operator + legal** | Decide before C5. Default: clone is private from creation; recreate the releases on the clone from `releases-export.json` (already in C4's scope) rather than a pointer, since the clone has no live link back to the original. The MIT grant on the original's published code is irrevocable regardless of the clone's licence posture. | C4, C5 |
 
 ---
 
@@ -740,10 +770,12 @@ the answer rather than the alarm. Package the two negative proofs as the secrets
 including the exact commands, so the reviewer can re-run them. Export the API-only assets:
 `gh api repos/rmsharp/claims-model-starter/releases > releases-export.json` and
 `gh pr list --state all --json number,title,body,mergedAt > prs-export.json` (release bodies are
-**not** carried by `git push --tags`). Build the **external-asset register**: the three GitLab
-pilot projects, the wiki repo, the gh-pages site, the two GitHub Releases and both annotated tags,
-and the three `.env` credentials awaiting rotation — each with a keep/export/delete decision
-**before any account is closed**.
+**not** carried by `git push --tags`). Build the **external-asset register**, split into two kinds
+— **the wiki repo and the gh-pages site have a fixed disposition (keep, unconditionally; §1.2/D6)
+and do not need a register entry beyond noting that**; the genuinely undecided assets are the three
+GitLab pilot projects, the two GitHub Releases and both annotated tags (recreate on the clone per
+D16/C4, or leave as a pointer), and the three `.env` credentials (rotate regardless of any account
+closure — none is planned, §1.2).
 
 **DONE looks like:** a reviewer-ready import packet; every non-git asset has a named disposition.
 
@@ -884,15 +916,20 @@ get-caller-identity` from inside the workload returns the expected role.
 
 ### Phase C3 — CI and supply-chain hardening
 
-**Gated on:** D9 and D15. **⚠ Do not start before D9.** If D9 = GitLab, the whole
-`.github/workflows/` tree is dead and SHA-pinning it is discarded work.
+**Gated on:** D9, D15, and **C4 complete.** **⚠ Do not start before D9.** If D9 = GitLab, the whole
+`.github/workflows/` tree is dead and SHA-pinning it is discarded work. **This entire phase targets
+the enterprise clone's CI configuration** (D9 decides *its* host), not the original's — the SHA-pin
+or `.gitlab-ci.yml`-authoring work is committed inside `<enterprise-clone>` (C4), which is why C4
+must exist first; the original's `.github/workflows/` stays exactly as A4 left it (§1.2).
 
 **Scope, if D9 = GHES:** SHA-pin all 11 `uses:` lines and bump the deprecated Node-20 action
 majors in the same pass; confirm runner labels — `runs-on: ubuntu-latest` requires GitHub-hosted
 runners the enterprise will not provide.
 **Scope, if D9 = GitLab:** author `.gitlab-ci.yml` reproducing all four `ci.yml` jobs (lint /
-typecheck / test / decoupling); replace `publish-tutorial.yml` with a GitLab Pages job or drop it
-per D6. **Every `gh`-based verification command in this plan must be re-expressed for the target
+typecheck / test / decoupling). This is the **clone's own** docs-publish decision — the original's
+`publish-tutorial.yml` keeps serving the public site unchanged (D6, §1.2) and is not touched by
+this phase; decide separately whether the clone needs an equivalent internal-docs job at all, or
+none. **Every `gh`-based verification command in this plan must be re-expressed for the target
 host.**
 
 **Either way:** add `--frozen` to all 5 `uv sync` invocations; add `.python-version`; fix or delete
@@ -921,77 +958,130 @@ grep -rn 'docker.io\|python:3.11\|github.com/' <generated-project>/   # → 0
 
 ---
 
-### Phase C4 — Host retargeting and repository migration
+### Phase C4 — Enterprise clone provisioning
 
-**Gated on:** D4, D5, D8, D9, and B1 complete.
+**Gated on:** D4, D5, D8, D9, D16, **A1–A4 complete**, **B2 complete**, and B1 complete. *(A1–A4 and
+B1 explicit per §1.2 — the clone is one-time and does not sync; anything not fixed on the original
+before this phase runs is permanent in the clone. B2 is required because this phase consumes its
+`releases-export.json` and external-asset register. C1/C2/C2b/C3 are deliberately **not** gates —
+see dragon #20's scoping note: they are enterprise-readiness fixes that can be applied to the
+original before or after the fork, at the cost of having to reapply them to the clone by hand if
+done after, since there is no sync.)*
 
-**Scope**
+**Scope — fork FIRST; every edit below happens only inside the resulting enterprise checkout,
+never in the current working tree, and nothing here is ever committed or pushed to the original's
+`origin`:**
 
-- **Parameterise `publish_wiki.sh`'s six coupling points — fail-closed, NOT "today's values as
-  defaults".** `WIKI_CLONE`, `WIKI_REMOTE_PATTERN`, `WIKI_BRANCH`, `WIKI_PUSH_REFSPEC` must be
-  required (`${WIKI_CLONE:?set WIKI_CLONE for the target wiki}`), so an unset environment aborts
-  instead of publishing enterprise content to the personal public wiki. Then **delete or re-remote
-  `~/Development/claims-model-starter.wiki`** and verify with `git -C "$WIKI_CLONE" remote get-url
-  origin` before the first post-migration wiki commit.
-- Update `mkdocs.yml:3-5`, `README.md:9`, the **`config.py:198,354-366` error-message namespace**
-  (+ its 5 asserting tests), `.env.example:25-30`, `OPERATIONS.md:25`, `docs/tutorial.md:427,445-447`,
-  and `Contributing.md:19,236,238`. Re-derive with the §2.6 rediscovery command rather than
-  trusting the table.
-- Update the **prose** documenting the mechanism — `SESSION_RUNNER.md:209` and
-  `Contributing.md:122`.
-- **Migrate the main repo:** `git clone --mirror`, **never a filesystem copy** (a folder copy
-  carries `.env`, the checkpoint store with three live GitLab project URLs, `intake_sessions.db`,
-  and 8 dropped-stash commits). Push tags separately (`git push --tags`).
-- **Migrate the wiki repo — it is a second, independent repository with 33 commits:**
-  ```bash
-  git clone --mirror https://github.com/rmsharp/claims-model-starter.wiki.git /tmp/wiki-mirror
-  # ⚠ On GitHub/GHES the target wiki repo does not exist until one page is created via the web UI.
-  git -C /tmp/wiki-mirror push --mirror <enterprise-wiki-url>
-  ```
-- **If D8's destination is not a GitHub-family wiki:** convert `_Sidebar.md` to the host's sidebar
-  convention, rename `Home.md` to the host's landing page, and rewrite the **157** extensionless
-  intra-wiki links (`grep -rhoE '\]\([A-Za-z0-9][A-Za-z0-9-]*\)' docs/wiki/claims-model-starter/ | wc -l`).
-- Recreate both GitHub Releases on the target host from `releases-export.json`.
-- Execute the external-asset register from B2. **Rotate the three personal credentials.**
+1. **Fork the main repo (one-time, no ongoing sync):** `git clone --mirror` **the public `origin`**,
+   never a filesystem copy (a folder copy carries `.env`, the checkpoint store with three live
+   GitLab project URLs, `intake_sessions.db`, and 8 dropped-stash commits). Push the mirror with
+   `git push --mirror <enterprise-remote>` (this already carries tags — no separate tag push
+   needed). **The public `origin` is read-only for this operation — nothing about it changes.**
+2. **Create the working checkout.** The mirror pushed in step 1 is bare — nothing in it can be
+   edited, and a bare repo breaks both `git grep` (no revision to search without one) and any
+   command referencing a file path inside it. Clone it normally:
+   `git clone <enterprise-remote> <enterprise-clone>`. **Every `<enterprise-clone>` reference below,
+   and in this phase's Verify block, means this working checkout — never the bare mirror.**
+3. **Fork the wiki repo — it is a second, independent repository with 33 commits:**
+   ```bash
+   git clone --mirror https://github.com/rmsharp/claims-model-starter.wiki.git /tmp/wiki-mirror
+   # ⚠ On GitHub/GHES the target wiki repo does not exist until one page is created via the web UI.
+   git -C /tmp/wiki-mirror push --mirror <enterprise-wiki-url>
+   # /tmp/wiki-mirror is a scratch clone for this push only — it is NOT
+   # ~/Development/claims-model-starter.wiki, which stays wired to the original (dragon #21).
+   ```
+   Then clone the new enterprise wiki remote to `<new-wiki-clone>` as the working copy the
+   remaining wiki steps operate on.
+4. **Inside `<enterprise-clone>` only, parameterise `publish_wiki.sh`'s six coupling points —
+   fail-closed, NOT "today's values as defaults".** `WIKI_CLONE`, `WIKI_REMOTE_PATTERN`,
+   `WIKI_BRANCH`, `WIKI_PUSH_REFSPEC` must be required (`${WIKI_CLONE:?set WIKI_CLONE for the target
+   wiki}`), so an unset environment aborts instead of silently publishing enterprise content into
+   the **original's** public wiki. Also fix the hardcoded clone-URL text at
+   `scripts/publish_wiki.sh:23,63` (comment + error text) — left as-is, it survives the C5
+   independence check unnoticed. **Do NOT delete or re-remote
+   `~/Development/claims-model-starter.wiki`** — it continues to serve the original's live
+   auto-publish (D6: refresh and keep) and must keep working unchanged. Point `WIKI_CLONE` at
+   `<new-wiki-clone>` (step 3) instead, and verify with `git -C "$WIKI_CLONE" remote get-url origin`
+   before the first commit in the clone touches `docs/wiki/`.
+5. **Inside `<enterprise-clone>` only:** update `mkdocs.yml:3-5`, `README.md:9`, the
+   **`config.py:198,354-366` error-message namespace** (+ its 5 asserting tests),
+   `.env.example:25-30`, `OPERATIONS.md:25`, `docs/tutorial.md:427,445-447`, and
+   `Contributing.md:19,236,238`. Re-derive with the §2.6 rediscovery command rather than trusting
+   the table. **These are clone-only edits — committing or pushing them to the original's `origin`
+   would alter the still-live public site (§1.2).**
+6. **Inside `<enterprise-clone>` only:** update the **prose** documenting the mechanism —
+   `SESSION_RUNNER.md:209` and `Contributing.md:122`.
+7. **If D8's destination is not a GitHub-family wiki:** convert `_Sidebar.md` to the host's sidebar
+   convention, rename `Home.md` to the host's landing page, and rewrite the **157** extensionless
+   intra-wiki links (`grep -rhoE '\]\([A-Za-z0-9][A-Za-z0-9-]*\)' docs/wiki/claims-model-starter/ | wc -l`).
+8. **Recreate both GitHub Releases on the target host from `releases-export.json`** (B2).
+9. **Execute the external-asset register from B2, minus the wiki repo and the gh-pages site** —
+   their disposition is fixed (keep, unconditionally; §1.2/D6/§6). **Rotate the three personal dev
+   credentials** (Anthropic key, GitLab PAT, Bedrock bearer token) so the clone never depends on
+   personal-account secrets — independent of any account closure, since none is planned (§1.2).
 
 **DONE looks like:** the enterprise remote carries the full history, both tags, and the 23-page
-wiki; nothing in the tree points at the personal account; the publish script cannot target the
-public wiki.
+wiki; `<enterprise-clone>` is a normal (non-bare) working checkout; nothing in the clone's tree
+points at the personal account, including the hardcoded strings in `publish_wiki.sh`; the clone's
+publish script cannot target the public wiki; **the original repo, wiki, and site are untouched and
+continue operating exactly as before this phase.**
 
 **Verify:**
 
 ```bash
 git -C <enterprise-clone> rev-list --count HEAD          # → matches the source
+git -C <enterprise-clone> rev-parse --is-bare-repository # → false (a working checkout, not the mirror)
 git ls-remote --tags <enterprise-remote>                 # → both tags
 git -C <new-wiki-clone> log --oneline | wc -l            # → 33
 git -C <new-wiki-clone> ls-files | wc -l                 # → 23
-git grep -n -I -iE 'rmsharp|github\.com/rmsharp' -- . \
-  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0
-WIKI_CLONE= scripts/publish_wiki.sh; echo "exit=$?"       # → non-zero (fails closed)
+git -C <enterprise-clone> grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter' -- . \
+  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0 (full §2.6 pattern — do not narrow it)
+WIKI_CLONE= <enterprise-clone>/scripts/publish_wiki.sh; echo "exit=$?"   # → non-zero (fails closed)
+git -C ~/Development/claims-model-starter.wiki remote get-url origin    # → unchanged, still the public wiki
 ```
 
 **Boundary:** one session, plus operator actions outside git.
 
 ---
 
-### Phase C5 — Public-surface decommission
+### Phase C5 — Fork independence verification
 
-**Gated on:** D6, D16, and C4 complete.
+**Gated on:** D16, and C4 complete.
 
-**Scope:** retire the public surfaces that D6/D16 designate. Steps: disable GitHub Pages
-(`gh api -X DELETE repos/rmsharp/claims-model-starter/pages`); delete the branch
-(`git push origin --delete gh-pages`); remove `.github/workflows/publish-tutorial.yml` (or gate it
-`if: false`); execute the D16 disposition for the public repo and the public wiki (archive / make
-private / leave with a README pointer to the enterprise home).
+**Scope:** confirm the enterprise clone is fully independent and the public originals are
+untouched. Per §1.2, this phase does the **opposite** of its original scope (decommission) — the
+public repo, wiki, and MkDocs/gh-pages site are not retired.
 
-**DONE looks like:** no public surface auto-updates; the D16 disposition is applied and recorded.
+1. **Independence check on the clone:** re-run C4's rediscovery grep **inside the enterprise
+   clone** — confirm zero hits outside the historical-record exclusions, and confirm the clone's
+   `publish_wiki.sh` / `.githooks/post-commit` cannot resolve to the personal wiki even with an
+   unset environment (dragons #20, #21).
+2. **Non-regression check on the originals:** confirm the public site still serves the tutorial,
+   `~/Development/claims-model-starter.wiki` still points at its original remote and was not
+   touched by C4, and `origin/gh-pages` / `publish-tutorial.yml` on the **original** repo are
+   unchanged from their A4 state.
+3. **Record the D16 disposition** for the clone: access model (private from creation, by default),
+   administrator/owner, and whether the two GitHub Releases were recreated on the clone (C4) or
+   left as a pointer.
+
+**DONE looks like:** the clone has no live path back to the personal account or the public repo;
+the public repo/wiki/site are confirmed unchanged and still serving; the D16 disposition is applied
+and recorded for the clone.
 
 **Verify:**
 
 ```bash
-curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/tutorial/   # → 404
-git ls-remote origin gh-pages                            # → empty
-gh repo view rmsharp/claims-model-starter --json isPrivate,archived,hasWikiEnabled
+# clone independence — full §2.6 pattern; do not narrow it (a narrower pattern can pass "→ 0"
+# while a hardcoded `claims-model-starter` string survives in the clone's publish_wiki.sh)
+git -C <enterprise-clone> grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter' -- . \
+  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0
+WIKI_CLONE= <enterprise-clone>/scripts/publish_wiki.sh; echo "exit=$?"        # → non-zero (fails closed)
+
+# original non-regression — none of this should differ from A4's verified state
+curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/tutorial/   # → 200 (still live)
+git ls-remote origin gh-pages                                                # → still populated
+git -C ~/Development/claims-model-starter.wiki remote get-url origin         # → unchanged, still the public wiki
+gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # → false, false (untouched)
 ```
 
 **Boundary:** one session. Close out. **This is the last phase — after it, goal 3 is complete.**
@@ -1050,6 +1140,21 @@ gh repo view rmsharp/claims-model-starter --json isPrivate,archived,hasWikiEnabl
 18. **The `gh` token cannot do security or org work** — no `security_events`, no `admin:org`.
 19. **"Defaults = today's values" is the wrong shape for `publish_wiki.sh`.** After C4, an unset
     environment must **abort**, not fall back to the personal public wiki.
+20. **The one-time fork has no future sync.** Whatever is wrong in the public repo at the moment
+    C4 clones it is baked into the proprietary copy permanently — there is no later pull to carry a
+    fix over. This is why C4 is gated on A1–A4, B1, and B2 complete, not just its D-items. Cloning
+    early "to get started" silently ships every not-yet-fixed defect (stale docs, the live
+    exposure, the licensing conflict) into the thing meant to be the clean enterprise copy.
+    **This logic applies just as much to C1/C2/C2b/C3's enterprise-readiness gaps** (the false
+    `ANTHROPIC_BASE_URL` claim, the `require_sigv4` hole, the unauthenticated intake UI, the
+    hardcoded-public-registry CI) — they are deliberately **not** gates on C4, on the scoping
+    choice that they are ordinary code/config fixes an operator can apply to the original before
+    the fork, or to the clone after it, at the cost of doing the work twice if done after. Only the
+    items with a legal/exposure/asset-availability character (A1–A4, B1, B2) are hard gates.
+21. **`~/Development/claims-model-starter.wiki` is the ORIGINAL's live publish target, not a
+    migration scratch directory.** It is tempting to repurpose or re-remote it while provisioning
+    the enterprise wiki — doing so silently breaks the original's still-live auto-publish (D6:
+    refresh and keep, not retire). Create a separate local clone for the enterprise wiki instead.
 
 ---
 
@@ -1068,6 +1173,9 @@ gh repo view rmsharp/claims-model-starter --json isPrivate,archived,hasWikiEnabl
   `docs/architecture-history/` and the historical wiki pages stay as written — **with one
   documented exception**: `docs/architecture-history/methodology-pr2527-remediation-mpc.md` is in
   scope for D1, because it reproduces third-party material verbatim.
+- **Decommissioning, archiving, or otherwise altering the public repo, wiki, or MkDocs/gh-pages
+  site.** Confirmed by the operator (§1.2): they continue to exist, unchanged, indefinitely. Only
+  the one-time enterprise clone is provisioned (C4) and verified independent (C5).
 
 ---
 
@@ -1093,6 +1201,7 @@ curl -s https://rmsharp.github.io/claims-model-starter/sitemap.xml | grep -c aud
 uv run pytest -q && uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy
 ```
 
-Goal 3 completes when D1–D16 are answered and Phases B and C — **including C5** — close.
+Goal 3 completes when D1–D16 are answered and Phases B and C — **including C5 in its revised form
+(fork-independence verification, §1.2, not the original decommission scope)** — close.
 **B1 is the gate: do not push to a corporate host until the third-party methodology rights
 conflict is resolved in writing.**
