@@ -6,6 +6,157 @@
 
 ## ACTIVE TASK
 
+### What Session 184 Did
+**Deliverable:** Revise `docs/planning/enterprise-migration.md` to correct a wrong premise the
+operator identified in conversation (continuation of Session 183): the plan's D6/D8/D9/D16 rows
+and Phases C4/C5 assumed the operator's goal 3 ("move this wiki and main repository into an
+enterprise environment") meant **relocate-and-retire** — land the branch, then eventually
+decommission the public repo, wiki, and MkDocs/gh-pages site. **The operator corrected this: the
+public repo/wiki/site continue to exist, unchanged, publicly, indefinitely; "move into an
+enterprise environment" means preparing a ONE-TIME CLONE/FORK (no ongoing sync) that becomes the
+proprietary enterprise instance.** **(COMPLETE — commit `accaf5a`. 175 insertions / 66 deletions.)**
+
+**Started / Completed:** 2026-07-27.
+
+**What changed:** new §1.2 recording the correction and its load-bearing consequence (nothing
+fixed after the fork ever reaches the clone — no sync); D6 (site refreshed and kept public, not
+retired), D7 (unaffected, more urgent), D8/D9 (reframed around the clone's host), D16 (reframed
+from "disposition of the originals" — moot, they don't move — to the clone's access model); Phase
+C4 retitled "Host retargeting and repository migration" → "Enterprise clone provisioning" with
+fork-first step ordering, an explicit bare-mirror→working-checkout step, a new gate on B2, and a
+guard against reusing `~/Development/claims-model-starter.wiki`; Phase C5 retitled "Public-surface
+decommission" → "Fork independence verification" (originals are never decommissioned); two new
+dragons (#20 no-sync ordering risk, #21 the wiki-clone reuse trap); an out-of-scope bullet; and
+fixes to a stale D8 gate, a weakened rediscovery grep, and stale "personal account decommissioned"
+framing in §2.8 and Phase B2 that pre-dated the correction.
+
+**Method:** read the entire ~1170-line plan myself first (not just the flagged sections) to build
+the full edit set, applied it directly via `Edit`, then ran a **3-agent adversarial verification
+workflow** (`wf_036533cd-954`) — each agent instructed to read the FULL revised document fresh, not
+just the diff, checking consistency / mechanics / completeness respectively. **All three found
+genuine, mostly non-overlapping problems** (9 distinct issues, 3 independently confirmed by two
+agents): a bare `git clone --mirror` has no working tree, but the phase's own later steps (file
+edits, `git grep` with no revision, a script path) assumed one; the scope bullets edited files
+*before* the fork step that creates the destination — read top-to-bottom, an executor could edit
+`mkdocs.yml`'s `site_url` etc. in the **current, live** working tree and push it to the original's
+`origin`, breaking the still-public site; Phase C4 consumed Phase B2's `releases-export.json` and
+external-asset register without gating on B2; the independence-check grep silently dropped the
+`claims-model-starter` term from §2.6's own canonical pattern, which could pass "→ 0" while a
+hardcoded personal string survived; D8's Gates column still cited Phase A2 (stale, from before D8
+was narrowed to the clone); D8 recommended "publish from CI" while C4 actually implements a
+hardened local hook (unreconciled); Phase C3's clone-CI authoring is sequenced *before* Phase C4
+creates the clone it needs to commit into, with no gate connecting them; and the "personal account
+decommissioned" framing survived in two more places (§2.8, Phase B2) after the correction. **All
+nine were fixed** — see the commit for the full list.
+
+**Advice given, then acted on with explicit go-ahead** (per standing operator directive): the
+operator first corrected my understanding across two turns (site stays public; fork is one-time,
+no sync), then I asked which of three next steps they wanted via `AskUserQuestion` — they chose
+**"revise the plan now."** Everything above followed from that explicit authorization, not from me
+independently deciding to expand scope.
+
+### Session 183 Handoff Evaluation (by Session 184)
+
+**Score: 7/10 — with a caveat: I am evaluating my own immediately-prior handoff**, since Sessions
+183 and 184 both happened inside one continuous conversation with no context reset between them.
+- **What helped:** the handoff's clear map of D2/D6/D7's gate relationships (D6/D7 gate Phase A1)
+  gave me the structural vocabulary to work from the moment the operator introduced the fork
+  correction — I could immediately identify which D-items and phases needed revision because I'd
+  just finished explaining their old shape in the same conversation.
+- **What was missing:** nothing factually wrong, but the handoff (like the plan itself at that
+  point) still modeled D6 as a three-way refresh/retire/relocate choice — it had no way to
+  anticipate the operator would answer it with a fourth option (keep-and-fork) that invalidated
+  four other decision rows and two phases. Not a fair criticism of the handoff itself, but worth
+  recording: **a handoff's D-item framing is only as good as the plan's own option space**, and a
+  plan's decision register should be treated as provisional until the operator has actually
+  weighed in, not as a closed set of choices.
+- **ROI:** strongly positive as a launching point, though substantially superseded within the same
+  session by new operator input — which is a normal, healthy outcome for a DRAFT plan, not a
+  failure of the handoff.
+
+### Phase 3B: Self-assess — Session 184 — 9/10
+
+- **The +:** (1) **Read the entire plan before editing**, not just the sections the conversation
+  had touched — this is what surfaced the C1-C3 gate-scoping question and the B2 dependency before
+  any subagent found them. (2) **Ran adversarial verification before committing**, matched to the
+  stakes (a plan that will govern real legal/architectural decisions) — and it worked: 9 genuine
+  issues surfaced, including one (the bullet-ordering risk of editing the live original) that would
+  have been a real production incident if executed as originally drafted. (3) **Fixed every finding
+  rather than cherry-picking** the convenient ones. (4) **Distinguished advice from action twice** —
+  answered the D6/D7 sequencing question as a recommendation without acting, then asked via
+  `AskUserQuestion` before starting the larger plan revision, only proceeding on explicit
+  authorization. (5) **Did not silently reorder phases C3/C4** to "fix" the sequencing problem —
+  added an explicit gate instead, which resolves the correctness issue without the larger,
+  riskier blast radius of renumbering every cross-reference to those phases.
+- **The −:** (1) Did not validate the revised markdown mechanically (a linter/table-renderer) —
+  relied on manual fence-count and stale-term greps. A real markdown parse would have been stronger
+  verification, cheap to add. (2) The revision ended up touching ~15 distinct locations across the
+  document for what began as "explain D6/D7 further" — proportionate to what the operator's own
+  escalating corrections required, not scope creep I introduced, but worth naming so a future
+  session doesn't read the size of this diff as evidence of drift.
+- **Quality bar:** exceeds — full-document evidence gathering, adversarial verification matched to
+  stakes, all findings fixed, scope boundaries (advice vs. action) held throughout.
+
+### Phase 3C: Learnings — Session 184
+
+- **Candidate #150 — NEW, 1st instance — "When adversarially verifying a revision to a large,
+  cross-referenced document, instruct verifiers to read the FULL current document, not the diff —
+  the most valuable findings live in places the diff never touched. Of 9 genuine issues found here,
+  at least 3 (D8's stale Gates-column reference to Phase A2, Phase C4 consuming Phase B2's artifact
+  without gating on it, Phase C3's clone-CI authoring being sequenced before Phase C4 creates the
+  clone) were pre-existing structure that became inconsistent BECAUSE of the edit, invisible to a
+  diff review and found only by an agent reading the document end-to-end and checking every
+  cross-reference against what it now points at."** Sibling of the project's existing
+  adversarial-verification pattern (Sessions 181/182), specialized to: verify the whole artifact,
+  not the delta. **When to apply:** any time a revision changes an assumption load-bearing enough
+  that other, unedited parts of the same document depend on the old assumption being true. Now at
+  **1.** Next candidate = **#151.**
+- **Reinforced:** the project's standing **adversarial-verify-before-shipping** discipline (now
+  applied to a plan-of-a-plan revision, not just code or wiki content). **`feedback_advice_not_action`**
+  memory — held twice in one session. **SAFEGUARDS.md mode discipline** — treated the plan revision
+  as Architect Mode work requiring explicit go-ahead (via `AskUserQuestion`) before starting, not a
+  "while I'm at it" extension of the README fix.
+- **Candidate roster:** **#150 NEW at 1**; #149 at 1 (S183); #148 at 1 (S182); #147 at 1 (S182);
+  #146 at 1 (S181); earlier per prior roster. `PROJECT_LEARNINGS.md` = **61 rows** (no promotion).
+  Next = **#151.**
+
+### Phase 3D: Handoff to Session 185
+
+**The plan (`docs/planning/enterprise-migration.md`) is now internally consistent under the
+corrected premise.** It is still a DRAFT — **nothing has been executed.** D6 is now the only
+D-item the operator has directly answered (D2 in Session 183, folded into the plan's history but
+not into the plan text itself — see `feedback`/learning #149). D7, and all of D1/D3–D5/D8–D16, are
+still open.
+
+**⚠ Read this before touching Phase C3 or C4:** **Phase C3 appears BEFORE Phase C4 in the
+document's reading order, but C3 is now gated on `C4 complete`** (added this session — C3 authors
+CI configuration into the enterprise clone's repo, which only exists after C4 forks it). This is a
+deliberate choice — reordering/renumbering the phases was judged higher-risk than adding an explicit
+forward-gate — but it means **do not execute phases in document order for C1–C5; follow the "Gated
+on" lines.** Practical order is roughly: A1→A2→A3→A4→B1→B2→B3→C1→C2→C2b→**C4**→**C3**→C5.
+
+**State you will inherit:**
+1. Tree is CLEAN after this close-out. Branch `feat/bedrock-mantle-migration` is now **3 commits
+   ahead** of `origin/feat/bedrock-mantle-migration` (`eaa2cf5`, `4f20852`, `accaf5a`) — **nothing
+   pushed.**
+2. **D2 and D6 are the only decisions the operator has directly answered** (D2: MIT, Session 183;
+   D6: refresh-and-keep-public, Session 184). D7, D9, D16, and all others remain genuinely open —
+   do not assume they'll resolve the same easy way D6 did.
+3. **No phase has been executed.** The gate structure changed (C4 now needs A1–A4 + B1 + B2 + its
+   D-items; C3 now needs C4), but no phase's actual work has started.
+4. Baseline not re-measured this session (no code touched, only the planning doc). Last measured:
+   Session 181's 922 passed + 8 live-skipped @ 97.41%, ruff+mypy clean.
+5. Next learning candidate = **#151**. `PROJECT_LEARNINGS.md` = 61 rows.
+
+**Key files:**
+- `docs/planning/enterprise-migration.md` — §1.2 (the correction, ~line 64), §3 decision register
+  (D6/D8/D9/D16, ~lines 439–453), Phase C3 (~line 909), Phase C4 (~line 950), Phase C5 (~line
+  1036), dragons #20/#21 (~line 1135).
+- Verification workflow transcript: `wf_036533cd-954` (3 agents: consistency-check,
+  mechanics-check, completeness-check).
+
+---
+
 ### What Session 183 Did
 **Deliverable:** Correct the license claim in root `README.md` — the "Proprietary." line at `README.md:215` contradicted `LICENSE` (MIT since `f2f2a70`, 2026-04-16), `pyproject.toml:7` (`license = { text = "MIT" }` in both workspace members), and the wiki. This is **D2** from `docs/planning/enterprise-migration.md` — the operator answered it directly this session ("This is an MIT licensed repository... Correct the README.md file"), matching the plan's own recommendation ("Stay MIT... Fix `README.md:215` to match"). **(COMPLETE — commit `eaa2cf5`. `grep -n "Proprietary" README.md` → 0 matches, confirmed both before commit and via the plan's own stated verification command.)**
 
