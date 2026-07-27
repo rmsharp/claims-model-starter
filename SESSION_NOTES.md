@@ -6,6 +6,219 @@
 
 ## ACTIVE TASK
 
+### What Session 187 Did
+**Deliverable:** Execute Phase A2 of `docs/planning/enterprise-migration.md` ("Wiki merge-status
+sweep") — canonical grep sweep, 3 mechanical value changes, 2 blockquote deletions + surrounding
+rewrites, `Evolution.md:3` banner fix, test-count reconciliation, new CI guard in
+`tests/test_wiki_no_line_citations.py`. **(COMPLETE — commit `41ab834`. 7 files changed, 52
+insertions / 39 deletions.)**
+
+**Started / Completed:** 2026-07-27.
+
+**What changed:**
+1. **Mechanical value changes (verified exhaustively, per plan §2.5):** `anthropic[bedrock]
+   >=0.40` → `>=0.94` at 4 sites (`Software-Bill-of-Materials.md:31,73`,
+   `Security-Considerations.md:352`, `AI-Dependencies.md:36`) — cross-checked against both live
+   `pyproject.toml` files, which already read `>=0.94`. Bedrock default `sonnet-4-6` → `opus-4-8`
+   at exactly 3 sites (`Security-Considerations.md:126,127` old-numbering, `AI-Dependencies.md:56`)
+   — cross-checked against `DEFAULT_MODEL` in both live `bedrock_client.py` files
+   (`anthropic.claude-opus-4-8`). Left the other 9 `sonnet-4-6` occurrences untouched (first-party
+   default, correctly unchanged) — final count verified at 9 (was 12).
+2. **Blockquote deletions + surrounding rewrite:** deleted the `Changelog.md:15` "not yet merged"
+   blockquote and its now-stale heading suffix; deleted the `Security-Considerations.md:46` "Merge
+   status" blockquote **and** rewrote the two sentences the plan flagged as restating the same
+   split (`:28`'s table intro, `:48`'s "two modules... unmerged branch adds a third" — now "three
+   modules... one duplicated"), so §1.2 reads as one coherent post-merge reality rather than
+   contradicting itself once the blockquote alone was gone.
+3. **Evolution.md — the largest file, ~9 narrative rewrite sites plus the banner:** fixed the
+   `:3` "Last updated" banner, which named `aca05e2` (a Session-180 close-out commit) while the
+   page's own chronological index (Session 187's `:381` — now unchanged since edits were
+   surgical) records the actual full-rewrite as landing in **Session 181** as commit `a1d8af7`
+   (verified via `git log`/`git show --stat`) — a self-contradiction the plan named explicitly.
+   Rewrote §6's "Live Bedrock validation" paragraph, §11's test-count sentence and open-threads
+   sentence, the codebase-structure bullet, the chronological-index rows 178–180, and the
+   References section's three plan-file bullets — removing every "unmerged" / "not on master" /
+   "branch-only" / "when it lands" marker while preserving every fact that remains true post-merge
+   (e.g., the AWS quota-denial blocker, which is independent of merge status).
+4. **New CI guard:** `tests/test_wiki_no_line_citations.py::test_wiki_has_no_branch_name_literal`
+   — bans the literal string `feat/bedrock-mantle-migration` on any wiki page. Added it **before**
+   finishing the sweep (per plan instruction), which turned its own failure output into a live,
+   exact todo-list of remaining sites each time I re-ran the non-live suite — this is faster and
+   more complete than manually re-deriving from the bare canonical grep (see learning below).
+5. **Test-count reconciliation:** added the guard, then ran `uv run pytest -q -m "not live"` twice
+   (before and after finishing the sweep) to get an honest, non-guessed number — 922 passed
+   pre-sweep (guard failing, unrelated tests unaffected — confirms no regression from the new
+   test), **923 passed + 8 live-skipped @ 97.41% coverage, 931 collected total** post-sweep (guard
+   now green). Wrote that single reconciled number into `Evolution.md:254` and
+   `Monitoring-and-Operations.md:100`, replacing the stale "916 on master / 922 with 6 branch-only"
+   split. Did not paste the plan's named traps (930 pre-guard, or A3's 898 `--ignore=tests/ui`
+   scope).
+6. **Software-Bill-of-Materials.md** (3 sites) and **Monitoring-and-Operations.md** (2 sites,
+   `:21` `AWS_BEARER_TOKEN_BEDROCK` row + `:100` test count) — same mechanical + narrative pattern.
+
+**Method:** verified the hook was still disarmed from Session 186 before touching anything
+(`git config --get core.hooksPath` → empty, exit 1 — confirmed, no re-disarm command needed, no
+permission-classifier prompt this session). Ran the canonical §2.5 grep first to get ground truth
+(36 lines: 34 real + exactly the 2 documented false positives), then worked through the 7 affected
+files. Did **not** strictly follow line-number-descending order within `Security-Considerations.md`
+(the file with ~15 sites) — instead grouped several adjacent old-numbered lines into single Edit
+calls where they were part of one cohesive rewrite (e.g. the §1.2 blockquote-plus-two-sentences).
+This is safe with a string-match editor (unlike `sed`, no line-offset risk), and I re-ran the
+canonical grep after finishing *each file* (the plan's actual boundary condition), not after each
+individual line — zero stale-list errors resulted. For one factual claim inherited from the old
+wiki prose ("the branch's mantle client raises" on unresolved region), I did not trust the prose at
+face value — read the installed SDK source (`anthropic.lib.bedrock._mantle.resolve_region` /
+`_resolve_mantle_config`) directly and confirmed `AnthropicBedrockMantle` raises `AnthropicError`
+when no region and no `base_url` are resolvable, so the merged claim is precise, not just
+inherited. Ran the plan's full verify block (canonical grep, `>=0.40` search, `sonnet-4-6` count,
+guard test, dead-path check, wiki-clone-unchanged check, hook-still-disarmed check) — all 7 passed
+exactly as specified. Ran `ruff check` + `mypy` on the new test file (both clean). Committed
+excluding this file (matching the A1 precedent), verified `git status` clean after.
+
+**Did not push.** `feat/bedrock-mantle-migration` now 9 commits ahead of its remote (was 8; the A2
+commit added 1). Did not start A3; did not touch `README.md`, `OPERATIONS.md`, `ROADMAP.md`, or any
+other A3-scoped file.
+
+### Session 186 Handoff Evaluation (by Session 187)
+
+**Score: 9/10.**
+- **What helped:** the handoff's Phase 3D named the exact next deliverable (Phase A2) with precise
+  plan-line pointers (`enterprise-migration.md:555` for scope-start, `:560` on for the canonical
+  grep/mechanical-changes/NO-EDIT-traps/blockquote-deletions) — I did not have to search the plan
+  document to find my own scope. It also correctly predicted the hook state ("Verify it's still
+  unset... if the tree was touched by anything else between sessions, re-verify rather than
+  assume") — I did verify rather than assume, found it still unset, and (unlike Session 186) hit
+  no permission-classifier block this session since no hook-disarm command was needed. The
+  "new open item" note (README.md/baseline test-count discrepancy) was correctly flagged as
+  out-of-scope for A2 specifically, which kept me from either ignoring it silently or scope-creeping
+  into fixing it.
+- **What was missing (−1):** nothing load-bearing. The one thing I had to derive myself rather than
+  being told: the handoff didn't flag that the test-count reconciliation would require an actual
+  `pytest` run (not just `--collect-only`) to get an honest pass/fail decomposition — the plan text
+  itself named the `--collect-only` command specifically, and following it literally would have
+  given only a bare total (931) with no way to state "923 passing" without also running the suite.
+  This was derivable from the plan's own wording ("re-measure and write the number") but a more
+  explicit note would have saved the two-minute decision to run the full non-live suite twice.
+- **ROI:** strongly net positive — the exact plan-line pointers alone saved a full read-through of
+  the plan's phase list to locate A2.
+
+### Phase 3B: Self-assess — Session 187 — 9/10
+
+- **The +:** (1) Ran the canonical grep first and got the plan-predicted 36 lines exactly (34 real
+  + 2 false positives) before touching anything — confirms no drift between Session 186's plan
+  reading and the live tree. (2) Added the CI guard test *before* finishing the sweep rather than
+  after, which turned every subsequent `pytest -q -m "not live"` run into a live, exact todo-list
+  (offending `page:line: 'text'` for every remaining site) — this caught remaining
+  `Security-Considerations.md` sites faster and more completely than re-deriving from a bare grep
+  each time. (3) For the one inherited factual claim about SDK behavior on unresolved-region
+  (`AnthropicBedrockMantle` raising), read the actual installed SDK source
+  (`anthropic.lib.bedrock._mantle`) rather than trusting or blindly stripping the old wiki prose —
+  confirmed `AnthropicError` is raised in `_resolve_mantle_config`, so the merged sentence states a
+  precise, source-verified mechanism instead of a vaguer carried-over claim. (4) Ran the full
+  7-command verify block from the plan and got exact matches on every check, including the two
+  numeric checks (`sonnet-4-6` count = 9, `>=0.40` = 1 historical hit) that the plan predicted
+  exactly. (5) Re-measured the test count via a real run (not just `--collect-only`) both before and
+  after finishing the sweep, confirming 922→923 (exactly +1, the new guard test, zero unrelated
+  regression) rather than assuming the carried baseline still held. (6) Did not start Phase A3
+  despite finishing with context budget remaining — one deliverable, no bundling.
+- **The −:** (1) Did not follow strict per-line bottom-up ordering within `Security-Considerations.md`
+  — grouped several old-numbered lines into combined Edit calls. This was safe (string-match editor,
+  not `sed`; re-grepped per-file, matching the plan's actual stated boundary) but is a literal
+  deviation from the plan's bottom-up-within-file wording, worth flagging explicitly rather than
+  silently reinterpreting the instruction. (2) Spent time verifying the SDK's region-resolution
+  behavior in depth (installed-package source dive) for one sentence — high-value here since it
+  upgraded a vague claim to a precise one, but a narrower version of Session 186's self-critique
+  (reading more than the task strictly required) applies if judged purely against A2's minimum bar.
+- **Quality bar:** meets/exceeds — verify-script discipline (all 7 plan-named checks run and
+  matched exactly), source-verification discipline beyond what the plan asked for on one claim, and
+  the guard-test-first technique (a new pattern, see learnings) all match or exceed the standard set
+  by Sessions 183–186.
+
+### Phase 3C: Learnings — Session 187
+
+- **Candidate #154 — NEW, 1st instance — "When a plan-mandated CI guard bans a literal string (or
+  other exact pattern) that a documentation sweep is actively removing, add the guard test BEFORE
+  finishing the sweep, not after. The guard's own failure assertion lists every remaining
+  `page:line: 'offending text'` — re-running it after each file gives a live, exact, self-updating
+  todo-list that is faster and more complete than manually re-deriving remaining sites from the
+  sweep's bare canonical grep each time."** Discovered executing Phase A2's guard-then-sweep
+  ordering: `tests/test_wiki_no_line_citations.py::test_wiki_has_no_branch_name_literal`, added
+  before `Security-Considerations.md` (the densest file) was finished, and its assertion output
+  directly enumerated all 9 remaining sites with full line text — I used that output, not a fresh
+  grep, to locate and fix them. **When to apply:** any session running a plan-mandated literal-
+  string or pattern sweep across many files where a matching CI guard is also being added in the
+  same phase — sequence the guard-add first. Now at **1**.
+- **Candidate #155 — NEW, 1st instance — "When deleting a merge-status wrapper ('unmerged branch',
+  'on master vs branch') around a factual claim about library/SDK behavior, verify the surviving
+  claim against the actual installed source (or docs) rather than just stripping the wrapper and
+  keeping the prose as-is. The wrapper sometimes hedges a claim that is precisely true and can be
+  stated with more mechanism-level accuracy once source-checked (function name, exception type),
+  which a bare find-and-replace on the merge-status framing would not surface."** Sibling of #58
+  (re-derive carried STATUS claims against the live tree) but narrower — this is specifically about
+  SDK/library *behavioral* claims embedded inside merge-status prose, not document status.
+  Discovered fixing `Security-Considerations.md`'s AWS-region-resolution sentence: read
+  `anthropic.lib.bedrock._mantle.resolve_region` / `_resolve_mantle_config` directly, confirmed
+  `AnthropicBedrockMantle` raises `AnthropicError` on an unresolved region with no `base_url`
+  override, and named that exact mechanism instead of the old wiki's vaguer "the branch's mantle
+  client raises instead." **When to apply:** any session removing merge-status framing from a
+  behavioral/technical claim about a dependency — read the dependency's actual source for the
+  surviving sentence rather than trusting inherited prose. Now at **1**.
+- **Reinforced:** **The plan's "re-run the grep after each file, not after each line" boundary**
+  (§4, Phase A2's Boundary note) — held exactly as literally stated, even though I deviated from
+  strict per-line editing order within files (see self-assessment −). **feedback_advice_not_action /
+  SAFEGUARDS "commit before verifying"** — the full 7-command verify block ran against the clean,
+  already-committed tree, matching the A1 precedent's discipline (`git status` clean, verify after,
+  not before, commit). **Candidate #152's sibling shape** (S186: extending a structural action to
+  an un-named target needs its own fresh reference sweep) — not directly invoked this session
+  since A2's scope was fully pre-enumerated by the plan's own canonical grep, but the same
+  discipline (trust the grep, not memory of what "should" be there) held.
+- **Candidate roster:** **#155 NEW at 1; #154 NEW at 1**; #153 at 1 (S186); #152 at 1 (S186); #151
+  at 1 (S185); #150 at 1 (S184); earlier per prior roster. `PROJECT_LEARNINGS.md` = **61 rows** (no
+  promotion this session — no candidate reached 3 instances). Next = **#156.**
+
+### Phase 3D: Handoff to Session 188
+
+**Phase A2 is COMPLETE and committed (`41ab834`), not pushed. Phase A3 (in-repo documentation
+reconciliation, `enterprise-migration.md:602`) is the natural next deliverable** — same branch,
+same standing rule (verify the hook is still disarmed before touching `Evolution.md` /
+`Changelog.md` again — A3 touches both).
+
+**State you will inherit:**
+1. Tree is CLEAN after this close-out. Branch `feat/bedrock-mantle-migration`, **9 commits ahead**
+   of `origin/feat/bedrock-mantle-migration` (was 8; +1 this session, `41ab834`) — nothing pushed.
+2. `core.hooksPath` is currently **unset** (disarmed) at the end of this session — Session 187 did
+   not re-arm it (correct: only A4 re-arms, per the plan) and did not need to re-run the disarm
+   command (it was already unset from Session 186; verify fresh before your first commit rather
+   than trusting this note, per the standing rule's own wording).
+3. D2, D6, D7 remain the three operator-answered D-items; A3 is **gated on D2 and D12** per the
+   plan (`enterprise-migration.md:604`) — D2 (MIT, answered) is satisfied; **D12 (version/tag the
+   landing) is still open** and A3's scope explicitly depends on it (`README.md:215` "Proprietary"
+   fix needs D2 only, but the `pyproject.toml`/`README.md:3`/`uv.lock` version bump needs D12
+   answered first — read `enterprise-migration.md:434-456`'s D12 row before starting A3, and if
+   D12 is still unanswered, that sub-scope may need to be split out or the operator asked before
+   you can call A3 complete).
+4. Baseline **was** re-measured this session (one `.py` file touched — the new guard test): **923
+   passed + 8 live-skipped @ 97.41% coverage, 931 collected total**, ruff+mypy clean on the touched
+   file. This is now the current, live-verified number — supersedes the Session-181-carried "922 +
+   8 @ 97.41%" baseline in every prior handoff.
+5. Next learning candidate = **#156**. `PROJECT_LEARNINGS.md` = 61 rows (unchanged).
+6. **Still-open item from Session 186, unchanged, not yet touched:** `README.md:128` claims "795
+   tests... ≈97.2%" vs. the now-current "923 passed + 8 live-skipped @ 97.41%" — Phase A3's own
+   scope (`enterprise-migration.md:608`) explicitly names fixing `README.md:128`'s test count as
+   part of A3, so this item folds into A3 rather than needing separate handling. Use **923** (not
+   898, not 930, not the stale 795) unless A3's own `--ignore=tests/ui` scope note changes the
+   number you should paste — re-read `enterprise-migration.md:608` before pasting a number.
+
+**Key files:**
+- `docs/planning/enterprise-migration.md:602-649` — Phase A3's full scope (README/ROADMAP/
+  OPERATIONS/CHANGELOG/version-bump/two-archive-moves), DONE criteria, and verify block.
+  `:434-456` — the decision register; re-check D2/D12 rows before starting.
+- `docs/wiki/claims-model-starter/` — untouched by A3 except via the version number, if any wiki
+  page cites it (grep before assuming none do).
+- `tests/test_wiki_no_line_citations.py` — now has 3 tests (was 2); the new
+  `test_wiki_has_no_branch_name_literal` guard is permanent, not phase-scoped — it will fail again
+  if any future session reintroduces the literal branch-name string on a wiki page.
+
 ### What Session 186 Did
 **Deliverable:** Execute Phase A1 of `docs/planning/enterprise-migration.md` ("Contain the public
 exposure and correct the tutorial") — `mkdocs.yml` fail-closed allowlist, relocate `docs/audits/`
