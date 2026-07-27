@@ -6,6 +6,54 @@
 
 ## ACTIVE TASK
 
+### What Session 183 Did
+**Deliverable:** Correct the license claim in root `README.md` — the "Proprietary." line at `README.md:215` contradicted `LICENSE` (MIT since `f2f2a70`, 2026-04-16), `pyproject.toml:7` (`license = { text = "MIT" }` in both workspace members), and the wiki. This is **D2** from `docs/planning/enterprise-migration.md` — the operator answered it directly this session ("This is an MIT licensed repository... Correct the README.md file"), matching the plan's own recommendation ("Stay MIT... Fix `README.md:215` to match"). **(COMPLETE — commit `eaa2cf5`. `grep -n "Proprietary" README.md` → 0 matches, confirmed both before commit and via the plan's own stated verification command.)**
+
+**Started / Completed:** 2026-07-27.
+
+**Scope held:** did not touch the adjacent stale facts the plan also lists at `README.md:128` ("795 tests" vs actual current count) or the docs/methodology/ D1 legal question (third-party copyright claim) — those were not what the operator asked to fix, and D1 in particular needs legal, not a text edit. Did not edit `docs/planning/enterprise-migration.md` itself to mark D2 resolved — the plan is treated as a frozen artifact of Session 182 (per its own handoff: "valid at `fc12d9f`... every phase re-derives rather than trusting the plan's own counts"); this file (SESSION_NOTES.md) is the place D2's resolution is recorded for the next session.
+
+**Advice given, not acted on** (per standing operator directive: advise only when asked for guidance, act only on explicit go-ahead): operator asked whether **D2, D6, D7** should be addressed before starting execution on the plan. Answered: **D2 is now resolved** (this session). **D6 and D7 remain open** and explicitly gate Phase A1 per the plan's own Phase 0 ("`DONE`: D2, D6, D7 answered (these gate Phase A)" and Phase A1's header "Gated on: D6, D7") — recommended answering both before starting A1, since A1's scope (fail-closed `mkdocs.yml`, relocating `docs/audits/`) depends on knowing whether the gh-pages site is being retired (D6) and whether the public audits should be taken down (D7). The other 13 decisions (D1, D3–D5, D8–D16) gate later phases (A3, B1, C1–C5) and can lag. No phase was started.
+
+### Session 182 Handoff Evaluation (by Session 183)
+
+**Score: 9/10.**
+- **What helped:** (1) The **decision register with owners and default recommendations** (D2 row: *"Stay MIT... Fix `README.md:215` to match"*) meant the operator's one-line answer converted directly into a correct, citable commit — no rediscovery needed. (2) **Key files section's exact line number** (`README.md:215`) was verified correct on read — no drift. (3) The **root-cause citation** (`f2f2a70`, "change license from Proprietary to MIT") was present in `CHANGELOG.md` exactly as the plan implied, letting the commit message cite it precisely.
+- **What was missing (−1):** the plan doesn't distinguish "decisions cheap enough to answer inline, mid-conversation, without a formal Phase 0 session" from the ones needing legal/platform-team turnaround — D2 turned out to be answerable in one sentence, but nothing in the handoff flagged it as the *fastest* of the three "DONE" gate items to close, or noted the plan itself isn't the place to record the resolution.
+- **ROI:** strongly positive — a 5-minute, zero-ambiguity fix plus a well-informed advisory answer, both directly enabled by Session 182's decision register.
+
+### Phase 3B: Self-assess — Session 183 — 8/10
+
+- **The +:** (1) **Separated the directive from the question** — fixed README.md because it was an instructed action; answered the D2/D6/D7 sequencing question as a recommendation and did not start Phase A1 or Phase 0, per the standing "advice ≠ action" rule. (2) **Verified before and after** — confirmed the exact line and wording before editing, then re-ran the plan's own stated verification grep after committing. (3) **Held scope** — did not fix the adjacent stale test-count or D1 legal issue in the same file, despite both being nearby in the same plan section. (4) Correctly identified the fix as **resolving D2** rather than treating it as an unrelated typo fix, which is what makes the advisory answer to the D6/D7 question coherent (D2 is now off the list).
+- **The −:** (1) Skipped the formal **Phase 1B stub-then-work** sequencing — went from task to edit to commit in one continuous pass rather than writing a stub first. For a single-line, fully-scoped, no-ambiguity fix this carried negligible risk (nothing here could have failed catastrophically mid-edit), but it is a literal protocol step not performed as written. (2) Did not run the full test/lint gate — justified (grep confirmed zero test/code references to the old string) but not stated as a deliberate call until this write-up.
+- **Quality bar:** meets the bar for a micro-session; the process shortcut (1) is the only deviation and is honestly disclosed.
+
+### Phase 3C: Learnings — Session 183
+
+- **Candidate #149 — NEW, 1st instance — "A plan's decision register (D-items with owner + recommendation) can be resolved inline, mid-conversation, the moment the operator states a preference — it does not require the formal 'Phase 0' session the plan describes. When a D-item resolves this way, record the resolution in SESSION_NOTES.md against its D-ID explicitly (not just as a code diff) so the next session doesn't have to reconstruct 'was D2 answered?' from git log. Do NOT edit the frozen plan document itself to mark it resolved — S182's handoff established the plan's facts are 'valid at `fc12d9f`' and meant to be re-derived, not live-edited; SESSION_NOTES.md is the mutable continuity surface."** **When to apply:** whenever a plan with a decision register is open and the operator answers one of its D-items in conversation rather than through a dedicated decision-gathering session. Now at **1.** Next candidate = **#150.**
+- **Reinforced:** **`feedback_advice_not_action`** (operator memory) — answered the D6/D7 sequencing question as a recommendation, took no action on Phase 0 or A1. **SAFEGUARDS.md scope discipline** — one file changed, one committed, no adjacent cleanup.
+- **Candidate roster:** **#149 NEW at 1**; #148 at 1 (S182); #147 at 1 (S182); #146 at 1 (S181); #145 at 1 (S180); earlier per prior roster. `PROJECT_LEARNINGS.md` = **61 rows** (no promotion). Next = **#150.**
+
+### Phase 3D: Handoff to Session 184
+
+**D2 is resolved: MIT, confirmed by the operator, `README.md:215` fixed in commit `eaa2cf5`.** `grep -n "Proprietary" README.md` → 0 matches (this was also the plan's own stated Phase A3 verification line — one line of that phase's Verify block is now pre-satisfied).
+
+**D6 and D7 are still OPEN and gate Phase A1.** Per the plan (`docs/planning/enterprise-migration.md:415-416`):
+- **D6** (MkDocs/gh-pages site: refresh/retire/relocate) — plan recommends **retire**, after one corrected final deploy in A1/A4, decommission in C5.
+- **D7** (take down the already-public audits retroactively) — plan recommends **yes**, by moving `docs/audits/` out of `docs_dir` (structural), forcing a re-deploy, then requesting search-index removal.
+
+**Neither D6 nor D7 has been operator-confirmed as of this close-out.** Do not start Phase A1 until they are — A1's scope (fail-closed `mkdocs.yml`, relocating `docs/audits/`) is written assuming both answers.
+
+**Nothing else changed.** Branch is `feat/bedrock-mantle-migration`, now 2 commits ahead of `origin/feat/bedrock-mantle-migration` (`808b49b` + `eaa2cf5`), tree clean, nothing pushed. Bedrock live-verification is still environment-blocked (AWS quota denial, case moot) — unchanged from Session 182. `PROJECT_LEARNINGS.md` still 61 rows; next candidate = **#150**.
+
+**Key files:**
+- `README.md:215` — the fix (now "MIT License. See [LICENSE](LICENSE).").
+- `docs/planning/enterprise-migration.md:404-425` (decision register, D1–D16), `:466-476` (Phase 0), `:478-` (Phase A1, gated on D6/D7).
+- `LICENSE:1,3`, `pyproject.toml:7` — the MIT source of truth README now matches.
+- `CHANGELOG.md:1260` — the original relicense commit `f2f2a70` this session's commit message cites.
+
+---
+
 ### What Session 182 Did
 **Deliverable:** Produce the **enterprise migration PLAN** requested by the operator at the close of Session 181. **(COMPLETE — `docs/planning/enterprise-migration.md`, 1098 lines: 10 evidence sections, a 16-entry decision register, 12 phases each a one-session unit with DONE/Verify/Boundary, 19 dragons, and a final acceptance block. NOTHING WAS EXECUTED — no merge, no push, no wiki publish, no MkDocs deploy. The tree is untouched apart from this file and these notes.)**
 
