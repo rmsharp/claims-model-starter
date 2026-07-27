@@ -29,7 +29,7 @@ From the `[project.optional-dependencies]` table in `pyproject.toml`:
 
 | Extra | Installs | Why |
 |---|---|---|
-| `agents` | `langgraph`, `anthropic`, `sqlparse`, `sqlalchemy`, `python-gitlab`, `PyGithub`, `typer` | Agent runtimes and host adapters |
+| `agents` | `langgraph`, `anthropic[bedrock]`, `sqlparse`, `sqlalchemy`, `python-gitlab`, `PyGithub`, `typer` | Agent runtimes and host adapters. The `[bedrock]` marker adds the AWS transitive stack (boto3 / botocore) used by the `bedrock` LLM provider. |
 | `ui` | `fastapi`, `uvicorn`, `sse-starlette`, `langgraph-checkpoint-sqlite`, `python-multipart` | Intake web UI |
 | `dev` | `pytest`, `pytest-asyncio`, `pytest-cov`, `mypy`, `ruff` | Developer toolchain |
 | `docs` | `mkdocs`, `mkdocs-material` | MkDocs tutorial-site build (`mkdocs.yml` at the repository root) |
@@ -94,12 +94,15 @@ Run locally:
 uv run pytest -q                    # full suite
 uv run pytest tests/agents/intake/  # one subdir
 uv run pytest -k "test_envelope"    # by name pattern
+uv run pytest -m "not live"         # skip the live-LLM eval tier (see below)
 ```
 
-Current snapshot: **707 test functions** across `tests/` subdirectories (`orchestrator/` 201, `agents/website/` 137, `data_agent_package/` 135, `agents/intake/` 83, `schemas/` 81, `ui/intake/` 22, `scripts/` 17, `agents/data/` 16), plus 15 across the top-level files `test_data_agent_decoupling.py`, `test_llm_json_parity.py`, `test_vocab_guard.py`, and `test_wiki_no_line_citations.py`. This number drifts as tests are added; recompute it with:
+**The `live` tier.** `tests/eval/` holds the LLM eval corpus. Most of it is hermetic, but `tests/eval/test_eval_live.py` is marked `live` file-wide (four test functions, each parametrized over both providers) and calls a **real** LLM. The marker is registered under `[tool.pytest.ini_options]` in `pyproject.toml`. A `live` test auto-skips when the provider it targets has no credentials (`anthropic` → `ANTHROPIC_API_KEY`; `bedrock` → the AWS credential chain), which is how CI stays hermetic — CI runs with none. If you have provider credentials exported, a bare `uv run pytest -q` **will make billable API calls**: pass `-m "not live"` to deselect the tier, or `-m live` to run it deliberately.
+
+Current snapshot: **829 test functions** across `tests/` subdirectories (`orchestrator/` 210, `data_agent_package/` 150, `agents/website/` 137, `agents/intake/` 101, `schemas/` 81, `eval/` 69, `ui/intake/` 32, `scripts/` 17, `agents/data/` 16), plus 16 across the top-level files `test_data_agent_decoupling.py`, `test_llm_json_parity.py`, `test_vocab_guard.py`, and `test_wiki_no_line_citations.py`. This number drifts as tests are added; recompute it with:
 
 ```bash
-grep -rhE '^\s*(async )?def test_' tests/ | wc -l   # 707 at time of writing
+grep -rhE '^\s*(async )?def test_' tests/ | wc -l   # 829 at time of writing
 ```
 
 ### 2.4 Data-agent decoupling
@@ -116,9 +119,9 @@ This test AST-walks the standalone `packages/data-agent/` package and asserts ze
 
 ## 3. Pre-commit hooks
 
-There is **no** `.pre-commit-config.yaml` or equivalent git-hook configuration in the repository. Contributors are expected to run `ruff` and `pytest` locally before pushing. The CI pipeline is the enforcement boundary; hooks are a convenience, not a requirement.
+There is **no** `.pre-commit-config.yaml` in the repository and no pre-commit gate on code. There *is* one checked-in project-wide hook: `.githooks/post-commit`, which republishes the GitHub Wiki whenever a commit touches `docs/wiki/claims-model-starter/` (it delegates to `scripts/publish_wiki.sh`; set `MPC_SKIP_WIKI_PUBLISH=1` for a deliberate skip). It is opt-in per clone — enable it once with `git config core.hooksPath .githooks`. **If you edit any wiki page, install it.** Otherwise contributors are expected to run `ruff` and `pytest` locally before pushing. The CI pipeline is the enforcement boundary; hooks are a convenience, not a requirement.
 
-If you want local hooks, the recommended pattern is a personal `.git/hooks/pre-push` script that runs `uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy && uv run pytest -q`. Do not commit a project-wide hook configuration without first proposing it as a separate design change.
+If you want local hooks, the recommended pattern is a personal `.git/hooks/pre-push` script that runs `uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy && uv run pytest -q`. Do not commit another project-wide hook configuration without first proposing it as a separate design change.
 
 ---
 
@@ -179,7 +182,7 @@ When adding a new contract, add a structural guard alongside it. CI enforcement 
 
 ### Mocking external services
 
-- The Anthropic client is mocked via fixtures that inject a `FakeAnthropicClient` returning canned JSON. Do not hit the real API in unit tests.
+- The Anthropic SDK is stubbed with module-local `_FakeAnthropic` / `_FakeMessages` classes defined inside each client test file — `tests/agents/intake/test_anthropic_client.py`, `tests/agents/intake/test_bedrock_client.py`, their `tests/data_agent_package/` twins, and `tests/test_llm_json_parity.py` — that return canned JSON. They are plain classes, not shared pytest fixtures. At the protocol seam, `FakeLLMClient` (in `tests/agents/data/test_data_agent.py`) and `FixtureLLMClient` (in `src/model_project_constructor/agents/intake/fixture.py`) stand in for a real client. Do not hit the real API in unit tests.
 - The GitLab and GitHub adapters are tested via `MagicMock` at the `python-gitlab` / `PyGithub` boundary. An end-to-end `FakeRepoClient` is provided for Website Agent tests — see `tests/agents/website/conftest.py`.
 - Database tests use in-memory SQLite; there is no integration test requiring a live database.
 
@@ -223,7 +226,7 @@ These aren't style preferences — they are documented responses to specific pas
 ## 8. Licenses, attribution, and dependency hygiene
 
 - **Project license:** MIT (`LICENSE` at repository root). Copyright © 2026 R. Mark Sharp.
-- **Dependency licenses:** tracked on the [Software Bill of Materials](Software-Bill-of-Materials) page. Direct dependencies are predominantly MIT / BSD / Apache 2.0. `PyGithub` is LGPL-3.0; LGPL compliance is satisfied by Python's import mechanism allowing re-linking against modified library versions.
+- **Dependency licenses:** not yet tracked per-dependency on the [Software Bill of Materials](Software-Bill-of-Materials) page — adding a license column there is an open item on [Content Recommendations](Content-Recommendations). Direct dependencies are predominantly MIT / BSD / Apache 2.0. `PyGithub` is LGPL-3.0; LGPL compliance is satisfied by Python's import mechanism allowing re-linking against modified library versions.
 - **New dependencies:** prefer zero-new-dep solutions when the stdlib or existing deps can do the job (per learning #13). Each added dependency is a maintenance commitment — version conflicts, CI install time, and security-review surface all grow. If you need a new dep, include justification in the PR description.
 
 ---
@@ -232,7 +235,7 @@ These aren't style preferences — they are documented responses to specific pas
 
 There is no public issue tracker actively in use for pre-UAT development — `gh issue list` is expected to return empty. Open work items are tracked in `BACKLOG.md` at the repository root. Once UAT begins, the tracker at `https://github.com/rmsharp/claims-model-starter/issues` will be the submission target.
 
-For security-sensitive reports, please do not open a public issue. Contact the maintainer directly; see `README.md` for the current contact path.
+For security-sensitive reports, please do not open a public issue. Contact the repository owner directly — `rmsharp` on GitHub, per the clone URL in §1. The project has no `SECURITY.md` and `README.md` carries no contact path; publishing a documented disclosure address is an open gap.
 
 ---
 
@@ -242,4 +245,4 @@ For security-sensitive reports, please do not open a public issue. Contact the m
 - [Extending the Pipeline](Extending-the-Pipeline) — design-level extension surfaces and the tests that guard them
 - [Changelog](Changelog) — phase-by-phase history of notable changes
 - [Architecture Decisions](Architecture-Decisions) — the rationale behind each design choice you'd encounter while contributing
-- [Software Bill of Materials](Software-Bill-of-Materials) — current dependency versions and licenses
+- [Software Bill of Materials](Software-Bill-of-Materials) — current dependency versions and constraints

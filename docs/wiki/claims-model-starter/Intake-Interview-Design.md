@@ -242,9 +242,11 @@ Useful fixtures ship in `tests/fixtures/`:
 
 ### Web UI mode (Phase 3B, FastAPI)
 
-The FastAPI web UI in `src/model_project_constructor/ui/intake/` reuses the same compiled graph but builds its LLM client via the provider factory `make_llm_client("anthropic")` and a `SqliteSaver` checkpointer so interview state survives server restart. The UI is what `go/modelintake` points to in a deployed environment. Environment variables:
+The FastAPI web UI in `src/model_project_constructor/ui/intake/` reuses the same compiled graph but builds its LLM client through the provider factory — `make_llm_client(provider, model=model)`, where `provider` resolves from the `create_app(provider=...)` argument, then `INTAKE_LLM_PROVIDER`, then `DEFAULT_LLM_PROVIDER` (`anthropic`), and `model` from the `create_app(model=...)` argument, then `INTAKE_LLM_MODEL`, else the provider's own default — plus a `SqliteSaver` checkpointer so interview state survives server restart. An unknown provider raises at app construction, not at the first interview. The UI is what `go/modelintake` points to in a deployed environment. Environment variables:
 
-- `ANTHROPIC_API_KEY` (required)
+- `INTAKE_LLM_PROVIDER` (optional; `anthropic` (default) or `bedrock` — the `bedrock` path is implemented and unit-tested but has never been exercised against a live endpoint)
+- `INTAKE_LLM_MODEL` (optional; defaults to the selected provider's own model id)
+- `ANTHROPIC_API_KEY` (required **only** when the provider resolves to `anthropic`; `bedrock` authenticates via the AWS credential chain)
 - `INTAKE_DB_PATH` (optional; defaults to `./intake_sessions.db`)
 
 See [Monitoring and Operations](Monitoring-and-Operations) for deployment specifics.
@@ -272,7 +274,7 @@ The `IntakeLLMClient` is a `Protocol` (in `src/model_project_constructor/agents/
 
 Four extension points, ordered by effort:
 
-1. **Swap the LLM provider** — implement `IntakeLLMClient` (4 methods) in a new client module, add one branch in `make_llm_client` and one member to the `LLMProvider` `Literal` in `src/model_project_constructor/agents/intake/factory.py`, then select it with `--provider`. Do not modify the nodes or the call sites; they are provider-agnostic. See [Extending the Pipeline §6](Extending-the-Pipeline).
+1. **Swap the LLM provider** — implement `IntakeLLMClient` (4 methods) in a new client module, add one branch in `make_llm_client` and one member to the `LLMProvider` `Literal` in `src/model_project_constructor/agents/intake/factory.py`, then select it with `INTAKE_LLM_PROVIDER` (web UI) or `--provider` on `scripts/run_pipeline.py`. The Intake Agent's own CLI has no `--provider` flag — it is fixture-driven only. Do not modify the nodes or the call sites; they are provider-agnostic. See [Extending the Pipeline §6](Extending-the-Pipeline).
 2. **Change the caps** — edit `MAX_QUESTIONS` / `MAX_REVISIONS` in `src/model_project_constructor/agents/intake/state.py`. These are hard-coded by design; changing them is a deliberate policy decision.
 3. **Add governance dimensions** — extend `GovernanceClassification` in `src/model_project_constructor/agents/intake/protocol.py` and `GovernanceMetadata` in `src/model_project_constructor/schemas/v1/intake.py`. Update the `SYSTEM_GOVERNANCE` classification prompt in `src/model_project_constructor/agents/intake/anthropic_client.py` and the `classify_governance_node` in `src/model_project_constructor/agents/intake/nodes.py`. Downstream governance artifact templates in `src/model_project_constructor/agents/website/governance_templates.py` may also need updates.
 4. **Add a new interview phase** — add a node, wire edges in `src/model_project_constructor/agents/intake/graph.py`, extend `IntakeState` in `src/model_project_constructor/agents/intake/state.py`. This is the largest change and should go through a planning session — the current two-phase shape (interview → review) is load-bearing for the CLI, the web UI, and the fixture format.

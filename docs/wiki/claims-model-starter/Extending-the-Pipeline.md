@@ -233,7 +233,7 @@ At render time, `build_regulatory_mapping` in `src/model_project_constructor/age
 
 1. **Add an entry** to `_FRAMEWORK_ARTIFACTS` mapping the new framework's identifier string to the list of artifact paths it requires. Identifiers follow the convention `<JURISDICTION>_<CODE>` (e.g., `FCA_CP23_17`).
 2. **If the framework requires a new artifact type**, add it per §4 above *before* referencing it here.
-3. **Update the `IntakeReport` schema documentation** to note the new framework identifier. The schema itself does not validate framework strings (it stores them as `list[str]`), but the intake agent's system prompt in `src/model_project_constructor/agents/intake/anthropic_client.py` enumerates known frameworks — add the new string to that enumeration so the agent will suggest it.
+3. **Update the `IntakeReport` schema documentation** to note the new framework identifier. The schema itself does not validate framework strings (it stores them as `list[str]`), but the intake agent's system prompt in `src/model_project_constructor/agents/intake/anthropic_client.py` enumerates known frameworks — add the new string to that enumeration so the agent will suggest it. This edit and step 1 are **not** independent: a CI parity guard pins the prompt enumeration and `_FRAMEWORK_ARTIFACTS` equal (see *Invariants enforced by tests* below), so doing one without the other fails the build.
 4. **Test coverage** in `tests/agents/website/test_governance.py`:
    - Assert `build_regulatory_mapping` includes the new framework when declared in intake.
    - Assert the mapping intersects correctly with emitted artifacts (a framework mapped to an un-emitted artifact must not falsely appear in the manifest).
@@ -246,7 +246,7 @@ Framework additions are pure content. They flow through `IntakeReport.governance
 
 ## 6. Extension surface: adding a new LLM provider
 
-Use case: route the agents to a second LLM backend (e.g., an OpenAI-compatible endpoint, a self-hosted model) without editing any call site. Each agent talks to its LLM only through a `Protocol`, and the provider choice flows through a small **factory** — a `Protocol` + factory boundary, analogous to (but separate from) the `RepoClient` `Protocol` used for repo-host adapters in §3.
+Use case: route the agents to a further LLM backend (e.g., an OpenAI-compatible endpoint, a self-hosted model) without editing any call site. Two providers already ship — `anthropic` and `bedrock` (AWS Bedrock-hosted Claude, added Session 162) — so the recipe below has been executed for real, not merely designed. (The `bedrock` client is wired and unit-tested; it has not been run against a live endpoint.) Each agent talks to its LLM only through a `Protocol`, and the provider choice flows through a small **factory** — a `Protocol` + factory boundary, analogous to (but separate from) the `RepoClient` `Protocol` used for repo-host adapters in §3.
 
 ### Two parallel factories (not shared)
 
@@ -261,7 +261,7 @@ Both factories have the same shape:
 
 ```python
 # agents/intake/factory.py (the data-agent factory mirrors this)
-LLMProvider = Literal["anthropic"]
+LLMProvider = Literal["anthropic", "bedrock"]
 KNOWN_PROVIDERS: tuple[str, ...] = get_args(LLMProvider)
 
 def make_llm_client(
@@ -277,6 +277,15 @@ def make_llm_client(
             AnthropicLLMClient,
         )
         return AnthropicLLMClient(model=DEFAULT_MODEL if model is None else model)
+    if provider == "bedrock":
+        # Same lazy-import rationale. BedrockLLMClient is a thin subclass of
+        # AnthropicLLMClient pointed at AWS Bedrock; AWS credentials are
+        # self-discovered by the SDK.
+        from model_project_constructor.agents.intake.bedrock_client import (
+            DEFAULT_MODEL,
+            BedrockLLMClient,
+        )
+        return BedrockLLMClient(model=DEFAULT_MODEL if model is None else model)
     raise ValueError(
         f"Unknown LLM provider {provider!r}. "
         f"Known providers: {', '.join(KNOWN_PROVIDERS)}."
@@ -286,22 +295,24 @@ def make_llm_client(
 Two conventions make this surface safe:
 
 - **The known-provider list is single-sourced.** `KNOWN_PROVIDERS` is derived from the `LLMProvider` `Literal` via `typing.get_args`, so the unknown-provider `ValueError` (and the data-agent CLI's `--provider` help) cannot drift from the set the factory actually handles. `provider` is typed `str`, not `LLMProvider`, because the value usually arrives from a CLI flag.
-- **The concrete client is lazy-imported inside the branch.** Importing the factory (or the package `__init__` that re-exports it) never pulls in the `anthropic` SDK; the SDK is imported only when a real client is constructed. A new provider's client module must follow the same lazy-import convention.
+- **The concrete client is lazy-imported inside the branch.** Importing the factory (or the package `__init__` that re-exports it) never pulls in the `anthropic` SDK — nor `boto3`/`botocore`, which the Bedrock client needs; the SDKs are imported only when a real client is constructed, and each package's factory test asserts none of them is present at factory-import time. A new provider's client module must follow the same lazy-import convention.
 
-### Files to add or edit (in BOTH packages)
+### Files to add or edit (in BOTH packages, plus one orchestrator entry)
 
-Adding a provider is the same three-step recipe applied independently to each agent:
+Steps 1-3 are the same three-step recipe applied independently to each agent; step 4 is done once:
 
 1. **New client module** implementing the agent's protocol — `IntakeLLMClient` for intake (mirror `src/model_project_constructor/agents/intake/anthropic_client.py`) and `LLMClient` for the data agent (mirror `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py`). Expose a `DEFAULT_MODEL` constant and accept `model=` as a keyword argument, as the existing Anthropic clients do.
 2. **One branch** in that package's `make_llm_client`, lazy-importing the new client.
 3. **One member** in that package's `LLMProvider` `Literal` (which automatically updates `KNOWN_PROVIDERS`, the error message, and the data-agent CLI help).
+4. **One entry** in the orchestrator's `LLM_PROVIDERS` registry (`src/model_project_constructor/orchestrator/config.py`) — done once, not per package, since the standalone wheel cannot import the orchestrator (C4). Map the provider name to an `LLMProviderSpec`, setting `api_key_env_var` to the env var carrying its credential, or `None` when the provider authenticates by another mechanism (as `bedrock` does, via the AWS credential chain). `OrchestratorSettings.require_llm_api_key` rejects any provider missing from this registry; unlike `REPO_PLATFORMS`/`HostLiteral` there is **no** import-time parity guard tying it to the agents' `LLMProvider` `Literal`s — the module comment explains why — so the lockstep is a documented convention you must keep by hand.
 
-### CLI surfaces
+### Provider-selection surfaces
 
-The `--provider` flag is exposed in two places, both defaulting to `anthropic`:
+The provider is selectable in three places, all defaulting to `anthropic`:
 
 - **`scripts/run_pipeline.py`** (`--provider`, in `main` of `scripts/run_pipeline.py`) — applies to the intake **and** data agents when `--llm` is `data` or `both` (ignored when `--llm=none`); it routes through each agent's `make_llm_client` factory.
 - **The data-agent CLI** (`model-data-agent`, the `run` and `discover` commands in `packages/data-agent/src/model_project_constructor_data_agent/cli.py`) — `--provider` whose help text is `_PROVIDER_HELP`, generated from `KNOWN_PROVIDERS`.
+- **The intake web UI** (`create_app` in `src/model_project_constructor/ui/intake/app.py`) — not a CLI flag, but the same seam: the provider resolves from the `create_app(provider=...)` argument, then the `INTAKE_LLM_PROVIDER` env var, then `DEFAULT_LLM_PROVIDER`, and an unknown value raises at app construction listing `KNOWN_PROVIDERS`. The model override (`INTAKE_LLM_MODEL`) defaults to `None` on purpose, so each provider's own `DEFAULT_MODEL` wins.
 
 
 ---
@@ -316,6 +327,7 @@ Several extension surfaces have mechanical guards that will fail CI if the contr
 | Every schema in `REGISTRY` round-trips | `tests/schemas/test_envelope_and_registry.py` | For each `(payload_type, version)` key, constructs an envelope, calls `load_payload`, and asserts equality. |
 | Every governance artifact path is classified | `tests/agents/website/test_governance.py` | Asserts `is_governance_artifact` returns `True` for every path emitted by `build_governance_files` / `build_analysis_files` / `build_test_files` across all tier/flag combinations. |
 | Tier gating is positive *and* negative | `tests/agents/website/test_governance.py` | Per-tier fan-out asserts both `"governance/<artifact>.md" in files` for the correct tier *and* `... not in files` for lower tiers. |
+| Framework vocabulary parity | `tests/agents/website/test_governance.py` | `TestFrameworkPromptMapParity` asserts `set(anthropic_client.GOVERNANCE_FRAMEWORKS) == set(governance_templates._FRAMEWORK_ARTIFACTS)`, and separately that every prompted framework maps to a *non-empty* artifact list — so a framework the intake prompt is told to suggest can never scaffold zero governance artifacts (the Audit #39 hole). |
 
 An extension that breaks any of these invariants is rejected at CI, not in production.
 

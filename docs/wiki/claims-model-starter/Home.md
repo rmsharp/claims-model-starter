@@ -24,11 +24,12 @@ This tool serves a **claims organization within a property & casualty insurance 
 
 ## What it depends on
 
-The constructor itself runs on Python 3.11+ with `uv` and `git`. No JavaScript build, no Docker required for development, no database server. External services in scope are exactly three, each gated by one credential:
+The constructor itself runs on Python 3.11+ with `uv` and `git`. No JavaScript build, no Docker required for development, no database server. External services in scope are a Claude backend (Anthropic's API *or* AWS Bedrock — one per run) and a git host (GitLab *or* GitHub — one per run). Each is gated by one credential, except AWS Bedrock, which authenticates from the AWS credential chain rather than a single env-var key:
 
 | Service | Credential | When required |
 |---|---|---|
-| **Anthropic Claude** | `ANTHROPIC_API_KEY` | Any live run that uses the intake or data agents |
+| **Anthropic Claude** | `ANTHROPIC_API_KEY` | Any live run that uses the intake or data agents (the default provider) |
+| **AWS Bedrock** *(alternative Claude backend)* | AWS credential chain (IAM role, SSO, or profile) plus a region (`AWS_REGION`) — not a single API-key env var | Instead of the Anthropic API, when a run selects the `bedrock` provider (`--provider bedrock` on the pipeline script, or `INTAKE_LLM_PROVIDER=bedrock` for the intake web UI). Implemented and unit-tested, but **never exercised live** — every measured result in this project is `anthropic`-only |
 | **GitLab** *or* **GitHub** | `GITLAB_TOKEN` or `GITHUB_TOKEN` | When the website agent targets that host (one host per run, not both) |
 
 The **generated downstream project** is deliberately small (pandas + scikit-learn + sqlalchemy) and has **zero AI runtime dependency** — the data-science team can run it with no API key. AI-generated content is materialised as static markdown, SQL, and Quarto analysis narratives at construction time.
@@ -50,7 +51,7 @@ See [Software Bill of Materials](Software-Bill-of-Materials) for full dependency
 - [Extending the Pipeline](Extending-the-Pipeline) -- Adding agents, adapters, governance artifacts, regulatory frameworks
 - [Monitoring and Operations](Monitoring-and-Operations) -- Deployment, checkpoints, operations
 - [Security Considerations](Security-Considerations) -- Credentials, network boundaries, what the LLM sees
-- [Software Bill of Materials](Software-Bill-of-Materials) -- All dependencies, versions, and licenses
+- [Software Bill of Materials](Software-Bill-of-Materials) -- All dependencies, versions, and constraints
 - [AI Dependencies](AI-Dependencies) -- The AI/LLM dependencies, how each is used, and the risks they pose
 - [Architecture Decisions](Architecture-Decisions) -- Key design choices and rationale
 - [Evolution](Evolution) -- How the project grew from concept to current state

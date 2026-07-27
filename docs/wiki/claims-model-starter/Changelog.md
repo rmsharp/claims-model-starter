@@ -10,6 +10,55 @@ The repository is at version `0.2.0` (pre-1.0, pilot-ready). Release tags `v0.1.
 
 ## [Unreleased]
 
+### Bedrock mantle migration + enterprise-deployment readiness (Sessions 179-180) — IN FLIGHT, NOT YET ON `master`
+
+> *This work lives on the `feat/bedrock-mantle-migration` branch and has not been merged to `master`. It is recorded here for visibility; it is not part of any release until the branch lands.*
+
+- **Changed:** the Bedrock clients in both packages now construct `anthropic.AnthropicBedrockMantle` (was `anthropic.AnthropicBedrock`), targeting the `bedrock-mantle` endpoint and the native Anthropic Messages API. Auth resolves from the AWS credential chain (SigV4 via an IAM role) or, for development only, a Bedrock API key in `AWS_BEARER_TOKEN_BEDROCK`.
+- **Changed:** `BedrockLLMClient.DEFAULT_MODEL` is now `anthropic.claude-opus-4-8` (was `anthropic.claude-sonnet-4-6`) in both packages — the mantle catalog ships no Sonnet tier. The first-party `AnthropicLLMClient` default is deliberately unchanged at `claude-sonnet-4-6`; the two defaults diverge on purpose.
+- **Added:** enterprise-networking keyword arguments on `BedrockLLMClient` — `base_url` (a PrivateLink VPCE or GovCloud host), `http_client` (forward proxy, corporate TLS-inspection CA bundle, mTLS), and `require_sigv4` (raises when `AWS_BEARER_TOKEN_BEDROCK` is set, so that variable cannot silently override role-based SigV4 — the SDK's mantle client also accepts `ANTHROPIC_AWS_API_KEY`, which this guard does not check). All three default to no-ops, and they are deliberately not yet wired to the app or its environment variables.
+- **Changed:** the dependency pin is now `anthropic[bedrock]>=0.94` in both `pyproject.toml` files (was `>=0.40`); the pin's comment records 0.94 as the release that ships `AnthropicBedrockMantle`.
+- **Added:** `docs/deployment/bedrock-enterprise.md` — an enterprise deployment guide covering least-privilege IAM, SigV4/role auth, PrivateLink, data residency, the mantle-versus-`bedrock-runtime` fork (mandated Guardrails or FIPS force the classic path), and a pre-deployment checklist.
+- **Planned, not executed:** `docs/planning/httpx-adapter-migration.md` — a plan to drop both LGPL repository-host SDKs in favour of direct `httpx` calls. Nothing has been migrated: `python-gitlab` and `PyGithub` remain the shipped GitLab and GitHub adapters.
+- **Known limitation:** the live Bedrock path remains **unit-verified only**. On the account used for testing, every current-generation Claude model returns a runtime 403 ("not available for this account") while the control plane reports those models as available, and AWS declined the runtime-quota request on account-eligibility grounds. This is an AWS-side enablement gate, not a code defect; the deployment plan is an enterprise AWS account that already carries the eligibility. **Bedrock has still never been exercised live.**
+
+### AWS Bedrock testing-enablement runbook (Session 178)
+
+- **Added:** `docs/planning/bedrock-testing-enablement.md` — an operator runbook for enabling live AWS Bedrock testing: region choice and console navigation, the authentication-path decision, a pre-flight access check, and a three-tier cost estimate for running the eval corpus. Planning documentation only; no code changed.
+
+### Interview-convergence and governance-classification hardening (Sessions 166-177)
+
+The Session 165 baseline exposed the eval harness itself — not model quality — as the dominant source of threshold failures. This arc fixed the harness and the governance prompt rather than lowering the thresholds to match them.
+
+- **Added:** a stakeholder simulator (`tests/eval/stakeholder_sim.py`) so live interview runs receive realistic answers instead of a canned script (Session 166).
+- **Fixed:** the default `max_tokens` raised to 16384 with an explicit truncation guard, ending silently truncated quality-check generations (Session 167).
+- **Changed:** the live interview-convergence gate is calibrated to the §3.4 metric text, samples N≥5, disambiguates transient transport errors from genuine failures, and now clears its 95% threshold (Sessions 168-171).
+- **Added:** `docs/explainers/interview-convergence-explainer.qmd` (with a rendered PDF) — an explainer of how the live convergence test works (Session 172).
+- **Changed:** `SYSTEM_GOVERNANCE` now defines the `cycle_time` cadence vocabulary, and `CYCLE_TIME_DEFINITIONS` discriminates `tactical` from `operational` on **output purpose** rather than run frequency (with `strategic` re-anchored on the filing-calendar / enterprise scope); the governance agreement metric was made faithful by crediting a stricter `risk_tier` instead of scoring it as disagreement. On the Anthropic baseline, live `cycle_time` agreement is 60/60 with zero laxer-tier misses across the governance corpus — a corpus-scoped result, not a general-robustness claim (Sessions 173-177).
+
+### Multi-provider LLM support — AWS Bedrock as a second provider (Sessions 159-165)
+
+A five-phase arc (`docs/planning/multi-provider-llm-plan.md`) adds a second LLM provider behind the existing E4 factory seam, motivated by a target deployment customer on AWS Bedrock with no direct Anthropic contract.
+
+- **Added:** per-provider credential seam in `src/model_project_constructor/orchestrator/config.py` — `LLMProviderSpec`, the `LLM_PROVIDERS` registry, `DEFAULT_LLM_PROVIDER`, and `require_llm_api_key(provider)`. `anthropic_api_key` / `require_anthropic_api_key()` are preserved as back-compatible delegates, so no existing caller changed (Session 160).
+- **Added:** `tests/eval/` — a golden-corpus eval/parity harness: P&C SQL cases over a seeded schema, governance reference labels, interview goldens, pure scorers (`eval_scoring.py`), a hermetic deterministic tier, and a credential-gated `live` tier (Session 161).
+- **Added:** `BedrockLLMClient` in both packages (`src/model_project_constructor/agents/intake/bedrock_client.py` and the data-agent wheel's `bedrock_client.py`) — a thin subclass of each package's `AnthropicLLMClient` overriding only construction and the `anthropic.`-prefixed default model, so the hardened `_extract_json` parser, the seam error classes, and every interview/query method are inherited with zero parser-drift surface (Session 162).
+- **Changed:** `LLMProvider` is now `Literal["anthropic", "bedrock"]` in both factories; `make_llm_client("bedrock")` constructs a working client in either package. Bedrock registers with `api_key_env_var=None` because the AWS credential chain — not an API-key environment variable — supplies its credentials (Session 162).
+- **Added:** provider/model selection on the intake web UI — `create_app(provider=..., model=...)` resolving argument → the `INTAKE_LLM_PROVIDER` / `INTAKE_LLM_MODEL` environment variables → default, with `model=None` so each provider uses its native default model id (Session 163).
+- **Added:** provider shadow run + deterministic cutover gate — `tests/eval/eval_cutover.py` scores each provider against the eight §3.4 thresholds and emits GO / NO-GO / PENDING; an unmeasured threshold cannot certify GO (Session 164).
+- **Status:** the standing verdict is **NO-GO** — `anthropic` remains the primary provider. The Anthropic baseline was measured in Session 165 (and the harness it exposed as untrustworthy was hardened in Sessions 166-177); the Bedrock half of the shadow run is still unmeasured — the Bedrock client is constructible and unit-tested, but it has never been exercised against live AWS.
+
+### AI Dependencies wiki page (Session 157)
+
+- **Added:** [AI Dependencies](AI-Dependencies) — a 22nd wiki page cataloguing the project's AI/LLM dependencies, how each is used, and the risks they pose; wired into the sidebar, [Home](Home), and [Content Recommendations](Content-Recommendations).
+
+### Standing-micros batch + GitHub Release v0.2.0 (Session 155)
+
+- **Changed:** the orchestrator adapter's `time_series` branch is pinned to a `Final[ModelType]` constant, so mypy fails the build if that Literal member is renamed — previously a bare magic string that would have silently routed every time-series intake to event grain.
+- **Changed:** `src/model_project_constructor/agents/website/governance_templates.py` now imports the shared `assert_vocab_parity` from `model_project_constructor._vocab_guard` instead of carrying its own private copy.
+- **Fixed:** the Data Agent's self-contradictory `measurement_unit` baseline-query prompt — the closed list is now presented as examples, matching the schema's free-form-by-design field.
+- **Released:** the GitHub Release for the existing `v0.2.0` tag was cut (administrative; no code changed).
+
 ### SR 11-7 → SR 26-2 regulatory-citation rename (Session 144)
 
 - **Changed:** the governance-framework vocabulary token `SR_11_7` is now `SR_26_2` — across the intake agent's `GOVERNANCE_FRAMEWORKS` prompt enumeration, the website agent's `_FRAMEWORK_ARTIFACTS` registry, test fixtures, the tutorial, and this wiki. The Federal Reserve superseded SR 11-7 with SR 26-2 in 2026; for this pipeline the supersession is a citation-level change (no artifact-set or behavior changes). Generated projects' `regulatory_mapping.md` and `model_registry.json` entries now cite the new name. Historical entries below keep the old name as records of what shipped at the time.

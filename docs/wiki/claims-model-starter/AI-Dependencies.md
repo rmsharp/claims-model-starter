@@ -7,7 +7,7 @@ This page is for architects, security reviewers, compliance officers, and operat
 Three facts frame everything below:
 
 1. The AI surface is **small and confined to two of the three agents** — the Intake Agent and the Data Agent. The Website Agent is fully deterministic.
-2. There is exactly **one AI provider and one model family** in use: Anthropic's Claude (`claude-sonnet-4-6` by default), reached through a single SDK.
+2. There are **two AI providers but one model family**: Anthropic's Claude, reached either through the first-party Anthropic API (provider `anthropic`, the default — `claude-sonnet-4-6`) or through AWS Bedrock-hosted Claude (provider `bedrock`). Both go through the same `anthropic` SDK. The provider is chosen per run; there is no automatic failover between them.
 3. The **generated downstream project has zero AI runtime dependency.** All AI-produced content is materialised as static markdown, SQL, and Quarto narratives at construction time. The data-science team runs the output with no API key.
 
 ---
@@ -16,8 +16,8 @@ Three facts frame everything below:
 
 | Agent | Calls an LLM? | Uses LangGraph? | `ANTHROPIC_API_KEY` required? |
 |---|---|---|---|
-| **Intake Agent** | **Yes** — `AnthropicLLMClient` | Yes — stateful interview + checkpointing | **Yes** |
-| **Data Agent** | **Yes** — `AnthropicLLMClient` | Yes — query → QC → summary graph | **Yes** |
+| **Intake Agent** | **Yes** — `AnthropicLLMClient` or `BedrockLLMClient` | Yes — stateful interview + checkpointing | **Only on the `anthropic` provider** — `bedrock` authenticates from the AWS credential chain instead |
+| **Data Agent** | **Yes** — `AnthropicLLMClient` or `BedrockLLMClient` | Yes — query → QC → summary graph | **Only on the `anthropic` provider** — `bedrock` authenticates from the AWS credential chain instead |
 | **Website Agent** | **No** — deterministic f-string templates | Yes — commit-retry state machine, **no LLM** | **No** |
 
 Two things this table makes explicit:
@@ -33,7 +33,9 @@ These are the packages that exist in the tree *because of* the AI integration. V
 
 | Package | Constraint | Locked | Sourcing | Role |
 |---|---|---|---|---|
-| `anthropic` | `>=0.40` | 0.94.1 | Direct (`agents` extra; also a Data Agent core dep) | Official Claude API client — every LLM call goes through it |
+| `anthropic[bedrock]` | `>=0.40` | 0.94.1 | Direct (`agents` extra; also a Data Agent core dep) | Official Claude API client — every LLM call goes through it. The `[bedrock]` extra pulls `boto3`/`botocore` in for the AWS Bedrock provider. (An in-flight, not-yet-merged branch raises the floor to `>=0.94`, the release that ships `AnthropicBedrockMantle`; update this row when it lands.) |
+| `boto3` | (transitive) | 1.43.32 | Pulled in by the `anthropic[bedrock]` extra | AWS SDK — present only because of the Bedrock provider |
+| `botocore` | (transitive) | 1.43.32 | Pulled in by `boto3` / the `anthropic[bedrock]` extra | AWS SigV4 request signing and credential-chain resolution; the largest package in the locked tree (~15 MB sdist) |
 | `langgraph` | `>=0.2,<0.3` | 0.2.76 | Direct (`agents`) | Agent state-machine / graph execution for all three agents |
 | `langgraph-checkpoint-sqlite` | `>=2.0,<3` | 2.0.11 | Direct (`ui` extra) | SQLite-backed checkpointing for resumable live interviews |
 | `langchain-core` | (transitive) | 0.3.84 | Pulled in by `langgraph` | Base types and protocols LangGraph builds on |
@@ -50,16 +52,18 @@ The Claude model is itself a dependency — an external, versioned service, not 
 
 | Property | Value | Defined at |
 |---|---|---|
-| Default model | `claude-sonnet-4-6` | `DEFAULT_MODEL` in `src/model_project_constructor/agents/intake/anthropic_client.py` and `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` |
-| Max tokens per call | 4096 | `DEFAULT_MAX_TOKENS` in both `anthropic_client.py` modules |
-| Endpoint | `https://api.anthropic.com` | Anthropic SDK default; no `base_url` override is exposed through our constructors |
+| Default model (`anthropic` provider) | `claude-sonnet-4-6` | `DEFAULT_MODEL` in `src/model_project_constructor/agents/intake/anthropic_client.py` and `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` |
+| Default model (`bedrock` provider) | `anthropic.claude-sonnet-4-6` — Bedrock model ids carry an `anthropic.` provider prefix | `DEFAULT_MODEL` in `src/model_project_constructor/agents/intake/bedrock_client.py` and `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py`. The two provider defaults are deliberately independent. An in-flight, not-yet-merged branch changes the Bedrock default to `anthropic.claude-opus-4-8` because the Bedrock mantle catalog offers no Sonnet tier; update this row when it lands |
+| Max tokens per call | 16384 | `DEFAULT_MAX_TOKENS` in both `anthropic_client.py` modules — raised from 4096 in Session 167 because the large `draft_report` / `revise_report` JSON and the Data Agent's quality-check arrays overran 4096 and stopped with `stop_reason='max_tokens'` mid-JSON. Overridable per client via `max_tokens=` |
+| Endpoint (`anthropic`) | `https://api.anthropic.com` | Anthropic SDK default; no `base_url` override is exposed through the first-party constructor |
+| Endpoint (`bedrock`) | A regional AWS Bedrock endpoint, resolved by the SDK from `aws_region` or, when unset, the environment's AWS region | Constructed in `bedrock_client.py`; region and credentials self-discover from the AWS credential chain — except that at the locked SDK version a set `AWS_BEARER_TOKEN_BEDROCK` silently replaces SigV4 with bearer auth, unguarded on `master` (see [Security Considerations §1.2](Security-Considerations)). (Pending, unmerged: the client moves to the `bedrock-mantle` endpoint and gains `base_url` / `http_client` keyword args for PrivateLink, GovCloud, and corporate-proxy deployments, plus `require_sigv4`, which turns a stray bearer token into a hard error — see `docs/deployment/bedrock-enterprise.md`.) |
 | Model override | `--model` CLI flag / `model=` factory arg | `make_llm_client(provider, *, model)` in both `factory.py` modules |
 
-**The provider seam.** LLM client construction is routed through factory functions so the provider is named explicitly and a second backend is a localised change, not a call-site rewrite:
+**The provider seam.** LLM client construction is routed through factory functions so the provider is named explicitly and each backend is a localised change, not a call-site rewrite:
 
 - `make_llm_client` in `src/model_project_constructor/agents/intake/factory.py` (returns an `IntakeLLMClient`) and in `packages/data-agent/src/model_project_constructor_data_agent/factory.py` (returns an `LLMClient`).
-- The known-provider list is single-sourced: `LLMProvider = Literal["anthropic"]` with `KNOWN_PROVIDERS = get_args(LLMProvider)` in both factories, so an unknown-provider `ValueError` cannot drift from reality.
-- Only `"anthropic"` is implemented today. The seam (the E4 overhaul, see [Architecture Decisions AD-2](Architecture-Decisions)) exists for future providers; it is a design affordance, not a working multi-provider fallback.
+- The known-provider list is single-sourced: `LLMProvider = Literal["anthropic", "bedrock"]` with `KNOWN_PROVIDERS = get_args(LLMProvider)` in both factories, so an unknown-provider `ValueError` cannot drift from reality. The orchestrator keeps a parallel registry, `LLM_PROVIDERS` in `src/model_project_constructor/orchestrator/config.py`, carrying each provider's credential env var — `ANTHROPIC_API_KEY` for `anthropic`, and `None` for `bedrock`, which authenticates from the AWS credential chain rather than a single key. The two lists are kept in lockstep by convention, not by a parity test (the factories live in decoupled packages).
+- Two providers are implemented today: `"anthropic"` (first-party API, `ANTHROPIC_API_KEY`) and `"bedrock"` (AWS Bedrock-hosted Claude, credentials self-discovered from the AWS credential chain). `make_llm_client` has a live branch for each, and the intake web UI resolves the provider from `INTAKE_LLM_PROVIDER` (`_resolve_provider` in `src/model_project_constructor/ui/intake/app.py`). The seam (the E4 overhaul, see [Architecture Decisions AD-2](Architecture-Decisions)) has therefore been exercised once — but it remains a per-run *choice*, not an automatic multi-provider fallback, and the `bedrock` branch has **not been exercised live** (see [§6.7](#67-provider-concentration)).
 
 ---
 
@@ -67,7 +71,7 @@ The Claude model is itself a dependency — an external, versioned service, not 
 
 ### 4.1 Intake Agent
 
-- **Client.** `AnthropicLLMClient` in `src/model_project_constructor/agents/intake/anthropic_client.py` constructs `anthropic.Anthropic()` (SDK reads `ANTHROPIC_API_KEY` from the environment) and accepts an injected `client` for testing. Four methods make LLM calls — `next_question`, `draft_report`, `classify_governance`, `revise_report` — all routed through the `_call_json` helper.
+- **Client.** `AnthropicLLMClient` in `src/model_project_constructor/agents/intake/anthropic_client.py` constructs `anthropic.Anthropic()` (SDK reads `ANTHROPIC_API_KEY` from the environment) and accepts an injected `client` for testing. Four methods make LLM calls — `next_question`, `draft_report`, `classify_governance`, `revise_report` — all routed through the `_call_json` helper. On the `bedrock` provider the factory returns `BedrockLLMClient` (`src/model_project_constructor/agents/intake/bedrock_client.py`), a subclass that overrides only construction and `DEFAULT_MODEL` and inherits all four methods unchanged.
 - **Prompts.** Two system prompts: `SYSTEM_INTERVIEWER` (the multi-turn interviewer) and `SYSTEM_GOVERNANCE` (risk-tier / framework classification), both in `anthropic_client.py`. The draft-report JSON shape is single-sourced from the Pydantic `Literal` schema members via `join_members()` in `_DRAFT_REPORT_INSTRUCTIONS`, so the prompt's enumerations cannot drift from the schema.
 - **Graph.** `build_intake_graph` in `src/model_project_constructor/agents/intake/graph.py` wires an 8-node `IntakeState` graph and uses `langgraph.types.interrupt()` for human-in-the-loop at the `ask_user` and `await_review` nodes.
 - **Bounded loops.** `MAX_QUESTIONS = 20` and `MAX_REVISIONS = 3` in `src/model_project_constructor/agents/intake/state.py` cap interview length and review cycles — the LLM cannot loop unboundedly.
@@ -75,13 +79,13 @@ The Claude model is itself a dependency — an external, versioned service, not 
 
 ### 4.2 Data Agent
 
-- **Client.** `AnthropicLLMClient` in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py`, same construction and injection pattern. Six methods call Claude: `generate_primary_queries`, `generate_quality_checks`, `summarize`, `generate_datasheet`, `generate_baseline_query`, and the optional `rank_candidate_tables` (dispatched via `hasattr`). All go through `_call_claude`.
+- **Client.** `AnthropicLLMClient` in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py`, same construction and injection pattern. Six methods call Claude: `generate_primary_queries`, `generate_quality_checks`, `summarize`, `generate_datasheet`, `generate_baseline_query`, and the optional `rank_candidate_tables` (dispatched via `hasattr`). All go through `_call_claude`. The `bedrock` provider swaps in `BedrockLLMClient` (`packages/data-agent/.../bedrock_client.py`) by the same subclass-only-the-constructor pattern.
 - **Graph and SQL retry.** `build_graph` in `packages/data-agent/src/model_project_constructor_data_agent/graph.py`. Generated SQL is checked by `validate_sql` and, on failure, retried exactly once — `MAX_SQL_RETRIES = 1` in `nodes.py` — before the graph takes the `fail_execution` off-ramp (`status="EXECUTION_FAILED"`).
 - **What the LLM does and does not see.** The Data Agent asks Claude to *generate* SQL; it never feeds executed query rows back to the model. See [Security Considerations §3.2](Security-Considerations) for the verified data-flow.
 
 ### 4.3 What goes to the LLM
 
-Stakeholder interview answers and the `DataRequest` JSON (target description, features, filters, `database_hint`) are forwarded to Anthropic. There is no redaction or PII filter. The full inventory of what each agent transmits is in [Security Considerations §3](Security-Considerations) — that analysis is not repeated here.
+Stakeholder interview answers and the `DataRequest` JSON (target description, features, filters, `database_hint`) are forwarded to the selected provider — Anthropic on `anthropic`, AWS Bedrock on `bedrock`. There is no redaction or PII filter. The full inventory of what each agent transmits is in [Security Considerations §3](Security-Considerations) — that analysis is not repeated here.
 
 ---
 
@@ -113,10 +117,10 @@ A schema-valid response can still be wrong. Three sub-cases matter:
 
 ### 6.3 Third-party data exposure and PII
 
-Stakeholder answers and request metadata are transmitted verbatim to Anthropic. A `grep` for `redact|pii|scrub|mask|sanitize` in `src/` returns zero hits — there is no PII filter.
+Stakeholder answers and request metadata are transmitted verbatim to the selected provider. A `grep` for `redact|pii|scrub|mask|sanitize` in `src/` returns zero hits — there is no PII filter.
 
 - **Containment.** Query result **rows are never sent to the LLM** (Data Agent — see [Security Considerations §3.2](Security-Considerations)); checkpoints on disk carry payloads, not credentials ([Security Considerations §5.2](Security-Considerations)).
-- **Residual.** Any policyholder-identifying detail a stakeholder types into the interview reaches Anthropic. The deployment must either constrain the interview to exclude PII or satisfy Anthropic's data-handling terms. This is a **policy decision the operator owns**, not something the code resolves.
+- **Residual.** Any policyholder-identifying detail a stakeholder types into the interview reaches the provider. The deployment must either constrain the interview to exclude PII or satisfy that provider's data-handling terms — **which provider is selected changes who the processor is**: `anthropic` sends the text to Anthropic, `bedrock` sends it to AWS in the configured region, and the two carry different contracts and different data-residency positions. This is a **policy decision the operator owns**, not something the code resolves.
 
 ### 6.4 Prompt injection
 
@@ -134,22 +138,23 @@ Untrusted text flows into prompts from two directions: stakeholder free-text ans
 
 ### 6.6 Availability, rate limits, and cost
 
-The pipeline depends on a single external API for its AI steps. An outage halts the Intake and Data agents.
+The pipeline depends on one external API per run for its AI steps. An outage at the selected provider halts the Intake and Data agents.
 
 - **Containment.** Website-only runs need no LLM, so the final scaffolding step is insulated. Failures surface cleanly as typed exceptions (`IntakeLLMError` in the intake `protocol.py`; `LLMParseError` in the Data Agent `anthropic_client.py`) at the LangGraph node boundary, and the interview's checkpoint allows resumption.
 - **Residual.** The project adds **no rate-limiter, no backoff wrapper, and no token budget of its own** around LLM calls ([Security Considerations §10.4–10.5](Security-Considerations)); a per-run token cap and 429 backoff are *proposed in the architecture plan but not implemented*. Provider-side `429`/`5xx` responses, latency, and per-token cost are the operator's to monitor and absorb.
 
-### 6.7 Single-provider concentration
+### 6.7 Provider concentration
 
-Only one provider is implemented. There is no automatic failover.
+Two providers are implemented (`anthropic`, `bedrock`), but both serve the same model family (Claude) through the same `anthropic` SDK, and the provider is fixed for the duration of a run. There is no automatic failover.
 
-- **Containment.** The provider seam ([§3](#3-the-model-as-a-dependency)) is designed so that adding a second backend is one new client module plus one factory branch — no changes at the call sites ([Architecture Decisions AD-2](Architecture-Decisions)).
-- **Residual.** That seam is *latent capacity*, not a live redundancy. Today an Anthropic outage has no fallback path; treating multi-provider resilience as "available" would be over-claiming.
+- **Containment.** The provider seam ([§3](#3-the-model-as-a-dependency)) is designed so that adding a backend is one new client module plus one factory branch — no changes at the call sites ([Architecture Decisions AD-2](Architecture-Decisions)). `bedrock` is that seam exercised once, and it lets an operator move the trust boundary to an AWS account they control.
+- **Residual.** The `bedrock` backend is **implemented but not live-validated** — every governance and evaluation result recorded in this project was produced on the `anthropic` provider, and the live-evaluation test tier skips `bedrock` for want of credentials. Treat it as a documented migration path, not a tested redundancy: a cutover needs its own live verification first. Provider choice is also fixed per run, so an in-flight Anthropic outage still has no fallback path — and because both providers serve one model family through one SDK, a defect in that SDK or that model family is not diversified away by switching. Treating multi-provider resilience as "available" would be over-claiming.
 
 ### 6.8 AI supply-chain surface
 
-The AI integration pulls a transitive stack — `langchain-core`, `langsmith`, `tenacity` — behind the two directly-declared packages, and pins `langgraph` to a pre-1.0 line (`>=0.2,<0.3`).
+The AI integration pulls a transitive stack — `langchain-core`, `langsmith`, `tenacity`, plus the AWS SDK subtree (`boto3`, `botocore`) — behind the two directly-declared packages, and pins `langgraph` to a pre-1.0 line (`>=0.2,<0.3`).
 
+- **The AWS SDK is installed whether or not Bedrock is used.** The `agents` extra declares `anthropic[bedrock]`, so `boto3` and `botocore` are in the locked tree on every install — `botocore` alone is the largest package in it. **Residual:** an `anthropic`-only deployment still carries, and must still patch, the AWS SDK's vulnerability surface. Dropping the extra would remove the `bedrock` provider entirely, so this is a deliberate trade, not an oversight.
 - **LangSmith telemetry is dormant by default.** A `grep` for `langsmith|LANGCHAIN_TRACING|tracing_v2|LANGCHAIN_API_KEY` across `src/`, `packages/`, and `scripts/` returns **zero hits** — the tracing SDK ships in the dependency tree but the project never imports or activates it. It only begins egressing trace data if an **operator** sets the LangSmith environment variables (e.g. `LANGCHAIN_TRACING_V2`, `LANGSMITH_API_KEY`). **Residual / operator action:** do **not** set those variables in a production environment unless you intend to send interview and query metadata to LangSmith, and have cleared that egress with your data-handling policy.
 - **Pre-1.0 framework churn.** The `langgraph<0.3` pin is deliberate — its API is not yet stable. **Residual:** a future LangGraph upgrade may require code changes; all versions are pinned in `uv.lock` so upgrades are explicit, not automatic. See the [SBOM](Software-Bill-of-Materials) for the full locked tree and the [Content Recommendations](Content-Recommendations) note on adding vulnerability scanning.
 
@@ -157,12 +162,13 @@ The AI integration pulls a transitive stack — `langchain-core`, `langsmith`, `
 
 ## 7. Operator checklist
 
-- [ ] Confirm whether interview content may contain PII, and either constrain it or clear Anthropic's data-handling terms ([§6.3](#63-third-party-data-exposure-and-pii)).
+- [ ] Confirm whether interview content may contain PII, and either constrain it or clear the selected provider's data-handling terms — Anthropic's or AWS's ([§6.3](#63-third-party-data-exposure-and-pii)).
 - [ ] Confirm the Data Agent's validation DB role is `SELECT`-only — the code does not block destructive SQL ([§6.2](#62-incorrect-or-hallucinated-output)).
 - [ ] Ensure a human reviews the **risk-tier classification** and the generated SQL before either is trusted ([§6.2](#62-incorrect-or-hallucinated-output)).
 - [ ] Confirm `LANGCHAIN_TRACING_V2` / `LANGSMITH_API_KEY` are **unset** unless LangSmith egress is intended ([§6.8](#68-ai-supply-chain-surface)).
 - [ ] Decide how `429`/outage/cost is monitored — the project ships no limiter, backoff, or token budget ([§6.6](#66-availability-rate-limits-and-cost)).
-- [ ] Re-validate the `DEFAULT_MODEL` pin against currently-available Anthropic models before a production cutover ([§6.5](#65-model-and-version-drift)).
+- [ ] Re-validate the `DEFAULT_MODEL` pin against the selected provider's currently-available models before a production cutover ([§6.5](#65-model-and-version-drift)).
+- [ ] Decide which provider a deployment runs on, and record who the data processor therefore is — Anthropic or AWS. If choosing `bedrock`, run your own live verification first: it is implemented but **not live-validated** here ([§6.7](#67-provider-concentration)).
 - [ ] Treat all AI-generated SQL, narratives, and value estimates as drafts requiring review ([§6.1](#61-non-determinism-and-non-reproducibility)).
 
 ---
@@ -173,11 +179,13 @@ The AI integration pulls a transitive stack — `langchain-core`, `langsmith`, `
 |---|---|
 | `src/model_project_constructor/agents/intake/anthropic_client.py` | Intake LLM client, prompts, JSON parsing, model/token constants |
 | `src/model_project_constructor/agents/intake/factory.py` | Intake provider seam (`make_llm_client`, `LLMProvider`) |
+| `src/model_project_constructor/agents/intake/bedrock_client.py` | Intake Bedrock client (`BedrockLLMClient`) — subclasses `AnthropicLLMClient`, overriding only construction and the `anthropic.`-prefixed `DEFAULT_MODEL`; all four interview methods and the JSON parsing are inherited |
 | `src/model_project_constructor/agents/intake/graph.py` / `state.py` | Intake LangGraph + `MAX_QUESTIONS` / `MAX_REVISIONS` |
 | `src/model_project_constructor/agents/intake/fixture.py` | Deterministic `FixtureLLMClient` for tests |
 | `src/model_project_constructor/ui/intake/runner.py` | `SqliteSaver` checkpointing for live interviews |
 | `packages/data-agent/.../anthropic_client.py` | Data Agent LLM client, prompts, `_sanitize_prompt_field` |
 | `packages/data-agent/.../factory.py` | Data Agent provider seam |
+| `packages/data-agent/.../bedrock_client.py` | Data Agent Bedrock client — same subclassing pattern, kept inside the standalone wheel for the C4 decoupling boundary |
 | `packages/data-agent/.../graph.py` / `nodes.py` | Data Agent LangGraph + `MAX_SQL_RETRIES`, `validate_sql` |
 | `packages/data-agent/.../sql_validation.py` | Coarse SQL well-formedness check (not a security filter) |
 | `src/model_project_constructor/agents/website/templates.py` / `governance_templates.py` | Deterministic templating — **no LLM** |
@@ -188,7 +196,7 @@ The AI integration pulls a transitive stack — `langchain-core`, `langsmith`, `
 ## Related pages
 
 - [Security Considerations](Security-Considerations) — credential handling, network boundaries, exactly what the LLM sees, read-only DB contract.
-- [Software Bill of Materials](Software-Bill-of-Materials) — full dependency tables, transitive tree, locked versions, licenses.
+- [Software Bill of Materials](Software-Bill-of-Materials) — full dependency tables, transitive tree, and locked versions.
 - [Architecture Decisions](Architecture-Decisions) — AD-2 (LangGraph + provider seam), AD-9 (no LLM-generated SQL executes against production).
 - [Agent Reference](Agent-Reference) — per-agent inputs, outputs, and failure modes.
 - [Governance Framework](Governance-Framework) — what the LLM's governance classification drives.

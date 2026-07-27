@@ -2,7 +2,7 @@
 
 ## Architecture
 
-The pipeline is a sequential chain of three LLM-backed agents, each producing a structured report that becomes the next agent's input. An orchestrator drives the chain and persists inter-agent handoffs as checkpoint envelopes.
+The pipeline is a sequential chain of three agents -- two LLM-backed (Intake, Data) and a deterministic, template-driven Website Agent -- each producing a structured report that becomes the next agent's input. An orchestrator drives the chain and persists inter-agent handoffs as checkpoint envelopes.
 
 ```
 Stakeholder

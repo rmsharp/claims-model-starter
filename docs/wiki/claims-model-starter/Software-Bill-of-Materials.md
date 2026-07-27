@@ -28,7 +28,7 @@ This SBOM covers both the **Model Project Constructor** (the tool) and the **gen
 | Package | Constraint | Purpose |
 |---------|-----------|---------|
 | langgraph | >=0.2,<0.3 | Agent state machine and graph execution |
-| anthropic | >=0.40 | Claude API client (all agents) |
+| anthropic[bedrock] | >=0.40 | Claude API client (Intake and Data agents only — the Website Agent makes no LLM calls). The `[bedrock]` extra pulls in boto3/botocore for the AWS Bedrock provider. An unmerged branch raises the floor to >=0.94 |
 | sqlparse | >=0.5 | SQL parsing and validation |
 | sqlalchemy | >=2.0,<3 | Database abstraction (Data Agent) |
 | python-gitlab | >=4 | GitLab API adapter (Website Agent) |
@@ -70,7 +70,7 @@ This SBOM covers both the **Model Project Constructor** (the tool) and the **gen
 | langgraph | >=0.2,<0.3 | Agent graph execution |
 | sqlparse | >=0.5 | SQL parsing and analysis |
 | sqlalchemy | >=2.0,<3 | Database abstraction |
-| anthropic | >=0.40 | Claude API client |
+| anthropic[bedrock] | >=0.40 | Claude API client; the `[bedrock]` extra pulls in boto3/botocore for the AWS Bedrock provider. An unmerged branch raises the floor to >=0.94 |
 | typer | >=0.12 | CLI framework |
 
 ### Key transitive dependencies
@@ -82,6 +82,11 @@ These are pulled in by direct dependencies and pinned in `uv.lock`:
 | langchain-core | langgraph | Base types and protocols |
 | langsmith | langchain-core | Observability and debugging |
 | httpx | anthropic, langsmith | Async HTTP client |
+| boto3 | anthropic[bedrock] | AWS SDK — present only because of the Bedrock LLM provider |
+| botocore | boto3, anthropic[bedrock] | AWS SigV4 request signing and credential-chain resolution |
+| jmespath | boto3, botocore | JSON query language used by the AWS SDK |
+| s3transfer | boto3 | AWS transfer manager (a boto3 dependency; unused by this project) |
+| python-dateutil | botocore, ghp-import | Date parsing for AWS API payloads |
 | requests | python-gitlab, PyGithub | Sync HTTP client |
 | starlette | fastapi | ASGI web framework |
 | click | typer, uvicorn | CLI argument parsing |
@@ -157,14 +162,24 @@ The generated claims-model-starter repository has its own, much smaller dependen
 
 | Variable | Scope | Purpose |
 |----------|-------|---------|
-| `ANTHROPIC_API_KEY` | Any live agent run | Claude API authentication |
+| `ANTHROPIC_API_KEY` | Live agent runs on the `anthropic` provider | Claude API authentication — not used by the `bedrock` provider, which authenticates from the AWS credential chain |
+| `AWS_REGION` / `AWS_DEFAULT_REGION` | `bedrock` provider | Selects the regional Bedrock endpoint and the data-residency geography |
 | `GITLAB_TOKEN` | GitLab live mode | GitLab API (Website Agent) |
 | `GITHUB_TOKEN` | GitHub live mode | GitHub API (Website Agent) |
 | `MPC_CHECKPOINT_DIR` | All runs | Orchestrator handoff storage |
 | `MPC_HOST` | All runs | `gitlab` or `github` (default: gitlab) |
 | `MPC_HOST_URL` | Self-hosted instances | Override API endpoint |
 | `MPC_LOG_LEVEL` | All runs | Logging verbosity (default: INFO) |
+| `MPC_NAMESPACE` | Live host runs | Target GitLab group / GitHub org **path** (never a URL — a URL is rejected) |
 | `INTAKE_DB_PATH` | Web UI only | SQLite session state |
+| `INTAKE_LLM_PROVIDER` | Intake web UI | LLM backend: `anthropic` (default) or `bedrock` |
+| `INTAKE_LLM_MODEL` | Intake web UI | Model-id override; when unset, each provider uses its own `DEFAULT_MODEL` |
+
+One more variable is honoured by the Bedrock SDK client on `master` **and** on the unmerged branch, but is only documented (in `.env.example`) and guarded (`require_sigv4`) on the branch:
+
+| Variable | Scope | Purpose |
+|----------|-------|---------|
+| `AWS_BEARER_TOKEN_BEDROCK` | `bedrock` provider, **dev only** | Short-term Bedrock API key; when set it overrides SigV4 and bypasses the IAM role — leave unset in production (pass `require_sigv4=True` to make a stray token a hard error) |
 
 ### Frontend dependencies
 
@@ -181,10 +196,10 @@ There is no `package.json`, `npm`, or `node_modules`.
 
 | Component | Direct deps | Notable transitive |
 |-----------|------------|-------------------|
-| **Intake Agent** | anthropic, langgraph, pydantic, typer | httpx, langchain-core, anyio |
+| **Intake Agent** | anthropic[bedrock], langgraph, pydantic, typer | httpx, langchain-core, anyio, boto3, botocore |
 | **Intake Web UI** | fastapi, uvicorn, sse-starlette, langgraph-checkpoint-sqlite | starlette, aiosqlite, anyio |
-| **Data Agent** | anthropic, langgraph, sqlparse, sqlalchemy, typer | httpx, langchain-core, greenlet |
-| **Website Agent** | anthropic, langgraph, python-gitlab, PyGithub, typer | requests, cryptography, pynacl, pyjwt |
+| **Data Agent** | anthropic[bedrock], langgraph, sqlparse, sqlalchemy, typer | httpx, langchain-core, greenlet, boto3, botocore |
+| **Website Agent** | langgraph, python-gitlab, PyGithub, typer (no `anthropic` — deterministic, makes no LLM calls) | requests, cryptography, pynacl, pyjwt |
 | **Orchestrator** | pydantic, pyyaml | (uses agent deps transitively) |
 | **Testing** | pytest, pytest-asyncio, pytest-cov, mypy, ruff | coverage, pluggy, pathspec |
 
@@ -204,5 +219,7 @@ The `uv.lock` file pins all packages to exact versions. As of the current lockfi
 | pytest | 9.0.3 |
 | mypy | 1.20.1 |
 | ruff | 0.15.10 |
+| boto3 | 1.43.32 |
+| botocore | 1.43.32 |
 
-The full locked dependency tree (87 packages) is in `uv.lock` at the repository root.
+The full locked dependency tree — 98 `[[package]]` entries, including the two workspace members — is in `uv.lock` at the repository root.

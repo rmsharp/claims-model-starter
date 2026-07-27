@@ -58,13 +58,13 @@ The [Schema Reference](Schema-Reference) page is hand-written against v1.0.0. An
 
 ### Release-tag-driven changelog refresh
 
-The [Changelog](Changelog) is phase-organized. Once the first tagged release cuts, a script that emits a new section per `git tag` would avoid manual phase-curation.
+The [Changelog](Changelog) is phase-organized. Two release tags have now cut (`v0.1.0`, `v0.2.0`) and `pyproject.toml` is at `0.2.0`, so the tagged-release precondition is already met: a script that emits a new section per `git tag` would replace manual phase-curation today.
 
 **Audience:** Operators, developers.
 
 ### Additional worked example
 
-[Worked Examples](Worked-Examples) traces two scenarios (subrogation — tier-3 supervised classification; renewal profitability — tier-1 fairness-constrained). A third example covering regression or an unsupervised scenario would improve coverage once a corresponding fixture lands.
+[Worked Examples](Worked-Examples) traces two scenarios (subrogation — tier-3 supervised classification; renewal profitability — tier-1 fairness-constrained). A third example covering regression is unblocked today: `tests/fixtures/tier2_intake.json` (commercial property loss reserving; `supervised_regression`, tier-2 high) already ships and is listed in the Worked Examples fixture table, but has no traced walkthrough. An unsupervised scenario still awaits a corresponding fixture.
 
 **Audience:** New users, business stakeholders evaluating the tool.
 

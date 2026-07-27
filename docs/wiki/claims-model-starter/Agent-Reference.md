@@ -6,7 +6,7 @@ Detailed specifications for each agent in the pipeline.
 
 ### Purpose
 
-Conducts a guided interview with a business stakeholder to capture the business problem, proposed solution, model solution, and estimated value. Acts as an expert data scientist, business analyst, and consultant in the P&C claims domain.
+Conducts a guided interview with a business stakeholder to capture the business problem, proposed solution, model solution, estimated value, and value-measurement plan. Acts as an expert data scientist, business analyst, and consultant in the P&C claims domain.
 
 ### Input schema
 
@@ -23,9 +23,14 @@ initial_state
 `run_scripted` additionally takes:
 
 ```
-interview_answers: list[str]
-review_responses:  list[str]
+review_responses:  list[str]                     # required; one per review interrupt
+interview_answers: list[str] | None = None       # fixed answers consumed in order
+answer_provider:   AnswerProvider | None = None  # answers on demand (live runs)
+domain:            str = "pc_claims"
+initial_problem:   str | None = None
 ```
+
+Supply **exactly one** of `interview_answers` / `answer_provider` -- passing both, or neither, raises `ValueError`. A fixed list raises `RuntimeError` if the graph asks more questions than were supplied; an `AnswerProvider` is called with each question actually asked, so it cannot run out -- that is the path used to drive a live model (`tests/eval/stakeholder_sim.py` implements the protocol; `tests/eval/test_eval_live.py` and `tests/eval/shadow_run.py` pass it in).
 
 Source of truth: `initial_state` (`src/model_project_constructor/agents/intake/state.py`) and `run_scripted` (`src/model_project_constructor/agents/intake/agent.py`).
 
@@ -62,7 +67,9 @@ IntakeReport
   value_measurement_plan: ValueMeasurementPlan | None
   governance:        GovernanceMetadata
     cycle_time:                CycleTime
+    cycle_time_rationale:      str
     risk_tier:                 RiskTier
+    risk_tier_rationale:       str
     regulatory_frameworks:     list[str]
     affects_consumers:         bool
     uses_protected_attributes: bool
@@ -77,7 +84,7 @@ IntakeReport
 ### Behavior
 
 - Asks **one question at a time** (not multiple)
-- **Max 20 questions** -- converges toward the four required sections
+- **Max 20 questions** -- converges toward the five required sections
 - Guides the stakeholder with domain expertise -- does not just transcribe answers
 - Presents a draft for stakeholder review with up to **3 revision cycles**
 - Status is `DRAFT_INCOMPLETE` if the cap is hit with gaps or the stakeholder rejects after 3 revisions

@@ -7,7 +7,7 @@
 - Git
 
 For live runs (optional):
-- An Anthropic API key (`ANTHROPIC_API_KEY`)
+- An Anthropic API key (`ANTHROPIC_API_KEY`) -- or, to run the Intake/Data agents on AWS Bedrock instead (`--provider bedrock`, or `INTAKE_LLM_PROVIDER=bedrock` for the intake web UI), AWS credentials resolvable from the standard credential chain (IAM role, SSO login, or profile) plus a region (`AWS_REGION`). Bedrock has no single API-key env var. The `bedrock` provider is implemented and unit-tested but has **never been exercised against a live endpoint** -- every measured result in this project is `anthropic`-only, so verify it in your own AWS account before depending on it.
 - A GitLab personal access token with `api` scope (`GITLAB_TOKEN`), or
 - A GitHub PAT with `repo` scope (`GITHUB_TOKEN`)
 
@@ -31,7 +31,7 @@ uv sync --extra agents --extra ui --extra dev
 uv run pytest -q
 ```
 
-You should see 795+ tests pass with ~97% coverage.
+You should see 900+ tests pass with ~97% coverage.
 
 ## First dry run (no API keys needed)
 
@@ -89,7 +89,7 @@ To run the Intake and Data agents against the real Anthropic API, add `--llm=bot
 uv run python scripts/run_pipeline.py --live --host github --llm both --intake-fixture tests/fixtures/subrogation.yaml
 ```
 
-This requires `ANTHROPIC_API_KEY` in `.env` in addition to the repo host token. See the script's help (`uv run python scripts/run_pipeline.py --help`) for all LLM mode options and the `--provider` flag to swap the LLM backend.
+This requires `ANTHROPIC_API_KEY` in `.env` in addition to the repo host token. See the script's help (`uv run python scripts/run_pipeline.py --help`) for all LLM mode options and the `--provider` flag to swap the LLM backend (e.g. `--provider bedrock`, which authenticates from the AWS credential chain instead of `ANTHROPIC_API_KEY`).
 
 See [Monitoring and Operations](Monitoring-and-Operations) for environment variable details.
 

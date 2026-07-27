@@ -20,10 +20,10 @@ When the pipeline completes, your team gets a repository containing:
 ```bash
 git clone <project-url>
 cd <project-name>
-uv sync
+uv sync --extra dev
 ```
 
-The generated `pyproject.toml` includes `pandas`, `scikit-learn`, and `sqlalchemy` as core dependencies, plus `pytest`, `pytest-cov`, and `ruff` as dev dependencies.
+The generated `pyproject.toml` includes `pandas`, `scikit-learn`, and `sqlalchemy` as core dependencies, plus `pytest`, `pytest-cov`, and `ruff` as dev dependencies. The dev toolchain is declared as an *optional-dependency extra*, so a bare `uv sync` installs the runtime dependencies only and leaves `pytest` and `ruff` missing -- pass `--extra dev` as shown.
 
 ### 2. Review the intake and data reports
 
@@ -94,13 +94,14 @@ The CI pipeline runs `ruff check`, `pytest`, and governance JSON well-formedness
 
 The generated project includes:
 
-- **ruff** -- Linting and formatting (with default rules: E, F, I, UP, B, SIM).
+- **ruff** -- Linting and formatting. Note the generated `pyproject.toml` ships no `[tool.ruff]` section and the generated pre-commit hook passes no rule selection, so a generated repo runs ruff's own built-in defaults, *not* the constructor's `E, F, I, UP, B, SIM` set. To match the constructor, add a `[tool.ruff.lint]` table with `select = ["E", "F", "I", "UP", "B", "SIM"]`.
 - **pytest** -- Testing framework with coverage reporting.
 - **Pre-commit hooks** -- ruff lint + format, model registry JSON well-formedness check.
 
-Install the hooks:
+Install the hooks: the generated project ships the `.pre-commit-config.yaml` but does not declare `pre-commit` itself, so `uv run pre-commit` resolves only if you already have it installed globally. Add it to the project first, then activate the hooks:
 
 ```bash
+uv add --dev pre-commit
 uv run pre-commit install
 ```
 

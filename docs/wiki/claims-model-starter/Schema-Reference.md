@@ -56,10 +56,12 @@ The schemas/v1/common module defines three Literal-string enums reused across re
 CycleTime = Literal["strategic", "tactical", "operational", "continuous"]
 ```
 
-- `strategic` — months to quarters between decisions (e.g., pricing committee).
-- `tactical` — weeks (e.g., weekly triage model retuning).
-- `operational` — days to hours (e.g., daily batch scoring).
-- `continuous` — sub-minute / event-driven (e.g., real-time fraud triage).
+- `strategic` — its output informs enterprise- or portfolio-level strategy, pricing, or capital decisions set and refreshed on the business/regulatory planning calendar (typically quarterly to annual), e.g. a rating strategy refreshed each filing cycle. The planning cadence and enterprise scope decide this, not how often the output is consumed.
+- `tactical` — its output is **per-case decision support** (which individual claim to work, how to handle one case), paced by the workflow it informs rather than by a fixed institutional close; a nightly batch feeding the next shift's work-queue is still `tactical`. Output *purpose*, not run frequency, decides this.
+- `operational` — its output is a periodic portfolio- or process-level artifact produced as a recurring scheduled step in a standing process or close (e.g. a daily/weekly/monthly reserving or close dashboard) — not per-case decision support and not real-time.
+- `continuous` — real-time/streaming per-case scoring: each event is scored as it arrives (e.g. at first notice of loss), with no batch or scheduled-run boundary.
+
+These bullets paraphrase `CYCLE_TIME_DEFINITIONS` (`src/model_project_constructor/agents/intake/anthropic_client.py`), which the `SYSTEM_GOVERNANCE` prompt renders verbatim and which `assert_vocab_parity` pins to the `CycleTime` `Literal`. Keep them in sync with it.
 
 ### `RiskTier`
 
@@ -166,7 +168,7 @@ class EstimatedValue(StrictBase):
 
 `annual_impact_usd_low` and `_high` are both nullable — when value is genuinely uncertain, both should be `null`, not a zeroed estimate.
 
-The pre-construction business-case fields are optional at the schema level so legacy fixtures continue to validate. They are required for `COMPLETE` status at finalize-time (intake-prompt extensions land in Phase 2). They feed the generated `01_business_understanding.qmd` and `reports/intake_report.md` (Phase 4).
+The pre-construction business-case fields are optional at the schema level so legacy fixtures continue to validate. They stay optional at finalize-time as well: the finalize node's only `COMPLETE` gate on the value sections is the `value_measurement_plan` (see [`ValueMeasurementPlan`](#valuemeasurementplan) below). When a business-case field is absent, the generated `analysis/01_business_understanding.qmd` and `reports/intake_report.md` render `(not estimated)` rather than failing validation.
 
 ### `ValueMeasurementPlan`
 
@@ -594,7 +596,7 @@ The `CheckpointStore` in `src/model_project_constructor/orchestrator/checkpoints
 <MPC_CHECKPOINT_DIR>/<run_id>/
     IntakeReport.json           # envelope (source_agent=orchestrator, target=data)
     DataRequest.json            # envelope (source=orchestrator, target=data)
-    DataReport.json             # envelope (source=data, target=website)
+    DataReport.json             # envelope (source=orchestrator, target=website)
     RepoTarget.json             # envelope (source=orchestrator, target=website)
     RepoProjectResult.result.json   # terminal result, not an envelope
 ```

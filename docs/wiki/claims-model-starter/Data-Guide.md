@@ -51,16 +51,16 @@ These datasheets are scaffolds -- the data science team should update them with 
 The generated module contains:
 
 - `PRIMARY_QUERY_NAMES` -- list of query names from the DataReport
-- `read_sql(query_name)` -- stub to read a `.sql` file and execute it
-- `load_primary()` -- stub to load all primary query results
+- `read_sql(query_name)` -- returns the SQL text of a primary query (already implemented; it does not execute anything)
+- `load_primary(query_name)` -- stub to load one primary query's result into a DataFrame
 
-The team implements these functions to connect to their data warehouse:
+The team implements `load_primary` to connect to their data warehouse:
 
 ```python
-from <project>.data_loading import load_primary
+from <project>.data_loading import PRIMARY_QUERY_NAMES, load_primary
 
-# After implementing the stubs:
-df = load_primary()
+# After implementing the loader stub:
+df = load_primary(PRIMARY_QUERY_NAMES[0])  # or any name from PRIMARY_QUERY_NAMES
 ```
 
 ## Data expectations
@@ -92,6 +92,8 @@ When the intake interview captures a value-measurement plan with a baseline metr
 | `metric_name` | The baseline metric, e.g. `subro_recovery_rate` |
 | `value` | The scalar baseline (`null` when not executed or failed) |
 | `measurement_unit` | Free-form unit -- `percent`, `USD`, `count`, ... |
+| `measurement_window_start` | Start of the window the baseline was measured over -- `null` unless a caller sets it (the pipeline's baseline-collection node leaves it unset) |
+| `measurement_window_end` | End of the window the baseline was measured over -- `null` unless a caller sets it |
 | `query_sql` | The generated baseline query, preserved even when unexecuted |
 | `query_execution_status` | `EXECUTED`, `NOT_EXECUTED`, or `FAILED` |
 | `caveats` | Notes -- populated when the query was not executed or failed |
@@ -116,7 +118,7 @@ The Data Agent accepts a `DataRequest` (target, granularity, features, populatio
 
 ## LLM provider selection
 
-Both `run` and `discover` subcommands accept a `--provider` flag (default `anthropic`) to select the LLM backend. The known-provider list is single-sourced via `factory.make_llm_client`, so adding a new provider requires one new client module plus one factory branch. Today only `anthropic` is available; the seam exists for future extensibility.
+Both `run` and `discover` subcommands accept a `--provider` flag (default `anthropic`) to select the LLM backend. The known-provider list is single-sourced from the `LLMProvider` `Literal` in `factory.py` via `typing.get_args`, so adding a new provider requires one new client module, one factory branch, and one `Literal` member. Two providers ship today: `anthropic` (first-party API, default model `claude-sonnet-4-6`) and `bedrock` (AWS Bedrock-hosted Claude, whose credentials resolve from the AWS credential chain rather than `ANTHROPIC_API_KEY`, and whose `DEFAULT_MODEL` carries an `anthropic.` Bedrock provider prefix). The `bedrock` path has not been exercised against a live endpoint.
 
 ## Providing a data source inventory
 

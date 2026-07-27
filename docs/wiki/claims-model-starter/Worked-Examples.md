@@ -242,7 +242,7 @@ Personal auto policy renewals are currently decided by a rules engine that over-
 - `evaluation_metrics`: AUC, calibration_slope, **subgroup_AUC_parity**
 - `estimated_value`: $8M–$12M annual on a $400M book, *primarily compliance-driven*
 - `governance.risk_tier: "tier_1_critical"`
-- `governance.cycle_time: "continuous"` — nightly scoring + near-real-time drift/fairness monitoring
+- `governance.cycle_time: "continuous"` — nightly scoring + near-real-time drift/fairness monitoring (the fixture's own `cycle_time_rationale`; note the tightened `continuous` definition on [Schema Reference](Schema-Reference), under which a batch-only cadence would classify as `tactical`)
 - `governance.regulatory_frameworks: ["SR_26_2", "NAIC_AIS", "EU_AI_ACT_ART_9", "ASOP_56"]`
 - `governance.affects_consumers: true`
 - **`governance.uses_protected_attributes: true`** — triggers fairness scaffolds

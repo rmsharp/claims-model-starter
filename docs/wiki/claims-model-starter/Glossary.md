@@ -37,7 +37,7 @@
 | Term | Definition |
 |------|-----------|
 | **Risk tier** | Classification of model risk severity. Tier 1 (critical) through Tier 4 (low). Determines governance artifact depth. |
-| **Cycle time** | How frequently the model's decisions are acted upon. Strategic (annual), tactical (quarterly), operational (monthly), continuous (real-time). |
+| **Cycle time** | The decision purpose and scope the model's output serves — a governance label, not a run frequency. `strategic` = enterprise/portfolio strategy, pricing, or capital decisions set on the planning calendar; `tactical` = per-case decision support paced by the workflow it feeds (an overnight batch is still tactical); `operational` = a periodic portfolio- or process-level artifact in a standing process or close; `continuous` = real-time per-event scoring. Distinct from the *monitoring* cadence each value maps to — see [Governance Framework](Governance-Framework). |
 | **Model card** | Standardized documentation of a model's purpose, performance, and limitations (Mitchell et al. 2019). |
 | **Datasheet** | Standardized documentation of a dataset's composition, collection process, and biases (Gebru et al. 2021). |
 | **Three-pillar validation** | Validation framework: conceptual soundness, ongoing monitoring, outcomes analysis. |
@@ -56,7 +56,7 @@
 
 ## Statistical terms
 
-> **Curated subset.** See [`docs/style/statistical_terms.md`](../../style/statistical_terms.md) for the full glossary, authoritative sources, and amendment process.
+> **Curated subset.** See `docs/style/statistical_terms.md` in the repository for the full glossary, authoritative sources, and amendment process.
 
 | Term | Definition | Common confusion |
 |------|-----------|-----------------|
@@ -75,6 +75,6 @@
 | **Pydantic** | Python library for data validation using type annotations. v2 provides high-performance validation via a Rust core. |
 | **uv** | Fast Python package installer and resolver. Used as the project's package manager with workspace support. |
 | **RepoClient** | Python protocol defining the interface for repository operations (`create_project`, `commit_files`). |
-| **IntakeLLMClient** | Python protocol for the Intake Agent's LLM client. Implementations may vary (e.g., `AnthropicLLMClient`); client selection is routed through `make_llm_client(provider)` factory. |
+| **IntakeLLMClient** | Python protocol for the Intake Agent's LLM client. Two implementations exist: `AnthropicLLMClient` (first-party Anthropic API) and `BedrockLLMClient` (a thin subclass pointed at AWS Bedrock-hosted Claude). Client selection is routed through the `make_llm_client(provider)` factory, whose provider vocabulary is `LLMProvider = Literal["anthropic", "bedrock"]`. |
 | **SSE** | Server-Sent Events. HTTP-based protocol for streaming data from server to client. Used by the intake web UI. |
 | **HTMX** | Lightweight JavaScript library for building dynamic UIs using HTML attributes instead of JavaScript. |

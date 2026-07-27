@@ -25,7 +25,7 @@ Loading a `.env` file is the caller's responsibility — `src/model_project_cons
 
 ### 1.2 The complete env-var matrix
 
-Defined in `.env.example` and documented in `OPERATIONS.md` §1:
+Defined in `.env.example` and documented in `OPERATIONS.md` §1 — except the two AWS rows (`AWS_REGION` / `AWS_DEFAULT_REGION` and `AWS_BEARER_TOKEN_BEDROCK`), which appear only in `.env.example` on the unmerged branch and are covered by `docs/deployment/bedrock-enterprise.md` rather than `OPERATIONS.md`:
 
 | Variable | Required | Default | Used for |
 |---|---|---|---|
@@ -34,15 +34,22 @@ Defined in `.env.example` and documented in `OPERATIONS.md` §1:
 | `MPC_NAMESPACE` | no | host-specific default (GitLab: `data-science/model-drafts`; GitHub: `my-org`) | Target group/org path for generated project (git-host scoped) |
 | `GITLAB_TOKEN` | yes (live GitLab) | — | PAT with `api` scope + create_project permission |
 | `GITHUB_TOKEN` | yes (live GitHub) | — | PAT with `repo` scope |
-| `ANTHROPIC_API_KEY` | yes (any LLM call) | — | Intake, Data Agent QC generation |
+| `ANTHROPIC_API_KEY` | yes (LLM calls on the `anthropic` provider) | — | Intake, Data Agent QC generation. Not used by `bedrock`, which authenticates from the AWS credential chain. |
 | `MPC_CHECKPOINT_DIR` | no | `./.orchestrator/checkpoints` | Where per-run JSON envelopes land |
 | `MPC_LOG_LEVEL` | no | `INFO` | `DEBUG` through `CRITICAL` |
 | `INTAKE_DB_PATH` | no | `./intake_sessions.db` | SQLite for live intake web UI sessions |
+| `INTAKE_LLM_PROVIDER` | no | `anthropic` | LLM backend for the intake web UI: `anthropic` or `bedrock`. An unknown value raises `ValueError` at app construction (`_resolve_provider` in `src/model_project_constructor/ui/intake/app.py`). Only read by the UI; the CLIs use `--provider`. |
+| `INTAKE_LLM_MODEL` | no | provider default | Model-id override for the intake web UI; leave unset to keep the id provider-native. Only read by the UI. |
+| `AWS_REGION` / `AWS_DEFAULT_REGION` | yes (bedrock, unless supplied as the `aws_region` argument or by the AWS profile) | — | Region for the Bedrock client — selects the endpoint host and the data-residency geography. On `master` an unresolved region does **not** fail: the SDK logs a warning and silently defaults to `us-east-1`. The branch's mantle client raises instead. |
+| `AWS_BEARER_TOKEN_BEDROCK` | no (**dev only**) | — | Short-term Bedrock API key. **Leave unset in production** — on both the classic `AnthropicBedrock` client (`master`) and the bedrock-mantle client (branch) it selects bearer mode and skips SigV4 even with a valid IAM role attached, bypassing least-privilege. |
 
-Only two places outside `src/model_project_constructor/orchestrator/config.py` read env vars directly:
+> **Merge status.** The `bedrock` provider and `INTAKE_LLM_PROVIDER` / `INTAKE_LLM_MODEL` are on `master` — read by the web UI and documented in `OPERATIONS.md` §1 — and `AWS_REGION` / `AWS_DEFAULT_REGION` apply on `master` too, since `master`'s `AnthropicBedrock` client resolves its region through the AWS credential chain. What is *not* on `master`: any of these rows in `.env.example`, the mantle endpoint and its client (`AnthropicBedrockMantle`), the `require_sigv4` guard, and `docs/deployment/bedrock-enterprise.md` — all on the unmerged `feat/bedrock-mantle-migration` branch. `AWS_BEARER_TOKEN_BEDROCK` itself is **not** branch-only: at the locked SDK version `master`'s `anthropic.AnthropicBedrock` also switches to bearer auth when that variable is set, silently in place of SigV4. What `master` lacks is the `require_sigv4` guard that rejects a stray token — so the bypass is *unguarded* there rather than absent.
 
-- `create_app` in `src/model_project_constructor/ui/intake/app.py` — `INTAKE_DB_PATH` for the FastAPI web UI.
-- `build_repo_target` and `build_website_runner` in `scripts/run_pipeline.py` — demo script convenience defaults (MPC_HOST_URL, MPC_NAMESPACE, MPC_HOST, and host-specific token).
+Outside `src/model_project_constructor/orchestrator/config.py`, two modules read env vars directly on `master`; the unmerged `feat/bedrock-mantle-migration` branch adds a third (duplicated across both packages, so four files in total on that branch):
+
+- `_resolve_provider`, `_resolve_model`, and `create_app` in `src/model_project_constructor/ui/intake/app.py` — `INTAKE_LLM_PROVIDER`, `INTAKE_LLM_MODEL`, and `INTAKE_DB_PATH` for the FastAPI web UI.
+- `build_repo_target` and `build_website_runner` in `scripts/run_pipeline.py` — demo-script convenience defaults (`MPC_HOST_URL`, `MPC_NAMESPACE`). The host token is *not* read directly here; it comes from `settings.require_host_token()`.
+- `BedrockLLMClient.__init__` in `src/model_project_constructor/agents/intake/bedrock_client.py` and in `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py` — tests `AWS_BEARER_TOKEN_BEDROCK` for **presence only**, to enforce the optional `require_sigv4=True` guard; the value is never read, and AWS credentials themselves are resolved by the SDK from the credential chain. (Unmerged `feat/bedrock-mantle-migration` branch.)
 
 The adapters consume tokens via the settings object; their `__init__` signatures take `private_token: str` as a parameter (`PythonGitLabAdapter.__init__` in `src/model_project_constructor/agents/website/gitlab_adapter.py`, `PyGithubAdapter.__init__` in `src/model_project_constructor/agents/website/github_adapter.py`), so a caller must decide how to get the value to them. The example in the docstring shows `os.environ["GITLAB_TOKEN"]`, but the adapter itself has no opinion on where the token came from — a secret manager, a vault agent, or a keychain all work.
 
@@ -67,13 +74,36 @@ def require_host_token(self) -> str:
         )
     return self.host_token
 
+def require_llm_api_key(self, provider: str = DEFAULT_LLM_PROVIDER) -> str:
+    """Return the API key for ``provider``, raising if it is missing."""
+
+    spec = LLM_PROVIDERS.get(provider)
+    if spec is None:
+        known = ", ".join(sorted(LLM_PROVIDERS))
+        raise ConfigError(
+            f"Unknown LLM provider {provider!r}. Known providers: {known}."
+        )
+    if spec.api_key_env_var is None:
+        raise ConfigError(
+            f"Provider {provider!r} authenticates via the AWS credential "
+            f"chain (boto3), not an API-key env var, so require_llm_api_key "
+            f"does not apply. Ensure AWS credentials and region are available "
+            f"to the boto3 chain (e.g. AWS_REGION, an IAM role, or a profile)."
+        )
+    key = self.llm_api_keys.get(provider)
+    if not key:
+        raise ConfigError(f"{spec.api_key_env_var} is required but was not set")
+    return key
+
 def require_anthropic_api_key(self) -> str:
-    if not self.anthropic_api_key:
-        raise ConfigError("ANTHROPIC_API_KEY is required but was not set")
-    return self.anthropic_api_key
+    """Back-compat alias for ``require_llm_api_key('anthropic')``."""
+
+    return self.require_llm_api_key("anthropic")
 ```
 
 Calling these before any network I/O is the operator's responsibility — they are the explicit "I need this now" checkpoint.
+
+Note the consequence for the Bedrock path: **there is deliberately no fail-loud credential checkpoint for `bedrock`.** `require_llm_api_key("bedrock")` raises by design, because `LLM_PROVIDERS["bedrock"].api_key_env_var` is `None` and AWS credentials are self-discovered by the SDK at call time. A missing, expired, or under-scoped IAM role is therefore not detectable at config-load — it surfaces at the first live `messages.create`. Operators wanting an early check must probe the AWS credential chain themselves before starting a run.
 
 ### 1.4 What `.env` files look like
 
@@ -85,30 +115,40 @@ The template is at `.env.example`. None of its values are defaults; every creden
 
 Outbound network I/O happens from exactly four places.
 
-### 2.1 Anthropic (the LLM)
+### 2.1 The LLM provider (Anthropic API or AWS Bedrock)
 
-Both agents that use an LLM call Anthropic's Claude API:
+Both agents that use an LLM call Claude — via Anthropic's first-party API by default, or via AWS Bedrock when the `bedrock` provider is selected:
 
 | Caller | File | Model (default) |
 |---|---|---|
-| Intake Agent | `DEFAULT_MODEL` in `src/model_project_constructor/agents/intake/anthropic_client.py` | `claude-sonnet-4-6` |
-| Data Agent | `DEFAULT_MODEL` in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` | `claude-sonnet-4-6` |
+| Intake Agent (`provider="anthropic"`) | `DEFAULT_MODEL` in `src/model_project_constructor/agents/intake/anthropic_client.py` | `claude-sonnet-4-6` |
+| Data Agent (`provider="anthropic"`) | `DEFAULT_MODEL` in `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` | `claude-sonnet-4-6` |
+| Intake Agent (`provider="bedrock"`) | `DEFAULT_MODEL` in `src/model_project_constructor/agents/intake/bedrock_client.py` | `anthropic.claude-sonnet-4-6` on `master`; `anthropic.claude-opus-4-8` on the unmerged `feat/bedrock-mantle-migration` branch |
+| Data Agent (`provider="bedrock"`) | `DEFAULT_MODEL` in `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py` | `anthropic.claude-sonnet-4-6` on `master`; `anthropic.claude-opus-4-8` on the unmerged branch |
 
-Both construct `anthropic.Anthropic()` with no explicit args — the SDK picks up `ANTHROPIC_API_KEY` from the environment. Both accept an injected `client` argument so tests can pass a mock. Both default to `claude-sonnet-4-6` and expose a `model` argument for override.
+The Bedrock ids carry the `anthropic.` provider prefix; the two default families deliberately diverge on the unmerged branch because the mantle catalog has no Sonnet tier. Do not treat the first-party default and the Bedrock default as the same id.
 
-LLM client construction is routed through factory functions (`make_llm_client` in `src/model_project_constructor/agents/intake/factory.py` for Intake; `make_llm_client` in `packages/data-agent/src/model_project_constructor_data_agent/factory.py` for Data Agent) so the provider is named explicitly by callers, and a second LLM backend becomes one new client module plus one branch in the factory — no changes at the call sites. The known-provider list is single-sourced via `Literal` + `get_args`, so unknown-provider errors cannot drift from reality. Currently only `"anthropic"` is implemented; the seam (E4 overhaul) exists for future providers.
+The two first-party clients construct `anthropic.Anthropic()` with no explicit args — the SDK picks up `ANTHROPIC_API_KEY` from the environment. All four accept an injected `client` argument so tests can pass a mock, and all four expose a `model` argument for override.
+
+LLM client construction is routed through factory functions (`make_llm_client` in `src/model_project_constructor/agents/intake/factory.py` for Intake; `make_llm_client` in `packages/data-agent/src/model_project_constructor_data_agent/factory.py` for Data Agent) so the provider is named explicitly by callers, and a second LLM backend becomes one new client module plus one branch in the factory — no changes at the call sites. The known-provider list is single-sourced via `Literal` + `get_args`, so unknown-provider errors cannot drift from reality. Two providers are implemented: `"anthropic"` (the first-party API, keyed by `ANTHROPIC_API_KEY`) and `"bedrock"` (AWS-hosted Claude, authenticated by the AWS credential chain rather than an API-key env var — see `src/model_project_constructor/agents/intake/bedrock_client.py` and §1.2 above). Both factories single-source the list from `LLMProvider = Literal["anthropic", "bedrock"]`. The orchestrator's `LLM_PROVIDERS` registry records `bedrock` with `api_key_env_var=None`, so `require_llm_api_key("bedrock")` deliberately raises rather than inventing an env-var key.
 
 **Which agents call Claude (and which do not):**
 
 | Agent | Calls Claude? | `ANTHROPIC_API_KEY` required? |
 |---|---|---|
-| Intake Agent | Yes | Yes |
-| Data Agent | Yes | Yes |
+| Intake Agent | Yes | Yes (on the `anthropic` provider) |
+| Data Agent | Yes | Yes (on the `anthropic` provider) |
 | Website Agent | **No** | **No** |
+
+On the `bedrock` provider `ANTHROPIC_API_KEY` is not required at all — credentials come from the AWS chain instead (§1.2).
 
 Consequence: `ANTHROPIC_API_KEY` is **not** required for website-only runs. The Website Agent operates on the prior agents' artifacts and needs only the git-host token (`GITLAB_TOKEN` or `GITHUB_TOKEN`). Operations recipes that list `ANTHROPIC_API_KEY` as a universal live-run prerequisite are over-specified — see [Evolution](Evolution) (Learning #24, Session 31).
 
-The Anthropic SDK's default endpoint is `https://api.anthropic.com`. Self-hosting the LLM is out of scope — the SDK does not support `base_url` override through our constructors.
+The endpoint depends on the selected provider. With `provider="anthropic"` (the default) the SDK's default endpoint is `https://api.anthropic.com`. With `provider="bedrock"` the traffic goes to AWS instead — on `master` the classic `bedrock-runtime` endpoint via `anthropic.AnthropicBedrock` (SigV4 from the AWS credential chain by default, but the locked SDK also accepts a dev-only `AWS_BEARER_TOKEN_BEDROCK` bearer token in its place, with no guard against it on `master`); on the unmerged `feat/bedrock-mantle-migration` branch the bedrock-mantle endpoint, `https://bedrock-mantle.{region}.api.aws/anthropic`, via `anthropic.AnthropicBedrockMantle` (SigV4 by default, with a dev-only `AWS_BEARER_TOKEN_BEDROCK` bearer mode that silently overrides it). Region comes from the `aws_region` argument or, when unset, `AWS_REGION` / `AWS_DEFAULT_REGION`.
+
+Self-hosting the LLM remains out of scope. On `master` no LLM constructor exposes `base_url`. The unmerged branch adds optional `base_url` and `http_client` keyword args to `BedrockLLMClient.__init__` (both the intake and data-agent copies) so an enterprise deployment can target a PrivateLink VPCE host (when Private DNS is off) or a GovCloud host, and can supply `anthropic.DefaultHttpxClient(proxy=…, verify=<corp CA bundle>)` for a forward proxy / TLS-inspection CA. See `docs/deployment/bedrock-enterprise.md` §4 (also unmerged).
+
+Bedrock has **never been exercised live** — every governance and eval result in this project was produced against the `anthropic` provider, and the live eval tier auto-skips `bedrock` for want of credentials. Treat the Bedrock path as implemented-but-unvalidated.
 
 ### 2.2 GitLab (`PythonGitLabAdapter`)
 
@@ -157,9 +197,9 @@ Every LLM call sends:
 - One of two system prompts (`SYSTEM_INTERVIEWER` for the interviewer, `SYSTEM_GOVERNANCE` for governance classification, both in `src/model_project_constructor/agents/intake/anthropic_client.py`).
 - A user message containing: the domain, the optional `initial_problem`, the full `qa_pairs` history, and the `questions_asked` counter (assembled in `AnthropicLLMClient.next_question` in `src/model_project_constructor/agents/intake/anthropic_client.py`).
 
-**The stakeholder's answers are forwarded verbatim to Anthropic.** Any PII or confidential claim details included in an answer are transmitted as-is. There is **no redaction, scrubbing, or PII filter in this codebase** — grep for `redact|pii|scrub|mask|sanitize` in `src/` returns zero hits.
+**The stakeholder's answers are forwarded verbatim to the configured LLM provider** — Anthropic's API by default, or AWS Bedrock when `provider="bedrock"` (see §2.1). Any PII or confidential claim details included in an answer are transmitted as-is. There is **no redaction, scrubbing, or PII filter in this codebase** — grep for `redact|pii|scrub|mask|sanitize` in `src/` returns zero hits.
 
-Implication for operators: if the interview may contain policyholder-identifying data, the deployment must satisfy Anthropic's data handling terms (or the interview must be constrained to not elicit PII). See [Anthropic's product terms](https://www.anthropic.com/legal) for current commitments — this project does not re-state them.
+Implication for operators: if the interview may contain policyholder-identifying data, the deployment must satisfy the data handling terms of whichever provider it selects (or the interview must be constrained to not elicit PII). See [Anthropic's product terms](https://www.anthropic.com/legal) for current commitments on the first-party path — this project does not re-state them. On the `bedrock` path the counterparty is AWS instead, and the residency geography is whatever `AWS_REGION` selects.
 
 ### 3.2 Data Agent
 
@@ -227,11 +267,12 @@ What lands on disk:
 - **SQL queries** — in `DataRequest.json` (features, filters) and `DataReport.json` (primary queries + quality check SQL).
 - **Database hints** — `database_hint` field on `DataRequest`.
 - **Repo target URLs and project URLs** — from `RepoTarget` and `RepoProjectResult`.
+- **Query result sample rows** — `QualityCheck.raw_result` inside `DataReport.json`. When a DB URL is configured, `make_execute_qc` in `packages/data-agent/src/model_project_constructor_data_agent/nodes.py` populates it with a row count plus the **first five rows** of the result, so real rows from the source tables are written verbatim. `BaselineSnapshot.value` likewise carries a single aggregate read from the baseline query. Treat `$MPC_CHECKPOINT_DIR` as holding production data, not only prose and SQL — see §10 item 7.
 
 What does **not** land on disk:
 
 - **No API tokens** (`GITLAB_TOKEN`, `GITHUB_TOKEN`, `ANTHROPIC_API_KEY`). Envelopes carry payloads, not the orchestrator's configuration.
-- **No query result rows.** `QualityCheck.raw_result` is the only field that could carry rows, and the production flow populates it only with summary statistics, not row data.
+- **No full query result sets.** `QualityCheck.raw_result` is capped at the first five rows per executed quality check; a complete result set is never persisted. (It does not reach the LLM either — see §3.2 — but it *is* on disk, per the list above.)
 
 ### 5.3 Protection
 
@@ -308,7 +349,7 @@ From `pyproject.toml` (root) and `packages/data-agent/pyproject.toml`:
 | `pydantic>=2.6,<3` | everywhere | Core schema layer — wide usage, active maintenance. |
 | `pyyaml>=6` | intake fixtures | Standard YAML. Use `safe_load` only (verified). |
 | `langgraph>=0.2,<0.3` | intake/data/website agent graphs | State graph framework. |
-| `anthropic>=0.40` | LLM calls | Anthropic's official SDK. |
+| `anthropic[bedrock]>=0.40` | LLM calls (first-party + Bedrock) | Anthropic's official SDK. The `[bedrock]` extra pulls `boto3` / `botocore` for AWS SigV4 signing (`uv.lock`, the `anthropic` package's `[package.optional-dependencies] bedrock` group) — additional transitive trust surface. The unmerged `feat/bedrock-mantle-migration` branch raises the floor to `>=0.94`, the release that ships `AnthropicBedrockMantle`. |
 | `sqlparse>=0.5` | Data Agent SQL validation | Parse-level only — no execution. |
 | `sqlalchemy>=2.0,<3` | `ReadOnlyDB` | Standard; DB URL is operator-provided. |
 | `python-gitlab>=4` | GitLab adapter | Official GitLab SDK. |
@@ -326,7 +367,7 @@ Full dependency tree including transitives and locked versions is in the [SBOM](
 These are explicit design decisions, not bugs.
 
 1. **No in-process SQL filtering.** The Data Agent prompts for SELECTs; safety is a DB-role concern. If you need defense-in-depth, add a proxy that rejects non-SELECTs — do not patch `packages/data-agent/src/model_project_constructor_data_agent/sql_validation.py`.
-2. **No PII redaction before LLM calls.** The deployment must satisfy its own data-handling contract with Anthropic. This is a policy problem, not a code problem.
+2. **No PII redaction before LLM calls.** The deployment must satisfy its own data-handling contract with whichever LLM provider it selects — Anthropic on the default path, AWS on the `bedrock` path. This is a policy problem, not a code problem.
 3. **No auth on the intake web UI.** `src/model_project_constructor/ui/intake/app.py` serves routes without authentication or authorization middleware. The app is designed to be run behind a reverse proxy that handles auth (corporate SSO, OAuth proxy, etc.). Running it as-is on a public interface would expose the interview surface to anyone who can reach it.
 4. **No rate limiting** on adapter calls or LLM calls. The SDKs will surface provider-side rate limit errors; this project does not add its own limiter.
 5. **No retry budget for network calls.** The Website Agent's LangGraph has a bounded retry loop for commit failures (the `RETRY_BACKOFF` self-loop off `INITIAL_COMMITS`, bounded by `MAX_COMMIT_ATTEMPTS` and `RETRY_BASE_DELAY_SECONDS` in `src/model_project_constructor/agents/website/state.py`), but neither the adapters nor the LLM clients retry on their own. Transient failures bubble up as halt conditions.
@@ -341,12 +382,15 @@ These are explicit design decisions, not bugs.
 - [ ] Confirm `.env` and `$MPC_CHECKPOINT_DIR` are on appropriately-permissioned storage.
 - [ ] Confirm the Data Agent's DB role is `SELECT`-only on the intended schemas.
 - [ ] Confirm the intake web UI, if deployed, sits behind an authenticating reverse proxy.
-- [ ] Confirm Anthropic data handling terms are compatible with the content interviewers will elicit.
+- [ ] Confirm the selected provider's data handling terms are compatible with the content interviewers will elicit — Anthropic's on the default path, AWS's on the `bedrock` path.
 - [ ] Confirm the target `GITLAB_TOKEN` / `GITHUB_TOKEN` has the minimum required scope (no broader than `api` / `repo`).
 - [ ] Confirm CI does not inject real credentials into the `.github/workflows/ci.yml` jobs.
-- [ ] Review the [SBOM](Software-Bill-of-Materials) for unacceptable license profiles.
+- [ ] Review the [SBOM](Software-Bill-of-Materials) for unacceptable license profiles — note it lists packages, constraints, and locked versions but **not** per-dependency licenses yet (adding a license column is an open item on [Content Recommendations](Content-Recommendations)); `PyGithub` is the one LGPL-3.0 direct dependency.
 - [ ] Decide whether checkpoint files must be encrypted at rest (this project does not encrypt them).
 - [ ] Decide whether LLM call metadata should be forwarded to a SIEM (structured logging makes this straightforward).
+- [ ] If the `bedrock` provider is selected (`--provider bedrock` on the CLIs, or `INTAKE_LLM_PROVIDER=bedrock` for the web UI): confirm the execution role's policy is least-privilege **and matches the endpoint in use**. On the unmerged `feat/bedrock-mantle-migration` branch the client is `AnthropicBedrockMantle`, which authorizes on `bedrock-mantle:CreateInference` (plus `aws-marketplace:ViewSubscriptions`) — a *different action namespace* from `master`'s classic `bedrock:InvokeModel` path, so a role scoped only to `bedrock:*` will 403 the mantle client. See `docs/deployment/bedrock-enterprise.md` §3.
+- [ ] If the `bedrock` provider is selected — on `master` **or** on the branch: confirm `AWS_BEARER_TOKEN_BEDROCK` is **unset** in the production profile. At the locked SDK version both `anthropic.AnthropicBedrock` (`master`) and `anthropic.AnthropicBedrockMantle` (branch) switch to bearer auth when it is set, silently bypassing the IAM role. Only the branch ships a guard: construct `BedrockLLMClient(require_sigv4=True)` to turn a stray token into a hard `ValueError`. On `master` there is no such guard — the environment is the only control.
+- [ ] If the `bedrock` provider is selected: confirm `AWS_REGION` satisfies data residency (Regional vs Global endpoint — Global routing is a residency violation for regulated P&C data), and enable Bedrock model-invocation logging if prompts/responses need an audit surface — it is off by default. See `docs/deployment/bedrock-enterprise.md` §5, §6 (on the unmerged `feat/bedrock-mantle-migration` branch).
 
 ---
 
@@ -359,6 +403,10 @@ These are explicit design decisions, not bugs.
 | `OPERATIONS.md` | Env-var reference, deployment recipes |
 | `src/model_project_constructor/agents/intake/anthropic_client.py` | Intake LLM prompts + SDK construction |
 | `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py` | Data Agent LLM prompts + SDK construction |
+| `src/model_project_constructor/agents/intake/factory.py` | Provider seam — which LLM backend (and therefore which auth mechanism) a run selects |
+| `src/model_project_constructor/agents/intake/bedrock_client.py` | Bedrock (AWS) auth surface — SigV4 from the AWS credential chain, with a dev-only `AWS_BEARER_TOKEN_BEDROCK` bearer mode that silently overrides it on `master` **and** on the branch; the unmerged `feat/bedrock-mantle-migration` branch adds the `require_sigv4` guard against that override, plus the `base_url` / `http_client` network hooks |
+| `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py` | Same, for the standalone Data Agent wheel |
+| `docs/deployment/bedrock-enterprise.md` | Enterprise Bedrock deployment: least-privilege IAM policy, PrivateLink, data residency, model-invocation logging (unmerged branch) |
 | `src/model_project_constructor/agents/website/gitlab_adapter.py` | GitLab network boundary |
 | `src/model_project_constructor/agents/website/github_adapter.py` | GitHub network boundary |
 | `packages/data-agent/src/model_project_constructor_data_agent/db.py` | Database connection layer + read-only contract |
