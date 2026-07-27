@@ -6,6 +6,76 @@
 
 ## ACTIVE TASK
 
+### What Session 182 Did
+**Deliverable:** Produce the **enterprise migration PLAN** requested by the operator at the close of Session 181. **(COMPLETE — `docs/planning/enterprise-migration.md`, 1098 lines: 10 evidence sections, a 16-entry decision register, 12 phases each a one-session unit with DONE/Verify/Boundary, 19 dragons, and a final acceptance block. NOTHING WAS EXECUTED — no merge, no push, no wiki publish, no MkDocs deploy. The tree is untouched apart from this file and these notes.)**
+
+**Started / Completed:** 2026-07-27.
+
+**Method (2 Workflows, 18 agents, ~2.75M subagent tokens).**
+1. **Evidence** (`wf_9abaa11b-04d`, 14 agents) — 7 disjoint inventory surfaces (merge/CI, wiki, MkDocs/gh-pages, licensing, identity/secrets, enterprise runtime, doc consistency), each adversarially re-verified by a second agent instructed to refute. The verifiers corrected the finders on ~30 points.
+2. **Plan review** (`wf_197374b5-813`, 4 agents) — facts / commands-actually-run / sequencing / completeness, against the drafted plan. **53 defects, 10 BLOCKERs.** All folded in; the plan was then re-tested by running its own commands.
+
+**⚠ FOUR STATE FACTS IN THE SESSION-181 HANDOFF WERE WRONG.** They were labelled *"verified in Session 181, do not re-derive from memory"* — the instruction that would have propagated them. Corrected in the plan §1.1, with commands:
+- **"15-commit branch / 24-commit problem" → 16 and 25.** `git rev-list --count master..feat/…` → 16; `origin/master..feat/…` → 25.
+- **"46 branch-status markers"** mixes units: 46 *occurrences* on 29 *lines*, and the handoff's own per-page breakdown (14/8/3/2/1/1) sums to 29. The canonical grep in the plan finds **36 lines = 34 real + 2 unrelated false positives**, and the handoff's two-term grep **misses 6 real sites**.
+- **"the merge changes no file under `docs/wiki/`, so it produces no diff and no review signal" — INVERTED.** The merge changes **20 wiki pages, +318/−129**; `a1d8af7` lives on the branch. This was load-bearing: it would have made an executor skip wiki review at the one moment it matters.
+- **gh-pages staleness quoted the STALE LOCAL REF.** `git rev-parse origin/gh-pages` → `18c9853`; `git ls-remote origin gh-pages` → **`e8fcba1`**, deployed **2026-06-19** from `d6ea1e7` — not 2026-06-04 / `2442fd7` / "~26 sessions".
+
+**⚠ NEW, UNASKED-FOR AND LIVE — A PUBLIC EXPOSURE ON gh-pages. I verified this by fetching the site, not from an agent report:**
+- `…/audits/2026-06-01-technical-debt-audit/` → **HTTP 200**. `…/audits/2026-06-10-wiki-vs-code-accuracy-audit/` → **HTTP 200**. Both are internal engineering audits; the second **renders the operator's absolute home-directory path into public HTML**.
+- `…/executive-summaries/business-value-capture.qmd` → **HTTP 200** (raw Quarto source of an executive business-case doc).
+- `sitemap.xml` lists **both audits**; `robots.txt` → **404**. They are submitted for indexing.
+- **`…/deployment/bedrock-enterprise/` is 404 today and goes public on the next deploy** — which the merge triggers, because `publish-tutorial.yml` fires on `pyproject.toml` and the merge must change `>=0.40`→`>=0.94`.
+- Cause: `mkdocs.yml:12-17` `exclude_docs` is a **denylist** omitting `audits/`, `deployment/`, `executive-summaries/`, `explainers/`; `nav:` does not gate publication. **This is why the plan's Phase A1 (fix the publication surface) precedes any push.**
+
+**⚠ HIGHEST-SEVERITY LEGAL FINDING — verified first-hand, wider than the handoff's licensing note.** `docs/methodology/README.md:361` asserts *"Iterative Session Methodology — Copyright © 2025-2026 Terrell Deppe (KJ5HST)"* and `:365` *"You may not sell, sublicense, redistribute, publish … without prior written permission"*, inside a **public** repo whose root `LICENSE:8` grants exactly those rights. Its own referenced `LICENSE` file **does not exist**. And the exposure is **not confined to `docs/methodology/`**: `CLAUDE.md:67` declares **`SESSION_RUNNER.md` (304 lines) and `SAFEGUARDS.md` (183 lines)** "synced from canonical, not project-owned" — same framework — and both carry **zero attribution** (`grep -c -i "terrell\|KJ5HST\|copyright"` → 0, 0). Deleting only `docs/methodology/` would leave ~490 lines shipping to a corporate host. **This gates the corporate push (plan D1 / Phase B1) and only the operator and legal can clear it.**
+
+### Session 181 Handoff Evaluation (by Session 182)
+
+**Score: 7/10.**
+- **What helped (a lot):** (1) The **operator directive quoted verbatim** plus the unambiguous *"THE DELIVERABLE IS THE PLAN DOCUMENT. DO NOT EXECUTE IT"* framing — it set the session's shape correctly and pre-empted FM #18/#19. (2) The **planning-protocol reminder** (grep inventory, per-phase criteria, one-session boundaries, dragons) mapped directly onto the deliverable's structure. (3) **The third documentation surface.** Flagging `origin/gh-pages` as *"PREVIOUSLY UNTRACKED IN THESE NOTES"* was the single highest-value pointer in the handoff — it is what led to the live public exposure above. Without it I would have planned two surfaces and shipped a plan that silently published two internal audits. (4) The wiki sweep framed as **"three different edit kinds mixed together… Not a `sed`"** — accurate, and reused verbatim in the plan. (5) The `bedrock-enterprise.md` pointer with its three security questions.
+- **What was wrong (−3):** the four state facts above. One (the wiki-diff claim) was **inverted**, not merely imprecise. All four sat under *"verified in Session 181, do not re-derive from memory"* — a framing that converts a single measurement error into a propagated one, and which cost more than a plain "I believe" would have.
+- **ROI:** strongly positive despite the errors. The gh-pages pointer alone repaid the read many times over.
+
+### Phase 3B: Self-assess — Session 182 — 8/10
+
+- **The +:** (1) **Did not trust the inherited "verified" facts** — re-derived every load-bearing number and found four errors including one inversion. (2) **Verified the two highest-stakes claims first-hand rather than via agent report** — `curl`ed the live site for the public exposure, and read `docs/methodology/README.md`, `LICENSE`, and the two synced root files myself for the rights conflict. (3) **Adversarially reviewed my own deliverable** and acted on all 53 findings; the plan is materially safer for it. (4) **Ran the plan's own commands** — which is how the `uv run mkdocs` failure, the `tar -C` failure, and two pre-existing dead wiki links surfaced. (5) **Held scope absolutely**: a planning session that planned and executed nothing.
+- **The −:** (1) **My first draft contained two blockers of my own making.** `export MPC_SKIP_WIKI_PUBLISH=1` as a standalone step does not survive to the commit (each Bash call is a fresh shell) — it would have published half-swept "merged" language to the public wiki. And A4 opened the PR **without pushing the branch first**, so CI would have tested the pre-A1 tree, gone green, and then an untested tree would have been pushed to `master` — defeating the plan's own central safety claim. Both are things I should have caught before the review. (2) I **carried ~8 line-number citations from the evidence run without checking them myself**; the review caught them. The discipline should have been "verify every citation I publish" from the first draft. (3) My §7 dead-path check was wrong on first write — only running it revealed two pre-existing historical refs.
+- **Quality bar:** meets/exceeds — measured not assumed, adversarially reviewed, commands executed. Held back from 9 by the two self-inflicted blockers.
+
+### Phase 3C: Learnings — Session 182
+
+- **Candidate #147 — NEW, 1st instance — "A plan's verification commands are executable artifacts: RUN every one of them before shipping the plan. They are the part an executor trusts most and reads least critically, and their defects are invisible to reading. S182's draft shipped `export MPC_SKIP_WIKI_PUBLISH=1` as a standalone step (each Bash tool call is a fresh shell → unset by `git commit` time → the armed hook publishes to the PUBLIC wiki), `uv run mkdocs` (mkdocs is in an optional extra → `Failed to spawn`), `tar -x -C /tmp/clean` (tar does not create the dir), an unchained `git merge-base --is-ancestor` guard (prints nothing on failure → the guarded destructive command runs anyway), and a `grep 'sonnet-4-6' → 0` gate that would have destroyed two CORRECT facts. Every one was found by execution, none by reading."** Sibling of #57 (`--no-cov` in plan commands), generalised from one flag to the whole command set. **When to apply:** before committing any plan, runbook, or handoff containing a fenced verification block. Now at **1.** Next candidate = **#148.**
+- **Candidate #148 — NEW, 1st instance — "A handoff fact stamped 'verified — do not re-derive' is the MOST dangerous kind, not the safest: the stamp suppresses the one check that would catch it, so a single measurement error becomes a propagated one. Re-derive stamped facts FIRST, cheapest-first. S182: four such facts were wrong (commit counts 15/24→16/25; '46 markers' unit-confused; 'the merge changes no wiki file' INVERTED; gh-pages staleness read off a stale local ref). Corollary for the producer: stamp a fact with the COMMAND that produced it, never with an authority claim — `git rev-list --count …` invites re-running; 'verified, do not re-derive' forbids it."** Sibling of #145/#146 (verify against primary source; parity ≠ freshness), specialised to the handoff-authority channel. **When to apply:** reading any handoff, and writing one. Now at **1.**
+- **Reinforced:** **#146** (auto-published surfaces: parity green by construction — here the *third* surface, gh-pages, was auto-deploying and nobody was watching). **#59/#61** (adjudicate fan-out output in both directions; arm the shared preamble — the review's own preamble carried the wrong commit count from the handoff and 3 of 4 lenses propagated it until they measured). **#143** (path-scoped `git add`, no `-a`). **FM #11** (read the file NOW).
+- **Candidate roster:** **#147 NEW at 1; #148 NEW at 1**; #146 at 1 (S181); #145 at 1 (S180); #144 at 1 (S180); #143 at 1 (S179); #142 at 1 (S178); earlier per prior roster. `PROJECT_LEARNINGS.md` = **61 rows** (no promotion). Next = **#149.**
+
+### Phase 3D: Handoff to Session 183
+
+**The plan is `docs/planning/enterprise-migration.md`. Session 183's deliverable is OPERATOR'S CHOICE, but the plan is explicit about what comes first — and it is NOT a code phase.**
+
+**⚠ Phase 0 of the plan is an OPERATOR action, not a session.** Sixteen decisions (D1–D16) are recorded with owners and recommendations. **D2, D6 and D7 gate Phase A1 and are the cheapest to answer.** D1 (the third-party methodology rights conflict) gates every corporate push and needs legal. Do not start A1 until D2/D6/D7 are answered — the phase's first scope item depends on D6/D7.
+
+**If the operator green-lights execution, the next session is Phase A1** (contain the public exposure + correct the tutorial). It is a one-session unit with a tested Verify block.
+
+**⚠ State you will inherit:**
+1. **Tree is CLEAN** after this close-out. **Nothing was pushed.** Local `master` still 9 ahead of `origin/master`; branch still at `fc12d9f` + this commit, and **`origin/feat/bedrock-mantle-migration` is still at `fc12d9f`** — i.e. the close-out commit is local only.
+2. **The wiki auto-publish hook is ARMED and untouched** (`git config --get core.hooksPath` → `.githooks`). This session touched no wiki file, so it never fired. **Phases A1, A2, A3 and B1 all touch `docs/wiki/` and must disarm it first — see the STANDING RULE in the plan's §4. `export MPC_SKIP_WIKI_PUBLISH=1` DOES NOT WORK** (fresh shell per Bash call); use `git config --unset core.hooksPath` and re-arm in A4.
+3. **The live public exposure is still live.** Nothing was taken down. It closes in plan Phase A1 + A4.
+4. **Baseline NOT re-measured this session** (no code touched). The inherited measured baseline is 922 passed + 8 live-skipped @ 97.41%, ruff + mypy clean — S181-measured, and independently re-confirmed for ruff + mypy by a review agent this session. **Re-run the full gate before any phase that claims green.**
+5. **The plan's line numbers are valid at `fc12d9f`** and drift as soon as a phase edits. Every phase's Verify block re-derives rather than trusting the plan's own counts — keep it that way.
+6. **Next learning candidates = #147 and #148**, both at 1. `PROJECT_LEARNINGS.md` = 61 rows.
+
+**Key files (full paths):**
+- **The deliverable:** `docs/planning/enterprise-migration.md` (1098 lines). §1.1 = corrections to this handoff's predecessor; §2 = evidence; §3 = D1–D16; §4 = phases A1–A4, B1–B3, C1–C5; §5 = 19 dragons; §7 = acceptance.
+- Publication surface: `mkdocs.yml:12-17` (the denylist), `.github/workflows/publish-tutorial.yml:6-10` (trigger paths incl. `pyproject.toml`), `.github/workflows/ci.yml:9-11` (the `cancel-in-progress` trap).
+- Wiki machinery: `.githooks/post-commit:14,18`, `scripts/publish_wiki.sh:42,72,80,92,104`, `tests/test_wiki_no_line_citations.py:38`.
+- Legal: `docs/methodology/README.md:361,365,369`, `LICENSE:1,3,8`, `README.md:213-215`, `CLAUDE.md:67`.
+- Enterprise runtime: `docs/deployment/bedrock-enterprise.md:149` (the false `ANTHROPIC_BASE_URL` claim), `src/model_project_constructor/agents/intake/bedrock_client.py:92-118`, `agents/website/cli.py:98-108,155-156` (the `MPC_HOST_URL` gap).
+- Workflow transcripts: `wf_9abaa11b-04d` (evidence), `wf_197374b5-813` (plan review).
+
+---
+
 ### What Session 181 Did
 **Deliverable:** Update the published wiki — refresh CONTENT to match repository reality, then publish. **(COMPLETE — `a1d8af7` `docs(wiki): refresh all 20 stale pages to repository reality (Sessions 154-180)`; auto-published to the live GitHub Wiki as `88956f6` by the `.githooks/post-commit` hook. 20 of 24 pages changed, +318/−129. Parity re-verified byte-identical; wiki clone up to date with its `origin/master`.)**
 

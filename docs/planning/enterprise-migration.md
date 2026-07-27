@@ -1,0 +1,1098 @@
+# Plan: Land the branch work on `origin/master`, converge all three documentation surfaces, and prepare the repository + wiki for an enterprise environment
+
+**Status:** DRAFT plan (deliverable of Session 182, a planning session). **Not approved for
+execution.** Each phase below is a *separate* session. Nothing in this document was executed
+while writing it — no merge, no push, no wiki publish, no MkDocs deploy.
+
+**Operator directive (recorded at the close of Session 181, 2026-07-27):**
+
+> *"In the next session, produce a plan to get all of the branch work in the remote master, the
+> wiki reflecting all of the updates, and anything else that needs to be done to move this wiki
+> and main repository into an enterprise environment."*
+
+**Evidence basis.** Every "files to change" list below comes from an executed search, not from
+architectural memory (per `SESSION_RUNNER.md` Phase 2 → Planning Sessions). Evidence was gathered
+by a 14-agent workflow (7 disjoint inventory surfaces, each adversarially re-verified), then the
+plan itself was attacked by a 4-agent review (facts / commands / sequencing / completeness) that
+raised 53 defects — 10 of them blocking. Every fix is folded in below and every surviving number
+was reproduced first-hand. Where a count could not be reproduced exactly, this plan publishes the
+**command** rather than the count and says so.
+
+**Frame of reference.** All line numbers are valid at `feat/bedrock-mantle-migration` = `fc12d9f`
+unless stated otherwise. **Do not cite `SESSION_NOTES.md` line numbers** — that file grows every
+session, and the Session-181 handoff's own citations are already off by 7 against `fc12d9f`.
+
+---
+
+## 1. Executive summary
+
+The operator named three goals. Their true shapes, after measurement:
+
+| # | Goal | Reality |
+|---|---|---|
+| 1 | All branch work into remote `master` | **25 commits**, not 24 — two stacked fast-forwards (9 + 16). Topologically trivial. What makes it non-trivial is that **pushing to `master` is publishing**: it fires a public GitHub Pages deploy that currently leaks documents nobody decided to publish. |
+| 2 | The wiki reflecting all updates | **Already published and byte-identical** — but published *from an unmerged branch*. The public wiki is ahead of the public `master`. The real work is a **merge-status sweep** across 6 pages and **re-pointing the publish machinery** at an enterprise host. |
+| 3 | Anything else needed to move to an enterprise environment | A licensing conflict that is a **hard legal gate**, a live public exposure, an unauthenticated web UI, an incomplete security guard, no deployment artifact at all, and a governance/CI surface that is essentially empty. |
+
+**The single most important structural finding:** every push to `origin/master` triggers
+`mkdocs gh-deploy --force --clean`, which publishes the **entire non-excluded `docs/` tree** — and
+`mkdocs.yml`'s exclusion list is a *denylist* that omits four directories. Stage 1 fires the deploy
+via `docs/tutorial.md`; Stage 2 fires it via `pyproject.toml`. **There is no way to land this work
+without publishing.** The publication surface must therefore be fixed *before* the first push.
+
+**The single highest-severity finding:** third-party methodology material — `docs/methodology/`
+(12 files) **plus `SESSION_RUNNER.md` and `SAFEGUARDS.md`** — carries a copyright with an explicit
+no-redistribution clause, inside a public repository whose root `LICENSE` grants the world the
+right to "publish, distribute, sublicense, and/or sell". This is a rights conflict, it is already
+realized (the repo is public), and pushing to a corporate host republishes it a second time under
+the company's name. **It gates the corporate push and only the operator and legal can clear it.**
+
+### 1.1 Corrections to the inherited state facts
+
+The Session-181 handoff is the input to this plan. Four of its state facts are wrong:
+
+| Handoff claim | Verified reality | Command |
+|---|---|---|
+| "15-commit branch… 24-commit problem" | **16** on the branch, **25** total | `git rev-list --count master..feat/bedrock-mantle-migration` → 16; `… origin/master..feat/…` → 25 |
+| "46 branch-status markers across 6 pages" | Mixed units. The baseline grep matches **46 occurrences on 29 lines**; the handoff's per-page breakdown (14/8/3/2/1/1 = 29) is the *line* count. The canonical grep in §2.5 finds **36 lines**, of which 2 are unrelated false positives → **34 real sites**. | `grep -rno … \| wc -l` → 46; `grep -rn … \| wc -l` → 29 |
+| "the merge changes no file under `docs/wiki/`, so it produces no diff there and no review signal" | **False.** The merge changes **20 wiki pages, +318/−129** — the Session-181 refresh (`a1d8af7`) lives on the branch. The merge is the one and only review opportunity. | `git diff --stat master..feat/… -- docs/wiki/` |
+| "`origin/gh-pages` … last deployed 2026-06-04 (`18c9853`), ~26 sessions stale" | The **local ref is stale**. Real remote `gh-pages` is `e8fcba1`, deployed **2026-06-19** from `d6ea1e7`. | `git rev-parse origin/gh-pages` → `18c9853…`; `git ls-remote origin gh-pages` → `e8fcba1…` |
+
+> **Do not "fix" the historical record.** These corrections belong in this plan and in live docs.
+> Per project convention, the Session-178/180/181 narratives in `SESSION_NOTES.md` stay as written.
+
+---
+
+## 2. Evidence-based inventory
+
+### 2.1 Git topology — measured, not assumed
+
+```
+git rev-list --count origin/master..master                        →  9
+git rev-list --count master..feat/bedrock-mantle-migration        → 16
+git rev-list --count origin/master..feat/bedrock-mantle-migration → 25
+git merge-base --is-ancestor origin/master master                 → exit 0
+git merge-base --is-ancestor master feat/bedrock-mantle-migration → exit 0
+git log --merges --oneline                                        → (empty — zero merge commits, ever)
+```
+
+- `origin/master` = `f590585` (Session 175). Local `master` = `b791d77` (Session 178).
+  Branch = `fc12d9f` (Session 181), and **`origin/feat/bedrock-mantle-migration` is also at
+  `fc12d9f`** — so any commit a phase adds locally is *not* on the remote until pushed. This
+  matters in A4; see the pre-flight.
+- **Both stages are true fast-forwards, and the merged tree is byte-identical to the branch tip**
+  (`git merge-tree --write-tree master feat/…` → `aa50ede6…` = `git rev-parse feat/…^{tree}`).
+  No conflict is possible, and the Session-181 gate result applies to the merged state unchanged.
+- The repo has **zero merge commits in its entire history** — fast-forward landing is house
+  convention (`Evolution.md:216`). Any step phrased "review the merge commit" has nothing to review.
+- ⚠ **"master" is ambiguous by one file.** `git diff --stat origin/master..master -- docs/wiki/`
+  → `Intake-Interview-Design.md | 4 ++--`. Name which `master` in every wiki assertion.
+
+### 2.2 What fires on a push to `master`
+
+| Workflow | Trigger | Stage 1 (9 commits) | Stage 2 (16 commits) |
+|---|---|---|---|
+| `ci.yml` | push to `master`, **no** path filter | **FIRES** | **FIRES** |
+| `publish-tutorial.yml` | push to `master`, paths `docs/*.md`, `mkdocs.yml`, the workflow file, **`pyproject.toml`** | **FIRES** — via `docs/tutorial.md` | **FIRES** — via `pyproject.toml` (`>=0.40`→`>=0.94`) |
+
+Three traps in that table:
+
+1. **`docs/*.md` is non-recursive.** None of the 20 changed `docs/wiki/claims-model-starter/*.md`
+   pages match it. Stage 2 fires *because of `pyproject.toml`*. Never phrase the reason as
+   "because docs changed" — change that line and the reasoning silently inverts.
+2. **Trigger scope ≠ publication scope.** A file under `docs/<subdir>/` never *triggers* a deploy
+   but is always *published* by one. That decoupling is how the audits went public.
+3. **`ci.yml` has `concurrency: cancel-in-progress: true`; `publish-tutorial.yml` has no
+   concurrency block at all.** Two pushes in quick succession cancel the first CI run (leaving a
+   grey "cancelled" that reads like a pass) and race two `gh-deploy --force` jobs.
+
+### 2.3 The live public exposure — verified by fetching the site
+
+`mkdocs.yml:12-17` excludes only `/methodology/`, `/planning/`, `/architecture-history/`,
+`/style/`, `/wiki/`. It is a **denylist**, and `nav:` does not gate publication (MkDocs publishes
+every non-excluded file and emits only an INFO notice). Four `docs/` subdirectories are therefore
+published by default: `audits/`, `deployment/`, `executive-summaries/`, `explainers/`.
+
+Fetched 2026-07-27:
+
+| URL | Status | What it is |
+|---|---|---|
+| `/audits/2026-06-01-technical-debt-audit/` | **200** | Internal technical-debt audit |
+| `/audits/2026-06-10-wiki-vs-code-accuracy-audit/` | **200** | Internal accuracy audit; **renders the operator's absolute home-directory path into public HTML** |
+| `/executive-summaries/business-value-capture.qmd` | **200** | Raw Quarto source of an executive business-case document |
+| `/deployment/bedrock-enterprise/` | **404** | *Goes public on the next deploy — which the merge triggers* |
+| `/robots.txt` | **404** | Nothing blocks crawling |
+
+`sitemap.xml` lists exactly four URLs — `/`, `/tutorial/`, and **both audits** — i.e. the audits
+are not merely reachable, they are *submitted for indexing*. The executive summary is served but
+absent from the sitemap (link-discoverable only), so a take-down scoped to `docs/audits/` leaves
+it live.
+
+`gh-deploy --force --clean` writes a **parentless single commit** each deploy (`gh api
+…/commits/e8fcba1 --jq '.parents'` → `[]`), so there is no recoverable record of what was
+published and no `git revert` path. **Bundle the branch before the next deploy** (A4 pre-flight) —
+a path listing is not enough to reconstruct content.
+
+### 2.4 Documentation-accuracy inventory
+
+| Surface | Freshness | Load-bearing defects |
+|---|---|---|
+| GitHub Wiki (23 pages) | Current as of S181 — but **published from an unmerged branch** | 6 pages carry merge-status markers; 4 rows publish the stale `>=0.40` SDK floor; `Security-Considerations.md:388` states `PyGithub` is "the one LGPL-3.0 direct dependency" (false), and 4 further locations name PyGithub as the LGPL example without mentioning `python-gitlab` |
+| MkDocs / gh-pages (public) | Deployed 2026-06-19 from `d6ea1e7` | `tutorial.md:522` "Only `anthropic` exists today" — **false since `cf40dc0` (2026-06-17), two days before the deploy**; `tutorial.md:53` "422+ tests"; `tutorial.md:218` a wiki-relative link that 404s |
+| In-repo docs | Not refreshed since S177 | `README.md:215` "Proprietary."; `README.md:128` "795 tests"; `ROADMAP.md:7` "797 tests"; `OPERATIONS.md:33` bedrock default `sonnet-4-6` (actual: `opus-4-8`); `OPERATIONS.md` documents **no** `AWS_*` variable |
+
+**Test-count claims disagree four ways** (422 / 795 / 797 / 922) and coverage three ways. Scoped
+counts, measured: `--ignore=tests/ui` → **898**; `tests/ui` → **32**; full → **930**.
+`README.md:128`'s counterpart is **898** (its documented `uv sync` omits the `ui` extra), not 930
+— CI installs `ui` and gates on the full set. Single-source the number or drop it.
+
+### 2.5 The wiki merge-status sweep
+
+Zero markers exist on `master` or `origin/master` today. **The merge is what carries them onto
+`master` for the first time.**
+
+Baseline grep (`"unmerged\|feat/bedrock-mantle-migration"`) → **29 lines / 46 occurrences**.
+
+**Canonical sweep command** — publish this, not the handoff's two-term grep:
+
+```bash
+grep -rniE "unmerged|feat/bedrock-mantle-migration|not[- ]yet[- ]merged|branch-only|branch only|in[- ]flight|on the branch|last session on|the branch lands|when it lands|has not been merged" \
+  docs/wiki/claims-model-starter/
+```
+
+It returns **36 lines**: **34 real sites** plus **2 unrelated false positives** (below). The
+baseline grep misses 6 of the 34 — `AI-Dependencies.md:36`, `:56`, `Changelog.md:13`,
+`Evolution.md:379`, `Security-Considerations.md:392`, and `Evolution.md:380`'s neighbour context.
+`Evolution.md:379` is reachable **only** because `last session on` was added to the regex; the
+handoff's grep would have left it stale.
+
+Three edit kinds are mixed together — delete-the-block (the `Changelog.md:15` unreleased
+blockquote, the `Security-Considerations.md:46` merge-status blockquote), change-a-value, and
+rewrite-surrounding-prose. `Evolution.md`'s hits are almost all narrative rewrites. **This is not
+a `sed`.**
+
+**Mechanical value changes** — verified exhaustively:
+
+| Change | Sites |
+|---|---|
+| `>=0.40` → `>=0.94` | `Software-Bill-of-Materials.md:31`, `:73`, `Security-Considerations.md:352`, `AI-Dependencies.md:36` |
+| bedrock default `sonnet-4-6` → `opus-4-8` | `Security-Considerations.md:126`, `:127`, `AI-Dependencies.md:56` — **and only these three** |
+| test count `916`/`922` split → one number | `Monitoring-and-Operations.md:100`, `Evolution.md:254` |
+
+**NO-EDIT list — five traps.** The first three do *not* match the canonical grep, so they are
+protected only by reading before editing; the last two *do* match and must be left alone:
+
+1. `Changelog.md:20` already reads `…is now anthropic[bedrock]>=0.94 … (was >=0.40)`. **Correct
+   post-merge.** A blind `>=0.40`→`>=0.94` replace corrupts it.
+2. `grep -rn "sonnet-4-6" docs/wiki/claims-model-starter/` returns **12 lines; exactly 3 change**
+   (above). The other **9** are correct — `Changelog.md:18`, `Security-Considerations.md:124`,
+   `:125`, `:376`, `AI-Dependencies.md:10`, `:55`, `Data-Guide.md:110`, `:121`, `Evolution.md:89`
+   — because the **first-party `anthropic` default really is `claude-sonnet-4-6`** and is
+   deliberately unchanged.
+3. `Changelog.md:5` — "Dates are the commit dates on `master`" — a permanently-true convention
+   statement, at risk only from a manual `on \`master\`` sweep.
+4. **`AI-Dependencies.md:151`** — "an in-flight Anthropic **outage**". Unrelated sense. Matches
+   the canonical grep.
+5. **`Schema-Reference.md:632`** — "in-flight **runs** must not break mid-upgrade". Unrelated
+   sense. Matches the canonical grep.
+
+**Therefore the sweep's terminal state is: the canonical grep returns exactly two lines —
+`AI-Dependencies.md:151` and `Schema-Reference.md:632` — and nothing else.**
+
+**No automated backstop exists.** `tests/test_wiki_no_line_citations.py` checks *citation form*
+only. Nothing in the repo checks merge status.
+
+> **Confirmed:** that guard does **not** cover `docs/planning/`. Existing plans there already
+> carry `path.ext:N` citations and the guard is green — so this document may use them freely.
+
+### 2.6 Host and identity coupling points
+
+`.githooks/post-commit` → `scripts/publish_wiki.sh` → `~/Development/claims-model-starter.wiki`
+→ `git push origin master` to **github.com/rmsharp**.
+
+| File:line | Coupling | Breaks on an enterprise host? |
+|---|---|---|
+| `scripts/publish_wiki.sh:42` | `WIKI_CLONE` default path | Defaults to the **personal public** clone — see dragon #3 |
+| `scripts/publish_wiki.sh:44` | `SOURCE_DIR=…/docs/wiki/claims-model-starter` | Only if the directory is renamed |
+| `scripts/publish_wiki.sh:23`, `:63` | Hardcoded clone URL (comment + error text) | Misleading |
+| `scripts/publish_wiki.sh:72`, `:75` | **Hard-rejects** any origin URL not containing `claims-model-starter.wiki` | **YES — hard blocker on rename** |
+| `scripts/publish_wiki.sh:80` | **Hard-requires** the wiki branch be named `master` | **YES — most enterprise hosts default to `main`** |
+| `scripts/publish_wiki.sh:104` | `git push origin master` — hardcoded refspec | **YES** |
+| `.githooks/post-commit:18` | Path prefix `^docs/wiki/claims-model-starter/` | Only if renamed |
+| `mkdocs.yml:3-5` | `site_url` / `repo_url` / `repo_name` — all personal | **YES** |
+| `tests/test_wiki_no_line_citations.py:38` | Hardcoded wiki dir | Only if renamed |
+| **`orchestrator/config.py:198,354,355,365,366`** | Personal GitLab namespace embedded in a **user-facing `ConfigError` message** | **YES — code change** |
+| **`tests/orchestrator/test_config.py:38,39,121,222,234`** | Assert on those literals | **YES — paired test edit** |
+| `.env.example:25,26,30`; `OPERATIONS.md:25` | Personal namespace examples | Cosmetic but user-facing |
+| **`docs/tutorial.md:427,445-447`** | The *published* tutorial tells users to export a personal namespace | **YES — user-facing** |
+| `README.md:9` | Published-site URL | **YES** |
+| `Contributing.md:19`, `:236`, `:238` | Public clone URL, public issue tracker, **"contact `rmsharp` on GitHub" as the security-disclosure path** | **YES** |
+| `Monitoring-and-Operations.md:16` | Personal namespace example | Cosmetic |
+| `SESSION_RUNNER.md:209`, `Contributing.md:122` | **Prose** documenting the publish mechanism | **YES — omitted from every code-level inventory** |
+
+**Rediscovery command** — re-derive rather than trusting this table after any edit:
+
+```bash
+git grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter' -- . \
+  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'
+```
+
+Two behaviours the plan must build on:
+
+- **`rsync -a --delete` (`publish_wiki.sh:92`) is a destructive one-way sync.** Any page edited
+  through the web UI during the migration is **silently deleted** by the next publish.
+- **`core.hooksPath=.githooks` is per-clone local config, not tracked.** A fresh enterprise clone
+  publishes nothing, silently. And `post-commit` runs *after* the commit object exists, so a
+  publish failure cannot fail the commit — the only signal is console output.
+
+### 2.7 Licensing and legal exposure
+
+**Licence table — 22 declared direct dependencies plus 3 notable transitive components.** This
+artifact does not exist anywhere in the repo today and is what legal review will demand.
+
+| Class | Package | Version | Licence |
+|---|---|---|---|
+| **LGPL (direct)** | `python-gitlab` | 8.2.0 | LGPL-3.0-or-later (License field + classifier + bundled COPYING) |
+| **LGPL (direct)** | `PyGithub` | 2.9.1 | LGPL-3.0-only — *classifier is version-ambiguous*; provable only from bundled `licenses/COPYING.LESSER` |
+| **MPL (transitive)** | `certifi` (via httpx/anthropic), `orjson` (via LangGraph), `pathspec` (via mkdocs/hatchling) | — | MPL-2.0 (`orjson`: `MPL-2.0 AND (Apache-2.0 OR MIT)`) |
+
+The other **20** direct packages are MIT / BSD / Apache-2.0. **Zero GPL-only, zero AGPL** across
+all 96 installed distributions. The achievable end state is *"permissive + MPL-2.0"*, **not**
+"fully MIT" — `orjson` arrives via LangGraph and survives the LGPL removal entirely.
+
+Four legal items, in descending severity:
+
+1. **Third-party methodology rights conflict (HARD GATE).** Verified first-hand:
+   `docs/methodology/README.md:361` — *"Iterative Session Methodology — Copyright © 2025-2026
+   Terrell Deppe (KJ5HST)"*; `:365` — *"You may not sell, sublicense, redistribute, publish,
+   market, or commercially exploit this methodology itself … without prior written permission"*;
+   `:369` points at a `LICENSE` file that **does not exist** (`find docs/methodology -iname
+   'LICENSE*'` → empty). The root `LICENSE:8` grants exactly those rights.
+   **⚠ The exposure is wider than `docs/methodology/`.** `CLAUDE.md:67` declares
+   **`SESSION_RUNNER.md` (304 lines) and `SAFEGUARDS.md` (183 lines)** "synced from canonical, not
+   project-owned" — the same framework — and both carry **zero attribution**
+   (`grep -c -i "terrell\|KJ5HST\|copyright"` → 0, 0). `PROJECT_LEARNINGS.md`'s seed rows and
+   `docs/architecture-history/methodology-pr2527-remediation-mpc.md:6` ("captured **verbatim**"
+   from the upstream repo) are further instances. Deleting only `docs/methodology/` would leave
+   ~490 lines of the same material shipping to the corporate host. *(12 of the 13 files under
+   `docs/methodology/` are third-party; `PROJECT_CONVENTIONS.md` is project-authored.)*
+2. **`README.md:215` says "Proprietary."** while `LICENSE:1`, `pyproject.toml:7`,
+   `packages/data-agent/pyproject.toml:7`, `Contributing.md:5`/`:228` and the SBOM all say MIT.
+   Root cause is provable: `f2f2a70` (2026-04-16, *"change license from Proprietary to MIT"*)
+   changed exactly 4 files and missed the README; `git log -L 213,216:README.md` returns one
+   commit, `5c73ed0` (2026-04-14). **104 days old.**
+3. **Copyright is held by an individual** — `LICENSE:3`. Exactly **one human author** across all
+   345 commits, so a single signature closes the inbound question — but **329 commits carry
+   `Co-Authored-By: Claude` trailers** (`git log --grep="Co-Authored-By: Claude" --format=%H | wc -l`),
+   and no document in the repo answers AI-provenance. The MIT grant already made publicly is
+   **irrevocable** for code published to date.
+4. **The published wiki is a separate repository with no licence of its own** — 23 pages on the
+   public internet under no stated terms, with its own 33-commit history.
+
+**Absent legal artifacts** (all verified absent at repo root): `NOTICE`, `THIRD-PARTY-LICENSES`,
+`REUSE.toml`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CLA`/`DCO`, `AUTHORS`,
+`CODEOWNERS`. Zero `SPDX-License-Identifier` headers anywhere. And **projects generated by the
+pipeline carry no licence at all** (`agents/website/templates.py:150-170` emits no `license` field
+and no `LICENSE` file) — a policy violation that recurs on every pipeline run.
+
+### 2.8 Secrets, identity, and data hygiene — the good news
+
+Package this evidence *for the reviewer*, not just record it:
+
+- **No credential file has ever entered git history.** Across all refs the only env-shaped blob is
+  `.env.example`. Only two files were ever deleted in the entire history, neither sensitive.
+  **No history rewrite is needed on secrets grounds.**
+- **Zero committed secret values**, by two orthogonal proofs (credential-shape grep + entropy
+  scan). The entropy scan's only genuine high-entropy string is the **Subresource-Integrity hash**
+  in `ui/intake/templates.py`.
+- **`rmsharp@me.com` appears in zero tracked file contents** — it exists only in commit metadata.
+- **All runtime artifacts are correctly gitignored**, each confirmed with `git check-ignore -v`.
+- **All test fixtures and eval corpora are synthetic** — a PII-shape grep and a real-insurer grep
+  both return zero.
+
+Against that, five real items:
+
+- **~10 scanner false positives will fire on import** (`glpat-xyz` / `ghp_xyz` / `sk-ant-xyz` test
+  literals; `.env.example` placeholders; `uv.lock:522`'s `ghp_import-2.1.0` wheel; the SRI hash;
+  and `Security-Considerations.md:339`, which literally contains scanner-bait). No
+  `.gitleaksignore` or baseline exists. **Ship the allowlist with the import request.**
+- **Two live docs carry abandoned-personal-account identifiers** — `docs/planning/bedrock-testing-enablement.md`
+  (`:19`, `:50`, `:63`, `:64`, `:77`) and **this plan** until A3 scrubs both. The identifiers are
+  referred to here only as *the abandoned AWS account id* and *the abandoned support-case number*;
+  find them with `git grep -nE '[0-9]{12}|1784409[0-9]+'` scoped to those files.
+- **Three live credentials sit in the local `.env`** (Anthropic key, GitLab PAT, Bedrock bearer
+  token) awaiting rotation when the personal account is decommissioned.
+- **Three live GitLab pilot projects exist outside git**, recorded only in the gitignored
+  checkpoint store. Invisible to every repo-scoped check.
+- **`.git` is 162 MB with 3148 loose objects and zero packs**, plus 8 unreachable dropped-stash
+  commits. `git clone` drops both; `cp -r`/`rsync` does not.
+
+### 2.9 Enterprise runtime readiness
+
+**Already done — do not budget work for these:**
+
+- **PrivateLink needs no code.** The SDK reads **`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`**
+  (`_mantle.py:142`, verified first-hand) — a VPCE base URL is a pure env setting.
+- `aws_profile` **is** supported by `AnthropicBedrockMantle` and treated as SigV4 — closing
+  `bedrock-enterprise.md` §7 punch-list item 5.
+- The **repo-host adapters themselves** accept an enterprise host:
+  `PyGithubAdapter(host_url=…)` → GHES via `/api/v3`; `PythonGitLabAdapter(host_url=…)` →
+  self-hosted GitLab. *(But see the `cli.py` gap below — the adapters are ready; one entrypoint is
+  not.)*
+
+**Gaps, each verified:**
+
+| Gap | Evidence | Consequence |
+|---|---|---|
+| `bedrock-enterprise.md:149` says `ANTHROPIC_BASE_URL` is honored | It is **not** — that var is first-party-client only | A platform engineer sets it, sees no error, and believes PrivateLink is working while all traffic leaves publicly |
+| `require_sigv4` checks only `AWS_BEARER_TOKEN_BEDROCK` | SDK's `_MANTLE_API_KEY_ENV_VARS = ("AWS_BEARER_TOKEN_BEDROCK", "ANTHROPIC_AWS_API_KEY")` | A stray `ANTHROPIC_AWS_API_KEY` silently bypasses the IAM role **with the guard enabled** |
+| `bedrock-enterprise.md` §4/§7 say `base_url`/`http_client` are "not yet" exposed | `56dc700` shipped both (`bedrock_client.py:92-93,115-118`) | Reviewers scope and bill code work that is already done |
+| Enterprise hooks are library-only | Exactly 2 construction sites (`factory.py:72` ×2), both passing only `model` | **No deployment can set a proxy or corporate CA** for the Bedrock path |
+| **`MPC_HOST_URL` is read in only two places** — `config.py:245` and `run_pipeline.py:129,300` | `agents/website/cli.py` reads **no** environment variable; `:98-108` declares a `--host-url` flag and `:155-156` falls back to the **public** host | An operator who exports `MPC_HOST_URL` and runs the website CLI without `--host-url` creates the project on **gitlab.com / api.github.com**, silently |
+| `ssl_verify` is dead config | Accepted at `gitlab_adapter.py:61`, never forwarded by `_make_gitlab_adapter` (`config.py:59-69`) | Behind TLS inspection both adapters fail cert verification with no in-app knob |
+| **The intake web UI has zero auth** | No `authenticat`/`authoriz`/`login`/`CSRF`/`CORSMiddleware`/`add_middleware` anywhere in `src/…/ui/` | `go/modelintake` is the stakeholder front door and is an unauthenticated FastAPI app |
+| htmx loads from `unpkg.com` at render time | `ui/intake/templates.py:46-50` | **Browser-side** egress — invisible to a server-side firewall review; when blocked the page renders fine and silently does nothing |
+| `provider_creds_available('bedrock')` probes only `AWS_ACCESS_KEY_ID` / `AWS_PROFILE` / `~/.aws/credentials` | `eval_cutover.py:41-60` | Under IRSA/ECS/instance-profile auth every live test **skips** and pytest exits 0 |
+| **Two** plaintext stores, not one | `checkpoints.py:57-68` (0644 JSON) **and** `ui/intake/app.py:52` `DEFAULT_DB_PATH` (SQLite interview transcripts, 0644); no `chmod`/`umask`/`0o###` anywhere | Both will hold real stakeholder content on a shared host |
+| **Generated projects' CI is hardcoded to public registries** | `governance_templates.py:615` `python:3.11` (Docker Hub), `:617,656,667,678` `pip install uv` (PyPI), `:652-653,663-664,674-675` `actions/checkout@v4`+`setup-python@v5`, `:688` `ruff-pre-commit`; only knob is `--ci-platform {gitlab,github}` | **Every project the pipeline produces lands with red CI** on an enterprise runner — and the generated project *is* the deliverable |
+| **No package-index configuration anywhere** | `git grep -E 'UV_INDEX\|PIP_INDEX\|index-url\|\[\[tool.uv.index\]\]'` → nothing | `uv sync` is the first command in every documented workflow; on an allowlist-only runner nothing else in this plan can be validated |
+| No container image, manifest, or IaC | No `Dockerfile`/`*.tf`/`*.service` | The runtime shape is undecided — **and it determines the §3 IAM trust policy** |
+
+**Egress inventory** (the firewall-review deliverable), in three tiers:
+
+- *Server-side runtime:* `bedrock-mantle.{region}.api.aws`, `api.anthropic.com`, the repo host,
+  AWS STS, IMDS `169.254.169.254`.
+- *Browser-side (stakeholder workstation):* `unpkg.com`.
+- *Build-time:* `pypi.org` / `files.pythonhosted.org`; and **inside every generated project** —
+  Docker Hub, GitHub Actions marketplace, `ruff-pre-commit`, PyPI.
+
+Note `anthropic[bedrock]` pulls **boto3 + botocore** — SigV4 is not pure-httpx. An internal index
+mirroring only `anthropic` fails at the first call, not at startup. `botocore` honours
+`AWS_CA_BUNDLE`, which appears nowhere in this repo.
+
+### 2.10 Governance and CI surface
+
+Verified **absent**: `CODEOWNERS`, `dependabot.yml`, PR/issue templates, `SECURITY.md`,
+`.pre-commit-config.yaml`, `.gitleaksignore`, `.python-version`. `.github/` contains nothing but
+`workflows/`, holding exactly `ci.yml` and `publish-tutorial.yml` — **and there is no
+`.gitlab-ci.yml` or any other CI definition**, so a move to GitLab means authoring CI from
+scratch.
+
+Verified absent from CI: SAST, dependency-vulnerability audit, licence gate, machine-readable
+SBOM.
+
+Present but weak:
+
+- **All 11 `uses:` lines are floating tags** (`@v4`), not SHAs; `setup-uv` pulls `version: "latest"`;
+  all four jobs are `runs-on: ubuntu-latest` (GitHub-hosted runners, which GHES and GitLab do not
+  provide).
+- **No `--frozen`/`--locked` on any of 5 `uv sync` invocations.**
+- **`publish-tutorial.yml` is the only job with `contents: write`** while the repo default is
+  read-only — the single supply-chain blast path is an unpinned third-party action inside a
+  write-scoped job that force-pushes a branch.
+- The **"Upload coverage" step is a permanent no-op**.
+- **Live tests auto-activate whenever credentials are present.** CI is hermetic only because
+  GitHub Actions has no AWS chain. A corporate runner using OIDC role assumption — the pattern
+  `bedrock-enterprise.md` recommends — **un-skips 8 live tests and starts making paid calls**.
+- `origin/master` has **no branch protection, no rulesets**; the 25 pending commits have **never
+  run CI on GitHub**.
+- The available `gh` token has scopes `gist, read:org, repo, workflow` — **no `security_events`,
+  no `admin:org`**. Any step reading code-scanning results or setting org rulesets needs re-auth.
+
+---
+
+## 3. Decision register
+
+Phases are gated on these. **Owners are named because most are not engineering calls.**
+
+| # | Decision | Owner | Recommendation | Gates |
+|---|---|---|---|---|
+| **D1** | **All third-party methodology material** (`docs/methodology/`, `SESSION_RUNNER.md`, `SAFEGUARDS.md`, `PROJECT_LEARNINGS.md` seed rows, `docs/architecture-history/methodology-pr2527-remediation-mpc.md`): remove, obtain written permission, or carve out via NOTICE? | **Operator + legal** | Ask Terrell Deppe for written permission first (one email); if not promptly granted, **remove**. **Add the mandated attribution string in every branch of this decision** — it is currently absent everywhere. | B1, and **any corporate push** |
+| **D2** | Licence of record: MIT or proprietary? | **Operator + legal** | **Stay MIT.** Publicly MIT since 2026-04-16; that grant is irrevocable, so a retroactive relicense buys nothing. Fix `README.md:215` to match. | A3, B1 |
+| **D3** | IP disposition: assignment, work-for-hire, or third-party OSS intake? | **Legal** | Prepare **third-party OSS intake** as default. One human author = one signature. **Do not edit `LICENSE:3` until legal rules.** | B1 |
+| **D4** | Does the corporate host require signed commits / DCO? | **Operator → platform team** | Find out **before** migrating; push for "going forward only". A signed-history rewrite changes every SHA and breaks the provenance chain. A PR-button merge is host-signed, which may satisfy the policy with no local key setup. | C4 |
+| **D5** | Import history as-is, rewrite, or squash-import? | **Operator + platform team** | **Import as-is.** If an author-email allowlist blocks the push, prefer **squash-import + archived bundle** over `filter-repo` — it breaks SHA references honestly in one place instead of silently everywhere. | C4 |
+| **D6** | MkDocs/gh-pages site: refresh, retire, or relocate? | **Operator** | **Retire the public site** — after one corrected final deploy (A1/A4), then decommission in **C5**. | A1, C5 |
+| **D7** | Take down the already-public audits retroactively? | **Operator** | **Move `docs/audits/` out of `docs_dir`** (structural, not a config a future edit can undo), force a re-deploy so the URLs 404, then request search-index removal. They are in `sitemap.xml` with no `robots.txt`. | A1 |
+| **D8** | Where does the wiki live post-move; does auto-publish survive; **and what does the destination require of page naming, the sidebar file, and intra-wiki link syntax?** | **Operator + platform team** | Resolve the host first. Interim: **disarm the hook** (see the standing rule in §4). Target: **publish from CI**, not a local hook running under a developer's ambient credentials. Note `_Sidebar.md`/`Home.md` are GitHub-Wiki reserved names and **157 intra-wiki links are extensionless page slugs** that resolve only under GitHub's wiki router. | A2, C4 |
+| **D9** | Repo-host target: self-hosted GitLab or GHES? | **Operator** | Decide before security review. **GHES hard-rejects namespaces containing `/`** (`github_adapter.py:85-89`) — a contract change, not a config line. **If GitLab, all of `.github/workflows/` is dead and CI must be re-authored.** | C3, C4 |
+| **D10** | Bedrock endpoint: Regional or Global? | **Security + operator** | **Regional.** For P&C claims data, residency dominates the ~10% premium. | C1 |
+| **D11** | Run the LGPL removal before the corporate move? | **Operator + legal** | **Confirm the corporate copyleft policy first.** Many policies permit LGPL for unmodified, dynamically-imported libraries. If permitted, defer — it is a rewrite of the two least-tested modules immediately before their first live use. | B3 |
+| **D12** | Version/tag the landing? | **Operator** | **Bump to 0.3.0 and tag** in A3 — two `pyproject.toml` files, `README.md:3`, **and `uv lock`** (the lock pins both workspace members at `0.2.0`, `uv.lock:1109`, `:1175`). | A3 |
+| **D13** | Wire `http_client`/`require_sigv4` to app/env? | **Operator + platform team** | **Extend the `require_sigv4` guard to both env vars now** (2 lines × 2 files). Wire `require_sigv4` from env next. Wire `http_client` only if TLS inspection is confirmed. | C1, C2 |
+| **D14** | **Runtime shape: EKS+IRSA / ECS task role / EC2 instance profile / on-prem VM?** | **Operator + platform team** | Must be answered before C1 — **the IAM trust policy cannot be written without it**, and it also decides whether the live-test credential probe works at all. | C1, C2b |
+| **D15** | **Package resolution: internal index (Artifactory/Nexus/devpi) or proxied public PyPI?** | **Operator + platform team** | Decide early — `uv sync` is the first command in every documented workflow. | C2, C3 |
+| **D16** | **Disposition of the public repo, the public wiki, and the two GitHub Releases** after cutover: archive, make private, or leave with a pointer? | **Operator + legal** | Decide before C5. Note the MIT grant on published code is irrevocable either way. | C5 |
+
+---
+
+## 4. Phased plan
+
+**Every phase below is ONE session. Close out after each.** Phases A1–A4 are the operator's goals
+1 and 2 and form the critical path. B and C are "anything else"; B1 gates the corporate push.
+
+> **The load-bearing sequencing decision: do all preparation on the branch, then push ONCE.**
+> Both stages are fast-forwards to the same tree, so `git push origin
+> feat/bedrock-mantle-migration:master` lands all commits in a single ref update. This yields one
+> CI run and one deploy instead of two, avoids the `cancel-in-progress` trap, avoids racing two
+> `gh-deploy --force` jobs, and — decisively — means the **only** deploy that ever fires comes
+> from a tree whose publication surface has already been fixed. Pushing `master` first would
+> deploy the *unfixed* tree.
+
+> ### ⚠ STANDING RULE for Phases A1, A2, A3 and B1 — disarm the wiki auto-publish hook
+>
+> All four phases touch files under `docs/wiki/claims-model-starter/` (A1 updates audit-path
+> references in `Evolution.md:200,244,268,335,438`; A3 updates planning-doc references in
+> `Evolution.md` and `Changelog.md`). `.githooks/post-commit:18` fires on **any** commit touching
+> that prefix and pushes to the **public** wiki with no confirmation.
+>
+> **`export MPC_SKIP_WIKI_PUBLISH=1` does NOT work here.** Each Bash tool call gets a fresh shell,
+> so the variable is unset by the time `git commit` runs. Use a form that survives:
+>
+> ```bash
+> # FIRST action of each of these sessions:
+> git config --unset core.hooksPath
+> git config --get core.hooksPath        # → empty. Verify before editing anything.
+> ```
+>
+> Re-arm **only** in A4, after `scripts/publish_wiki.sh` has run successfully:
+> `git config core.hooksPath .githooks`.
+> If you keep the hook armed instead, every commit must be written as
+> `MPC_SKIP_WIKI_PUBLISH=1 git commit …` **on one command line**. Note `git commit --no-verify`
+> does **not** skip `post-commit`.
+
+---
+
+### Phase 0 — Raise the decision register *(operator action, not a session)*
+
+Put D1–D3 to legal, D4/D5/D8/D9/D14/D15/D16 to the platform team, and D10/D13 to security
+**together with `docs/deployment/bedrock-enterprise.md` §0's three existing questions**
+(Guardrails mandate? FIPS mandate? does the target account have current-gen Claude runtime
+quota?). A "yes" on Guardrails or FIPS redirects mantle → `bedrock-runtime`, a materially larger
+change than anything in this plan.
+
+**DONE:** D2, D6, D7 answered (these gate Phase A). The rest may lag.
+
+---
+
+### Phase A1 — Contain the public exposure and correct the tutorial
+
+**Branch:** `feat/bedrock-mantle-migration`. **Gated on:** D6, D7. **Standing rule applies.**
+
+**Scope**
+
+1. **`mkdocs.yml` → fail-closed.** The denylist has failed twice already. Invert to
+   gitignore-negation form — exclude everything under `docs/`, re-include `index.md` and
+   `tutorial.md`. Fix the misleading comment at `mkdocs.yml:10-11`.
+2. **Move `docs/audits/` out of `docs_dir`** (per D7) to a top-level `audits/`. **Update
+   references in LIVE documents only** — `docs/wiki/claims-model-starter/Evolution.md` (5 sites)
+   and `docs/planning/httpx-adapter-migration.md`. Per §6, `SESSION_NOTES.md`, `CHANGELOG.md` and
+   `docs/architecture-history/` keep the old path as historical record; add one line to the new
+   `audits/README` noting the former location.
+3. **Fix `docs/tutorial.md`:** `:522` ("Only `anthropic` exists today" → two providers ship),
+   `:53` ("422+ tests" → the single-sourced number or drop it), `:218` (wiki-relative link that
+   404s).
+4. **Add a `concurrency:` block to `publish-tutorial.yml`** so deploys serialize.
+5. *(Optional)* `validation: links: unrecognized_links: warn` in `mkdocs.yml` — `--strict` alone
+   does **not** catch the `:218` class of error.
+
+**DONE looks like:** a clean-tree build publishes only the tutorial, the root redirect, and
+`404`/assets/search/sitemap. `bedrock-enterprise.md` is **not** in the manifest.
+
+**Verify** — build from a clean checkout, never the working tree. **Commit first: `git archive`
+reads the ref, not the worktree.**
+
+```bash
+rm -rf /tmp/clean /tmp/out && mkdir -p /tmp/clean
+git archive feat/bedrock-mantle-migration | tar -x -C /tmp/clean
+(cd /tmp/clean && uv run --extra docs mkdocs build -d /tmp/out) || { echo BUILD-FAILED; exit 1; }
+find /tmp/out -type f | grep -vE '/assets/' | sed 's|/tmp/out/||' | sort
+#   expect: 404.html, index.html, search/search_index.json, sitemap.xml, sitemap.xml.gz, tutorial/index.html
+#   expect NOT: deployment/, audits/, executive-summaries/, explainers/
+grep -n "Only \`anthropic\` exists today\|422+" docs/tutorial.md   # → 0
+git config --get core.hooksPath                                    # → empty (hook still disarmed)
+```
+
+> `uv run mkdocs` **fails** without `--extra docs` — mkdocs lives in the optional `docs` extra
+> (`pyproject.toml:41-43`), and its failure (`Failed to spawn: mkdocs`) reads like a broken
+> environment rather than a wrong command.
+
+**Boundary:** one session. Close out. Nothing is pushed; the site is still stale-and-wrong in
+public. That is the correct intermediate state.
+
+---
+
+### Phase A2 — Wiki merge-status sweep
+
+**Branch:** `feat/bedrock-mantle-migration`. **Standing rule applies — verify the hook is
+disarmed before touching any wiki file.**
+
+**Scope:** work the canonical grep from §2.5. Apply the three mechanical value changes. Honour the
+five NO-EDIT traps. Delete the two blockquotes (`Changelog.md:15`,
+`Security-Considerations.md:46`) **and rewrite the sentences around them** —
+`Security-Considerations.md:28` and `:48` restate the same master/branch split and would leave
+§1.2 self-contradictory if only the blockquote goes. Fix `Evolution.md:3`'s "Last updated" banner,
+which already contradicts its own session table at `:381`.
+
+For the test-count split (`Monitoring-and-Operations.md:100`, `Evolution.md:254`): **add the CI
+guard first, then re-measure and write the number** — `uv run pytest --collect-only -q | tail -1`.
+Do not paste `930` (pre-guard) or A3's `898` (a different, `--ignore=tests/ui` scope).
+
+Add the narrow CI guard: ban the literal string `feat/bedrock-mantle-migration` on wiki pages, in
+`tests/test_wiki_no_line_citations.py`, in this same commit.
+
+**DONE looks like:** the canonical grep returns **exactly two lines** — `AI-Dependencies.md:151`
+and `Schema-Reference.md:632`, both unrelated uses of "in-flight" — and nothing else.
+
+**Verify:**
+
+```bash
+grep -rniE "unmerged|feat/bedrock-mantle-migration|not[- ]yet[- ]merged|branch-only|branch only|in[- ]flight|on the branch|last session on|the branch lands|when it lands|has not been merged" \
+  docs/wiki/claims-model-starter/ | cut -d: -f1,2 | sort -u
+#   → exactly: AI-Dependencies.md:151 and Schema-Reference.md:632
+grep -rn -- ">=0.40" docs/wiki/claims-model-starter/    # → only Changelog.md:20 (historical, correct)
+grep -rc "sonnet-4-6" docs/wiki/claims-model-starter/ | awk -F: '{s+=$2} END {print s}'   # → 9 (was 12; exactly 3 changed)
+uv run pytest tests/test_wiki_no_line_citations.py -q --no-cov
+# dead-path check (also in §7) — Changelog.md is excluded: its entries are dated historical
+# records that correctly name where a file lived AT THE TIME (two such refs exist today,
+# Changelog.md:107 and :220, both now under docs/architecture-history/). Do not "fix" them.
+for p in $(grep -rhoE '`?docs/(audits|planning|architecture-history)/[A-Za-z0-9._/-]+\.md' \
+            --exclude=Changelog.md docs/wiki/claims-model-starter/ | tr -d '`' | sort -u); do
+  [ -e "$p" ] || echo "DEAD WIKI PATH REFERENCE: $p"
+done                                                    # → no output
+git -C ~/Development/claims-model-starter.wiki log --oneline -1   # → UNCHANGED (hook disarmed)
+```
+
+**Boundary:** one session. Close out. Work **bottom-up within each file** (highest line number
+first) — `Security-Considerations.md` alone has ~17 sites and deletions shift everything below.
+Re-run the grep after each file rather than trusting a stale list.
+
+---
+
+### Phase A3 — In-repo documentation reconciliation
+
+**Branch:** `feat/bedrock-mantle-migration`. **Gated on:** D2, D12. **Standing rule applies.**
+
+**Scope**
+
+- `README.md:215` "Proprietary." → per D2. `README.md:128` test count → **898** (the README's own
+  documented `uv sync` omits the `ui` extra; do not paste 930).
+- `ROADMAP.md:7` counts; add an M6 entry for multi-provider/Bedrock — the milestone sections
+  (`ROADMAP.md:26-67`) predate the entire second-provider capability. `ROADMAP.md:9` and
+  `BACKLOG.md:7` both claim "nothing open" — land this plan's phases as backlog items.
+- `OPERATIONS.md`: add the `AWS_*` block (`AWS_REGION`, `AWS_DEFAULT_REGION`,
+  `AWS_BEARER_TOKEN_BEDROCK`, `AWS_PROFILE`, plus the CA/proxy/index variables from C2); fix
+  `:33`'s **bedrock** default to `anthropic.claude-opus-4-8`. Cross-check against
+  `.env.example:66-83`, which **is** correct on this branch.
+- `CHANGELOG.md`: entries for Sessions 178–181. Per D12, convert `[Unreleased]` to a dated `0.3.0`
+  heading and bump **both `pyproject.toml` files, `README.md:3`, and regenerate `uv.lock`**
+  (`uv lock`) — the lock pins both workspace members at `0.2.0` (`uv.lock:1109`, `:1175`) and
+  `uv run` will otherwise rewrite it silently. Stage `uv.lock` explicitly.
+- Archive `docs/planning/multi-provider-llm-plan.md` → `docs/architecture-history/` (fully
+  executed; `PROJECT_CONVENTIONS.md:35-37` makes it archive-eligible).
+- `docs/planning/bedrock-testing-enablement.md`: scrub the abandoned account id and case number,
+  carve the still-useful "how the project reaches Bedrock" table and the quota-code table forward
+  into `bedrock-enterprise.md`, then archive. Its `Status: ready-for-human` at `:45` currently
+  reads as live guidance for an abandoned account.
+- **Scrub the same two identifiers from this plan** (`docs/planning/enterprise-migration.md`).
+
+**DONE looks like:** no in-repo doc contradicts the code on provider count, model id, licence, or
+test count; the CHANGELOG covers through Session 181; `docs/planning/` holds only live plans; no
+live doc carries an abandoned-account identifier.
+
+**Verify:**
+
+```bash
+grep -n "Proprietary" README.md                                   # → 0 (if D2 = MIT)
+grep -n "anthropic\.claude-sonnet-4-6" OPERATIONS.md              # → 0
+grep -c "claude-sonnet-4-6" OPERATIONS.md                         # → 2 (:33 first-party, :297 cost note — BOTH CORRECT)
+grep -rnE "[0-9]{12}|1784409[0-9]+" docs/ --include='*.md' | grep -v '^docs/architecture-history/'   # → 0
+grep -n "^version" pyproject.toml packages/data-agent/pyproject.toml   # → both 0.3.0
+uv lock --check
+uv run pytest -q && uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy
+```
+
+**Boundary:** one session. Close out.
+
+---
+
+### Phase A4 — Land it: push branch → PR → CI → single fast-forward push → publish → verify
+
+**This is the phase the operator asked for.** Everything before it exists to make this phase safe.
+
+**Pre-flight (all must hold):**
+
+```bash
+git status --porcelain                       # → clean (commit or stash SESSION_NOTES.md FIRST)
+git fetch origin '+refs/heads/*:refs/remotes/origin/*'   # MANDATORY — local origin/gh-pages is stale
+
+# ⚠ A1–A3 commits are LOCAL ONLY. Push the branch, or the PR will test the pre-A1 tree.
+git push origin feat/bedrock-mantle-migration
+test "$(git rev-parse feat/bedrock-mantle-migration)" \
+   = "$(git ls-remote origin refs/heads/feat/bedrock-mantle-migration | cut -f1)" \
+   && echo BRANCH-PARITY-OK
+
+git merge-base --is-ancestor origin/master feat/bedrock-mantle-migration && echo FF-OK
+
+# Preserve the published CONTENT, not just its paths — gh-deploy --force destroys it.
+git fetch origin gh-pages:refs/heads/gh-pages-preA4
+git bundle create ~/gh-pages-preA4.bundle refs/heads/gh-pages-preA4
+```
+
+**Steps**
+
+1. **Open a PR** `feat/bedrock-mantle-migration` → `master` **from the pushed branch**. This is
+   the *only* way to get a GitHub-side CI signal before code reaches the default branch — these
+   commits have never run CI there. **Confirm the PR head SHA equals the local branch tip** before
+   trusting the result. Wait for all four jobs green. Re-push and re-assert parity after any
+   fixup commit.
+2. **Single push — this is the ONLY landing mechanism.**
+   `git push origin feat/bedrock-mantle-migration:master`.
+   **Do NOT use any PR merge button.** GitHub offers no fast-forward merge: `--merge` creates the
+   repo's first merge commit in 345 commits, and `--rebase`/`--squash` rewrite all 25 SHAs and
+   silently invalidate every SHA cited in `SESSION_NOTES.md` and `CHANGELOG.md` (dragon #12). The
+   PR auto-closes as merged once its commits appear on `master`.
+3. **Fast-forward local `master`** to match, so the two never diverge again.
+4. **Publish the wiki explicitly.** The hook will **not** fire — a fast-forward creates no commit,
+   and `post-merge` does not exist in `.githooks/`. Chain the guard so a failure aborts:
+
+   ```bash
+   git merge-base --is-ancestor a1d8af7 HEAD \
+     || { echo 'ABORT: HEAD does not contain a1d8af7 — publishing would regress 20 wiki pages'; exit 1; }
+   cd "$(git rev-parse --show-toplevel)"
+   scripts/publish_wiki.sh
+   ```
+   A `no changes to publish` message here is a **FAILURE**, not a pass — A2's sweep guarantees the
+   source differs from the live wiki.
+5. **Re-arm the hook:** `git config core.hooksPath .githooks`.
+6. **Verify the deploy** and confirm the exposure is closed.
+
+**DONE looks like:** `origin/master` = the branch tip; CI green on `master`; the public site serves
+only the tutorial; the audits 404; the wiki is published from a commit that is on `master`.
+
+**Verify:**
+
+```bash
+git ls-remote origin master                                   # → the branch tip SHA
+git rev-list --count origin/master..feat/bedrock-mantle-migration   # → 0
+git log --merges --oneline | wc -l                            # → 0 (no merge commit was created)
+gh run list --workflow ci.yml --limit 1                       # → success (NOT "cancelled")
+gh run list --workflow publish-tutorial.yml --limit 1         # → success
+curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/audits/2026-06-01-technical-debt-audit/   # → 404
+curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/deployment/bedrock-enterprise/            # → 404
+curl -s https://rmsharp.github.io/claims-model-starter/sitemap.xml | grep -c audits   # → 0
+git -C ~/Development/claims-model-starter.wiki log -1 --format=%s
+#   → "docs: sync wiki from model_project_constructor@<new master short sha>"
+git -C ~/Development/claims-model-starter.wiki status -sb     # → no "[ahead N]"
+git config --get core.hooksPath                               # → .githooks (re-armed)
+```
+
+**Rollback.** The gh-pages deploy is **not revertible** — restore from `~/gh-pages-preA4.bundle`
+and force-push if needed. The only backout for `master` is a force-push to `f590585`, which
+rewrites public history: **do not do it without explicit operator authorisation.** If CI fails on
+the PR, fix on the branch and re-push; do not proceed to step 2.
+
+**Boundary:** one session. Close out. **Goals 1 and 2 are complete at this point.** Do not start
+Phase B in the same session.
+
+---
+
+### Phase B1 — The legal packet *(gates the corporate push)*
+
+**Gated on:** D1, D2, D3. **Cannot start until legal has ruled on D1. Standing rule applies.**
+
+**Scope:** execute the D1 outcome across **all** third-party methodology material —
+`docs/methodology/` (12 files), `SESSION_RUNNER.md`, `SAFEGUARDS.md`, `PROJECT_LEARNINGS.md`'s
+framework seed rows, and `docs/architecture-history/methodology-pr2527-remediation-mpc.md` (an
+explicit carve-out from §6's never-rewrite-history rule). **Add the mandated attribution string in
+every branch of D1**, including removal. Commit the §2.7 licence table as `THIRD-PARTY-LICENSES`
+and add the licence column to the SBOM wiki page. Correct the **five** wiki locations that frame
+`PyGithub` as the only LGPL dependency (`Security-Considerations.md:355`, `:356`, `:388`;
+`Contributing.md:229`; `Content-Recommendations.md:75`). Author the AI-provenance statement
+covering the **329** `Co-Authored-By` trailers. Add root `SECURITY.md` (replacing
+`Contributing.md:238`'s "contact `rmsharp` on GitHub" disclosure path), root `CONTRIBUTING.md`
+with the corporate DCO/CLA mechanism, and `CODEOWNERS`.
+
+**DONE looks like:** the D1 conflict resolved with a written record; one file lists every
+dependency's licence; no document claims a single LGPL dependency; the three root governance files
+exist.
+
+**Verify:**
+
+```bash
+grep -rn "the one LGPL-3.0 direct dependency" docs/wiki/         # → 0
+grep -rn -i "lgpl" docs/wiki/claims-model-starter/               # every hit names BOTH packages
+ls SECURITY.md CONTRIBUTING.md CODEOWNERS THIRD-PARTY-LICENSES
+# attribution required in EVERY branch of D1:
+grep -c 'Terrell Deppe' SESSION_RUNNER.md SAFEGUARDS.md NOTICE   # → all non-zero
+git grep -l -i 'KJ5HST\|Terrell Deppe' -- . | grep -v NOTICE     # → only files carrying an attribution header
+```
+
+**Boundary:** one session. Close out.
+
+---
+
+### Phase B2 — Import readiness: scanners, identity, external assets
+
+**Scope:** author `.gitleaksignore` (or the target scanner's baseline) enumerating the ~10 known
+false positives from §2.8 **with the classification table**, so the import request arrives with
+the answer rather than the alarm. Package the two negative proofs as the secrets attestation —
+including the exact commands, so the reviewer can re-run them. Export the API-only assets:
+`gh api repos/rmsharp/claims-model-starter/releases > releases-export.json` and
+`gh pr list --state all --json number,title,body,mergedAt > prs-export.json` (release bodies are
+**not** carried by `git push --tags`). Build the **external-asset register**: the three GitLab
+pilot projects, the wiki repo, the gh-pages site, the two GitHub Releases and both annotated tags,
+and the three `.env` credentials awaiting rotation — each with a keep/export/delete decision
+**before any account is closed**.
+
+**DONE looks like:** a reviewer-ready import packet; every non-git asset has a named disposition.
+
+**Verify:**
+
+```bash
+git fetch origin '+refs/heads/*:refs/remotes/origin/*'
+[ "$(git rev-parse origin/gh-pages)" = "$(git ls-remote origin gh-pages | cut -f1)" ] \
+  || { echo 'ABORT: gh-pages ref stale — the history scan would be incomplete'; exit 1; }
+git rev-list --all --objects | awk '{print $2}' | grep -iE "\.env|secret|credential|\.pem|id_rsa"
+#   → only .env.example
+ls releases-export.json prs-export.json .gitleaksignore
+```
+
+**Boundary:** one session. Close out.
+
+---
+
+### Phase B3 — LGPL removal *(conditional on D11)*
+
+Execute `docs/planning/httpx-adapter-migration.md` — Phase 1 (GitLab), Phase 2 (GitHub), each its
+own session, on a dedicated branch off a clean `master`. **Do not re-plan it**; resolve its
+DP1–DP4 and go. Three corrections to fold in first:
+
+- Its §1.1 names only `certifi` as the residual MPL component. **Also `orjson` and `pathspec`** —
+  and `orjson` arrives via LangGraph, so it survives this migration regardless. Configure any
+  licence allow-list for **MPL-2.0 as a class**, not by package name.
+- Its `:99` prune list names `Deprecated` and `wrapt`, which are in neither the venv nor the lock.
+  Use `uv tree` as the authoritative prune check. *(Its `greenlet` note is a different case —
+  `greenlet` **is** in `uv.lock:526` as a SQLAlchemy dep, excluded on arm64 by marker but
+  installed on x86_64 CI. Do not "correct" the SBOM's greenlet row.)*
+- Its prerequisite at `:191-195` warns about "uncommitted Session-179 mantle WIP" — stale; that
+  branch is fully committed and, after A4, merged.
+
+**DONE looks like:** both LGPL SDKs gone from `pyproject.toml` and `uv.lock`; suite green at
+coverage ≥95%.
+
+**Verify:** the plan's own §8 done-greps:
+`grep -rn -E "import gitlab|from gitlab|from github import|import github" src/ tests/` → 0;
+`grep -rn -iE "python-gitlab|pygithub" pyproject.toml uv.lock` → 0;
+`uv tree | grep -iE "python-gitlab|pygithub"` → 0; full gate green.
+
+**Boundary:** 2–3 sessions (its own phases). Close out after each.
+
+---
+
+### Phase C1 — Bedrock enterprise correctness
+
+**Gated on:** D10, D13, **D14**, and `bedrock-enterprise.md` §0's three security questions.
+
+**Scope:** fix the false `ANTHROPIC_BASE_URL` claim at `bedrock-enterprise.md:149` and document
+**`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`** in `.env.example` and §4/§7 — the no-code PrivateLink
+lever and the cheapest item in the punch-list. Refresh §4/§7 to reflect that punch-list items 1–3
+shipped in `56dc700` and item 5 (`aws_profile`) is confirmed supported. **Close the
+`require_sigv4` hole** — iterate the SDK's `_MANTLE_API_KEY_ENV_VARS` tuple rather than hardcoding
+one name (2 lines × 2 files, + a test per file). Record the D10 residency decision in §5. Extract
+the §3 IAM policy and the residency SCP into **separate applyable artifact files** with the D14
+trust policy filled in — a security team will ask for reviewable JSON, not a fenced block.
+
+**DONE looks like:** no false claim in the enterprise guide; `require_sigv4` rejects both env
+vars; the IAM policy and SCP exist as files.
+
+**Verify:**
+
+```bash
+grep -n "ANTHROPIC_BASE_URL" docs/deployment/bedrock-enterprise.md   # → 0
+grep -rn "ANTHROPIC_AWS_API_KEY" src/ packages/                      # → present in BOTH guards
+ls docs/deployment/*.json                                            # → IAM policy + SCP artifacts
+uv run pytest tests/agents/intake/test_bedrock_client.py tests/data_agent_package/test_bedrock_client.py --no-cov
+uv run pytest -q                                                     # coverage gate must stay ≥95%
+```
+
+**⚠ Coverage trap:** `--cov-fail-under=95` is in the default addopts, so any wiring added without
+tests fails the **entire** suite with a coverage error that looks unrelated. The C4 decoupling
+rule duplicates the clients — **every hook change is a paired edit plus paired tests.**
+
+**Boundary:** one session. Close out.
+
+---
+
+### Phase C2 — Runtime, network, and data-at-rest readiness
+
+**Gated on:** D13, D15.
+
+**Scope:** vendor htmx locally and serve it from a static route (fixes both the browser-egress
+failure and the licence-inventory gap — a vendored copy carries its own LICENSE). Decide and
+document the intake UI's auth posture (**it has none today**). Fix the **`MPC_HOST_URL` gap** in
+`agents/website/cli.py` — either fall back to the env var at `:155-156` (with a paired test) or
+add a startup guard that refuses the public default when `MPC_HOST_URL` is set; document the
+asymmetry in `OPERATIONS.md` either way. Document `HTTPS_PROXY`/`NO_PROXY`/`REQUESTS_CA_BUNDLE`/
+`SSL_CERT_FILE`/`AWS_CA_BUNDLE` **and** the D15 index variables (`UV_INDEX_URL` /
+`UV_DEFAULT_INDEX` / `PIP_INDEX_URL`, plus their `UV_NATIVE_TLS` interaction) in `OPERATIONS.md` —
+**do not** try to plumb `ssl_verify`, which is dead config, and never set it `False`. Resolve the
+plaintext-at-rest question for **both** stores — `.orchestrator/checkpoints`
+(`checkpoints.py:57-68`) and the intake session DB (`ui/intake/app.py:52`, `INTAKE_DB_PATH`) — by
+`chmod 0600` at creation plus a documented 0700 parent under a dedicated service account, or a
+documented encrypted-volume requirement. Fix `run_pipeline.py:450` to default `--model` to `None`
+so the factory resolves the provider default.
+
+**DONE looks like:** no CDN dependency at page render; both stores have a decided and documented
+permission posture; every enterprise env var is in `OPERATIONS.md`; the website CLI cannot
+silently target a public host.
+
+**Verify:**
+
+```bash
+grep -rn "unpkg.com" src/                                        # → 0
+grep -nE "REQUESTS_CA_BUNDLE|UV_INDEX_URL|AWS_CA_BUNDLE|HTTPS_PROXY" OPERATIONS.md   # → present
+grep -n "MPC_HOST_URL" src/model_project_constructor/agents/website/cli.py           # → present (or guard present)
+python3 -c "import os,stat;print(oct(stat.S_IMODE(os.stat('intake_sessions.db').st_mode)))"   # → 0o600
+uv run pytest -q && uv run mypy
+```
+
+**Boundary:** one session. Close out.
+
+---
+
+### Phase C2b — Deployment artifact
+
+**Gated on:** D14. **This phase does not exist today in any form** — there is no Dockerfile, no
+manifest, no IaC.
+
+**Scope:** produce the chosen runtime shape's container image and deployment manifest/IaC, the
+intake-UI hosting with TLS termination and the SSO/auth fronting decided in C2, and the IAM trust
+relationship matching C1's policy artifact. Pin the interpreter (`.python-version`) and wire the
+D15 index configuration into the image build.
+
+**DONE looks like:** `docker build` (or the chosen equivalent) produces a runnable image; the
+intake UI serves behind auth; the workload assumes the C1 role and can reach Bedrock.
+
+**Verify:** image builds from a clean checkout with the internal index only; a smoke request to
+the intake UI is rejected unauthenticated and accepted authenticated; `aws sts
+get-caller-identity` from inside the workload returns the expected role.
+
+**Boundary:** one session. Close out.
+
+---
+
+### Phase C3 — CI and supply-chain hardening
+
+**Gated on:** D9 and D15. **⚠ Do not start before D9.** If D9 = GitLab, the whole
+`.github/workflows/` tree is dead and SHA-pinning it is discarded work.
+
+**Scope, if D9 = GHES:** SHA-pin all 11 `uses:` lines and bump the deprecated Node-20 action
+majors in the same pass; confirm runner labels — `runs-on: ubuntu-latest` requires GitHub-hosted
+runners the enterprise will not provide.
+**Scope, if D9 = GitLab:** author `.gitlab-ci.yml` reproducing all four `ci.yml` jobs (lint /
+typecheck / test / decoupling); replace `publish-tutorial.yml` with a GitLab Pages job or drop it
+per D6. **Every `gh`-based verification command in this plan must be re-expressed for the target
+host.**
+
+**Either way:** add `--frozen` to all 5 `uv sync` invocations; add `.python-version`; fix or delete
+the dead coverage-upload step; **add `-m 'not live'` to the corporate CI invocation explicitly**
+rather than relying on credential absence; add SAST, dependency-vulnerability audit, licence gate
+(allow-list = permissive + MPL-2.0), and a machine-generated SBOM from `uv.lock`; enable branch
+protection with required checks.
+
+**Also in scope — the generated projects' CI**, which is a code change, not a note: parameterise
+`governance_templates.py` on base image, index URL, action prefix, and pre-commit repo (defaults =
+today's public values), thread them from `WebsiteAgent`/`cli.py`, with paired tests.
+
+**DONE looks like:** CI runs on the target host with pinned inputs and a hermetic test job;
+generated projects reference only enterprise-internal hosts when the env is set.
+
+**Verify:**
+
+```bash
+grep -c 'uv sync --frozen' <ci-definition>                       # → 5
+grep -rnE '@v[0-9]+$' .github/workflows/ 2>/dev/null              # → 0 (if D9 = GHES)
+uv run python scripts/run_pipeline.py --fake                      # with the CI env vars set
+grep -rn 'docker.io\|python:3.11\|github.com/' <generated-project>/   # → 0
+```
+
+**Boundary:** one session. Close out.
+
+---
+
+### Phase C4 — Host retargeting and repository migration
+
+**Gated on:** D4, D5, D8, D9, and B1 complete.
+
+**Scope**
+
+- **Parameterise `publish_wiki.sh`'s six coupling points — fail-closed, NOT "today's values as
+  defaults".** `WIKI_CLONE`, `WIKI_REMOTE_PATTERN`, `WIKI_BRANCH`, `WIKI_PUSH_REFSPEC` must be
+  required (`${WIKI_CLONE:?set WIKI_CLONE for the target wiki}`), so an unset environment aborts
+  instead of publishing enterprise content to the personal public wiki. Then **delete or re-remote
+  `~/Development/claims-model-starter.wiki`** and verify with `git -C "$WIKI_CLONE" remote get-url
+  origin` before the first post-migration wiki commit.
+- Update `mkdocs.yml:3-5`, `README.md:9`, the **`config.py:198,354-366` error-message namespace**
+  (+ its 5 asserting tests), `.env.example:25-30`, `OPERATIONS.md:25`, `docs/tutorial.md:427,445-447`,
+  and `Contributing.md:19,236,238`. Re-derive with the §2.6 rediscovery command rather than
+  trusting the table.
+- Update the **prose** documenting the mechanism — `SESSION_RUNNER.md:209` and
+  `Contributing.md:122`.
+- **Migrate the main repo:** `git clone --mirror`, **never a filesystem copy** (a folder copy
+  carries `.env`, the checkpoint store with three live GitLab project URLs, `intake_sessions.db`,
+  and 8 dropped-stash commits). Push tags separately (`git push --tags`).
+- **Migrate the wiki repo — it is a second, independent repository with 33 commits:**
+  ```bash
+  git clone --mirror https://github.com/rmsharp/claims-model-starter.wiki.git /tmp/wiki-mirror
+  # ⚠ On GitHub/GHES the target wiki repo does not exist until one page is created via the web UI.
+  git -C /tmp/wiki-mirror push --mirror <enterprise-wiki-url>
+  ```
+- **If D8's destination is not a GitHub-family wiki:** convert `_Sidebar.md` to the host's sidebar
+  convention, rename `Home.md` to the host's landing page, and rewrite the **157** extensionless
+  intra-wiki links (`grep -rhoE '\]\([A-Za-z0-9][A-Za-z0-9-]*\)' docs/wiki/claims-model-starter/ | wc -l`).
+- Recreate both GitHub Releases on the target host from `releases-export.json`.
+- Execute the external-asset register from B2. **Rotate the three personal credentials.**
+
+**DONE looks like:** the enterprise remote carries the full history, both tags, and the 23-page
+wiki; nothing in the tree points at the personal account; the publish script cannot target the
+public wiki.
+
+**Verify:**
+
+```bash
+git -C <enterprise-clone> rev-list --count HEAD          # → matches the source
+git ls-remote --tags <enterprise-remote>                 # → both tags
+git -C <new-wiki-clone> log --oneline | wc -l            # → 33
+git -C <new-wiki-clone> ls-files | wc -l                 # → 23
+git grep -n -I -iE 'rmsharp|github\.com/rmsharp' -- . \
+  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0
+WIKI_CLONE= scripts/publish_wiki.sh; echo "exit=$?"       # → non-zero (fails closed)
+```
+
+**Boundary:** one session, plus operator actions outside git.
+
+---
+
+### Phase C5 — Public-surface decommission
+
+**Gated on:** D6, D16, and C4 complete.
+
+**Scope:** retire the public surfaces that D6/D16 designate. Steps: disable GitHub Pages
+(`gh api -X DELETE repos/rmsharp/claims-model-starter/pages`); delete the branch
+(`git push origin --delete gh-pages`); remove `.github/workflows/publish-tutorial.yml` (or gate it
+`if: false`); execute the D16 disposition for the public repo and the public wiki (archive / make
+private / leave with a README pointer to the enterprise home).
+
+**DONE looks like:** no public surface auto-updates; the D16 disposition is applied and recorded.
+
+**Verify:**
+
+```bash
+curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/tutorial/   # → 404
+git ls-remote origin gh-pages                            # → empty
+gh repo view rmsharp/claims-model-starter --json isPrivate,archived,hasWikiEnabled
+```
+
+**Boundary:** one session. Close out. **This is the last phase — after it, goal 3 is complete.**
+
+---
+
+## 5. Here be dragons
+
+1. **Pushing `master` IS publishing.** No approval gate, no environment protection,
+   `permissions: contents: write`, `gh-deploy --force --clean`. An executor who sequences "push,
+   then clean up docs" has already published. **This is why A1 precedes A4.**
+2. **The publish trigger and the publish scope are decoupled in opposite directions.** Editing
+   `docs/deployment/bedrock-enterprise.md` triggers nothing — so it looks safe — and then goes
+   live on the next unrelated deploy. Never reason about what the site publishes from the
+   workflow's `paths:` list; determine it from `docs_dir` + `exclude_docs`, and **verify by
+   building from a clean `git archive` with `--extra docs`**.
+3. **The wiki auto-publish hook is armed right now and pushes to a *personal public* repo.** Any
+   commit touching `docs/wiki/claims-model-starter/` rsyncs and pushes with no confirmation.
+   **`export MPC_SKIP_WIKI_PUBLISH=1` does not work** — each Bash call is a fresh shell. Use the
+   standing rule in §4. This bites in **A1 and A3 too**, not just A2.
+4. **`rsync -a --delete` silently destroys web-UI wiki edits.** Editing the wiki through the web
+   UI during the migration is a natural thing to do — and the next local commit deletes it.
+5. **Never run `publish_wiki.sh` from a `master` checkout before A4 lands.** The live wiki is
+   published from `a1d8af7`, which exists only on the branch. Running it from `master` mirrors
+   master's older wiki over the live one and **regresses 20 pages** — and reports success. The
+   guard must be `&&`-chained: `git merge-base --is-ancestor` prints nothing on failure.
+6. **The merge will not publish the wiki.** A fast-forward creates no commit, so `post-commit`
+   never fires; `post-merge` does not exist. The 20 pages land on `master` and the live wiki is
+   untouched. It *happens* to already be correct, which makes the silent no-op harder to notice.
+7. **A bulk replace on the wiki corrupts nine correct rows.** Of the 12 `sonnet-4-6` lines, only 3
+   change; the rest document the first-party default, which really is `claude-sonnet-4-6`. And two
+   lines that *match* the canonical sweep grep — `AI-Dependencies.md:151`, `Schema-Reference.md:632`
+   — are unrelated uses of "in-flight" and must not be touched. Read every site in context.
+8. **Line numbers shift as you sweep.** Work **bottom-up per file** and re-grep after each.
+9. **A1–A3 commits are local only.** If A4 opens the PR without pushing the branch first, CI tests
+   the *pre-A1* tree, shows green, and then step 2 pushes an untested tree straight to `master` —
+   defeating the plan's central safety claim. **Push the branch and assert parity first.**
+10. **GitHub has no fast-forward merge button.** All three merge methods either create the repo's
+    first merge commit or rewrite all 25 SHAs. Land by push only.
+11. **`--cov-fail-under=95` turns any un-tested wiring change into a red build that looks
+    unrelated.** Budget paired tests for both package copies with every hook change.
+12. **A history rewrite silently breaks the project's institutional memory.** `SESSION_NOTES.md`
+    and `CHANGELOG.md` cite dozens of SHAs. `filter-repo` invalidates all of them with no error.
+13. **A green `pytest -m live` in the enterprise proves nothing.** The credential probe cannot see
+    IRSA/ECS/instance-profile auth, so every live case skips and pytest exits 0. Prove the run
+    happened (`-rs`, non-zero run count) before treating it as validation. **The inverse also
+    holds:** a corporate runner with an OIDC AWS chain un-skips the tier and makes paid calls.
+14. **`git ls-files .env` returning empty is not proof.** It says nothing about history. Use the
+    history-wide object scan — **after a `git fetch`**, or the scan misses refs.
+15. **`origin/gh-pages` in this clone is stale.** `git fetch` before reasoning about what is
+    public. `origin/master` *is* current, which makes the inconsistency invisible.
+16. **The merged history will contain a literal `[WIP]` commit** (`dadf514`). Rewording it
+    rewrites 16 SHAs. Check `git grep dadf514` first; prefer accepting it with a rationale.
+17. **`SESSION_NOTES.md` is dirty during a session and differs between `master` and the branch.**
+    Commit or stash it as step 0 of A4, and use **path-scoped `git add`, never `-a`** (learning #143).
+18. **The `gh` token cannot do security or org work** — no `security_events`, no `admin:org`.
+19. **"Defaults = today's values" is the wrong shape for `publish_wiki.sh`.** After C4, an unset
+    environment must **abort**, not fall back to the personal public wiki.
+
+---
+
+## 6. Out of scope / explicit non-goals
+
+- **Executing any phase.** This plan is the deliverable of Session 182.
+- **Choosing the licence, the IP disposition, the host, the runtime shape, or the package index.**
+  D1–D5, D9, D14–D16 are operator/legal/platform decisions; this plan frames and recommends.
+- **Re-planning the httpx/LGPL migration** — it already exists in executable form; B3 references
+  and corrects it.
+- **The `bedrock-runtime` fallback path.** If Guardrails or FIPS are mandated, the client class,
+  IAM actions, and model-id form all change — that is a re-plan, not a phase.
+- **Live Bedrock validation.** Still environment-blocked; the enterprise account is the intended
+  unblock, making A4 → C1 → C2b the critical path to the last open §3.4 verification gap.
+- **Rewriting historical records.** `SESSION_NOTES.md`, `CHANGELOG.md` entries,
+  `docs/architecture-history/` and the historical wiki pages stay as written — **with one
+  documented exception**: `docs/architecture-history/methodology-pr2527-remediation-mpc.md` is in
+  scope for D1, because it reproduces third-party material verbatim.
+
+---
+
+## 7. Final acceptance — goals 1 and 2
+
+All must hold after Phase A4:
+
+```bash
+git rev-list --count origin/master..feat/bedrock-mantle-migration          # → 0
+git ls-remote origin master                                               # → branch tip SHA
+git log --merges --oneline | wc -l                                        # → 0
+gh run list --workflow ci.yml --limit 1                                   # → success, not cancelled
+diff -r -x '.git' docs/wiki/claims-model-starter ~/Development/claims-model-starter.wiki   # → identical
+git -C ~/Development/claims-model-starter.wiki status -sb                 # → no "[ahead N]"
+grep -rniE "unmerged|feat/bedrock-mantle-migration|not[- ]yet[- ]merged|branch-only|branch only|in[- ]flight|on the branch|last session on|the branch lands|when it lands|has not been merged" \
+  docs/wiki/claims-model-starter/ | cut -d: -f1,2 | sort -u
+#   → exactly AI-Dependencies.md:151 and Schema-Reference.md:632
+for p in $(grep -rhoE '`?docs/(audits|planning|architecture-history)/[A-Za-z0-9._/-]+\.md' \
+            docs/wiki/claims-model-starter/ | tr -d '`' | sort -u); do
+  [ -e "$p" ] || echo "DEAD WIKI PATH REFERENCE: $p"
+done                                                                      # → no output
+curl -s https://rmsharp.github.io/claims-model-starter/sitemap.xml | grep -c audits   # → 0
+uv run pytest -q && uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy
+```
+
+Goal 3 completes when D1–D16 are answered and Phases B and C — **including C5** — close.
+**B1 is the gate: do not push to a corporate host until the third-party methodology rights
+conflict is resolved in writing.**
