@@ -6,6 +6,144 @@
 
 ## ACTIVE TASK
 
+### What Session 185 Did
+**Deliverable:** Resolve **D7** (`docs/planning/enterprise-migration.md:446`) — the operator-owned
+decision on whether to take down the already-public audits, and whether that extends to
+`business-value-capture.qmd` — and record the resolution here against D7, per the D2 precedent
+(Session 183, learning #149). **(COMPLETE — resolved via `AskUserQuestion`, both parts answered.)**
+
+**Started / Completed:** 2026-07-27.
+
+**D7 resolution, verbatim outcome:**
+1. **Take the audits down: YES.** Per the plan's own recommendation (Phase A1 item 2, `:517-521`):
+   move `docs/audits/` out of `docs_dir` to a top-level `audits/` (structural, not a config a future
+   edit can undo), force a re-deploy so `/audits/2026-06-01-technical-debt-audit/` and
+   `/audits/2026-06-10-wiki-vs-code-accuracy-audit/` 404, then request search-index removal (both
+   are in `sitemap.xml`; no `robots.txt` exists to have blocked crawling in the first place).
+2. **Extend to `/executive-summaries/business-value-capture.qmd`: YES.** ⚠ **This exceeds the
+   plan's default D7 scope as written.** The plan's D7 row (`:446`) explicitly notes this document
+   is "as scoped, this action does not cover it" — Phase A1's Scope section (`:512-528`) item 2
+   only relocates `docs/audits/`, with no mention of `executive-summaries/`. **Whoever executes
+   Phase A1 must add a new scope item (or extend item 2) to also remove/relocate
+   `business-value-capture.qmd` from the published surface** — the current plan text does not do
+   this on its own and must not be treated as already covering it.
+
+**Method:** read the D7 row, Phase A1's gated scope, and the supporting live-exposure evidence
+(§2.3, `:136-156` — fetched-URL table, sitemap contents, the home-directory-path leak in the
+wiki-vs-code-accuracy audit) before presenting the decision, so the operator had the actual stakes
+(indexed exposure, no `robots.txt`, a leaked absolute path) rather than just the bare D7 row text.
+Presented as two `AskUserQuestion` items (take-down decision; `business-value-capture.qmd` scope),
+recommended option first per the plan's own stance, consistent with **D7's owner being the
+operator alone** — not an engineering call.
+
+**Did not edit `docs/planning/enterprise-migration.md`.** Per the D2 precedent (Session 183,
+learning #149): the plan is a frozen artifact meant to be re-derived, not live-edited for D-item
+resolutions of this size; `SESSION_NOTES.md` is the mutable continuity surface. (Contrast: D6 in
+Session 184 *was* edited in-place — but that was a large, explicitly-authorized plan revision, not
+a narrow D-item resolution. This session is the D2 pattern, not the D6 pattern.) Did not start
+Phase A1 or touch `docs/audits/`, `mkdocs.yml`, or any wiki file — that is Phase A1's own session,
+now unblocked but not begun.
+
+### Session 184 Handoff Evaluation (by Session 185)
+
+**Score: 8/10.**
+- **What helped:** the handoff correctly named D6 as the only D-item resolved that session, and
+  explicitly listed D7 as one of the items "still genuinely open" — it did not overclaim progress.
+  The "Key files" pointer to the decision register range (`§3 ... ~lines 439–453`) put me in the
+  right neighborhood of the document immediately.
+- **What was missing (−2):** D7 was never named individually in the handoff, even though it gates
+  Phase A1 *jointly with D6* (the one D-item the handoff does call out by name throughout). The
+  citation was a line-range covering D6/D8/D9/D16 — D7 sits inside that range at `:446` but wasn't
+  singled out, so I had to grep the whole document for `D7` myself to find its row, Phase A1's
+  scope text, and the supporting exposure evidence, rather than being pointed straight at them.
+  For a D-item that shares a gate with the one just-resolved item, naming it explicitly (not just
+  including it in a range) would have saved a full re-discovery pass.
+- **ROI:** net positive — the handoff's framing ("D7 ... remains genuinely open," "gates Phase A1")
+  was accurate and got me oriented fast, but the missing explicit citation cost one extra research
+  pass this session did anyway have budget for.
+
+### Phase 3B: Self-assess — Session 185 — 9/10
+
+- **The +:** (1) Recognized D7 as **operator-owned, not an engineering call**, and used
+  `AskUserQuestion` rather than deciding or defaulting to the plan's recommendation myself —
+  matches the standing `feedback_advice_not_action` memory. (2) **Read the supporting evidence
+  (§2.3) before presenting the decision**, not just the D7 row — this is what surfaced the concrete
+  stakes (indexed URLs, no `robots.txt`, the home-directory-path leak) that made the question
+  answerable rather than abstract. (3) **Caught the scope delta**: the operator's answer to part 2
+  (extend to `business-value-capture.qmd`) goes beyond what the plan's own D7 recommendation and
+  Phase A1 scope text cover — flagged this explicitly rather than letting "D7 resolved" absorb a
+  fact the plan text doesn't yet reflect. (4) **Held the D2 precedent** — did not edit the frozen
+  plan document, recorded resolution here instead, and explicitly distinguished this from the D6
+  case (which *was* edited, but under a different, explicitly-authorized scope). (5) Did not start
+  Phase A1 despite it now being fully unblocked (D6 + D7 both answered) — one deliverable, no
+  bundling.
+- **The −:** (1) Did not verify whether a `noindex` meta tag or an immediate manual search-console
+  removal request is feasible *now* (vs. only after the A1 re-deploy) — left entirely as Phase A1's
+  problem, which is correct scoping but means the exposure window between this decision and A1's
+  execution is not shortened by anything done this session.
+- **Quality bar:** meets/exceeds — correct owner-recognition, evidence-based framing, scope-delta
+  catch, precedent-consistent recording, no bundling.
+
+### Phase 3C: Learnings — Session 185
+
+- **Candidate #151 — NEW, 1st instance — "A D-item's operator answer can exceed the plan's own
+  stated default scope for that D-item (here: D7's recommendation and Phase A1's scope text only
+  ever covered `docs/audits/`; the operator's answer extended the take-down to
+  `business-value-capture.qmd`, which the plan explicitly flags as NOT covered 'as scoped'). When
+  resolving a D-item conversationally, explicitly check the operator's answer against the plan's
+  written default scope for that item, and if the answer exceeds it, name the delta as a required
+  plan-text update for whoever executes the gated phase — do not let the shorthand 'D-item
+  resolved' silently absorb a fact the plan document doesn't yet contain."** Sibling of #149
+  (record D-item resolutions in SESSION_NOTES, don't live-edit the frozen plan) — this is the
+  companion risk: a resolution can widen the item's scope, and that widening is easy to lose if
+  it's recorded as flatly as a same-scope resolution would be. **When to apply:** any time an
+  operator's answer to a decision-register item covers more (or less) than the item's own
+  recommendation text describes. Now at **1.** Next candidate = **#152.**
+- **Reinforced:** **`feedback_advice_not_action`** (operator memory) — presented D7 via
+  `AskUserQuestion`, took no unilateral action on the take-down itself. **Learning #149's
+  frozen-plan-document pattern** — held again, explicitly distinguished from the D6 exception.
+  **SAFEGUARDS.md "1 and done"** — did not start Phase A1 despite it becoming unblocked mid-session.
+- **Candidate roster:** **#151 NEW at 1**; #150 at 1 (S184); #149 at 1 (S183); #148 at 1 (S182);
+  #147 at 1 (S182); #146 at 1 (S181); earlier per prior roster. `PROJECT_LEARNINGS.md` = **61 rows**
+  (no promotion). Next = **#152.**
+
+### Phase 3D: Handoff to Session 186
+
+**D7 is RESOLVED (both parts) — D6 and D7, the two D-items gating Phase A1, are now BOTH answered.
+Phase A1 is unblocked and is the natural next-session deliverable.** Nothing in Phase A1 has been
+started; no file under `docs/`, `mkdocs.yml`, or the wiki has been touched this session.
+
+**⚠ Read this before starting Phase A1:** the plan's own text for Phase A1 (`:512-528`, item 2,
+`:517-521`) only relocates `docs/audits/`. **It does NOT yet reflect the operator's decision to
+also extend the take-down to `/executive-summaries/business-value-capture.qmd`** — that decision
+was made this session (185) and is recorded above, but the plan document was deliberately left
+unedited (D2 precedent). **Phase A1's actual scope for this session's executor is: the plan's
+written item 2, PLUS remove/relocate `business-value-capture.qmd` from the published surface** —
+treat the plan text as incomplete on this one point, not as the full picture. Confirm before
+executing: `curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/executive-summaries/business-value-capture.qmd` still 200 (i.e., not already handled by
+something else in the interim).
+
+**State you will inherit:**
+1. Tree is CLEAN after this close-out. Branch `feat/bedrock-mantle-migration`, still 5 commits
+   ahead of `origin/feat/bedrock-mantle-migration` (unchanged this session — only
+   `SESSION_NOTES.md` was touched) — nothing pushed.
+2. **D2, D6, D7 are now the three operator-answered D-items.** D1, D3–D5, D8–D16 remain open and
+   gate later phases (B1, A3, C1–C5 per §3) — none of them block Phase A1.
+3. **Phase A1 has not been started.** Its standing rule applies the moment any wiki file is
+   touched: disarm `.githooks` (`git config --unset core.hooksPath`) as the FIRST action, per the
+   plan's boxed warning at `:472-492` — `MPC_SKIP_WIKI_PUBLISH=1` does not survive across Bash tool
+   calls in this environment.
+4. Baseline not re-measured this session (no code touched). Last measured: Session 181's 922
+   passed + 8 live-skipped @ 97.41%, ruff+mypy clean.
+5. Next learning candidate = **#152**. `PROJECT_LEARNINGS.md` = 61 rows.
+
+**Key files:**
+- `docs/planning/enterprise-migration.md:446` — D7's row (now resolved per this handoff, plan text
+  unedited). `:512-551` — Phase A1's full scope, DONE criteria, and verify block (item 2 at
+  `:517-521` needs the `business-value-capture.qmd` addition noted above). `:136-156` (§2.3) — the
+  live-exposure evidence that informed this decision (fetched-URL table, sitemap contents, the
+  home-directory leak).
+
 ### What Session 184 Did
 **Deliverable:** Revise `docs/planning/enterprise-migration.md` to correct a wrong premise the
 operator identified in conversation (continuation of Session 183): the plan's D6/D8/D9/D16 rows
