@@ -6,6 +6,15 @@
 
 ## ACTIVE TASK
 
+### What Session 191 Did
+**Deliverable:** Execute Phase 1 (GitLab adapter → `httpx`) of
+`docs/planning/httpx-adapter-migration.md` (`85d8476`, Session 179). Operator-directed —
+not the `enterprise-migration.md` plan-revision session Session 190 flagged as the likely
+next task. (IN PROGRESS)
+**Started:** 2026-07-27 (same day as Sessions 188–190).
+**Status:** Session claimed. Branch `feat/httpx-adapters` being created off clean `master`
+(`8af4b9b`) per the plan's §5 branching prerequisite. Work beginning.
+
 ### What Session 190 Did
 **Deliverable:** Execute a scoped subset of Phase B1 ("The legal packet") of
 `docs/planning/enterprise-migration.md` — the four items confirmed necessary *before* Phase C4
