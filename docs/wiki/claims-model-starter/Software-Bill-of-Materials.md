@@ -31,8 +31,7 @@ This SBOM covers both the **Model Project Constructor** (the tool) and the **gen
 | anthropic[bedrock] | >=0.94 | Claude API client (Intake and Data agents only — the Website Agent makes no LLM calls). The `[bedrock]` extra pulls in boto3/botocore for the AWS Bedrock provider |
 | sqlparse | >=0.5 | SQL parsing and validation |
 | sqlalchemy | >=2.0,<3 | Database abstraction (Data Agent) |
-| httpx | >=0.27,<1 | GitLab API adapter — direct REST calls (Website Agent) |
-| PyGithub | >=2,<3 | GitHub API adapter (Website Agent) |
+| httpx | >=0.27,<1 | GitLab + GitHub API adapters — direct REST calls (Website Agent) |
 | typer | >=0.12 | CLI framework |
 
 ### Web UI stack (`--extra ui`)
@@ -87,13 +86,10 @@ These are pulled in by direct dependencies and pinned in `uv.lock`:
 | jmespath | boto3, botocore | JSON query language used by the AWS SDK |
 | s3transfer | boto3 | AWS transfer manager (a boto3 dependency; unused by this project) |
 | python-dateutil | botocore, ghp-import | Date parsing for AWS API payloads |
-| requests | PyGithub, langsmith | Sync HTTP client |
+| requests | langsmith | Sync HTTP client |
 | starlette | fastapi | ASGI web framework |
 | click | typer, uvicorn | CLI argument parsing |
 | rich | typer | Terminal formatting |
-| cryptography | PyGithub (via `pyjwt[crypto]`) | Encryption, SSH key handling |
-| pynacl | PyGithub | Public key encryption |
-| pyjwt | PyGithub | JWT token handling |
 | anyio | httpx, sse-starlette | Async/sync bridge |
 | aiosqlite | langgraph-checkpoint-sqlite | Async SQLite wrapper |
 | orjson | langgraph-sdk, langsmith | Fast JSON encoding |
@@ -199,7 +195,7 @@ There is no `package.json`, `npm`, or `node_modules`.
 | **Intake Agent** | anthropic[bedrock], langgraph, pydantic, typer | httpx, langchain-core, anyio, boto3, botocore |
 | **Intake Web UI** | fastapi, uvicorn, sse-starlette, langgraph-checkpoint-sqlite | starlette, aiosqlite, anyio |
 | **Data Agent** | anthropic[bedrock], langgraph, sqlparse, sqlalchemy, typer | httpx, langchain-core, greenlet, boto3, botocore |
-| **Website Agent** | langgraph, httpx, PyGithub, typer (no `anthropic` — deterministic, makes no LLM calls) | requests, cryptography, pynacl, pyjwt |
+| **Website Agent** | langgraph, httpx, typer (no `anthropic` — deterministic, makes no LLM calls) | (none unique — httpx's own transitives are shared with the LLM clients) |
 | **Orchestrator** | pydantic, pyyaml | (uses agent deps transitively) |
 | **Testing** | pytest, pytest-asyncio, pytest-cov, mypy, ruff | coverage, pluggy, pathspec |
 
@@ -215,11 +211,10 @@ The `uv.lock` file pins all packages to exact versions. As of the current lockfi
 | pydantic | 2.13.0 |
 | sqlalchemy | 2.0.49 |
 | httpx | 0.28.1 |
-| PyGithub | 2.9.1 |
 | pytest | 9.0.3 |
 | mypy | 1.20.1 |
 | ruff | 0.15.10 |
 | boto3 | 1.43.32 |
 | botocore | 1.43.32 |
 
-The full locked dependency tree — 97 `[[package]]` entries, including the two workspace members — is in `uv.lock` at the repository root.
+The full locked dependency tree — 91 `[[package]]` entries, including the two workspace members — is in `uv.lock` at the repository root.

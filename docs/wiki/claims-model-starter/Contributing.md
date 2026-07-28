@@ -29,7 +29,7 @@ From the `[project.optional-dependencies]` table in `pyproject.toml`:
 
 | Extra | Installs | Why |
 |---|---|---|
-| `agents` | `langgraph`, `anthropic[bedrock]`, `sqlparse`, `sqlalchemy`, `httpx`, `PyGithub`, `typer` | Agent runtimes and host adapters. The `[bedrock]` marker adds the AWS transitive stack (boto3 / botocore) used by the `bedrock` LLM provider. |
+| `agents` | `langgraph`, `anthropic[bedrock]`, `sqlparse`, `sqlalchemy`, `httpx`, `typer` | Agent runtimes and host adapters. The `[bedrock]` marker adds the AWS transitive stack (boto3 / botocore) used by the `bedrock` LLM provider. |
 | `ui` | `fastapi`, `uvicorn`, `sse-starlette`, `langgraph-checkpoint-sqlite`, `python-multipart` | Intake web UI |
 | `dev` | `pytest`, `pytest-asyncio`, `pytest-cov`, `mypy`, `ruff` | Developer toolchain |
 | `docs` | `mkdocs`, `mkdocs-material` | MkDocs tutorial-site build (`mkdocs.yml` at the repository root) |
@@ -183,7 +183,7 @@ When adding a new contract, add a structural guard alongside it. CI enforcement 
 ### Mocking external services
 
 - The Anthropic SDK is stubbed with module-local `_FakeAnthropic` / `_FakeMessages` classes defined inside each client test file — `tests/agents/intake/test_anthropic_client.py`, `tests/agents/intake/test_bedrock_client.py`, their `tests/data_agent_package/` twins, and `tests/test_llm_json_parity.py` — that return canned JSON. They are plain classes, not shared pytest fixtures. At the protocol seam, `FakeLLMClient` (in `tests/agents/data/test_data_agent.py`) and `FixtureLLMClient` (in `src/model_project_constructor/agents/intake/fixture.py`) stand in for a real client. Do not hit the real API in unit tests.
-- The GitLab adapter is tested via `httpx.MockTransport` at the wire boundary (migrated off `python-gitlab`/`MagicMock` in Session 191, `docs/planning/httpx-adapter-migration.md` Phase 1). The GitHub adapter is still tested via `MagicMock` at the `PyGithub` boundary, pending Phase 2. An end-to-end `FakeRepoClient` is provided for Website Agent tests — see `tests/agents/website/conftest.py`.
+- Both repo-host adapters are tested via `httpx.MockTransport` at the wire boundary (GitLab migrated off `python-gitlab`/`MagicMock` in Session 191, GitHub off `PyGithub`/`MagicMock` in Session 193 — both per `docs/planning/httpx-adapter-migration.md`). An end-to-end `FakeRepoClient` is provided for Website Agent tests — see `tests/agents/website/conftest.py`.
 - Database tests use in-memory SQLite; there is no integration test requiring a live database.
 
 ---
@@ -226,7 +226,7 @@ These aren't style preferences — they are documented responses to specific pas
 ## 8. Licenses, attribution, and dependency hygiene
 
 - **Project license:** MIT (`LICENSE` at repository root). Copyright © 2026 R. Mark Sharp.
-- **Dependency licenses:** the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root. Direct dependencies are predominantly MIT / BSD / Apache 2.0. **One is LGPL-3.0** — `PyGithub` (the GitLab adapter dropped its LGPL SDK for direct `httpx` calls in Session 191, `docs/planning/httpx-adapter-migration.md` Phase 1); LGPL compliance is satisfied by Python's import mechanism allowing re-linking against modified library versions.
+- **Dependency licenses:** the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root. Direct dependencies are predominantly MIT / BSD / Apache 2.0. **Zero are LGPL** as of Session 193 — both repo-host adapters (GitLab in Session 191, GitHub in Session 193) dropped their LGPL SDKs for direct `httpx` calls (`docs/planning/httpx-adapter-migration.md`).
 - **New dependencies:** prefer zero-new-dep solutions when the stdlib or existing deps can do the job (per learning #13). Each added dependency is a maintenance commitment — version conflicts, CI install time, and security-review surface all grow. If you need a new dep, include justification in the PR description.
 
 ---

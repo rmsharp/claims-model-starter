@@ -161,14 +161,14 @@ Every non-2xx response or `httpx` transport error (`httpx.HTTPError`) is transla
 
 ### 2.3 GitHub (`PyGithubAdapter`)
 
-`PyGithubAdapter` in `src/model_project_constructor/agents/website/github_adapter.py`. Calls:
+`PyGithubAdapter` in `src/model_project_constructor/agents/website/github_adapter.py`. Migrated off the `PyGithub` SDK to direct `httpx` calls against the REST API in Session 193 (`docs/planning/httpx-adapter-migration.md` Phase 2). Calls:
 
-- `Github(auth=Auth.Token(...), base_url=host_url)` (constructed in `PyGithubAdapter.__init__`) — SDK client.
-- `get_organization(namespace)` → falls back to `get_user(namespace)` — owner resolution.
-- `owner.create_repo(...)` — repo creation (maps visibility to `private` boolean).
-- `get_git_ref`, `create_git_blob`, `create_git_tree`, `create_git_commit`, `ref.edit` — git data API walk for a single atomic commit.
+- `httpx.Client(base_url=host_url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})` (constructed in `PyGithubAdapter.__init__`) — no network call at construction.
+- `GET /orgs/{namespace}` → falls back to `GET /users/{namespace}` on a 404 — owner resolution. Repo creation then targets `POST /orgs/{namespace}/repos` (organization) or `POST /user/repos` (the *authenticated* user's own account — GitHub's API has no endpoint to create a repo under an arbitrary third-party user).
+- `POST /orgs/{namespace}/repos` or `POST /user/repos` — repo creation (maps visibility to a `private` boolean).
+- `GET .../git/ref/heads/{branch}` → `GET .../git/commits/{sha}` → `POST .../git/blobs` (one per file) → `POST .../git/trees` → `POST .../git/commits` → `PATCH .../git/refs/heads/{branch}` — the git data API walk for a single atomic commit.
 
-Target host is `https://api.github.com` by default; GitHub Enterprise via `MPC_HOST_URL` (e.g., `https://github.example.com/api/v3`).
+Every non-2xx response or `httpx` transport error (`httpx.HTTPError`) is translated to `RepoClientError`/`RepoNameConflictError`; no raw `httpx` exception escapes the adapter. Target host is `https://api.github.com` by default; GitHub Enterprise via `MPC_HOST_URL` (e.g., `https://github.example.com/api/v3`).
 
 ### 2.4 Database (Data Agent, optional)
 
@@ -350,8 +350,7 @@ From `pyproject.toml` (root) and `packages/data-agent/pyproject.toml`:
 | `anthropic[bedrock]>=0.94` | LLM calls (first-party + Bedrock) | Anthropic's official SDK, on the release that ships `AnthropicBedrockMantle`. The `[bedrock]` extra pulls `boto3` / `botocore` for AWS SigV4 signing (`uv.lock`, the `anthropic` package's `[package.optional-dependencies] bedrock` group) — additional transitive trust surface. |
 | `sqlparse>=0.5` | Data Agent SQL validation | Parse-level only — no execution. |
 | `sqlalchemy>=2.0,<3` | `ReadOnlyDB` | Standard; DB URL is operator-provided. |
-| `httpx>=0.27,<1` | GitLab adapter | Direct REST calls (BSD-3-Clause — see [SBOM](Software-Bill-of-Materials)); replaced `python-gitlab` in Session 191. |
-| `PyGithub>=2,<3` | GitHub adapter | Official GitHub SDK. (LGPL-3.0-only — see [SBOM](Software-Bill-of-Materials).) |
+| `httpx>=0.27,<1` | GitLab + GitHub adapters | Direct REST calls (BSD-3-Clause — see [SBOM](Software-Bill-of-Materials)); replaced `python-gitlab` in Session 191 and `PyGithub` in Session 193. |
 | `typer>=0.12` | CLIs | Standard. |
 | `fastapi>=0.110`, `uvicorn>=0.29`, `sse-starlette>=2` | intake web UI | Only needed for live interviews. |
 | `langgraph-checkpoint-sqlite>=2.0,<3` | intake web UI checkpoints | SQLite-backed state persistence for live interviews. |
@@ -383,7 +382,7 @@ These are explicit design decisions, not bugs.
 - [ ] Confirm the selected provider's data handling terms are compatible with the content interviewers will elicit — Anthropic's on the default path, AWS's on the `bedrock` path.
 - [ ] Confirm the target `GITLAB_TOKEN` / `GITHUB_TOKEN` has the minimum required scope (no broader than `api` / `repo`).
 - [ ] Confirm CI does not inject real credentials into the `.github/workflows/ci.yml` jobs.
-- [ ] Review the [SBOM](Software-Bill-of-Materials) for unacceptable license profiles — the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root; **one** direct dependency is LGPL-3.0 (`PyGithub`; `python-gitlab` was removed in Session 191).
+- [ ] Review the [SBOM](Software-Bill-of-Materials) for unacceptable license profiles — the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root; **zero** direct dependencies are LGPL as of Session 193 (`python-gitlab` was removed in Session 191, `PyGithub` in Session 193 — both repo-host adapters now use direct `httpx` calls).
 - [ ] Decide whether checkpoint files must be encrypted at rest (this project does not encrypt them).
 - [ ] Decide whether LLM call metadata should be forwarded to a SIEM (structured logging makes this straightforward).
 - [ ] If the `bedrock` provider is selected (`--provider bedrock` on the CLIs, or `INTAKE_LLM_PROVIDER=bedrock` for the web UI): confirm the execution role's policy is least-privilege **and matches the endpoint in use**. The client is `AnthropicBedrockMantle`, which authorizes on `bedrock-mantle:CreateInference` (plus `aws-marketplace:ViewSubscriptions`) — a *different action namespace* from the classic `bedrock:InvokeModel` path, so a role scoped only to `bedrock:*` will 403 the mantle client. See `docs/deployment/bedrock-enterprise.md` §3.

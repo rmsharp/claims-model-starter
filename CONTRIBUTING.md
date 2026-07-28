@@ -37,8 +37,9 @@ For security-sensitive reports, do not open a public issue — see `SECURITY.md`
 
 ## Dependency licenses
 
-See `THIRD-PARTY-LICENSES` for the full per-dependency license table, including the two LGPL-3.0
-direct dependencies (`python-gitlab`, `PyGithub`).
+See `THIRD-PARTY-LICENSES` for the full per-dependency license table. As of Session 193, zero
+direct dependencies are LGPL — the two former LGPL SDKs (`python-gitlab`, `PyGithub`) were both
+replaced with direct `httpx` calls (`docs/planning/httpx-adapter-migration.md`).
 
 ## AI-assisted development
 

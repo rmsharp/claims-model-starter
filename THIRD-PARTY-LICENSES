@@ -5,7 +5,12 @@ This file lists the license of every third-party Python package installed in thi
 environment, as declared by each package's own distribution metadata. Generated 2026-07-27
 (Session 190) via a live scan of `importlib.metadata` across all installed distributions,
 cross-checked against each package's PyPI license classifiers; refreshed 2026-07-27 (Session 191)
-after `python-gitlab` was dropped in Phase 1 of `docs/planning/httpx-adapter-migration.md`.
+after `python-gitlab` was dropped in Phase 1 of `docs/planning/httpx-adapter-migration.md`;
+refreshed again 2026-07-28 (Session 193) after `PyGithub` was dropped in Phase 2 of the same plan
+(the table rows below for packages unaffected by that removal are carried forward from the
+Session 190 cross-checked scan, not re-derived — a live re-scan without classifier cross-checking
+returns `None`/`UNKNOWN` for several packages that declare license only via PyPI trove
+classifiers, e.g. `Jinja2`, `packaging`, `pathspec`, `sqlparse`).
 Re-run after any dependency change:
 
     uv run python3 -c "
@@ -20,13 +25,14 @@ are included for completeness; they are not third-party.
 Summary
 -------
 
-- **95 installed distributions** (was 96 — `python-gitlab` removed Session 191, Phase 1 of the
-  httpx adapter migration).
+- **89 installed distributions** (was 95 — `PyGithub` and its unique transitives `cffi`,
+  `cryptography`, `pycparser`, `PyJWT`, `PyNaCl` removed Session 193, Phase 2 of the httpx adapter
+  migration).
 - **Zero GPL-only, zero AGPL** dependencies.
-- **One LGPL-3.0 direct dependency: `PyGithub`** (see below). Until Session 191, `python-gitlab`
-  was a second LGPL-3.0 direct dependency (GitLab adapter) — removed when the GitLab adapter was
-  rewritten against direct `httpx` calls (`docs/planning/httpx-adapter-migration.md` Phase 1).
-  `PyGithub` remains pending Phase 2 of that plan.
+- **Zero LGPL direct dependencies.** `python-gitlab` (LGPL-3.0-or-later, GitLab adapter) was
+  removed in Session 191; `PyGithub` (LGPL-3.0-only, GitHub adapter) was removed in Session 193.
+  Both repo-host adapters now use direct `httpx` calls
+  (`docs/planning/httpx-adapter-migration.md`, both phases complete).
 - **Three MPL-2.0 components** (one direct-ish via a first-party dependency's own dependency
   tree; see notes): `certifi`, `orjson`, `pathspec`.
 - Everything else is MIT, BSD (2- or 3-clause), Apache-2.0, ISC, or PSF-2.0 — all permissive.
@@ -36,16 +42,13 @@ Copyleft and weak-copyleft dependencies (read first)
 
 | Package | Version | License | Note |
 |---|---|---|---|
-| `PyGithub` | 2.9.1 | LGPL-3.0-only | GitHub adapter (`agents/website` repo-host layer). The PyPI classifier is version-ambiguous ("GNU Library or Lesser General Public License (LGPL)"); the bundled `licenses/COPYING.LESSER` text is GNU LGPL **version 3** with no "or later" clause, so this project treats it as LGPL-3.0-only. Pending removal in Phase 2 of `docs/planning/httpx-adapter-migration.md`. |
 | `certifi` | 2026.2.25 | MPL-2.0 | Transitive, via `httpx`/`anthropic`. |
 | `orjson` | 3.11.8 | MPL-2.0 AND (Apache-2.0 OR MIT) | Transitive, via `langgraph`. |
 | `pathspec` | 1.0.4 | MPL-2.0 | Transitive, via `mkdocs`/`hatchling` (docs/build tooling only, not shipped in the runtime application). |
 
-LGPL compliance note: `PyGithub` is used purely through its public Python API (no source
-modification, no static linking) — LGPL §4/§6 compliance is satisfied by Python's import
-mechanism, which already permits re-linking against a modified version of the library. The GitLab
-adapter no longer uses an LGPL SDK as of Session 191 (direct `httpx` calls). See
-`docs/wiki/claims-model-starter/Security-Considerations.md` §9 for how each adapter is used.
+No LGPL dependency remains as of Session 193. See
+`docs/wiki/claims-model-starter/Security-Considerations.md` §9 for how each repo-host adapter is
+used.
 
 Full dependency table
 ----------------------
@@ -62,12 +65,10 @@ Full dependency table
 | boto3 | 1.43.32 | Apache-2.0 |
 | botocore | 1.43.32 | Apache-2.0 |
 | certifi | 2026.2.25 | MPL-2.0 |
-| cffi | 2.0.0 | MIT |
 | charset-normalizer | 3.4.7 | MIT |
 | click | 8.3.2 | BSD-3-Clause |
 | colorama | 0.4.6 | BSD License |
 | coverage | 7.13.5 | Apache-2.0 |
-| cryptography | 46.0.7 | Apache-2.0 OR BSD-3-Clause |
 | distro | 1.9.0 | Apache-2.0 |
 | docstring_parser | 0.18.0 | MIT |
 | fastapi | 0.135.3 | MIT |
@@ -109,14 +110,10 @@ Full dependency table
 | pathspec | 1.0.4 | MPL-2.0 |
 | platformdirs | 4.9.6 | MIT |
 | pluggy | 1.6.0 | MIT |
-| pycparser | 3.0 | BSD-3-Clause |
 | pydantic | 2.13.0 | MIT |
 | pydantic_core | 2.46.0 | MIT |
-| PyGithub | 2.9.1 | LGPL-3.0-only (see note above) |
 | Pygments | 2.20.0 | BSD-2-Clause |
-| PyJWT | 2.12.1 | MIT |
 | pymdown-extensions | 10.21.2 | MIT |
-| PyNaCl | 1.6.2 | Apache-2.0 |
 | pytest | 9.0.3 | MIT |
 | pytest-asyncio | 1.3.0 | Apache-2.0 |
 | pytest-cov | 7.1.0 | MIT |
