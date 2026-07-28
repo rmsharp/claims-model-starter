@@ -72,7 +72,7 @@ The [Changelog](Changelog) is phase-organized. Two release tags have now cut (`v
 
 The current SBOM page covers all direct and key transitive dependencies. To strengthen it for compliance review:
 
-1. **Add license information** for each dependency. Most are MIT, BSD, or Apache 2.0, but `cryptography` uses Apache/BSD dual license and **two** direct dependencies are LGPL-3.0 — `python-gitlab` (LGPL-3.0-or-later) and `PyGithub` (LGPL-3.0-only). LGPL compliance requires that the application can be re-linked with a modified version of the library, which is automatically satisfied by Python's import mechanism. See `THIRD-PARTY-LICENSES` at the repository root for the full per-dependency license table.
+1. **Add license information** for each dependency. Most are MIT, BSD, or Apache 2.0, but `cryptography` uses Apache/BSD dual license and **one** direct dependency is LGPL-3.0 — `PyGithub` (LGPL-3.0-only). `python-gitlab` (LGPL-3.0-or-later) was removed in Session 191 when the GitLab adapter was rewritten against direct `httpx` calls; `PyGithub` is pending the same treatment. LGPL compliance requires that the application can be re-linked with a modified version of the library, which is automatically satisfied by Python's import mechanism. See `THIRD-PARTY-LICENSES` at the repository root for the full per-dependency license table.
 
 2. **Add a dependency update policy** stating how often dependencies are reviewed and updated, and what testing is performed after updates.
 
