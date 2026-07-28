@@ -66,30 +66,25 @@ enterprise clone disposition/access model (operator + legal) — deferred to pos
 ### httpx adapter migration (`docs/planning/httpx-adapter-migration.md`)
 
 Replace both LGPL SDK dependencies (`python-gitlab`, `PyGithub`) in the Website Agent's repo-host
-adapters with direct `httpx` REST calls. **Phase 1 (GitLab) is DONE and LANDED** (Session 191,
-5 commits — `9af715b`/`09f80a4`/`348dff1`/`41445b9`/`7b9b05e` — merged to `master` via `ff04c02`
-and pushed to `origin/master` by Session 192; `feat/httpx-adapters` deleted post-merge, fully
-captured in `master` history). One of the two LGPL-3.0 direct dependencies is gone; `PyGithub`
-remains.
+adapters with direct `httpx` REST calls. **Both phases are DONE and LANDED.** Phase 1 (GitLab):
+Session 191, merged via `ff04c02`/pushed by Session 192. Phase 2 (GitHub): Session 193, 5 commits
+— `2412abf` (adapter+tests), `e0ae0c5` (packaging), `797ea5c` (src docstrings/README), `9aad76b`
+(wiki+`THIRD-PARTY-LICENSES`+root `CONTRIBUTING.md`) — landed directly on `master` (no feature
+branch this time; both phases had already been through the branch-then-merge cycle once, and
+Phase 2 alone touches no file Phase 1 or the still-open enterprise-migration thread depends on).
+**Zero direct dependencies are LGPL as of `9aad76b`** — full gate: 963 passed + 8 live-skipped @
+97.75% coverage, `ruff`/`mypy` clean. See `CHANGELOG.md`'s 2026-07-28 entry for the complete
+per-commit breakdown.
 
-- **Phase 2 — GitHub adapter → `httpx`.** Mirrors Phase 1: rewrite `github_adapter.py`'s git-database
-  commit dance (6 sequential calls, each a failure point) against `httpx`, rewrite
-  `test_github_adapter.py` against `httpx.MockTransport`, drop `PyGithub` from `pyproject.toml`,
-  update GitHub-specific docs (`README.md:75,191`, protocol docstring, SBOM/Security/Agent-Ref
-  GitHub rows, remove the now-obsolete LGPL-compliance notes). At completion, both LGPL
-  dependencies are gone. **Session 191 gotcha for whoever runs Phase 2:** the first Phase 1 draft
-  checked `status_code >= 400` instead of `_is_2xx` (`200 <= status < 300`) and left the
-  post-success `.json()` calls unguarded — both let a raw exception escape on a 3xx redirect or a
-  malformed-JSON 2xx body (`httpx.Client` doesn't follow redirects by default, unlike the
-  `requests`-based transport under both old SDKs). Apply the same `_is_2xx`/guarded-parse pattern
-  in the GitHub rewrite from the start rather than rediscovering it.
 - **Phase 3 (optional)** — rename `PythonGitLabAdapter`/`PyGithubAdapter` to drop the SDK names
-  now baked into misnomers. Plan recommends deferring this; only do it if DP1 is revisited.
+  now baked into misnomers (both classes still literally name the SDKs they no longer use). Plan
+  recommends deferring this; only do it if DP1 is revisited. Not started.
 
-Overlaps `B3` (LGPL removal) in the Enterprise migration section above — B3 is now partially
-satisfied (GitLab's LGPL dep is gone) but B3's own text hasn't been reconciled with this plan; not
-done this session (would be scope creep into the enterprise-migration plan-revision session already
-flagged as owed).
+Overlaps `B3` (LGPL removal) in the Enterprise migration section above — B3 is now **fully**
+satisfied (both LGPL deps are gone) but B3's own text still says "conditional on D11, may be
+deferred" as if a decision were pending; reconciling that wording is folded into the still-owed
+enterprise-migration plan-revision session below, not done here (same scope boundary Session 192
+already drew).
 
 ---
 
