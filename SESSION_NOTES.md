@@ -6,6 +6,47 @@
 
 ## ACTIVE TASK
 
+### What Session 190 Did
+**Deliverable:** Execute a scoped subset of Phase B1 ("The legal packet") of
+`docs/planning/enterprise-migration.md` — the four items the operator confirmed must be fixed
+*before* Phase C4 (enterprise clone provisioning / "the fork") can run, per dragon #20 (the clone
+is one-time with no future sync, so unfixed defects present at fork time are permanently baked
+in). **(IN PROGRESS)**
+
+**Started:** 2026-07-27.
+
+**Scope decision (this session, via operator dialogue):** the operator wants D3 (IP disposition)
+and C4's own gates (D4, D5, D8, D9, D14, D15, D16) resolved **after** the fork, inside the
+enterprise clone, not reported back to this repo. That leaves full Phase B1 (gated on D1+D2+D3)
+un-executable as written. Narrowed to the subset that does **not** depend on D3 or any other
+deferred decision: (1) fix the wiki's LGPL-mislabeling (frames `PyGithub` as the only LGPL
+dependency; `python-gitlab` also is), (2) add root `SECURITY.md`/`CODEOWNERS`/
+`THIRD-PARTY-LICENSES`/`CONTRIBUTING.md` (baseline only — the corporate DCO/CLA mechanism section
+is explicitly deferred, marked TBD, since it depends on D3/D4/D9), (3) author an AI-provenance
+statement for the 329 `Co-Authored-By: Claude` commits, (4) resolve the D1 methodology-attribution
+gap (operator stated Terrell Deppe granted MIT permission).
+
+**Load-bearing process finding:** the plan's own B1 verify block
+(`enterprise-migration.md:757`) checks `grep -c 'Terrell Deppe' SESSION_RUNNER.md SAFEGUARDS.md
+NOTICE` — i.e., it expects the attribution string inside the two synced methodology files. That
+directly conflicts with `CLAUDE.md`'s explicit rule: *"Additions and overrides to the base
+methodology... Do not edit the synced files — put customizations here."* `SESSION_RUNNER.md` and
+`SAFEGUARDS.md` are managed by a cross-project sync tool (`bin/sync`/`bin/status`, per
+`docs/methodology/README.md`) that refuses to overwrite locally-modified synced files — editing
+them directly would either silently break future canonical syncs for this project, or be wiped by
+a future `--force` sync. **Resolution used this session (not asked further, treated as a
+correct-by-construction engineering call given CLAUDE.md's rule is explicit and unambiguous):**
+attribution goes in the new root `NOTICE` file plus a new entry in `CLAUDE.md`'s
+"Project-Specific Methodology Adaptations" section — the customization seam the file already
+documents — instead of inside `SESSION_RUNNER.md`/`SAFEGUARDS.md` themselves. This means the
+plan's literal verify command for D1 will not pass as written; flagging this as a plan-text
+correction still needed (out of scope for this stub — see handoff when this session closes).
+
+**Not yet done at time of this stub (see close-out for final state):** actual file edits, license
+table verification (in progress — live `importlib.metadata` scan across all 96 installed
+distributions confirms the plan's §2.7 claim: exactly 2 LGPL — `PyGithub`, `python-gitlab` — 3 MPL
+— `certifi`, `orjson`, `pathspec` — zero GPL-only, zero AGPL), commit, verify.
+
 ### What Session 189 Did
 **Deliverable:** Execute Phase A4 of `docs/planning/enterprise-migration.md` ("Land it") — push
 branch, open PR, single fast-forward push to `master`, publish wiki, verify. (IN PROGRESS)
