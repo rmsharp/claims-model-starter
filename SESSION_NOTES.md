@@ -6,6 +6,14 @@
 
 ## ACTIVE TASK
 
+### What Session 194 Did
+**Deliverable:** Enterprise-migration plan-revision session — reconcile `docs/planning/enterprise-migration.md`
+(§1.2/§3/§4, dragon #20's C4-gated-on-B1 text) with the operator's 2026-07-27 post-fork sequencing
+decision recorded in `BACKLOG.md`. Operator-selected (offered as option 1 of the Phase 0 orientation
+report's two open threads). (IN PROGRESS)
+**Started:** 2026-07-28.
+**Status:** Session claimed. Work beginning.
+
 ### What Session 193 Did
 **Deliverable:** httpx migration Phase 2 — rewrite the GitHub adapter (`github_adapter.py`) and
 its tests against `httpx`, per `docs/planning/httpx-adapter-migration.md` §5. Operator-selected
