@@ -66,10 +66,11 @@ enterprise clone disposition/access model (operator + legal) — deferred to pos
 ### httpx adapter migration (`docs/planning/httpx-adapter-migration.md`)
 
 Replace both LGPL SDK dependencies (`python-gitlab`, `PyGithub`) in the Website Agent's repo-host
-adapters with direct `httpx` REST calls. **Phase 1 (GitLab) is DONE** (Session 191, branch
-`feat/httpx-adapters`, 5 commits — `9af715b`/`09f80a4`/`348dff1`/`41445b9`/`7b9b05e` —
-**not yet merged to `master` or pushed; awaiting operator decision**, see SESSION_NOTES.md). One
-of the two LGPL-3.0 direct dependencies is gone; `PyGithub` remains.
+adapters with direct `httpx` REST calls. **Phase 1 (GitLab) is DONE and LANDED** (Session 191,
+5 commits — `9af715b`/`09f80a4`/`348dff1`/`41445b9`/`7b9b05e` — merged to `master` via `ff04c02`
+and pushed to `origin/master` by Session 192; `feat/httpx-adapters` deleted post-merge, fully
+captured in `master` history). One of the two LGPL-3.0 direct dependencies is gone; `PyGithub`
+remains.
 
 - **Phase 2 — GitHub adapter → `httpx`.** Mirrors Phase 1: rewrite `github_adapter.py`'s git-database
   commit dance (6 sequential calls, each a failure point) against `httpx`, rewrite
