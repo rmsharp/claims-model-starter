@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+### What Session 189 Did
+**Deliverable:** Execute Phase A4 of `docs/planning/enterprise-migration.md` ("Land it") — push
+branch, open PR, single fast-forward push to `master`, publish wiki, verify. (IN PROGRESS)
+**Started:** 2026-07-27.
+**Status:** Session claimed. Operator authorized with "Phase 4" immediately following the Phase 0
+orientation report, which had explicitly named A4 as gated on explicit operator authorization for
+the push. Confirming the specific irreversible steps (push to origin, PR, fast-forward to
+`master`, public wiki deploy) with the operator before executing them, per the plan's own
+authorization requirement and Session 188's handoff note. Pre-flight read-only checks done:
+working tree clean, `gh` authenticated (repo+workflow scope), local `FF-OK` against last-known
+`origin/master` (not yet freshly fetched — plan requires `git fetch` before trusting this).
+
 ### What Session 188 Did
 **Deliverable:** Execute Phase A3 of `docs/planning/enterprise-migration.md` ("In-repo
 documentation reconciliation") — README/ROADMAP/OPERATIONS/CHANGELOG convergence, version bump to
