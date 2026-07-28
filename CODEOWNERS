@@ -1,0 +1,6 @@
+# CODEOWNERS
+#
+# Single-maintainer project. All paths default to the repository owner.
+# See CONTRIBUTING.md for the contribution process.
+
+* @rmsharp

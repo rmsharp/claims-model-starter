@@ -1,0 +1,47 @@
+NOTICE
+======
+
+This file records two things not covered by `LICENSE` (MIT) or `THIRD-PARTY-LICENSES` (Python
+package dependencies): the provenance of the project-management methodology this repository
+follows, and the provenance of AI assistance used in the repository's own commit history.
+
+1. Third-party methodology material
+------------------------------------
+
+This repository's session-management process — `SESSION_RUNNER.md`, `SAFEGUARDS.md`,
+`docs/methodology/` (12 files), the seed rows in `PROJECT_LEARNINGS.md`, and
+`docs/architecture-history/methodology-pr2527-remediation-mpc.md` — originates from the
+"Iterative Session Methodology," copyright © 2025-2026 Terrell Deppe (KJ5HST), and is used here
+under permission from that author.
+
+Per the repository operator (R. Mark Sharp), Terrell Deppe granted permission for this material to
+be used and redistributed under MIT terms, communicated 2026-07 (see the operator's own record of
+that communication — this NOTICE documents the grant's existence and terms as relayed to the
+project; it is not itself the written grant). If that permission is ever revoked, narrowed, or
+superseded, this NOTICE and the affected files must be updated or the material removed before
+further redistribution.
+
+Per `CLAUDE.md`'s "Project-Specific Methodology Adaptations" section, `SESSION_RUNNER.md` and
+`SAFEGUARDS.md` are synced verbatim from the canonical upstream methodology repository by a
+dedicated sync tool and are not edited locally — customizations and this attribution record live
+in `CLAUDE.md` and this file instead, so that future syncs from canonical are not blocked by
+local modification.
+
+2. AI-assisted development / provenance statement
+---------------------------------------------------
+
+This repository was developed with substantial assistance from Claude (Anthropic), used as an
+interactive coding agent (Claude Code) across the project's session-based development process
+described in `SESSION_RUNNER.md`. As of Session 190 (2026-07-27), 340 of the repository's 359
+commits carry a `Co-Authored-By: Claude <noreply@anthropic.com>` trailer, reflecting that Claude
+participated in drafting the change each such commit contains, under the direction and review of
+the human author. (This count grows with every subsequent commit; treat it as a snapshot, not a
+maintained running total — re-measure with `git log --grep="Co-Authored-By: Claude" --format=%H |
+wc -l` against `git log --oneline | wc -l` for the current figures.)
+
+The sole human author and copyright holder of record for this project's own code is R. Mark Sharp
+(see `LICENSE`). This statement is a factual disclosure of AI involvement in the development
+process; it does not itself alter, assign, or waive that copyright. The disposition of AI-assisted
+authorship for any future corporate intake of this codebase (assignment, work-for-hire, or
+third-party OSS intake) is an open decision — see `docs/planning/enterprise-migration.md` §3,
+decision D3 — and is deliberately not resolved by this file.

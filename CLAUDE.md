@@ -66,6 +66,10 @@ Each agent in the pipeline follows these principles (derived from `docs/architec
 
 *Additions and overrides to the base methodology at `SESSION_RUNNER.md` and `SAFEGUARDS.md` (synced from canonical, not project-owned). The base files govern unless explicitly overridden here. **Do not edit the synced files** — put customizations here.*
 
+### Third-party methodology attribution (decision D1, `docs/planning/enterprise-migration.md` §3)
+
+`SESSION_RUNNER.md`, `SAFEGUARDS.md`, `docs/methodology/` (12 files), the `PROJECT_LEARNINGS.md` seed rows, and `docs/architecture-history/methodology-pr2527-remediation-mpc.md` are the "Iterative Session Methodology," copyright © 2025-2026 Terrell Deppe (KJ5HST). Per the operator (2026-07-27), Terrell Deppe granted permission for this material to be used and redistributed under MIT terms. See `NOTICE` at the repository root for the full attribution and provenance record — this is the customization-seam location for that grant precisely because the synced files themselves must not be edited (rule above).
+
 ### Additional Phase 0 steps
 
 (none)
