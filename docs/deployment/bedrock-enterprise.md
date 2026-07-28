@@ -2,14 +2,16 @@
 
 **Audience:** the platform / security / cloud team standing up this project's AWS Bedrock
 Claude integration in an enterprise AWS account with complex security controls.
-**Status (2026-07-25):** the app code is **mantle-migrated and enterprise-*capable* as-is** —
+**Status (2026-07-27):** the app code is **mantle-migrated and enterprise-*capable* as-is** —
 the two hardest requirements (role-based SigV4 auth, AWS PrivateLink) already work with **zero
-code change**. A short punch-list of optional config pass-throughs is tracked in §7. All facts
-below are verified against official AWS + Anthropic docs (see *Sources*).
+code change**, and the §7 punch-list's config pass-throughs (`base_url`, `http_client`,
+`require_sigv4`) have since shipped (`56dc700`) — what remains open is *wiring* `require_sigv4`
+to app/env and confirming `aws_profile` support (§7). All facts below are verified against
+official AWS + Anthropic docs (see *Sources*).
 
 > **Why this exists.** The original testing account was a personal account that hit the
 > current-gen-Claude **account-eligibility gate** (AWS denied the runtime-quota request — see
-> `docs/planning/bedrock-testing-enablement.md`). The plan is to deploy into an enterprise
+> `docs/architecture-history/bedrock-testing-enablement.md`). The plan is to deploy into an enterprise
 > account that already has the eligibility *and* the security controls. This guide is what to
 > provision there.
 
@@ -46,7 +48,7 @@ we re-plan.
 |---|---|---|
 | IAM execution role + permissions policy | Platform team | §3 — the app assumes a role; it stores no keys |
 | VPC interface endpoint (PrivateLink) + DNS | Platform team | §4 — zero app change when Private DNS is on |
-| Model access / runtime quota (account eligibility) | Platform team | §0 Q3; `bedrock-testing-enablement.md` |
+| Model access / runtime quota (account eligibility) | Platform team | §0 Q3; Appendix B (quota codes) |
 | Model-invocation logging, KMS, SCP geo guardrails | Platform team | §6 — transparent to the app |
 | Region / model-id / provider selection (config) | App config | §5, §7 — env vars only |
 | The Bedrock client + Messages calls | This repo | already built (mantle) |
@@ -210,18 +212,20 @@ The web UI (`go/modelintake`) resolves provider/model from env (`ui/intake/app.p
 AWS credentials themselves are **never** app config — the IAM role supplies them via the chain.
 
 **Punch-list — the small code changes to add (the "then code" phase, once §0 is settled):**
-1. Optional **`base_url`** pass-through on `BedrockLLMClient.__init__` → `AnthropicBedrockMantle(base_url=…)`
-   (for PrivateLink without Private DNS, or a GovCloud host). Both client copies (intake +
-   data-agent). The SDK already accepts `base_url`.
-2. Optional **`http_client`** pass-through → `AnthropicBedrockMantle(http_client=DefaultHttpxClient(proxy=…, verify=<CA>))`
-   (for forward proxy / TLS-inspection CA / mTLS). Both client copies.
-3. **Invert the client docstrings** — currently they frame the bearer token as primary and SigV4 as
-   a "fallback"; for enterprise the primary is role SigV4 and the bearer token is the dev-only
-   fallback.
-4. Optional **prod safeguard** — warn/assert `AWS_BEARER_TOKEN_BEDROCK` is unset when
-   `INTAKE_LLM_PROVIDER=bedrock` in a production profile, so a stray token can't silently bypass
-   role auth.
+1. ✅ **DONE (`56dc700`).** Optional **`base_url`** pass-through on `BedrockLLMClient.__init__` →
+   `AnthropicBedrockMantle(base_url=…)` (for PrivateLink without Private DNS, or a GovCloud host).
+   Both client copies (intake + data-agent).
+2. ✅ **DONE (`56dc700`).** Optional **`http_client`** pass-through →
+   `AnthropicBedrockMantle(http_client=DefaultHttpxClient(proxy=…, verify=<CA>))` (for forward
+   proxy / TLS-inspection CA / mTLS). Both client copies.
+3. ✅ **DONE (`56dc700`).** **Invert the client docstrings** — now frame role SigV4 as primary and
+   the bearer token as the dev-only fallback.
+4. ✅ **DONE (`56dc700`), as a hard guard rather than a warning.** `require_sigv4=True` raises if
+   `AWS_BEARER_TOKEN_BEDROCK` is set, so a stray token cannot silently bypass role auth. Not yet
+   *wired* to app/env (`INTAKE_LLM_PROVIDER=bedrock` does not set it automatically) — that wiring is
+   `docs/planning/enterprise-migration.md` Phase C1/D13, still open.
 5. Confirm the SDK's `aws_profile` support if SSO named profiles are needed (SDK-version-specific).
+   **Still open.**
 
 ---
 
@@ -251,6 +255,33 @@ capacity is TPM-quota-bound, which matters for enterprise capacity planning.
 - [ ] (if §7 punch-list needed) `base_url` / `http_client` pass-throughs merged
 
 ---
+
+## Appendix A: How the project reaches Bedrock (verified facts, carried forward from the archived testing-enablement runbook)
+
+| Fact | Value | Evidence |
+|------|-------|----------|
+| Bedrock client | **`anthropic.AnthropicBedrockMantle(aws_region=…)`** (mantle Messages endpoint) | `src/.../agents/intake/bedrock_client.py` (`dadf514`) |
+| Default model (bedrock) | **`anthropic.claude-opus-4-8`** ($5 in / $25 out per M tok) — mantle catalog has no Sonnet | `bedrock_client.py` `DEFAULT_MODEL` (`9e3f19b`) |
+| Auth | **Role-based SigV4** primary (via the standard AWS credential chain); **Bedrock API key** (`AWS_BEARER_TOKEN_BEDROCK`) is a dev-only fallback that overrides SigV4 when set | client docstring (post-`56dc700`); `AnthropicBedrockMantle` |
+| Endpoint (automatic) | `https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages` | AWS Opus 4.8 model card |
+| Model-id format | bare `anthropic.` prefix, **no** version suffix, **no** `us.`/`global.` inference-profile prefix (mantle) | AWS model card |
+| Provider selection | explicit: `make_llm_client(provider="bedrock")` / `--provider bedrock` / `INTAKE_LLM_PROVIDER=bedrock`; model override via `INTAKE_LLM_MODEL`; default provider is `anthropic` | `factory.py:37-76` |
+| Why the live eval tier skips bedrock today | no working access in the personal test account (see *Why this exists* above) → `provider_creds_available("bedrock")` fails / a live call fails → live tests auto-skip | `conftest.py:47-60`, `eval_cutover.py:52-59` |
+
+## Appendix B: Bedrock TPM (tokens-per-minute) quota codes (reference)
+
+Quota codes for current-generation Claude on Bedrock mantle, `us-east-1`, model `anthropic.claude-opus-4-8`. Useful for checking a **new** (e.g. enterprise) account's Service Quotas console before assuming access — a control-plane model-access grant (`get-foundation-model-availability` returning `AVAILABLE`/`AUTHORIZED`) does **not** guarantee a non-zero runtime quota; check the *Applied* value for each code below (§0 checklist item 3).
+
+| Quota | Code | Default | Self-service adjustable |
+|---|---|---|---|
+| **[bedrock-mantle] Input TPM** | `L-8528F119` | 20,000,000 | Yes — Service Quotas console |
+| **[bedrock-mantle] Output TPM** | `L-37491D63` | 2,000,000 | Yes — Service Quotas console |
+| Cross-region TPM | `L-DB99DCDB` | 30,000,000 | Yes (not needed for mantle) |
+| Global cross-region TPM | `L-4FCE27C7` | 30,000,000 | Yes (not needed for mantle) |
+| Global cross-region tokens/day | `L-917CA0F1` | 43.2B | No — requires an AWS Support case |
+| On-demand max tokens/day | `L-AFE3B2BE` | 21.6B | No — requires an AWS Support case |
+
+The two **`[bedrock-mantle]`** TPM quotas are what gate this project's code (the mantle endpoint). If either shows `Applied = 0` on a target account, request an increase via Service Quotas first (self-service); the two `No` rows require an AWS Support case.
 
 ## Sources
 

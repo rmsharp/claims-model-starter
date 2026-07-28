@@ -1,5 +1,7 @@
 # Bedrock Testing Enablement — Operator Runbook & Cost Estimate
 
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-07-27 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope. The still-useful reference tables (how the project reaches Bedrock; Bedrock TPM quota codes) were carved forward into `docs/deployment/bedrock-enterprise.md` (Appendices A/B) — start there for live guidance.*
+
 **Originally Session 178 (2026-06-19). Substantially revised Session 180 (2026-07-18):**
 the mantle migration **landed** and live enablement was **attempted end-to-end**. The
 pre-mantle IAM/SigV4 guidance in the original revision was **wrong for the current code**
@@ -16,7 +18,7 @@ AWS-side action — not on code, not on anything the operator can self-serve.**
   default model `anthropic.claude-opus-4-8` (`9e3f19b`), authenticated by a **Bedrock API
   key** (`AWS_BEARER_TOKEN_BEDROCK`) against the mantle Messages endpoint (SigV4 fallback if
   the token is unset). Baseline **916 unit tests + ruff + mypy green**.
-- **The blocker (confirmed live — account `868785635769`, `us-east-1`, 2026-07-18):** every
+- **The blocker (confirmed live — the abandoned test account, `us-east-1`, 2026-07-18):** every
   current-generation Claude model returns
   `403 permission_error: "anthropic.<model> is not available for this account. … contact AWS
   Sales"` **at runtime** — reproduced in the console **Workbench** for both
@@ -47,7 +49,7 @@ AWS-side action — not on code, not on anything the operator can self-serve.**
 
 ### Update — 2026-07-23 (root cause CONFIRMED by AWS; requests filed)
 
-AWS's own **DevOps support agent** (opened via case `178440923600380` after a Developer-support
+AWS's own **DevOps support agent** (opened via the abandoned support case after a Developer-support
 upgrade) independently confirmed the diagnosis: control-plane entitlement is AUTHORIZED/AVAILABLE,
 but **every Opus 4.8 runtime throughput quota is Applied = 0**, while Opus 4.6 (3M TPM) and 4.5
 (2M TPM) are non-zero and work — a clean control group proving **model-specific under-provisioning**,
@@ -60,8 +62,8 @@ not an account-wide problem. The self-service lever is the **adjustable** quotas
 | **[bedrock-mantle] Output TPM** | `L-37491D63` | 0 → 2,000,000 | Yes | ✅ Service Quotas request — **Pending** |
 | Cross-region TPM | `L-DB99DCDB` | 0 → 30,000,000 | Yes | (not needed for mantle) |
 | Global cross-region TPM | `L-4FCE27C7` | 0 → 30,000,000 | Yes | (not needed for mantle) |
-| Global cross-region tokens/day | `L-917CA0F1` | 0 → 43.2B | **No → AWS** | via case `178440923600380` |
-| On-demand max tokens/day | `L-AFE3B2BE` | 0 → 21.6B | **No → AWS** | via case `178440923600380` |
+| Global cross-region tokens/day | `L-917CA0F1` | 0 → 43.2B | **No → AWS** | via the abandoned support case |
+| On-demand max tokens/day | `L-AFE3B2BE` | 0 → 21.6B | **No → AWS** | via the abandoned support case |
 
 The two **`[bedrock-mantle]` TPM** quotas are what gate this project's code (the mantle endpoint).
 Both self-serve requests are **Pending AWS service-team review** — a 0→default jump on a gated model
@@ -74,7 +76,7 @@ support case; the case additionally covers the two non-adjustable tokens/day cap
 
 ### Ready-to-paste AWS request
 
-> **Account:** 868785635769 · **Region:** us-east-1
+> **Account:** *(the abandoned test account)* · **Region:** us-east-1
 > **Issue:** Amazon Bedrock returns `403 permission_error: "anthropic.claude-opus-4-8 is not
 > available for this account"` at **runtime** (console Workbench, SDK, and the mantle
 > endpoint), even though `get-foundation-model-availability` returns

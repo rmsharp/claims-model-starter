@@ -121,7 +121,7 @@ def _client_pair(
 # Each seam carries its OWN ``_extract_json`` copy and its OWN error class
 # (constraint C4 — see the module docstring); today both seams run a single
 # provider (``anthropic``). Phase C of the multi-provider LLM plan
-# (``docs/planning/multi-provider-llm-plan.md`` §5) adds a second provider by
+# (``docs/architecture-history/multi-provider-llm-plan.md`` §5) adds a second provider by
 # appending one ``_Seam`` row per ``(seam, provider)`` — e.g.
 # ``_Seam("intake", "bedrock", intake_bedrock._extract_json, IntakeLLMError)`` —
 # after which the parity battery below asserts every provider's parser agrees on

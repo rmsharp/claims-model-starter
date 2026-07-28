@@ -30,7 +30,11 @@ orchestration layer's secret injection) before running the pipeline.
 | `MPC_LOG_LEVEL` | no | `INFO` | Stdlib level name: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. |
 | `INTAKE_DB_PATH` | no | `./intake_sessions.db` | SQLite file for the intake web UI's live session state. Only read by the UI. |
 | `INTAKE_LLM_PROVIDER` | no | `anthropic` (`DEFAULT_LLM_PROVIDER`) | LLM provider for the intake web UI. Any factory provider (`anthropic`, `bedrock`). An unknown value is rejected at app startup (`ValueError`). Only read by the UI; the CLIs use `--provider`. |
-| `INTAKE_LLM_MODEL` | no | provider default | Model id for the intake web UI. When unset, each provider's own default model is used (e.g. `claude-sonnet-4-6` for `anthropic`, `anthropic.claude-sonnet-4-6` for `bedrock`) — leave unset to keep the id provider-native. Only read by the UI. |
+| `INTAKE_LLM_MODEL` | no | provider default | Model id for the intake web UI. When unset, each provider's own default model is used (e.g. `claude-sonnet-4-6` for `anthropic`, `anthropic.claude-opus-4-8` for `bedrock` — the mantle catalog has no Sonnet tier) — leave unset to keep the id provider-native. Only read by the UI. |
+| `AWS_REGION` | yes (if `bedrock` and live) | — | Selects the `bedrock-mantle.{region}.api.aws` endpoint host and the data-residency geography. Must be a mantle-supported region. Only relevant when `INTAKE_LLM_PROVIDER=bedrock`. |
+| `AWS_DEFAULT_REGION` | no | — | Fallback read by the standard AWS credential chain if `AWS_REGION` is unset; set both for clarity. |
+| `AWS_BEARER_TOKEN_BEDROCK` | no | unset (SigV4 fallback) | **Dev only** — a short-term Bedrock API key. If present it overrides SigV4 and bypasses the runtime IAM role, so it must stay unset in production. Never use a long-term Bedrock API key. See `docs/deployment/bedrock-enterprise.md` §2. |
+| `AWS_PROFILE` | no | — | Standard AWS SDK credential-chain variable — selects a named local profile for local/dev use. Not read directly by this project's code; honored by the AWS credential chain `AnthropicBedrockMantle` resolves against (constructor args → env vars → shared config → SSO / assumed roles / ECS task role / EKS IRSA / IMDS). In production prefer an IAM role over a named profile. |
 
 Use `OrchestratorSettings.require_host_token()` /
 `require_anthropic_api_key()` inside runners that actually make HTTP

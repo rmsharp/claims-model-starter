@@ -1,7 +1,7 @@
 # Phase E — provider shadow run + cutover agreement report
 
 The production go/no-go for replacing the default LLM provider, per the
-[multi-provider LLM plan](../../docs/planning/multi-provider-llm-plan.md) §5
+[multi-provider LLM plan](../../docs/architecture-history/multi-provider-llm-plan.md) §5
 Phase E and the §3.4 threshold gate. The factory seam makes *swapping* a provider
 trivial; this report is the gate that decides whether a swap is *safe* — a
 candidate reaches production **only if it meets every §3.4 threshold** measured

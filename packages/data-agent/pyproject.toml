@@ -1,6 +1,6 @@
 [project]
 name = "model-project-constructor-data-agent"
-version = "0.2.0"
+version = "0.3.0"
 description = "Standalone Data Agent: generate SQL, run quality checks, produce DataReport. Usable as CLI, Python API, or pipeline component."
 readme = "USAGE.md"
 requires-python = ">=3.11"

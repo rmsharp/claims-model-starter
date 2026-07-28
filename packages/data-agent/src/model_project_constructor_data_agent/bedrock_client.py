@@ -28,10 +28,10 @@ so the one-way package dependency is preserved.
 as a drop-in for ``Anthropic``; a thin subclass expresses "the same Claude,
 reached via Bedrock" with zero parser/method drift surface (a deliberate
 as-built refinement of the plan's "one new client module" wording — see
-``docs/planning/multi-provider-llm-plan.md`` Phase C as-built note. Session 178
+``docs/architecture-history/multi-provider-llm-plan.md`` Phase C as-built note. Session 178
 switched this from ``AnthropicBedrock`` (SigV4-only, ``bedrock-runtime``) to
 ``AnthropicBedrockMantle`` so a Bedrock API key can be used — see
-``docs/planning/bedrock-testing-enablement.md``.)
+``docs/architecture-history/bedrock-testing-enablement.md``.)
 
 **Auth (enterprise-first).** ``AnthropicBedrockMantle`` resolves auth from the
 AWS credential chain and signs with **SigV4**, so the recommended production path
@@ -63,7 +63,7 @@ from model_project_constructor_data_agent.anthropic_client import (
 #: Bedrock model ids carry an ``anthropic.`` provider prefix. AWS Bedrock's mantle
 #: catalog offers **no Sonnet** tier, so the bedrock default is Opus 4.8 — it
 #: intentionally differs from the first-party/anthropic client's Sonnet default
-#: (Session 178; see ``docs/planning/bedrock-testing-enablement.md``).
+#: (Session 178; see ``docs/architecture-history/bedrock-testing-enablement.md``).
 DEFAULT_MODEL = "anthropic.claude-opus-4-8"
 
 

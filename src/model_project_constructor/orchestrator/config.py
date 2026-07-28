@@ -135,7 +135,7 @@ class LLMProviderSpec:
     default model lives with its concrete client (``DEFAULT_MODEL``) and is
     resolved by the agent factories (``model=None`` -> provider default), which
     keeps this module free of the provider SDKs and writes each model literal
-    exactly once per client (see ``docs/planning/multi-provider-llm-plan.md``
+    exactly once per client (see ``docs/architecture-history/multi-provider-llm-plan.md``
     Phase A / Trap 4).
 
     Note: a provider may authenticate by a mechanism other than a single

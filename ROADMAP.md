@@ -4,9 +4,9 @@
 
 **All 5 planned build milestones complete** (per `docs/architecture-history/architecture-plan.md` §14). Scope A of "First live end-to-end run" (Session 22) + Scope B-1 real data agent (Session 24) + Scope B-2 scripted-answers intake (Sessions 26-27) have shipped — real LLM-backed intake + data agents are wired into `scripts/run_pipeline.py` via `--llm data|both` (`--live` separately selects a real repo host instead of the in-memory `FakeRepoClient`).
 
-The codebase has **797 tests at 97.28% coverage** (Session 146 baseline); CI gates lint (ruff), typecheck (mypy), test suite, and the Data Agent decoupling test (2 AST tests enforcing the architecture plan's §7 decoupling invariant).
+The codebase has **923 tests passing + 8 live-skipped at 97.41% coverage** (931 collected total; current as of Session 188); CI gates lint (ruff), typecheck (mypy), test suite, and the Data Agent decoupling test (2 AST tests enforcing the architecture plan's §7 decoupling invariant).
 
-Remaining work (tracked in `BACKLOG.md`): **none open** — Session 70 closed the last item. The post-pilot operator-experience / doc-freshness improvements once listed here have shipped (wiki + tutorial doc-freshness work, the terminology Glossary wiki page, resume-from-checkpoint via `scripts/run_pipeline.py --resume`), and the optional Scope B-3 Web UI bridge was superseded by the resume flow (`docs/architecture-history/resume-from-checkpoint-plan.md` §1.3) — its optional Phase 4 (intake UI writes the `IntakeReport.json` envelope) remains deferred.
+Remaining work (tracked in `BACKLOG.md`): the enterprise-migration effort (`docs/planning/enterprise-migration.md`) — landing the `feat/bedrock-mantle-migration` branch on `origin/master` and provisioning a one-time enterprise clone of the repo + wiki. See `BACKLOG.md` for the phase-by-phase breakdown. The original pilot-delivery backlog (post-pilot operator-experience / doc-freshness improvements) shipped in full (wiki + tutorial doc-freshness work, the terminology Glossary wiki page, resume-from-checkpoint via `scripts/run_pipeline.py --resume`); the optional Scope B-3 Web UI bridge was superseded by the resume flow (`docs/architecture-history/resume-from-checkpoint-plan.md` §1.3) — its optional Phase 4 (intake UI writes the `IntakeReport.json` envelope) remains deferred.
 
 ### Pipeline Overview (6 Steps)
 
@@ -60,6 +60,11 @@ All agents operate within the context of a **claims organization in a property &
 - CI: `.github/workflows/ci.yml` (lint + test + typecheck + decoupling).
 - `OPERATIONS.md` runbook + `TROUBLESHOOTING.md` diagnostics.
 
+### M6: Multi-Provider LLM Support (AWS Bedrock) — Phases A-E
+- Per-provider LLM key/config seam and a named pilot model default (Phase A); an eval/parity harness — a golden P&C-domain corpus per LLM capability with concrete pass thresholds and a `live` pytest marker that keeps CI hermetic (Phase B); AWS Bedrock-hosted Claude added as a second concrete provider behind the existing protocol/factory seam, no adapter layer (Phase C); the intake web UI parameterized for provider selection via `INTAKE_LLM_PROVIDER`/`INTAKE_LLM_MODEL` (Phase D); a shadow-run → cutover gate comparing providers on the golden corpus (Phase E).
+- The Bedrock client has since migrated to the `AnthropicBedrockMantle` endpoint (Bedrock API key auth, `anthropic.claude-opus-4-8` default — the mantle catalog has no Sonnet tier) with enterprise-networking hooks (`base_url`, `http_client`, `require_sigv4`) — see `CHANGELOG.md`. Live Bedrock verification remains blocked on AWS account-side model-access provisioning, unrelated to this project's code; the `anthropic` provider is the only one exercised in CI/eval today (Phase E stays NO-GO pending a measured Bedrock run).
+- Archived plan: `docs/architecture-history/multi-provider-llm-plan.md`.
+
 ### First live end-to-end run
 - **Scope A** (Session 22): live repo-creation smoke test against real GitLab.
 - **Scope B-1** (Session 24): real data agent wired — `scripts/run_pipeline.py --llm data`.
@@ -78,5 +83,7 @@ All agents operate within the context of a **claims organization in a property &
 - `docs/architecture-history/architecture-plan.md` — Authoritative design document (archived); §14 phase plan.
 - `docs/architecture-history/scope-b-plan.md` — Scope B (real LLM-backed pipeline) plan (archived; B1+B2 shipped, B3 superseded).
 - `docs/architecture-history/github-gitlab-abstraction-plan.md` — GitHub/GitLab abstraction plan (Phases A-D, complete; archived).
+- `docs/architecture-history/multi-provider-llm-plan.md` — Multi-provider LLM (AWS Bedrock) plan (Phases A-E, complete; archived).
+- `docs/planning/enterprise-migration.md` — Active plan: land the branch on `origin/master` and provision a one-time enterprise clone.
 - `SESSION_RUNNER.md` — Session operating procedure.
 - `SAFEGUARDS.md` — Commit discipline, blast-radius limits, mode-switching rules.

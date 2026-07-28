@@ -1,6 +1,6 @@
 # Model Project Constructor
 
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 Multi-agent pipeline that turns a business model idea into a governance-scaffolded GitLab or GitHub project. Given a stakeholder interview, it produces (1) a structured intake report, (2) a data collection plan with validated SQL and a datasheet, and (3) a draft model-build repository with proportional governance artifacts for the claims domain of a property-and-casualty insurer.
 
@@ -121,18 +121,19 @@ SESSION_NOTES.md                        # session-by-session continuity log
 Prerequisites: `uv` and Python ≥ 3.11.
 
 ```bash
-uv sync --extra agents --extra dev
+uv sync --extra agents --extra ui --extra dev
 uv run pytest
 ```
 
-All 795 tests should pass with coverage above 95% (currently ≈97.2%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 923 tests should pass (8 more skip without live LLM credentials) with coverage above 95% (currently ≈97.41%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
 
 Production deployments read every secret and every deployment-variable parameter from the environment (or from a `.env` file loaded by the caller). See `.env.example` for the full matrix and `OPERATIONS.md` for the runbook. Common failure modes live in `TROUBLESHOOTING.md`; resume a halted run with `scripts/run_pipeline.py --resume <run_id>` (see `OPERATIONS.md` §5).
 
-To run the web UI tests as well, add the `ui` extra:
+To skip the web UI extra (and its 32 tests), sync without `ui` and ignore that test directory — the coverage gate needs the full sync, so also drop coverage enforcement:
 
 ```bash
-uv sync --extra agents --extra ui --extra dev
+uv sync --extra agents --extra dev
+uv run pytest --ignore=tests/ui --no-cov
 ```
 
 To use the standalone Data Agent CLI (requires `ANTHROPIC_API_KEY` in the environment):

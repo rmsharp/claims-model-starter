@@ -1,6 +1,6 @@
 # Eval / parity harness (Phase B corpus + Phase E cutover gate)
 
-The provider-quality gate for the [multi-provider LLM plan](../../docs/planning/multi-provider-llm-plan.md)
+The provider-quality gate for the [multi-provider LLM plan](../../docs/architecture-history/multi-provider-llm-plan.md)
 (§5 Phase B). The factory seam makes *swapping* an LLM provider trivial; **all**
 the risk is in **output quality**. This harness measures that quality so no
 second provider reaches production until it clears the §3.4 thresholds (the

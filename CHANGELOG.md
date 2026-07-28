@@ -13,9 +13,18 @@ Dates are commit dates on `master`. Commit hashes are short-form as produced by 
 
 ---
 
-## [Unreleased]
+## [0.3.0] - 2026-07-27
 
 > *Sessions 116–144 below were backfilled in Session 149 (2026-06-12), when the `CHANGELOG.md` cadence convention was clarified to gate on shipped-code changes rather than strictly per-session (see `docs/methodology/PROJECT_CONVENTIONS.md` §2). The six entries cover the O3/O1/O4 single-sourcing overhauls, the E4 provider factory, the wiki citation guard, and the `SR_11_7`→`SR_26_2` rename. Documentation-only sessions in the same span are intentionally recorded in `SESSION_NOTES.md` only.*
+
+### 2026-07-25 — Bedrock client migrated to the mantle endpoint + enterprise-networking hooks (Sessions 178–180)
+
+The classic `AnthropicBedrock` (SigV4/`bedrock-runtime`) client is replaced by `AnthropicBedrockMantle`, authenticating with a Bedrock API key against the native Anthropic Messages `bedrock-mantle` endpoint, with the default model flipped to `anthropic.claude-opus-4-8` (the mantle catalog has no Sonnet tier), plus optional enterprise-networking pass-throughs added on top.
+
+- **`src/model_project_constructor/agents/intake/bedrock_client.py`, `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py`:** swapped `AnthropicBedrock` → `AnthropicBedrockMantle` in both client copies (`dadf514`); bumped the `anthropic[bedrock]` floor to `>=0.94` (ships `AnthropicBedrockMantle`). Flipped `DEFAULT_MODEL` from the inherited `anthropic.claude-sonnet-4-6` (404s — no Sonnet in the mantle catalog) to `anthropic.claude-opus-4-8` (`9e3f19b`), intentionally diverging from the first-party `anthropic` client's Sonnet default. Added optional `base_url` (PrivateLink VPCE / GovCloud host), `http_client` (forward proxy / TLS-inspection CA / mTLS), and `require_sigv4` (raises if `AWS_BEARER_TOKEN_BEDROCK` is set, so a stray bearer token cannot silently override role-based SigV4) keyword arguments, forwarded to `AnthropicBedrockMantle` (`56dc700`). All new arguments default to no-op, so the factory and app are unchanged. Module docstrings inverted to the enterprise story: SigV4-via-IAM-role primary, bearer token dev-only fallback.
+- **Tests:** updated the 4 tests that patch the client by name for the endpoint swap; 2 default-model assertion tests updated for the opus-4-8 flip; +6 tests for the new keyword arguments (3 per client copy). Full gate: 922 passed + 8 live-skipped, ruff + mypy clean (as of `56dc700`).
+- **Verified live (auth + endpoint + region resolution only):** confirmed against `https://bedrock-mantle.us-east-1.api.aws/anthropic/`. **Not verified live end-to-end** — every current-generation Claude model returned `403 "not available for this account"` on the tested AWS account, a data-plane runtime-quota gate independent of this code; AWS subsequently denied the quota-increase request, and the operator's plan is to deploy into an enterprise AWS account instead (`docs/planning/enterprise-migration.md`). The `require_sigv4`/`base_url`/`http_client` hooks are not yet wired to app config — a future session wires them at the deployment entrypoint (see `docs/planning/enterprise-migration.md` Phase C1/D13).
+- **Docs:** `docs/deployment/bedrock-enterprise.md` (new — enterprise Bedrock deployment guide: IAM policy, PrivateLink, region/residency, security config, app config surface); `.env.example` AWS/Bedrock surface. Builds on the original Bedrock-provider rollout: `docs/architecture-history/multi-provider-llm-plan.md`.
 
 ### 2026-06-19 — Harden the `tactical`/`operational` cadence boundary (output purpose, not frequency) + add the role≠frequency corpus case (gap #2 robustness, Session 177)
 
