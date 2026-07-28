@@ -1,40 +1,46 @@
-"""Thin ``PyGithub`` adapter for :class:`RepoClient`.
+"""Thin direct-``httpx`` adapter for :class:`RepoClient` (GitHub).
 
 This is the production adapter for the Website Agent's GitHub path. It is
 intentionally thin:
 
-- The constructor wraps ``github.Github(auth=Auth.Token(...), base_url=...)``.
+- The constructor builds an ``httpx.Client`` scoped to ``host_url``
+  (default ``https://api.github.com``; pass a GitHub Enterprise API URL,
+  e.g. ``https://github.example.com/api/v3``, for GHE) with a bearer-token
+  ``Authorization`` header. No network call happens at construction time.
 - ``create_project`` resolves the target owner (organization first, then
-  user) and creates a repo under it, translating name collisions to
-  :class:`RepoNameConflictError` and every other ``GithubException`` to
+  the authenticated user — GitHub's API only allows creating a repo under
+  an organization or the token's own account, never an arbitrary
+  third-party user) and creates a repo under it, translating name
+  collisions to :class:`RepoNameConflictError` and every other error to
   :class:`RepoClientError`.
 - ``commit_files`` issues a single atomic multi-file commit by walking the
-  git data API: blob → tree → commit → ref.edit. This mirrors
-  ``gitlab_adapter.commit_files``'s "one commit per call" contract so the
-  RETRY_BACKOFF loop in the LangGraph sees identical semantics on both
-  platforms.
+  git data API: ref -> parent commit -> blobs -> tree -> commit -> ref
+  update. This mirrors ``gitlab_adapter.commit_files``'s "one commit per
+  call" contract so the RETRY_BACKOFF loop in the LangGraph sees identical
+  semantics on both platforms.
 
 Per the Phase 4B handoff (architecture-plan §14): this module is **not**
-unit-tested against a live GitHub. The test suite confirms it imports,
-implements the protocol, translates a few representative exceptions, and
-drives the commit_files git-dance against mocks; anything stronger requires
-a test GitHub account and is a Phase 5 concern.
-
-The import of :mod:`github` is eager here (``PyGithub`` is in the
-``agents`` optional extras). Callers that don't need GitHub should use
-:class:`FakeRepoClient` and never construct this class.
+unit-tested against a live GitHub. The test suite drives it against
+``httpx.MockTransport`` and confirms it implements the protocol and maps
+representative wire-level responses; anything stronger requires a test
+GitHub account and is a Phase 5 concern.
 
 Nested namespaces are **not** supported. GitLab allows arbitrary group
 nesting ("org/sub/sub"); GitHub has a single owner level. If callers pass a
 namespace containing ``"/"`` we fail loudly with :class:`RepoClientError`
 rather than silently flattening.
+
+Migrated off ``PyGithub`` (LGPL-3.0-only) to direct ``httpx`` calls per
+``docs/planning/httpx-adapter-migration.md`` Phase 2 — the needed surface
+is the standard git-database commit dance, so a full SDK adds licensing
+weight without functional benefit.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from github import Auth, Github, GithubException, InputGitTreeElement, UnknownObjectException
+import httpx
 
 from model_project_constructor.agents.website.protocol import (
     CommitInfo,
@@ -46,7 +52,8 @@ from model_project_constructor.agents.website.protocol import (
 
 
 class PyGithubAdapter(RepoClient):
-    """``RepoClient`` implementation backed by ``PyGithub``.
+    """``RepoClient`` implementation backed by direct calls to the GitHub
+    REST API.
 
     Usage::
 
@@ -69,7 +76,13 @@ class PyGithubAdapter(RepoClient):
         private_token: str,
         host_url: str = "https://api.github.com",
     ) -> None:
-        self._gh: Any = Github(auth=Auth.Token(private_token), base_url=host_url)
+        self._client = httpx.Client(
+            base_url=host_url.rstrip("/"),
+            headers={
+                "Authorization": f"Bearer {private_token}",
+                "Accept": "application/vnd.github+json",
+            },
+        )
 
     # ------------------------------------------------------------------
     # RepoClient protocol
@@ -88,36 +101,64 @@ class PyGithubAdapter(RepoClient):
                 "— flatten before passing"
             )
 
-        owner: Any
-        try:
-            owner = self._gh.get_organization(namespace)
-        except UnknownObjectException:
-            try:
-                owner = self._gh.get_user(namespace)
-            except GithubException as exc:
-                raise RepoClientError(
-                    f"owner lookup failed for {namespace!r}: {exc}"
-                ) from exc
-        except GithubException as exc:
-            raise RepoClientError(
-                f"owner lookup failed for {namespace!r}: {exc}"
-            ) from exc
+        create_path = self._resolve_owner_create_path(namespace)
 
         private = visibility != "public"
         try:
-            repo = owner.create_repo(name=name, private=private)
-        except GithubException as exc:
-            if _is_name_conflict(exc):
-                raise RepoNameConflictError(name) from exc
+            response = self._client.post(
+                create_path, json={"name": name, "private": private}
+            )
+        except httpx.HTTPError as exc:
+            raise RepoClientError(f"create_project failed for {name!r}: {exc}") from exc
+        if not _is_2xx(response):
+            if _is_name_conflict(response):
+                raise RepoNameConflictError(name)
             raise RepoClientError(
-                f"create_project failed for {name!r}: {exc}"
-            ) from exc
+                f"create_project failed for {name!r}: "
+                f"{response.status_code} {response.text}"
+            )
+        repo = _parse_json(response, f"create_project failed for {name!r}")
 
         return ProjectInfo(
-            id=str(repo.full_name),
-            url=str(repo.html_url),
-            default_branch=str(getattr(repo, "default_branch", None) or "main"),
+            id=str(repo["full_name"]),
+            url=str(repo["html_url"]),
+            default_branch=str(repo.get("default_branch") or "main"),
         )
+
+    def _resolve_owner_create_path(self, namespace: str) -> str:
+        """Return the repo-creation path for ``namespace``.
+
+        Tries organization first (``GET /orgs/{namespace}``); a 404 falls
+        back to treating ``namespace`` as a user account. GitHub's API only
+        allows creating a repo under an organization or the *authenticated*
+        user's own account (never an arbitrary third-party user), so the
+        user branch still confirms the account exists (preserving the old
+        adapter's "owner lookup failed" failure mode) but creates via
+        ``POST /user/repos`` rather than a namespace-scoped path.
+        """
+
+        try:
+            response = self._client.get(f"/orgs/{namespace}")
+        except httpx.HTTPError as exc:
+            raise RepoClientError(
+                f"owner lookup failed for {namespace!r}: {exc}"
+            ) from exc
+        if response.status_code == 200:
+            return f"/orgs/{namespace}/repos"
+        if response.status_code != 404:
+            raise RepoClientError(
+                f"owner lookup failed for {namespace!r}: "
+                f"{response.status_code} {response.text}"
+            )
+
+        try:
+            response = self._client.get(f"/users/{namespace}")
+        except httpx.HTTPError as exc:
+            raise RepoClientError(
+                f"owner lookup failed for {namespace!r}: {exc}"
+            ) from exc
+        _ok_or_raise(response, f"owner lookup failed for {namespace!r}")
+        return "/user/repos"
 
     def commit_files(
         self,
@@ -128,58 +169,138 @@ class PyGithubAdapter(RepoClient):
         message: str,
     ) -> CommitInfo:
         try:
-            repo = self._gh.get_repo(project_id)
-        except GithubException as exc:
+            response = self._client.get(f"/repos/{project_id}")
+        except httpx.HTTPError as exc:
             raise RepoClientError(
                 f"project lookup failed for id={project_id!r}: {exc}"
             ) from exc
+        _ok_or_raise(response, f"project lookup failed for id={project_id!r}")
+
+        context = f"commit_files failed (project={project_id!r}, branch={branch!r})"
+
+        try:
+            response = self._client.get(f"/repos/{project_id}/git/ref/heads/{branch}")
+        except httpx.HTTPError as exc:
+            raise RepoClientError(f"{context}: {exc}") from exc
+        _ok_or_raise(response, context)
+        parent_sha = _parse_json(response, context)["object"]["sha"]
+
+        try:
+            response = self._client.get(
+                f"/repos/{project_id}/git/commits/{parent_sha}"
+            )
+        except httpx.HTTPError as exc:
+            raise RepoClientError(f"{context}: {exc}") from exc
+        _ok_or_raise(response, context)
+        base_tree_sha = _parse_json(response, context)["tree"]["sha"]
 
         sorted_items = sorted(files.items())
-        try:
-            ref = repo.get_git_ref(f"heads/{branch}")
-            parent_commit = repo.get_git_commit(ref.object.sha)
-            tree_elements = [
-                InputGitTreeElement(
-                    path=path,
-                    mode="100644",
-                    type="blob",
-                    sha=repo.create_git_blob(content, "utf-8").sha,
+        tree_elements: list[dict[str, str]] = []
+        for path, content in sorted_items:
+            try:
+                response = self._client.post(
+                    f"/repos/{project_id}/git/blobs",
+                    json={"content": content, "encoding": "utf-8"},
                 )
-                for path, content in sorted_items
-            ]
-            tree = repo.create_git_tree(tree_elements, base_tree=parent_commit.tree)
-            commit = repo.create_git_commit(message, tree, [parent_commit])
-            ref.edit(sha=commit.sha)
-        except GithubException as exc:
-            raise RepoClientError(
-                f"commit_files failed (project={project_id!r}, branch={branch!r}): {exc}"
-            ) from exc
+            except httpx.HTTPError as exc:
+                raise RepoClientError(f"{context}: {exc}") from exc
+            _ok_or_raise(response, context)
+            blob_sha = _parse_json(response, context)["sha"]
+            tree_elements.append(
+                {"path": path, "mode": "100644", "type": "blob", "sha": blob_sha}
+            )
+
+        try:
+            response = self._client.post(
+                f"/repos/{project_id}/git/trees",
+                json={"base_tree": base_tree_sha, "tree": tree_elements},
+            )
+        except httpx.HTTPError as exc:
+            raise RepoClientError(f"{context}: {exc}") from exc
+        _ok_or_raise(response, context)
+        new_tree_sha = _parse_json(response, context)["sha"]
+
+        try:
+            response = self._client.post(
+                f"/repos/{project_id}/git/commits",
+                json={
+                    "message": message,
+                    "tree": new_tree_sha,
+                    "parents": [parent_sha],
+                },
+            )
+        except httpx.HTTPError as exc:
+            raise RepoClientError(f"{context}: {exc}") from exc
+        _ok_or_raise(response, context)
+        commit_sha = _parse_json(response, context)["sha"]
+
+        try:
+            response = self._client.patch(
+                f"/repos/{project_id}/git/refs/heads/{branch}",
+                json={"sha": commit_sha},
+            )
+        except httpx.HTTPError as exc:
+            raise RepoClientError(f"{context}: {exc}") from exc
+        _ok_or_raise(response, context)
 
         return CommitInfo(
-            sha=str(commit.sha),
-            files_committed=[path for path, _ in sorted_items],
+            sha=commit_sha,
+            files_committed=sorted(files),
         )
 
 
-def _is_name_conflict(exc: GithubException) -> bool:
-    """Detect a GitHub "name already exists" error from PyGithub.
+def _is_2xx(response: httpx.Response) -> bool:
+    return 200 <= response.status_code < 300
 
-    GitHub returns a 422 Unprocessable Entity with a response body of the
-    form ``{"errors": [{"message": "name already exists on this account"}]}``.
-    We match loosely (any 422 whose body mentions "already exists") so minor
-    wording changes don't break the adapter.
+
+def _ok_or_raise(response: httpx.Response, context: str) -> None:
+    """Raise :class:`RepoClientError` if ``response`` is not a 2xx.
+
+    Deliberately stricter than "not >= 400": ``httpx.Client`` does not
+    follow redirects by default (unlike the ``requests``-based transport
+    the old ``PyGithub`` adapter used), so a 3xx must also be treated as a
+    failure rather than silently falling through to a body parse.
     """
 
-    if getattr(exc, "status", None) != 422:
+    if not _is_2xx(response):
+        raise RepoClientError(f"{context}: {response.status_code} {response.text}")
+
+
+def _parse_json(response: httpx.Response, context: str) -> dict[str, Any]:
+    """Parse a 2xx response body, raising :class:`RepoClientError` on
+    malformed JSON instead of letting a raw ``ValueError`` escape."""
+
+    try:
+        body: dict[str, Any] = response.json()
+    except ValueError as exc:
+        raise RepoClientError(f"{context}: invalid JSON body: {exc}") from exc
+    return body
+
+
+def _is_name_conflict(response: httpx.Response) -> bool:
+    """Detect a GitHub "name already exists" error from a create-repo response.
+
+    GitHub returns a 422 Unprocessable Entity with a body of the form
+    ``{"errors": [{"message": "name already exists on this account"}]}``.
+    We match loosely (any 422 whose body mentions "already exists"
+    anywhere, not just in the ``errors`` list) so minor wording changes
+    don't break the adapter.
+    """
+
+    if response.status_code != 422:
         return False
-    data = getattr(exc, "data", None)
-    if isinstance(data, dict):
-        for err in data.get("errors", []) or []:
+    try:
+        body: Any = response.json()
+    except ValueError:
+        body = None
+    if isinstance(body, dict):
+        for err in body.get("errors", []) or []:
             if isinstance(err, dict):
                 message = str(err.get("message", "")).lower()
                 if "already exists" in message:
                     return True
-    return "already exists" in str(exc).lower()
+    text = str(body) if body is not None else response.text
+    return "already exists" in text.lower()
 
 
 __all__ = ["PyGithubAdapter"]
