@@ -226,7 +226,7 @@ These aren't style preferences — they are documented responses to specific pas
 ## 8. Licenses, attribution, and dependency hygiene
 
 - **Project license:** MIT (`LICENSE` at repository root). Copyright © 2026 R. Mark Sharp.
-- **Dependency licenses:** not yet tracked per-dependency on the [Software Bill of Materials](Software-Bill-of-Materials) page — adding a license column there is an open item on [Content Recommendations](Content-Recommendations). Direct dependencies are predominantly MIT / BSD / Apache 2.0. `PyGithub` is LGPL-3.0; LGPL compliance is satisfied by Python's import mechanism allowing re-linking against modified library versions.
+- **Dependency licenses:** the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root. Direct dependencies are predominantly MIT / BSD / Apache 2.0. **Two are LGPL-3.0** — `python-gitlab` and `PyGithub`; LGPL compliance is satisfied by Python's import mechanism allowing re-linking against modified library versions.
 - **New dependencies:** prefer zero-new-dep solutions when the stdlib or existing deps can do the job (per learning #13). Each added dependency is a maintenance commitment — version conflicts, CI install time, and security-review surface all grow. If you need a new dep, include justification in the PR description.
 
 ---
@@ -235,7 +235,7 @@ These aren't style preferences — they are documented responses to specific pas
 
 There is no public issue tracker actively in use for pre-UAT development — `gh issue list` is expected to return empty. Open work items are tracked in `BACKLOG.md` at the repository root. Once UAT begins, the tracker at `https://github.com/rmsharp/claims-model-starter/issues` will be the submission target.
 
-For security-sensitive reports, please do not open a public issue. Contact the repository owner directly — `rmsharp` on GitHub, per the clone URL in §1. The project has no `SECURITY.md` and `README.md` carries no contact path; publishing a documented disclosure address is an open gap.
+For security-sensitive reports, please do not open a public issue. See `SECURITY.md` at the repository root for the disclosure process.
 
 ---
 

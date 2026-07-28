@@ -350,8 +350,8 @@ From `pyproject.toml` (root) and `packages/data-agent/pyproject.toml`:
 | `anthropic[bedrock]>=0.94` | LLM calls (first-party + Bedrock) | Anthropic's official SDK, on the release that ships `AnthropicBedrockMantle`. The `[bedrock]` extra pulls `boto3` / `botocore` for AWS SigV4 signing (`uv.lock`, the `anthropic` package's `[package.optional-dependencies] bedrock` group) — additional transitive trust surface. |
 | `sqlparse>=0.5` | Data Agent SQL validation | Parse-level only — no execution. |
 | `sqlalchemy>=2.0,<3` | `ReadOnlyDB` | Standard; DB URL is operator-provided. |
-| `python-gitlab>=4` | GitLab adapter | Official GitLab SDK. |
-| `PyGithub>=2,<3` | GitHub adapter | Official GitHub SDK. (LGPL-3.0 — see [SBOM](Software-Bill-of-Materials).) |
+| `python-gitlab>=4` | GitLab adapter | Official GitLab SDK. (LGPL-3.0-or-later — see [SBOM](Software-Bill-of-Materials).) |
+| `PyGithub>=2,<3` | GitHub adapter | Official GitHub SDK. (LGPL-3.0-only — see [SBOM](Software-Bill-of-Materials).) |
 | `typer>=0.12` | CLIs | Standard. |
 | `fastapi>=0.110`, `uvicorn>=0.29`, `sse-starlette>=2` | intake web UI | Only needed for live interviews. |
 | `langgraph-checkpoint-sqlite>=2.0,<3` | intake web UI checkpoints | SQLite-backed state persistence for live interviews. |
@@ -383,7 +383,7 @@ These are explicit design decisions, not bugs.
 - [ ] Confirm the selected provider's data handling terms are compatible with the content interviewers will elicit — Anthropic's on the default path, AWS's on the `bedrock` path.
 - [ ] Confirm the target `GITLAB_TOKEN` / `GITHUB_TOKEN` has the minimum required scope (no broader than `api` / `repo`).
 - [ ] Confirm CI does not inject real credentials into the `.github/workflows/ci.yml` jobs.
-- [ ] Review the [SBOM](Software-Bill-of-Materials) for unacceptable license profiles — note it lists packages, constraints, and locked versions but **not** per-dependency licenses yet (adding a license column is an open item on [Content Recommendations](Content-Recommendations)); `PyGithub` is the one LGPL-3.0 direct dependency.
+- [ ] Review the [SBOM](Software-Bill-of-Materials) for unacceptable license profiles — the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root; **two** direct dependencies are LGPL-3.0 (`python-gitlab`, `PyGithub`).
 - [ ] Decide whether checkpoint files must be encrypted at rest (this project does not encrypt them).
 - [ ] Decide whether LLM call metadata should be forwarded to a SIEM (structured logging makes this straightforward).
 - [ ] If the `bedrock` provider is selected (`--provider bedrock` on the CLIs, or `INTAKE_LLM_PROVIDER=bedrock` for the web UI): confirm the execution role's policy is least-privilege **and matches the endpoint in use**. The client is `AnthropicBedrockMantle`, which authorizes on `bedrock-mantle:CreateInference` (plus `aws-marketplace:ViewSubscriptions`) — a *different action namespace* from the classic `bedrock:InvokeModel` path, so a role scoped only to `bedrock:*` will 403 the mantle client. See `docs/deployment/bedrock-enterprise.md` §3.
