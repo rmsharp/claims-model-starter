@@ -71,7 +71,7 @@ src/model_project_constructor/          # main "orchestrator" package
     templates.py                        # pure-python base file content generators
     governance_templates.py             # 4B governance artifact generators (§8.2 tier fan-out)
     fake_client.py                      # in-memory repo-host stand-in for tests + CLI
-    gitlab_adapter.py                   # production adapter via python-gitlab
+    gitlab_adapter.py                   # production adapter via direct httpx calls
     github_adapter.py                   # production adapter via PyGithub
     cli.py, __main__.py                 # typer CLI (--host gitlab|github, --fake or --private-token)
   orchestrator/                         # Phase 5/6: sequential pipeline driver (Intake → Data → Website) + observability
@@ -180,7 +180,7 @@ uv run python -m model_project_constructor.agents.website \
     --host github \
     --fake
 
-# Real GitLab — creates an actual project via python-gitlab.
+# Real GitLab — creates an actual project via direct httpx calls.
 uv run python -m model_project_constructor.agents.website \
     --intake tests/fixtures/subrogation_intake.json \
     --data tests/fixtures/sample_datareport.json \

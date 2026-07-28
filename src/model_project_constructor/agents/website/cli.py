@@ -10,7 +10,7 @@ The plan's literal verification command is::
 Phase D of the GitHub/GitLab abstraction plan adds the ``--host`` flag
 selecting between ``gitlab`` and ``github``. The ``--fake`` path uses the
 in-memory :class:`FakeRepoClient`; passing ``--private-token`` drives the
-real adapter for the chosen host (``python-gitlab`` for GitLab,
+real adapter for the chosen host (direct ``httpx`` calls for GitLab,
 ``PyGithub`` for GitHub). ``--ci-platform`` overrides the CI emission
 platform independently of the repo host (useful for fake-path testing).
 
@@ -170,7 +170,7 @@ def run(
         client = FakeRepoClient()
     else:
         # The registry decides which adapter to build; its factory lazy-imports
-        # the SDK, so `--help` and the fake path never pull python-gitlab or
+        # the SDK, so `--help` and the fake path never pull httpx or
         # PyGithub. ``host`` was validated against REPO_PLATFORMS above, so the
         # lookup cannot miss — an unknown host would fail loud, not fall through.
         assert private_token is not None  # narrowed by the guard above

@@ -150,14 +150,14 @@ Bedrock has **never been exercised live** — every governance and eval result i
 
 ### 2.2 GitLab (`PythonGitLabAdapter`)
 
-`PythonGitLabAdapter` in `src/model_project_constructor/agents/website/gitlab_adapter.py`. Calls:
+`PythonGitLabAdapter` in `src/model_project_constructor/agents/website/gitlab_adapter.py`. Migrated off the `python-gitlab` SDK to direct `httpx` calls against the `/api/v4` REST API in Session 191 (`docs/planning/httpx-adapter-migration.md` Phase 1). Calls:
 
-- `gitlab.Gitlab(url, private_token=..., ssl_verify=True)` (constructed in `PythonGitLabAdapter.__init__`) — the SDK client. `ssl_verify=True` is the default and not overridden for live runs.
-- `gl.groups.get(namespace)` — group resolution.
-- `gl.projects.create(...)` — project creation.
-- `project.commits.create(...)` — multi-file commit.
+- `httpx.Client(base_url=f"{host_url}/api/v4", headers={"PRIVATE-TOKEN": ...}, verify=ssl_verify)` (constructed in `PythonGitLabAdapter.__init__`) — no network call at construction; `ssl_verify=True` is the default and not overridden for live runs.
+- `GET /groups/{namespace}` — group resolution (namespace URL-encoded so nested group paths address a single path segment).
+- `POST /projects` — project creation.
+- `GET /projects/{id}` then `POST /projects/{id}/repository/commits` — multi-file commit.
 
-Target host is whatever `host_url` the caller provides (public `https://gitlab.com` by default; enterprise instances via `MPC_HOST_URL`).
+Every non-2xx response or `httpx` transport error (`httpx.HTTPError`) is translated to `RepoClientError`/`RepoNameConflictError`; no raw `httpx` exception escapes the adapter. Target host is whatever `host_url` the caller provides (public `https://gitlab.com` by default; enterprise instances via `MPC_HOST_URL`).
 
 ### 2.3 GitHub (`PyGithubAdapter`)
 
@@ -350,7 +350,7 @@ From `pyproject.toml` (root) and `packages/data-agent/pyproject.toml`:
 | `anthropic[bedrock]>=0.94` | LLM calls (first-party + Bedrock) | Anthropic's official SDK, on the release that ships `AnthropicBedrockMantle`. The `[bedrock]` extra pulls `boto3` / `botocore` for AWS SigV4 signing (`uv.lock`, the `anthropic` package's `[package.optional-dependencies] bedrock` group) — additional transitive trust surface. |
 | `sqlparse>=0.5` | Data Agent SQL validation | Parse-level only — no execution. |
 | `sqlalchemy>=2.0,<3` | `ReadOnlyDB` | Standard; DB URL is operator-provided. |
-| `python-gitlab>=4` | GitLab adapter | Official GitLab SDK. (LGPL-3.0-or-later — see [SBOM](Software-Bill-of-Materials).) |
+| `httpx>=0.27,<1` | GitLab adapter | Direct REST calls (BSD-3-Clause — see [SBOM](Software-Bill-of-Materials)); replaced `python-gitlab` in Session 191. |
 | `PyGithub>=2,<3` | GitHub adapter | Official GitHub SDK. (LGPL-3.0-only — see [SBOM](Software-Bill-of-Materials).) |
 | `typer>=0.12` | CLIs | Standard. |
 | `fastapi>=0.110`, `uvicorn>=0.29`, `sse-starlette>=2` | intake web UI | Only needed for live interviews. |
@@ -383,7 +383,7 @@ These are explicit design decisions, not bugs.
 - [ ] Confirm the selected provider's data handling terms are compatible with the content interviewers will elicit — Anthropic's on the default path, AWS's on the `bedrock` path.
 - [ ] Confirm the target `GITLAB_TOKEN` / `GITHUB_TOKEN` has the minimum required scope (no broader than `api` / `repo`).
 - [ ] Confirm CI does not inject real credentials into the `.github/workflows/ci.yml` jobs.
-- [ ] Review the [SBOM](Software-Bill-of-Materials) for unacceptable license profiles — the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root; **two** direct dependencies are LGPL-3.0 (`python-gitlab`, `PyGithub`).
+- [ ] Review the [SBOM](Software-Bill-of-Materials) for unacceptable license profiles — the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root; **one** direct dependency is LGPL-3.0 (`PyGithub`; `python-gitlab` was removed in Session 191).
 - [ ] Decide whether checkpoint files must be encrypted at rest (this project does not encrypt them).
 - [ ] Decide whether LLM call metadata should be forwarded to a SIEM (structured logging makes this straightforward).
 - [ ] If the `bedrock` provider is selected (`--provider bedrock` on the CLIs, or `INTAKE_LLM_PROVIDER=bedrock` for the web UI): confirm the execution role's policy is least-privilege **and matches the endpoint in use**. The client is `AnthropicBedrockMantle`, which authorizes on `bedrock-mantle:CreateInference` (plus `aws-marketplace:ViewSubscriptions`) — a *different action namespace* from the classic `bedrock:InvokeModel` path, so a role scoped only to `bedrock:*` will 403 the mantle client. See `docs/deployment/bedrock-enterprise.md` §3.
