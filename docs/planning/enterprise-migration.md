@@ -1,8 +1,11 @@
 # Plan: Land the branch work on `origin/master`, converge all three documentation surfaces, and provision a one-time enterprise clone of the repository + wiki
 
-**Status:** DRAFT plan (deliverable of Session 182, a planning session). **Not approved for
-execution.** Each phase below is a *separate* session. Nothing in this document was executed
-while writing it — no merge, no push, no wiki publish, no MkDocs deploy.
+**Status:** DRAFT plan (deliverable of Session 182, a planning session; **sequencing revised by
+Session 194, §1.3, 2026-07-28** — see that section for what changed and why). Each phase below is
+a *separate* session. Nothing in this document was executed while it was being written — no merge,
+no push, no wiki publish, no MkDocs deploy. **Since then, real progress has landed:** Phases
+A1–A4, B1's D3-independent core, and B3 are complete (see each phase's own status line and
+`CHANGELOG.md`); Phase B2 is the only remaining gate on C4 as of this revision.
 
 **Operator directive (recorded at the close of Session 181, 2026-07-27):**
 
@@ -35,7 +38,7 @@ The operator named three goals. Their true shapes, after measurement:
 |---|---|---|
 | 1 | All branch work into remote `master` | **25 commits**, not 24 — two stacked fast-forwards (9 + 16). Topologically trivial. What makes it non-trivial is that **pushing to `master` is publishing**: it fires a public GitHub Pages deploy that currently leaks documents nobody decided to publish. |
 | 2 | The wiki reflecting all updates | **Already published and byte-identical** — but published *from an unmerged branch*. The public wiki is ahead of the public `master`. The real work is a **merge-status sweep** across 6 pages and **provisioning separate publish machinery for a one-time enterprise clone** — the original's publish machinery is untouched (see §1.2). |
-| 3 | Anything else needed to move to an enterprise environment | A licensing conflict that is a **hard legal gate**, a live public exposure, an unauthenticated web UI, an incomplete security guard, no deployment artifact at all, and a governance/CI surface that is essentially empty. **These gaps must be fixed on the original before Phase C4's one-time clone captures them (see §1.2)** — the destination is a non-syncing enterprise fork, not this repo's relocation. |
+| 3 | Anything else needed to move to an enterprise environment | A licensing conflict that is a **hard legal gate**, a live public exposure, an unauthenticated web UI, an incomplete security guard, no deployment artifact at all, and a governance/CI surface that is essentially empty. **Only the legal-conflict and public-exposure gaps must be fixed on the original before Phase C4's one-time clone captures them** (see §1.2) — the destination is a non-syncing enterprise fork, not this repo's relocation. **Per §1.3, only the deployment-artifact gap (C2b) is fully out of this repository's scope**, stranded because its one gate (D14) is unanswerable here. The security-guard fix and the web-UI-auth *decision* (C1, C2) remain live pre-fork work this repository still tracks, gated on the still-open D10/D13 security decisions rather than the deferred platform-team bucket. The governance/CI surface splits in two: the generated-projects' CI portability work (C3b) is ungated and tracked here now; the clone's own CI authoring (C3) is still a session this repository schedules — it just needs D9/D15 supplied live by the operator at that session's start, the same pattern C4 uses for D9/D5/D4, rather than a pre-written answer. |
 
 **The single most important structural finding:** every push to `origin/master` triggers
 `mkdocs gh-deploy --force --clean`, which publishes the **entire non-excluded `docs/` tree** — and
@@ -84,9 +87,72 @@ decommissioned. Phase C4 becomes **fork provisioning**, not migration; Phase C5 
 
 **The load-bearing consequence of "one-time, no sync":** whatever is wrong in the public repo at
 the moment C4 clones it is **permanently baked into the proprietary copy** — there is no later sync
-to carry a fix over. This is why C4 is now gated on **A1–A4 and B1 complete**, not just its D-items
-(dragon #20). It is also why **`~/Development/claims-model-starter.wiki` must not be repurposed**
-for the clone (dragon #21) — it is the live publish target for the original, which keeps operating.
+to carry a fix over. This is why C4 is gated on **A1–A4 and B1's D3-independent core complete**
+(§1.3 corrects what "B1 complete" means), not just its D-items (dragon #20). It is also why
+**`~/Development/claims-model-starter.wiki` must not be repurposed** for the clone (dragon #21) —
+it is the live publish target for the original, which keeps operating.
+
+### 1.3 Further correction: post-fork sequencing for D3 and the platform-team decisions (Session 190, 2026-07-27)
+
+Session 190 recorded a second operator clarification, given in direct response to Phase B1's own
+D1/D2/D3 gate (§4). The operator's own words, preserved verbatim (`SESSION_NOTES.md`, Session 190
+handoff):
+
+> All of those will be determined after the fork is created and not reported back to this
+> repository.
+
+**"Those" = D3** (IP disposition) **plus the platform-team decision bucket named at Phase 0
+(§4): D4, D5, D8, D9, D14, D15, D16.** The legal bucket's other two items (D1, D2) and the
+security bucket (D10, D13) are unaffected — D1/D2 are already answered (§3), and D10/D13 were not
+named in the operator's decision; they remain live, Security-and-operator-owned decisions with the
+pre-fork/post-fork timing flexibility dragon #20 already grants non-D14/D15 readiness work.
+
+**What this changes, concretely:**
+
+- **Phase C4's explicit `D4, D5, D8, D9, D16` gate is removed.** These five decisions — and D3,
+  via its indirect gate on full Phase B1 — no longer need a written answer in this repository's
+  Decision Register before C4 can run. The operator supplies whatever C4's mechanics need live (for
+  example, the destination host URL for D9) at the time that session actually executes, and the
+  eventual answers are **not** written back into `BACKLOG.md`, `SESSION_NOTES.md`, or this plan.
+  C4 remains gated on **A1–A4 complete, B1's D3-independent core complete, and B2 complete** — see
+  the corrected Phase C4 text (§4).
+- **Full Phase B1 (the corporate DCO/CLA mechanism, which depends on D3) no longer gates C4.**
+  Session 190 already executed and pushed B1's D3-independent core (LGPL wiki fix, root
+  `SECURITY.md`/`CODEOWNERS`/`THIRD-PARTY-LICENSES`/baseline `CONTRIBUTING.md`, the AI-provenance
+  statement, and the D1 attribution) — see the corrected Phase B1 text (§4) for what remains open
+  and why it no longer blocks.
+- **Phases C2b (gated only on D14) and C3 (gated on D9, D15) lose their last pre-fork gate.**
+  Dragon #20 already scoped C1–C3's code/config work as flexible-timing; this decision resolves
+  that flexibility to **"after, inside the clone, not tracked here"** for the phases whose gates
+  fall entirely in the deferred bucket. C2b was never executable without D14 and is now explicitly
+  the clone's own future work, not a session this repository will schedule. C3 was already framed
+  as clone-only (§4); this removes only the now-moot "do not start before D9" pre-fork blocker.
+- **Phases C1 and C2 are only partially affected**, because each has one gate outside the deferred
+  bucket (C1: D10, D13; C2: D13) and one inside it (C1: D14; C2: D15). Splitting a phase's gate
+  bucket down the middle is unusual enough to flag rather than silently merge: **C1 and C2 keep a
+  narrower, still-live scope**, gated on their non-deferred D-items alone, with the D14/D15-dependent
+  sub-tasks carved out into the clone's own future work. See the corrected Phase C1/C2 text (§4)
+  for exactly which lines move.
+- **C5's D16 gate is removed by the same decision** (§4) — not called out as its own bullet above
+  because the change is small (one gate dropped, C4-complete remains) relative to C1/C2/C2b/C3.
+
+**Confidence note, flagged rather than silently assumed.** The operator's recorded words name
+D4/D5/D8/D9/D14/D15/D16 as a set, which is not literally identical to any single column of §3 — D14
+and D15 do not appear in Phase C4's `Gated on:` line at all (they gate C1/C2/C2b/C3 instead). The
+reading applied throughout this revision is that the named set is **Phase 0's own "platform team"
+bucket** (§4 Phase 0: *"D4/D5/D8/D9/D14/D15/D16 to the platform team"*), reproduced in the same
+order — i.e. the operator deferred an entire ownership bucket, not a literal reading of "C4's
+gates." This is corroborated by the security bucket (D10, D13) being named separately in that same
+Phase 0 line and *not* included in the deferral — though note the §3 Decision Register's own
+**Owner** column for D13 still reads "Operator + platform team" (inherited unchanged from the
+original plan, not edited by this revision), in some tension with routing D13 to "security" here;
+this pre-existing wrinkle doesn't overturn the reading (Phase 0's routing line, not the Owner
+column, is what groups D10/D13 together and predates Session 190 by several sessions), but is
+flagged rather than silently smoothed over. If the "platform team bucket" reading is wrong, the
+phases most affected by re-checking it are **C1 and C2** (left partially gated rather than fully
+resolved) **and C2b** (currently ruled fully out of scope on the strength of D14 being in the
+deferred set — if D14 turns out *not* to be deferred, C2b reverts to "in scope, blocked on D14"
+rather than "not this repository's phase at all," a bigger reversal than C1/C2's narrowing).
 
 ---
 
@@ -439,20 +505,20 @@ Phases are gated on these. **Owners are named because most are not engineering c
 |---|---|---|---|---|
 | **D1** | **All third-party methodology material** (`docs/methodology/`, `SESSION_RUNNER.md`, `SAFEGUARDS.md`, `PROJECT_LEARNINGS.md` seed rows, `docs/architecture-history/methodology-pr2527-remediation-mpc.md`): remove, obtain written permission, or carve out via NOTICE? | **Operator + legal** | Ask Terrell Deppe for written permission first (one email); if not promptly granted, **remove**. **Add the mandated attribution string in every branch of this decision** — it is currently absent everywhere. | B1, and **any corporate push** |
 | **D2** | Licence of record: MIT or proprietary? | **Operator + legal** | **Stay MIT.** Publicly MIT since 2026-04-16; that grant is irrevocable, so a retroactive relicense buys nothing. Fix `README.md:215` to match. | A3, B1 |
-| **D3** | IP disposition: assignment, work-for-hire, or third-party OSS intake? | **Legal** | Prepare **third-party OSS intake** as default. One human author = one signature. **Do not edit `LICENSE:3` until legal rules.** | B1 |
-| **D4** | Does the corporate host require signed commits / DCO? | **Operator → platform team** | Find out **before** migrating; push for "going forward only". A signed-history rewrite changes every SHA and breaks the provenance chain. A PR-button merge is host-signed, which may satisfy the policy with no local key setup. | C4 |
-| **D5** | Import history as-is, rewrite, or squash-import? | **Operator + platform team** | **Import as-is.** If an author-email allowlist blocks the push, prefer **squash-import + archived bundle** over `filter-repo` — it breaks SHA references honestly in one place instead of silently everywhere. | C4 |
+| **D3** | IP disposition: assignment, work-for-hire, or third-party OSS intake? | **Legal** | Prepare **third-party OSS intake** as default. One human author = one signature. **Do not edit `LICENSE:3` until legal rules.** **Timing (2026-07-27, Session 190): resolved by the operator after C4 runs, inside the enterprise clone — not reported back here (§1.3).** | ~~B1~~ none — see §1.3 |
+| **D4** | Does the corporate host require signed commits / DCO? | **Operator → platform team** | Find out **before** migrating; push for "going forward only". A signed-history rewrite changes every SHA and breaks the provenance chain. A PR-button merge is host-signed, which may satisfy the policy with no local key setup. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** | ~~C4~~ none — see §1.3 |
+| **D5** | Import history as-is, rewrite, or squash-import? | **Operator + platform team** | **Import as-is.** If an author-email allowlist blocks the push, prefer **squash-import + archived bundle** over `filter-repo` — it breaks SHA references honestly in one place instead of silently everywhere. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** | ~~C4~~ none — see §1.3 |
 | **D6** | MkDocs/gh-pages site: refresh, retire, or relocate? | **Operator** | **ANSWERED (2026-07-27): refresh and keep public, indefinitely.** The site is not retired. A1's containment fixes (fail-closed `mkdocs.yml`, corrected tutorial) become standing maintenance for an ongoing public site, not one-time cleanup before shutdown. See §1.2. | A1 |
 | **D7** | Take down the already-public audits retroactively? | **Operator** | **Move `docs/audits/` out of `docs_dir`** (structural, not a config a future edit can undo), force a re-deploy so the URLs 404, then request search-index removal. They are in `sitemap.xml` with no `robots.txt`. **Unaffected by D6/§1.2** — the site staying public makes this more urgent, not less: there is no future decommission to eventually close the exposure if this is left unanswered. Also decide whether this extends to `/executive-summaries/business-value-capture.qmd` (200, link-discoverable, not in `sitemap.xml`) — as scoped, this action does not cover it. | A1 |
-| **D8** | Where does the wiki live **in the enterprise clone** (the original wiki keeps auto-publishing unchanged — D6, §1.2); does the clone's copy need auto-publish at all; **and what does the destination require of page naming, the sidebar file, and intra-wiki link syntax?** | **Operator + platform team** | Resolve the host first. **C4 delivers a hardened, fail-closed local-hook mechanism for the clone as the default** (parameterised `publish_wiki.sh`, no defaults, cannot resolve to the personal wiki) — do **not** reuse `~/Development/claims-model-starter.wiki` for it (dragon #21). Publishing from CI instead of a local hook is a further hardening step, not required for C4's DONE criteria; take it up in C3 if the platform team wants it. Note `_Sidebar.md`/`Home.md` are GitHub-Wiki reserved names and **157 intra-wiki links are extensionless page slugs** that resolve only under GitHub's wiki router. | C4 |
-| **D9** | Repo-host target **for the enterprise clone** (the original stays on GitHub, untouched — §1.2): self-hosted GitLab or GHES? | **Operator** | Decide before security review. **GHES hard-rejects namespaces containing `/`** (`github_adapter.py:85-89`) — a contract change, not a config line. **If GitLab, all of `.github/workflows/` is dead and CI must be re-authored** for the clone only — the original's `.github/workflows/` is unaffected. | C3, C4 |
+| **D8** | Where does the wiki live **in the enterprise clone** (the original wiki keeps auto-publishing unchanged — D6, §1.2); does the clone's copy need auto-publish at all; **and what does the destination require of page naming, the sidebar file, and intra-wiki link syntax?** | **Operator + platform team** | Resolve the host first. **C4 delivers a hardened, fail-closed local-hook mechanism for the clone as the default** (parameterised `publish_wiki.sh`, no defaults, cannot resolve to the personal wiki) — do **not** reuse `~/Development/claims-model-starter.wiki` for it (dragon #21). Publishing from CI instead of a local hook is a further hardening step, not required for C4's DONE criteria; take it up in C3 if the platform team wants it. Note `_Sidebar.md`/`Home.md` are GitHub-Wiki reserved names and **157 intra-wiki links are extensionless page slugs** that resolve only under GitHub's wiki router. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3); C4 still delivers the fail-closed mechanism unconditionally regardless of what D8 turns out to be.** | ~~C4~~ none — see §1.3 |
+| **D9** | Repo-host target **for the enterprise clone** (the original stays on GitHub, untouched — §1.2): self-hosted GitLab or GHES? | **Operator** | Decide before security review. **GHES hard-rejects namespaces containing `/`** (`github_adapter.py:85-89`) — a contract change, not a config line. **If GitLab, all of `.github/workflows/` is dead and CI must be re-authored** for the clone only — the original's `.github/workflows/` is unaffected. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3). Practical consequence: whoever runs C4 needs the operator to supply a live destination host URL at that session's start — do not stall Phase C4 waiting for a written D9 answer in this document.** | ~~C3, C4~~ none — see §1.3 |
 | **D10** | Bedrock endpoint: Regional or Global? | **Security + operator** | **Regional.** For P&C claims data, residency dominates the ~10% premium. | C1 |
 | **D11** | Run the LGPL removal before the corporate move? | **Operator + legal** | **Confirm the corporate copyleft policy first.** Many policies permit LGPL for unmodified, dynamically-imported libraries. If permitted, defer — it is a rewrite of the two least-tested modules immediately before their first live use. | B3 |
 | **D12** | Version/tag the landing? | **Operator** | **ANSWERED (2026-07-27): bump to 0.3.0** — accepted the recommendation, confirmed by proceeding straight to A3. Done in A3: two `pyproject.toml` files, `README.md:3`, **and `uv lock`** (the lock pinned both workspace members at `0.2.0`, `uv.lock:1109`, `:1175`; now `0.3.0`). The actual `git tag` is a separate, still-open action — A3 has no `git tag` command; it belongs with A4 ("Land it") once the version is on `master`. | A3 |
 | **D13** | Wire `http_client`/`require_sigv4` to app/env? | **Operator + platform team** | **Extend the `require_sigv4` guard to both env vars now** (2 lines × 2 files). Wire `require_sigv4` from env next. Wire `http_client` only if TLS inspection is confirmed. | C1, C2 |
-| **D14** | **Runtime shape: EKS+IRSA / ECS task role / EC2 instance profile / on-prem VM?** | **Operator + platform team** | Must be answered before C1 — **the IAM trust policy cannot be written without it**, and it also decides whether the live-test credential probe works at all. | C1, C2b |
-| **D15** | **Package resolution: internal index (Artifactory/Nexus/devpi) or proxied public PyPI?** | **Operator + platform team** | Decide early — `uv sync` is the first command in every documented workflow. | C2, C3 |
-| **D16** | **Disposition and access model of the enterprise CLONE** (repo + wiki + releases) — private from creation? who administers it? are the two GitHub Releases recreated on the clone, or left as a pointer to the public originals? *(The public originals get no disposition decision — they are unchanged; §1.2.)* | **Operator + legal** | Decide before C5. Default: clone is private from creation; recreate the releases on the clone from `releases-export.json` (already in C4's scope) rather than a pointer, since the clone has no live link back to the original. The MIT grant on the original's published code is irrevocable regardless of the clone's licence posture. | C4, C5 |
+| **D14** | **Runtime shape: EKS+IRSA / ECS task role / EC2 instance profile / on-prem VM?** | **Operator + platform team** | Must be answered before the IAM-trust-policy artifact can be filled in, and it also decides whether the live-test credential probe works at all. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C1's own trust-policy sub-task moves with it (see corrected Phase C1, §4); C1's D10/D13-scoped work does not wait on D14. | ~~C1, C2b~~ none — see §1.3 (C2b fully deferred; C1 narrowed) |
+| **D15** | **Package resolution: internal index (Artifactory/Nexus/devpi) or proxied public PyPI?** | **Operator + platform team** | Decide early — `uv sync` is the first command in every documented workflow. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C2's own index-variable-documentation sub-task moves with it (see corrected Phase C2, §4); C2's D13-scoped work does not wait on D15. | ~~C2, C3~~ none — see §1.3 (C2 narrowed; C3 already clone-only) |
+| **D16** | **Disposition and access model of the enterprise CLONE** (repo + wiki + releases) — private from creation? who administers it? are the two GitHub Releases recreated on the clone, or left as a pointer to the public originals? *(The public originals get no disposition decision — they are unchanged; §1.2.)* | **Operator + legal** | Default: clone is private from creation; recreate the releases on the clone from `releases-export.json` (already in C4's scope) rather than a pointer, since the clone has no live link back to the original. The MIT grant on the original's published code is irrevocable regardless of the clone's licence posture. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C5 step 3 records whatever the operator decided, live, rather than gating on a pre-written answer. | ~~C4, C5~~ none — see §1.3 |
 
 ---
 
@@ -495,17 +561,25 @@ Phases are gated on these. **Owners are named because most are not engineering c
 
 ### Phase 0 — Raise the decision register *(operator action, not a session)*
 
-Put D1–D3 to legal, D4/D5/D8/D9/D14/D15/D16 to the platform team, and D10/D13 to security
-**together with `docs/deployment/bedrock-enterprise.md` §0's three existing questions**
+**Revised by §1.3 (Session 190):** D1–D3 (legal) and D4/D5/D8/D9/D14/D15/D16 (platform team) are
+no longer raised here — the operator resolves them post-fork, inside the enterprise clone, and
+their answers are not reported back to this repository. What remains for this phase is **D10/D13
+to security, together with `docs/deployment/bedrock-enterprise.md` §0's three existing questions**
 (Guardrails mandate? FIPS mandate? does the target account have current-gen Claude runtime
 quota?). A "yes" on Guardrails or FIPS redirects mantle → `bedrock-runtime`, a materially larger
 change than anything in this plan.
 
-**DONE:** D2, D6, D7 answered (these gate Phase A). The rest may lag.
+**DONE:** D1, D2, D6, D7, D12 answered (D1/D2/D6/D7 gate Phase A; D12 gated A3, already executed).
+D3–D9, D14–D16 are explicitly not this repository's decisions to track (§1.3). **D10, D13, and
+`bedrock-enterprise.md` §0's three security questions remain open items for this phase to raise**
+— D10/D13 gate Phase C1's and (D13 only) Phase C2's narrowed scope (§4); the three security
+questions gate whether C1's narrowed scope (which assumes "no" to all three) applies at all, or
+whether a "yes" instead requires the materially larger `bedrock-runtime` re-plan noted above. This
+plan does not resolve that branch — flagged, not silently assumed, for whoever runs C1.
 
 ---
 
-### Phase A1 — Contain the public exposure and correct the tutorial
+### Phase A1 — Contain the public exposure and correct the tutorial — **COMPLETE (Sessions 186–189)**
 
 **Branch:** `feat/bedrock-mantle-migration`. **Gated on:** D6, D7. **Standing rule applies.**
 
@@ -552,7 +626,7 @@ public. That is the correct intermediate state.
 
 ---
 
-### Phase A2 — Wiki merge-status sweep
+### Phase A2 — Wiki merge-status sweep — **COMPLETE (Sessions 186–189)**
 
 **Branch:** `feat/bedrock-mantle-migration`. **Standing rule applies — verify the hook is
 disarmed before touching any wiki file.**
@@ -599,7 +673,7 @@ Re-run the grep after each file rather than trusting a stale list.
 
 ---
 
-### Phase A3 — In-repo documentation reconciliation
+### Phase A3 — In-repo documentation reconciliation — **COMPLETE (Sessions 186–189)**
 
 **Branch:** `feat/bedrock-mantle-migration`. **Gated on:** D2, D12. **Standing rule applies.**
 
@@ -646,7 +720,7 @@ uv run pytest -q && uv run ruff check src/ tests/ packages/ scripts/ && uv run m
 
 ---
 
-### Phase A4 — Land it: push branch → PR → CI → single fast-forward push → publish → verify
+### Phase A4 — Land it: push branch → PR → CI → single fast-forward push → publish → verify — **COMPLETE (Sessions 186–189, PR #2 → `master@9cabe0e`)**
 
 **This is the phase the operator asked for.** Everything before it exists to make this phase safe.
 
@@ -727,38 +801,45 @@ Phase B in the same session.
 
 ---
 
-### Phase B1 — The legal packet *(gates the corporate push)*
+### Phase B1 — The legal packet *(gates the corporate push)* — **D3-independent core: COMPLETE (Session 190)**
 
-**Gated on:** D1, D2, D3. **Cannot start until legal has ruled on D1. Standing rule applies.**
+**Gated on:** D1, D2 (both answered — §3). **D3 no longer gates this phase** — per §1.3, the one
+D3-dependent sub-item (the corporate DCO/CLA mechanism) is explicitly deferred post-fork, inside
+the clone, rather than blocking B1. **Standing rule applied.**
 
-**Scope:** execute the D1 outcome across **all** third-party methodology material —
-`docs/methodology/` (12 files), `SESSION_RUNNER.md`, `SAFEGUARDS.md`, `PROJECT_LEARNINGS.md`'s
-framework seed rows, and `docs/architecture-history/methodology-pr2527-remediation-mpc.md` (an
-explicit carve-out from §6's never-rewrite-history rule). **Add the mandated attribution string in
-every branch of D1**, including removal. Commit the §2.7 licence table as `THIRD-PARTY-LICENSES`
-and add the licence column to the SBOM wiki page. Correct the **five** wiki locations that frame
-`PyGithub` as the only LGPL dependency (`Security-Considerations.md:355`, `:356`, `:388`;
-`Contributing.md:229`; `Content-Recommendations.md:75`). Author the AI-provenance statement
-covering the **329** `Co-Authored-By` trailers. Add root `SECURITY.md` (replacing
-`Contributing.md:238`'s "contact `rmsharp` on GitHub" disclosure path), root `CONTRIBUTING.md`
-with the corporate DCO/CLA mechanism, and `CODEOWNERS`.
+**Scope executed (Session 190, commits `f15b12d`/`86a19e9`/`623a3f2`, pushed to `origin/master`):**
+D1 outcome across **all** third-party methodology material — `docs/methodology/` (12 files),
+`SESSION_RUNNER.md`, `SAFEGUARDS.md`, `PROJECT_LEARNINGS.md`'s framework seed rows, and
+`docs/architecture-history/methodology-pr2527-remediation-mpc.md`. `THIRD-PARTY-LICENSES` (full
+distribution table, since updated again by the httpx migration — see `CHANGELOG.md` 2026-07-28).
+Corrected the **five** wiki locations that framed `PyGithub` as the only LGPL dependency. Authored
+the AI-provenance statement (`NOTICE`). Added root `SECURITY.md`, `CODEOWNERS`.
 
-**DONE looks like:** the D1 conflict resolved with a written record; one file lists every
-dependency's licence; no document claims a single LGPL dependency; the three root governance files
-exist.
+**Scope explicitly NOT executed, and no longer scheduled here:** root `CONTRIBUTING.md`'s
+corporate DCO/CLA mechanism section — added as baseline **TBD** text (D3/D4/D9-dependent). Per
+§1.3, D3/D4/D9 are now resolved post-fork, inside the clone — so this section will be authored
+**there**, not in a future session of this repository. Do not schedule a follow-up B1 session to
+close this gap; it is not this repository's gap to close.
 
-**Verify:**
+**DONE looks like (achieved):** the D1 conflict resolved with a written record; one file lists
+every dependency's licence; no document claims a single LGPL dependency; `SECURITY.md`,
+`CODEOWNERS`, `CONTRIBUTING.md` (baseline), `THIRD-PARTY-LICENSES` all exist.
+
+**Verify (re-derived from Session 190's own correction to the plan's original D1 command, which
+expected attribution inside the synced `SESSION_RUNNER.md`/`SAFEGUARDS.md` files themselves —
+`CLAUDE.md`'s "do not edit synced files" rule makes that impossible; attribution lives in `NOTICE`
++ `CLAUDE.md` instead):**
 
 ```bash
 grep -rn "the one LGPL-3.0 direct dependency" docs/wiki/         # → 0
 grep -rn -i "lgpl" docs/wiki/claims-model-starter/               # every hit names BOTH packages
 ls SECURITY.md CONTRIBUTING.md CODEOWNERS THIRD-PARTY-LICENSES
-# attribution required in EVERY branch of D1:
-grep -c 'Terrell Deppe' SESSION_RUNNER.md SAFEGUARDS.md NOTICE   # → all non-zero
-git grep -l -i 'KJ5HST\|Terrell Deppe' -- . | grep -v NOTICE     # → only files carrying an attribution header
+grep -c 'Terrell Deppe' NOTICE                                   # → non-zero
+grep -c 'Terrell Deppe' CLAUDE.md                                # → non-zero (Adaptations section)
+git grep -l -i 'KJ5HST\|Terrell Deppe' -- . | grep -vE '^NOTICE$|^CLAUDE\.md$'   # → 0 or historical-record-only hits
 ```
 
-**Boundary:** one session. Close out.
+**Boundary:** was one session (Session 190, 2026-07-27). Closed. No further B1 session is owed.
 
 ---
 
@@ -773,9 +854,10 @@ including the exact commands, so the reviewer can re-run them. Export the API-on
 **not** carried by `git push --tags`). Build the **external-asset register**, split into two kinds
 — **the wiki repo and the gh-pages site have a fixed disposition (keep, unconditionally; §1.2/D6)
 and do not need a register entry beyond noting that**; the genuinely undecided assets are the three
-GitLab pilot projects, the two GitHub Releases and both annotated tags (recreate on the clone per
-D16/C4, or leave as a pointer), and the three `.env` credentials (rotate regardless of any account
-closure — none is planned, §1.2).
+GitLab pilot projects, the two GitHub Releases and both annotated tags (recreate-vs-pointer is a
+D16 call, deferred post-fork per §1.3 — the register simply notes the two options and that C4/C5
+will record whichever the operator picks, live), and the three `.env` credentials (rotate
+regardless of any account closure — none is planned, §1.2).
 
 **DONE looks like:** a reviewer-ready import packet; every non-git asset has a named disposition.
 
@@ -794,7 +876,7 @@ ls releases-export.json prs-export.json .gitleaksignore
 
 ---
 
-### Phase B3 — LGPL removal *(conditional on D11)*
+### Phase B3 — LGPL removal *(was conditional on D11)* — **COMPLETE (Sessions 191–193)**
 
 Execute `docs/planning/httpx-adapter-migration.md` — Phase 1 (GitLab), Phase 2 (GitHub), each its
 own session, on a dedicated branch off a clean `master`. **Do not re-plan it**; resolve its
@@ -822,9 +904,19 @@ coverage ≥95%.
 
 ---
 
-### Phase C1 — Bedrock enterprise correctness
+### Phase C1 — Bedrock enterprise correctness *(narrowed by §1.3 — D14's sub-task carved out)*
 
-**Gated on:** D10, D13, **D14**, and `bedrock-enterprise.md` §0's three security questions.
+**Gated on:** D10, D13, and `bedrock-enterprise.md` §0's three security questions. **D14 no longer
+gates this phase** — per §1.3, D14 (runtime shape) is resolved post-fork, inside the clone, so the
+one D14-dependent sub-task below (the IAM *trust* policy) is carved out rather than blocking the
+rest of C1.
+
+**⚠ Pre-existing gap, not introduced or resolved by §1.3, flagged rather than silently carried
+forward:** the scope below silently assumes "no" to all three `bedrock-enterprise.md` §0
+questions. Nothing in this phase (or anywhere else in this plan) branches on a "yes" — confirm the
+three answers with the operator/security before starting; a "yes" makes this phase's scope wrong,
+not just incomplete, per Phase 0's own warning that Guardrails/FIPS redirect mantle →
+`bedrock-runtime`, "a materially larger change than anything in this plan."
 
 **Scope:** fix the false `ANTHROPIC_BASE_URL` claim at `bedrock-enterprise.md:149` and document
 **`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`** in `.env.example` and §4/§7 — the no-code PrivateLink
@@ -832,11 +924,15 @@ lever and the cheapest item in the punch-list. Refresh §4/§7 to reflect that p
 shipped in `56dc700` and item 5 (`aws_profile`) is confirmed supported. **Close the
 `require_sigv4` hole** — iterate the SDK's `_MANTLE_API_KEY_ENV_VARS` tuple rather than hardcoding
 one name (2 lines × 2 files, + a test per file). Record the D10 residency decision in §5. Extract
-the §3 IAM policy and the residency SCP into **separate applyable artifact files** with the D14
-trust policy filled in — a security team will ask for reviewable JSON, not a fenced block.
+the §3 IAM **permissions** policy and the residency SCP into **separate applyable artifact
+files** — a security team will ask for reviewable JSON, not a fenced block. **Leave the IAM
+policy's `Principal`/trust-relationship block as an explicit placeholder** (a comment naming D14
+as the blocker) rather than filling it in — that piece is the clone's own post-fork work per §1.3;
+do not guess a runtime shape to unblock this phase.
 
 **DONE looks like:** no false claim in the enterprise guide; `require_sigv4` rejects both env
-vars; the IAM policy and SCP exist as files.
+vars; the IAM **permissions** policy and SCP exist as files, with the trust-relationship section
+explicitly marked TODO rather than silently omitted or guessed.
 
 **Verify:**
 
@@ -844,6 +940,7 @@ vars; the IAM policy and SCP exist as files.
 grep -n "ANTHROPIC_BASE_URL" docs/deployment/bedrock-enterprise.md   # → 0
 grep -rn "ANTHROPIC_AWS_API_KEY" src/ packages/                      # → present in BOTH guards
 ls docs/deployment/*.json                                            # → IAM policy + SCP artifacts
+grep -n "D14" docs/deployment/*.json                                 # → the trust-policy TODO marker
 uv run pytest tests/agents/intake/test_bedrock_client.py tests/data_agent_package/test_bedrock_client.py --no-cov
 uv run pytest -q                                                     # coverage gate must stay ≥95%
 ```
@@ -852,13 +949,15 @@ uv run pytest -q                                                     # coverage 
 tests fails the **entire** suite with a coverage error that looks unrelated. The C4 decoupling
 rule duplicates the clients — **every hook change is a paired edit plus paired tests.**
 
-**Boundary:** one session. Close out.
+**Boundary:** one session. Close out. The trust-policy TODO is not this session's to resolve.
 
 ---
 
-### Phase C2 — Runtime, network, and data-at-rest readiness
+### Phase C2 — Runtime, network, and data-at-rest readiness *(narrowed by §1.3 — D15's sub-task carved out)*
 
-**Gated on:** D13, D15.
+**Gated on:** D13. **D15 no longer gates this phase** — per §1.3, D15 (package index) is resolved
+post-fork, inside the clone, so the one D15-dependent sub-task below (documenting the index
+variables) is carved out rather than blocking the rest of C2.
 
 **Scope:** vendor htmx locally and serve it from a static route (fixes both the browser-egress
 failure and the licence-inventory gap — a vendored copy carries its own LICENSE). Decide and
@@ -866,9 +965,10 @@ document the intake UI's auth posture (**it has none today**). Fix the **`MPC_HO
 `agents/website/cli.py` — either fall back to the env var at `:155-156` (with a paired test) or
 add a startup guard that refuses the public default when `MPC_HOST_URL` is set; document the
 asymmetry in `OPERATIONS.md` either way. Document `HTTPS_PROXY`/`NO_PROXY`/`REQUESTS_CA_BUNDLE`/
-`SSL_CERT_FILE`/`AWS_CA_BUNDLE` **and** the D15 index variables (`UV_INDEX_URL` /
-`UV_DEFAULT_INDEX` / `PIP_INDEX_URL`, plus their `UV_NATIVE_TLS` interaction) in `OPERATIONS.md` —
-**do not** try to plumb `ssl_verify`, which is dead config, and never set it `False`. Resolve the
+`SSL_CERT_FILE`/`AWS_CA_BUNDLE` in `OPERATIONS.md` — **do not** try to plumb `ssl_verify`, which is
+dead config, and never set it `False`. **Do not document the D15 index variables
+(`UV_INDEX_URL`/`UV_DEFAULT_INDEX`/`PIP_INDEX_URL`, `UV_NATIVE_TLS`) here** — that documentation
+depends on knowing which index D15 resolves to and is the clone's own post-fork work. Resolve the
 plaintext-at-rest question for **both** stores — `.orchestrator/checkpoints`
 (`checkpoints.py:57-68`) and the intake session DB (`ui/intake/app.py:52`, `INTAKE_DB_PATH`) — by
 `chmod 0600` at creation plus a documented 0700 parent under a dedicated service account, or a
@@ -876,14 +976,16 @@ documented encrypted-volume requirement. Fix `run_pipeline.py:450` to default `-
 so the factory resolves the provider default.
 
 **DONE looks like:** no CDN dependency at page render; both stores have a decided and documented
-permission posture; every enterprise env var is in `OPERATIONS.md`; the website CLI cannot
-silently target a public host.
+permission posture; every D13-scoped (proxy/CA) enterprise env var is in `OPERATIONS.md`; the
+website CLI cannot silently target a public host. **The D15 index variables are explicitly not
+part of this phase's DONE criteria** — do not treat their absence from `OPERATIONS.md` as
+incomplete.
 
 **Verify:**
 
 ```bash
 grep -rn "unpkg.com" src/                                        # → 0
-grep -nE "REQUESTS_CA_BUNDLE|UV_INDEX_URL|AWS_CA_BUNDLE|HTTPS_PROXY" OPERATIONS.md   # → present
+grep -nE "REQUESTS_CA_BUNDLE|AWS_CA_BUNDLE|HTTPS_PROXY" OPERATIONS.md                 # → present
 grep -n "MPC_HOST_URL" src/model_project_constructor/agents/website/cli.py           # → present (or guard present)
 python3 -c "import os,stat;print(oct(stat.S_IMODE(os.stat('intake_sessions.db').st_mode)))"   # → 0o600
 uv run pytest -q && uv run mypy
@@ -893,34 +995,38 @@ uv run pytest -q && uv run mypy
 
 ---
 
-### Phase C2b — Deployment artifact
+### Phase C2b — Deployment artifact — **out of scope for this repository (§1.3)**
 
-**Gated on:** D14. **This phase does not exist today in any form** — there is no Dockerfile, no
-manifest, no IaC.
+**Was gated on:** D14 alone. Per §1.3, D14 (runtime shape) is resolved post-fork, inside the
+enterprise clone, and not reported back here. Since D14 was C2b's *only* gate and this phase
+cannot be scoped, let alone executed, without knowing the runtime shape, **C2b is no longer a
+phase this repository schedules.** It becomes the enterprise clone's own future work, on its own
+timeline, using whatever runtime shape the operator settles on there.
 
-**Scope:** produce the chosen runtime shape's container image and deployment manifest/IaC, the
-intake-UI hosting with TLS termination and the SSO/auth fronting decided in C2, and the IAM trust
-relationship matching C1's policy artifact. Pin the interpreter (`.python-version`) and wire the
-D15 index configuration into the image build.
+**Scope, preserved here only as forward-looking context for whoever does this work in the
+clone** (not a session this plan's executor should pick up): produce the chosen runtime shape's
+container image and deployment manifest/IaC, the intake-UI hosting with TLS termination and the
+SSO/auth fronting decided in C2, and the IAM trust relationship matching C1's policy artifact
+(including the trust-policy block C1 deliberately left as a TODO). Pin the interpreter
+(`.python-version`) and wire the D15 index configuration into the image build.
 
-**DONE looks like:** `docker build` (or the chosen equivalent) produces a runnable image; the
-intake UI serves behind auth; the workload assumes the C1 role and can reach Bedrock.
-
-**Verify:** image builds from a clean checkout with the internal index only; a smoke request to
-the intake UI is rejected unauthenticated and accepted authenticated; `aws sts
-get-caller-identity` from inside the workload returns the expected role.
-
-**Boundary:** one session. Close out.
+**Boundary:** not this repository's session to run. If a future session is tempted to pick this
+up, re-check §1.3 first — the gate was removed because it is unanswerable here, not because it
+was satisfied.
 
 ---
 
-### Phase C3 — CI and supply-chain hardening
+### Phase C3 — CI and supply-chain hardening *(clone-only; D9/D15 resolved live, not pre-recorded — §1.3)*
 
-**Gated on:** D9, D15, and **C4 complete.** **⚠ Do not start before D9.** If D9 = GitLab, the whole
-`.github/workflows/` tree is dead and SHA-pinning it is discarded work. **This entire phase targets
-the enterprise clone's CI configuration** (D9 decides *its* host), not the original's — the SHA-pin
-or `.gitlab-ci.yml`-authoring work is committed inside `<enterprise-clone>` (C4), which is why C4
-must exist first; the original's `.github/workflows/` stays exactly as A4 left it (§1.2).
+**Gated on: C4 complete.** D9 and D15 no longer need a written answer in this document before C3
+can be scheduled (§1.3) — but C3's executor still needs to *know* D9 (GHES vs. GitLab) to author
+the right CI system, and D15 to configure the index. Since neither is answered here anymore, **the
+operator supplies both live, at the start of this session**, the same way C4's executor gets the
+destination host URL. If D9 = GitLab, the whole `.github/workflows/` tree is dead and SHA-pinning
+it is discarded work — confirm D9 with the operator before choosing a scope branch below. **This
+entire phase targets the enterprise clone's CI configuration**, not the original's — all work is
+committed inside `<enterprise-clone>` (C4), which is why C4 must exist first; the original's
+`.github/workflows/` stays exactly as A4 left it (§1.2).
 
 **Scope, if D9 = GHES:** SHA-pin all 11 `uses:` lines and bump the deprecated Node-20 action
 majors in the same pass; confirm runner labels — `runs-on: ubuntu-latest` requires GitHub-hosted
@@ -938,20 +1044,44 @@ rather than relying on credential absence; add SAST, dependency-vulnerability au
 (allow-list = permissive + MPL-2.0), and a machine-generated SBOM from `uv.lock`; enable branch
 protection with required checks.
 
-**Also in scope — the generated projects' CI**, which is a code change, not a note: parameterise
-`governance_templates.py` on base image, index URL, action prefix, and pre-commit repo (defaults =
-today's public values), thread them from `WebsiteAgent`/`cli.py`, with paired tests.
-
-**DONE looks like:** CI runs on the target host with pinned inputs and a hermetic test job;
-generated projects reference only enterprise-internal hosts when the env is set.
+**DONE looks like:** CI runs on the target host with pinned inputs and a hermetic test job.
 
 **Verify:**
 
 ```bash
-grep -c 'uv sync --frozen' <ci-definition>                       # → 5
-grep -rnE '@v[0-9]+$' .github/workflows/ 2>/dev/null              # → 0 (if D9 = GHES)
-uv run python scripts/run_pipeline.py --fake                      # with the CI env vars set
+grep -c 'uv sync --frozen' <enterprise-clone>/<ci-definition>                       # → 5
+grep -rnE '@v[0-9]+$' <enterprise-clone>/.github/workflows/ 2>/dev/null              # → 0 (if D9 = GHES)
+```
+
+**Boundary:** one session. Close out.
+
+**Scope moved out of this phase, §1.3:** the original text bundled a **generated projects' CI**
+code change here (parameterising `governance_templates.py`) that touches only this repository's
+own source, not the clone, and has no dependency on D9/D15/C4. Bundling it into a now-clone-only
+phase would strand it behind a gate it never needed. It is extracted below as Phase C3b, unblocked
+and independently schedulable.
+
+---
+
+### Phase C3b — Generated-project CI portability *(independent of the fork — no gate; extracted from the original C3 by §1.3)*
+
+**Gated on:** nothing. This phase touches only this repository's own pipeline-generator source and
+can run at any time, before or after the fork, in any order relative to A–C.
+
+**Scope:** parameterise `governance_templates.py` on base image, index URL, action prefix, and
+pre-commit repo (defaults = today's public values), thread them from `WebsiteAgent`/`cli.py`, with
+paired tests — so that projects the pipeline generates can target enterprise-internal hosts when
+configured to, instead of hardcoded public ones (Docker Hub, GitHub Actions marketplace, PyPI).
+
+**DONE looks like:** generated projects reference only enterprise-internal hosts when the relevant
+env is set, and still default to today's public values when it is not.
+
+**Verify:**
+
+```bash
+uv run python scripts/run_pipeline.py --fake                      # with the enterprise env vars set
 grep -rn 'docker.io\|python:3.11\|github.com/' <generated-project>/   # → 0
+uv run pytest -q && uv run mypy
 ```
 
 **Boundary:** one session. Close out.
@@ -960,13 +1090,27 @@ grep -rn 'docker.io\|python:3.11\|github.com/' <generated-project>/   # → 0
 
 ### Phase C4 — Enterprise clone provisioning
 
-**Gated on:** D4, D5, D8, D9, D16, **A1–A4 complete**, **B2 complete**, and B1 complete. *(A1–A4 and
-B1 explicit per §1.2 — the clone is one-time and does not sync; anything not fixed on the original
-before this phase runs is permanent in the clone. B2 is required because this phase consumes its
-`releases-export.json` and external-asset register. C1/C2/C2b/C3 are deliberately **not** gates —
-see dragon #20's scoping note: they are enterprise-readiness fixes that can be applied to the
-original before or after the fork, at the cost of having to reapply them to the clone by hand if
-done after, since there is no sync.)*
+**Gated on:** **A1–A4 complete** (done), **B1's D3-independent core complete** (done, Session 190),
+and **B2 complete** (open — the only remaining gate as of this revision). **D4, D5, D8, D9, D16 no
+longer gate this phase** — per §1.3, the operator resolves them post-fork, inside the clone, and
+supplies whatever this phase's mechanics need live (notably, a destination host URL for step 1) at
+execution time. *(A1–A4 and B1's core remain explicit per §1.2 — the clone is one-time and does
+not sync; anything not fixed on the original before this phase runs is permanent in the clone. B2
+is required because this phase consumes its `releases-export.json` and external-asset register.
+C1/C2/C2b/C3 are deliberately **not** gates — see dragon #20's scoping note: they are
+enterprise-readiness fixes that can be applied to the original before the fork or, per §1.3, are
+now definitively deferred to the clone, at the cost of having to do them there instead, since there
+is no sync.)*
+
+**Before step 1 — confirm the live inputs §1.3 deferred, do not assume the plan's recommendations
+were adopted as written:** D9 (destination host — needed for `<enterprise-remote>` below), D5
+(import as-is vs. squash-import — changes step 1's mechanics, not just its target), D4 (signed
+commits/DCO — may require re-authoring commits before the push, not after), **D8** (wiki
+destination host and naming/sidebar convention — needed by steps 3, 4, and 7 below, all in this
+same session), and **D16** (recreate-vs-pointer for the two GitHub Releases — needed by step 8
+below; see dragon #24). Get explicit answers from the operator at the start of this session; do not
+silently default to the plan's §3 recommendations, since §1.3 means those were never confirmed as
+decisions.
 
 **Scope — fork FIRST; every edit below happens only inside the resulting enterprise checkout,
 never in the current working tree, and nothing here is ever committed or pushed to the original's
@@ -1014,11 +1158,20 @@ never in the current working tree, and nothing here is ever committed or pushed 
 7. **If D8's destination is not a GitHub-family wiki:** convert `_Sidebar.md` to the host's sidebar
    convention, rename `Home.md` to the host's landing page, and rewrite the **157** extensionless
    intra-wiki links (`grep -rhoE '\]\([A-Za-z0-9][A-Za-z0-9-]*\)' docs/wiki/claims-model-starter/ | wc -l`).
-8. **Recreate both GitHub Releases on the target host from `releases-export.json`** (B2).
+8. **Recreate both GitHub Releases on the target host from `releases-export.json`, OR leave them as
+   a pointer to the public originals — whichever the operator confirmed live for D16 before step 1
+   (see the preamble above and dragon #24). Do not default to "recreate" from the §3 Recommendation
+   column** — Phase B2 (§4) lists this asset explicitly as "genuinely undecided," and Phase C5
+   step 3 records whichever branch was actually taken, which is only possible if this step didn't
+   silently pre-empt the choice.
 9. **Execute the external-asset register from B2, minus the wiki repo and the gh-pages site** —
-   their disposition is fixed (keep, unconditionally; §1.2/D6/§6). **Rotate the three personal dev
-   credentials** (Anthropic key, GitLab PAT, Bedrock bearer token) so the clone never depends on
-   personal-account secrets — independent of any account closure, since none is planned (§1.2).
+   their disposition is fixed (keep, unconditionally; §1.2/D6/§6). **Confirm the disposition of the
+   three GitLab pilot projects with the operator** — B2's register lists them as a genuinely
+   undecided asset alongside the Releases, and this plan does not itself recommend migrate-vs-leave
+   for them; do not treat their absence from this step's original text as "no action needed."
+   **Rotate the three personal dev credentials** (Anthropic key, GitLab PAT, Bedrock bearer token)
+   so the clone never depends on personal-account secrets — independent of any account closure,
+   since none is planned (§1.2).
 
 **DONE looks like:** the enterprise remote carries the full history, both tags, and the 23-page
 wiki; `<enterprise-clone>` is a normal (non-bare) working checkout; nothing in the clone's tree
@@ -1046,7 +1199,9 @@ git -C ~/Development/claims-model-starter.wiki remote get-url origin    # → un
 
 ### Phase C5 — Fork independence verification
 
-**Gated on:** D16, and C4 complete.
+**Gated on:** C4 complete. **D16 no longer gates this phase** — per §1.3, D16 is resolved post-fork,
+inside the clone; step 3 below records whatever the operator decided live rather than gating on a
+pre-written §3 answer.
 
 **Scope:** confirm the enterprise clone is fully independent and the public originals are
 untouched. Per §1.2, this phase does the **opposite** of its original scope (decommission) — the
@@ -1060,9 +1215,11 @@ public repo, wiki, and MkDocs/gh-pages site are not retired.
    `~/Development/claims-model-starter.wiki` still points at its original remote and was not
    touched by C4, and `origin/gh-pages` / `publish-tutorial.yml` on the **original** repo are
    unchanged from their A4 state.
-3. **Record the D16 disposition** for the clone: access model (private from creation, by default),
-   administrator/owner, and whether the two GitHub Releases were recreated on the clone (C4) or
-   left as a pointer.
+3. **Record the D16 disposition inside `<enterprise-clone>` only** (its own README or governance
+   doc, not this repository's `SESSION_NOTES.md`/`BACKLOG.md`/this plan — §1.3's "not reported back
+   to this repository" applies to D16 same as the rest of the deferred bucket): access model
+   (private from creation, by default), administrator/owner, and whether the two GitHub Releases
+   were recreated on the clone (C4) or left as a pointer.
 
 **DONE looks like:** the clone has no live path back to the personal account or the public repo;
 the public repo/wiki/site are confirmed unchanged and still serving; the D16 disposition is applied
@@ -1142,33 +1299,71 @@ gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # 
     environment must **abort**, not fall back to the personal public wiki.
 20. **The one-time fork has no future sync.** Whatever is wrong in the public repo at the moment
     C4 clones it is baked into the proprietary copy permanently — there is no later pull to carry a
-    fix over. This is why C4 is gated on A1–A4, B1, and B2 complete, not just its D-items. Cloning
-    early "to get started" silently ships every not-yet-fixed defect (stale docs, the live
-    exposure, the licensing conflict) into the thing meant to be the clean enterprise copy.
+    fix over. This is why C4 is gated on A1–A4, B1's D3-independent core, and B2 complete — **not
+    its D-items** (§1.3 formally removed D4/D5/D8/D9/D16 as C4 gates; they resolve post-fork,
+    inside the clone, per the operator's 2026-07-27 decision). Cloning early "to get started" would
+    still silently ship every not-yet-fixed defect of the **legal/exposure/asset-availability**
+    kind (stale docs, the live exposure, the licensing conflict) into the thing meant to be the
+    clean enterprise copy — that risk is exactly why A1–A4/B1-core/B2 remain hard gates even though
+    the D-items no longer are.
     **This logic applies just as much to C1/C2/C2b/C3's enterprise-readiness gaps** (the false
     `ANTHROPIC_BASE_URL` claim, the `require_sigv4` hole, the unauthenticated intake UI, the
-    hardcoded-public-registry CI) — they are deliberately **not** gates on C4, on the scoping
-    choice that they are ordinary code/config fixes an operator can apply to the original before
-    the fork, or to the clone after it, at the cost of doing the work twice if done after. Only the
-    items with a legal/exposure/asset-availability character (A1–A4, B1, B2) are hard gates.
+    hardcoded-public-registry CI) — they were already **not** gates on C4, on the scoping choice
+    that they are ordinary code/config fixes an operator can apply to the original before the fork
+    or to the clone after it. §1.3 resolves that choice to "after, inside the clone" for the
+    sub-tasks whose only gate (D14 or D15) is in the deferred bucket — C2b entirely, and one
+    sub-task each from C1 and C2 (§4). Only the items with a legal/exposure/asset-availability
+    character (A1–A4, B1-core, B2) are hard gates on C4; C1/C2's D10/D13-scoped work and C3's
+    clone-only work remain schedulable, just no longer blocking or blocked by the fork itself.
 21. **`~/Development/claims-model-starter.wiki` is the ORIGINAL's live publish target, not a
     migration scratch directory.** It is tempting to repurpose or re-remote it while provisioning
     the enterprise wiki — doing so silently breaks the original's still-live auto-publish (D6:
     refresh and keep, not retire). Create a separate local clone for the enterprise wiki instead.
+22. **§1.3 removed written answers for D3–D9 and D14–D16 from this document — it did not remove
+    the need for those answers to exist before the phase that needs them runs.** C4 still needs a
+    destination host (D9) and an import strategy (D5) before its first git command; C3 still needs
+    D9 to pick a scope branch; C1/C2b still need D14 for the IAM trust policy and deployment
+    artifact. The executor's job changed from "read §3" to "ask the operator, live, at session
+    start" — do not silently fall back to the §3 **Recommendation** column text as if it were a
+    ratified decision. Those columns are preserved as context for whoever eventually answers the
+    question, not as a default.
+23. **A narrowed phase's DONE criteria are not the original phase's DONE criteria.** §1.3 split
+    C1 and C2 in two — a live scope (D10/D13) and a deferred scope (D14/D15) — and left C2b and the
+    generated-projects-CI sub-item as fully separate concerns. A future session that runs the
+    narrowed C1 or C2 and checks their (also narrowed) Verify blocks has **not** produced the IAM
+    trust policy, the deployment artifact, or the D15 index documentation — those remain explicitly
+    open, tracked in §1.3 and the phase text itself, not silently satisfied by adjacent work.
+24. **A recommendation the operator never confirmed is not a default — even where the original
+    plan text (predating §1.3) already reads as an imperative.** Phase C4 step 8 (original,
+    Session-182 text) unconditionally said "recreate both GitHub Releases" — silently enacting D16's
+    §3 Recommendation column as if it had been ratified, even though Phase B2 lists the same asset
+    as "genuinely undecided" and §1.3 places D16 in the deferred, resolved-live bucket. This is
+    exactly the failure mode dragon #22 warns about, just easy to miss because the sentence reads
+    as a normal scope item rather than a decision point. Before executing *any* single-branch
+    imperative sentence in Phases C4/C5 that happens to match a §3 Recommendation for a deferred
+    D-item, stop and ask whether the operator actually confirmed it live this session — the
+    sentence having always read that way is not evidence that it was confirmed.
 
 ---
 
 ## 6. Out of scope / explicit non-goals
 
-- **Executing any phase.** This plan is the deliverable of Session 182.
+- **Executing any phase.** This plan is the deliverable of Session 182 (revised by Session 194,
+  §1.3).
 - **Choosing the licence, the IP disposition, the host, the runtime shape, or the package index.**
-  D1–D5, D9, D14–D16 are operator/legal/platform decisions; this plan frames and recommends.
+  D1, D2 are answered (§3). **D3–D9 and D14–D16 are, per §1.3, not this repository's decisions to
+  track at all** — the operator resolves them post-fork, inside the enterprise clone, and the
+  outcome is not reported back here. D10, D13 remain live operator/security decisions this plan
+  still frames and recommends on.
 - **Re-planning the httpx/LGPL migration** — it already exists in executable form; B3 references
-  and corrects it.
+  and corrects it. **B3 is now fully executed** (both LGPL SDKs removed — see `CHANGELOG.md`
+  2026-07-28).
 - **The `bedrock-runtime` fallback path.** If Guardrails or FIPS are mandated, the client class,
   IAM actions, and model-id form all change — that is a re-plan, not a phase.
-- **Live Bedrock validation.** Still environment-blocked; the enterprise account is the intended
-  unblock, making A4 → C1 → C2b the critical path to the last open §3.4 verification gap.
+- **Live Bedrock validation from this repository.** Still environment-blocked, and — per §1.3 —
+  now expected to stay that way: C2b (the deployment artifact live validation would run from) is
+  out of scope here (§4), so the unblock happens in the enterprise clone, on its own timeline, not
+  as a critical path this plan tracks.
 - **Rewriting historical records.** `SESSION_NOTES.md`, `CHANGELOG.md` entries,
   `docs/architecture-history/` and the historical wiki pages stay as written — **with one
   documented exception**: `docs/architecture-history/methodology-pr2527-remediation-mpc.md` is in
@@ -1201,7 +1396,16 @@ curl -s https://rmsharp.github.io/claims-model-starter/sitemap.xml | grep -c aud
 uv run pytest -q && uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy
 ```
 
-Goal 3 completes when D1–D16 are answered and Phases B and C — **including C5 in its revised form
-(fork-independence verification, §1.2, not the original decommission scope)** — close.
-**B1 is the gate: do not push to a corporate host until the third-party methodology rights
-conflict is resolved in writing.**
+**Goal 3, revised scope for this repository (§1.3, supersedes the original "D1–D16 answered"
+criterion):** completes when B1's D3-independent core (done), B2, B3 (done), C1 and C2 in their
+narrowed D10/D13-scoped form, C3, C3b, C4, and C5 — **in its revised form (fork-independence
+verification, §1.2, not the original decommission scope)** — all close. **C3, like C4/C5, stays a
+session this repository schedules even though its edits land inside `<enterprise-clone>`** — it
+needs D9/D15 supplied live by the operator at that session's start (§4), not a pre-written §3
+answer, the same pattern C4 uses for D9/D5/D4. **Explicitly excluded from this repository's Goal 3,
+per §1.3:** full Phase B1 (the DCO/CLA mechanism), C2b, and the D14/D15-dependent sub-tasks carved
+out of C1/C2 (the IAM trust policy, the D15 index documentation) — these are genuinely stranded,
+not merely deferred, because their one gate (D14 or D15) is never answered in a form this
+repository can act on, and are never expected to close inside this repository's tracked history.
+**B1's D3-independent core is the gate: do not push to a corporate host until the third-party
+methodology rights conflict is resolved in writing** (already done, Session 190).

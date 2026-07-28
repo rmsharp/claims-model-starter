@@ -15,53 +15,72 @@ open and that a later session would mark "Goals 1–2 done" here — that update
 landed (Session 189's close-out claimed it did; `git log -- BACKLOG.md` shows no commit between
 Session 188's `35ccbd9` and this one touched this file). Fixed by Session 190.
 
-**Operator sequencing decision (2026-07-27, Session 190):** D3 (IP disposition) and Phase C4's own
-gates (D4, D5, D8, D9, D14, D15, D16) will be resolved **after** the fork, inside the enterprise
-clone, and **not reported back to this repository**. `enterprise-migration.md` as currently
-written has C4 gated on B1 complete specifically *because* the fork is one-time with no sync-back
-(dragon #20) — this sequencing decision inverts that, and the plan document itself has not yet
-been revised to reflect it. **A dedicated plan-revision session is still owed** — do not treat the
-phase list below as current until `enterprise-migration.md` §1.2/§3/§4/dragon-#20 are reconciled
-with this decision.
+**Plan-revision session done (Session 194, 2026-07-28):** `enterprise-migration.md` §1.3 now
+reconciles the operator's 2026-07-27 sequencing decision (D3 + the "platform team" bucket — D4,
+D5, D8, D9, D14, D15, D16 — resolved post-fork, inside the clone, not reported back to this
+repository; the "security" bucket, D10/D13, is unaffected and stays live) with the plan's phase
+gates, §3 Decision Register, dragon #20, §6, and §7. The phase list below reflects the revised
+plan; the bullets below are a summary — `enterprise-migration.md` is authoritative.
 
-- **B1 — The legal packet.** **Partially done (Session 190):** wiki LGPL mislabeling fixed (both
-  `python-gitlab` and `PyGithub` now correctly named); root `SECURITY.md`, `CODEOWNERS`,
-  `THIRD-PARTY-LICENSES`, baseline `CONTRIBUTING.md`, and `NOTICE` (methodology attribution +
-  AI-provenance statement) added. **Still open:** the corporate DCO/CLA mechanism section in
-  `CONTRIBUTING.md` (explicitly left TBD — depends on D3/D4/D9, deferred per the operator's
-  sequencing decision above). D1 is resolved (Terrell Deppe granted MIT permission per the
-  operator); note the plan's own D1 verify command (`grep` for the attribution string inside
-  `SESSION_RUNNER.md`/`SAFEGUARDS.md` themselves) will not pass — attribution lives in `NOTICE` +
-  `CLAUDE.md` instead, since those two files are synced from canonical and must not be edited
-  locally. This is a plan-text correction still needed, not done this session.
-- **B2 — Import readiness**: secret-scanner allowlist, dev-credential rotation, external-asset
-  audit (3 GitLab pilot projects invisible to git; a 162 MB `.git` with loose objects).
-- **B3 — LGPL removal** (conditional on D11 — confirm the corporate copyleft policy first; may be
-  deferred if the policy permits unmodified, dynamically-imported LGPL libraries).
-- **C1 — Bedrock enterprise correctness.** Gated on D10 (Regional vs Global endpoint — Regional
-  recommended for P&C residency), D13 (wire `require_sigv4`/`http_client` to app/env), D14
-  (runtime shape). Per the operator's sequencing decision, likely resolved post-fork.
-- **C2 — Runtime, network, and data-at-rest readiness.** Gated on D13, D15.
-- **C2b — Deployment artifact** — no Dockerfile, manifest, or IaC exists today. Gated on D14.
-- **C3 — CI and supply-chain hardening** (targets the enterprise clone's own CI, not the
-  original's). Gated on D9, D15, and **C4 complete**.
-- **C4 — Enterprise clone provisioning ("the fork").** Per the operator, this is now expected to
-  run *before* D3/D4/D5/D8/D9/D14/D15/D16 are resolved, contingent on the plan-revision session
-  above actually reconciling that with dragon #20's stated reasoning.
-- **C5 — Fork independence verification.**
+- **B1 — The legal packet.** **D3-independent core: DONE (Session 190)** — wiki LGPL mislabeling
+  fixed, root `SECURITY.md`/`CODEOWNERS`/`THIRD-PARTY-LICENSES`/baseline `CONTRIBUTING.md`/`NOTICE`
+  added, D1 attribution in place. **Full B1 (the corporate DCO/CLA mechanism section) is no longer
+  a session this repository schedules** — per §1.3, it depends on D3/D4/D9, all deferred post-fork;
+  it will be authored inside the enterprise clone, not here. B1's D3-independent core is the actual
+  gate on Phase C4, and it's satisfied.
+- **B2 — Import readiness** *(the only remaining gate on C4)*: secret-scanner allowlist,
+  dev-credential rotation, external-asset register (3 GitLab pilot projects invisible to git; the
+  two GitHub Releases — recreate-vs-pointer is a live D16 call, not pre-decided; a 162 MB `.git`
+  with loose objects).
+- **B3 — LGPL removal.** **DONE** (both LGPL SDKs removed, Sessions 191–193 — see the httpx section
+  below). D11 is moot; no further action.
+- **C1 — Bedrock enterprise correctness.** **Narrowed by §1.3.** Gated on D10, D13, and
+  `bedrock-enterprise.md` §0's three security questions (a pre-existing, still-unresolved branch —
+  the plan doesn't yet handle a "yes" answer; flagged, not fixed, this session). D14's one
+  dependency (the IAM trust-policy artifact) is carved out and deferred post-fork — the rest of C1
+  stays a live, schedulable phase.
+- **C2 — Runtime, network, and data-at-rest readiness.** **Narrowed by §1.3.** Gated on D13 only —
+  D15's dependency (index-variable documentation) is carved out and deferred post-fork.
+- **C2b — Deployment artifact.** **Out of scope for this repository (§1.3)** — its only gate (D14)
+  is unanswerable here; this is now the enterprise clone's own future work, not a session this
+  repository will schedule.
+- **C3 — CI and supply-chain hardening** (targets the enterprise clone's own CI). Gated on **C4
+  complete only** — D9/D15 no longer need a written answer here, but the operator must supply both
+  live at C3's session start (same pattern C4 uses for D9/D5/D4). Still a session this repository
+  schedules, even though its edits land inside `<enterprise-clone>`.
+- **C3b — Generated-project CI portability** *(new, extracted from C3 by §1.3)*: parameterise
+  `governance_templates.py` so pipeline-generated projects can target enterprise-internal hosts.
+  **Ungated — touches only this repo's own source, schedulable any time**, independent of the fork.
+- **C4 — Enterprise clone provisioning ("the fork").** Gated on **A1–A4 complete (done), B1's
+  D3-independent core complete (done), and B2 complete (open — the only real gate)**. D4/D5/D8/D9/D16
+  no longer need written answers here; the operator supplies them live at C4's session start.
+- **C5 — Fork independence verification.** Gated on **C4 complete only** — D16 no longer a written
+  pre-req; C5 records whatever the operator decided, live, inside the clone (not back into this
+  repository's own tracking).
+- **New (pre-fork) — Executive summary / stakeholder readiness dossier.** Requested by the
+  operator, 2026-07-28. A planning session to produce an executive-summary document — there is
+  existing precedent for this kind of artifact at `docs/executive-summaries/` (see
+  `enterprise-migration.md` §2.3) — covering: (1) the **business benefit** of this repository's
+  software (the model-project-constructor pipeline); (2) **legal safety of bringing MIT-licensed
+  software into the business for use and modification** (ties to D1/D2 and the §2.7 licence
+  table); (3) **enterprise-environment readiness**, specifically security concerns, code testing,
+  readiness to take in data for data selection, and readiness for incorporation into an AWS
+  Bedrock environment. Positioned as pre-fork groundwork for stakeholder/legal/security review —
+  likely informs Phase C4, but exactly where it fits in the A/B/C phase structure (a new phase vs.
+  a standalone document) is for that planning session to decide; not assumed here, and this note
+  does not add a new gate to C4 (§1.3 of the plan already reconciled C4's gates this session).
 
-**Open decisions** (owners per `enterprise-migration.md` §3; D2/D6/D7/D12/D1 already answered):
-**D3** IP disposition (legal) — deferred to post-fork per operator; **D4** signed commits/DCO
-requirement (operator → platform team) — deferred to post-fork; **D5** import history as-is vs.
-rewrite vs. squash (operator + platform team) — deferred to post-fork; **D8** wiki destination +
-auto-publish in the enterprise clone (operator + platform team) — deferred to post-fork; **D9**
-repo-host target — self-hosted GitLab or GHES (operator) — deferred to post-fork; **D10** Bedrock
-endpoint Regional vs Global (security + operator); **D11** LGPL-removal timing (operator + legal);
-**D13** wire `require_sigv4`/`http_client` to app/env (operator + platform team); **D14** runtime
-shape — EKS/ECS/EC2/on-prem (operator + platform team) — deferred to post-fork; **D15** package
-index — internal or proxied PyPI (operator + platform team) — deferred to post-fork; **D16**
-enterprise clone disposition/access model (operator + legal) — deferred to post-fork. See
-`docs/planning/enterprise-migration.md` §3 for full text and recommendations.
+**Open decisions this repository still tracks:** only **D10** (Bedrock endpoint Regional vs Global
+— security + operator) and **D13** (wire `require_sigv4`/`http_client` to app/env — operator +
+platform team); both gate Phase C1's narrowed scope, D13 also gates Phase C2's narrowed scope.
+
+**Decisions no longer tracked here (§1.3):** D1, D2, D6, D7, D11, D12 are already answered;
+**D3, D4, D5, D8, D9, D14, D15, D16** are resolved by the operator after Phase C4 runs, inside the
+enterprise clone, live — not written up in this repository's Decision Register, `BACKLOG.md`, or
+`SESSION_NOTES.md`. Whoever runs C3/C4/C5 must get the relevant answers directly from the operator
+at that session's start (`enterprise-migration.md` §4's "Before step 1" notes and dragon #22/#24).
+See `docs/planning/enterprise-migration.md` §3 for the full Recommendation-column text, preserved
+as forward context for whoever eventually answers these inside the clone.
 
 ### httpx adapter migration (`docs/planning/httpx-adapter-migration.md`)
 
@@ -80,11 +99,8 @@ per-commit breakdown.
   now baked into misnomers (both classes still literally name the SDKs they no longer use). Plan
   recommends deferring this; only do it if DP1 is revisited. Not started.
 
-Overlaps `B3` (LGPL removal) in the Enterprise migration section above — B3 is now **fully**
-satisfied (both LGPL deps are gone) but B3's own text still says "conditional on D11, may be
-deferred" as if a decision were pending; reconciling that wording is folded into the still-owed
-enterprise-migration plan-revision session below, not done here (same scope boundary Session 192
-already drew).
+Overlaps `B3` (LGPL removal) in the Enterprise migration section above — reconciled by Session 194:
+B3 is now correctly marked **DONE** there (both LGPL deps are gone; D11 is moot).
 
 ---
 
