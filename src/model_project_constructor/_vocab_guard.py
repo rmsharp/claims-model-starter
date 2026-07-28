@@ -9,7 +9,7 @@ they drift apart.
 
 This module is the shared home for that guard so SDK-free modules (notably
 :mod:`model_project_constructor.orchestrator.config`, which must not import
-``python-gitlab`` or ``PyGithub``) can pin their vocabularies without importing
+``httpx`` or ``PyGithub``) can pin their vocabularies without importing
 the SDK-eager ``agents.website.governance_templates`` where the original
 Audit #2 copy lived (that module now imports this shared guard too). The guard
 depends only on :mod:`typing`.

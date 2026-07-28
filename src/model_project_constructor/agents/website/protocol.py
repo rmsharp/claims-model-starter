@@ -3,8 +3,8 @@
 Per architecture-plan §4.3 the agent talks to a repository host (GitLab in
 production today, GitHub planned) via a thin adapter, but nodes must be
 unit-testable without a live host. This ``Protocol`` is the boundary: tests
-pass a ``FakeRepoClient``, production passes a thin wrapper around
-``python-gitlab`` or ``PyGithub``.
+pass a ``FakeRepoClient``, production passes a thin wrapper around direct
+``httpx`` calls (GitLab) or ``PyGithub`` (GitHub).
 
 The Phase 4A CLI (`--fake`) uses the fake client so it can show a file tree
 of what *would* have been committed without needing credentials.

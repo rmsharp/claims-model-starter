@@ -47,7 +47,7 @@ class PlatformSpec:
     Phase O3-3 adds :attr:`adapter_factory`, so the registry now also decides
     which ``RepoClient`` adapter a live run builds. The factory lazy-imports its
     SDK inside the body, so importing this module stays SDK-free — the registry
-    pulls ``python-gitlab`` / ``PyGithub`` only when an adapter is actually
+    pulls ``httpx`` / ``PyGithub`` only when an adapter is actually
     constructed.
     """
 
@@ -57,10 +57,10 @@ class PlatformSpec:
 
 
 def _make_gitlab_adapter(*, host_url: str, private_token: str) -> RepoClient:
-    """Build the GitLab :class:`RepoClient` adapter (lazy SDK import).
+    """Build the GitLab :class:`RepoClient` adapter (lazy import).
 
     Imported inside the body so importing the registry never pulls
-    ``python-gitlab``; the SDK loads only when a live run builds the adapter.
+    ``httpx``; it loads only when a live run builds the adapter.
     """
     from model_project_constructor.agents.website.gitlab_adapter import (
         PythonGitLabAdapter,
