@@ -8,14 +8,245 @@
 
 ### What Session 191 Did
 **Deliverable:** Execute Phase 1 (GitLab adapter → `httpx`) of
-`docs/planning/httpx-adapter-migration.md` (`85d8476`, Session 179). Operator-directed —
-not the `enterprise-migration.md` plan-revision session Session 190 flagged as the likely
-next task. (IN PROGRESS)
-**Started:** 2026-07-27 (same day as Sessions 188–190).
-**Status:** Session claimed. Branch `feat/httpx-adapters` being created off clean `master`
-(`8af4b9b`) per the plan's §5 branching prerequisite. Work beginning.
+`docs/planning/httpx-adapter-migration.md` (`85d8476`, Session 179). Operator-directed — not the
+`enterprise-migration.md` plan-revision session Session 190 flagged as the likely next task
+(precedent: Session 179's own "operator-directed detour"). **(COMPLETE.** 5 commits on branch
+`feat/httpx-adapters` — `9af715b` adapter+tests, `09f80a4` packaging, `348dff1` src docstrings,
+`41445b9` docs (wiki auto-published), `7b9b05e` CHANGELOG. **Branch NOT merged to `master` and NOT
+pushed to `origin` — this is an open decision for the operator, see Handoff item 1 below.)**
 
-### What Session 190 Did
+**Started / Completed:** 2026-07-27 (same day as Sessions 188–190).
+
+**Branching (plan §5 prerequisite):** created `feat/httpx-adapters` off clean `master` (parent
+`4e47a96`, this session's own claim-stub commit — `master` carried no other uncommitted work).
+Confirmed unrelated to `feat/bedrock-mantle-migration` (untouched).
+
+**What changed:**
+1. **`gitlab_adapter.py` full rewrite** (`9af715b`): `PythonGitLabAdapter` now builds one
+   `httpx.Client` scoped to `{host_url}/api/v4` with a `PRIVATE-TOKEN` header (no network call at
+   construction, matching the old SDK's lazy-auth behavior) instead of wrapping
+   `gitlab.Gitlab(...)`. Four REST calls per plan §4: `GET /groups/{namespace}` (URL-encoded so a
+   nested group path like `data-science/models` addresses one path segment, verified via
+   `request.url.raw_path`) → `POST /projects`; `GET /projects/{id}` → `POST
+   /projects/{id}/repository/commits`. `_is_name_conflict` re-signatured from a `GitlabCreateError`
+   argument to an `httpx.Response`, same loose "already been taken"/"already exists" text match,
+   same 400/409 status gate.
+2. **Adversarial review caught a real bug before commit.** Spawned an independent
+   `general-purpose` review agent (fresh context, told to actively try to break the rewrite against
+   plan dragons #2/#4/#6/#7) rather than relying on my own pass. It found: the first draft checked
+   `status_code >= 400` for "is this a failure" instead of "is this a 2xx." `httpx.Client` does
+   **not** follow redirects by default — unlike the `requests`-based transport under the old
+   `python-gitlab` SDK — so a 3xx response fell through the check uncaught and crashed on
+   `response.json()` with a raw `json.JSONDecodeError`; the same unguarded `.json()` call also
+   crashed on any 2xx response with a malformed body. Both are direct violations of the "no raw
+   exception escapes" contract dragon #4 names, and neither showed up as a coverage gap — the
+   adapter was already at 100%/100% line/branch coverage, because a *missing* guard produces no
+   branch for the coverage tool to flag as unexercised (see learning candidate #161 below). Fixed
+   pre-commit (not amended after — this was caught before the first commit landed): a strict
+   `_is_2xx` check (`200 <= status < 300`) replaces `>= 400` at both call sites that need it, and a
+   new `_parse_json` helper wraps every post-success `.json()` call, converting `ValueError` into
+   `RepoClientError`. +7 regression tests (one redirect + one malformed-JSON case per call site).
+3. **`test_gitlab_adapter.py` full rewrite** (`9af715b`) against `httpx.MockTransport` (DP4)
+   instead of `MagicMock` SDK stubbing — asserts exact request method/path/body (including the
+   `%2F`-encoded nested-namespace wire form and the sorted multi-file commit `actions` payload),
+   drives transport errors, HTTP errors, 3xx redirects, and malformed-JSON bodies through every
+   call site. 27 tests (was 11); `gitlab_adapter.py` itself at 100%/100% line/branch coverage.
+4. **Packaging** (`09f80a4`): `pyproject.toml` — removed `python-gitlab>=4`, added
+   `httpx>=0.27,<1` as a direct `agents`-extra dep. `uv lock` + `uv sync --all-extras` (needed
+   separately — `uv run` alone left the stale `python-gitlab` installed in `.venv` even after the
+   lockfile changed) confirmed the prune removes only the `python-gitlab` package itself; its two
+   deps (`requests`, `requests-toolbelt`) both survive because `PyGithub`/`langsmith` (unrelated,
+   already in the graph) still need them (dragon #6 — verified live via `uv.lock`'s dependency
+   blocks and `uv tree`, not assumed).
+5. **Docs** (`348dff1` src docstrings; `41445b9` README/wiki/THIRD-PARTY-LICENSES — this commit
+   touched `docs/wiki/claims-model-starter/`, so the armed `post-commit` hook auto-published it
+   immediately, confirmed pushed to `claims-model-starter.wiki`): `README.md`, `protocol.py`,
+   `cli.py`, `config.py`, `_vocab_guard.py` docstrings/comments; five wiki pages
+   (`Software-Bill-of-Materials.md`, `Security-Considerations.md`, `Agent-Reference.md`,
+   `Contributing.md`, `Content-Recommendations.md`); `THIRD-PARTY-LICENSES` regenerated from a live
+   `importlib.metadata` scan (95 distributions, was 96 — confirmed live, not copied from the
+   Session 190 snapshot). Left historical records untouched per the plan's explicit leave-list
+   (`Changelog.md`, `Evolution.md`, `docs/architecture-history/`).
+6. **`7b9b05e` — CHANGELOG.md entry**, written last so it could cite the real commit hashes from
+   items 1–5 rather than placeholders (this project's established convention for same-session
+   entries, confirmed by reading the Sessions 178–180 entry's hash citations before writing my own).
+7. **`BACKLOG.md`** — added a new "httpx adapter migration" Open Items section: Phase 1 marked
+   done (with the unmerged-branch flag), Phase 2 (GitHub) scoped with the redirect/JSON-guard
+   gotcha pre-written so the next session doesn't rediscover it, cross-referenced against the
+   Enterprise migration section's `B3` (LGPL removal, now partially satisfied).
+
+**Verified (live, every number re-measured — not copied from the plan or CHANGELOG precedent):**
+`grep -rn "import gitlab" src/ tests/` → 0; `grep -rn -i "python-gitlab" pyproject.toml uv.lock` →
+0; `uv tree | grep -i gitlab` → 0. Full gate **939 passed + 8 live-skipped @ 97.64% coverage**
+(was 922 passed, Sessions 178–180 baseline); `ruff check src/ tests/` clean; `mypy` clean (66
+source files).
+
+**Method:** `TaskCreate`/`TaskUpdate` tracked all 8 sub-deliverables. Read the full plan
+(`httpx-adapter-migration.md`, 308 lines) and the existing adapter + its tests + `protocol.py` +
+`config.py`'s factory before writing anything, per `DEVELOPMENT_WORKSTREAM.md` Phase 2 ("read the
+code you will modify... then the tests"). Ran the plan's own verify commands after implementation,
+then spawned an independent adversarial review agent BEFORE committing (not after) — this is what
+caught the redirect/JSON bug; a same-context self-review likely would not have, since the bug came
+from an unstated assumption (`httpx` behaves like `requests` on redirects) I wouldn't have
+naturally re-examined.
+
+### Session 190 Handoff Evaluation (by Session 191)
+
+**Score: 6/10.** Accurate on everything it stated; low ROI purely because the operator redirected
+to a different task than the one it anticipated — not a quality flaw in the handoff itself.
+
+- **What helped:** the state facts that transfer across any task — clean tree, `master` =
+  `origin/master` = `8af4b9b`, no ghost sessions — were accurate and saved a repeat of the
+  Phase-0 verification. Confirmed independently via `git status`/`git log` at orientation rather
+  than trusted blind, per Phase 3A's own "re-read the actual files" discipline.
+- **What was missing:** nothing structurally wrong, but the handoff's five numbered "state you
+  will inherit" items (enterprise-migration D-item sequencing, the D1 verify-command mismatch, the
+  `Evolution.md:268` staleness, the BACKLOG correction) were **zero-ROI for this session** — none
+  of them touched the httpx migration. This isn't a defect in Session 190's handoff (it correctly
+  predicted the *most likely* next task per its own close-out reasoning); it's a reminder that a
+  handoff's "what's next" section is a forecast, not a commitment, and the operator can redirect at
+  Phase 1 with no penalty to the predecessor's score for the parts that didn't apply.
+- **What was wrong:** nothing found. Every specific claim I checked against fresh state (tree
+  clean, hash match, no bedrock-WIP commingling) held.
+- **ROI:** net neutral-to-slightly-positive — the general orientation facts were reusable, the
+  task-specific content wasn't, and reading the ~250-line Session 190 entry cost real time for
+  the same reason. This is the first evaluation in this session's visible history where "the
+  handoff was accurate but mostly inapplicable" is the dominant finding, rather than either "high
+  ROI" or "a specific false claim" (Session 190's own evaluation of Session 189 was the latter).
+
+### Phase 3B: Self-assess — Session 191 — 8/10
+
+- **The +:** (1) Read the full 308-line plan before touching anything, including §5's branching
+  prerequisite and §6's 8 dragons, and resolved the branch decision exactly as the plan specified
+  rather than skipping straight to code. (2) Read the existing adapter, its tests, `protocol.py`,
+  and `config.py`'s factory before writing the rewrite (`DEVELOPMENT_WORKSTREAM.md` Phase 2 order:
+  code → tests → docs), so the new adapter preserves the exact constructor signature and exception
+  contract callers depend on. (3) Ran the plan's own verify commands (the exact `grep`/`uv
+  tree`/`pytest` invocations from §5 Phase 1), not a paraphrase of them. (4) Spawned an independent
+  adversarial review agent *before* committing rather than after, and it found a real bug (the
+  status-code/redirect/JSON-guard issue) that my own same-context pass had missed and that 100%
+  coverage did not surface — then fixed it in-session per Learning #49 rather than filing it as a
+  follow-up. (5) Re-verified every number live rather than copying it — the distribution count
+  (95, was 96), the test count (27, was 11), the coverage figure, and the `uv.lock` diff were all
+  freshly measured, continuing the discipline Sessions 189–190 established for this project's
+  legal/licensing-adjacent docs. (6) Kept strictly to Phase 1 — did not touch `github_adapter.py`,
+  did not rename the adapter classes (DP1 deferred per the plan's own recommendation), did not
+  attempt to reconcile the unrelated `enterprise-migration.md` plan-revision Session 190 flagged as
+  owed (that would have been unrequested scope creep into a different plan entirely).
+- **The −:** (1) My own first-pass implementation had the redirect/JSON-guard bug — I had *read*
+  dragon #4's "any non-2xx... → RepoClientError" wording but wrote `>= 400` anyway, effectively
+  substituting a familiar idiom (many codebases treat 4xx/5xx as "the failure range") for what the
+  plan actually specified. A more careful first pass, re-reading dragon #4's exact sentence while
+  writing the status check rather than from memory of it, might have caught this without needing
+  the adversarial pass — though the review's real value was also independent of that: it forced an
+  explicit check of `httpx.Client`'s redirect-following default, which I had not verified either
+  way before writing the code (`DEVELOPMENT_WORKSTREAM.md` anti-pattern #4, assumption-based impact
+  analysis, applied to a *library's* behavior rather than this codebase's). (2) Left
+  `feat/httpx-adapters` unmerged and unpushed rather than deciding either way myself — this is
+  named as a deliberate choice below (merging/pushing are shared-state actions the plan's own text
+  didn't instruct, unlike almost every other session in this project's history, which commits
+  straight to `master`), but it does mean Phase 1 isn't actually *live* yet, only complete-and-
+  verified-on-a-branch; the operator has to take one more action before Phase 2 can safely build on
+  top of it.
+- **Quality bar:** matches Session 190's live-verification discipline and extends it with a
+  concrete instance of Learning #49 (adversarial review finds a real gap → fix in-session, not
+  handed off) plus a first-instance-in-this-session's-visible-history use of a genuinely
+  *adversarial* (try-to-break-it) reviewer prompt rather than a confirmatory one — worth noting for
+  future sessions doing SDK/library-swap work, since the bug it caught was specifically the kind a
+  same-context, non-adversarial self-check tends to miss (an unstated assumption the author doesn't
+  think to question because they're not looking for it).
+
+### Phase 3C: Learnings — Session 191
+
+- **Candidate #161 — NEW, 1st instance — "100% line/branch coverage on a rewritten module does not
+  prove exception-safety, because a *missing* guard (no `try/except` around a call that can raise,
+  or a status-code range check that's too permissive) produces no branch for the coverage tool to
+  flag as unexercised — there's no conditional there to miss. Coverage proves every branch that
+  EXISTS ran; it says nothing about branches that SHOULD exist but don't."** Discovered when the
+  adversarial review agent found the redirect/JSON-guard bug in a file the coverage report showed
+  at 100%/100% line/branch — the bug wasn't a coverage gap, it was an absent code path entirely.
+  **When to apply:** when coverage is high (or 100%) on freshly-written exception-handling code,
+  don't treat that as evidence the exception handling is *complete* — it only proves the handling
+  that was written gets exercised. Pair coverage with an adversarial review or an explicit
+  enumeration of "what inputs/responses could this code receive that it doesn't have a branch for"
+  before trusting it.
+- **Candidate #162 — NEW, 1st instance — "When porting a network client from one HTTP
+  library/SDK to another (e.g. `requests`-based → `httpx`-based), audit the new library's DEFAULT
+  behaviors explicitly — redirect-following, timeout, retry, connection pooling — even when the
+  call-surface (`.get()`/`.post()`) looks identical. Library ports commonly change these defaults
+  silently; `httpx.Client()` does not follow redirects by default while `requests` (and therefore
+  the SDKs built on it, here `python-gitlab`) does."** Discovered via the same bug as #161 — the
+  root cause was specifically the httpx/requests redirect-default mismatch, not a logic error in
+  the new code's own structure. **When to apply:** directly actionable for this project's own
+  Phase 2 (GitHub adapter, `PyGithub` is also `requests`-based) — audit the same default before
+  writing the rewrite, not after an adversarial pass finds it again. More generally: any session
+  doing an SDK-to-direct-HTTP-client migration.
+- **Reinforced: Learning #49** ("adversarial review of a just-finished deliverable surfaces a gap
+  in that deliverable's own correctness → fix in-session, not handed off") — applied exactly as
+  specified: the gap was in-scope (this session's own new code), small (a status-check + a parse
+  helper), and gates-passing after the fix (full suite re-run green). Fixed pre-commit (the
+  not-yet-committed-work case in Learning #49's mechanical note, not the `--amend` case, since
+  nothing had been committed yet when the review returned).
+- **Not promoted to the roster:** neither #161 nor #162 — both are 1st instance. Per Session 190's
+  count, `PROJECT_LEARNINGS.md` = 61 rows (unchanged). **Candidate roster:** #162 NEW at 1; #161
+  NEW at 1; #160 at 1 (S190); #159 at 1 (S190); #158 at 1 (S189); earlier per prior roster. Next =
+  **#163.**
+
+### Phase 3D: Handoff to Session 192
+
+**Phase 1 of the httpx adapter migration is done, verified, and committed — but sits on an
+unmerged, unpushed branch. That is the single most important thing to resolve before anything else
+touches this area.**
+
+**State you will inherit:**
+1. **`feat/httpx-adapters` (5 commits, `9af715b`..`7b9b05e`) is NOT merged into `master` and NOT
+   pushed to `origin`.** `master` itself only carries this session's claim-stub commit (`4e47a96`)
+   beyond Session 190's `8af4b9b` — the actual Phase 1 code/docs/packaging changes are branch-only.
+   **This was a deliberate choice, not an oversight:** the plan's own text mandated a dedicated
+   branch (§5, to avoid commingling with the now-historical bedrock WIP) but never said whether to
+   merge at the end of Phase 1, unlike virtually every other session in this project's history,
+   which commits straight to `master`. Merging and/or pushing are the kind of shared-state actions
+   this project's own guidance says to confirm before taking, so this session deliberately left
+   that decision to the operator rather than picking either way. **If the operator says "merge
+   it": `git checkout master && git merge --ff-only feat/httpx-adapters` will fast-forward cleanly
+   (no other commits landed on `master` since the branch point). If the operator wants a PR
+   instead: `git push -u origin feat/httpx-adapters` then open one.**
+2. Tree is otherwise clean (verify fresh). `feat/httpx-adapters` is checked out as the current
+   branch — if the next session's task is unrelated, switch back to `master` first.
+3. **Phase 2 (GitHub adapter → `httpx`) is the natural next step of this same plan**, now tracked
+   in `BACKLOG.md`'s new "httpx adapter migration" section — but per FM #18/#19, that is its own
+   session, not a continuation of this one, and per the plan's own boundary text ("GitHub still on
+   `PyGithub` — that's a valid intermediate state") there's no urgency forcing it. Whether Phase 2
+   or the still-owed `enterprise-migration.md` plan-revision session (flagged by Session 190, still
+   untouched this session — genuinely out of scope, not silently dropped) comes next is an
+   operator call, not a default.
+4. **Phase 2 gotcha, pre-written so it isn't rediscovered:** apply the `_is_2xx`
+   (`200 <= status < 300`) check and a `_parse_json`-style guard from the start in
+   `github_adapter.py`'s rewrite — `PyGithub` is also `requests`-based, so the same
+   redirect-default mismatch this session found in the GitLab rewrite almost certainly applies
+   there too. See `gitlab_adapter.py`'s `_is_2xx`/`_ok_or_raise`/`_parse_json` for the pattern to
+   mirror (learning candidates #161/#162 above).
+5. Learning candidates #161 and #162 are new, 1st instance each — not promoted. Next candidate
+   number is **#163**. `PROJECT_LEARNINGS.md` unchanged at 61 rows.
+6. `BACKLOG.md` has a new top-level "httpx adapter migration" section (inserted between Enterprise
+   migration and "Most recently completed") — read it fresh rather than re-deriving Phase 2's scope
+   from the plan document alone; the BACKLOG entry already carries the Session 191 gotcha forward.
+
+**Key files:**
+- `src/model_project_constructor/agents/website/gitlab_adapter.py` — the reference implementation
+  for Phase 2's `github_adapter.py` rewrite; mirror its `_is_2xx`/`_parse_json` pattern.
+- `tests/agents/website/test_gitlab_adapter.py` — the reference test structure
+  (`httpx.MockTransport`, redirect + malformed-JSON regression tests) for Phase 2's test rewrite.
+- `docs/planning/httpx-adapter-migration.md` §5 Phase 2, §6 dragons 1/3 (GitHub-specific: org-vs-
+  user repo creation, the 6-call git-database commit dance) — read before starting Phase 2, they
+  don't apply to what Phase 1 touched.
+- `BACKLOG.md` (new httpx section) — Phase 2 scope + the gotcha, pre-written.
+
+**Gotchas:**
+- Don't assume `master` has the Phase 1 work — check `git log --oneline -5 master` first; if the
+  operator hasn't merged yet, `feat/httpx-adapters` is where it lives.
+- The `_ok_or_raise` docstring in `gitlab_adapter.py` explains *why* it's stricter than `>= 400` —
+  read it before assuming a simpler check is equivalent when writing the GitHub version.
 **Deliverable:** Execute a scoped subset of Phase B1 ("The legal packet") of
 `docs/planning/enterprise-migration.md` — the four items confirmed necessary *before* Phase C4
 (enterprise clone provisioning / "the fork") can run, per dragon #20 (the clone is one-time with

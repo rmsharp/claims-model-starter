@@ -63,6 +63,33 @@ index — internal or proxied PyPI (operator + platform team) — deferred to po
 enterprise clone disposition/access model (operator + legal) — deferred to post-fork. See
 `docs/planning/enterprise-migration.md` §3 for full text and recommendations.
 
+### httpx adapter migration (`docs/planning/httpx-adapter-migration.md`)
+
+Replace both LGPL SDK dependencies (`python-gitlab`, `PyGithub`) in the Website Agent's repo-host
+adapters with direct `httpx` REST calls. **Phase 1 (GitLab) is DONE** (Session 191, branch
+`feat/httpx-adapters`, 5 commits — `9af715b`/`09f80a4`/`348dff1`/`41445b9`/`7b9b05e` —
+**not yet merged to `master` or pushed; awaiting operator decision**, see SESSION_NOTES.md). One
+of the two LGPL-3.0 direct dependencies is gone; `PyGithub` remains.
+
+- **Phase 2 — GitHub adapter → `httpx`.** Mirrors Phase 1: rewrite `github_adapter.py`'s git-database
+  commit dance (6 sequential calls, each a failure point) against `httpx`, rewrite
+  `test_github_adapter.py` against `httpx.MockTransport`, drop `PyGithub` from `pyproject.toml`,
+  update GitHub-specific docs (`README.md:75,191`, protocol docstring, SBOM/Security/Agent-Ref
+  GitHub rows, remove the now-obsolete LGPL-compliance notes). At completion, both LGPL
+  dependencies are gone. **Session 191 gotcha for whoever runs Phase 2:** the first Phase 1 draft
+  checked `status_code >= 400` instead of `_is_2xx` (`200 <= status < 300`) and left the
+  post-success `.json()` calls unguarded — both let a raw exception escape on a 3xx redirect or a
+  malformed-JSON 2xx body (`httpx.Client` doesn't follow redirects by default, unlike the
+  `requests`-based transport under both old SDKs). Apply the same `_is_2xx`/guarded-parse pattern
+  in the GitHub rewrite from the start rather than rediscovering it.
+- **Phase 3 (optional)** — rename `PythonGitLabAdapter`/`PyGithubAdapter` to drop the SDK names
+  now baked into misnomers. Plan recommends deferring this; only do it if DP1 is revisited.
+
+Overlaps `B3` (LGPL removal) in the Enterprise migration section above — B3 is now partially
+satisfied (GitLab's LGPL dep is gone) but B3's own text hasn't been reconciled with this plan; not
+done this session (would be scope creep into the enterprise-migration plan-revision session already
+flagged as owed).
+
 ---
 
 Most recently completed: **harden the `cycle_time` cadence definitions and corpus**
