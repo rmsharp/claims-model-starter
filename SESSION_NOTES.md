@@ -8,44 +8,262 @@
 
 ### What Session 190 Did
 **Deliverable:** Execute a scoped subset of Phase B1 ("The legal packet") of
-`docs/planning/enterprise-migration.md` — the four items the operator confirmed must be fixed
-*before* Phase C4 (enterprise clone provisioning / "the fork") can run, per dragon #20 (the clone
-is one-time with no future sync, so unfixed defects present at fork time are permanently baked
-in). **(IN PROGRESS)**
+`docs/planning/enterprise-migration.md` — the four items confirmed necessary *before* Phase C4
+(enterprise clone provisioning / "the fork") can run, per dragon #20 (the clone is one-time with
+no future sync, so unfixed defects present at fork time are permanently baked in). **(COMPLETE.**
+4 commits: `18e0710` claim, `f15b12d` wiki fix, `86a19e9` root governance files, `623a3f2` BACKLOG
+correction. Pushed to `origin/master`.**)**
 
-**Started:** 2026-07-27.
+**Started / Completed:** 2026-07-27 (same day as Sessions 188–189).
 
-**Scope decision (this session, via operator dialogue):** the operator wants D3 (IP disposition)
-and C4's own gates (D4, D5, D8, D9, D14, D15, D16) resolved **after** the fork, inside the
-enterprise clone, not reported back to this repo. That leaves full Phase B1 (gated on D1+D2+D3)
-un-executable as written. Narrowed to the subset that does **not** depend on D3 or any other
-deferred decision: (1) fix the wiki's LGPL-mislabeling (frames `PyGithub` as the only LGPL
-dependency; `python-gitlab` also is), (2) add root `SECURITY.md`/`CODEOWNERS`/
-`THIRD-PARTY-LICENSES`/`CONTRIBUTING.md` (baseline only — the corporate DCO/CLA mechanism section
-is explicitly deferred, marked TBD, since it depends on D3/D4/D9), (3) author an AI-provenance
-statement for the 329 `Co-Authored-By: Claude` commits, (4) resolve the D1 methodology-attribution
-gap (operator stated Terrell Deppe granted MIT permission).
+**Scope narrowing (via operator dialogue, this session):** the operator stated D3 (IP disposition)
+and Phase C4's own gates (D4, D5, D8, D9, D14, D15, D16) will be resolved **after** the fork,
+inside the enterprise clone, and **not reported back to this repository**. This leaves full Phase
+B1 (gated on D1+D2+D3 per its own text) un-executable as written. Before accepting this, flagged
+that it directly conflicts with a reasoned, already-documented risk: dragon #20
+(`enterprise-migration.md:1113`) — *"the one-time fork has no future sync... this is why C4 is
+gated on A1–A4, B1, and B2 complete"* — because whatever is legally wrong in the repo at fork time
+is permanently baked into the clone. Presented this conflict explicitly (quoting the exact plan
+text) rather than silently either complying or blocking. Operator's resolution: **"Yes, fix now"**
+— fix what B1 doesn't need D3 for, in this repo, before the fork. Narrowed to: (1) the wiki's
+LGPL-mislabeling (5 sites framed `PyGithub` as the only LGPL dependency; `python-gitlab` also is),
+(2) root `SECURITY.md`/`CODEOWNERS`/`THIRD-PARTY-LICENSES`/baseline `CONTRIBUTING.md` (corporate
+DCO/CLA mechanism explicitly left **TBD** — genuinely depends on D3/D4/D9), (3) an AI-provenance
+statement for the `Co-Authored-By: Claude` commits, (4) the D1 methodology-attribution gap
+(operator stated Terrell Deppe/KJ5HST granted MIT permission, 2026-07-27).
 
-**Load-bearing process finding:** the plan's own B1 verify block
-(`enterprise-migration.md:757`) checks `grep -c 'Terrell Deppe' SESSION_RUNNER.md SAFEGUARDS.md
-NOTICE` — i.e., it expects the attribution string inside the two synced methodology files. That
-directly conflicts with `CLAUDE.md`'s explicit rule: *"Additions and overrides to the base
-methodology... Do not edit the synced files — put customizations here."* `SESSION_RUNNER.md` and
-`SAFEGUARDS.md` are managed by a cross-project sync tool (`bin/sync`/`bin/status`, per
-`docs/methodology/README.md`) that refuses to overwrite locally-modified synced files — editing
-them directly would either silently break future canonical syncs for this project, or be wiped by
-a future `--force` sync. **Resolution used this session (not asked further, treated as a
-correct-by-construction engineering call given CLAUDE.md's rule is explicit and unambiguous):**
-attribution goes in the new root `NOTICE` file plus a new entry in `CLAUDE.md`'s
-"Project-Specific Methodology Adaptations" section — the customization seam the file already
-documents — instead of inside `SESSION_RUNNER.md`/`SAFEGUARDS.md` themselves. This means the
-plan's literal verify command for D1 will not pass as written; flagging this as a plan-text
-correction still needed (out of scope for this stub — see handoff when this session closes).
+**What changed (by commit):**
+1. **`f15b12d` — wiki LGPL correction.** Fixed `Content-Recommendations.md:75`,
+   `Contributing.md:229`, `Security-Considerations.md:353-354,386` (line numbers re-derived live,
+   not trusted from the plan's stale citations — dragon #8). Verified with the plan's own verify
+   commands: `grep -rn "the one LGPL-3.0 direct dependency" docs/wiki/` → 0;
+   every remaining `lgpl` hit in `docs/wiki/claims-model-starter/` either names both packages or is
+   historical narrative not claiming exclusivity (`Evolution.md:137`, left untouched per the
+   project's no-rewrite-history convention). Also updated `Contributing.md:238`'s ad-hoc "contact
+   rmsharp on GitHub" security-disclosure text to point at the new `SECURITY.md`. **This commit
+   touches `docs/wiki/`, so the armed `post-commit` hook auto-published it immediately** — confirmed
+   live: `296b79b..8a96505` pushed to `claims-model-starter.wiki`.
+2. **`86a19e9` — five new root files.**
+   - `THIRD-PARTY-LICENSES`: full 96-distribution table, generated from a **live**
+     `importlib.metadata` scan (not the plan's possibly-stale §2.7 table) — confirmed the plan's
+     claim exactly: 96 distributions, 2 LGPL (`python-gitlab` LGPL-3.0-or-later, `PyGithub`
+     LGPL-3.0-only — confirmed from its bundled `COPYING.LESSER` text, which is v3 with no "or
+     later" clause), 3 MPL (`certifi`, `orjson`, `pathspec`), zero GPL-only, zero AGPL. Flagged
+     `mergedeep`'s metadata `License:` field as literally `"UNKNOWN"` but resolved it via its PyPI
+     classifier (MIT) rather than leaving it unexplained.
+   - `NOTICE`: methodology attribution (Terrell Deppe/KJ5HST, MIT permission per the operator —
+     recorded as relayed-by-operator, not fabricated as a verified written grant) + AI-provenance
+     statement (340 of 359 commits carry `Co-Authored-By: Claude`, re-measured live — the plan's
+     "329 of 345" figure is 14 commits stale, expected growth since the plan was written).
+   - `SECURITY.md`, `CODEOWNERS`: baseline, neither existed before.
+   - `CONTRIBUTING.md`: baseline contribution guide; the corporate DCO/CLA mechanism section is
+     explicit **TBD** text, not invented content, since D3/D4/D9 are unresolved.
+   - **`CLAUDE.md`**: added a "Third-party methodology attribution (decision D1)" entry under
+     Adaptations — **not** edited into `SESSION_RUNNER.md`/`SAFEGUARDS.md` directly. Load-bearing
+     finding: the plan's own D1 verify command (`enterprise-migration.md:757`,
+     `grep -c 'Terrell Deppe' SESSION_RUNNER.md SAFEGUARDS.md NOTICE`) expects the attribution
+     string **inside** the two synced files — directly conflicting with `CLAUDE.md`'s own explicit
+     rule ("Do not edit the synced files — put customizations here") and the cross-project sync
+     tool (`bin/sync`/`bin/status`) that refuses to overwrite locally-modified synced files.
+     Resolved by putting attribution in `NOTICE` + `CLAUDE.md` instead (the documented
+     customization seam) — a judgment call made without a further question round, since
+     `CLAUDE.md`'s rule is explicit and unambiguous, but explicitly flagged rather than silently
+     applied. **Consequence: the plan's literal D1 verify command will not pass as written** — a
+     plan-text correction is still owed (not done this session; see handoff).
+3. **`623a3f2` — BACKLOG.md correction, an unplanned but necessary find.** Re-verifying the prior
+   handoff's claims (Phase 3A discipline) found Session 189's close-out asserted
+   *"BACKLOG.md updated: removed the completed A4 line... Goals 1-2 are done"* — but
+   `git log --oneline -- BACKLOG.md` shows the **last commit to touch that file is Session 188's
+   `35ccbd9`**; no Session 189 commit changed it. The claim was false — read the actual file
+   (still said "Phases A1-A3 are complete," still listed A4 as open) rather than trusting the
+   handoff prose. Fixed: A1-A4 now correctly marked complete, this session's B1 subset recorded,
+   and the operator's fork-sequencing decision recorded as a flagged, not-yet-reconciled conflict
+   with the plan document (see below).
 
-**Not yet done at time of this stub (see close-out for final state):** actual file edits, license
-table verification (in progress — live `importlib.metadata` scan across all 96 installed
-distributions confirms the plan's §2.7 claim: exactly 2 LGPL — `PyGithub`, `python-gitlab` — 3 MPL
-— `certifi`, `orjson`, `pathspec` — zero GPL-only, zero AGPL), commit, verify.
+**Deliberately not done, flagged rather than silently absorbed:** a full revision of
+`docs/planning/enterprise-migration.md` to reconcile the operator's fork-sequencing decision (D3 +
+C4's own gates resolved post-fork, not reported back here) with the plan's current text — which
+still states C4 is gated on B1 complete (dragon #20) and gives Phase C4 an explicit D4/D5/D8/D9/D16
+gate list. This is a plan-revision session in its own right (methodology precedent: Session 184's
+"fork-vs-relocate revision" was exactly this kind of dedicated session) — bundling it into this
+execution session would be planning-to-implementation bleed (FM #18). `BACKLOG.md` now carries an
+explicit flag that the phase list is stale until that session runs.
+
+**No CHANGELOG.md entry** — per `PROJECT_CONVENTIONS.md`'s cadence rule (checked, not assumed,
+matching Session 189's discipline): an entry is earned only by changes to `src/`/`packages/`/
+`scripts/`/`tests/` logic. This session touched only docs and root governance files.
+
+**Method:** `TaskCreate`/`TaskUpdate` tracked all 8 sub-deliverables. Verified every factual claim
+live rather than trusting the plan's or a prior handoff's numbers: re-scanned installed-package
+licenses via `importlib.metadata` instead of copying the plan's §2.7 table, re-measured the
+`Co-Authored-By: Claude` commit count instead of copying "329 of 345," and re-derived wiki line
+numbers by grep instead of trusting the plan's citations (which had already shifted, per dragon
+#8). Caught and corrected a false claim in the immediately-prior session's handoff by re-reading
+the actual file and its `git log`, not by trusting the prose (SESSION_RUNNER's explicit Phase 3A
+discipline: "re-read the actual files before writing claims").
+
+### Session 189 Handoff Evaluation (by Session 190)
+
+**Score: 6/10.** Materially useful on the state facts that mattered most for this session's actual
+work, but contains one concrete, checkable false claim.
+
+- **What helped:** the PR/merge/hook/wiki-publish state (item 2-5 in Session 189's inherited-state
+  list) all verified accurate on inspection — `origin/master` was indeed `9cabe0e`, the hook was
+  indeed re-armed, the wiki was indeed freshly published. The pointer to `enterprise-migration.md`
+  §3 for full D-item text saved real time locating exact decision-register language during the
+  operator's fork-sequencing questions.
+- **What was missing:** nothing structurally — item 6/7's flagged gaps (BACKLOG's B1/D-item
+  listing, the `Evolution.md:268` staleness) were exactly the right things to flag, in principle.
+- **What was wrong:** item 6 states *"`BACKLOG.md` now shows Goals 1–2 complete"* and the
+  session's own "what happened" narrative (step 10) claims *"`BACKLOG.md` updated: removed the
+  completed A4 line, reworded the enterprise-migration section to state Goals 1–2 are done."*
+  **Neither is true.** `git log --oneline -- BACKLOG.md` shows no commit between `35ccbd9`
+  (Session 188) and this session's own `623a3f2` touched the file — Session 189 never made this
+  edit, despite believing (or reporting) that it had. This is exactly the failure mode SESSION_RUNNER
+  names in FM #11 ("gaps from memory... claims turn out wrong") and the evidence requirement in
+  Phase 3D ("never claim credit for work you didn't do") — whether this was a slipped/uncommitted
+  edit, a conflation with a different file, or an outright memory error, the effect is the same: a
+  handoff claim that didn't hold up under a fresh read of the file plus `git log`.
+- **ROI:** still net positive — the other ~90% of the handoff (git/PR/hook/wiki state) was accurate
+  and load-bearing for this session's work — but the BACKLOG.md claim cost real time (had to
+  re-derive the actual BACKLOG state from scratch rather than trusting "already done") and is the
+  kind of error that compounds if not caught: a future session trusting "Goals 1-2 marked complete
+  in BACKLOG.md" without checking would have inherited a stale task list.
+
+### Phase 3B: Self-assess — Session 190 — 8/10
+
+- **The +:** (1) Did not silently accept the operator's "fork now, sort out D3/D4/etc. after"
+  framing — surfaced the dragon #20 conflict explicitly, with the exact plan quote, before doing
+  anything, and let the operator make an informed call rather than either blocking or complying
+  quietly. (2) When the operator pushed back twice ("I do not know what you are referring to" /
+  disputing the sync-risk framing), re-explained without jargon and with concrete before/after
+  content rather than repeating the same abstraction — recognized that the confusion was about
+  communication, not disagreement on substance. (3) Verified every number fresh rather than
+  copying the plan's or a prior handoff's figures — the live license scan, the live commit-count
+  re-measure, and the live wiki-line re-grep all confirmed at least a little drift from the source
+  documents' original numbers, and using stale ones in a *legal* document would have been the
+  wrong failure mode to introduce here of all places. (4) Caught the BACKLOG.md/Session-189
+  discrepancy by actually running `git log -- BACKLOG.md` rather than trusting the handoff prose —
+  direct application of Phase 3A's "re-read the actual files" instruction. (5) Recognized the
+  `CLAUDE.md`-vs-plan conflict on where attribution belongs, made a defensible call (the
+  customization seam `CLAUDE.md` itself documents), and flagged the resulting verify-command
+  mismatch instead of quietly satisfying the letter of the plan's grep by editing files the project
+  has a standing rule against editing. (6) Scoped the deliverable narrowly (four items, not full
+  B1) and left the corporate-DCO/CLA content genuinely blank/TBD rather than inventing plausible
+  corporate-policy language with no decision behind it.
+- **The −:** (1) Did not get explicit operator confirmation on the `CLAUDE.md`-attribution-seam
+  design choice before implementing it — reasoned it was unambiguous enough per Auto Mode's
+  "make the reasonable call" guidance, but it is nonetheless a real deviation from the plan's
+  literal verify block, and a different session might have asked first given the legal/attribution
+  stakes. Naming this plainly rather than treating it as the only reasonable call. (2) Did not
+  attempt to reconcile `enterprise-migration.md` itself with the operator's fork-sequencing
+  decision this session — correctly identified as its own plan-revision session per FM #18, but
+  this leaves the plan document and `BACKLOG.md` in tension until that session runs (mitigated by
+  flagging it explicitly in both places rather than leaving it implicit). (3) The AI-provenance
+  commit-count in `NOTICE` will itself go stale the moment any future commit lands — mitigated
+  with an explicit "treat as a snapshot, re-measure with..." note in the file itself, but this is a
+  file that will require periodic re-verification indefinitely, not a one-time fix.
+- **Quality bar:** meets Session 189's standard on live-verification discipline (re-measuring
+  rather than trusting cited figures) and extends it by adding a live cross-check against a prior
+  session's *procedural* claim (did the file actually get edited), not just state-fact claims —
+  the BACKLOG.md catch is a new instance of that discipline, not previously exercised in this
+  project's session history.
+
+### Phase 3C: Learnings — Session 190
+
+- **Candidate #159 — NEW, 1st instance — "A session's own narrative of 'what I did' can contain a
+  false claim about a file it believes it edited, even when the rest of the handoff is accurate.
+  Phase 3A's 'read the actual files, not memory of them' applies to the PREVIOUS session's claims,
+  not just the current session's own drafting — cross-check specifically the file-level claims
+  ('updated X', 'removed Y from Z') against `git log --oneline -- <file>`, not just against a
+  fresh `Read` of the current file content (a fresh Read alone would have caught this too, but
+  `git log` additionally pinpoints exactly when — or whether — the claimed edit happened, which
+  matters when deciding how to word the correction)."** Discovered while sourcing `BACKLOG.md`
+  content for this session's own update: read the current file (found it stale), then ran
+  `git log --oneline -- BACKLOG.md` to see when it was last touched, and found the answer was
+  "not by the session that claimed to touch it." **When to apply:** whenever a prior handoff
+  claims a specific file was updated/edited/created — verify with `git log -- <file>` before
+  either trusting the claim or writing a correction, especially before scoring that session's
+  handoff in Phase 3A.
+- **Candidate #160 — NEW, 1st instance — "When a plan's literal verify command targets a file this
+  project has a standing 'do not edit' rule for (e.g., synced methodology files), do not silently
+  satisfy the letter of the verify command by editing the protected file anyway — put the
+  substance in the designated customization seam instead (here: `CLAUDE.md`'s Adaptations section
+  + a new project-owned file), and explicitly flag that the plan's verify command itself now needs
+  a text correction to match."** Discovered executing B1's D1 sub-item: the plan's verify block
+  (`grep -c 'Terrell Deppe' SESSION_RUNNER.md SAFEGUARDS.md NOTICE`) assumes attribution lives
+  inside the two synced files, directly conflicting with `CLAUDE.md`'s explicit "do not edit the
+  synced files" rule and the cross-project sync tool's drift-protection. **When to apply:** any
+  time a plan document (written before, or without full awareness of, a project's own
+  synced-file/customization-seam architecture) specifies a verify step that would require editing
+  a file the project has a standing rule against editing.
+- **Reinforced:** the #158 pattern (Session 189 — read a gated phase's full text before treating a
+  terse go-ahead as sufficient, then present a structured confirmation) generalized again this
+  session — the dragon #20 conflict was surfaced the same way (quote the exact gating text, name
+  the concrete consequence, let the operator decide) rather than either silently complying with
+  "fork now" or refusing outright.
+- **Not promoted to the roster:** none this session — both new candidates are genuinely novel
+  (first B1-adjacent execution session; first time a prior session's *file-edit* claim, not just a
+  *state* claim, was found false).
+- **Candidate roster:** **#160 NEW at 1; #159 NEW at 1**; #158 at 1 (S189); #157 at 1 (S188); #156
+  at 1 (S188); #155 at 1 (S187); #154 at 1 (S187); #153 at 1 (S186); #152 at 1 (S186); #151 at 1
+  (S185); #150 at 1 (S184); earlier per prior roster. `PROJECT_LEARNINGS.md` = **61 rows** (no
+  promotion this session — neither candidate reached 3 instances). Next = **#161.**
+
+### Phase 3D: Handoff to Session 191
+
+**B1's four operator-approved, D3-independent items are DONE and pushed to `origin/master`
+(`623a3f2`).** Full Phase B1 (the corporate DCO/CLA mechanism in `CONTRIBUTING.md`) remains open,
+correctly, pending D3/D4/D9.
+
+**State you will inherit:**
+1. Tree is CLEAN after this close-out (verify fresh). `master` = `origin/master` = `623a3f2`.
+   `feat/bedrock-mantle-migration` still sits at `4795c29` (Session 189's close-out, unpushed to
+   its own `origin` counterpart) — untouched this session, now **behind** `master` by 4 commits
+   (expected: all new work lands on `master` directly per the plan's post-A4 design; the feat
+   branch is functionally done and historical).
+2. **Root governance files now exist:** `SECURITY.md`, `CODEOWNERS`, `THIRD-PARTY-LICENSES`,
+   `CONTRIBUTING.md`, `NOTICE` — none existed before this session. `CLAUDE.md` has a new
+   "Third-party methodology attribution (decision D1)" entry under Adaptations.
+3. **The wiki was published again this session** (`8a96505`, 3 files, LGPL correction) —
+   independent of A4's publish; verify with `git -C ~/Development/claims-model-starter.wiki log`
+   if you need the incremental history.
+4. **Load-bearing open item: `enterprise-migration.md` itself needs a plan-revision session.** The
+   operator has decided D3 and Phase C4's own gates (D4/D5/D8/D9/D14/D15/D16) resolve *after* the
+   fork, inside the clone, not reported back here — but the plan document still says C4 is gated
+   on B1 complete specifically because of dragon #20 (no-sync-back risk). Read the full exchange in
+   this session's transcript context if picking this up, or at minimum re-derive it fresh: the
+   operator's own words were "all of those will be determined after the fork is created and not
+   reported back to this repository." **Do not silently implement C4 under either the plan's old
+   gating or a new unwritten gating — this needs its own dedicated session to reconcile the plan
+   text with the operator's decision, following the Planning Sessions discipline in
+   `SESSION_RUNNER.md`** (grep-based inventory, per-phase completion criteria, one session, no
+   implementation in the same session).
+5. **The plan's D1 verify command will not pass as written** (`grep -c 'Terrell Deppe'
+   SESSION_RUNNER.md SAFEGUARDS.md NOTICE` — the first two are deliberately 0; attribution lives in
+   `NOTICE`/`CLAUDE.md` instead). This is a small, textual correction to `enterprise-migration.md`
+   §B1's verify block — can ride along with the plan-revision session in item 4, or be done
+   standalone if that session is delayed.
+6. **`Evolution.md:268`'s stale post-archive claim (flagged by Session 189, not yet fixed)** is
+   still open — untouched this session, still live on the public wiki.
+7. **BACKLOG.md's Session-189 discrepancy is now corrected** (see this session's "what changed,"
+   item 3) — the file now accurately reflects A1-A4 complete + this session's B1 subset. Trust this
+   session's BACKLOG.md state; do not re-inherit Session 189's version from memory.
+8. Next learning candidate = **#161**. `PROJECT_LEARNINGS.md` = 61 rows (unchanged — neither
+   candidate promoted this session).
+
+**Key files:**
+- `docs/planning/enterprise-migration.md:1113-1122` (dragon #20) and `:961-969` (C4's gate list) —
+  read both before touching Phase C4; they are what the plan-revision session in item 4 needs to
+  reconcile against the operator's decision.
+- `NOTICE`, `CLAUDE.md` (Adaptations section) — the D1 attribution record; do not add attribution
+  directly to `SESSION_RUNNER.md`/`SAFEGUARDS.md`.
+- `BACKLOG.md` — corrected this session; read it fresh rather than trusting any prior session's
+  memory of its content (see item 7 above).
+- `THIRD-PARTY-LICENSES` — regenerate with the command in its own header if any dependency changes
+  before the fork.
+
+### What Session 189 Did
 
 ### What Session 189 Did
 **Deliverable:** Execute Phase A4 of `docs/planning/enterprise-migration.md` ("Land it") — push
