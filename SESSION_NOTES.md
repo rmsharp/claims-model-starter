@@ -6,6 +6,18 @@
 
 ## ACTIVE TASK
 
+### What Session 193 Did
+**Deliverable:** httpx migration Phase 2 — rewrite the GitHub adapter (`github_adapter.py`) and
+its tests against `httpx`, per `docs/planning/httpx-adapter-migration.md` §5. Operator-selected
+(offered a choice between this and the owed enterprise-migration plan-revision session; chose
+Phase 2). (IN PROGRESS)
+
+**Started:** 2026-07-28.
+
+**Status:** Session claimed. Work beginning.
+
+---
+
 ### What Session 192 Did
 **Deliverable:** Resolve the open merge/push decision left by Session 191 for
 `feat/httpx-adapters` (Phase 1 of `docs/planning/httpx-adapter-migration.md`, GitLab adapter →
