@@ -9,10 +9,259 @@
 ### What Session 194 Did
 **Deliverable:** Enterprise-migration plan-revision session — reconcile `docs/planning/enterprise-migration.md`
 (§1.2/§3/§4, dragon #20's C4-gated-on-B1 text) with the operator's 2026-07-27 post-fork sequencing
-decision recorded in `BACKLOG.md`. Operator-selected (offered as option 1 of the Phase 0 orientation
-report's two open threads). (IN PROGRESS)
-**Started:** 2026-07-28.
-**Status:** Session claimed. Work beginning.
+decision. Operator-selected (offered as option 1 of the Phase 0 orientation report's two open
+threads). **(COMPLETE.** Commit `f1f79af` — plan doc + `BACKLOG.md`, 391 insertions / 171
+deletions across both files.)
+
+**Started / Completed:** 2026-07-28.
+
+**What changed:** Added `enterprise-migration.md` §1.3, reconciling the operator's decision
+(recorded by Session 190, verbatim quote re-derived from `SESSION_NOTES.md`'s own Session 190
+entry rather than trusted from `BACKLOG.md`'s paraphrase): *"All of those will be determined after
+the fork is created and not reported back to this repository."* "Those" = D3 (IP disposition) plus
+the **"platform team" decision bucket already named at the plan's own Phase 0** (D4, D5, D8, D9,
+D14, D15, D16) — a reading corroborated by (a) that exact 7-item bucket, in that exact order,
+existing verbatim in the plan's very first commit (`808b49b`, Session 182, predating the operator's
+statement by 8 sessions — checked via `git log -p`, not assumed), and (b) the "security" bucket
+(D10, D13), named separately in that same Phase 0 line, being the one thing the operator's
+recorded words do *not* include.
+
+**Concrete edits, by section:**
+- **Phase C4:** dropped its explicit `D4, D5, D8, D9, D16` gate. Remaining gate: A1–A4 complete
+  (done), B1's D3-independent core complete (done, Session 190), B2 complete (**open — now C4's
+  only real gate**). Added a "Before step 1" preamble instructing the executor to get D9/D5/D4/D8/D16
+  live from the operator rather than silently defaulting to §3's Recommendation column.
+- **Phase B1:** retitled "D3-independent core: COMPLETE (Session 190)." Full B1 (the DCO/CLA
+  mechanism, D3-dependent) no longer gates C4 — it's the enterprise clone's own future work.
+- **Phase C2b:** retitled "out of scope for this repository" — its only gate, D14, is unanswerable
+  here, so the phase can never be scoped, let alone run, in this repository.
+- **Phases C1 and C2 (narrowed, not removed):** each has one gate in the deferred bucket (C1: D14;
+  C2: D15) and one outside it (C1: D10/D13; C2: D13). Carved the D14/D15-dependent sub-tasks out
+  (C1's IAM *trust*-policy artifact left as an explicit TODO placeholder; C2's D15 index-variable
+  documentation dropped from its DONE criteria) rather than either fully blocking or fully running
+  each phase.
+- **Phase C3:** kept as a session this repository still schedules (like C4/C5, its edits just land
+  inside `<enterprise-clone>`) — only its "do not start before D9" pre-fork blocker is removed;
+  D9/D15 are now supplied live by the operator at that session's start.
+- **New Phase C3b:** extracted the original C3's "generated-projects' CI portability"
+  sub-item (parameterising `governance_templates.py`) into its own fully ungated phase — it was
+  bundled into a phase that just went clone-only, but it touches only this repo's own source and
+  never depended on D9/D15.
+- **Phase C5:** dropped its D16 gate; tagged its D16-recording step as clone-only (not written back
+  into this repository's own tracking).
+- §3 Decision Register: all 8 affected rows (D3–D5, D8–D9, D14–D16) got a `~~gate~~ none — see §1.3`
+  strikethrough plus a timing note; §6/§7/dragon #20 updated to match; new dragons #22–#24 warn
+  against silently treating a deferred item's Recommendation-column text as a ratified decision.
+- `BACKLOG.md`'s Enterprise-migration section fully resynced to the revised plan; B3 (LGPL removal)
+  corrected from "conditional on D11" to **DONE** (both SDKs gone, Sessions 191–193 — a stale-wording
+  fix Session 193 had explicitly deferred into this session, per its own handoff item 4).
+
+**Adversarial verification (Workflow, 4 parallel review lenses — completeness, fidelity, internal
+consistency, executability — each reading the revised 1400-line document fresh):** found one
+**blocking** self-introduced error — the §1 executive-summary Goal-3 row, written during the first
+draft, wrongly re-imported the "resolved post-fork, not tracked here" framing onto C1/C2/C3b work
+that the rest of the same revision correctly kept live and pre-fork. Also surfaced several
+**pre-existing plan gaps that the reconciliation newly exposed** as live contradictions rather than
+latent ones: Phase C4's original, unconditional "recreate both GitHub Releases" step silently
+enacted the now-explicitly-deferred D16 recommendation as if ratified (violates the very dragon
+#22 this session added); Phase C1's "Gated on" line names `bedrock-enterprise.md` §0's three
+security questions but nothing in the phase (or Phase 0's own DONE line, which I'd have otherwise
+left contradicting Phase 0's own Scope paragraph) branches on a "yes" answer; Phase C3's Verify
+block checked a bare `.github/workflows/` path inconsistent with its own "clone-only" framing; C5's
+D16-recording step wasn't tagged clone-only. **All fixed** — see commit `f1f79af`'s message for the
+full list. Two minor completeness gaps (D13's Owner-column label, §1.3's confidence note omitting
+C2b/C5 from its own blast-radius disclosure) were also fixed.
+
+**Mid-session addition (operator-directed, not scope creep):** the operator asked, mid-turn, to
+add a `BACKLOG.md` item for a pre-fork planning session producing an executive-summary document
+covering business benefit, MIT-license legal safety, and enterprise readiness (security, testing,
+data-selection, AWS Bedrock integration). Added as a new bullet in the Enterprise-migration
+section, explicitly scoped as *not* adding a new gate to the just-reconciled C4 (kept the two
+pieces of work separate rather than threading the new item through the phase-gate edit already in
+flight).
+
+**Not done (explicitly out of scope, not silently dropped):**
+- Did not attempt to resolve Phase C1's pre-existing Guardrails/FIPS branching gap (no scope
+  written for a "yes" answer anywhere in the plan) — flagged prominently in Phase C1's own text and
+  Phase 0's DONE line, not fixed; resolving it would mean designing the `bedrock-runtime` fallback
+  path, which the plan's own §6 already lists as an explicit non-goal ("a re-plan, not a phase").
+- Did not write the executive-summary document itself — only added the `BACKLOG.md` item per the
+  operator's literal ask. That's a separate future planning session.
+- Did not re-verify Phase A1–A4/B3's own DONE claims against a fresh build/test run — trusted
+  `CHANGELOG.md`/`BACKLOG.md`'s existing record of Sessions 186–193 rather than re-running
+  `uv run pytest` (out of scope for a planning-only session that touched no `src/`/`tests/` files).
+
+### Session 193 Handoff Evaluation (by Session 194)
+
+**Score: 8/10.** Accurate scope-setting and correct entry points; cost me one extra layer of
+digging the handoff could have saved.
+
+- **What helped:** (1) Correctly identified this as "the only explicitly-open thread" besides the
+  optional Phase 3 rename, so Phase 0's orientation report could present a clean, accurate choice.
+  (2) Pointed directly at `docs/planning/enterprise-migration.md` and `BACKLOG.md`'s
+  Enterprise-migration section as the two documents to read — both were exactly right, and reading
+  them first (rather than starting from memory) surfaced the real complexity (the D-item bucket
+  ambiguity) that a shallower read would have missed. (3) Flagged the B3-wording staleness as
+  "folded into the still-owed enterprise-migration plan-revision session, not done here" — an
+  accurate pointer that let me fix it in the right place instead of rediscovering the gap myself.
+- **What was wrong:** nothing found to be inaccurate. The "state you will inherit... verify fresh"
+  framing (Learning #163 discipline) held — `git status`/`git log` at Phase 0 confirmed `master`
+  was exactly where the handoff said modulo my own Phase 1B stub commit, as expected.
+- **What was missing:** the handoff pointed at `BACKLOG.md` for "the full context" of the
+  operator's sequencing decision, but `BACKLOG.md`'s own text was itself only a paraphrase
+  (**"Phase C4's own gates (D4, D5, D8, D9, D14, D15, D16)"**) — it didn't carry the operator's
+  verbatim words or note that the verbatim quote lives much further down in `SESSION_NOTES.md`'s
+  own Session 190 entry. I had to dig for it myself (via `grep -n "sequencing decision\|after the
+  fork" SESSION_NOTES.md`) to find the load-bearing exact phrase and, critically, to notice it was
+  a paraphrase rather than a literal transcript — that distinction turned out to be the crux of the
+  whole reconciliation (§1.3's "Confidence note"). A one-line pointer ("verbatim operator quote is
+  in Session 190's own entry, not just BACKLOG's summary") would have saved a search.
+- **ROI:** net positive — the accurate scoping and correct document pointers were worth more than
+  the one extra search cost, and the handoff correctly avoided fabricating an interpretation Session
+  193 wasn't positioned to make (it explicitly deferred the reconciliation itself as its own
+  session, per Planning-to-implementation-bleed discipline).
+
+### Phase 3B: Self-assess — Session 194 — 8/10
+
+- **The +:** (1) Did not take `BACKLOG.md`'s paraphrase of the operator's decision at face value —
+  went to Session 190's own entry in `SESSION_NOTES.md` for the verbatim quote before writing a
+  single edit, which surfaced the "platform team bucket" reading as the load-bearing interpretive
+  question of the whole session rather than something a shallower read would have missed entirely.
+  (2) Verified that interpretation with evidence rather than asserting it — confirmed via `git log
+  -p` (delegated to the verification workflow) that the exact 7-item bucket predates the operator's
+  statement by 8 sessions, ruling out circular reasoning. (3) Flagged the interpretation's
+  confidence level explicitly in the plan text itself (§1.3's "Confidence note") rather than
+  presenting an inference as settled fact — named which phases (C1, C2, later corrected to add
+  C2b) would need re-checking if the reading turned out wrong. (4) Ran an adversarial 4-lens
+  verification workflow before treating the revision as done, per Ultracode's quality-pattern
+  guidance — this caught one real blocking self-introduced contradiction and several genuine
+  pre-existing plan gaps that a single self-review pass likely would have missed, since the same
+  reasoning that produced the first draft would have reviewed it. (5) Did not silently absorb the
+  mid-session operator request (executive-summary backlog item) into the in-flight phase-gate edit
+  — kept it as a separate, clearly-scoped addition, avoiding a "while I'm at it" merge of two
+  distinct changes. (6) Followed the Planning Session checklist's evidence-based-inventory
+  requirement literally — ran the actual `grep` inventory of every D-item reference before writing
+  any edit, rather than working from memory of the first full read.
+- **The −:** (1) The first draft (before verification) shipped a real, blocking self-contradiction
+  in the executive summary — evidence that even a careful single-pass edit of a ~1200-line
+  cross-referenced document isn't reliably self-consistent without an independent check; the
+  adversarial pass was necessary, not just thorough-for-its-own-sake. Worth naming so a future
+  session doesn't treat this session's care as proof that skipping verification would have been
+  fine. (2) Did not write out DEVELOPMENT_WORKSTREAM.md's "Implementation Plan" template as a
+  distinct artifact before editing (same gap Session 193 self-flagged) — for a planning-workstream
+  session this is arguably a smaller miss since the deliverable *is* a plan document rather than
+  code, but the discipline gap is the same shape. (3) Spent verification-workflow budget (4 agents,
+  ~365K tokens) on a single reconciliation session — proportionate given the document's legal/
+  compliance stakes and Ultracode being active, but worth flagging as a real cost, not a free
+  action, in case a future session needs to budget similarly for a comparable revision.
+- **Quality bar:** matches the rigor of recent sessions (live-verified claims over trusted
+  paraphrases, evidence before assertion) and extends it with the adversarial-verification pattern,
+  which no prior session in this project's history applied to a planning-document revision
+  specifically (prior uses were code-review — Session 191's `_is_2xx` catch — not plan-text).
+
+### Phase 3C: Learnings — Session 194
+
+- **Candidate #167 — NEW, 1st instance — "When an intermediate session's paraphrase of an operator
+  decision doesn't literally match the structure of the document it's describing (e.g. naming items
+  that don't appear together in any single table column), check whether the paraphrase instead
+  matches an existing categorical grouping already present in the document — and verify that
+  grouping's origin predates the operator's statement (`git log -p`) before trusting the
+  interpretation."** Discovered reconciling Session 190's "Phase C4's own gates (D4, D5, D8, D9,
+  D14, D15, D16)" against `enterprise-migration.md` §3/§4, where a literal reading is provably
+  wrong (D14/D15 don't appear in Phase C4's actual gate list) but the phrase exactly matches Phase
+  0's pre-existing "platform team" ownership bucket, confirmed via `git log -p` to predate the
+  operator's statement by 8 sessions. **When to apply:** reconciling any paraphrased decision
+  against a structured planning document — don't take the paraphrase as a literal column-read if it
+  doesn't fit; look for a categorical grouping it might actually be naming instead.
+- **Candidate #168 — NEW, 1st instance — "A plan phase gated on multiple decision items that later
+  split across a deferred/live boundary needs its Scope, DONE-criteria, and Verify blocks
+  re-examined line by line, not just its 'Gated on' list edited — some sub-tasks may depend
+  specifically on the now-deferred item and must be carved out (explicit TODO / dropped from DONE
+  criteria) while the rest of the phase stays live."** Discovered narrowing Phases C1 (D10/D13 live,
+  D14 deferred) and C2 (D13 live, D15 deferred) — a blanket gate-list edit would have left both
+  phases claiming DONE criteria (the IAM trust policy, the D15 index docs) that the narrowed scope
+  can no longer produce. **When to apply:** any plan revision that removes or defers one gate from
+  a multi-gated phase — check the phase's own body text for gate-specific sub-tasks before treating
+  the edit as just a header change.
+- **Candidate #169 — NEW, 1st instance — "Run an adversarial multi-lens verification pass
+  (completeness / fidelity-to-source / internal-consistency / fresh-executor-executability) on a
+  planning-document revision before closing the session, not just on code changes."** Discovered
+  this session: a 4-lens Workflow review of the revised `enterprise-migration.md` caught one
+  blocking self-introduced contradiction (an executive-summary sentence that silently re-imported
+  the exact framing the revision was removing) plus several genuine pre-existing plan gaps the
+  reconciliation newly exposed as live contradictions. Self-review alone likely would have missed
+  these, since the same reasoning that produced the first draft also reviews it. **When to apply:**
+  any session whose deliverable is a substantive revision to a cross-referenced planning document
+  (multiple phases/sections that must stay mutually consistent) — not just code review, which this
+  project has applied the pattern to before (Session 191's `_is_2xx` catch) but never yet to plan
+  text specifically.
+- **Not promoted to the roster:** #167, #168, #169 are all 1st instance, per this project's
+  established promotion bar (2nd+ instance required; see Sessions 192–193's #163–#166
+  non-promotion for precedent). Checked against the recent candidate roster (#161–#166) for a
+  possible 2nd-instance match — found none; did not re-check the full 61-row `PROJECT_LEARNINGS.md`
+  history, consistent with the depth of check prior sessions applied at this same step.
+  `PROJECT_LEARNINGS.md` = 61 rows (unchanged this session). **Candidate roster:** #169 NEW at 1;
+  #168 NEW at 1; #167 NEW at 1; #166 at 1 (S193); #165 at 1 (S193); #164 at 1 (S192); #163 at 1
+  (S192); earlier per prior roster. **Next = #170.**
+
+### Phase 3D: Handoff to Session 195
+
+**The enterprise-migration plan-revision thread is closed.** `enterprise-migration.md` and
+`BACKLOG.md` are reconciled with the operator's post-fork sequencing decision and adversarially
+verified. **What's actually next, in priority order, is the operator's call** — three live threads
+exist simultaneously for the first time in a while:
+
+1. **Phase B2 (Import readiness)** is now literally the only remaining gate on Phase C4 (the fork
+   itself) — see `enterprise-migration.md` §4 Phase B2 and `BACKLOG.md`'s Enterprise-migration
+   section. A natural next session if the operator wants to keep moving toward the fork.
+2. **The new executive-summary/stakeholder-readiness planning session** (operator-requested this
+   session, mid-turn) — see `BACKLOG.md`'s Enterprise-migration section, last bullet. Not scoped
+   beyond the operator's original request; the planning session that picks this up should decide
+   where the artifact lives (new phase vs. standalone doc) and do its own evidence-gathering — this
+   session deliberately didn't pre-scope it further, per Planning-to-implementation-bleed
+   discipline.
+3. **Phase C1's Guardrails/FIPS branching gap** (flagged, not fixed, this session — see
+   `enterprise-migration.md` Phase C1's "⚠ Pre-existing gap" callout and Phase 0's DONE line) is a
+   real, if smaller, open question: nothing in the plan says what changes if the answer to any of
+   `bedrock-enterprise.md` §0's three security questions is "yes." Not urgent (C1 itself isn't
+   gating anything else right now), but worth a mental note if C1 is ever picked up.
+
+**Do not assume which of these three the operator wants** — Phase 0 of the next session should
+present them as options, the same way this session's own Phase 0 presented the plan-revision
+thread as option 1 of two.
+
+**State you will inherit:**
+1. `master` is clean at `f1f79af` (verify fresh — same point-in-time caveat as every prior handoff,
+   Learning #163).
+2. No feature branch exists for this work (landed directly on `master`, matching the pattern
+   Sessions 190/193 used for docs-only sessions).
+3. `enterprise-migration.md` is now ~1400 lines (was ~1210) — if a future session needs to re-read
+   it in full, expect at least 2 `Read` calls (the tool's per-call cap is ~1370 lines for this
+   file's line lengths).
+4. Learning candidates #167–#169 are new, 1st instance each — not promoted. Next candidate number
+   is **#170**. `PROJECT_LEARNINGS.md` unchanged at 61 rows.
+5. README.md:128's stale test-count line (flagged by Session 193, not yet fixed) is still open —
+   untouched this session, out of scope for a planning-only session.
+
+**Key files:**
+- `docs/planning/enterprise-migration.md` §1.3 — the reconciliation itself; read this first if
+  picking up B2, C1, C3, C4, or the executive-summary thread, since every one of those phases'
+  text now assumes §1.3's framing.
+- `BACKLOG.md`'s Enterprise-migration section — resynced summary; treat as accurate as of this
+  session (unlike the version Session 193 inherited, which had drifted from the plan doc).
+
+**Gotchas:**
+- **Dragons #22–#24 (new this session)** warn against silently treating a deferred D-item's §3
+  Recommendation-column text as a ratified operator decision. This applies most concretely to
+  whoever runs Phase C4: get D9 (host), D5 (import strategy), D4 (DCO), D8 (wiki destination), and
+  D16 (release disposition) from the operator live, at that session's start — do not assume the
+  plan's own recommendations were adopted just because they're written down.
+- Any git-ancestry claim in this handoff (including "`master` is at `f1f79af`") should be
+  re-verified live before acting on it — Learning #163 still applies every session.
+- If a future session is tempted to treat this session's care (verbatim-quote-first, adversarial
+  verification) as proof that a lighter-touch revision would also have been safe: it wasn't — the
+  first draft, produced with the same discipline, still shipped a blocking self-contradiction. The
+  verification step is what caught it, not the drafting care alone.
 
 ### What Session 193 Did
 **Deliverable:** httpx migration Phase 2 — rewrite the GitHub adapter (`github_adapter.py`) and
