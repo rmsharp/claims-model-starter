@@ -46,8 +46,8 @@ class PlatformSpec:
     (consumed first as host membership, then as the URL/token sources in O3-2);
     Phase O3-3 adds :attr:`adapter_factory`, so the registry now also decides
     which ``RepoClient`` adapter a live run builds. The factory lazy-imports its
-    SDK inside the body, so importing this module stays SDK-free — the registry
-    pulls ``httpx`` / ``PyGithub`` only when an adapter is actually
+    adapter module inside the body, so importing this module stays
+    ``httpx``-free — the registry pulls it only when an adapter is actually
     constructed.
     """
 
@@ -70,7 +70,7 @@ def _make_gitlab_adapter(*, host_url: str, private_token: str) -> RepoClient:
 
 
 def _make_github_adapter(*, host_url: str, private_token: str) -> RepoClient:
-    """Build the GitHub :class:`RepoClient` adapter (lazy SDK import).
+    """Build the GitHub :class:`RepoClient` adapter (lazy import).
 
     The uniform ``(*, host_url, private_token)`` signature absorbs the
     constructor asymmetry (GitHub bakes a URL default and omits ``ssl_verify``);

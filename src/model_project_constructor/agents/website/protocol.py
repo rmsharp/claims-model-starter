@@ -1,10 +1,10 @@
 """Repo client boundary for the Website Agent.
 
-Per architecture-plan §4.3 the agent talks to a repository host (GitLab in
-production today, GitHub planned) via a thin adapter, but nodes must be
-unit-testable without a live host. This ``Protocol`` is the boundary: tests
-pass a ``FakeRepoClient``, production passes a thin wrapper around direct
-``httpx`` calls (GitLab) or ``PyGithub`` (GitHub).
+Per architecture-plan §4.3 the agent talks to a repository host (GitLab or
+GitHub) via a thin adapter, but nodes must be unit-testable without a live
+host. This ``Protocol`` is the boundary: tests pass a ``FakeRepoClient``,
+production passes a thin wrapper around direct ``httpx`` calls to either
+host's REST API.
 
 The Phase 4A CLI (`--fake`) uses the fake client so it can show a file tree
 of what *would* have been committed without needing credentials.

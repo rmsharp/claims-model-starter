@@ -72,7 +72,7 @@ src/model_project_constructor/          # main "orchestrator" package
     governance_templates.py             # 4B governance artifact generators (§8.2 tier fan-out)
     fake_client.py                      # in-memory repo-host stand-in for tests + CLI
     gitlab_adapter.py                   # production adapter via direct httpx calls
-    github_adapter.py                   # production adapter via PyGithub
+    github_adapter.py                   # production adapter via direct httpx calls
     cli.py, __main__.py                 # typer CLI (--host gitlab|github, --fake or --private-token)
   orchestrator/                         # Phase 5/6: sequential pipeline driver (Intake → Data → Website) + observability
     pipeline.py                         # run_pipeline(config, *, intake_runner, data_runner, website_runner)
@@ -189,9 +189,10 @@ uv run python -m model_project_constructor.agents.website \
     --namespace data-science/model-drafts \
     --private-token "$GITLAB_TOKEN"
 
-# Real GitHub — creates an actual repo via PyGithub. --host-url defaults
-# to https://api.github.com; pass an enterprise API URL for GHE. Note that
-# GitHub does not support nested namespaces — pass a single owner/org.
+# Real GitHub — creates an actual repo via direct httpx calls. --host-url
+# defaults to https://api.github.com; pass an enterprise API URL for GHE.
+# Note that GitHub does not support nested namespaces — pass a single
+# owner/org.
 uv run python -m model_project_constructor.agents.website \
     --intake tests/fixtures/subrogation_intake.json \
     --data tests/fixtures/sample_datareport.json \
