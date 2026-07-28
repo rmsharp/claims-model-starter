@@ -22,16 +22,28 @@ repository; the "security" bucket, D10/D13, is unaffected and stays live) with t
 gates, §3 Decision Register, dragon #20, §6, and §7. The phase list below reflects the revised
 plan; the bullets below are a summary — `enterprise-migration.md` is authoritative.
 
+**Phase C4's gate is now fully satisfied (Session 195, 2026-07-28):** B2 (below) is DONE. C4 can
+run as soon as the operator supplies D9 (destination host), D5 (import strategy), D4 (DCO), D8
+(wiki destination), and D16 (release disposition) live at that session's start — see
+`enterprise-migration.md` Phase C4's "Before step 1" note and dragons #22/#24. This repository does
+not pre-answer those five; whoever runs C4 gets them from the operator directly.
+
 - **B1 — The legal packet.** **D3-independent core: DONE (Session 190)** — wiki LGPL mislabeling
   fixed, root `SECURITY.md`/`CODEOWNERS`/`THIRD-PARTY-LICENSES`/baseline `CONTRIBUTING.md`/`NOTICE`
   added, D1 attribution in place. **Full B1 (the corporate DCO/CLA mechanism section) is no longer
   a session this repository schedules** — per §1.3, it depends on D3/D4/D9, all deferred post-fork;
   it will be authored inside the enterprise clone, not here. B1's D3-independent core is the actual
   gate on Phase C4, and it's satisfied.
-- **B2 — Import readiness** *(the only remaining gate on C4)*: secret-scanner allowlist,
-  dev-credential rotation, external-asset register (3 GitLab pilot projects invisible to git; the
-  two GitHub Releases — recreate-vs-pointer is a live D16 call, not pre-decided; a 162 MB `.git`
-  with loose objects).
+- **B2 — Import readiness.** **DONE (Session 195).** `.gitleaksignore` + classification table +
+  secrets attestation + external-asset register at `audits/2026-07-28-b2-import-readiness.md`;
+  `releases-export.json`/`prs-export.json` at repo root. The three GitLab pilot projects
+  (`subrogation-pilot`, `-v2`, `-v3`) and the two GitHub Releases + tags are registered with a named
+  disposition (undecided/D16 for the Releases and pilot projects — recreate-vs-pointer and
+  migrate-vs-leave stay live D16/operator calls, not pre-decided). **Not done: the three `.env`
+  credential rotations** — flagged as an open, named disposition requiring operator action against
+  external consoles (Anthropic/GitLab/AWS), not something this session could perform. The 162 MB
+  `.git`/loose-objects fact from §2.9 is pre-existing repo state, not a B2 action item — `git clone
+  --mirror` (C4 step 1) repacks on push regardless.
 - **B3 — LGPL removal.** **DONE** (both LGPL SDKs removed, Sessions 191–193 — see the httpx section
   below). D11 is moot; no further action.
 - **C1 — Bedrock enterprise correctness.** **Narrowed by §1.3.** Gated on D10, D13, and
@@ -52,8 +64,9 @@ plan; the bullets below are a summary — `enterprise-migration.md` is authorita
   `governance_templates.py` so pipeline-generated projects can target enterprise-internal hosts.
   **Ungated — touches only this repo's own source, schedulable any time**, independent of the fork.
 - **C4 — Enterprise clone provisioning ("the fork").** Gated on **A1–A4 complete (done), B1's
-  D3-independent core complete (done), and B2 complete (open — the only real gate)**. D4/D5/D8/D9/D16
-  no longer need written answers here; the operator supplies them live at C4's session start.
+  D3-independent core complete (done), and B2 complete (done, Session 195) — the gate is fully
+  satisfied**. D4/D5/D8/D9/D16 no longer need written answers here; the operator supplies them live
+  at C4's session start.
 - **C5 — Fork independence verification.** Gated on **C4 complete only** — D16 no longer a written
   pre-req; C5 records whatever the operator decided, live, inside the clone (not back into this
   repository's own tracking).

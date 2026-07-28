@@ -4,8 +4,9 @@
 Session 194, §1.3, 2026-07-28** — see that section for what changed and why). Each phase below is
 a *separate* session. Nothing in this document was executed while it was being written — no merge,
 no push, no wiki publish, no MkDocs deploy. **Since then, real progress has landed:** Phases
-A1–A4, B1's D3-independent core, and B3 are complete (see each phase's own status line and
-`CHANGELOG.md`); Phase B2 is the only remaining gate on C4 as of this revision.
+A1–A4, B1's D3-independent core, B2, and B3 are complete (see each phase's own status line and
+`CHANGELOG.md`); **Phase C4's gate is now fully satisfied** — the fork can run as soon as the
+operator supplies D9/D5/D4/D8/D16 live at that session's start (§4's "Before step 1" note).
 
 **Operator directive (recorded at the close of Session 181, 2026-07-27):**
 
@@ -843,9 +844,18 @@ git grep -l -i 'KJ5HST\|Terrell Deppe' -- . | grep -vE '^NOTICE$|^CLAUDE\.md$'  
 
 ---
 
-### Phase B2 — Import readiness: scanners, identity, external assets
+### Phase B2 — Import readiness: scanners, identity, external assets — **COMPLETE (Session 195)**
 
-**Scope:** author `.gitleaksignore` (or the target scanner's baseline) enumerating the ~10 known
+**Delivered:** `.gitleaksignore` (repo root, one real gitleaks fingerprint on a full-history scan —
+`ROADMAP.md:65`, a model-id false positive — plus documentation of why); the full classification
+table and external-asset register at `audits/2026-07-28-b2-import-readiness.md`; `releases-export.json`
+and `prs-export.json` (repo root). The three GitLab pilot projects (`subrogation-pilot`, `-v2`,
+`-v3`, all under `rmsharp-modelpilot`) were located via the gitignored checkpoint store and given
+project IDs/URLs in the register. **Not performed:** rotating the three live `.env` credentials —
+that requires operator action against external consoles (Anthropic/GitLab/AWS), named as an open
+disposition in the register rather than silently marked done (see that doc §3.3).
+
+**Scope (original):** author `.gitleaksignore` (or the target scanner's baseline) enumerating the ~10 known
 false positives from §2.8 **with the classification table**, so the import request arrives with
 the answer rather than the alarm. Package the two negative proofs as the secrets attestation —
 including the exact commands, so the reviewer can re-run them. Export the API-only assets:
@@ -1091,12 +1101,14 @@ uv run pytest -q && uv run mypy
 ### Phase C4 — Enterprise clone provisioning
 
 **Gated on:** **A1–A4 complete** (done), **B1's D3-independent core complete** (done, Session 190),
-and **B2 complete** (open — the only remaining gate as of this revision). **D4, D5, D8, D9, D16 no
-longer gate this phase** — per §1.3, the operator resolves them post-fork, inside the clone, and
-supplies whatever this phase's mechanics need live (notably, a destination host URL for step 1) at
-execution time. *(A1–A4 and B1's core remain explicit per §1.2 — the clone is one-time and does
-not sync; anything not fixed on the original before this phase runs is permanent in the clone. B2
-is required because this phase consumes its `releases-export.json` and external-asset register.
+and **B2 complete** (done, Session 195 — **this phase's gate is now fully satisfied**, pending only
+the live D9/D5/D4/D8/D16 answers below). **D4, D5, D8, D9, D16 no longer gate this phase** — per
+§1.3, the operator resolves them post-fork, inside the clone, and supplies whatever this phase's
+mechanics need live (notably, a destination host URL for step 1) at execution time. *(A1–A4 and
+B1's core remain explicit per §1.2 — the clone is one-time and does not sync; anything not fixed on
+the original before this phase runs is permanent in the clone. B2 is required because this phase
+consumes its `releases-export.json` and external-asset register (now at
+`audits/2026-07-28-b2-import-readiness.md`).
 C1/C2/C2b/C3 are deliberately **not** gates — see dragon #20's scoping note: they are
 enterprise-readiness fixes that can be applied to the original before the fork or, per §1.3, are
 now definitively deferred to the clone, at the cost of having to do them there instead, since there
@@ -1164,14 +1176,21 @@ never in the current working tree, and nothing here is ever committed or pushed 
    column** — Phase B2 (§4) lists this asset explicitly as "genuinely undecided," and Phase C5
    step 3 records whichever branch was actually taken, which is only possible if this step didn't
    silently pre-empt the choice.
-9. **Execute the external-asset register from B2, minus the wiki repo and the gh-pages site** —
-   their disposition is fixed (keep, unconditionally; §1.2/D6/§6). **Confirm the disposition of the
-   three GitLab pilot projects with the operator** — B2's register lists them as a genuinely
-   undecided asset alongside the Releases, and this plan does not itself recommend migrate-vs-leave
-   for them; do not treat their absence from this step's original text as "no action needed."
+9. **Execute the external-asset register from B2** (`audits/2026-07-28-b2-import-readiness.md` §3),
+   **minus the wiki repo and the gh-pages site** — their disposition is fixed (keep, unconditionally;
+   §1.2/D6/§6). **Confirm the disposition of the three GitLab pilot projects with the operator**
+   (`subrogation-pilot`, `-v2`, `-v3`, project IDs and URLs in the register's §3.2) — B2's register
+   lists them as a genuinely undecided asset alongside the Releases, and this plan does not itself
+   recommend migrate-vs-leave for them; do not treat their absence from this step's original text as
+   "no action needed."
    **Rotate the three personal dev credentials** (Anthropic key, GitLab PAT, Bedrock bearer token)
    so the clone never depends on personal-account secrets — independent of any account closure,
-   since none is planned (§1.2).
+   since none is planned (§1.2). **This is an operator action, not an agent one** — generating
+   replacements and invalidating the originals happens on external consoles (Anthropic Console,
+   GitLab, AWS IAM) an agent has no access to and should not act on unilaterally (an irreversible
+   external-account action, `SAFEGUARDS.md`). B2 flagged this same item as a named-but-not-performed
+   disposition (`audits/2026-07-28-b2-import-readiness.md` §3.3) rather than silently completing it
+   — this step inherits the same split: the executor confirms rotation happened, they don't do it.
 
 **DONE looks like:** the enterprise remote carries the full history, both tags, and the 23-page
 wiki; `<enterprise-clone>` is a normal (non-bare) working checkout; nothing in the clone's tree
@@ -1397,7 +1416,7 @@ uv run pytest -q && uv run ruff check src/ tests/ packages/ scripts/ && uv run m
 ```
 
 **Goal 3, revised scope for this repository (§1.3, supersedes the original "D1–D16 answered"
-criterion):** completes when B1's D3-independent core (done), B2, B3 (done), C1 and C2 in their
+criterion):** completes when B1's D3-independent core (done), B2 (done, Session 195), B3 (done), C1 and C2 in their
 narrowed D10/D13-scoped form, C3, C3b, C4, and C5 — **in its revised form (fork-independence
 verification, §1.2, not the original decommission scope)** — all close. **C3, like C4/C5, stays a
 session this repository schedules even though its edits land inside `<enterprise-clone>`** — it

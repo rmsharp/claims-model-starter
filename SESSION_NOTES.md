@@ -6,6 +6,263 @@
 
 ## ACTIVE TASK
 
+### What Session 195 Did
+**Deliverable:** Execute Phase B2 (Import readiness) from `docs/planning/enterprise-migration.md:847-887` —
+operator-selected (option 1 of Session 194's three-way Phase 0 handoff). **COMPLETE.**
+
+**Started / Completed:** 2026-07-28.
+
+**What was delivered:**
+- **`.gitleaksignore`** (repo root) — installed `gitleaks` v8.30.1 via Homebrew and ran a real
+  full-git-history scan (`gitleaks detect --source . -v --log-opts="--all"`, after
+  `git fetch origin '+refs/heads/*:refs/remotes/origin/*'` per dragon #14) rather than trusting
+  §2.8's narrative description of "~10 known false positives" at face value. **Ground truth turned
+  out different from the inherited description:** gitleaks' default ruleset flags exactly **one**
+  finding across 385 commits — `ROADMAP.md:65`, a Bedrock model-id string (`anthropic.claude-opus-4-8`)
+  flagged by `generic-api-key` only because it sits next to the prose "API key auth." Confirmed as
+  a false positive by reading the live line, suppressed via a commit-pinned fingerprint with an
+  inline `#`-comment explaining why (verified gitleaks' `.gitleaksignore` format supports comment
+  lines by testing it directly before relying on it).
+- **`audits/2026-07-28-b2-import-readiness.md`** — the classification table and register the phase
+  calls for. Contains: (1) two negative-proof secrets attestations, both re-derived fresh this
+  session with exact re-runnable commands — a history-wide filename scan (3 hits, all
+  `.env.example`) and a history-wide content-shape scan (`git log --all -p | grep -oE
+  "ghp_...|glpat-...|sk-ant-...|AKIA...|-----BEGIN..."`, real-token-length regex — 3 unique
+  placeholder strings, traced via `git log -S` to exactly 4 paths, all documentation); (2) a
+  14-row false-positive classification table covering every location in the working tree that
+  superficially matches a credential shape, whether or not gitleaks' *default* config currently
+  flags it (since the eventual reviewer's scanner is unspecified — "the target scanner's
+  baseline," per the phase's own text); (3) the external-asset register, split into fixed
+  disposition (wiki + gh-pages, D6, keep unconditionally) and genuinely-undecided (3 GitLab pilot
+  projects — found via the gitignored `.orchestrator/checkpoints/*/RepoProjectResult.result.json`
+  store, with real project IDs/URLs/commit SHAs: `subrogation-pilot` `81385820`,
+  `subrogation-pilot-v2` `81387275`, `subrogation-pilot-v3` `81393718`, all under
+  `rmsharp-modelpilot`; a fourth checkpoint run, `run_live_001`, failed at group lookup and created
+  no project — and the 2 GitHub Releases + 2 annotated tags, D16-deferred).
+- **`releases-export.json` / `prs-export.json`** (repo root) — `gh api
+  repos/rmsharp/claims-model-starter/releases` (2 releases, v0.1.0/v0.2.0, full bodies) and `gh pr
+  list --state all --json number,title,body,mergedAt` (2 PRs), exactly as the phase's Scope text
+  specifies.
+- **Not performed: rotating the three live `.env` credentials** (Anthropic key, GitLab PAT,
+  Bedrock bearer token). Flagged to the operator *before* starting work: generating replacements
+  and invalidating originals happens on external consoles (Anthropic Console, GitLab, AWS IAM) this
+  agent has no access to and should not act on unilaterally — an irreversible external-account
+  action, exactly the class `SAFEGUARDS.md` requires stopping for. The phase's own DONE criteria
+  ("every non-git asset has a named disposition") is satisfied by naming this disposition
+  (`audits/2026-07-28-b2-import-readiness.md` §3.3: confirmed present via length-only inspection —
+  108/62/136 chars — never reading values; operator action required, not silently marked done).
+  Added a matching flag to Phase C4 step 9, which has the identical "rotate the three personal dev
+  credentials" instruction, so a future C4 session doesn't have to rediscover this same boundary.
+- **`docs/planning/enterprise-migration.md` and `BACKLOG.md` updated:** Phase B2 marked COMPLETE
+  (Session 195); Phase C4's gate text changed from "B2 complete (open — the only remaining gate)"
+  to "done, Session 195 — this phase's gate is now fully satisfied"; C4 step 9 now cross-references
+  the register's exact path; §7's Goal-3 completion list now marks B2 "(done)" alongside its peers
+  B1-core/B3 (previously unmarked, a stale omission caught by the adversarial pass — see below);
+  top-of-document status line updated.
+
+**Adversarial verification (Workflow, 4 parallel review lenses — completeness vs. B2's own
+Scope/DONE text, fidelity/fact-checking every citation and command, security-sensitivity of the
+four files about to be committed, internal-consistency between `enterprise-migration.md` and
+`BACKLOG.md`):** all four ran fresh, independent re-derivations (re-running every bash command,
+re-reading every citation) rather than trusting the drafted packet. **Security-sensitivity came
+back fully clean** — no credential value or high-entropy secret in any of the four files, the
+`.gitleaksignore` fingerprint correctly scoped to exactly one commit/file/line (not overly broad),
+and the credential-rotation-deferral judgment call confirmed as the security-correct one. The other
+three lenses each found one minor, real issue, all fixed this session: (1) **completeness** — the
+classification table covered `glpat-xyz`/`ghp_xyz` test literals (§2.8's first and second named
+token shapes) but had zero row for the third, `sk-ant-xyz`, which exists at
+`tests/orchestrator/test_config.py:101-102` (`test_anthropic_api_key`) — added as table row 14;
+(2) **fidelity** — the packet's own citation of Phase B2's line range (`:846-876`) was imprecise
+(846 is a blank separator line before the heading at 847; the section actually runs through 887) —
+fixed in both the audit doc and `.gitleaksignore`'s header comment; also `docs/tutorial.md` row 8
+cited only 2 of the 3 lines where the three placeholders appear (missed `:383`, the
+`ANTHROPIC_API_KEY` line) — fixed; (3) **internal-consistency** — §7's Goal-3 paragraph listed
+"B1's D3-independent core (done), B2, B3 (done)" — B1 and B3 got a "(done)" annotation, B2 didn't,
+even though B2 is now done — a stale-in-spirit omission from before this session's edit — fixed.
+**No blocking findings from any lens.**
+
+**Not done (explicitly out of scope, not silently dropped):**
+- Did not rotate the three `.env` credentials — see above; named disposition, not performed.
+- Did not resolve D16 (release/pilot-project recreate-vs-pointer/migrate-vs-leave) — B2's register
+  only names the options; the phase text is explicit that C4/C5 record whichever the operator
+  picks, live. Not this session's decision to make.
+- Did not touch the 162 MB `.git`/loose-objects fact from §2.8/§2.9 — confirmed this is not
+  actually part of Phase B2's own Scope text (a `BACKLOG.md` paraphrase artifact that had drifted
+  in); noted in `BACKLOG.md`'s B2 bullet that C4 step 1's `git clone --mirror` naturally resolves
+  it (mirror clones only reachable refs, which repacks the loose objects and drops the 8
+  unreachable dropped-stash commits `§2.8` names) rather than treating it as an open B2 action.
+
+### Session 194 Handoff Evaluation (by Session 195)
+
+**Score: 9/10.** A clean, well-bounded single-session phase, presented as one clear option among
+three at Phase 0 — cost me almost no extra digging.
+
+- **What helped:** (1) The three-way Phase 0 menu (B2 / executive-summary planning / C1's
+  Guardrails-FIPS gap) was accurate and let the operator pick cleanly with "1" — no ambiguity about
+  what that meant. (2) Phase B2's own text (`enterprise-migration.md:847-887`, written by an earlier
+  session but reconciled by 194) was internally complete — its own Scope, DONE criteria, and Verify
+  block needed no interpretation or repair before I could execute against them directly. (3) The
+  handoff correctly flagged that D4/D5/D8/D9/D16 no longer gate C4, meaning B2 stood alone as this
+  session's actual remaining work rather than being entangled with any open decision-register item.
+- **What was wrong:** nothing found inaccurate. `git status`/`git log` at Phase 0 confirmed `master`
+  was exactly at `81a867d` as the handoff implied (re-verified fresh per Learning #163, not trusted
+  from the handoff's own claim).
+- **What was missing:** nothing structural — the one gap was in the *plan text itself* (a much
+  earlier session's write-up), not this handoff: §2.8's "~10 known false positives" description
+  turned out not to match what an actual `gitleaks` scan flags today (see below). That's not a
+  handoff-evaluation finding against Session 194 specifically — 194 didn't author §2.8 and had no
+  reason to re-verify a scanner claim while doing a plan-sequencing reconciliation.
+- **ROI:** strongly positive — a well-scoped, self-contained phase with an accurate menu is close to
+  the ideal handoff shape for a single-deliverable execution session.
+
+### Phase 3B: Self-assess — Session 195 — 8/10
+
+- **The +:** (1) Installed a real scanner (`gitleaks` v8.30.1) and ran it against full git history
+  rather than trusting `enterprise-migration.md` §2.8's narrative description of "~10 known false
+  positives" — ground truth turned out meaningfully different (1 real finding, not ~10; a different
+  one than any of §2.8's five named categories). Re-deriving evidence instead of restating an
+  inherited description is the same discipline `SESSION_RUNNER.md` Learning #6 names for code, now
+  extended to a scanner's actual behavior. (2) Re-fetched (`git fetch origin
+  '+refs/heads/*:refs/remotes/origin/*'`) before every full-history claim, per dragon #14 — caught
+  nothing new this session, but the discipline is the point, not the catch. (3) Found the three
+  GitLab pilot projects' real project IDs/URLs/commit SHAs from primary evidence (the gitignored
+  checkpoint store) rather than restating the vague "three GitLab pilot projects" placeholder that
+  every prior mention of them in this plan carries. (4) Flagged the credential-rotation boundary to
+  the operator *before* starting any work, then held that boundary through close-out — named the
+  disposition in both the register and, proactively, in Phase C4's own text (which has the
+  identical instruction and would otherwise force a future session to rediscover the same question).
+  (5) Ran a 4-lens adversarial verification workflow before closing out — extending Session 194's
+  pattern (candidate #169) from planning-document revisions to an execution-phase, reviewer-facing
+  deliverable for the first time in this project's history. It caught 3 real minor issues (one
+  missing table row, two citation-precision slips) that my own single-pass authoring missed, plus
+  confirmed security-sensitivity fully clean via independent re-derivation, not by trusting my own
+  claims about what the four files contained.
+- **The −:** (1) The first draft's Phase-B2 line-range citation (`:846-876`) was imprecise (true
+  span `:847-887`) — a small but real accuracy slip, caught only by the adversarial fidelity lens,
+  not by my own re-read. This is the second session in a row (after 194's self-introduced executive-
+  summary contradiction) where the adversarial pass, not the author's own review, caught the actual
+  defect — worth naming as a pattern, not a coincidence: the same reasoning that writes a citation
+  also tends to accept it on re-read. (2) Missed the `sk-ant-xyz` test literal on the classification
+  table's first draft even though I had already grepped for and confirmed all three of §2.8's named
+  token shapes (`glpat-xyz`/`ghp_xyz`/`sk-ant-xyz`) earlier in the session — built rows for two of
+  three and simply didn't transcribe the third. An avoidable oversight, not a new-information gap.
+  (3) Spent real verification budget (4 agents, ~245K tokens, ~5 minutes wall-clock) on a single B2
+  session — proportionate given the packet is meant for an external security reviewer, but a real,
+  repeatable cost worth budgeting for in future single-phase sessions of similar sensitivity.
+- **Quality bar:** matches Session 194's rigor and extends its adversarial-verification pattern to a
+  new deliverable shape (execution output, not plan text) for the first time.
+
+### Phase 3C: Learnings — Session 195
+
+- **Candidate #170 — NEW, 1st instance — "When a plan document's inventory of scanner false
+  positives (or any tool-output claim) was written by an earlier session's narrative description
+  rather than a fresh tool run, re-derive it with the actual tool installed and run against current
+  state before treating the plan's enumeration as authoritative — a real run can surface a
+  materially different result (fewer hits, due to length/entropy gating the narrative didn't
+  account for; or new hits the narrative never anticipated)."** Discovered running `gitleaks
+  detect --source . -v --log-opts="--all"` against `enterprise-migration.md` §2.8's "~10 known
+  false positives" claim: the real scan found exactly 1 (a model-id string in `ROADMAP.md`, not
+  named in §2.8 at all), not ~10, because gitleaks' default config length/entropy-gates short test
+  literals and uniform-character placeholders that a naive substring description would flag.
+  **When to apply:** any session about to author a scanner allowlist, dependency audit, or similar
+  artifact whose plan-level description of "what will fire" predates an actual tool run this
+  session can now perform.
+- **Candidate #171 — NEW, 1st instance — "When authoring a security-scanner allowlist/baseline for
+  an unspecified 'target scanner' (the actual reviewer's tool is unknown), keep two separate
+  artifacts: an ignore-file with real fingerprints for only what your own installed scanner
+  actually flags today, plus a companion classification table enumerating every other
+  shape-matching location regardless of whether your tool flags it — since a stricter or
+  differently-configured scanner the eventual reviewer runs may flag entries yours doesn't, and you
+  have no fingerprint to suppress something your own tool is silent on."** Discovered authoring
+  `.gitleaksignore` (1 real fingerprint) alongside a 14-row classification table (13 more locations
+  gitleaks' default config doesn't flag but a stricter ruleset might). **When to apply:** any
+  security-artifact session where "the target scanner" is explicitly unspecified in the plan text.
+- **Candidate #172 — NEW, 1st instance (extends candidate #169, Session 194) — "The adversarial
+  multi-lens verification pattern generalizes beyond planning-document revisions to any
+  execution-phase deliverable that makes checkable factual claims for an external audience (a
+  security/compliance packet, an audit report) — not just plan text or code review."** Discovered
+  this session: applying #169's pattern (completeness/fidelity/security-sensitivity/consistency
+  lenses) to a *security packet* rather than a plan revision caught the same class of self-review
+  blind spot (a citation slip the author's own re-read didn't catch) that #169 first documented for
+  plan text. **When to apply:** any single-session deliverable whose claims (citations, counts,
+  reproducible commands) another party will rely on without independently re-deriving them
+  themselves.
+- **Candidate #173 — NEW, 1st instance — "A plan phase's own Scope text explicitly naming an action
+  (e.g., 'rotate this credential') does not override `SAFEGUARDS.md`'s irreversible-external-account-
+  action stop rule — when the phase's DONE criteria is satisfiable by naming a disposition rather
+  than performing the action ('every asset has a named disposition'), give it that disposition
+  (flagged to the operator, not silently completed or silently skipped) instead of either
+  fabricating completion or treating the safeguard as blocking the whole phase."** Discovered this
+  session: Phase B2's Scope text says to "rotate" three live credentials; this session named that
+  disposition in the register and flagged it to the operator up front, then found the identical
+  tension pre-written into Phase C4 step 9 and added the same flag there pre-emptively.
+  **When to apply:** any phase whose Scope text includes an action against an external
+  account/console the agent cannot safely perform unilaterally, where the DONE criteria's actual
+  wording allows a named-disposition resolution instead of the literal action.
+- **Not promoted to the roster:** #170–#173 are all 1st instance, per this project's established
+  promotion bar (2nd+ instance required). Checked against the recent roster (#161–#169) for a
+  possible 2nd-instance match — none found (closest was #169, related but scoped to plan-text
+  revisions specifically, hence #172 is filed as a related-but-distinct extension rather than a
+  2nd instance of #169 itself). `PROJECT_LEARNINGS.md` = 61 rows (unchanged this session).
+  **Candidate roster:** #173 NEW at 1; #172 NEW at 1 (extends #169); #171 NEW at 1; #170 NEW at 1;
+  #169–#167 at 1 (S194); earlier per prior roster. **Next = #174.**
+
+### Phase 3D: Handoff to Session 196
+
+**Phase B2 is closed.** `enterprise-migration.md`, `BACKLOG.md`, `.gitleaksignore`, the new audit
+doc, and the two export JSONs are committed. **Phase C4's gate is now fully satisfied** — nothing
+in this repository blocks the fork any longer.
+
+**What's next, in priority order — present as options, do not assume which the operator wants:**
+
+1. **Phase C4 (Enterprise clone provisioning — "the fork")** is now unblocked. This is the natural
+   next session if the operator wants to proceed toward the fork. **Read the "Before step 1" note
+   at `enterprise-migration.md:~1105`** before starting — the operator must supply D9 (destination
+   host), D5 (import strategy), D4 (DCO/signed-commits), D8 (wiki destination/naming), and D16
+   (release disposition) live, at that session's start. Do not default to §3's Recommendation-
+   column text (dragons #22/#24) — none of those five were confirmed as decisions, only proposed.
+2. **The executive-summary/stakeholder-readiness planning session** (operator-requested, Session
+   194) — still open, `BACKLOG.md`'s Enterprise-migration section, last bullet. Not scoped further
+   by either Session 194 or 195.
+3. **Phase C1's Guardrails/FIPS branching gap** — still open, unchanged since Session 194 flagged
+   it (`enterprise-migration.md` Phase C1's "⚠ Pre-existing gap" callout). Not urgent; nothing else
+   gates on it right now.
+
+**State you will inherit:**
+1. `master` is clean — verify fresh with `git status`/`git log -1` before acting on this claim
+   (Learning #163 still applies every session; this handoff's own commit hash is stated in the
+   commit message, not repeated here to avoid yet another stale-hash risk).
+2. No feature branch — landed directly on `master`, matching the pattern recent docs-only/
+   packet-authoring sessions (190, 193, 194) have used.
+3. `gitleaks` v8.30.1 is now installed locally via Homebrew (`/opt/homebrew/Cellar/gitleaks`) — a
+   real, reusable tool for any future scanner-related session on this machine, not scoped to B2.
+4. Learning candidates #170–#173 are new, 1st instance each — not promoted. Next candidate number
+   is **#174**. `PROJECT_LEARNINGS.md` unchanged at 61 rows.
+5. `audits/2026-07-28-b2-import-readiness.md` is the authoritative external-asset register — Phase
+   C4 step 9 already points to it directly; anyone touching the 3 GitLab pilot projects or the 2
+   GitHub Releases should read that doc's §3, not re-derive the register from scratch.
+
+**Key files:**
+- `docs/planning/enterprise-migration.md` Phase C4 (`~1101-1200`) — the next natural session if the
+  operator picks option 1; its "Before step 1" note and step 9 (credential-rotation boundary,
+  external-asset register execution) are both directly relevant to what this session just produced.
+- `audits/2026-07-28-b2-import-readiness.md` — full secrets attestation, classification table, and
+  external-asset register; read before touching any of the assets it names.
+- `.gitleaksignore` (repo root) — re-run `gitleaks detect --source . -v --log-opts="--all"` after
+  any future commit to confirm it still reports clean; if it doesn't, a *new* finding exists and
+  needs its own classification, not a blind re-suppression.
+
+**Gotchas:**
+- **The credential-rotation boundary recurs at Phase C4 step 9** (same three credentials, same
+  "rotate" instruction) — this session added an explicit flag there; do not let a future session
+  re-litigate whether the agent should perform it. The agent confirms it happened; the operator
+  performs it.
+- Any git-ancestry or line-number claim in this handoff should be re-verified live before acting on
+  it — Learning #163 still applies every session, and `enterprise-migration.md` grows/shifts with
+  each edit (dragon #8: line numbers shift as you sweep).
+
+---
+
 ### What Session 194 Did
 **Deliverable:** Enterprise-migration plan-revision session — reconcile `docs/planning/enterprise-migration.md`
 (§1.2/§3/§4, dragon #20's C4-gated-on-B1 text) with the operator's 2026-07-27 post-fork sequencing

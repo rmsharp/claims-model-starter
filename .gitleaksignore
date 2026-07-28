@@ -1,0 +1,21 @@
+# gitleaks allowlist — Phase B2 (Import readiness), docs/planning/enterprise-migration.md:847-887
+#
+# This file suppresses fingerprints that gitleaks' *default* ruleset actually
+# flags on a full-history scan of this repository as of 2026-07-28
+# (`gitleaks detect --source . -v --log-opts="--all"`, 385 commits scanned).
+# It is NOT a substitute for the classification table in
+# `audits/2026-07-28-b2-import-readiness.md`, which additionally enumerates
+# shape-matching locations that do not fire under gitleaks' default config
+# (test fixtures shorter than real token length, `.env.example`/tutorial
+# placeholders, an SRI hash, a self-referential grep example, a wheel-name
+# coincidence) — a different scanner or ruleset the eventual reviewer runs
+# may use looser regexes that DO flag some of those; see that doc for the
+# full disposition of each.
+#
+# 1. ROADMAP.md:65 — generic-api-key / entropy false positive.
+#    The flagged string is the Bedrock model id `anthropic.claude-opus-4-8`,
+#    matched only because it sits next to the prose "API key auth" in a
+#    sentence describing the AnthropicBedrockMantle endpoint's auth method.
+#    It is a model identifier, not a credential. Verified by reading the
+#    live line: `sed -n '65p' ROADMAP.md`.
+35ccbd91afcfca0a6223e6fe2765e87821095f29:ROADMAP.md:generic-api-key:65
