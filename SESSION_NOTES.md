@@ -6,6 +6,238 @@
 
 ## ACTIVE TASK
 
+### What Session 188 Did
+**Deliverable:** Execute Phase A3 of `docs/planning/enterprise-migration.md` ("In-repo
+documentation reconciliation") — README/ROADMAP/OPERATIONS/CHANGELOG convergence, version bump to
+0.3.0 (D12), archive two fully-executed planning docs. **(COMPLETE — commit `35ccbd9`. 18 files
+changed, 141 insertions / 46 deletions.)**
+
+**Started / Completed:** 2026-07-27.
+
+**D12 resolution:** the operator's orientation-report reply was the single word **"Phase 3"**
+after being shown, explicitly, that A3 was gated on D12 (version/tag) with the plan's own
+recommendation quoted ("bump to 0.3.0 and tag in A3"). Verified before proceeding that A3 itself
+contains **no `git tag` command** (that belongs to A4 "Land it") — so D12's A3-scope is reversible
+file edits (`pyproject.toml` ×2, `README.md`, `uv.lock`), not an irreversible tag/push. Proceeded
+under that reading and stated it back to the operator before starting. Updated the decision
+register (`enterprise-migration.md:451`) to **D12 ANSWERED (2026-07-27)**, noting the actual `git
+tag` is still a separate, open A4 action.
+
+**What changed (by task):**
+1. **README.md:** version `0.2.0`→`0.3.0`; license line already correct (MIT, fixed Session 183,
+   verified not touched). **Test-count fix went beyond the plan's literal instruction** — the plan
+   said paste `898` (its own `--ignore=tests/ui` measurement), but literally running the README's
+   documented minimal-sync recipe (`uv sync --extra agents --extra dev; uv run pytest`) **fails
+   outright**: coverage drops to 88.93% against the workspace-wide 95% gate (`ui/` source shows
+   0%) — verified empirically, not assumed. Fixed by restructuring the Getting Started section:
+   the full-sync command (`--extra ui`) is now the documented default (923 tests, coverage
+   ≈97.41%, satisfies the gate cleanly), and the minimal sync is documented as an opt-out with
+   `--ignore=tests/ui --no-cov` explicitly (fresh-measured 899 collected / 891 passed + 8 skipped).
+2. **ROADMAP.md:** refreshed counts (797→923 passed + 8 live-skipped @ 97.41%, dated Session 188);
+   added an **M6 milestone** (multi-provider LLM / Bedrock, Phases A–E, archived plan pointer);
+   corrected the "none open" backlog claim; added Related-Documents pointers to both newly-archived
+   plans + the active enterprise-migration plan.
+3. **OPERATIONS.md:** fixed `:33`'s bedrock default (`anthropic.claude-sonnet-4-6`, wrong — the
+   mantle catalog has no Sonnet — → `anthropic.claude-opus-4-8`); added 4 new env-var rows
+   (`AWS_REGION`, `AWS_DEFAULT_REGION`, `AWS_BEARER_TOKEN_BEDROCK`, `AWS_PROFILE`). **Deliberately
+   did NOT add C2's CA/proxy/index variables** (`REQUESTS_CA_BUNDLE`/`UV_INDEX_URL`/etc.) despite
+   the plan's parenthetical "plus the CA/proxy/index variables from C2" — C2 is gated on D13/D15,
+   both still open, and C2's own scope text is where those variables get *decided*, not just
+   documented; pasting them now would document undecided config, the opposite of A3's own DONE
+   criteria. Verify block matched exactly: `anthropic\.claude-sonnet-4-6` → 0,
+   `claude-sonnet-4-6` count → 2.
+4. **CHANGELOG.md:** `[Unreleased]` → `## [0.3.0] - 2026-07-27`; one combined entry (per
+   `PROJECT_CONVENTIONS.md`'s multi-session-feature convention) dated `2026-07-25` (the last
+   shipped-code commit) covering the bedrock-mantle migration across Sessions 178–180 (`dadf514`
+   endpoint swap, `9e3f19b` opus-4-8 default, `56dc700` enterprise-networking hooks). Session 181
+   needs no entry — doc-only (wiki refresh), per the cadence rule.
+5. **Version bump (D12):** both `pyproject.toml` files `0.2.0`→`0.3.0`; `uv lock` regenerated and
+   verified (`uv lock --check` clean); `uv.lock` staged.
+6. **Archived `docs/planning/multi-provider-llm-plan.md`** → `docs/architecture-history/` with the
+   standard banner (fully executed, Phases A–E delivered Sessions 160–164). **Grep-swept the whole
+   repo for the bare filename** (not just the plan's own named scope) and found **7 live citation
+   sites the plan text never named**: `scripts/run_pipeline.py`, both `bedrock_client.py` copies,
+   `orchestrator/config.py`, `tests/eval/README.md`, `tests/eval/PHASE_E_AGREEMENT_REPORT.md`,
+   `tests/test_llm_json_parity.py` — all updated to the new path. Left `CHANGELOG.md`,
+   `SESSION_NOTES.md`, and `docs/wiki/` references untouched as historical narrative (matches
+   Session 186's established precedent).
+7. **Scrubbed + carved forward + archived `docs/planning/bedrock-testing-enablement.md`:** removed
+   the abandoned account id (`868785635769`) and support-case number (`178440923600380`) at all 5
+   named sites (`:19,:50,:63,:64,:77`), replacing with the plan's own generic phrasing ("the
+   abandoned test account" / "the abandoned support case"). Carved the "how the project reaches
+   Bedrock" fact table and the Bedrock TPM quota-code table forward into
+   `docs/deployment/bedrock-enterprise.md` as new Appendices A/B. **While there, also fixed that
+   doc's own staleness** (not separately plan-named, but directly adjacent to the edit and within
+   A3's "no in-repo doc contradicts the code" DONE criteria): its §7 punch-list said `base_url` /
+   `http_client` / docstring-inversion were **not yet** implemented, but `56dc700` (committed the
+   same day the doc was written, just later) already shipped all three — marked items 1–3 ✅ DONE,
+   left items 4 (wiring) and 5 (`aws_profile`) open. Grep-swept for the bare filename again — found
+   and fixed 6 more live citation sites. Then archived with the standard banner.
+8. **`enterprise-migration.md` itself:** confirmed (grep) it carries no literal instance of either
+   identifier already — the plan's own text already used the generic phrasing — so the "scrub this
+   plan too" instruction was a no-op confirmation, not an edit.
+9. **BACKLOG.md:** replaced the stale "none open" with the enterprise-migration plan's remaining
+   phases (A4, B1–B3, C1–C5) and the 12 still-open decision-register items (D1/D3/D4/D5/D8/D9/D11/
+   D13/D14/D15/D16 — D2/D6/D7/D12 already answered), each with its gate and owner, pointing back to
+   `enterprise-migration.md` §3 for full text.
+
+**Deliberately out of scope (flagged, not silently dropped):** `docs/wiki/` staleness caused by
+this session's archive moves — `Evolution.md:268` currently reads "`docs/planning/` … has since
+refilled — `multi-provider-llm-plan.md` (Session 159), `bedrock-testing-enablement.md` (Session
+178…)"; both named files are no longer in `docs/planning/` as of this session, so that sentence is
+now wrong. A3's own DONE criteria is an enumerated list (provider count / model id / licence / test
+count / CHANGELOG-through-181 / `docs/planning/` holds only live plans / no abandoned-account
+identifier) that does **not** include wiki path-reference freshness, and the wiki auto-publishes on
+any touching commit (a bigger blast radius than this phase's scope) — left for a dedicated future
+session rather than expanding A3.
+
+**Method:** verified `core.hooksPath` unset before starting (still disarmed from Session 186,
+irrelevant this session since no `docs/wiki/` path was touched at all). Read every file before
+editing it (10 files) rather than trusting the plan's summaries of their content. Re-measured test
+counts live (`--ignore=tests/ui` and full) rather than trusting the plan's Session-182-era snapshot
+(898/930) — found 899/923, consistent with Session 187 having added exactly one guard test since
+the plan was written. Ran the plan's full 5-command verify block plus `uv lock --check`, `ruff
+check`, `mypy`, and the full `pytest` suite — all green, zero regressions (923 passed + 8
+live-skipped @ 97.41%, unchanged from pre-session). Used `TaskCreate`/`TaskUpdate` to track the 10
+sub-deliverables (a first for this project's session log) — kept nothing dropped across a dense,
+multi-file phase.
+
+### Session 187 Handoff Evaluation (by Session 188)
+
+**Score: 9/10.**
+- **What helped:** named Phase A3 as the exact next deliverable with precise plan-line pointers
+  (`enterprise-migration.md:602-649` for scope, `:434-456` for the decision register) — no time
+  spent locating my own scope. Explicitly flagged the D12 gate as still open and instructed
+  re-checking line 449 rather than assuming — this is exactly what surfaced D12 in my own
+  orientation report to the operator, which produced the "Phase 3" go-ahead this session executed
+  against. Correctly folded the README test-count item into A3 rather than treating it as separate,
+  and named the exact trap ("Use 923... unless A3's own scope note changes the number — re-read
+  `enterprise-migration.md:608`") — A3's scope *does* say 898, and I did re-read it rather than
+  default to 923, per the instruction.
+- **What was missing (−1):** nothing load-bearing. The handoff couldn't have anticipated that
+  "paste 898" would require actually *running* the README's documented command to discover it
+  fails the coverage gate outright — that's only discoverable by executing A3, not by reading the
+  plan.
+- **What was wrong:** nothing found inaccurate.
+- **ROI:** strongly positive — the exact D12 flag and plan-line pointers saved a full plan
+  read-through and correctly pre-empted a wrong-number mistake.
+
+### Phase 3B: Self-assess — Session 188 — 9/10
+
+- **The +:** (1) Verified the plan's literal "paste 898" instruction against actual command
+  behavior rather than trusting the number — found and fixed a real functional bug (the README's
+  documented minimal-sync recipe fails the coverage gate outright), not just a stale-number typo.
+  (2) Re-measured test counts live rather than trusting the plan's Session-182 snapshot, catching
+  the +1 shift from Session 187's guard test. (3) Grep-swept the whole repo for bare filenames
+  (not just plan-named sites) after both archive moves, catching 13 live citation sites across
+  `src/`, `packages/`, `tests/`, `scripts/` the plan's own scope text never named — matches Session
+  186's established discipline, applied to a new context (archived-plan citations, not moved
+  directories). (4) Read the D12 gate's actual mechanics (checked for a `git tag` command in A3
+  before treating the operator's terse "Phase 3" as authorization) rather than either blocking on
+  a redundant confirmation question or blindly assuming — the reasoning was stated back to the
+  operator before proceeding, not silently assumed. (5) Kept `docs/wiki/` edits out of scope
+  despite finding real staleness there, explicitly flagging it rather than silently expanding a
+  dense phase further or silently dropping the finding. (6) Ran the plan's full verify block plus
+  mypy/ruff/full-pytest — all green, zero regressions.
+- **The −:** (1) The "Phase 3" → D12-resolved inference, while checked against A3's actual content
+  (no `git tag` present) and stated back before acting, was still an inference from a two-word
+  reply rather than an explicit operator confirmation of the version bump specifically — worth
+  naming plainly rather than treating as fully risk-free. (2) Spent substantial verification time
+  (running the README recipe for real, checking coverage) beyond A3's literal ask — high-value here
+  (real bug caught) but a deviation from "paste 898" worth flagging explicitly per this project's
+  own transparency norm, same shape as Session 187's self-critique.
+- **Quality bar:** meets/exceeds — verify-script discipline (plan's block + additional mypy/ruff/
+  full-suite, all matched or green), dangling-reference discipline extended to a new pattern
+  (archived-plan citations), and empirical-verification-over-literal-instruction-following (the
+  README bug) all match or exceed the standard set by Sessions 185–187.
+
+### Phase 3C: Learnings — Session 188
+
+- **Candidate #156 — NEW, 1st instance — "When a plan instructs pasting a specific literal (a test
+  count, a version string) into a doc, verify the surrounding claim's actual behavior first, not
+  just the number's correctness. A stale number can be masking a genuinely broken instruction (a
+  documented command that fails outright under a coverage/lint gate), and pasting a 'corrected'
+  number over a broken command still leaves the doc lying about what happens if a reader follows
+  it."** Discovered fixing `README.md:128`: the plan said paste `898` (its own `--ignore=tests/ui`
+  measurement), but literally running the README's documented minimal-sync command (`uv sync
+  --extra agents --extra dev; uv run pytest`) fails outright — coverage drops to 88.93% against the
+  workspace-wide 95% gate. The real fix was restructuring which sync path is documented as default,
+  not pasting a number. **When to apply:** any doc-reconciliation phase that touches a "run this
+  command, expect this outcome" pairing — run the exact documented command before trusting a
+  plan-provided replacement number. Now at **1**.
+- **Candidate #157 — NEW, 1st instance — "When archiving a plan/runbook document (`docs/planning/
+  X.md` → `docs/architecture-history/X.md`), grep the whole repo for the bare filename — not just
+  the directory-qualified path, and not just the plan's own named scope inventory — before
+  committing. `src/`/`tests`/`scripts` docstrings and comments that cite the file as a live pointer
+  ('see docs/planning/X.md for design rationale') go stale silently; they're not part of what the
+  plan author enumerated when scoping the archive step."** Discovered archiving both
+  `multi-provider-llm-plan.md` (7 live sites: both `bedrock_client.py` copies, `config.py`,
+  `run_pipeline.py`, `tests/eval/README.md`, `tests/eval/PHASE_E_AGREEMENT_REPORT.md`,
+  `tests/test_llm_json_parity.py` — none named in A3's own scope text) and
+  `bedrock-testing-enablement.md` (6 sites). Sibling to Session 186's grep-sweep-after-path-change
+  discipline, applied specifically to archived-plan citations from code, which plan authors
+  systematically under-enumerate (they scope from the plan's own outward references, not from a
+  full-repo grep of the filename). **When to apply:** any archive-move of a `docs/planning/` file.
+  Now at **1**.
+- **Reinforced:** the D12/A3 gate-check pattern (verify what a phase's own text actually requires —
+  here, "does A3 contain a `git tag` command?" — before treating a terse operator go-ahead as
+  covering an irreversible action) is a specific instance of `feedback_advice_not_action` /
+  SAFEGUARDS' "check reversibility before acting on ambiguous authorization" — not a new candidate,
+  but worth reinforcing since it correctly prevented either over-blocking (a redundant
+  confirmation question) or under-checking (assuming "Phase 3" authorized a `git tag`).
+- **Candidate roster:** **#157 NEW at 1; #156 NEW at 1**; #155 at 1 (S187); #154 at 1 (S187); #153
+  at 1 (S186); #152 at 1 (S186); #151 at 1 (S185); #150 at 1 (S184); earlier per prior roster.
+  `PROJECT_LEARNINGS.md` = **61 rows** (no promotion this session — no candidate reached 3
+  instances). Next = **#158.**
+
+### Phase 3D: Handoff to Session 189
+
+**Phase A3 is COMPLETE and committed (`35ccbd9`), not pushed.** `feat/
+bedrock-mantle-migration` is now **11 commits ahead** of `origin/feat/bedrock-mantle-migration`
+(was 10; +1 this session, plus this close-out commit makes it 12). **Phase A4 ("Land it") is the natural next deliverable** —
+`enterprise-migration.md:649-696` — but re-read its pre-flight block carefully before starting:
+it pushes the branch, opens a PR, and does a single fast-forward push to `master`, which is a
+different risk class (shared/remote state) than every phase so far. **Do not start A4 without
+explicit operator authorization for the push** — Auto Mode's action bias does not extend to
+pushing to a remote or opening a PR; that is exactly the kind of action SAFEGUARDS.md and the
+system's own risk-tiering call out for confirmation first, unlike A3's file-only edits.
+
+**State you will inherit:**
+1. Tree is CLEAN after this close-out (verify fresh — don't trust this note). Branch
+   `feat/bedrock-mantle-migration`, 11 commits ahead of `origin/feat/bedrock-mantle-migration` —
+   nothing pushed.
+2. `core.hooksPath` is unset (disarmed) — unchanged this session (no `docs/wiki/` file was
+   touched). Verify fresh before your first commit per the standing rule.
+3. **Version is now 0.3.0** everywhere (both `pyproject.toml`, `README.md:3`, `uv.lock` — verified
+   `uv lock --check` clean). D12 is ANSWERED in the decision register
+   (`enterprise-migration.md:451`). **The actual `git tag` has NOT been created** — that's an A4
+   action, not done yet.
+4. `docs/planning/` now holds only `enterprise-migration.md` and `httpx-adapter-migration.md`
+   (both active/draft). `multi-provider-llm-plan.md` and `bedrock-testing-enablement.md` are now
+   in `docs/architecture-history/` with banners.
+5. Baseline re-measured this session, zero regression: **923 passed + 8 live-skipped @ 97.41%
+   coverage** (unchanged from Session 187's number — no test-logic files were touched, only docs/
+   config/version strings). ruff + mypy clean.
+6. **Known open gap, explicitly NOT fixed this session (flagged, see "Deliberately out of scope"
+   above):** `docs/wiki/claims-model-starter/Evolution.md:268` now reads as factually wrong — it
+   describes `docs/planning/` as having "refilled" with `multi-provider-llm-plan.md` and
+   `bedrock-testing-enablement.md`, both of which this session archived out of that directory.
+   Fixing this means touching `docs/wiki/`, which auto-publishes on commit — treat as its own
+   scoped deliverable (possibly folded into whichever future session next touches Evolution.md),
+   not an A4 prerequisite.
+7. Next learning candidate = **#158**. `PROJECT_LEARNINGS.md` = 61 rows (unchanged).
+
+**Key files:**
+- `docs/planning/enterprise-migration.md:649-696` — Phase A4's full scope, pre-flight block (push +
+  fetch + parity checks), the 6 landing steps (PR → single push → fast-forward local master →
+  publish wiki → re-arm hook → verify), DONE criteria, verify block, and the rollback note
+  (`gh-pages` deploy is **not** revertible — the pre-flight bundles it first).
+- `BACKLOG.md` — now lists A4 plus every phase after it (B1–C5) and the 12 still-open D-items, each
+  with its gate — read this instead of re-opening the full plan for a scope overview.
+- `docs/deployment/bedrock-enterprise.md` — gained Appendices A (verified Bedrock facts) and B
+  (TPM quota codes), carved forward from the now-archived testing-enablement runbook; also has an
+  updated §7 punch-list (items 1–3 done, 4 partially done/not wired, 5 still open).
+
 ### What Session 187 Did
 **Deliverable:** Execute Phase A2 of `docs/planning/enterprise-migration.md` ("Wiki merge-status
 sweep") — canonical grep sweep, 3 mechanical value changes, 2 blockquote deletions + surrounding
