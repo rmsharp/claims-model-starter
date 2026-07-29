@@ -6,6 +6,238 @@
 
 ## ACTIVE TASK
 
+### What Session 196 Did
+**Deliverable:** Executive-summary / stakeholder-readiness dossier — operator-selected (option 2 of
+Session 195's three-way Phase 0 handoff, `BACKLOG.md`'s "New (pre-fork)" bullet). **COMPLETE.**
+
+**Started / Completed:** 2026-07-28/29.
+
+**Note on option 1:** the operator briefly selected option 1 (Phase C4, the fork) first; this
+session read Phase C4's full text and the D9/D5/D4/D8/D16 preamble before being redirected
+mid-investigation to option 2. No Phase C4 action was taken (read-only investigation, no file
+changes) — that context is available if a future session picks C4 up, but nothing was written
+anywhere about it.
+
+**What was delivered:**
+- **`executive-summaries/stakeholder-readiness-dossier.qmd`** (+ reproducible, gitignored
+  `.html`/`.pdf` renders — the `.qmd` is the only committed artifact, matching the
+  `business-value-capture` precedent's own `.gitignore` convention, confirmed rather than assumed)
+  — one Quarto document, six sections (At a glance; Business benefit; Legal safety;
+  Enterprise-environment readiness with Security/Testing/Data-readiness/Bedrock-readiness
+  subsections; a consolidated Open items and owners table; Where this stands), matching the
+  precedent's frontmatter shape and executive prose register.
+- Built via a **Workflow**: 3 parallel research agents (business benefit, legal safety, enterprise
+  readiness — each instructed to re-derive every claim live, not restate `enterprise-migration.md`
+  §2's evidence, which predates Sessions 186–195) → 1 synthesis agent that drafted the file → 4
+  parallel adversarial-verify lenses (fidelity, completeness, internal-consistency,
+  security-sensitivity) → 1 fix agent.
+- **Confirmed before drafting, not assumed:** `executive-summaries/` sits outside `mkdocs.yml`'s
+  `docs_dir: docs`, so this document (unlike the precedent, which briefly went live before Phase
+  A1's containment) is not published to the public site.
+- **Verify found 5 findings (1 blocking, 4 minor), all fixed:** (1) *completeness, blocking* — the
+  draft covered 3 of 4 items in `enterprise-migration.md` §2.7's "Four legal items" list but
+  silently omitted the published wiki's own lack of a license — added as a named Open item with
+  the wiki's D6 disposition (stays public) correctly distinguished from its licensing (unresolved).
+  (2) *fidelity, minor* — the draft invented an unsubstantiated third disposition option ("retire")
+  for the three GitLab pilot projects; the actual source names only two (leave as-is / migrate) —
+  fixed. (3–5) *consistency, minor ×3* — the draft's Open-items table marked three items
+  (web-UI auth, `--host-url` fallback, CI supply-chain hardening) "Unassigned" when
+  `enterprise-migration.md` already scopes them inside Phases C2/C3 with named decision-register
+  owners (D13, D9/D15) — fixed to cross-reference the actual phase/owner instead of presenting them
+  as orphaned gaps.
+- **The workflow's own `finalize:apply-fixes` agent crashed** ("Connection closed mid-response")
+  *after* its edits had already landed — its last tool call was a full re-read of the file (its own
+  closing self-check, per the prompt), and it appears to have crashed while composing its final
+  summary text, not while editing. Did not trust this at face value: read the file directly,
+  confirmed all 5 findings' fixes were present and correct in the actual file content, then
+  independently spot-checked the highest-stakes claims myself with live commands (commit count:
+  384 ✓; Claude co-author trailers: 358 ✓; MIT-consistency across `LICENSE`/both `pyproject.toml`
+  files/`README.md` ✓; zero LGPL in `uv.lock` ✓; no license file under `docs/wiki/` ✓; 971 tests
+  collected ✓, matching the previously-reported 963 passed + 8 live-skipped) before treating the
+  document as done — none of the crashed agent's actual work was lost, but I did not assume that.
+- **Rendered both formats** (`quarto render --to html`, `--to pdf`) to confirm the `.qmd`'s Quarto
+  syntax is actually valid end-to-end, not just plausible-looking markdown — both succeeded.
+- **`BACKLOG.md` updated:** the "New (pre-fork)" bullet rewritten to "DONE (Session 196)", with the
+  phase-structure question the bullet had left open explicitly resolved — **standalone document,
+  not a new lettered A/B/C phase**; it does not gate or get gated by anything, Phase C4's gate
+  remains A1–A4/B1-core/B2 only. Also removed the bullet's stale `docs/executive-summaries/` path
+  reference (see Learning candidate #175 below).
+
+**Not done (explicitly out of scope, not silently dropped):**
+- Did not touch Phase C4 itself (see the option-1 note above) — read-only investigation, no
+  decisions made, no files changed.
+- Did not resolve any of the open items the dossier itself catalogues (D3, D10, D13, D14, the
+  generated-project license gap, the wiki license gap, the security/CI gaps) — the dossier's job
+  was to surface and correctly attribute them, not close them. They remain exactly as open as they
+  were before this session; `BACKLOG.md`'s existing tracking for D10/D13 is unchanged.
+
+### Session 195 Handoff Evaluation (by Session 196)
+
+**Score: 9/10.** A clean three-way menu that let the operator redirect cheaply mid-flight with no
+wasted work.
+
+- **What helped:** (1) The three-way Phase 0 menu (C4 / executive-summary / C1's Guardrails-FIPS
+  gap) was accurate and let the operator pick, then re-pick, cleanly — when the operator switched
+  from "1" to the executive-summary option after I'd already started reading Phase C4's text, the
+  switch cost nothing beyond the reading time, because I hadn't touched a single file. (2) Option
+  2's `BACKLOG.md` bullet (`f1f79af`, actually authored by Session 194, not 195, per
+  `git log -S`) was specific enough — three named sub-topics, an explicit "positioned as pre-fork
+  groundwork" framing, and an explicit open question about phase-structure placement — that I could
+  scope the entire deliverable directly from it, without a clarifying round-trip. (3) `git
+  status`/`git log` at Phase 0 confirmed `master` was exactly at `01c650e` as the handoff implied,
+  re-verified fresh per Learning #163, not trusted from the handoff's own claim.
+- **What was wrong:** nothing in Session 195's own work — my session never touched B2's artifacts.
+  One small inherited inaccuracy surfaced in the option-2 bullet (the stale
+  `docs/executive-summaries/` path), but `git log -S` on the exact bullet text attributes that
+  wording to Session 194's commit `f1f79af`, not Session 195 — so this is not a mark against 195's
+  handoff quality; it's a inherited, unrelated staleness Session 195 had no reason to touch while
+  writing a B2-scoped handoff.
+- **What was missing:** nothing structural for the actual path I took (option 2). I cannot evaluate
+  whether option 1's context (the D9/D5/D4/D8/D16 preamble, the "Before step 1" note) would have
+  been sufficient to execute Phase C4 cleanly, since I only read it, never acted on it — that
+  evaluation belongs to whichever future session actually runs C4.
+- **ROI:** strongly positive. A three-way menu that survives an in-session redirect with zero sunk
+  cost is close to the ideal shape for a handoff whose next-session choice is genuinely the
+  operator's, not the agent's, to make.
+
+### Phase 3B: Self-assess — Session 196 — 8/10
+
+- **The +:** (1) Did not silently trust the workflow's crashed `finalize` agent — read the actual
+  file, confirmed the fixes had landed, then independently re-derived the six highest-stakes claims
+  with my own live commands before treating the document as trustworthy. This is the same
+  "re-derive, don't restate" discipline (Learning #6/#170) applied one level up: not just to the
+  plan document the sub-agents were told to distrust, but to the sub-agents' *own* output after an
+  ambiguous failure signal. (2) Confirmed the publish-safety question (is `executive-summaries/`
+  still outside `docs_dir`?) live, before drafting a single word of a document that discusses legal
+  and security posture — the wrong answer here would have meant drafting content that goes live on
+  the public site, the same class of exposure `enterprise-migration.md` Phase A1 was built to
+  contain. (3) Rendered both output formats rather than treating a clean `Write` as sufficient
+  evidence the Quarto syntax was valid. (4) Closed the loop `BACKLOG.md` had explicitly left open
+  (phase-structure placement) rather than leaving it dangling for a future session to rediscover.
+  (5) Used `git log -S` to attribute the one inaccuracy I found to its actual origin session (194,
+  not 195) rather than either crediting or blaming the wrong predecessor — small, but this project's
+  norm (Learning #58/#163) is that carried claims get re-derived, and "who wrote this" is exactly
+  that kind of claim.
+- **The −:** (1) The workflow's `finalize` agent crash was a genuine near-miss — had its edits
+  *not* actually landed (a plausible failure mode: "Connection closed mid-response" could just as
+  easily mean the write was interrupted), I would have needed a full second fix pass. I got lucky
+  that Write/Edit tool calls commit synchronously and independently of the agent's final text
+  response; I did not design the workflow to be resilient to this in advance (e.g., no
+  intermediate checkpoint or dedicated "confirm file state" stage before the fix agent's summary).
+  (2) Spent a large research budget (9 agents, ~615K subagent tokens, ~16 minutes wall-clock) on a
+  single-document deliverable — proportionate given the document is meant for legal/security
+  stakeholder review and covers three genuinely distinct domains, but worth naming as a real,
+  repeatable cost, same caveat Session 195 named for the B2 packet.
+- **Quality bar:** matches Session 194/195's rigor; extends the adversarial-verification pattern to
+  a second execution-phase deliverable in a row (see Learning #172 below).
+
+### Phase 3C: Learnings — Session 196
+
+- **Candidate #172 (filed Session 195) — 2nd instance, NOT promoted.** Session 195 first applied
+  the 4-lens adversarial-verification pattern to an execution-phase deliverable (the B2 security
+  packet); this session applied the identical pattern to a second execution-phase deliverable (this
+  dossier) — a genuine 2nd instance. **Not promoting despite Session 195's own note that the
+  promotion bar is "2nd+ instance"** — that phrasing does not match the actual pattern observed in
+  every row of `PROJECT_LEARNINGS.md` (#54 through #61), each of which required a **3rd,
+  promotion-triggering** instance before promotion, never a 2nd. Flagging this discrepancy rather
+  than silently resolving it either way: a future session should either find a 3rd instance before
+  promoting #172, or an operator should clarify which rule (2nd+ vs. 3rd-triggers) actually governs
+  this project's roster, since the two sources (Session 195's prose summary vs. the table's own
+  empirical pattern) disagree.
+- **Candidate #174 — NEW, 1st instance — "A Workflow-orchestrated subagent's Write/Edit tool calls
+  commit to disk synchronously, independent of whether the agent's final text response completes —
+  a terminal `state: error` (e.g. 'Connection closed mid-response') on a file-mutating agent does
+  NOT mean its file mutations were lost. Before discarding a workflow's output or re-running a
+  failed stage, read the actual working-tree state (git diff / file read) — the crash may have
+  happened only while the agent composed its closing summary text, after all real tool-call work
+  had already landed."** Discovered this session: the `finalize:apply-fixes` agent's terminal state
+  was `error`, but reading `executive-summaries/stakeholder-readiness-dossier.qmd` directly showed
+  all 5 verify findings (including the 1 blocking one) correctly fixed; its last recorded tool call
+  was a `Read` (its own self-instructed final check), consistent with the crash occurring during
+  response composition, after editing. **When to apply:** any Workflow agent result with a
+  non-`done` terminal state where the agent's job included file mutation — verify the file before
+  assuming the work needs to be redone.
+- **Candidate #175 — NEW, 1st instance (extends the #170 family — re-derive stale plan claims — to
+  a location/publish-scope shape rather than a scanner-output shape) — "A BACKLOG/plan bullet's
+  reference to a document's LOCATION can go stale in a way that has safety consequences, not just
+  accuracy ones, when an intervening phase moved the file for containment reasons — verify the
+  CURRENT location and its current publish-scope live before drafting new content there, rather
+  than trusting an inherited path reference."** Discovered this session: `BACKLOG.md`'s "New
+  (pre-fork)" bullet (Session 194, `f1f79af`) pointed at `docs/executive-summaries/` as precedent —
+  a path Phase A1 (Sessions 186–189) had already moved to top-level `executive-summaries/`
+  specifically to take it OUT of `mkdocs.yml`'s `docs_dir` publish scope. Verifying this live
+  before drafting confirmed the new document would not be published; had I trusted the stale path
+  without checking `docs_dir`, I would have had no reason to question publish-safety at all.
+  **When to apply:** before adding new content to any location a plan/backlog document names,
+  when that document predates a known containment-motivated file move elsewhere in the project.
+- **Not promoted to the roster:** #174 and #175 are both 1st instance, per this project's
+  promotion bar (whichever the correct threshold turns out to be per the #172 discrepancy noted
+  above, neither qualifies yet). Checked against the recent roster (#161–#173) for a possible 2nd-
+  instance match — none found. `PROJECT_LEARNINGS.md` = 61 rows (unchanged this session).
+  **Candidate roster:** #175 NEW at 1; #174 NEW at 1; #172 at 2 (not promoted — see discrepancy
+  note); #173/#171/#170 at 1 (S195); earlier per prior roster. **Next = #176.**
+
+### Phase 3D: Handoff to Session 197
+
+**The stakeholder-readiness dossier is closed.** `executive-summaries/stakeholder-readiness-dossier.qmd`
+and `BACKLOG.md` are committed. This document does not gate or unblock anything — it was pre-fork
+groundwork, not a phase.
+
+**What's next, in priority order — present as options, do not assume which the operator wants:**
+
+1. **Phase C4 (Enterprise clone provisioning — "the fork")** remains unblocked (gate: A1–A4,
+   B1-core, B2 — all done). This session read Phase C4's full text and preamble before being
+   redirected last time; that reading is not repeated here — re-read
+   `enterprise-migration.md:1101-1217` fresh next time, since dragon #8 (line numbers shift) and
+   Learning #163 (re-verify, don't trust a carried citation) both apply. **Get D9/D5/D4/D8/D16 live
+   from the operator at that session's start** — do not default to §3's Recommendation-column text
+   (dragons #22/#24).
+2. **Phase C1's Guardrails/FIPS branching gap** — still open, unchanged since Session 194 flagged
+   it (`enterprise-migration.md` Phase C1's "⚠ Pre-existing gap" callout; also now named in the new
+   dossier's Open-items table as "Bedrock Guardrails / FIPS / quota pre-check"). Not urgent;
+   nothing else gates on it.
+3. **The open items the dossier itself surfaced but did not resolve** — most concretely, the
+   generated-project license gap (no owner named anywhere in the decision register; the dossier
+   recommends adding it to the website-agent backlog but does not do so) and the wiki's own lack of
+   a license (same — recommends the legal-artifact backlog). Neither is a scheduled phase; either
+   could become a small, well-scoped session on its own if the operator wants to close them before
+   the fork rather than carry them into it.
+
+**State you will inherit:**
+1. `master` is clean — verify fresh with `git status`/`git log -1` before acting on this claim
+   (Learning #163 still applies every session).
+2. No feature branch — landed directly on `master`, matching the recent docs-only-session pattern
+   (190, 193, 194, 195).
+3. `quarto` (1.7.33) is confirmed installed and working (`/usr/local/bin/quarto`) — useful for any
+   future session that needs to render another Quarto document.
+4. Learning candidates #174–#175 are new, 1st instance each; #172 is now at 2 instances with an
+   unresolved promotion-threshold discrepancy (see Phase 3C above) — a future session should either
+   find #172's 3rd instance or get the operator to clarify the actual promotion rule.
+   `PROJECT_LEARNINGS.md` unchanged at 61 rows. Next candidate number is **#176**.
+5. The dossier's own Open-items table (12 rows) is now the single place to look for every open
+   decision this project is tracking pre-fork — it cross-references but does not replace
+   `BACKLOG.md`'s "Open decisions this repository still tracks" line or `enterprise-migration.md`
+   §3's full decision register.
+
+**Key files:**
+- `executive-summaries/stakeholder-readiness-dossier.qmd` — the dossier itself; re-render with
+  `quarto render executive-summaries/stakeholder-readiness-dossier.qmd --to html` (or `--to pdf`)
+  after any future edit — the `.html`/`.pdf` are gitignored, regenerate-on-demand artifacts, not
+  committed state.
+- `docs/planning/enterprise-migration.md:1101-1217` — Phase C4, the next natural session if the
+  operator picks option 1.
+- `BACKLOG.md`'s Enterprise migration section — updated this session to mark the dossier DONE and
+  record the standalone-document decision.
+
+**Gotchas:**
+- **Workflow agent crash ≠ lost work** — see Learning candidate #174. Check the file before
+  re-running.
+- Any git-ancestry or line-number claim in this handoff should be re-verified live before acting on
+  it — Learning #163 still applies every session, and both `enterprise-migration.md` and
+  `BACKLOG.md` continue to grow/shift with each edit.
+
+---
+
 ### What Session 195 Did
 **Deliverable:** Execute Phase B2 (Import readiness) from `docs/planning/enterprise-migration.md:847-887` —
 operator-selected (option 1 of Session 194's three-way Phase 0 handoff). **COMPLETE.**

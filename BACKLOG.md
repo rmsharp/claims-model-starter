@@ -70,18 +70,27 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
 - **C5 — Fork independence verification.** Gated on **C4 complete only** — D16 no longer a written
   pre-req; C5 records whatever the operator decided, live, inside the clone (not back into this
   repository's own tracking).
-- **New (pre-fork) — Executive summary / stakeholder readiness dossier.** Requested by the
-  operator, 2026-07-28. A planning session to produce an executive-summary document — there is
-  existing precedent for this kind of artifact at `docs/executive-summaries/` (see
-  `enterprise-migration.md` §2.3) — covering: (1) the **business benefit** of this repository's
-  software (the model-project-constructor pipeline); (2) **legal safety of bringing MIT-licensed
-  software into the business for use and modification** (ties to D1/D2 and the §2.7 licence
-  table); (3) **enterprise-environment readiness**, specifically security concerns, code testing,
-  readiness to take in data for data selection, and readiness for incorporation into an AWS
-  Bedrock environment. Positioned as pre-fork groundwork for stakeholder/legal/security review —
-  likely informs Phase C4, but exactly where it fits in the A/B/C phase structure (a new phase vs.
-  a standalone document) is for that planning session to decide; not assumed here, and this note
-  does not add a new gate to C4 (§1.3 of the plan already reconciled C4's gates this session).
+- **Executive summary / stakeholder readiness dossier — DONE (Session 196).** Requested by the
+  operator, 2026-07-28; produced Session 196, 2026-07-28/29. Delivered as
+  `executive-summaries/stakeholder-readiness-dossier.qmd` (+ reproducible `.html`/`.pdf` renders,
+  gitignored per the `business-value-capture` precedent — the `.qmd` is the committed source of
+  truth), covering all three requested sections: (1) business benefit of the pipeline, with an
+  honest evidence/limits split (real engineering smoke-test traction vs. no claims-team adoption
+  yet); (2) legal safety, re-derived fresh against D1/D2/D3 and the §2.7 licence table (MIT
+  consistent, zero LGPL/GPL/AGPL, third-party methodology material under a documented permission
+  grant) plus two open items surfaced independently — the generated-project license gap and the
+  published wiki's own lack of a license; (3) enterprise-environment readiness across security,
+  testing, data readiness, and Bedrock readiness, each split into resolved vs. genuinely open with
+  named owners cross-referenced to the plan's §3 decision register and C1-C3 phases. Built via a
+  research → draft → 4-lens adversarial verify → fix workflow; verify found 1 blocking gap (the
+  wiki-license omission) and 4 minor gaps (an unsubstantiated third disposition option, and three
+  "Unassigned"-owner claims that actually duplicate already-scoped C2/C3 phase items) — all fixed
+  and spot-checked live before commit (commit counts, license files, LGPL-freedom, wiki license
+  absence, and test-collection count independently re-verified, not just trusted from the
+  sub-agent). **Phase-structure decision (resolved by this session, as the prior note left open):
+  standalone document, not a new lettered A/B/C phase** — it does not gate or get gated by any
+  phase; Phase C4's gate (A1–A4, B1-core, B2) remains independently satisfied. Recommendation
+  stated in the document: proceed to the fork, carrying the open-items table forward.
 
 **Open decisions this repository still tracks:** only **D10** (Bedrock endpoint Regional vs Global
 — security + operator) and **D13** (wire `require_sigv4`/`http_client` to app/env — operator +
