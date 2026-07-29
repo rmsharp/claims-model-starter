@@ -16,7 +16,7 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from model_project_constructor.agents.website import PyGithubAdapter
+from model_project_constructor.agents.website import GitHubAdapter
 from model_project_constructor.agents.website.github_adapter import _is_name_conflict
 from model_project_constructor.agents.website.protocol import (
     RepoClientError,
@@ -38,7 +38,7 @@ RouteEntry = httpx.Response | Handler
 RouteMap = dict[tuple[str, str], RouteEntry]
 
 
-def _adapter_with_transport(handler: Handler) -> PyGithubAdapter:
+def _adapter_with_transport(handler: Handler) -> GitHubAdapter:
     """Build an adapter, then swap its client for one backed by a mock transport.
 
     Mirrors the pre-migration pattern of stubbing the internal SDK handle
@@ -46,7 +46,7 @@ def _adapter_with_transport(handler: Handler) -> PyGithubAdapter:
     the wire layer instead of the SDK layer.
     """
 
-    adapter = PyGithubAdapter(host_url="https://api.github.com", private_token="t")
+    adapter = GitHubAdapter(host_url="https://api.github.com", private_token="t")
     adapter._client = httpx.Client(
         base_url=adapter._client.base_url,
         headers=adapter._client.headers,
@@ -111,7 +111,7 @@ class TestImport:
         # ``RepoClient`` is not runtime_checkable (structural only), so a
         # duck-type check mirrors the gitlab-adapter pattern. mypy strict
         # on the production module enforces the real contract.
-        adapter = PyGithubAdapter(
+        adapter = GitHubAdapter(
             host_url="https://api.github.com", private_token="dummy"
         )
         assert callable(adapter.create_project)
@@ -124,13 +124,13 @@ class TestImport:
         instantiating with junk credentials should succeed silently.
         """
 
-        PyGithubAdapter(
+        GitHubAdapter(
             host_url="https://invalid.example.invalid",
             private_token="not-a-real-token",
         )
 
     def test_constructor_scopes_client_to_default_host(self) -> None:
-        adapter = PyGithubAdapter(host_url="https://api.github.com", private_token="t")
+        adapter = GitHubAdapter(host_url="https://api.github.com", private_token="t")
         assert str(adapter._client.base_url) == "https://api.github.com"
         assert adapter._client.headers["authorization"] == "Bearer t"
         assert adapter._client.headers["accept"] == "application/vnd.github+json"
@@ -139,7 +139,7 @@ class TestImport:
         # A single trailing slash passed by the caller must not become a
         # double slash once httpx's own base_url normalization (which
         # always ends a non-empty path in "/") is applied.
-        adapter = PyGithubAdapter(
+        adapter = GitHubAdapter(
             host_url="https://github.example.com/api/v3/", private_token="t"
         )
         assert str(adapter._client.base_url) == "https://github.example.com/api/v3/"
@@ -199,7 +199,7 @@ class TestNameConflictSniffing:
 class TestNestedNamespaceGuard:
     def test_nested_namespace_raises_client_error(self) -> None:
         # No transport needed — the guard fires before any request is sent.
-        adapter = PyGithubAdapter(host_url="https://api.github.com", private_token="t")
+        adapter = GitHubAdapter(host_url="https://api.github.com", private_token="t")
         with pytest.raises(RepoClientError, match="nested namespace"):
             adapter.create_project(namespace="acme/sub", name="foo", visibility="private")
 

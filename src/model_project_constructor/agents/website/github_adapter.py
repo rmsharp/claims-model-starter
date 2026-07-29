@@ -51,16 +51,16 @@ from model_project_constructor.agents.website.protocol import (
 )
 
 
-class PyGithubAdapter(RepoClient):
+class GitHubAdapter(RepoClient):
     """``RepoClient`` implementation backed by direct calls to the GitHub
     REST API.
 
     Usage::
 
         from model_project_constructor.agents.website import (
-            PyGithubAdapter, WebsiteAgent,
+            GitHubAdapter, WebsiteAgent,
         )
-        client = PyGithubAdapter(
+        client = GitHubAdapter(
             host_url="https://api.github.com",
             private_token=os.environ["GITHUB_TOKEN"],
         )
@@ -303,4 +303,4 @@ def _is_name_conflict(response: httpx.Response) -> bool:
     return "already exists" in text.lower()
 
 
-__all__ = ["PyGithubAdapter"]
+__all__ = ["GitHubAdapter"]

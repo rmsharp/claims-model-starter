@@ -40,16 +40,16 @@ from model_project_constructor.agents.website.protocol import (
 )
 
 
-class PythonGitLabAdapter(RepoClient):
+class GitLabAdapter(RepoClient):
     """``RepoClient`` implementation backed by direct calls to the GitLab
     REST API (``/api/v4``).
 
     Usage::
 
         from model_project_constructor.agents.website import (
-            PythonGitLabAdapter, WebsiteAgent,
+            GitLabAdapter, WebsiteAgent,
         )
-        client = PythonGitLabAdapter(
+        client = GitLabAdapter(
             host_url="https://gitlab.example.com",
             private_token=os.environ["GITLAB_TOKEN"],
         )
@@ -213,4 +213,4 @@ def _is_name_conflict(response: httpx.Response) -> bool:
     return "already been taken" in lowered or "already exists" in lowered
 
 
-__all__ = ["PythonGitLabAdapter"]
+__all__ = ["GitLabAdapter"]

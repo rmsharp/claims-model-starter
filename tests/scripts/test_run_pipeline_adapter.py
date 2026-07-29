@@ -173,7 +173,7 @@ def test_build_data_runner_unknown_provider_raises(run_pipeline_module):
 # build_website_runner — live-mode adapter construction (Session 30)
 #
 # The GitHub live path at scripts/run_pipeline.py:273-278 had been broken since
-# Phase C shipped: (a) it passed ``token=`` but PyGithubAdapter's keyword is
+# Phase C shipped: (a) it passed ``token=`` but GitHubAdapter's keyword is
 # ``private_token=`` (parallels Session 22's ``url=`` → ``host_url=`` GitLab
 # fix), and (b) it never read MPC_HOST_URL so GHE users silently hit public
 # api.github.com even with the env var set. These tests pin the kwargs the
@@ -207,8 +207,8 @@ def _install_fake_adapters_and_agent(monkeypatch, run_pipeline_module):
     import model_project_constructor.agents.website.github_adapter as gh_mod
     import model_project_constructor.agents.website.gitlab_adapter as gl_mod
 
-    monkeypatch.setattr(gh_mod, "PyGithubAdapter", _FakeGithubAdapter)
-    monkeypatch.setattr(gl_mod, "PythonGitLabAdapter", _FakeGitlabAdapter)
+    monkeypatch.setattr(gh_mod, "GitHubAdapter", _FakeGithubAdapter)
+    monkeypatch.setattr(gl_mod, "GitLabAdapter", _FakeGitlabAdapter)
     monkeypatch.setattr(run_pipeline_module, "WebsiteAgent", _FakeWebsiteAgent)
     return captured
 

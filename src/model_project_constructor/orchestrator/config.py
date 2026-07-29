@@ -63,10 +63,10 @@ def _make_gitlab_adapter(*, host_url: str, private_token: str) -> RepoClient:
     ``httpx``; it loads only when a live run builds the adapter.
     """
     from model_project_constructor.agents.website.gitlab_adapter import (
-        PythonGitLabAdapter,
+        GitLabAdapter,
     )
 
-    return PythonGitLabAdapter(host_url=host_url, private_token=private_token)
+    return GitLabAdapter(host_url=host_url, private_token=private_token)
 
 
 def _make_github_adapter(*, host_url: str, private_token: str) -> RepoClient:
@@ -78,10 +78,10 @@ def _make_github_adapter(*, host_url: str, private_token: str) -> RepoClient:
     (e.g. GitHub Enterprise) wins over that baked default.
     """
     from model_project_constructor.agents.website.github_adapter import (
-        PyGithubAdapter,
+        GitHubAdapter,
     )
 
-    return PyGithubAdapter(host_url=host_url, private_token=private_token)
+    return GitHubAdapter(host_url=host_url, private_token=private_token)
 
 
 # The single source of truth for the host vocabulary: which repo hosts exist,

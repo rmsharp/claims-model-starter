@@ -80,7 +80,7 @@ class TestLiveDispatchIsRegistryDriven:
         # Swap the GitHub spec's factory for a sentinel-returning stub. Seeing
         # the sentinel flow all the way to the agent proves the dispatch reads
         # ``REPO_PLATFORMS[host].adapter_factory`` rather than a hardcoded
-        # ``PyGithubAdapter(...)``.
+        # ``GitHubAdapter(...)``.
         sentinel = FakeRepoClient()
         calls: dict[str, Any] = {}
 
@@ -171,7 +171,7 @@ class TestRegistryFactories:
 
         import model_project_constructor.agents.website.gitlab_adapter as gl
 
-        monkeypatch.setattr(gl, "PythonGitLabAdapter", _Fake)
+        monkeypatch.setattr(gl, "GitLabAdapter", _Fake)
         client = cfg._make_gitlab_adapter(host_url="https://gl", private_token="t")
         assert isinstance(client, _Fake)
         assert captured == {"host_url": "https://gl", "private_token": "t"}
@@ -188,7 +188,7 @@ class TestRegistryFactories:
 
         import model_project_constructor.agents.website.github_adapter as gh
 
-        monkeypatch.setattr(gh, "PyGithubAdapter", _Fake)
+        monkeypatch.setattr(gh, "GitHubAdapter", _Fake)
         client = cfg._make_github_adapter(host_url="https://gh", private_token="t")
         assert isinstance(client, _Fake)
         assert captured == {"host_url": "https://gh", "private_token": "t"}

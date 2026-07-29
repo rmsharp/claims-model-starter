@@ -208,7 +208,7 @@ def test_cli_ci_platform_bogus_exits_2(
 class _StandinAdapter(FakeRepoClient):
     """FakeRepoClient subclass that records the kwargs the CLI passed in.
 
-    Used to monkeypatch ``PythonGitLabAdapter`` and ``PyGithubAdapter`` so
+    Used to monkeypatch ``GitLabAdapter`` and ``GitHubAdapter`` so
     the CLI's adapter-selection branch can be exercised end-to-end without
     a real network client. Each subclass keeps its own ``last_init_kwargs``
     class attribute so the two paths can be tested independently in the
@@ -230,14 +230,14 @@ class _StandinGitHubAdapter(_StandinAdapter):
     last_init_kwargs: dict[str, Any] = {}
 
 
-def test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter(
+def test_cli_host_gitlab_with_token_invokes_gitlab_adapter(
     intake_report_path: Path,
     data_report_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _StandinGitLabAdapter.last_init_kwargs = {}
     monkeypatch.setattr(
-        "model_project_constructor.agents.website.gitlab_adapter.PythonGitLabAdapter",
+        "model_project_constructor.agents.website.gitlab_adapter.GitLabAdapter",
         _StandinGitLabAdapter,
     )
 
@@ -273,7 +273,7 @@ def test_cli_host_gitlab_explicit_host_url_override(
 
     _StandinGitLabAdapter.last_init_kwargs = {}
     monkeypatch.setattr(
-        "model_project_constructor.agents.website.gitlab_adapter.PythonGitLabAdapter",
+        "model_project_constructor.agents.website.gitlab_adapter.GitLabAdapter",
         _StandinGitLabAdapter,
     )
 
@@ -300,14 +300,14 @@ def test_cli_host_gitlab_explicit_host_url_override(
     }
 
 
-def test_cli_host_github_with_token_invokes_pygithub_adapter(
+def test_cli_host_github_with_token_invokes_github_adapter(
     intake_report_path: Path,
     data_report_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _StandinGitHubAdapter.last_init_kwargs = {}
     monkeypatch.setattr(
-        "model_project_constructor.agents.website.github_adapter.PyGithubAdapter",
+        "model_project_constructor.agents.website.github_adapter.GitHubAdapter",
         _StandinGitHubAdapter,
     )
 
@@ -348,7 +348,7 @@ def test_cli_host_github_explicit_host_url_override(
 
     _StandinGitHubAdapter.last_init_kwargs = {}
     monkeypatch.setattr(
-        "model_project_constructor.agents.website.github_adapter.PyGithubAdapter",
+        "model_project_constructor.agents.website.github_adapter.GitHubAdapter",
         _StandinGitHubAdapter,
     )
 

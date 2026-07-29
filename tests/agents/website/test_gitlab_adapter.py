@@ -15,7 +15,7 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from model_project_constructor.agents.website import PythonGitLabAdapter
+from model_project_constructor.agents.website import GitLabAdapter
 from model_project_constructor.agents.website.gitlab_adapter import _is_name_conflict
 from model_project_constructor.agents.website.protocol import (
     RepoClientError,
@@ -25,7 +25,7 @@ from model_project_constructor.agents.website.protocol import (
 
 def _adapter_with_transport(
     handler: Callable[[httpx.Request], httpx.Response],
-) -> PythonGitLabAdapter:
+) -> GitLabAdapter:
     """Build an adapter, then swap its client for one backed by a mock transport.
 
     Mirrors the pre-migration pattern of stubbing the internal SDK handle
@@ -33,7 +33,7 @@ def _adapter_with_transport(
     the wire layer instead of the SDK layer.
     """
 
-    adapter = PythonGitLabAdapter(
+    adapter = GitLabAdapter(
         host_url="https://gitlab.example.com", private_token="t"
     )
     adapter._client = httpx.Client(
@@ -49,7 +49,7 @@ class TestImport:
         # ``RepoClient`` is not runtime_checkable (structural only), so
         # ``isinstance`` would raise. A duck-type check is sufficient
         # since mypy strict on the module enforces the real contract.
-        adapter = PythonGitLabAdapter(
+        adapter = GitLabAdapter(
             host_url="https://gitlab.example.com", private_token="dummy"
         )
         assert callable(adapter.create_project)
@@ -62,13 +62,13 @@ class TestImport:
         instantiating with junk credentials should succeed silently.
         """
 
-        PythonGitLabAdapter(
+        GitLabAdapter(
             host_url="https://invalid.example.invalid",
             private_token="not-a-real-token",
         )
 
     def test_constructor_scopes_client_to_api_v4(self) -> None:
-        adapter = PythonGitLabAdapter(
+        adapter = GitLabAdapter(
             host_url="https://gitlab.example.com/", private_token="t"
         )
         assert str(adapter._client.base_url) == "https://gitlab.example.com/api/v4/"
