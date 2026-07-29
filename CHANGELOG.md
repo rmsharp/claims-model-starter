@@ -60,7 +60,7 @@ Previously, every project the pipeline generates had public-host values baked in
 - **Adversarial review (pre-commit, no code change from it needed beyond the coverage fixes below):** two independent lenses reviewed the diff. Correctness/regression: no issues — confirmed byte-identical default output via a `git stash`/diff comparison and validated the new GitHub Actions `env:` block with `yaml.safe_load`. Test-coverage: found 3 real gaps, all closed before commit — the live-mode branch of `build_website_runner` had no test asserting `ci_host_config` threading at all, no test isolated a single-field override from its untouched siblings, and no CLI test covered a partial (not all-four, not zero) flag combination.
 - **Verified:** a fake-mode run with all four `MPC_CI_*` env vars set produced zero `docker.io|python:3.11|github.com/` matches across all 39 generated files; the same run with the env vars unset still showed the public values in exactly `.github/workflows/ci.yml` and `.pre-commit-config.yaml`. Full gate: **989 passed + 8 live-skipped @ 97.78% coverage** (was 970 passed, Session 203 baseline); `ruff check .` and `mypy` both clean.
 
-
+### 2026-07-27 — Bedrock provider migrated from `AnthropicBedrock` (SigV4) to `AnthropicBedrockMantle` (native Bedrock API key auth) (Session 188, Phase A3 of `docs/planning/enterprise-migration.md`)
 
 The classic `AnthropicBedrock` (SigV4/`bedrock-runtime`) client is replaced by `AnthropicBedrockMantle`, authenticating with a Bedrock API key against the native Anthropic Messages `bedrock-mantle` endpoint, with the default model flipped to `anthropic.claude-opus-4-8` (the mantle catalog has no Sonnet tier), plus optional enterprise-networking pass-throughs added on top.
 

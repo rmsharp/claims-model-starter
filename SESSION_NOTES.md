@@ -6,6 +6,121 @@
 
 ## ACTIVE TASK
 
+### What Session 206 Did
+**Deliverable:** Fix the headerless Bedrock-mantle `CHANGELOG.md` entry — add the missing `### `
+date/title heading, matching the convention every other entry in the file follows. **COMPLETE.**
+
+**Started / Completed:** 2026-07-29.
+
+**Trigger:** operator, offered a choice between the two unclaimed threads Session 205's handoff
+left open (Phase C4 fork vs. this entry), declined C4 ("requires information only available after
+consulting with the enterprise... I am not ready for that") and asked a clarifying question about
+whether the CHANGELOG fix was pre- or post-fork. After the answer (pre-fork, self-contained,
+no operator input needed), confirmed with a one-word "yes."
+
+**What was done (2 files, 1 commit):**
+1. Traced the entry's origin before writing anything: `git log --follow -p -- CHANGELOG.md` found
+   the paragraph first added in commit `35ccbd9` ("feat(docs): Phase A3 of enterprise-migration.md
+   — in-repo documentation reconciliation", 2026-07-27). Located the session number by scanning
+   `SESSION_NOTES.md` for the nearest preceding `### What Session N Did` heading above that commit's
+   mention (line 3523, pre-edit numbering) → **Session 188**.
+2. Confirmed via `grep -n "headerless\|Bedrock-mantle.*CHANGELOG" BACKLOG.md` that `BACKLOG.md`
+   never tracked this gap (it only ever lived as a `SESSION_NOTES.md` handoff carry-forward from
+   Sessions 203→204→205) — so no `BACKLOG.md` edit was needed, only `CHANGELOG.md` and this file.
+3. Inserted a new heading — "### 2026-07-27 — Bedrock provider migrated from AnthropicBedrock
+   (SigV4) to AnthropicBedrockMantle (native Bedrock API key auth) (Session 188, Phase A3 of
+   docs/planning/enterprise-migration.md)" — immediately before the orphaned paragraph
+   (`CHANGELOG.md:63`), reusing the exact title language already present in the paragraph's own
+   opening sentence rather than inventing new wording. Also collapsed the pre-existing 3 blank
+   lines between the prior entry and this one down to the single blank line every other
+   entry-to-entry transition in the file uses (a `git diff` confirms this was a 1-line change,
+   not a reflow — the blank-line normalization was folded into the same edit since it sat on the
+   immediately adjacent lines, not a separate unrequested pass over the file).
+4. **Deliberately did NOT reorder the entry** — it now sits after the 2026-07-29 Session 205 entry
+   even though its own date (2026-07-27) is earlier, matching the pre-existing (already
+   non-strictly-chronological) position of the paragraph before this session touched it. Reordering
+   was out of scope: the task was "add the missing heading," not "fix chronological ordering,"
+   and the surrounding entries (191, 193, 203, 205, this one, then 177) were already
+   out of strict date order before this session started — not a gap this session introduced or was
+   asked to fix.
+5. Ran the verify gate even though this was a markdown-only change, per project convention for
+   docs-only sessions (Session 203's precedent): `uv run ruff check .` clean, `uv run mypy`
+   (strict, 66 source files) clean. Did not re-run `pytest` — no source file changed, and Session
+   203's own docs-only close-out used the same reasoning for its non-CHANGELOG doc edits.
+
+**Verification:** `git diff -- CHANGELOG.md` reviewed before commit — exactly one line changed
+(blank line → heading line), zero content/wording changes to the paragraph itself. `grep -n "^## \[\|^### " CHANGELOG.md` confirms the new heading parses identically to its 4 neighbors. `ruff
+check .` and `mypy` both clean.
+
+**Not done / out of scope:** did not reorder the entry into strict chronological position (see
+item 4). Did not touch `BACKLOG.md` (nothing there referenced this gap). Phase C4 (the
+enterprise-clone fork) remains the sole open thread — operator explicitly declined it this session,
+pending enterprise consultation.
+
+### Session 205 Handoff Evaluation (by Session 206)
+
+**Score: 9/10.** Session 205's handoff named both remaining threads (Phase C4 and this CHANGELOG
+entry) accurately and specifically enough that the operator could make an informed choice between
+them without a round-trip — declining C4 with a concrete reason ("requires information only
+available after consulting with the enterprise") shows the handoff's framing of C4 as
+"fully gated-open, needs 5 live operator decisions" landed correctly. **What helped:** the handoff
+named the exact D9/D5/D4/D8/D16 decision list for C4, which let the operator recognize immediately
+that C4 wasn't yet actionable, without this session having to re-derive that from
+`enterprise-migration.md`. It also correctly reused Session 203's own "small, independent,
+one-file fix, not gated on anything" description for the CHANGELOG entry, which turned out to be
+exactly true once this session traced the fix. **What was missing:** no direct line/commit pointer
+into `CHANGELOG.md` for the headerless entry — this session had to `grep`/`git log --follow -p`
+to locate it fresh rather than jumping straight to the line. Minor: a one-line pointer
+(`CHANGELOG.md` line ~65, paragraph starting "The classic `AnthropicBedrock`...") would have saved
+one lookup. **What was wrong:** nothing found inaccurate — the handoff's characterization of the
+fix as small/independent/ungated held up exactly as described. **ROI:** positive — the handoff's
+two-option framing, inherited faithfully from Session 204, was exactly right-sized for the operator
+to make a real choice (accept one, decline the other with a stated reason) in a single reply.
+
+### Phase 3B: Self-assess — Session 206 — 8/10
+
+- **The +:** (1) Traced the entry's actual origin commit and session number via `git log --follow
+  -p` before writing a heading, rather than guessing a plausible-sounding date/session — the
+  git-blame result (Session 188, `35ccbd9`, 2026-07-27) diverged from what a surface read of the
+  paragraph's content alone would suggest (the paragraph mentions Session-188-era work but never
+  states its own session number). (2) Recognized the pre-existing chronological-ordering oddity
+  (this entry sits after two 2026-07-29 entries despite being dated 2026-07-27) and consciously
+  chose not to fix it, naming the reasoning explicitly rather than silently leaving it ambiguous
+  whether it was noticed. (3) Checked `BACKLOG.md` before assuming a second file needed editing —
+  confirmed empirically (grep, zero hits) rather than assumed from the pattern of other
+  close-outs touching multiple files. (4) Kept the diff to exactly the minimal single-line
+  insertion plus a small adjacent whitespace normalization, matching the task's stated scope
+  ("add the missing heading") without expanding into an unrequested content rewrite of the
+  orphaned paragraph itself.
+- **The −:** (1) This was a small, low-risk, single-file documentation fix — the full
+  Phase-3-close-out ceremony (handoff evaluation, self-assessment, this write-up) is now longer
+  than the fix itself. Proportionate to the task, this session likely over-invested in
+  close-out prose relative to the deliverable's size; a future session doing a similarly tiny
+  fix could reasonably ask the operator whether an abbreviated close-out is acceptable for
+  single-line documentation fixes, rather than defaulting to the full ceremony every time. (2)
+  Did not consult `PROJECT_LEARNINGS.md` to check whether "CHANGELOG entry provenance tracing via
+  `git log --follow -p`" is a pattern worth a new learnings row — deferred for the same reason
+  Session 205 deferred its own candidate (visibility into the promotion pipeline), but this
+  session didn't explicitly check that file before deferring, unlike Session 205's explicit
+  inspection-then-defer.
+
+**What's next:** One open thread remains: **Phase C4** (the enterprise-clone fork). Operator has
+explicitly declined it this session pending a live enterprise consultation — do not resume it
+without the operator initiating and supplying the 5 live decisions listed in
+`enterprise-migration.md` Phase C4's "Before step 1" note (D9 destination host, D5 import
+strategy, D4 DCO, D8 wiki destination, D16 release disposition). No other backlog thread is
+currently open in this repository — `BACKLOG.md`'s "Open decisions this repository still tracks:
+none" line (written by an earlier session) remains accurate; the only outstanding item was this
+session's now-closed CHANGELOG fix.
+
+**Key files:** `CHANGELOG.md:63` (new heading, immediately before the previously-orphaned
+Bedrock-mantle paragraph). `SESSION_NOTES.md` (this entry).
+
+**Gotchas:** none new. The one pre-existing oddity this session found and deliberately left alone —
+this entry's position in `CHANGELOG.md` is not in strict chronological order relative to its
+neighbors (dated 2026-07-27, sits after two 2026-07-29 entries) — is not a bug this session
+introduced; it predates this session's edit and reordering was never the requested scope.
+
 ### What Session 205 Did
 **Deliverable:** Phase C3b (`docs/planning/enterprise-migration.md`) — parameterise
 `governance_templates.py` on base image, index URL, action prefix, and pre-commit repo;
