@@ -76,9 +76,14 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
   complete only** — D9/D15 no longer need a written answer here, but the operator must supply both
   live at C3's session start (same pattern C4 uses for D9/D5/D4). Still a session this repository
   schedules, even though its edits land inside `<enterprise-clone>`.
-- **C3b — Generated-project CI portability** *(new, extracted from C3 by §1.3)*: parameterise
-  `governance_templates.py` so pipeline-generated projects can target enterprise-internal hosts.
-  **Ungated — touches only this repo's own source, schedulable any time**, independent of the fork.
+- **C3b — Generated-project CI portability.** **DONE (Session 205, 2026-07-29).** New `CIHostConfig`
+  dataclass (base image, index URL, action prefix, pre-commit repo — default to today's public
+  values) threaded through `governance_templates.py` → `WebsiteAgent` → the website agent CLI →
+  `scripts/run_pipeline.py`'s new `MPC_CI_*` env vars, so pipeline-generated projects can target
+  enterprise-internal hosts instead of Docker Hub / the public GitHub Actions marketplace / public
+  PyPI / the public `astral-sh/ruff-pre-commit` mirror. Verified: fake-mode run with all four env
+  vars set → 0 public-host matches across 39 generated files; unset → public values unchanged.
+  See `docs/planning/enterprise-migration.md` Phase C3b for the full breakdown.
 - **C4 — Enterprise clone provisioning ("the fork").** Gated on **A1–A4 complete (done), B1's
   D3-independent core complete (done), and B2 complete (done, Session 195) — the gate is fully
   satisfied**. D4/D5/D8/D9/D16 no longer need written answers here; the operator supplies them live

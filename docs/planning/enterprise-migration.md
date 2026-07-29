@@ -1150,6 +1150,28 @@ and independently schedulable.
 
 ### Phase C3b — Generated-project CI portability *(independent of the fork — no gate; extracted from the original C3 by §1.3)*
 
+**DONE (Session 205, 2026-07-29).** New frozen `CIHostConfig` dataclass (`base_image`, `index_url`,
+`action_prefix`, `pre_commit_repo` — all default to today's public values) in
+`governance_templates.py`, threaded through `render_gitlab_ci`/`render_github_actions_ci`/
+`render_pre_commit_config`/`build_governance_files` → `WebsiteState`/`scaffold_governance` →
+`WebsiteAgent` (constructor kwarg) → the website agent CLI (`--ci-base-image`/`--ci-index-url`/
+`--ci-action-prefix`/`--ci-pre-commit-repo`) → `scripts/run_pipeline.py` (new
+`build_ci_host_config()`, reading `MPC_CI_BASE_IMAGE`/`MPC_CI_INDEX_URL`/`MPC_CI_ACTION_PREFIX`/
+`MPC_CI_PRE_COMMIT_REPO` directly from the environment, matching the existing `MPC_HOST_URL`
+direct-read pattern rather than `OrchestratorSettings`, since `ci_platform` itself never flowed
+through that settings object either). Verify block below re-run and passed: a fake-mode run with
+all four env vars set produced zero `docker.io|python:3.11|github.com/` matches across all 39
+generated files, and the same run with the env vars unset still showed the public values in exactly
+`.github/workflows/ci.yml` and `.pre-commit-config.yaml` (proving the check isn't vacuous).
+989 tests pass (added 15 new: `CIHostConfig` defaults/overrides/integration in
+`test_governance.py`, CLI flag threading in `test_cli.py`, env-var threading (fake AND live modes)
+in `test_run_pipeline_adapter.py`), `mypy --strict` and `ruff` clean. Two independent adversarial
+review passes ran before commit: a correctness/regression lens (no issues; confirmed byte-identical
+default output via `git stash` diff and validated the new GitHub Actions `env:` block with
+`yaml.safe_load`) and a test-coverage lens (found and closed 3 real gaps — live-mode env threading
+was untested, no test isolated a single-field override from its untouched siblings, and no CLI test
+covered a partial (not all-four, not zero) flag combination).
+
 **Gated on:** nothing. This phase touches only this repository's own pipeline-generator source and
 can run at any time, before or after the fork, in any order relative to A–C.
 

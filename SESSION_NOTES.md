@@ -6,6 +6,134 @@
 
 ## ACTIVE TASK
 
+### What Session 205 Did
+**Deliverable:** Phase C3b (`docs/planning/enterprise-migration.md`) — parameterise
+`governance_templates.py` on base image, index URL, action prefix, and pre-commit repo;
+thread through `WebsiteAgent`/`cli.py`/`scripts/run_pipeline.py`; paired tests. **COMPLETE.**
+
+**Started / Completed:** 2026-07-29.
+
+**Trigger:** operator selected "C3b" from the two active threads Session 205's Phase 0
+orientation report surfaced (C3b vs. Phase C4's enterprise-clone fork).
+
+**What was done (12 files, 1 commit `ed09df5`; 2 more docs-only commits for CHANGELOG/BACKLOG/
+plan-doc/session-notes close-out):**
+1. Traced the full call chain before writing anything: `governance_templates.py`'s three CI/
+   pre-commit renderers (`render_gitlab_ci`, `render_github_actions_ci`, `render_pre_commit_config`)
+   and `build_governance_files` → `state.py`'s `WebsiteState`/`initial_state` → `nodes.py`'s
+   `scaffold_governance` → `agent.py`'s `WebsiteAgent` → `agents/website/cli.py` → `scripts/
+   run_pipeline.py`'s `build_website_runner`. Confirmed via grep that ALL public-host literals
+   (`python:3.11`, `actions/checkout@v4`, `actions/setup-python@v5`,
+   `https://github.com/astral-sh/ruff-pre-commit`) live only in `governance_templates.py` —
+   `templates.py` (the Phase 4A base scaffold) has none, matching the plan's stated scope exactly.
+2. Added a frozen `CIHostConfig` dataclass (`base_image`, `index_url`, `action_prefix`,
+   `pre_commit_repo`; defaults = today's public values) and threaded it through every layer above.
+   `render_gitlab_ci` adds a conditional `variables: UV_INDEX_URL` block (only when `index_url` is
+   set — empty string when not, preserving byte-identical default output); `render_github_actions_ci`
+   mirrors this with a top-level `env:` block and parameterises the `actions/` prefix on all three
+   jobs' checkout/setup-python steps.
+3. **Deliberately did NOT add these fields to `OrchestratorSettings`/`config.py`** — that module's
+   own docstring explains it must never import anything from `agents.website.*` at runtime (only
+   under `TYPE_CHECKING`), because importing any submodule there triggers the SDK-eager package
+   `__init__.py` (httpx/PyGithub adapters). `ci_platform` itself never flowed through
+   `OrchestratorSettings` either — same precedent applied to `ci_host_config`. `scripts/
+   run_pipeline.py`'s new `build_ci_host_config()` reads the four `MPC_CI_*` env vars directly via
+   `os.environ.get`, mirroring the file's existing `MPC_HOST_URL`/`MPC_NAMESPACE` direct-read pattern.
+4. Ran the full verify block: `ruff check .` clean, `mypy` (strict) clean, `pytest -q` — caught one
+   real regression here, not earlier: `tests/agents/website/test_retry.py`'s end-to-end helper
+   constructs `WebsiteAgent.__new__(WebsiteAgent)` and manually sets `.client`/`.ci_platform`/`.graph`,
+   bypassing `__init__` entirely — it needed `.ci_host_config = CIHostConfig()` added too, since
+   `run()` now reads that attribute unconditionally. Fixed; full suite green after.
+5. Ran the plan's own literal verify command adapted for the actual CLI surface (`run_pipeline.py`
+   has no `--fake` flag — fake mode is simply the `--live` flag's absence): a fake-mode run with all
+   four `MPC_CI_*` env vars set produced **zero** `docker.io|python:3.11|github.com/` matches across
+   all 39 generated files; the same run with the env vars unset still showed the public values in
+   exactly `.github/workflows/ci.yml` and `.pre-commit-config.yaml` (proving the check wasn't
+   vacuous).
+6. **Adversarial verify, two independent fresh subagents, before commit:** a correctness/regression
+   lens (grepped for missed call sites, confirmed byte-identical default output empirically via
+   `git stash`/diff, validated the new GitHub Actions `env:` block with `yaml.safe_load` — found NO
+   issues) and a test-coverage lens (found 3 real, non-cosmetic gaps: the live-mode branch of
+   `build_website_runner` had zero assertion on `ci_host_config` threading; no test isolated a
+   single-field override from its untouched siblings; no CLI test covered a partial/mixed flag
+   combination). All 3 gaps closed with new tests before commit (989 passed, was 987 pre-gap-fix,
+   984 pre-session).
+7. Wrote the `CHANGELOG.md` entry, updated `BACKLOG.md`'s C3b bullet to DONE, and added a **DONE
+   (Session 205)** note to `docs/planning/enterprise-migration.md`'s Phase C3b section itself.
+
+**Verification:** `uv run ruff check .` clean. `uv run mypy` (strict mode, 66 source files) clean.
+`uv run pytest -q` → **989 passed, 8 skipped, 97.78% coverage** (was 970 passed / 97.76% at Session
+203's baseline). Manual fake-mode grep-check per the plan's own Verify block (see item 5 above).
+
+**Not done / out of scope:** did not touch `OrchestratorSettings`/`config.py` (see item 3 — this was
+a deliberate design decision, not an omission). Did not address Phase C4 (the enterprise-clone fork)
+or the headerless Bedrock-mantle `CHANGELOG.md` entry Session 203 flagged — both remain open, neither
+was this session's scope.
+
+### Session 204 Handoff Evaluation (by Session 205)
+
+**Score: 8/10.** Session 204's handoff correctly named C3b as one of exactly two live options for
+this session and described it accurately enough ("ungated, self-contained, touches only this repo's
+own source") that the operator's one-word "C3b" reply was unambiguous — no `AskUserQuestion` round
+trip needed, unlike Session 203's predecessor. **What helped:** the handoff didn't over-promise or
+under-describe C3b's scope; everything it said about the option matched what
+`enterprise-migration.md`'s actual Phase C3b section specified once read. **What was missing:** no
+line-number pointer into the plan document for either of the two named options — reasonable, since
+Session 204 legitimately didn't know which the operator would pick, but it meant this session's
+first two tool calls were `grep`s to locate the Phase C3b section rather than a direct file read.
+**What was wrong:** nothing found inaccurate. **ROI:** positive — the two-option framing was exactly
+right-sized (neither too vague to act on nor presumptuous about the operator's choice).
+
+### Phase 3B: Self-assess — Session 205 — 8/10
+
+- **The +:** (1) Traced the entire call chain via direct file reads before writing any code, rather
+  than guessing the threading points — confirmed with grep that the scope was correctly bounded to
+  `governance_templates.py` (checked `templates.py` too, found nothing, so didn't touch it). (2)
+  Recognized and respected an existing architectural boundary (`config.py`'s SDK-eager-import
+  avoidance) that a less careful pass would have violated by naively adding the new env vars to
+  `OrchestratorSettings` — reasoned explicitly about why, both in code comments and here. (3) Used
+  two independent fresh (not forked) adversarial-review subagents post-implementation, matching
+  ultracode guidance for a verification-shaped fan-out rather than trying to parallelize the
+  inherently-sequential implementation itself; the test-coverage lens earned its keep by finding 3
+  real, specific, non-manufactured gaps, all fixed before commit. (4) Ran the plan's own literal
+  verify command (adapted for the actual `run_pipeline.py` CLI surface, which has no `--fake` flag)
+  rather than declaring victory on unit tests alone — this is what caught that `run_pipeline.py`
+  doesn't have a `--fake` flag (minor) and, more importantly, gave empirical proof (0 forbidden-
+  pattern matches with env set, 2 files WITH those patterns when unset) that the feature actually
+  works end-to-end, not just that its unit tests pass. (5) Caught test_retry.py's `__new__`-bypass
+  regression via the actual test suite, not by inspection alone.
+- **The −:** (1) Made two genuinely erroneous tool calls mid-session — spawned a "placeholder" Agent
+  and then a "noop-wait" Agent, apparently trying to literally "wait" for the two real review agents.
+  `ScheduleWakeup` alone handles pacing; no filler Agent call is ever needed or appropriate to pass
+  time, and both were caught and stopped (`TaskStop`) but should not have happened at all — a process
+  mistake worth naming plainly rather than glossing over. (2) Did not attempt to add a new row to
+  `PROJECT_LEARNINGS.md` despite this being exactly the kind of methodology-repo dogfooding context
+  that file's "Learnings (added by sessions)" convention describes — on inspection, that file uses a
+  Candidate-then-3-instance-promotion pipeline this session doesn't have full visibility into (where
+  candidates are filed pre-promotion isn't documented in what this session read), so fabricating a
+  new row risked violating that convention rather than following it; deferred rather than guessed.
+
+**What's next:** Two active threads remain, same as Session 204 left them: **Phase C4** (the
+enterprise-clone fork — fully gated-open, needs the operator to supply 5 live decisions at that
+session's start: D9 destination host, D5 import strategy, D4 DCO, D8 wiki destination, D16 release
+disposition; see `enterprise-migration.md` Phase C4's "Before step 1" note) or the standalone
+headerless Bedrock-mantle `CHANGELOG.md` entry Session 203 flagged (small, independent, one-file fix,
+not gated on anything, still unclaimed).
+
+**Key files:** `src/model_project_constructor/agents/website/governance_templates.py` (new
+`CIHostConfig` dataclass + parameterised renderers, ~L27-45 and the three `render_*` functions).
+`src/model_project_constructor/agents/website/agent.py` (`WebsiteAgent.__init__`/`run` threading).
+`src/model_project_constructor/agents/website/cli.py` (4 new `--ci-*` typer options). `scripts/
+run_pipeline.py` (`build_ci_host_config()`, new). All at commit `ed09df5`.
+
+**Gotchas:** (1) `scripts/run_pipeline.py` has no `--fake` flag — fake mode is simply the default
+(`--live` is the opt-in flag). (2) Any future test that constructs `WebsiteAgent` via `__new__`
+bypassing `__init__` (there is exactly one, `test_retry.py`) must be kept in sync with every new
+constructor-set attribute — this bit this session once already. (3) `CIHostConfig`'s `index_url`
+field has no default string (defaults to `None`, not a public PyPI URL) — `None`/falsy is the "don't
+emit an index override" sentinel in all three renderers; don't confuse this with the other three
+fields, which all default to a real public-value string.
+
 ### What Session 204 Did
 **Deliverable:** `BACKLOG.md` cleanup — remove the closed-out `httpx-adapter-migration` section.
 **COMPLETE.**
