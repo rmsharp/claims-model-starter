@@ -225,7 +225,7 @@ These aren't style preferences — they are documented responses to specific pas
 
 ## 8. Licenses, attribution, and dependency hygiene
 
-- **Project license:** MIT (`LICENSE` at repository root). Copyright © 2026 R. Mark Sharp.
+- **Project license:** MIT (`LICENSE` at repository root). Copyright © 2026 R. Mark Sharp. This published wiki is a separate repository and states the same MIT terms for its own content on the [License](License) page.
 - **Dependency licenses:** the full per-dependency license table is `THIRD-PARTY-LICENSES` at the repository root. Direct dependencies are predominantly MIT / BSD / Apache 2.0. **Zero are LGPL** as of Session 193 — both repo-host adapters (GitLab in Session 191, GitHub in Session 193) dropped their LGPL SDKs for direct `httpx` calls (`docs/planning/httpx-adapter-migration.md`).
 - **New dependencies:** prefer zero-new-dep solutions when the stdlib or existing deps can do the job (per learning #13). Each added dependency is a maintenance commitment — version conflicts, CI install time, and security-review surface all grow. If you need a new dep, include justification in the PR description.
 

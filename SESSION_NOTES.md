@@ -6,6 +6,258 @@
 
 ## ACTIVE TASK
 
+### What Session 197 Did
+**Deliverable:** Redirected mid-session (operator override) from Phase C4 to: fix the two open
+items the Session 196 stakeholder-readiness dossier surfaced — the generated-project license gap
+and the published wiki's own missing license. **COMPLETE.**
+
+**Started / Completed:** 2026-07-29.
+
+**The redirect:** Operator picked option 1 (Phase C4, "the fork") at Phase 0. Per Phase C4's own
+"Before step 1" instruction and dragon #22, this session re-read Phase C4 fresh
+(`docs/planning/enterprise-migration.md:1101-1217`, confirmed line numbers unchanged) and asked the
+operator live for D9/D5/D4/D16 via `AskUserQuestion` (D9: enterprise GitLab, URL deliberately not
+recorded here per §1.3; D5: import as-is; D4: unknown, must be confirmed before proceeding; D16:
+private clone, recreate both Releases). Mid-answer, the operator interrupted: **"There is work
+still to be done before this repository is ready to be cloned so do not do anything that assumes
+otherwise."** No C4 mechanical step had run (no `git clone --mirror`, nothing touched outside this
+file's stub). Asked the operator what was outstanding; offered the known candidates from
+`BACKLOG.md`/the dossier (credential rotations, D10/D13, the FIPS/Guardrails gap, the two dossier
+license gaps). Operator chose: **fix the two dossier license gaps.**
+
+**What was delivered:**
+1. **Generated-project license gap closed.**
+   `src/model_project_constructor/agents/website/templates.py` — added `render_license()` and wired
+   `"LICENSE"` into `build_base_files()` (Phase 4A, always-emitted, alongside `.gitignore`/
+   `README.md` — not tier-gated, so it belongs in the 4A base scaffold, not 4B governance). Content
+   is a **proprietary/confidential placeholder** (stakeholder ID + scaffold date, explicit "not
+   confirmed by Legal," explicit "do not publish/redistribute/open-source") — deliberately **not**
+   MIT. Rationale: this repository's own MIT status (D2) covers the *pipeline tool*; the *projects
+   the pipeline generates* are a P&C insurer's internal claims-modeling work product for an
+   unnamed downstream team, and defaulting that to MIT would risk actually open-sourcing a real
+   company's proprietary model code — the unambiguously safer default, consistent with every other
+   `governance_templates.py`/`templates.py` renderer's convention of an explicit
+   "(fill in — needs human judgment)" placeholder rather than a silent guess. Also added a
+   "## License" section to the generated `README.md` pointing at the new file. Verified via direct
+   code search (`grep -rn -i license` across `agents/website/`, `docs/architecture-plan.md`) that
+   zero license handling existed anywhere before this change — matches the dossier's own claim
+   exactly, not just trusted from its prose.
+   Tests: extended `tests/agents/website/test_templates.py`
+   (`test_readme_surfaces_business_problem` now checks the new README section; added
+   `test_license_is_proprietary_placeholder_not_a_known_license`, which asserts the placeholder text
+   contains no real-license-grant language — `"Permission is hereby granted"`, `"MIT"` — that
+   SPDX/license-detection tooling could mistake for an actual open-source grant; added `"LICENSE"`
+   to `test_returns_expected_file_set`'s expected set). Confirmed no other test hardcodes an exact
+   file count or set for `build_base_files` (`assert expected <= set(files.keys())` is a subset
+   check) before adding the key, and confirmed `is_governance_artifact()` correctly excludes
+   `LICENSE` (root-level, not `governance/`-prefixed).
+2. **Wiki's own missing license closed.**
+   New page `docs/wiki/claims-model-starter/License.md` — states the repository's own MIT terms
+   (mirroring root `LICENSE`, same copyright holder) explicitly for the wiki's content, since the
+   published wiki is a separate repository with its own commit history and does not inherit the
+   main repo's `LICENSE` file automatically. Chose MIT (not a new proprietary text) because this
+   **is not a new legal decision** — D2 already settled "license of record: MIT" for this
+   repository, and `Contributing.md`'s wiki page already asserted "the project is MIT-licensed...
+   by opening a pull request you agree to license your contribution under the same terms" — this
+   page just closes the gap between that existing prose assertion and an actual license artifact.
+   Linked from `_Sidebar.md` (new "License" entry under "Development") and `Home.md`'s "Wiki
+   contents" list; cross-linked from `Contributing.md` §8. Updated
+   `Generated-Project-Structure.md` (tree diagram, the per-tier file-count table's "Root config"
+   row 3→4 and "Typical total" row +1 across all four tiers, and the "Root configuration" bullet
+   list) so the wiki's own documentation of the generated-project layout doesn't go stale the
+   moment item 1 landed. Verified against `tests/test_wiki_no_line_citations.py` (the fragile
+   `path.ext:N` / `(N lines)` citation guard) — new/edited pages pass; ran the guard test directly
+   rather than eyeballing the regex.
+3. **`executive-summaries/stakeholder-readiness-dossier.qmd` updated in place** — moved both gaps
+   from "Open" to a new "Resolved since this dossier's original session (Session 197)" paragraph in
+   the Legal safety section (was "Three items remain genuinely open," now "One item"); updated the
+   "At a glance" summary paragraph; updated both rows in the "Open items and owners" table from
+   `**Unassigned**` to `**RESOLVED (Session 197)**` with what closed them. **Distinguished this from
+   the project's "do not fix the historical record" convention** (`enterprise-migration.md` §1.1) —
+   that convention protects point-in-time *evidence-inventory* sections recording what a past
+   measurement found; the dossier's "Open items and owners" table is a live status tracker (same
+   category as `BACKLOG.md`'s phase bullets, which every session updates in place), not a frozen
+   forensic record, so updating it here is the same pattern as any phase-completion `BACKLOG.md`
+   edit, not "fixing history." Re-rendered both `--to html` and `--to pdf` (both succeeded) to
+   confirm the edited Quarto syntax is still valid, matching Session 196's own verification
+   practice; both renders stay gitignored per the existing convention.
+4. **Full verification, not partial:** `uv run pytest -q` → **964 passed, 8 live-skipped, 97.75%
+   coverage** (was 963+8 before this session per Session 196's handoff; net +1 test, matching the
+   one new test added — `test_readme_surfaces_business_problem`'s extension isn't a new test, it's
+   an extended assertion on an existing one). `uv run ruff check src/ tests/ packages/ scripts/` and
+   `uv run mypy` both clean across the full repository, not just the changed files.
+
+**Not done (explicitly out of scope, not silently dropped):** Phase C4 itself — no git action taken
+toward it. The other candidates raised during the redirect (the three `.env` credential rotations,
+D10/D13, the Guardrails/FIPS gap) remain open; see the priority list given to the operator mid-turn,
+reproduced in the handoff below.
+
+### Session 196 Handoff Evaluation (by Session 197)
+
+**Score: 8/10.** The three-way Phase 0 menu did its job — option 3 ("the open items the dossier
+itself surfaced but did not resolve") is exactly what this session ended up delivering, even though
+the operator initially picked option 1 and only redirected mid-flight.
+
+- **What helped:** (1) The menu's option 3 named both items precisely enough
+  (`generated-project license gap`, `wiki's own lack of a license`) that once the operator redirected
+  to them, no discovery work was needed to figure out *what* to fix — only *how*. (2) The dossier's
+  own "Open items and owners" table (added by Session 196) was the exact artifact this session
+  needed to read to scope both fixes, and its cross-references (`enterprise-migration.md` §2.7 item
+  4, `templates.py`/`governance_templates.py` file names) were accurate and saved a full second
+  discovery pass. (3) Phase C4's own text (re-read fresh, not trusted from the handoff's summary)
+  correctly required live D9/D5/D4/D8/D16 answers before step 1 — this is why zero C4 file/git state
+  changed before the operator's interrupt, matching dragon #22's discipline exactly.
+- **What was wrong:** Nothing factually inaccurate in Session 196's own writing. But the
+  handoff's framing — "This document does not itself resolve or gate anything... proceed to the
+  fork, carrying forward... the open items" — reads as implicitly treating the two license gaps as
+  safe to carry into the fork rather than as pre-fork blockers. The operator's actual bar turned out
+  stricter: "there is work still to be done before this repository is ready to be cloned." This
+  isn't a defect in Session 196's handoff (it accurately reported the *written* gate — A1–A4/
+  B1-core/B2 — as satisfied); it's a gap between the plan document's formal gate and the operator's
+  informal "ready" bar that no prior session's handoff had surfaced, because no prior session had
+  hit it. See Learning candidate #176 below.
+- **What was missing:** Nothing structural. The three-way menu was the right shape for a
+  handoff whose next-session choice is genuinely the operator's — this session is direct evidence of
+  that, since the operator exercised the option to redirect mid-flight at near-zero cost (identical
+  to Session 196's own praise of Session 195's menu).
+- **ROI:** strongly positive — same conclusion as Session 196 reached about Session 195's menu, now
+  a second data point for the pattern.
+
+### Phase 3B: Self-assess — Session 197 — 9/10
+
+- **The +:** (1) Took the operator's mid-flow interrupt literally — stopped immediately, verified
+  via `git status`/context review that zero C4 mechanical steps had run, and did not try to salvage
+  or partially continue the original path. (2) Asked what was outstanding rather than guessing —
+  offered the concrete, already-tracked candidates instead of either picking one unilaterally or
+  asking an unbounded open question. (3) For the generated-project license fix, explicitly reasoned
+  about *why* MIT would be the wrong default (real legal risk of accidentally open-sourcing a P&C
+  insurer's internal model code) rather than reflexively reusing this repository's own MIT status —
+  and chose the safer, codebase-convention-consistent placeholder instead. (4) For the wiki license
+  fix, explicitly checked whether MIT *was* the right call this time (yes — D2 already decided it,
+  `Contributing.md` already asserted it in prose) rather than either blindly copying the same
+  proprietary-placeholder pattern from fix #1 or blindly assuming MIT was safe without checking
+  — the two fixes needed genuinely different content, and both required a live "is this actually
+  the same decision or a new one" check rather than pattern-matching on surface similarity. (5)
+  Did not stop at "add the file" — updated `Generated-Project-Structure.md`'s file-count table (a
+  page whose own accuracy this change would otherwise have silently broken) and the dossier's own
+  Open-items table (whose "Unassigned" status this change directly falsified). (6) Verified against
+  the actual fragile-citation guard test and the actual full test/lint/type suite, not a subset,
+  before treating either fix as done.
+- **The −:** (1) Spent real budget reading Phase C4 in full (lines 1101–1217, the §3 Decision
+  Register rows, dragons #20–#24) before the operator's redirect made that reading moot for this
+  session's actual deliverable — unavoidable, since Phase 0's protocol requires re-reading the
+  chosen phase fresh before asking its gating questions, and the redirect came only after the first
+  round of `AskUserQuestion` answers, not before. Not wasted long-term (Phase C4's context is now
+  fresh for whichever future session runs it), but it is real cost against *this* session's
+  deliverable. (2) Did not re-derive the "23 pages" figure the dossier and `Generated-Project-
+  Structure.md`'s tree-diagram context implied before editing — trusted the `ls` count taken earlier
+  in the session rather than re-running it immediately before the edit. Low risk (nothing else
+  changed the wiki page count in between), but worth naming per this project's own re-derive
+  discipline.
+- **Quality bar:** matches Session 195/196's rigor; extends the "verify against the actual test/lint
+  gate, not a description of it" discipline to a session whose deliverable was code (not just docs),
+  which is a slightly different verification shape than Sessions 194–196 exercised.
+
+### Phase 3C: Learnings — Session 197
+
+- **Candidate #176 — NEW, 1st instance — "A plan's formal phase gate (the written completion
+  criteria in a Decision Register / phased plan) and the operator's actual 'ready' bar for a
+  one-time, no-sync operation (dragon #20's fork) are not guaranteed to coincide, even when the
+  written gate is satisfied and every session has correctly reported it as satisfied. An operator
+  mid-flow correction ('there is work still to be done... do not assume otherwise') is not evidence
+  any prior handoff was wrong — it's evidence the written gate was never meant to be the operator's
+  complete bar for the specific irreversible action gated behind it."** Discovered this session:
+  Phase C4's gate (A1–A4/B1-core/B2) was accurately reported satisfied by Sessions 195/196, and the
+  dossier's own "Open items" table explicitly did NOT list either license gap as a C4 gate — yet the
+  operator treated at least one of them (arguably both) as blocking readiness anyway. **When to
+  apply:** before executing any irreversible, no-sync operation (a fork, a production cutover, a
+  final migration) whose plan states a formal gate — treat "gate satisfied" as necessary, not
+  sufficient, and surface the *carried-forward, not-gating* open items to the operator explicitly
+  before executing, rather than only offering them as optional follow-up work.
+- **Candidate #177 — NEW, 1st instance — "A stakeholder-facing status document's 'Open items'
+  table is a live tracker, not a frozen historical record, even when the document also contains
+  point-in-time evidence-inventory prose in the same file. When an open item it lists gets fixed,
+  update the table and the surrounding prose in place — the project's 'do not fix the historical
+  record' convention (`enterprise-migration.md` §1.1) protects forensic measurement snapshots
+  ('what did Session X's handoff claim, and was it right'), not status trackers whose entire
+  purpose is to go stale and be corrected as work closes items out (the same category as
+  `BACKLOG.md`'s phase bullets)."** Discovered this session: initially had to reason explicitly
+  about whether editing `stakeholder-readiness-dossier.qmd` in place was permitted, given the
+  project's strong "don't rewrite history" norm elsewhere — resolved by distinguishing the two
+  document-section *types*, not by the document's identity. **When to apply:** any time a session
+  closes an item a status/tracking table (not an evidence-inventory section) previously listed as
+  open, in any document, not just `BACKLOG.md`.
+- **Not promoted to the roster:** both are 1st instance. Checked against the recent roster
+  (#172–#175, all filed Sessions 195–196) for a possible 2nd-instance match — none found; both are
+  genuinely new shapes. `PROJECT_LEARNINGS.md` = 61 rows (unchanged this session). **Next = #178.**
+  The #172 promotion-threshold discrepancy Session 196 flagged (2nd-instance vs. 3rd-instance
+  promotion bar) remains unresolved — still needs either a 3rd instance of #172 or an operator
+  ruling; not touched this session.
+
+### Phase 3D: Handoff to Session 198
+
+**Both dossier-flagged license gaps are closed.** `templates.py`, the wiki's `License.md` (+ 4
+cross-referencing pages), and the dossier itself are all committed and consistent with each other.
+Full gate green: 964 passed + 8 live-skipped @ 97.75% coverage, ruff clean, mypy --strict clean.
+
+**What's next, in priority order — present as options, do not assume which the operator wants
+(same discipline Session 196 used, now reinforced by this session's own redirect):**
+
+1. **The three `.env` credential rotations** (Anthropic key, GitLab PAT, Bedrock bearer token) —
+   flagged by B2 as named-but-not-performed, and Phase C4 itself calls for them so the clone never
+   depends on personal-account secrets. **This is an operator action against external consoles, not
+   a session an agent executes** — the next session's job (if picked) is to confirm rotation
+   happened and update the register, not to perform it.
+2. **D10 (Bedrock Regional vs. Global) + D13 (`require_sigv4`/`http_client` wiring)** — gate the
+   narrowed Phase C1. Independent of the fork; can land anytime.
+3. **The Guardrails/FIPS branching gap** inside Phase C1 (`enterprise-migration.md` Phase C1's "⚠
+   Pre-existing gap" callout) — naturally bundled with #2 since both touch C1.
+4. **Phase C4 (the fork)** — re-read `enterprise-migration.md:1101-1217` fresh (line numbers
+   confirmed current as of this session, but dragon #8 says they shift — re-verify, don't trust this
+   citation). **Before this runs, per Learning #176 above: explicitly ask the operator whether items
+   1–3 above (and anything else the operator considers load-bearing) must land first, rather than
+   inferring from the written gate alone that C4 is clear to execute.** Get D9/D5/D4/D8/D16 live at
+   that session's start — D9 (GitLab, host URL not recorded here per §1.3) and D5 (import as-is) are
+   already known from this session's partial `AskUserQuestion` round, but re-confirm live rather
+   than treating a partial, interrupted round as settled; D4 was explicitly answered "unknown — find
+   out before proceeding," so it is NOT resolved and must be chased down before step 1.
+5. **Phase C3 (CI/supply-chain hardening, clone-only)** — after C4, needs D9 live at that session's
+   start (already GitLab, per above, but re-confirm).
+6. **Phase C5 (fork independence verification)** — immediately after C4.
+
+**State you will inherit:**
+1. `master` is clean as of this session's commit — verify fresh with `git status`/`git log -1`
+   before acting on this claim (Learning #163 still applies every session).
+2. No feature branch — landed directly on `master`, matching the recent docs/code-mixed-session
+   pattern.
+3. `quarto` (1.7.33) confirmed still installed and working.
+4. Learning candidates #176–#177 are new, 1st instance each. #172's promotion-threshold
+   discrepancy (2nd-instance vs. 3rd-instance) is still unresolved from Session 196.
+   `PROJECT_LEARNINGS.md` unchanged at 61 rows. Next candidate number is **#178**.
+5. The dossier's Open-items table now has 10 live rows (was 12; D3 stays, the two license rows are
+   marked RESOLVED but kept in the table rather than deleted, so the document's own history of what
+   it originally flagged stays visible — deleting resolved rows would itself be a small
+   "fix the historical record" violation of the same kind Learning #177 above is about).
+
+**Key files:**
+- `src/model_project_constructor/agents/website/templates.py` — `render_license()` (new),
+  `build_base_files()`'s `"LICENSE"` key (new), `render_readme()`'s new "## License" section.
+- `tests/agents/website/test_templates.py` — new/extended tests, see "What was delivered" #1 above.
+- `docs/wiki/claims-model-starter/License.md` — new page; `_Sidebar.md`, `Home.md`,
+  `Contributing.md`, `Generated-Project-Structure.md` — updated to reference/stay consistent with it.
+- `executive-summaries/stakeholder-readiness-dossier.qmd` — re-render with
+  `quarto render executive-summaries/stakeholder-readiness-dossier.qmd --to html` (or `--to pdf`)
+  after any future edit; both gitignored, regenerate-on-demand.
+
+**Gotchas:**
+- **D4 (DCO/signed-commit requirement) is explicitly unresolved**, not just deferred — the operator
+  answered "unknown — find out before proceeding" mid-session. Do not treat it as answered by this
+  handoff's D9/D5/D16 notes.
+- Any git-ancestry, line-number, or "gate satisfied" claim in this handoff should be re-verified
+  live before acting on it — Learning #163 still applies every session, and Learning #176 (this
+  session) specifically warns against treating a written gate as the operator's full bar for Phase
+  C4.
+
 ### What Session 196 Did
 **Deliverable:** Executive-summary / stakeholder-readiness dossier — operator-selected (option 2 of
 Session 195's three-way Phase 0 handoff, `BACKLOG.md`'s "New (pre-fork)" bullet). **COMPLETE.**

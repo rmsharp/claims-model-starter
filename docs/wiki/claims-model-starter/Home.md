@@ -57,5 +57,6 @@ See [Software Bill of Materials](Software-Bill-of-Materials) for full dependency
 - [Evolution](Evolution) -- How the project grew from concept to current state
 - [Changelog](Changelog) -- Phase-by-phase history of notable changes
 - [Contributing](Contributing) -- Dev setup, code-quality gates, commit convention, PR workflow
+- [License](License) -- This wiki's own license terms (MIT, mirroring the repository)
 - [Glossary](Glossary) -- Domain and technical terminology
 - [Content Recommendations](Content-Recommendations) -- Suggested additions and priorities for this wiki

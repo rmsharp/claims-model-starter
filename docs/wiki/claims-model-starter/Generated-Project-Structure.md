@@ -10,6 +10,7 @@ The website agent scaffolds a complete repository project. The exact file set de
 ├── .gitlab-ci.yml              # or .github/workflows/ci.yml
 ├── .pre-commit-config.yaml
 ├── README.md
+├── LICENSE                     # Proprietary placeholder -- pending Legal review
 ├── pyproject.toml              # uv-managed, Python 3.11+
 │
 ├── src/<project_slug>/
@@ -76,7 +77,7 @@ The website agent scaffolds a complete repository project. The exact file set de
 
 | Component | Tier 4 (Low) | Tier 3 (Moderate) | Tier 2 (High) | Tier 1 (Critical) |
 |-----------|-------------|-------------------|----------------|-------------------|
-| Root config | 3 | 3 | 3 | 3 |
+| Root config | 4 | 4 | 4 | 4 |
 | src/ modules | 4 | 4 | 4 | 4 |
 | Quarto narratives | 7 | 7 | 7 | 7 |
 | Tests | 4 | 4 | 4 | 4 |
@@ -85,7 +86,7 @@ The website agent scaffolds a complete repository project. The exact file set de
 | Governance (tier-gated) | 0 | +3 | +5 | +7 |
 | Datasheets | 1/query | 1/query | 1/query | 1/query |
 | Query files | varies | varies | varies | varies |
-| **Typical total** | ~28 | ~31 | ~33 | ~37 |
+| **Typical total** | ~29 | ~32 | ~34 | ~38 |
 
 Add +3 files if `uses_protected_attributes=true` (fairness audit, fairness module, fairness test).
 Add +1 file if `affects_consumers=true` (EU AI Act compliance).
@@ -94,7 +95,8 @@ Add +1 file if `affects_consumers=true` (EU AI Act compliance).
 
 ### Root configuration
 
-- **README.md** -- Generated from the IntakeReport: business problem, proposed solution, model overview, repo layout, getting-started instructions.
+- **README.md** -- Generated from the IntakeReport: business problem, proposed solution, model overview, repo layout, getting-started instructions, and a pointer to `LICENSE`.
+- **LICENSE** -- A proprietary/confidential placeholder naming the requesting stakeholder and scaffold date. States plainly that no license or distribution terms have been confirmed by Legal, and that the contents must not be published, redistributed, or open-sourced until Legal replaces it with the organization's actual terms. This is distinct from the Model Project Constructor pipeline's own (MIT) license -- see [License](License).
 - **pyproject.toml** -- Dependencies: `pandas>=2`, `scikit-learn>=1.4`, `sqlalchemy>=2`. Dev deps: `pytest>=8`, `pytest-cov>=5`, `ruff>=0.5`. Build system: hatchling.
 - **.gitignore** -- Python, Quarto, and data artifacts (`.venv/`, `_site/`, `*.parquet`, `*.csv`).
 

@@ -79,7 +79,8 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
   yet); (2) legal safety, re-derived fresh against D1/D2/D3 and the §2.7 licence table (MIT
   consistent, zero LGPL/GPL/AGPL, third-party methodology material under a documented permission
   grant) plus two open items surfaced independently — the generated-project license gap and the
-  published wiki's own lack of a license; (3) enterprise-environment readiness across security,
+  published wiki's own lack of a license (**both closed, Session 197** — see the dossier's own
+  "Open items and owners" table); (3) enterprise-environment readiness across security,
   testing, data readiness, and Bedrock readiness, each split into resolved vs. genuinely open with
   named owners cross-referenced to the plan's §3 decision register and C1-C3 phases. Built via a
   research → draft → 4-lens adversarial verify → fix workflow; verify found 1 blocking gap (the

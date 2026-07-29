@@ -11,6 +11,7 @@ from model_project_constructor.agents.website.templates import (
     render_data_loading,
     render_evaluation,
     render_gitignore,
+    render_license,
     render_models,
     render_pyproject,
     render_qmd_business_understanding,
@@ -70,6 +71,21 @@ class TestIndividualRenderers:
         assert "# foo-bar" in readme
         assert "Subrogation recovery dropped" in readme
         assert "stakeholder_claims_001" in readme
+        assert "## License" in readme
+        assert "LICENSE" in readme
+
+    def test_license_is_proprietary_placeholder_not_a_known_license(
+        self, intake_report: IntakeReport
+    ) -> None:
+        intake = intake_report.model_dump(mode="json")
+        out = render_license(intake=intake, project_name="foo-bar")
+        assert "PROPRIETARY AND CONFIDENTIAL" in out
+        assert "stakeholder_claims_001" in out
+        assert "Legal" in out
+        # Must not resemble a real open-source grant (MIT, Apache, etc.) that
+        # SPDX/license-detection tooling could mistake for a real license.
+        assert "Permission is hereby granted" not in out
+        assert "MIT" not in out
 
     def test_pyproject_uses_slug_for_wheel(self) -> None:
         out = render_pyproject(project_name="foo-bar", project_slug="foo_bar")
@@ -306,6 +322,7 @@ class TestBuildBaseFiles:
         expected = {
             ".gitignore",
             "README.md",
+            "LICENSE",
             "pyproject.toml",
             "src/subrogation_model/__init__.py",
             "src/subrogation_model/data_loading.py",

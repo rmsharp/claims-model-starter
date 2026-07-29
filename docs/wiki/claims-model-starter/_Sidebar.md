@@ -22,6 +22,7 @@
 **Development**
 - [Extending the Pipeline](Extending-the-Pipeline)
 - [Contributing](Contributing)
+- [License](License)
 - [Changelog](Changelog)
 
 **Reference**
