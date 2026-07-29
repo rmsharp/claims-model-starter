@@ -91,13 +91,15 @@ packages/data-agent/                    # standalone: model-project-constructor-
     anthropic_client.py                       # concrete LLMClient using Claude
     cli.py, __main__.py                       # typer CLI (model-data-agent run)
 tests/
-  schemas/                              # 88 schema tests
-  agents/data/                          # 12 end-to-end Data Agent tests
-  agents/intake/                        # 56 intake tests (graph, nodes, CLI, Anthropic)
-  agents/website/                       # 122 website agent tests (templates, fake client, nodes, agent, CLI, governance, retry, gitlab + github adapters)
-  orchestrator/                         # 99 orchestrator tests (pipeline halt paths, adapters, checkpoints, config, logging, metrics)
-  ui/intake/                            # 22 web UI tests (FastAPI, runner, SQLite resume, SSE)
-  data_agent_package/                   # 21 CLI + AnthropicLLMClient tests
+  schemas/                              # 99 schema tests
+  agents/data/                          # 19 end-to-end Data Agent tests
+  agents/intake/                        # 109 intake tests (graph, nodes, CLI, Anthropic)
+  agents/website/                       # 199 website agent tests (templates, fake client, nodes, agent, CLI, governance, retry, gitlab + github adapters)
+  orchestrator/                         # 249 orchestrator tests (pipeline halt paths, adapters, checkpoints, config, logging, metrics)
+  ui/intake/                            # 32 web UI tests (FastAPI, runner, SQLite resume, SSE)
+  data_agent_package/                   # 161 CLI + AnthropicLLMClient tests
+  eval/                                 # 80 eval/parity harness tests (corpus, scoring, cutover gate, interview sweep, stakeholder sim, live)
+  scripts/                              # 22 run_pipeline.py adapter + resume CLI tests
   fixtures/sample_request.json          # canonical DataRequest fixture
   fixtures/subrogation.yaml             # canonical intake fixture (§4.1 worked example)
   fixtures/pricing_optimization.yaml    # strategic/tier-2 governance scenario
@@ -109,6 +111,9 @@ tests/
   fixtures/tier2_intake.json            # tier 2 high + strategic cycle (Phase 4B)
   fixtures/sample_datareport.json       # serialized DataReport for website agent input
   test_data_agent_decoupling.py         # structural decoupling guarantee (2 tests)
+  test_llm_json_parity.py               # intake/data-agent JSON-parser behavioral parity (16 tests)
+  test_vocab_guard.py                   # Literal-derived vocabulary/enum guard (6 tests)
+  test_wiki_no_line_citations.py        # wiki fragile-citation guard (3 tests)
 docs/planning/                          # active (not-yet-archived) plans
 docs/architecture-history/              # archived plans (concept-era + delivered): architecture-plan.md + 17 others + initial_purpose.txt
 SESSION_RUNNER.md                       # per-session operating procedure

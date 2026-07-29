@@ -6,6 +6,113 @@
 
 ## ACTIVE TASK
 
+### What Session 209 Did
+**Deliverable:** Fix `README.md`'s repo-layout tree per-directory test-count staleness (flagged by
+Session 208) — update every stale per-directory comment and add missing entries for `tests/eval/`
+and `tests/scripts/`. **COMPLETE.**
+
+**Started / Completed:** 2026-07-29.
+
+**Trigger:** operator's first message after Phase 0 orientation was the single character "1",
+selecting item (1) of the two non-conflicting items Session 208's handoff explicitly enumerated
+(the README tree fix vs. Phase C4, which stays gated on the operator per standing decision).
+Confirmed that interpretation back to the operator before starting, per the Phase 1 protocol.
+
+**What was done (1 file, 1 commit):**
+1. Re-verified Session 208's per-directory numbers rather than trusting them unconditionally (its
+   own stated gotcha) — ran `pytest --collect-only` per directory named in the current tree plus
+   the two missing ones. All eight directory counts matched Session 208's figures exactly (schemas
+   99, agents/data 19, agents/intake 109, agents/website 199, orchestrator 249, ui/intake 32,
+   data_agent_package 161, tests/eval 80, tests/scripts 22) — expected, since the only commit
+   between Session 208's measurement (`fef901c`) and this session's start (`59c1a13`) was a
+   one-line docs-only edit that touched no test file.
+2. **Correction to Session 208's handoff during verification:** its number for "decoupling" (2
+   tests) is real, but `tests/decoupling` is not a directory — `pytest --collect-only tests/decoupling`
+   errors "file or directory not found." The 2 tests are `tests/test_data_agent_decoupling.py`, a
+   top-level loose file, already listed in the tree correctly (just not as a directory). Session
+   208's handoff table header called it "decoupling 2" without flagging this distinction; harmless
+   here since the existing tree entry was already correct, but worth naming so a future session
+   doesn't go looking for a `tests/decoupling/` directory that doesn't exist.
+3. **Found three more loose top-level test files with no tree entry at all**, beyond the one
+   (`test_data_agent_decoupling.py`) already listed: `test_llm_json_parity.py` (16 tests),
+   `test_vocab_guard.py` (6 tests), `test_wiki_no_line_citations.py` (3 tests). Session 208's
+   handoff had named these three files (while explaining how its 997 reconciliation was computed)
+   but had not flagged that they were themselves missing tree entries, nor given their individual
+   counts. Read each file's module docstring to write accurate one-line descriptions rather than
+   guessing from the filename alone.
+4. Edited `README.md`'s `tests/` tree (lines 93-113): updated all 7 stale per-directory counts,
+   added `eval/` (80) and `scripts/` (22) directory entries, and added the 3 missing loose-file
+   entries alongside the existing `test_data_agent_decoupling.py` line. Preserved the file's fixed
+   comment-column alignment (verified via `awk 'index($0,"#")'` — every row's `#` sits at column 41
+   both before and after the edit).
+5. **Verification:** summed every count now shown in the tree (99+19+109+199+249+32+161+80+22+2+16+6+3
+   = 997) against the live `pytest --collect-only tests/` total (997 tests collected) — exact match.
+   `git diff README.md` reviewed before commit: only the intended tree lines changed, nothing else
+   in the file touched. No source file touched, so the full test/lint/type gate was not re-run
+   (same docs-only-session convention Sessions 203/206/208 established) — Session 208's own gate run
+   earlier in this conversation-chain already confirmed 989 passed + 8 skipped @ 97.78%, ruff clean,
+   mypy clean, and this session changed no source.
+
+### Session 208 Handoff Evaluation (by Session 209)
+
+**Score: 9/10.** The handoff named the exact fix, the exact file, and pre-gathered all eight
+per-directory counts plus the two missing directories — this session's first substantive step was
+verification, not discovery, and every number checked out. **What helped:** the pre-gathered counts
+(re-verifying them cost one `pytest --collect-only` sweep instead of deriving them from scratch);
+the explicit list of the two missing directories (`tests/eval/`, `tests/scripts/`) meant no grep was
+needed to find what the tree was missing. **What was missing:** the handoff named "three top-level
+loose test files" as part of its reconciliation math but didn't flag that two of the three
+(`test_llm_json_parity.py`, `test_vocab_guard.py`, `test_wiki_no_line_citations.py` — actually all
+three lacked entries except the pre-existing `test_data_agent_decoupling.py` line) had no tree entry
+at all, nor did it give their individual per-file counts — this session had to derive those three
+counts itself (a small gap, ~2 minutes of work, not a blocking one). **What was wrong:** the
+handoff's shorthand "decoupling 2" implied a directory parallel to the other seven; it's actually a
+loose file — cosmetic, caused zero rework since the tree already had that entry right, but worth
+naming so it doesn't cause a wasted `tests/decoupling/` lookup in a future session with less context.
+**ROI:** strongly positive — of a session whose deliverable required re-deriving nothing except the
+three loose-file counts, the handoff carried nearly the full weight of the work.
+
+### Phase 3B: Self-assess — Session 209 — 9/10
+
+- **The +:** (1) Did not trust Session 208's numbers on the strength of the handoff alone — re-ran
+  `pytest --collect-only` per directory before writing anything, which is what caught both the
+  "decoupling isn't a directory" nuance and the three under-documented loose files; a session that
+  had just copied the handoff's numbers verbatim would have shipped a tree still missing three
+  entries. (2) Closed the loop completely: the fix now reconciles exactly to the live collected
+  total (997), verified by an actual `pytest --collect-only` run at the end, not by arithmetic on
+  assumed-correct inputs. (3) Preserved formatting discipline (fixed comment-column alignment)
+  rather than treating a docs tree as free-form text — checked column position programmatically
+  before and after rather than eyeballing it. (4) Diff reviewed before commit and scoped to exactly
+  the intended lines, matching the standard this project's recent docs-only sessions have held to.
+- **The −:** (1) This remained a small, low-risk, single-file fix, and the close-out ceremony is
+  again longer than the fix itself — the same observation Sessions 206/208 made about their own
+  work; this project may be due for an explicit decision about whether small doc-accuracy fixes
+  warrant a lighter-weight close-out template, rather than each session independently re-noting the
+  same imbalance. (2) Did not add a PROJECT_LEARNINGS.md row for the "loose top-level test files are
+  easy to omit from a per-directory reconciliation" observation — judged it too narrow/file-specific
+  to be institutional memory on the scale of that table's existing 61 entries, but flagging the
+  judgment call here in case a future session disagrees.
+
+**What's next:** Both items from Session 208's handoff are now resolved or unchanged. **(1)**
+`README.md`'s test-count staleness is fully fixed — no further action; if new test files are
+added/removed in a future session, re-verify the tree counts then, don't assume this session's
+numbers stay correct indefinitely. **(2)** Phase C4 (the enterprise-clone fork) remains on hold
+pending the operator's live enterprise consultation — do not resume without the operator initiating
+and supplying the 5 live decisions per `enterprise-migration.md` Phase C4's "Before step 1" note.
+**No other open, actionable item is currently known in `BACKLOG.md`** beyond Phase C4's standing
+gate — a future session's Phase 0 should re-check `BACKLOG.md` and `gh issue list` fresh rather than
+assume this statement stays current.
+
+**Key files:** `README.md` lines 93-113 (the `tests/` repo-layout tree — now accurate as of commit
+noted below).
+
+**Gotchas:** (1) `tests/decoupling` is not a directory — don't go looking for one; the 2 decoupling
+tests live in the loose file `tests/test_data_agent_decoupling.py`. (2) The per-directory/per-file
+counts in the tree are a snapshot as of this session's commit — if any test file is added, removed,
+or moved, the tree will drift again; there is no automated check enforcing tree-vs-collected parity,
+so this is a manual-reconciliation debt that will recur unless a future session adds one (not
+proposed as this session's scope — noting the absence, not fixing it).
+
 ### What Session 208 Did
 **Deliverable:** Refresh `README.md`'s stale test-count/coverage figures (923 tests / 97.41% ->
 current 989 passed + 8 skipped / 97.78%), flagged by Session 207. **COMPLETE.**
