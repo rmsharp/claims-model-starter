@@ -125,7 +125,7 @@ uv sync --extra agents --extra ui --extra dev
 uv run pytest
 ```
 
-All 923 tests should pass (8 more skip without live LLM credentials) with coverage above 95% (currently ≈97.41%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 989 tests should pass (8 more skip without live LLM credentials) with coverage above 95% (currently ≈97.78%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
 
 Production deployments read every secret and every deployment-variable parameter from the environment (or from a `.env` file loaded by the caller). See `.env.example` for the full matrix and `OPERATIONS.md` for the runbook. Common failure modes live in `TROUBLESHOOTING.md`; resume a halted run with `scripts/run_pipeline.py --resume <run_id>` (see `OPERATIONS.md` §5).
 

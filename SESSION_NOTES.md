@@ -6,6 +6,115 @@
 
 ## ACTIVE TASK
 
+### What Session 208 Did
+**Deliverable:** Refresh `README.md`'s stale test-count/coverage figures (923 tests / 97.41% ->
+current 989 passed + 8 skipped / 97.78%), flagged by Session 207. **COMPLETE.**
+
+**Started / Completed:** 2026-07-29.
+
+**Trigger:** operator said "continue" immediately after Session 207's close-out. Session 207's
+report named exactly two open, non-conflicting items: this `README.md` fix, or Phase C4 (still
+on hold — operator explicitly declined it two sessions ago pending enterprise consultation). With
+Phase C4 ruled out by that standing decision, took the `README.md` fix as the only remaining
+actionable item and stated that interpretation before proceeding, per Auto Mode guidance to make
+the reasonable call rather than pause on a generic "continue."
+
+**What was done (1 file, 1 commit):**
+1. Located the stale line via `grep -n "923\|97.41"` README.md` — the "Getting started" section's
+   `uv run pytest` paragraph. Confirmed the current, correct numbers were already fresh from this
+   same session's own final gate run for Session 207 (989 passed, 8 skipped, 97.78% coverage) —
+   no re-run needed, no source changed since.
+2. Edited the single line: `923` -> `989`, `97.41` -> `97.78`.
+3. **While gathering evidence for the fix, discovered a second, deeper staleness problem in the
+   same file — deliberately did NOT fix it, flagged instead:** the repo-layout tree's per-directory
+   test-count comments (`schemas/ # 88 schema tests`, `agents/data/ # 12 end-to-end...`, etc.) sum
+   to roughly 422 against an actual total of 997 tests collected, and the tree lists no entry at
+   all for two entire test directories that now exist — `tests/eval/` (80 tests collected) and
+   `tests/scripts/` (22 tests collected). Ran `pytest --collect-only` per subdirectory to get
+   current accurate counts for every directory named in the tree (schemas 99, agents/data 19,
+   agents/intake 109, agents/website 199, orchestrator 249, ui/intake 32, data_agent_package 161,
+   decoupling 2) plus the two missing directories and three top-level loose test files
+   (`test_llm_json_parity.py`, `test_vocab_guard.py`, `test_wiki_no_line_citations.py`), confirming
+   the sum reconciles exactly to the collected total of 997. Recognized this as a materially larger
+   fix than the one line explicitly claimed as this session's deliverable — rewriting an entire
+   tree's worth of annotations plus adding two missing directory entries is a different-shaped
+   change, not a one-line follow-on — so left it alone rather than silently expanding scope
+   (`SAFEGUARDS.md`'s "while I'm at it" trap), and flagged it below with the numbers already
+   gathered so a future session doesn't have to re-derive them.
+4. **Verification:** `git diff README.md` reviewed before commit — exactly the one claimed line
+   changed, nothing else. No source file touched, so the full test/lint/type gate was not
+   re-run (matches the established docs-only-session convention from Sessions 203/206) — Session
+   207's gate run in this same conversation (moments prior, before any further commits) already
+   confirmed 989 passed + 8 skipped @ 97.78%, ruff clean, mypy clean.
+
+**Not done / out of scope, flagged but not fixed:** `README.md`'s repo-layout tree (`tests/`
+subsection) has per-directory test-count comments that are now stale in every entry and is
+missing entries for `tests/eval/` and `tests/scripts/` entirely — see item 3 above for the
+current accurate counts per directory, gathered this session specifically so a future session
+doesn't need to re-run the breakdown. This is a distinct, larger fix from the one-line figure
+this session's deliverable named; left for a future session, same discipline as this session's
+own predecessor (Session 207) flagging this session's fix rather than doing it inline.
+
+### Session 207 Handoff Evaluation (by Session 208)
+
+**Score: 9/10.** Session 207's handoff named exactly two next items, one of which (this fix) was
+immediately actionable with zero further discovery needed — the stale figures, their correct
+replacements, and the exact grep to find them were all already stated in the handoff, so this
+session's first tool call went straight to the fix rather than any re-derivation. **What helped:**
+the handoff explicitly named both old and new numbers (923/97.41% -> 989/97.78%) and the section
+they lived in ("Architecture in one screen" section area — close enough; the actual location was
+the adjacent "Getting started" section, a minor imprecision that cost one extra grep, not a real
+delay). **What was missing:** nothing material — a session claiming this exact fix could act on
+the handoff alone without reading anything else first. **What was wrong:** the section-location
+pointer was slightly off (said "Architecture in one screen" area; the actual stale line lives in
+"Getting started"), though both are close together in the file and the grep resolved it instantly.
+**ROI:** strongly positive — of the two items handed off, this one was actionable with no gate or
+missing decision, and the handoff made it a near-zero-latency pickup.
+
+### Phase 3B: Self-assess — Session 208 — 8/10
+
+- **The +:** (1) Made the exact, narrowly-scoped fix claimed, verified via a clean single-line
+  `git diff` before commit — no drift into adjacent content despite finding a second stale-data
+  problem in the same file while working. (2) Did not simply eyeball or assume the "current"
+  numbers were still correct — explicitly reasoned that no source had changed since Session 207's
+  own gate run in this same conversation, which is a justified basis for reuse, not a shortcut
+  taken carelessly. (3) When a second, larger staleness problem surfaced in the same file
+  mid-task, resisted expanding this session's scope to fix it, but also resisted just noting "this
+  looks stale too" vaguely — instead did the work to get exact current per-directory counts now,
+  specifically so the flag has zero rediscovery cost for whoever picks it up next, matching the
+  standard this project's recent sessions have set for handoff quality.
+- **The −:** (1) This was a very small, low-risk, single-line fix — similar to Session 206's
+  self-assessed observation, the full Phase-3 close-out ceremony is now substantially longer than
+  the fix itself, and more of this session's actual token/time cost went to investigating the
+  *newly discovered, deliberately-not-fixed* problem than to the claimed deliverable. That
+  investigation had real value (a future session inherits ready-to-use numbers instead of having
+  to regenerate them), but a stricter read of "1 and done" might say a session whose deliverable is
+  a single-line fix should stop at the line, note "the tree also looks stale" without quantifying
+  it, and let the *next* session decide whether quantifying is worth its own dedicated pass. (2)
+  Interpreted "continue" as authorization to pick and claim a new session deliverable, rather than
+  asking explicitly which of the two flagged items the operator meant — reasonable under Auto Mode
+  guidance and made explicit before acting, but this is inference of intent from a single-word
+  message, not an explicit instruction, and is worth naming plainly as exactly that.
+
+**What's next:** Two items remain, neither blocking the other. **(1)** `README.md`'s repo-layout
+tree per-directory test-count staleness (see "Not done" above for the exact current numbers per
+directory, already gathered — schemas 99, agents/data 19, agents/intake 109, agents/website 199,
+orchestrator 249, ui/intake 32, data_agent_package 161, decoupling 2, plus new entries for
+`tests/eval/` at 80 and `tests/scripts/` at 22, reconciling to the collected total of 997).
+**(2)** Phase C4 (the enterprise-clone fork) remains on hold pending the operator's live
+enterprise consultation — do not resume without the operator initiating and supplying the 5 live
+decisions per `enterprise-migration.md` Phase C4's "Before step 1" note.
+
+**Key files:** `README.md` (single line in the "Getting started" section; the stale repo-layout
+tree needing a future pass is the same file, `tests/` subsection).
+
+**Gotchas:** none new beyond what's stated above. The per-directory counts gathered this session
+(item 3) were computed via `pytest --collect-only` against the tree at commit `fef901c` — if any
+test file is added or removed before the next session picks this up, re-verify rather than trusting
+these numbers unconditionally.
+
+### What Session 207 Did
+
 ### What Session 207 Did
 **Deliverable:** New wiki page, `docs/wiki/claims-model-starter/Architecture-Overview.md` — a
 chief-architect-audience architecture summary (system boundaries, tech/vendor choices and
