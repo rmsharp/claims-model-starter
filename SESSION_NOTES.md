@@ -6,6 +6,170 @@
 
 ## ACTIVE TASK
 
+### What Session 207 Did
+**Deliverable:** New wiki page, `docs/wiki/claims-model-starter/Architecture-Overview.md` — a
+chief-architect-audience architecture summary (system boundaries, tech/vendor choices and
+tradeoffs, security/compliance posture, honest current enterprise-readiness status). **COMPLETE.**
+
+**Started / Completed:** 2026-07-29.
+
+**Trigger:** operator, after Session 206's close-out, asked for a general high-level pipeline
+summary; established the wiki's `Home.md` already covered that (business/general audience) and
+`README.md`/`Pipeline-Overview.md` covered the developer-technical angle. Operator then asked for
+the same but "for a chief architect," to be added to the wiki, and asked whether a separate
+planning session was needed first. Answered no (single bounded deliverable, not a multi-phase or
+deletion/migration plan per `SESSION_RUNNER.md`'s planning-session gate) and proceeded as this
+session's own work.
+
+**What was done (7 files, 1 commit; auto-published to the live GitHub Wiki via the tracked
+`post-commit` hook):**
+1. **Research (Workflow, 5 parallel agents):** fanned out across architecture/decisions,
+   tech-stack/dependencies, security/governance, deployment/enterprise-readiness, and
+   extensibility/maturity — each agent read a distinct cluster of existing docs (`README.md`,
+   the `docs/wiki/claims-model-starter/` pages, `docs/architecture-history/architecture-plan.md`
+   and `architecture-approaches.md`, `BACKLOG.md`'s enterprise-migration section) and returned a
+   structured prose summary. The deployment/enterprise-readiness agent was explicitly briefed to
+   report an honest, not rosy, current status. The extensibility/maturity agent independently
+   caught that `README.md`'s printed test/coverage figures (923 tests, 97.41%) are stale — current
+   is 989 passed + 8 skipped (997 collected), 97.78% coverage — by cross-checking a live
+   `pytest --collect-only` run against the most recent `CHANGELOG.md` entry rather than trusting
+   `README.md`'s own printed number.
+2. **Drafted the page directly** (not via a subagent) using the five research summaries plus this
+   session's own context — nine sections: what the system is, architecture at a glance, key
+   decisions/tradeoffs, technology/vendor posture, security/governance posture, deployment/
+   operations model, enterprise-readiness status, extensibility model, and maturity/adoption
+   status, plus a "where to go deeper" link section. Deliberately positioned above
+   `Architecture-Decisions.md` (a decision log) and `Pipeline-Overview.md` (agent mechanics)
+   rather than duplicating either.
+3. **Adversarial verify (Workflow, 3 parallel lenses)** against the drafted page: accuracy/
+   staleness (grepped/read the actual repo to check every concrete claim — **zero issues found**),
+   chief-architect-completeness (what would this reader want that's missing — found 2 blocking +
+   4 minor gaps: no ownership/support model, no concurrency/capacity-planning statement, no LLM
+   cost/TCO signal, no checkpoint backup/retention statement, no schema-versioning-compatibility
+   policy, no web-UI auth statement), and audience-fit/redundancy (found 1 blocking + 2 minor:
+   **the page was an orphan** — not linked from `Home.md`'s Wiki contents list or `_Sidebar.md`;
+   the `HandoffEnvelope` paragraph over-duplicated `Pipeline-Overview.md`'s field list; the "(see
+   AD-6 below)" pointer promised tags the decision bullets didn't actually have).
+4. **Verified each completeness gap against the actual docs before writing a fix** — did not
+   invent answers. Web-UI auth: `Security-Considerations.md` already documents "No auth on the
+   intake web UI... designed to be run behind a reverse proxy" — cited directly. Schema-version
+   policy: `Schema-Reference.md` already documents the major/minor-bump policy and that no
+   migration machinery exists yet — cited directly. Concurrency: confirmed via
+   `checkpoints.py`'s own module docstring ("No database, no migrations, no locking. A pipeline
+   run is sequential") that runs are structurally isolated per `run_id`, but genuinely nothing
+   documents provider-side throughput/rate-limit ceilings — stated that gap honestly rather than
+   asserting a number. Backup/retention and LLM-cost/TCO: confirmed via grep that neither is
+   documented anywhere in this repository — stated both as genuinely open pilot-stage questions
+   for an adopting enterprise to answer, not invented figures. Ownership/support model: confirmed
+   there is no owning-team artifact anywhere (only `CODEOWNERS`-style output for *generated*
+   downstream projects) — stated plainly as an undefined gap the operator should close before
+   sponsoring adoption, framed as due diligence rather than criticism.
+5. **Fixed all blocking findings and all minor findings** (Edit tool, targeted): compressed the
+   `HandoffEnvelope` paragraph to point at `Pipeline-Overview.md` instead of re-listing its eight
+   fields; added explicit `AD-#` tags to all four decision bullets; added the schema-versioning-
+   policy sentence; added the web-UI-auth sentence; added a new "Concurrency and capacity
+   planning" paragraph (covering concurrency, backup/retention, and LLM-cost/TCO together) to the
+   deployment section; added a new "Ownership and support model" section. Fixed the orphan-page
+   finding by adding `Architecture-Overview` to `Home.md`'s Wiki contents list and `_Sidebar.md`
+   (both under "Using the Tool," ahead of "Pipeline Overview," reflecting its higher-altitude
+   role), adding one-line backlinks from `Pipeline-Overview.md` and `Architecture-Decisions.md`
+   pointing up to the new page, and adding a row to `Content-Recommendations.md`'s own page-
+   inventory table (that table's job is literally to list every wiki page — leaving the new page
+   out of it would have been the identical orphan problem in a second index).
+6. **Verified before commit:** `tests/test_wiki_no_line_citations.py` (bans `file:line` citations,
+   `(line N)`/`(N lines)` phrasing, and the literal branch-name string across every wiki page) —
+   3/3 passed on first attempt post-draft, and again after all fix edits. Full gate:
+   `uv run ruff check .` clean, `uv run mypy` (strict, 66 source files) clean, `uv run pytest -q`
+   → **989 passed, 8 skipped, 97.78% coverage** — unchanged from Session 206's baseline (docs-only
+   change, no source touched). Confirmed via `grep -rl "Architecture-Overview"
+   docs/wiki/claims-model-starter/*.md` that the new page is referenced from 5 other pages
+   (no longer an orphan).
+
+**Verification:** see item 6. All quantitative claims in the published page (test count, coverage
+percentage, dependency count, license mix) were independently cross-checked against the live repo
+state during this session, not copied from any single source document — this caught and avoided
+propagating `README.md`'s stale test-count figure into a second document.
+
+**Not done / out of scope, flagged but not fixed:** `README.md`'s own printed test/coverage figures
+(923 tests / 97.41%, "Architecture in one screen" section) are stale — current reality is 989
+passed + 8 skipped / 97.78%, confirmed twice this session (the extensibility_maturity research
+agent, and this session's own final gate run). Not fixed here — `README.md` was not part of this
+session's stated deliverable (a new wiki page), and fixing it would have been exactly the "while
+I'm at it" scope-creep pattern `SAFEGUARDS.md` warns against. Flagged here, same as Session 203
+flagged the headerless `CHANGELOG.md` entry, for a future session to pick up as its own small,
+independent, one-file fix.
+
+### Session 206 Handoff Evaluation (by Session 207)
+
+**Score: N/A — not applicable, structurally.** Session 206's handoff correctly and accurately
+named Phase C4 as the sole remaining open thread in `BACKLOG.md`/`enterprise-migration.md` — that
+claim was true and remains true. But this session's actual deliverable came from a brand-new
+operator request (a wiki page for a chief-architect audience) that has nothing to do with either
+backlog thread Session 206 could have anticipated; Session 206 had no way to hand off toward work
+the operator hadn't asked for yet. This isn't a flaw in Session 206's handoff — a handoff can only
+be evaluated against work that was actually available to hand off, and Phase C4 (correctly
+described as gated on live operator decisions) is exactly where the operator confirmed they're not
+ready to go. Scoring this N/A rather than inventing a number avoids the false-precision failure
+mode of grading a handoff against a deliverable it had no way to predict.
+
+### Phase 3B: Self-assess — Session 207 — 9/10
+
+- **The +:** (1) Used a genuine two-workflow pattern matched to the task's actual shape: parallel
+  research fan-out (5 independent doc-reading agents, no cross-item dependency, a textbook
+  `parallel()` case) followed by drafting done directly in-session (preserving full conversation
+  context and editorial judgment rather than delegating synthesis to a fresh subagent that would
+  have had to re-derive context this session already had), followed by a second parallel-lens
+  adversarial-verify workflow against the finished draft — matching the project's own established
+  precedent (Session 196's stakeholder-readiness dossier: "research → draft → N-lens adversarial
+  verify → fix"). (2) Every completeness-lens finding was checked against the actual repository
+  before being answered — three of the six gaps turned out to already have documented answers
+  elsewhere in the wiki/source (`Security-Considerations.md`, `Schema-Reference.md`,
+  `checkpoints.py`'s own docstring) and were cited rather than re-derived from scratch; the
+  remaining three (concurrency ceiling, backup/retention, LLM-cost baseline) were confirmed absent
+  via grep and stated as genuinely open gaps rather than invented to fill the space. (3) The
+  blocking orphan-page finding was fixed completely, not just at the point flagged — added to
+  `Home.md`, `_Sidebar.md`, *and* `Content-Recommendations.md`'s own page inventory, plus backlinks
+  from the two sibling pages, rather than the minimum single fix the finding technically asked for.
+  (4) Caught and did not propagate a stale statistic (`README.md`'s test count) into the new page —
+  every quantitative claim published was independently verified against a live run this session,
+  not copied from the first document that mentioned it.
+- **The −:** (1) The "NO-GO" Bedrock cutover-gate claim, included in the published page, was
+  verified via targeted grep against `Evolution.md`/`multi-provider-llm-plan.md` *before* drafting
+  (good), but the accuracy-verify lens was not separately asked to double-check that specific claim
+  by name in its prompt — it happened to re-confirm it anyway as part of a general accuracy sweep,
+  which worked out but was closer to lucky coverage than a targeted check for the single highest-
+  stakes claim in the document. A stricter process would name the two or three highest-stakes
+  claims explicitly in the verify prompt rather than trusting a general sweep to catch them. (2)
+  Did not fix `README.md`'s stale test-count figure even though it was independently confirmed
+  twice this session (see "Not done" above) — correctly out of scope per `SAFEGUARDS.md`, but a
+  future session should not have to re-discover this; flagged explicitly below so it doesn't need
+  rediscovery.
+
+**What's next:** Two independent items, neither blocking the other: **(1)** `README.md`'s stale
+test-count/coverage figures (923/97.41%, in the "Architecture in one screen" section area) should
+be refreshed to the current 989 passed + 8 skipped / 97.78% — small, independent, one-file fix,
+not gated on anything, first flagged this session. **(2)** Phase C4 (the enterprise-clone fork)
+remains the sole open `BACKLOG.md` thread — still explicitly on hold pending the operator's live
+enterprise consultation; do not resume without the operator initiating and supplying the 5 live
+decisions (destination host, import strategy, DCO, wiki destination, release disposition) per
+`enterprise-migration.md` Phase C4's "Before step 1" note.
+
+**Key files:** `docs/wiki/claims-model-starter/Architecture-Overview.md` (new — the deliverable
+itself). `docs/wiki/claims-model-starter/Home.md`, `_Sidebar.md`, `Content-Recommendations.md`
+(navigation/inventory additions). `docs/wiki/claims-model-starter/Pipeline-Overview.md`,
+`Architecture-Decisions.md` (one-line backlinks added to each).
+
+**Gotchas:** (1) Any new wiki page MUST be added to both `Home.md`'s "Wiki contents" list and
+`_Sidebar.md`, or it is unreachable via either normal entry point into the wiki — this bit this
+session once already (caught by the audience-fit verify lens, not by this session's own drafting
+process) and is worth checking proactively for any future new page rather than relying on a
+verify pass to catch it. (2) `tests/test_wiki_no_line_citations.py` bans `file:line` citations,
+`(line N)`/`(N lines)` phrasing, and the literal branch-name string across every page under
+`docs/wiki/claims-model-starter/` — write new wiki content with symbol/section-name references
+from the start rather than line numbers, to avoid a rewrite pass later. (3) `README.md`'s test/
+coverage figures are now confirmed stale (see "Not done" above) — do not cite them as current in
+any future document without cross-checking a live `pytest` run first.
+
 ### What Session 206 Did
 **Deliverable:** Fix the headerless Bedrock-mantle `CHANGELOG.md` entry — add the missing `### `
 date/title heading, matching the convention every other entry in the file follows. **COMPLETE.**

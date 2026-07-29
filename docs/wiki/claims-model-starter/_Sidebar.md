@@ -4,6 +4,7 @@
 
 **Using the Tool**
 - [Getting Started](Getting-Started)
+- [Architecture Overview](Architecture-Overview)
 - [Pipeline Overview](Pipeline-Overview)
 - [Intake Interview Design](Intake-Interview-Design)
 - [Agent Reference](Agent-Reference)

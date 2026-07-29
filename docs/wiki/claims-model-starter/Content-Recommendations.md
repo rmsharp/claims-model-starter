@@ -8,6 +8,7 @@ This page lists the wiki's current pages (with audiences) and known gaps where a
 |------|----------|---------|
 | [Home](Home) | All | Landing page and navigation |
 | [Getting Started](Getting-Started) | New users | Install, first run, verify |
+| [Architecture Overview](Architecture-Overview) | Architects, technical decision-makers | System architecture synthesis, tech/vendor tradeoffs, security/governance posture, honest enterprise-readiness status |
 | [Pipeline Overview](Pipeline-Overview) | All | How the three agents work together |
 | [Intake Interview Design](Intake-Interview-Design) | Stakeholders, operators | Interview strategy, caps, governance pass, tips |
 | [Generated Project Structure](Generated-Project-Structure) | Data science teams | What the output repository contains |

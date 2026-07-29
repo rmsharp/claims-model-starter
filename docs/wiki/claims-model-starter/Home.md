@@ -39,6 +39,7 @@ See [Software Bill of Materials](Software-Bill-of-Materials) for full dependency
 ## Wiki contents
 
 - [Getting Started](Getting-Started) -- Install, first run, verify
+- [Architecture Overview](Architecture-Overview) -- System architecture, tech/vendor posture, and honest enterprise-readiness status, for architects and technical decision-makers
 - [Pipeline Overview](Pipeline-Overview) -- How the agents work together
 - [Intake Interview Design](Intake-Interview-Design) -- Interview strategy, caps, tips for stakeholders
 - [Generated Project Structure](Generated-Project-Structure) -- What the output repository contains

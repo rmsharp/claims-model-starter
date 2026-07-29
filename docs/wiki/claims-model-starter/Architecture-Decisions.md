@@ -1,6 +1,6 @@
 # Architecture Decisions
 
-Key design choices and their rationale. For the full architecture plan, see `docs/architecture-history/architecture-plan.md` (archived concept-era plan).
+Key design choices and their rationale. For the full architecture plan, see `docs/architecture-history/architecture-plan.md` (archived concept-era plan). For a higher-altitude synthesis (tradeoffs, vendor posture, enterprise-readiness status), see [Architecture Overview](Architecture-Overview).
 
 ## AD-1: Sequential pipeline, not parallel agents
 
