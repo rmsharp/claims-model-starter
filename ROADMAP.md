@@ -48,7 +48,7 @@ All agents operate within the context of a **claims organization in a property &
 ### M4: Website Agent (pipeline Steps 4-5) — Phases 4A, 4B + GitHub/GitLab abstraction Phases A-D
 - LangGraph section-generation flow in `src/model_project_constructor/agents/website/`.
 - `.qmd` files and `src/` module stubs generated for initial model build.
-- Dual-host GitLab/GitHub project scaffolding via `RepoClient` protocol (`PythonGitLabAdapter`, `PyGithubAdapter`).
+- Dual-host GitLab/GitHub project scaffolding via `RepoClient` protocol (`GitLabAdapter`, `GitHubAdapter`).
 - Package-extension suggestions in generated projects.
 - Governance scaffolding proportional to `risk_tier` and `cycle_time` per §8.
 

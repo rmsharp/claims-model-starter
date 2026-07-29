@@ -145,19 +145,19 @@ as forward context for whoever eventually answers these inside the clone.
 ### httpx adapter migration (`docs/planning/httpx-adapter-migration.md`)
 
 Replace both LGPL SDK dependencies (`python-gitlab`, `PyGithub`) in the Website Agent's repo-host
-adapters with direct `httpx` REST calls. **Both phases are DONE and LANDED.** Phase 1 (GitLab):
-Session 191, merged via `ff04c02`/pushed by Session 192. Phase 2 (GitHub): Session 193, 5 commits
-— `2412abf` (adapter+tests), `e0ae0c5` (packaging), `797ea5c` (src docstrings/README), `9aad76b`
-(wiki+`THIRD-PARTY-LICENSES`+root `CONTRIBUTING.md`) — landed directly on `master` (no feature
-branch this time; both phases had already been through the branch-then-merge cycle once, and
-Phase 2 alone touches no file Phase 1 or the still-open enterprise-migration thread depends on).
-**Zero direct dependencies are LGPL as of `9aad76b`** — full gate: 963 passed + 8 live-skipped @
-97.75% coverage, `ruff`/`mypy` clean. See `CHANGELOG.md`'s 2026-07-28 entry for the complete
-per-commit breakdown.
-
-- **Phase 3 (optional)** — rename `PythonGitLabAdapter`/`PyGithubAdapter` to drop the SDK names
-  now baked into misnomers (both classes still literally name the SDKs they no longer use). Plan
-  recommends deferring this; only do it if DP1 is revisited. Not started.
+adapters with direct `httpx` REST calls. **All three phases are DONE and LANDED**, including the
+optional Phase 3. Phase 1 (GitLab): Session 191, merged via `ff04c02`/pushed by Session 192.
+Phase 2 (GitHub): Session 193, 5 commits — `2412abf` (adapter+tests), `e0ae0c5` (packaging),
+`797ea5c` (src docstrings/README), `9aad76b` (wiki+`THIRD-PARTY-LICENSES`+root `CONTRIBUTING.md`)
+— landed directly on `master` (no feature branch this time; both phases had already been through
+the branch-then-merge cycle once, and Phase 2 alone touches no file Phase 1 or the still-open
+enterprise-migration thread depends on). **Zero direct dependencies are LGPL as of `9aad76b`** —
+full gate: 963 passed + 8 live-skipped @ 97.75% coverage, `ruff`/`mypy` clean. **Phase 3 (the
+optional rename, DP1): DONE (Session 203, 2026-07-29)** — explicitly selected by the operator,
+overriding the plan's own default recommendation to keep the names. `PythonGitLabAdapter` →
+`GitLabAdapter`, `PyGithubAdapter` → `GitHubAdapter` across `src/`, `tests/`, and `docs/wiki/`
+(`2538f8f`/`36734a9`); full gate unchanged at 970 passed + 8 live-skipped @ 97.76% coverage. See
+`CHANGELOG.md`'s 2026-07-28 and 2026-07-29 entries for the complete per-commit breakdown.
 
 Overlaps `B3` (LGPL removal) in the Enterprise migration section above — reconciled by Session 194:
 B3 is now correctly marked **DONE** there (both LGPL deps are gone; D11 is moot).
