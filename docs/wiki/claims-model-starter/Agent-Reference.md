@@ -243,8 +243,8 @@ RepoProjectResult
 
 | Adapter | Library | Authentication |
 |---------|---------|---------------|
-| `PythonGitLabAdapter` | `httpx` (direct REST calls) | Token-based |
-| `PyGithubAdapter` | `httpx` (direct REST calls) | Token-based |
+| `GitLabAdapter` | `httpx` (direct REST calls) | Token-based |
+| `GitHubAdapter` | `httpx` (direct REST calls) | Token-based |
 | `FakeRepoClient` | (none) | Test/dry-run -- no network |
 
 ### Failure modes

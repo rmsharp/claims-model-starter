@@ -28,7 +28,7 @@ Key design choices and their rationale. For the full architecture plan, see `doc
 
 ## AD-5: RepoClient protocol for host abstraction
 
-**Decision:** Use a Python protocol (`RepoClient`) with adapter implementations (`PythonGitLabAdapter`, `PyGithubAdapter`, `FakeRepoClient`).
+**Decision:** Use a Python protocol (`RepoClient`) with adapter implementations (`GitLabAdapter`, `GitHubAdapter`, `FakeRepoClient`).
 
 **Rationale:** The Website Agent should not know or care whether the target is GitLab or GitHub. The protocol defines two operations: `create_project()` and `commit_files()`. Each adapter wraps a host-specific library. `FakeRepoClient` enables testing without network calls. Adding a new host (e.g., Bitbucket) requires a new `PlatformSpec` entry in the `REPO_PLATFORMS` registry (with `default_api_url`, `token_env_var`, and `adapter_factory`), plus a member in the `HostLiteral` type alias — the adapter factory and registry dispatch handle the rest.
 

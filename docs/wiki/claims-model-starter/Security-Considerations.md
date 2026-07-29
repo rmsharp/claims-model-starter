@@ -49,7 +49,7 @@ Outside `src/model_project_constructor/orchestrator/config.py`, three modules re
 - `build_repo_target` and `build_website_runner` in `scripts/run_pipeline.py` — demo-script convenience defaults (`MPC_HOST_URL`, `MPC_NAMESPACE`). The host token is *not* read directly here; it comes from `settings.require_host_token()`.
 - `BedrockLLMClient.__init__` in `src/model_project_constructor/agents/intake/bedrock_client.py` and in `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py` — tests `AWS_BEARER_TOKEN_BEDROCK` for **presence only**, to enforce the optional `require_sigv4=True` guard; the value is never read, and AWS credentials themselves are resolved by the SDK from the credential chain.
 
-The adapters consume tokens via the settings object; their `__init__` signatures take `private_token: str` as a parameter (`PythonGitLabAdapter.__init__` in `src/model_project_constructor/agents/website/gitlab_adapter.py`, `PyGithubAdapter.__init__` in `src/model_project_constructor/agents/website/github_adapter.py`), so a caller must decide how to get the value to them. The example in the docstring shows `os.environ["GITLAB_TOKEN"]`, but the adapter itself has no opinion on where the token came from — a secret manager, a vault agent, or a keychain all work.
+The adapters consume tokens via the settings object; their `__init__` signatures take `private_token: str` as a parameter (`GitLabAdapter.__init__` in `src/model_project_constructor/agents/website/gitlab_adapter.py`, `GitHubAdapter.__init__` in `src/model_project_constructor/agents/website/github_adapter.py`), so a caller must decide how to get the value to them. The example in the docstring shows `os.environ["GITLAB_TOKEN"]`, but the adapter itself has no opinion on where the token came from — a secret manager, a vault agent, or a keychain all work.
 
 ### 1.3 Fail-loud helpers
 
@@ -148,22 +148,22 @@ Self-hosting the LLM remains out of scope for the first-party client. `BedrockLL
 
 Bedrock has **never been exercised live** — every governance and eval result in this project was produced against the `anthropic` provider, and the live eval tier auto-skips `bedrock` for want of credentials. Treat the Bedrock path as implemented-but-unvalidated.
 
-### 2.2 GitLab (`PythonGitLabAdapter`)
+### 2.2 GitLab (`GitLabAdapter`)
 
-`PythonGitLabAdapter` in `src/model_project_constructor/agents/website/gitlab_adapter.py`. Migrated off the `python-gitlab` SDK to direct `httpx` calls against the `/api/v4` REST API in Session 191 (`docs/planning/httpx-adapter-migration.md` Phase 1). Calls:
+`GitLabAdapter` in `src/model_project_constructor/agents/website/gitlab_adapter.py`. Migrated off the `python-gitlab` SDK to direct `httpx` calls against the `/api/v4` REST API in Session 191 (`docs/planning/httpx-adapter-migration.md` Phase 1). Calls:
 
-- `httpx.Client(base_url=f"{host_url}/api/v4", headers={"PRIVATE-TOKEN": ...}, verify=ssl_verify)` (constructed in `PythonGitLabAdapter.__init__`) — no network call at construction; `ssl_verify=True` is the default and not overridden for live runs.
+- `httpx.Client(base_url=f"{host_url}/api/v4", headers={"PRIVATE-TOKEN": ...}, verify=ssl_verify)` (constructed in `GitLabAdapter.__init__`) — no network call at construction; `ssl_verify=True` is the default and not overridden for live runs.
 - `GET /groups/{namespace}` — group resolution (namespace URL-encoded so nested group paths address a single path segment).
 - `POST /projects` — project creation.
 - `GET /projects/{id}` then `POST /projects/{id}/repository/commits` — multi-file commit.
 
 Every non-2xx response or `httpx` transport error (`httpx.HTTPError`) is translated to `RepoClientError`/`RepoNameConflictError`; no raw `httpx` exception escapes the adapter. Target host is whatever `host_url` the caller provides (public `https://gitlab.com` by default; enterprise instances via `MPC_HOST_URL`).
 
-### 2.3 GitHub (`PyGithubAdapter`)
+### 2.3 GitHub (`GitHubAdapter`)
 
-`PyGithubAdapter` in `src/model_project_constructor/agents/website/github_adapter.py`. Migrated off the `PyGithub` SDK to direct `httpx` calls against the REST API in Session 193 (`docs/planning/httpx-adapter-migration.md` Phase 2). Calls:
+`GitHubAdapter` in `src/model_project_constructor/agents/website/github_adapter.py`. Migrated off the `PyGithub` SDK to direct `httpx` calls against the REST API in Session 193 (`docs/planning/httpx-adapter-migration.md` Phase 2). Calls:
 
-- `httpx.Client(base_url=host_url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})` (constructed in `PyGithubAdapter.__init__`) — no network call at construction.
+- `httpx.Client(base_url=host_url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})` (constructed in `GitHubAdapter.__init__`) — no network call at construction.
 - `GET /orgs/{namespace}` → falls back to `GET /users/{namespace}` on a 404 — owner resolution. Repo creation then targets `POST /orgs/{namespace}/repos` (organization) or `POST /user/repos` (the *authenticated* user's own account — GitHub's API has no endpoint to create a repo under an arbitrary third-party user).
 - `POST /orgs/{namespace}/repos` or `POST /user/repos` — repo creation (maps visibility to a `private` boolean).
 - `GET .../git/ref/heads/{branch}` → `GET .../git/commits/{sha}` → `POST .../git/blobs` (one per file) → `POST .../git/trees` → `POST .../git/commits` → `PATCH .../git/refs/heads/{branch}` — the git data API walk for a single atomic commit.

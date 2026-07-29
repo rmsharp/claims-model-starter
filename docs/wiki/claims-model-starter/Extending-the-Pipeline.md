@@ -122,15 +122,15 @@ The existing adapters illustrate the template:
 
 | Adapter | Module | Constructor signature |
 |---|---|---|
-| `PythonGitLabAdapter` | `src/model_project_constructor/agents/website/gitlab_adapter.py` | `__init__(*, host_url: str, private_token: str, ssl_verify: bool = True)` |
-| `PyGithubAdapter` | `src/model_project_constructor/agents/website/github_adapter.py` | `__init__(*, private_token: str, host_url: str = "https://api.github.com")` |
+| `GitLabAdapter` | `src/model_project_constructor/agents/website/gitlab_adapter.py` | `__init__(*, host_url: str, private_token: str, ssl_verify: bool = True)` |
+| `GitHubAdapter` | `src/model_project_constructor/agents/website/github_adapter.py` | `__init__(*, private_token: str, host_url: str = "https://api.github.com")` |
 
 Each class is roughly ~120 lines, implements exactly `create_project` and `commit_files`, maps host-library exceptions to `RepoClientError` / `RepoNameConflictError`, and is kwarg-only on construction.
 
 ### Files to add or edit
 
 1. **New module** `src/model_project_constructor/agents/website/<host>_adapter.py` — implement `create_project` and `commit_files`, translate host exceptions.
-2. **Re-export** in `src/model_project_constructor/agents/website/__init__.py` — mirror the existing `PythonGitLabAdapter` / `PyGithubAdapter` re-export.
+2. **Re-export** in `src/model_project_constructor/agents/website/__init__.py` — mirror the existing `GitLabAdapter` / `GitHubAdapter` re-export.
 3. **Optional dependency** in the top-level `pyproject.toml` under the `agents` extra — add the host's Python SDK (e.g., `atlassian-python-api` for Bitbucket).
 4. **Tests** in `tests/agents/website/test_<host>_adapter.py` — follow the pattern of `tests/agents/website/test_github_adapter.py` and `tests/agents/website/test_gitlab_adapter.py`:
    - Import-level check (module loads, class has both Protocol methods).

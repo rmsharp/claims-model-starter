@@ -479,7 +479,7 @@ class RepoTarget(StrictBase):
     visibility: Literal["private", "internal", "public"] = "private"
 ```
 
-Default visibility is `"private"`. GitHub does not support nested namespaces — the GitHub adapter raises `RepoClientError` if `namespace` contains a `/` (`PyGithubAdapter.create_project` in `src/model_project_constructor/agents/website/github_adapter.py`).
+Default visibility is `"private"`. GitHub does not support nested namespaces — the GitHub adapter raises `RepoClientError` if `namespace` contains a `/` (`GitHubAdapter.create_project` in `src/model_project_constructor/agents/website/github_adapter.py`).
 
 ### `GovernanceManifest`
 
