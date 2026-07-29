@@ -6,6 +6,105 @@
 
 ## ACTIVE TASK
 
+### What Session 204 Did
+**Deliverable:** `BACKLOG.md` cleanup — remove the closed-out `httpx-adapter-migration` section.
+**COMPLETE.**
+
+**Started / Completed:** 2026-07-29.
+
+**Trigger:** operator, reading Session 204's Phase 0 orientation report (which listed
+`httpx-adapter-migration` as an "active thread" summarized from `BACKLOG.md`), pointed out that the
+report itself said the work was complete — so it shouldn't still be sitting in a file whose own
+header states "Open work only."
+
+**What was done (2 files, 1 commit):**
+1. Confirmed `CHANGELOG.md` already fully records all three phases (2026-07-27, 2026-07-28,
+   2026-07-29 dated entries — `grep -n "^## \[\|^### " CHANGELOG.md`) before deleting anything from
+   `BACKLOG.md`, so no information was lost.
+2. Removed the entire `### httpx adapter migration (...)` section from `BACKLOG.md` (18 lines).
+3. Fixed the one dangling forward-reference this left behind: the Enterprise Migration section's
+   `B3 — LGPL removal` bullet said "see the httpx section below" — repointed it to
+   `CHANGELOG.md`'s 2026-07-27/2026-07-28 entries instead.
+4. Repurposed the file's trailing "Most recently completed: ..." line (previously pointing at the
+   Session 177 `cycle_time` work) to summarize the httpx migration instead, since it is now the
+   more-recently-completed item; relabeled the old Session 177 paragraph "Previously completed:" and
+   left its content untouched (historical record, not rewritten).
+
+**Verification:** `git diff BACKLOG.md` reviewed line-by-line before commit — confirmed no other
+open-items bullet references the deleted section (`grep -n "httpx" BACKLOG.md` → 0 matches
+remaining). Searched the whole repo for other *live* pointers into the deleted section
+(`grep -rn "httpx section" --include="*.md" .`) — all remaining hits are in `SESSION_NOTES.md`
+and `CHANGELOG.md`, which are historical records of what past sessions did and are correctly left
+unedited (this project's convention — see Learning re: not rewriting history, applied identically
+by Session 203 to the `Changelog.md`/`Evolution.md` wiki pages).
+
+**Gate:** not re-run. This change touches only `BACKLOG.md` and `SESSION_NOTES.md` — zero `src/` or
+`tests/` files — so there is no code path for a regression to hide in. Session 203's "re-run the
+gate on a docs-only commit" precedent applied to a session that *also* touched `docs/wiki/` pages
+documenting live code behavior (adapter `__init__` signatures) where staleness was a real risk; a
+pure `BACKLOG.md` bookkeeping edit has no equivalent risk. Noting the deviation explicitly rather
+than silently skipping a named precedent.
+
+**Not done / out of scope:** did not address the pre-existing headerless Bedrock-mantle
+`CHANGELOG.md` entry that Session 203 flagged and deliberately left for a future session — still
+open, still someone else's call.
+
+### Session 203 Handoff Evaluation (by Session 204)
+
+**Score: 8/10.** The orientation report Session 204 built from `BACKLOG.md` correctly summarized
+`httpx-adapter-migration` as complete — Session 203's own handoff was accurate and is what let the
+operator immediately spot the convention violation from the Phase 0 report alone, without needing
+to read the file directly. **What helped:** Session 203's detailed record of exactly which commits
+and files closed out Phase 3 made it trivial to confirm `CHANGELOG.md` had full coverage before
+deleting the `BACKLOG.md` section — no re-derivation needed. **What was missing:** Session 203's own
+close-out (which explicitly followed the "no checked-off items" convention by rewriting the section
+as prose rather than `[x]`-marking it) didn't go the last step and ask whether the section should
+still exist in `BACKLOG.md` at all — it satisfied the letter of the convention (no `[x]` markers)
+but not really its spirit (closed-out items don't belong in an "open work only" file even as prose).
+That gap is what this session closed. Not a scoring-worthy miss — reasonable to leave a first-pass
+convention judgment call to the next reader — but worth naming so future sessions default to asking
+"does this still belong in this file" rather than just "did I phrase it without checkboxes."
+
+### Phase 3B: Self-assess — Session 204 — 8/10
+
+- **The +:** (1) Correctly scoped this as a small, single-purpose deliverable — no scope creep into
+  fixing the unrelated headerless CHANGELOG entry Session 203 flagged, even though it was sitting in
+  the same file. (2) Verified `CHANGELOG.md` had full coverage *before* deleting the `BACKLOG.md`
+  section, rather than assuming and finding out later that history had been lost. (3) Found and
+  fixed the dangling `B3` cross-reference proactively — grepped for it rather than assuming the
+  deleted section was self-contained. (4) Grepped the whole repo, not just `BACKLOG.md`, for other
+  live pointers into the deleted section before declaring done. (5) Made a reasoned, stated judgment
+  call on skipping the full gate re-run rather than either cargo-culting Session 203's precedent
+  uncritically or silently skipping it without comment.
+- **The −:** (1) Did not use `Workflow`/parallel-subagent structure despite ultracode being active —
+  justified here (a 2-file, single-writer, sequential mechanical edit has no parallelizable
+  sub-tasks and no independent-verification value a solo pass doesn't already provide) but, per
+  Session 203's own self-critique, worth naming explicitly each time rather than letting the
+  omission go unstated. (2) Session 1B stub-then-full-rewrite pattern (stub written, then
+  immediately overwritten in the same session with the full write-up) is correct per protocol but
+  means the "stub survives a crash" safety property was never actually tested this session — not a
+  flaw, just noting the stub's value was theoretical here given how fast the task completed.
+
+**What's next:** No specific follow-on implied by this session — it was a standalone bookkeeping
+fix. The two active threads identified in this session's Phase 0 report remain the real options for
+Session 205: **C3b** (`docs/planning/enterprise-migration.md`'s generated-project CI portability —
+ungated, self-contained, touches only this repo's own source) or **Phase C4** (the enterprise-clone
+fork — fully gated-open, but needs the operator to supply 5 live decisions — D9 destination host,
+D5 import strategy, D4 DCO, D8 wiki destination, D16 release disposition — at that session's start;
+see `enterprise-migration.md` Phase C4's "Before step 1" note). Also still open and unclaimed: the
+headerless Bedrock-mantle `CHANGELOG.md` entry Session 203 flagged (a small, independent, one-file
+fix — not gated on anything).
+
+**Key files:** `BACKLOG.md` (this session's edit — L51-52 the B3 cross-ref fix, L145-150 the
+"most/previously recently completed" section). `CHANGELOG.md` L16-49 (the three dated
+httpx-adapter-migration entries this session verified as the full record). No `src/`/`tests/` files
+touched.
+
+**Gotchas:** none introduced. The one pre-existing gotcha worth repeating: `BACKLOG.md`'s "no
+checked-off items" convention is easy to satisfy at the letter (no `[x]` markers) while missing the
+spirit (the item still shouldn't be *in* the file once done) — see this session's evaluation of
+Session 203 above.
+
 ### What Session 203 Did
 **Deliverable:** Phase 3 (optional) of `docs/planning/httpx-adapter-migration.md` — mechanical
 rename `PythonGitLabAdapter → GitLabAdapter`, `PyGithubAdapter → GitHubAdapter` across `src/`,

@@ -48,8 +48,8 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
   C4 time, not rotating the personal ones beforehand — no pre-fork action needed. The 162 MB
   `.git`/loose-objects fact from §2.9 is pre-existing repo state, not a B2 action item — `git clone
   --mirror` (C4 step 1) repacks on push regardless.
-- **B3 — LGPL removal.** **DONE** (both LGPL SDKs removed, Sessions 191–193 — see the httpx section
-  below). D11 is moot; no further action.
+- **B3 — LGPL removal.** **DONE** (both LGPL SDKs removed via `docs/planning/httpx-adapter-migration.md`,
+  Sessions 191–193 — see `CHANGELOG.md`'s 2026-07-27/2026-07-28 entries). D11 is moot; no further action.
 - **C1 — Bedrock enterprise correctness.** **Narrowed by §1.3.** **D10 RESOLVED (Session 199):
   Regional. D13 RESOLVED (Session 200):** `require_sigv4` sub-scope only (guard completeness + env
   wiring), not `http_client`. **`bedrock-enterprise.md` §0's three security questions RESOLVED
@@ -142,29 +142,14 @@ at that session's start (`enterprise-migration.md` §4's "Before step 1" notes a
 See `docs/planning/enterprise-migration.md` §3 for the full Recommendation-column text, preserved
 as forward context for whoever eventually answers these inside the clone.
 
-### httpx adapter migration (`docs/planning/httpx-adapter-migration.md`)
-
-Replace both LGPL SDK dependencies (`python-gitlab`, `PyGithub`) in the Website Agent's repo-host
-adapters with direct `httpx` REST calls. **All three phases are DONE and LANDED**, including the
-optional Phase 3. Phase 1 (GitLab): Session 191, merged via `ff04c02`/pushed by Session 192.
-Phase 2 (GitHub): Session 193, 5 commits — `2412abf` (adapter+tests), `e0ae0c5` (packaging),
-`797ea5c` (src docstrings/README), `9aad76b` (wiki+`THIRD-PARTY-LICENSES`+root `CONTRIBUTING.md`)
-— landed directly on `master` (no feature branch this time; both phases had already been through
-the branch-then-merge cycle once, and Phase 2 alone touches no file Phase 1 or the still-open
-enterprise-migration thread depends on). **Zero direct dependencies are LGPL as of `9aad76b`** —
-full gate: 963 passed + 8 live-skipped @ 97.75% coverage, `ruff`/`mypy` clean. **Phase 3 (the
-optional rename, DP1): DONE (Session 203, 2026-07-29)** — explicitly selected by the operator,
-overriding the plan's own default recommendation to keep the names. `PythonGitLabAdapter` →
-`GitLabAdapter`, `PyGithubAdapter` → `GitHubAdapter` across `src/`, `tests/`, and `docs/wiki/`
-(`2538f8f`/`36734a9`); full gate unchanged at 970 passed + 8 live-skipped @ 97.76% coverage. See
-`CHANGELOG.md`'s 2026-07-28 and 2026-07-29 entries for the complete per-commit breakdown.
-
-Overlaps `B3` (LGPL removal) in the Enterprise migration section above — reconciled by Session 194:
-B3 is now correctly marked **DONE** there (both LGPL deps are gone; D11 is moot).
-
 ---
 
-Most recently completed: **harden the `cycle_time` cadence definitions and corpus**
+Most recently completed: **`httpx-adapter-migration`** (`docs/planning/httpx-adapter-migration.md`)
+— all three phases DONE and LANDED (Phase 1 GitLab: Session 191; Phase 2 GitHub: Session 193; Phase
+3 optional rename: Session 203). Zero direct dependencies are LGPL as of Session 193's `9aad76b`.
+Full per-commit breakdown in `CHANGELOG.md`'s 2026-07-27/2026-07-28/2026-07-29 entries.
+
+Previously completed: **harden the `cycle_time` cadence definitions and corpus**
 (gap #2 robustness follow-up) — Session 177 refined `CYCLE_TIME_DEFINITIONS` to
 discriminate `tactical`/`operational` on **output purpose** (not run frequency) and
 added the role≠frequency corpus case `claim_workqueue_triage` (live cycle_time 60/60 =
