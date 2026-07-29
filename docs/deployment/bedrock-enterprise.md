@@ -176,6 +176,14 @@ Ask and I'll drop the full runtime policy in.)*
   worldwide at no premium — a **residency violation** for regulated P&C/insurance data. Choose
   deliberately; Global routing sets `aws:RequestedRegion=unspecified`, which a region-restriction
   SCP must explicitly allow (or you can Deny it to hard-block global).
+- **Decision (D10, operator-accepted 2026-07-29): Regional.** For P&C claims data, residency
+  dominates the ~10% premium — see `docs/planning/enterprise-migration.md` Decision Register. The
+  hard-block SCP is templated at `docs/deployment/bedrock-residency-scp.json` (Deny on
+  `aws:RequestedRegion` outside an allowlist, which also catches Global's `unspecified` value).
+  **The specific allowed region(s) in that file are a placeholder** (`us-east-1`/`us-east-2`/
+  `us-west-2`, the three US in-region choices named above) — the platform team confirms/replaces
+  them once the actual deployment region is known; that region choice itself is not part of D10 and
+  remains open. Applying the SCP in AWS Organizations is platform-team work (§1), not this repo's.
 
 ---
 
@@ -249,7 +257,9 @@ capacity is TPM-quota-bound, which matters for enterprise capacity planning.
 - [ ] `AWS_BEARER_TOKEN_BEDROCK` **unset** in the prod profile; `AWS_REGION` set to a mantle region
 - [ ] Interface VPC endpoint `com.amazonaws.{region}.bedrock-mantle` with **Private DNS enabled** + endpoint policy
 - [ ] Egress allowlist: `bedrock-mantle.{region}.api.aws:443`, STS, IMDS; `NO_PROXY` for intra-VPC
-- [ ] Region/model-id chosen (bare id; Regional vs Global residency decision made; SCPs aligned)
+- [ ] Region/model-id chosen (bare id; **Regional vs Global residency decision made — D10:
+      Regional, 2026-07-29**; SCPs aligned — template at `bedrock-residency-scp.json`, specific
+      region allowlist and AWS application still open)
 - [ ] Model-invocation logging + KMS + geo SCPs provisioned per §6
 - [ ] `INTAKE_LLM_PROVIDER=bedrock` set; smoke-test a live `messages.create`
 - [ ] (if §7 punch-list needed) `base_url` / `http_client` pass-throughs merged

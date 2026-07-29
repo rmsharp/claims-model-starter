@@ -550,7 +550,7 @@ Phases are gated on these. **Owners are named because most are not engineering c
 | **D7** | Take down the already-public audits retroactively? | **Operator** | **Move `docs/audits/` out of `docs_dir`** (structural, not a config a future edit can undo), force a re-deploy so the URLs 404, then request search-index removal. They are in `sitemap.xml` with no `robots.txt`. **Unaffected by D6/§1.2** — the site staying public makes this more urgent, not less: there is no future decommission to eventually close the exposure if this is left unanswered. Also decide whether this extends to `/executive-summaries/business-value-capture.qmd` (200, link-discoverable, not in `sitemap.xml`) — as scoped, this action does not cover it. | A1 |
 | **D8** | Where does the wiki live **in the enterprise clone** (the original wiki keeps auto-publishing unchanged — D6, §1.2); does the clone's copy need auto-publish at all; **and what does the destination require of page naming, the sidebar file, and intra-wiki link syntax?** | **Operator + platform team** | Resolve the host first. **C4 delivers a hardened, fail-closed local-hook mechanism for the clone as the default** (parameterised `publish_wiki.sh`, no defaults, cannot resolve to the personal wiki) — do **not** reuse `~/Development/claims-model-starter.wiki` for it (dragon #21). Publishing from CI instead of a local hook is a further hardening step, not required for C4's DONE criteria; take it up in C3 if the platform team wants it. Note `_Sidebar.md`/`Home.md` are GitHub-Wiki reserved names and **157 intra-wiki links are extensionless page slugs** that resolve only under GitHub's wiki router. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3); C4 still delivers the fail-closed mechanism unconditionally regardless of what D8 turns out to be.** | ~~C4~~ none — see §1.3 |
 | **D9** | Repo-host target **for the enterprise clone** (the original stays on GitHub, untouched — §1.2): self-hosted GitLab or GHES? | **Operator** | Decide before security review. **GHES hard-rejects namespaces containing `/`** (`github_adapter.py:85-89`) — a contract change, not a config line. **If GitLab, all of `.github/workflows/` is dead and CI must be re-authored** for the clone only — the original's `.github/workflows/` is unaffected. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3). Practical consequence: whoever runs C4 needs the operator to supply a live destination host URL at that session's start — do not stall Phase C4 waiting for a written D9 answer in this document.** | ~~C3, C4~~ none — see §1.3 |
-| **D10** | Bedrock endpoint: Regional or Global? | **Security + operator** | **Regional.** For P&C claims data, residency dominates the ~10% premium. | C1 |
+| **D10** | Bedrock endpoint: Regional or Global? | **Security + operator** | **ANSWERED (2026-07-29): Regional** — operator accepted the recommendation this session; formal security co-sign is still nominal until an actual security team exists (post-fork). For P&C claims data, residency dominates the ~10% premium. Recorded in `bedrock-enterprise.md` §5; hard-block SCP templated at `docs/deployment/bedrock-residency-scp.json` (specific region allowlist still a platform-team placeholder). | C1 |
 | **D11** | Run the LGPL removal before the corporate move? | **Operator + legal** | **Confirm the corporate copyleft policy first.** Many policies permit LGPL for unmodified, dynamically-imported libraries. If permitted, defer — it is a rewrite of the two least-tested modules immediately before their first live use. | B3 |
 | **D12** | Version/tag the landing? | **Operator** | **ANSWERED (2026-07-27): bump to 0.3.0** — accepted the recommendation, confirmed by proceeding straight to A3. Done in A3: two `pyproject.toml` files, `README.md:3`, **and `uv lock`** (the lock pinned both workspace members at `0.2.0`, `uv.lock:1109`, `:1175`; now `0.3.0`). The actual `git tag` is a separate, still-open action — A3 has no `git tag` command; it belongs with A4 ("Land it") once the version is on `master`. | A3 |
 | **D13** | Wire `http_client`/`require_sigv4` to app/env? | **Operator + platform team** | **Extend the `require_sigv4` guard to both env vars now** (2 lines × 2 files). Wire `require_sigv4` from env next. Wire `http_client` only if TLS inspection is confirmed. | C1, C2 |
@@ -608,9 +608,10 @@ quota?). A "yes" on Guardrails or FIPS redirects mantle → `bedrock-runtime`, a
 change than anything in this plan.
 
 **DONE:** D1, D2, D6, D7, D12 answered (D1/D2/D6/D7 gate Phase A; D12 gated A3, already executed).
-D3–D9, D14–D16 are explicitly not this repository's decisions to track (§1.3). **D10, D13, and
-`bedrock-enterprise.md` §0's three security questions remain open items for this phase to raise**
-— D10/D13 gate Phase C1's and (D13 only) Phase C2's narrowed scope (§4); the three security
+**D10 answered (Session 199, 2026-07-29): Regional** — see the Decision Register row and
+`bedrock-enterprise.md` §5. D3–D9, D14–D16 are explicitly not this repository's decisions to track
+(§1.3). **D13 and `bedrock-enterprise.md` §0's three security questions remain open items for this
+phase to raise** — D13 gates Phase C1's and Phase C2's narrowed scope (§4); the three security
 questions gate whether C1's narrowed scope (which assumes "no" to all three) applies at all, or
 whether a "yes" instead requires the materially larger `bedrock-runtime` re-plan noted above. This
 plan does not resolve that branch — flagged, not silently assumed, for whoever runs C1.
@@ -957,10 +958,14 @@ coverage ≥95%.
 
 ### Phase C1 — Bedrock enterprise correctness *(narrowed by §1.3 — D14's sub-task carved out)*
 
-**Gated on:** D10, D13, and `bedrock-enterprise.md` §0's three security questions. **D14 no longer
-gates this phase** — per §1.3, D14 (runtime shape) is resolved post-fork, inside the clone, so the
-one D14-dependent sub-task below (the IAM *trust* policy) is carved out rather than blocking the
-rest of C1.
+**Gated on:** ~~D10~~ (**answered, Session 199: Regional** — see Decision Register and
+`bedrock-enterprise.md` §5), D13, and `bedrock-enterprise.md` §0's three security questions. **D14
+no longer gates this phase** — per §1.3, D14 (runtime shape) is resolved post-fork, inside the
+clone, so the one D14-dependent sub-task below (the IAM *trust* policy) is carved out rather than
+blocking the rest of C1. **Answering D10 does not clear this phase to run** — D13 and the three
+security questions are still open, and the phase's own bundled scope (the `ANTHROPIC_BASE_URL` fix,
+`require_sigv4` wiring, and the §3 IAM-permissions-policy extraction) is untouched; Session 199
+implemented only D10's own artifact (the residency SCP), not the rest of this phase's scope.
 
 **⚠ Pre-existing gap, not introduced or resolved by §1.3, flagged rather than silently carried
 forward:** the scope below silently assumes "no" to all three `bedrock-enterprise.md` §0
@@ -1413,8 +1418,9 @@ gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # 
 - **Choosing the licence, the IP disposition, the host, the runtime shape, or the package index.**
   D1, D2 are answered (§3). **D3–D9 and D14–D16 are, per §1.3, not this repository's decisions to
   track at all** — the operator resolves them post-fork, inside the enterprise clone, and the
-  outcome is not reported back here. D10, D13 remain live operator/security decisions this plan
-  still frames and recommends on.
+  outcome is not reported back here. D10, D13 are the live operator/security decisions this plan
+  frames and recommends on — **D10 answered (Session 199, 2026-07-29): Regional** (§3 Decision
+  Register, Phase 0); **D13 remains open.**
 - **Re-planning the httpx/LGPL migration** — it already exists in executable form; B3 references
   and corrects it. **B3 is now fully executed** (both LGPL SDKs removed — see `CHANGELOG.md`
   2026-07-28).

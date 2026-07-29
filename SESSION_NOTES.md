@@ -6,6 +6,214 @@
 
 ## ACTIVE TASK
 
+### What Session 199 Did
+**Deliverable:** Implement recommended D10 (Bedrock endpoint: Regional, not Global) — the operator
+accepted the plan's recommendation this session, after a conversational walkthrough of the
+rationale (residency vs. the ~10% Regional premium, and the `aws:RequestedRegion=unspecified`
+mechanism Global routing uses). **COMPLETE, scoped narrowly as requested.**
+
+**Started / Completed:** 2026-07-29.
+
+**Scope, deliberately narrow:** the D10-specific slice of Phase C1 (`enterprise-migration.md:
+972-982`), not the full phase. D13 (`require_sigv4`/`http_client` wiring), the
+`ANTHROPIC_BASE_URL` doc fix, and the §3 IAM-permissions-policy extraction are explicitly **not**
+part of this session's scope — they remain open Phase C1 work, untouched.
+
+**What was done (5 files, none code — no test/lint changes expected or needed):**
+1. **`docs/deployment/bedrock-residency-scp.json` (new)** — a Deny SCP on
+   `aws:RequestedRegion` outside an allowlist (`us-east-1`/`us-east-2`/`us-west-2`), which also
+   catches Global's `unspecified` value per §5's own description of the mechanism. Validated with
+   `python3 -m json.tool`. **The specific region allowlist is a placeholder** — templated from
+   §5's "US in-region choices" text, not an operator-confirmed value; flagged in three places
+   (the file's neighboring doc text, §9 checklist, this handoff) as still open, following the same
+   "leave a TODO rather than guess" convention the plan itself uses for D14's IAM trust-policy
+   block.
+2. **`docs/deployment/bedrock-enterprise.md`** — §5 gets an explicit "Decision (D10,
+   operator-accepted 2026-07-29): Regional" paragraph pointing at the new artifact; §9 checklist
+   bullet annotated (not checked — the region choice and SCP application are still open).
+3. **`docs/planning/enterprise-migration.md`** — four touch points, all re-grepped fresh
+   immediately before editing (dragon #8 — line numbers had NOT shifted since Session 198 this
+   time, confirmed rather than assumed): the D10 Decision Register row (`ANSWERED (2026-07-29)`,
+   matching the D6/D7/D12 convention), Phase 0's DONE list, Phase C1's "Gated on" line (struck
+   through with a pointer, plus an explicit "answering D10 does not clear this phase to run" note
+   so a future skim doesn't misread partial progress as the phase being unblocked), and §6's
+   out-of-scope framing sentence (a durable structural section, not frozen historical narrative —
+   corrected in place rather than left stale).
+4. **`BACKLOG.md`** — two touch points: the C1 bullet and the "Open decisions this repository
+   still tracks" summary line, both updated to show D10 resolved and D13 as the sole remaining
+   open decision.
+5. **`SESSION_NOTES.md`** (this entry).
+
+**Full verification (doc/artifact-only change, ran the full gate anyway per established project
+discipline — Session 198 precedent):** `uv run pytest -q` → **964 passed, 8 live-skipped, 97.75%
+coverage** (identical to Session 198's baseline — no code touched). `uv run ruff check src/ tests/
+packages/ scripts/` and `uv run mypy` both clean.
+
+**Not done (explicitly out of scope, not silently dropped):** D13, the `ANTHROPIC_BASE_URL` fix,
+and the IAM-permissions-policy extraction remain open Phase C1 work. The three
+`bedrock-enterprise.md` §0 security questions (Guardrails/FIPS/quota) remain completely unopened —
+resolving D10 has no bearing on them. **Resolving D10 does not change Phase C4's (the fork's)
+readiness at all** — D10 never gated C4 (only C1); this is stated explicitly here because it would
+be an easy misread otherwise. The specific AWS region(s) to actually allow in the SCP, and applying
+the SCP in AWS Organizations, are both still open — platform-team/deployment-time work, not part of
+D10 itself.
+
+### Session 198 Handoff Evaluation (by Session 199)
+
+**Score: 8/10.** Item 2 of Session 198's priority list ("D10 (Bedrock Regional vs. Global) + D13
+... — gates the narrowed Phase C1. Independent of the fork; can land anytime") pointed at exactly
+what this session executed, and the "independent of the fork" framing was accurate and useful — it
+meant this session didn't need to worry about fork sequencing at all.
+
+- **What helped:** the correct gating relationship (narrowed Phase C1, not C4), and the
+  dragon #8 line-number-shift warning — acted on it by re-grepping before editing, and this time
+  the citations happened to still be accurate (Session 198's own edits landed after these
+  particular lines, so nothing had shifted here — worth noting as a data point, not assumed).
+- **What was missing:** nothing that mattered. The handoff bundled D10 and D13 together as one
+  numbered item; this session (correctly, per the operator's explicit instruction) split that
+  bundle and did only D10. That's not a handoff defect — the operator's own conversational
+  question narrowed the scope live, which the handoff couldn't have anticipated.
+- **What was wrong:** nothing identified.
+- **ROI:** positive and direct — went straight from the handoff's pointer to the operator's
+  question to the implementation with no wasted discovery.
+
+### Phase 3B: Self-assess — Session 199 — 8/10
+
+- **The +:** (1) Split the operator's request against the plan's own bundling — implemented
+  exactly D10, resisted finishing D13 "while in the file" even though both live in the same Phase
+  C1 scope sentence (SAFEGUARDS' scope-creep discipline). (2) Re-grepped every citation into
+  `enterprise-migration.md` before editing rather than trusting numbers read earlier in the
+  conversation, per dragon #8 — and reported the outcome (unchanged) rather than silently assuming
+  it. (3) Found and updated **both** BACKLOG.md mentions of D10 (the C1 bullet and the separate
+  "open decisions" summary line), not just the one caught by the first targeted grep — a second,
+  broader `grep -rn "D10"` across the repo caught the §6 out-of-scope sentence in
+  `enterprise-migration.md` that the first pass missed. (4) Matched the project's own established
+  "ANSWERED (date): ..." convention (D6/D7/D12) instead of inventing new phrasing. (5) Did not
+  overclaim: explicitly distinguished "the Regional-vs-Global category decision is answered" from
+  "the specific region allowlist is a guessed placeholder" and from "formal Security sign-off is
+  nominal, not literal, since no separate security team exists pre-fork" — three distinct
+  disclaimers instead of one blanket "D10 done." (6) Validated the new JSON artifact
+  mechanically (`python3 -m json.tool`) rather than eyeballing it. (7) Stayed at exactly 5 touched
+  files, matching (not exceeding) the SAFEGUARDS blast-radius limit. (8) Ran the full gate despite
+  no code changes, matching Session 198's precedent rather than assuming doc-only changes need no
+  verification.
+- **The −:** (1) Made the placeholder-region-list call (`us-east-1`/`-2`/`us-west-2`) and the
+  "operator-accepted, Security co-sign nominal" framing unilaterally under Auto Mode guidance,
+  rather than pausing to ask the operator to confirm either — a reasonable judgment call (mirrors
+  the plan's own D14-placeholder convention) but not a verified fact, and is flagged as such in the
+  handoff below rather than presented as settled. (2) Did not check whether resolving D10 should
+  also update the Phase C1 "Verify" block's `ls docs/deployment/*.json` line (it already matches —
+  the SCP file now exists — but this session didn't explicitly re-run that specific Verify
+  command; general pytest/ruff/mypy gate doesn't cover it). Not a defect since the artifact does
+  exist and the glob does match — flagged for completeness, not as a gap.
+- **Quality bar:** matches Session 198's rigor in re-verifying citations directly and distinguishing
+  "resolved" from "resolved and fully closed in every sense" — same discipline, applied to a
+  Decision Register item instead of a plan-error correction.
+
+### Phase 3C: Learnings — Session 199
+
+- **Candidate #179 — NEW, 1st instance — "A Decision Register item embedded inside a larger
+  bundled phase (e.g., D10 living inside Phase C1's multi-item scope paragraph, adjacent to D13's
+  unrelated code fix) can be implemented as its own narrower session deliverable, distinct from the
+  phase it's bundled into. 'Implement recommended D10' is a valid, well-scoped operator request
+  separate from 'run Phase C1.' The executor must actively re-derive which lines of the phase's
+  bundled prose belong to the named decision alone versus which belong to sibling
+  decisions/cleanup bundled in the same sentence — and must state explicitly, in every touched
+  document, that resolving the sub-item does not clear the phase's gate."** Discovered this
+  session: Phase C1's scope paragraph bundles D10's artifact-and-record instruction with D13's
+  `require_sigv4` code fix and an unrelated `ANTHROPIC_BASE_URL` doc fix in adjacent sentences with
+  no structural separation — skimming it as one unit would have produced a diff that either did too
+  much (implementing D13 unasked, a scope-creep violation) or left the "Gated on" line stale
+  (implying C1 could now run once D10 landed, which is false — D13 and the three security
+  questions are still open). **Not the same as Learning #176/#178** — those are about a gate's
+  bar or a gate's stated *rationale* being wrong; this is about a single phase's gate list
+  containing multiple independently-implementable sub-items, and the risk of treating the whole
+  phase as the atomic unit of work when the operator asked for only one gate. **When to apply:**
+  whenever an operator asks to implement one named decision (a D-number) that a Decision Register
+  lists as one of several items gating the same phase, or that a phase's own prose bundles into
+  shared sentences with sibling work — separate the requested decision's own deliverable from the
+  phase's total scope, and update every "Gated on"/"still open" line that names the decision to
+  show partial (not full) resolution.
+- **Not promoted to the roster:** 1st instance. `PROJECT_LEARNINGS.md` unchanged at 61 rows. Next
+  candidate number is **#180**. The #172 promotion-threshold discrepancy remains unresolved — now
+  four consecutive sessions (196, 197, 198, 199) have noted it and moved on without fixing it;
+  this is itself starting to look like the kind of "flagged but never actually checked" pattern
+  Learning #178 describes, applied recursively to the learnings process itself. Worth a future
+  session actually resolving it rather than re-noting it a fifth time.
+
+### Phase 3D: Handoff to Session 200
+
+**D10 is resolved: Regional.** Recorded in `enterprise-migration.md`'s Decision Register, Phase 0,
+Phase C1's gate line, and §6; in `bedrock-enterprise.md` §5 and the §9 checklist; and in
+`BACKLOG.md`'s C1 bullet and open-decisions summary. The residency SCP artifact exists at
+`docs/deployment/bedrock-residency-scp.json` — **template only**, region allowlist is a guessed
+placeholder, not operator-confirmed, and applying it in AWS Organizations is platform-team/post-fork
+work. Full gate green: 964 passed + 8 live-skipped @ 97.75% coverage, ruff clean, mypy clean (no
+code changed this session).
+
+**D10 resolving does NOT unblock Phase C1 to run, and has zero effect on Phase C4's (the fork's)
+readiness** — C4's gate was always A1-A4/B1-core/B2 only, never D10. Don't let "a Decision Register
+item closed" read as "more fork-ready than before."
+
+**What's next — Session 197's priority list, now minus items 1 and half of item 2:**
+1. ~~The three `.env` credential rotations~~ — RESOLVED Session 198, not required.
+2. ~~D10 (Bedrock Regional vs. Global)~~ — **RESOLVED this session: Regional.**
+2b. **D13 (`require_sigv4`/`http_client` wiring to app/env)** — now the *only* decision this
+    repository tracks gating Phase C1's and Phase C2's narrowed scope. Independent of the fork;
+    can land anytime. `bedrock-enterprise.md` §7 punch-list item 4 has the technical detail
+    (`require_sigv4=True` already ships as a hard guard, `56dc700`; not yet wired to
+    `INTAKE_LLM_PROVIDER=bedrock` triggering it automatically).
+3. **The Guardrails/FIPS/quota branching gap** (`bedrock-enterprise.md` §0's three questions) —
+   still completely unopened, still bundled with C1 by the plan. A "yes" on Guardrails or FIPS
+   forces a `bedrock-runtime` re-plan, materially larger than anything in this plan — ask the
+   operator/security before anyone starts the rest of C1, not after.
+4. **Phase C4 (the fork)** — gate remains fully satisfied (A1–A4, B1-core, B2), **unaffected by
+   today's D10 work**. Re-grep `^### Phase C4` fresh before trusting any line-number citation —
+   this session's own edits (one line-count-neutral row rewrite, plus small insertions at Phase 0,
+   Phase C1, and §6) may have shifted lines after ~line 600; re-grep, don't assume unchanged just
+   because this session found the earlier citations intact. Get D9/D5/D4/D8/D16 live at that
+   session's start (Learning #176: ask the operator whether anything else is load-bearing before
+   treating the written gate as sufficient). **D4 (DCO) is still explicitly unresolved** — operator
+   answered "unknown — find out before proceeding" in Session 197, untouched since.
+5. **Phase C3** (needs D9 live, already known as GitLab but re-confirm).
+6. **Phase C5** (immediately after C4).
+
+**State you will inherit:**
+1. `master` is clean as of this session — verify fresh with `git status`/`git log -1` before
+   acting on this claim (Learning #163 applies every session). Branch was 14 commits ahead of
+   `origin/master` at this session's start and will be 15 after this session's commit; not pushed
+   (not requested).
+2. No feature branch — landed directly on `master`, matching the recent pattern.
+3. Learning candidates #178 (Session 198) and #179 (this session) are both 1st-instance, not yet
+   promoted. `PROJECT_LEARNINGS.md` unchanged at 61 rows. Next candidate number is **#180**. The
+   #172 promotion-threshold discrepancy is unresolved across four sessions now (196-199) — consider
+   actually resolving it rather than re-flagging it a fifth time.
+4. Line-number citations anywhere in `enterprise-migration.md` past line ~550 have shifted
+   slightly from this session's edits (the D10 row grew substantially, Phase 0's DONE paragraph
+   was edited, Phase C1's "Gated on" line grew, §6's out-of-scope sentence was touched). Re-grep
+   before trusting any citation into this file, per dragon #8 — same discipline this session itself
+   applied and confirmed necessary (a broad `grep -rn "D10"` across the whole repo, not just the
+   file this session was already editing, caught the §6 mention the first targeted grep missed).
+
+**Key files:**
+- `docs/deployment/bedrock-residency-scp.json` (new) — the D10 artifact, template region allowlist.
+- `docs/deployment/bedrock-enterprise.md` §5 (decision recorded), §9 (checklist annotated).
+- `docs/planning/enterprise-migration.md` — D10 Decision Register row (~line 553), Phase 0 (~line
+  610-616), Phase C1 "Gated on" (~line 961-968), §6 out-of-scope (~line 1419-1422) — re-grep, these
+  shifted this session.
+- `BACKLOG.md` — C1 bullet (~line 53-57), open-decisions summary (~line 100-108).
+
+**Gotchas:**
+- Don't re-treat D10 as open — it's resolved as "Regional," not "still needs an operator answer."
+  If an old handoff narrative further down this file (Sessions ≤198, left untouched per
+  convention) still lists "D10 + D13" as one bundled open item, that's historical record, not
+  current state — check this entry first.
+- The residency SCP's region allowlist is a **placeholder**, not a confirmed value — don't treat
+  its presence as "region chosen." That's a separate, still-open operational decision.
+- D13 is now the *sole* named decision this repository tracks (per `BACKLOG.md`'s updated
+  summary line) — don't let a future session assume D10+D13 are a matched pair still requiring
+  joint resolution; they're independent and D10 is done.
+
 ### What Session 198 Did
 **Deliverable:** Confirm `.env` credential rotation status (Anthropic API key, GitLab PAT, Bedrock
 bearer token — priority item 1 of Session 197's handoff) with the operator; update the register at
