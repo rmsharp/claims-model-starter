@@ -28,6 +28,7 @@ import typer
 
 from model_project_constructor.agents.website.agent import WebsiteAgent
 from model_project_constructor.agents.website.fake_client import FakeRepoClient
+from model_project_constructor.agents.website.governance_templates import CIHostConfig
 from model_project_constructor.agents.website.protocol import RepoClient
 from model_project_constructor.orchestrator.config import REPO_PLATFORMS
 from model_project_constructor.schemas.v1.data import DataReport
@@ -116,6 +117,51 @@ def run(
             ),
         ),
     ] = None,
+    ci_base_image: Annotated[
+        str | None,
+        typer.Option(
+            "--ci-base-image",
+            help=(
+                "Enterprise-host override: base image the generated project's "
+                f"CI runs on (Phase C3b). Default: {CIHostConfig.base_image!r} "
+                "(Docker Hub)."
+            ),
+        ),
+    ] = None,
+    ci_index_url: Annotated[
+        str | None,
+        typer.Option(
+            "--ci-index-url",
+            help=(
+                "Enterprise-host override: Python package index URL the "
+                "generated project's CI uses (Phase C3b). Default: unset "
+                "(public PyPI)."
+            ),
+        ),
+    ] = None,
+    ci_action_prefix: Annotated[
+        str | None,
+        typer.Option(
+            "--ci-action-prefix",
+            help=(
+                "Enterprise-host override: marketplace/org prefix for the "
+                "generated project's GitHub Actions steps (Phase C3b). "
+                f"Default: {CIHostConfig.action_prefix!r} (the public "
+                "marketplace)."
+            ),
+        ),
+    ] = None,
+    ci_pre_commit_repo: Annotated[
+        str | None,
+        typer.Option(
+            "--ci-pre-commit-repo",
+            help=(
+                "Enterprise-host override: repo URL for the generated "
+                "project's ruff pre-commit hook (Phase C3b). Default: "
+                f"{CIHostConfig.pre_commit_repo!r}."
+            ),
+        ),
+    ] = None,
     output: Annotated[
         Path | None,
         typer.Option(
@@ -179,7 +225,21 @@ def run(
         )
 
     typed_ci_platform = cast(Literal["gitlab", "github"], ci_platform)
-    agent = WebsiteAgent(client, ci_platform=typed_ci_platform)
+    ci_host_overrides: dict[str, str] = {
+        k: v
+        for k, v in {
+            "base_image": ci_base_image,
+            "index_url": ci_index_url,
+            "action_prefix": ci_action_prefix,
+            "pre_commit_repo": ci_pre_commit_repo,
+        }.items()
+        if v is not None
+    }
+    agent = WebsiteAgent(
+        client,
+        ci_platform=typed_ci_platform,
+        ci_host_config=CIHostConfig(**ci_host_overrides),
+    )
     result = agent.run(intake_report, data_report, target)
 
     tree = _render_file_tree(sorted(result.files_created))

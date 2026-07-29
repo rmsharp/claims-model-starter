@@ -25,12 +25,33 @@ composition entry point; everything else is private.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from typing import Any, Literal
 
 from model_project_constructor._vocab_guard import assert_vocab_parity
 from model_project_constructor.schemas.v1.common import CycleTime, RiskTier
 
 CIPlatform = Literal["gitlab", "github"]
+
+
+@dataclass(frozen=True)
+class CIHostConfig:
+    """Enterprise-host overrides for a *generated project's* CI/pre-commit config.
+
+    (docs/planning/enterprise-migration.md Phase C3b.) Every field defaults to
+    today's public value, so a project generated with no overrides emits
+    byte-identical CI/pre-commit content to pre-C3b — these are opt-in
+    redirects for pipeline-generated projects that need to target
+    enterprise-internal hosts instead of Docker Hub, the public GitHub Actions
+    marketplace, public PyPI, and the public ``astral-sh/ruff-pre-commit``
+    mirror. This governs the CI baked into *generated* repos, never this
+    repository's own CI.
+    """
+
+    base_image: str = "python:3.11"
+    index_url: str | None = None
+    action_prefix: str = "actions"
+    pre_commit_repo: str = "https://github.com/astral-sh/ruff-pre-commit"
 
 
 # ---------------------------------------------------------------------------
@@ -604,17 +625,24 @@ def render_datasheet(*, query: dict[str, Any]) -> str:
     )
 
 
-def render_gitlab_ci() -> str:
+def render_gitlab_ci(*, ci_host_config: CIHostConfig | None = None) -> str:
+    cfg = ci_host_config or CIHostConfig()
+    variables_block = ""
+    pip_install = "pip install uv"
+    if cfg.index_url:
+        variables_block = f'variables:\n  UV_INDEX_URL: "{cfg.index_url}"\n\n'
+        pip_install = f"pip install --index-url {cfg.index_url} uv"
     return (
+        f"{variables_block}"
         "stages:\n"
         "  - lint\n"
         "  - test\n"
         "  - governance\n"
         "\n"
         "default:\n"
-        "  image: python:3.11\n"
+        f"  image: {cfg.base_image}\n"
         "  before_script:\n"
-        "    - pip install uv\n"
+        f"    - {pip_install}\n"
         "    - uv sync\n"
         "\n"
         "lint:\n"
@@ -635,7 +663,23 @@ def render_gitlab_ci() -> str:
     )
 
 
-def render_github_actions_ci() -> str:
+def render_github_actions_ci(*, ci_host_config: CIHostConfig | None = None) -> str:
+    cfg = ci_host_config or CIHostConfig()
+    checkout = f"{cfg.action_prefix}/checkout@v4"
+    setup_python = f"{cfg.action_prefix}/setup-python@v5"
+    pip_install = "pip install uv"
+    env_block = ""
+    if cfg.index_url:
+        pip_install = f"pip install --index-url {cfg.index_url} uv"
+        env_block = f'\nenv:\n  UV_INDEX_URL: "{cfg.index_url}"\n'
+    steps = (
+        f"      - uses: {checkout}\n"
+        f"      - uses: {setup_python}\n"
+        "        with:\n"
+        "          python-version: '3.11'\n"
+        f"      - run: {pip_install}\n"
+        "      - run: uv sync\n"
+    )
     return (
         "name: ci\n"
         "\n"
@@ -644,48 +688,35 @@ def render_github_actions_ci() -> str:
         "    branches: [main]\n"
         "  pull_request:\n"
         "    branches: [main]\n"
+        f"{env_block}"
         "\n"
         "jobs:\n"
         "  lint:\n"
         "    runs-on: ubuntu-latest\n"
         "    steps:\n"
-        "      - uses: actions/checkout@v4\n"
-        "      - uses: actions/setup-python@v5\n"
-        "        with:\n"
-        "          python-version: '3.11'\n"
-        "      - run: pip install uv\n"
-        "      - run: uv sync\n"
+        f"{steps}"
         "      - run: uv run ruff check .\n"
         "\n"
         "  test:\n"
         "    runs-on: ubuntu-latest\n"
         "    steps:\n"
-        "      - uses: actions/checkout@v4\n"
-        "      - uses: actions/setup-python@v5\n"
-        "        with:\n"
-        "          python-version: '3.11'\n"
-        "      - run: pip install uv\n"
-        "      - run: uv sync\n"
+        f"{steps}"
         "      - run: uv run pytest -q\n"
         "\n"
         "  governance:\n"
         "    runs-on: ubuntu-latest\n"
         "    steps:\n"
-        "      - uses: actions/checkout@v4\n"
-        "      - uses: actions/setup-python@v5\n"
-        "        with:\n"
-        "          python-version: '3.11'\n"
-        "      - run: pip install uv\n"
-        "      - run: uv sync\n"
+        f"{steps}"
         '      - run: uv run python -c "import json; json.load(open('
         "'governance/model_registry.json'))\"\n"
     )
 
 
-def render_pre_commit_config() -> str:
+def render_pre_commit_config(*, ci_host_config: CIHostConfig | None = None) -> str:
+    cfg = ci_host_config or CIHostConfig()
     return (
         "repos:\n"
-        "  - repo: https://github.com/astral-sh/ruff-pre-commit\n"
+        f"  - repo: {cfg.pre_commit_repo}\n"
         "    rev: v0.5.0\n"
         "    hooks:\n"
         "      - id: ruff\n"
@@ -800,6 +831,7 @@ def build_governance_files(
     project_name: str,
     project_slug: str,
     ci_platform: CIPlatform = "gitlab",
+    ci_host_config: CIHostConfig | None = None,
 ) -> dict[str, str]:
     """Return every governance file this project emits.
 
@@ -808,6 +840,10 @@ def build_governance_files(
     a single commit. Every key in the returned dict is considered a
     governance artifact and is added to ``WebsiteState.governance_paths``
     for manifest assembly.
+
+    ``ci_host_config`` (Phase C3b) overrides the enterprise-host values baked
+    into the emitted CI/pre-commit files; ``None`` (the default) keeps
+    today's public values.
     """
 
     governance = intake.get("governance") or {}
@@ -825,10 +861,14 @@ def build_governance_files(
     )
     files["governance/change_log.md"] = render_change_log(intake=intake)
     if ci_platform == "gitlab":
-        files[".gitlab-ci.yml"] = render_gitlab_ci()
+        files[".gitlab-ci.yml"] = render_gitlab_ci(ci_host_config=ci_host_config)
     else:
-        files[".github/workflows/ci.yml"] = render_github_actions_ci()
-    files[".pre-commit-config.yaml"] = render_pre_commit_config()
+        files[".github/workflows/ci.yml"] = render_github_actions_ci(
+            ci_host_config=ci_host_config
+        )
+    files[".pre-commit-config.yaml"] = render_pre_commit_config(
+        ci_host_config=ci_host_config
+    )
 
     # One datasheet per primary query, per Gebru 2021.
     for query in data.get("primary_queries") or []:
@@ -953,6 +993,7 @@ def is_governance_artifact(path: str) -> bool:
 
 
 __all__ = [
+    "CIHostConfig",
     "CIPlatform",
     "build_governance_files",
     "build_analysis_files",

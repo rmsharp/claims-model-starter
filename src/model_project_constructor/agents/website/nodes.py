@@ -27,6 +27,7 @@ from collections.abc import Callable
 from typing import Any
 
 from model_project_constructor.agents.website.governance_templates import (
+    CIHostConfig,
     build_analysis_files,
     build_governance_files,
     build_model_registry_entry,
@@ -139,12 +140,14 @@ def make_nodes(
         return {"files_pending": pending}
 
     def scaffold_governance(state: WebsiteState) -> dict[str, Any]:
+        ci_host_config_raw = state.get("ci_host_config") or {}
         files = build_governance_files(
             intake=state["intake_report"],
             data=state["data_report"],
             project_name=state["project_name"],
             project_slug=state["project_slug"],
             ci_platform=state.get("ci_platform", "gitlab"),
+            ci_host_config=CIHostConfig(**ci_host_config_raw),
         )
         pending = dict(state.get("files_pending", {}))
         pending.update(files)

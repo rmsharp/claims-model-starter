@@ -74,6 +74,9 @@ sys.path.insert(0, str(PROJECT_ROOT / "packages" / "data-agent" / "src"))
 
 from model_project_constructor.agents.website.agent import WebsiteAgent  # noqa: E402
 from model_project_constructor.agents.website.fake_client import FakeRepoClient  # noqa: E402
+from model_project_constructor.agents.website.governance_templates import (  # noqa: E402
+    CIHostConfig,
+)
 from model_project_constructor.orchestrator import (  # noqa: E402
     CheckpointStore,
     MetricsRegistry,
@@ -280,6 +283,28 @@ def build_intake_runner(
     return runner
 
 
+def build_ci_host_config() -> CIHostConfig:
+    """Build a :class:`CIHostConfig` from the ``MPC_CI_*`` env vars (Phase C3b).
+
+    These override the enterprise-host values baked into generated projects'
+    CI/pre-commit config — unset vars keep today's public defaults. Read
+    directly here (matching the ``MPC_HOST_URL``/``MPC_NAMESPACE`` pattern
+    above), not via ``OrchestratorSettings``, since this is generated-project
+    config, not orchestrator/host wiring.
+    """
+    overrides: dict[str, str] = {}
+    for env_var, field in (
+        ("MPC_CI_BASE_IMAGE", "base_image"),
+        ("MPC_CI_INDEX_URL", "index_url"),
+        ("MPC_CI_ACTION_PREFIX", "action_prefix"),
+        ("MPC_CI_PRE_COMMIT_REPO", "pre_commit_repo"),
+    ):
+        value = os.environ.get(env_var)
+        if value:
+            overrides[field] = value
+    return CIHostConfig(**overrides)
+
+
 def build_website_runner(*, host: str, live: bool):
     """Return a WebsiteRunner callable.
 
@@ -287,10 +312,13 @@ def build_website_runner(*, host: str, live: bool):
     In live mode, constructs the real adapter for the chosen host.
     """
     ci_platform = host
+    ci_host_config = build_ci_host_config()
 
     if not live:
         client = FakeRepoClient()
-        agent = WebsiteAgent(client, ci_platform=ci_platform)
+        agent = WebsiteAgent(
+            client, ci_platform=ci_platform, ci_host_config=ci_host_config
+        )
         return agent.run, client  # return client so we can inspect files
 
     # Live mode: build the real adapter
@@ -306,7 +334,9 @@ def build_website_runner(*, host: str, live: bool):
         host_url=host_url, private_token=token
     )
 
-    agent = WebsiteAgent(client, ci_platform=ci_platform)
+    agent = WebsiteAgent(
+        client, ci_platform=ci_platform, ci_host_config=ci_host_config
+    )
     return agent.run, None  # no fake client to inspect
 
 

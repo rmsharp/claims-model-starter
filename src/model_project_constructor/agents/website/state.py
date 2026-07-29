@@ -30,6 +30,14 @@ class WebsiteState(TypedDict, total=False):
     # scaffolded with a FakeRepoClient in tests.
     ci_platform: Literal["gitlab", "github"]
 
+    # Enterprise-host overrides (base image, index URL, action prefix,
+    # pre-commit repo) for the CI/pre-commit config baked into generated
+    # projects (Phase C3b). Stored as a plain dict (not the CIHostConfig
+    # dataclass) to keep this module decoupled from governance_templates and
+    # the state JSON-serializable; SCAFFOLD_GOVERNANCE reconstructs the
+    # dataclass. Absent/empty means "use today's public defaults."
+    ci_host_config: dict[str, Any]
+
     # Derived project naming
     project_name: str      # final name after conflict resolution
     project_slug: str      # python-package-safe (underscores, lowercase)
@@ -74,12 +82,14 @@ def initial_state(
     data_report: dict[str, Any],
     repo_target: dict[str, Any],
     ci_platform: Literal["gitlab", "github"] = "gitlab",
+    ci_host_config: dict[str, Any] | None = None,
 ) -> WebsiteState:
     return WebsiteState(
         intake_report=intake_report,
         data_report=data_report,
         repo_target=repo_target,
         ci_platform=ci_platform,
+        ci_host_config=ci_host_config or {},
         files_pending={},
         governance_paths=[],
         files_created=[],

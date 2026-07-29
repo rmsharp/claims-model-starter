@@ -35,6 +35,10 @@ orchestration layer's secret injection) before running the pipeline.
 | `AWS_DEFAULT_REGION` | no | — | Fallback read by the standard AWS credential chain if `AWS_REGION` is unset; set both for clarity. |
 | `AWS_BEARER_TOKEN_BEDROCK` | no | unset (SigV4 fallback) | **Dev only** — a short-term Bedrock API key. If present it overrides SigV4 and bypasses the runtime IAM role, so it must stay unset in production. Never use a long-term Bedrock API key. See `docs/deployment/bedrock-enterprise.md` §2. |
 | `AWS_PROFILE` | no | — | Standard AWS SDK credential-chain variable — selects a named local profile for local/dev use. Not read directly by this project's code; honored by the AWS credential chain `AnthropicBedrockMantle` resolves against (constructor args → env vars → shared config → SSO / assumed roles / ECS task role / EKS IRSA / IMDS). In production prefer an IAM role over a named profile. |
+| `MPC_CI_BASE_IMAGE` | no | `python:3.11` (script-level, `CIHostConfig.base_image`) | Base image for the **generated project's** `.gitlab-ci.yml` — not this repository's own CI. Read directly by `scripts/run_pipeline.py`'s `build_ci_host_config()`; also settable via the website agent CLI's `--ci-base-image`. Phase C3b (`docs/planning/enterprise-migration.md`). |
+| `MPC_CI_INDEX_URL` | no | unset (public PyPI) | Python package index URL threaded into the **generated project's** CI (`UV_INDEX_URL` + the `pip install uv` step) on both GitLab and GitHub. Same script-level/CLI-flag pattern as `MPC_CI_BASE_IMAGE`. |
+| `MPC_CI_ACTION_PREFIX` | no | `actions` (`CIHostConfig.action_prefix`) | Marketplace/org prefix for the **generated project's** GitHub Actions steps (e.g. `{prefix}/checkout@v4`). Same script-level/CLI-flag pattern as `MPC_CI_BASE_IMAGE`. |
+| `MPC_CI_PRE_COMMIT_REPO` | no | `https://github.com/astral-sh/ruff-pre-commit` (`CIHostConfig.pre_commit_repo`) | Repo URL for the ruff pre-commit hook baked into every **generated project** (both CI platforms). Same script-level/CLI-flag pattern as `MPC_CI_BASE_IMAGE`. |
 
 Use `OrchestratorSettings.require_host_token()` /
 `require_anthropic_api_key()` inside runners that actually make HTTP

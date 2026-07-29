@@ -185,9 +185,10 @@ def test_build_data_runner_unknown_provider_raises(run_pipeline_module):
 def _install_fake_adapters_and_agent(monkeypatch, run_pipeline_module):
     """Replace both adapter classes + WebsiteAgent with capturing stubs.
 
-    Returns the dict that will accumulate kwargs, one key per adapter class.
+    Returns the dict that will accumulate kwargs, one key per adapter class
+    plus an "agent" key capturing WebsiteAgent's own constructor kwargs.
     """
-    captured: dict[str, dict] = {"github": {}, "gitlab": {}}
+    captured: dict[str, dict] = {"github": {}, "gitlab": {}, "agent": {}}
 
     class _FakeGithubAdapter:
         def __init__(self, **kwargs):
@@ -198,8 +199,8 @@ def _install_fake_adapters_and_agent(monkeypatch, run_pipeline_module):
             captured["gitlab"] = dict(kwargs)
 
     class _FakeWebsiteAgent:
-        def __init__(self, *_args, **_kwargs):
-            pass
+        def __init__(self, *_args, **kwargs):
+            captured["agent"] = dict(kwargs)
 
         def run(self, *_args, **_kwargs):
             return None
@@ -216,11 +217,22 @@ def _install_fake_adapters_and_agent(monkeypatch, run_pipeline_module):
 def test_build_website_runner_github_live_threads_host_url(
     run_pipeline_module, monkeypatch
 ):
+    from model_project_constructor.agents.website.governance_templates import (
+        CIHostConfig,
+    )
+
     captured = _install_fake_adapters_and_agent(monkeypatch, run_pipeline_module)
 
     monkeypatch.setenv("MPC_HOST", "github")
     monkeypatch.setenv("GITHUB_TOKEN", "fake-gh-token")
     monkeypatch.setenv("MPC_HOST_URL", "https://github.mycompany.com/api/v3")
+    for var in (
+        "MPC_CI_BASE_IMAGE",
+        "MPC_CI_INDEX_URL",
+        "MPC_CI_ACTION_PREFIX",
+        "MPC_CI_PRE_COMMIT_REPO",
+    ):
+        monkeypatch.delenv(var, raising=False)
 
     _runner, fake_client = run_pipeline_module.build_website_runner(
         host="github", live=True
@@ -230,6 +242,9 @@ def test_build_website_runner_github_live_threads_host_url(
         "private_token": "fake-gh-token",
         "host_url": "https://github.mycompany.com/api/v3",
     }
+    # Live-mode path also threads ci_host_config (not just the fake path) —
+    # defaults here since no MPC_CI_* env vars are set in this test.
+    assert captured["agent"]["ci_host_config"] == CIHostConfig()
 
 
 def test_build_website_runner_github_live_defaults_host_url(
@@ -272,3 +287,129 @@ def test_build_website_runner_gitlab_live_threads_host_url(
         "private_token": "fake-gl-token",
         "host_url": "https://gitlab.internal.company.com",
     }
+
+
+# ---------------------------------------------------------------------------
+# build_ci_host_config / build_website_runner — Phase C3b enterprise-host
+# overrides for generated-project CI (docs/planning/enterprise-migration.md).
+# ---------------------------------------------------------------------------
+
+
+def test_build_ci_host_config_defaults_when_env_unset(
+    run_pipeline_module, monkeypatch
+):
+    from model_project_constructor.agents.website.governance_templates import (
+        CIHostConfig,
+    )
+
+    for var in (
+        "MPC_CI_BASE_IMAGE",
+        "MPC_CI_INDEX_URL",
+        "MPC_CI_ACTION_PREFIX",
+        "MPC_CI_PRE_COMMIT_REPO",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+    assert run_pipeline_module.build_ci_host_config() == CIHostConfig()
+
+
+def test_build_ci_host_config_reads_all_four_env_vars(run_pipeline_module, monkeypatch):
+    from model_project_constructor.agents.website.governance_templates import (
+        CIHostConfig,
+    )
+
+    monkeypatch.setenv(
+        "MPC_CI_BASE_IMAGE", "registry.enterprise.example/python:3.11"
+    )
+    monkeypatch.setenv(
+        "MPC_CI_INDEX_URL", "https://pypi.enterprise.example/simple"
+    )
+    monkeypatch.setenv("MPC_CI_ACTION_PREFIX", "enterprise-mirror")
+    monkeypatch.setenv(
+        "MPC_CI_PRE_COMMIT_REPO",
+        "https://git.enterprise.example/mirrors/ruff-pre-commit",
+    )
+
+    assert run_pipeline_module.build_ci_host_config() == CIHostConfig(
+        base_image="registry.enterprise.example/python:3.11",
+        index_url="https://pypi.enterprise.example/simple",
+        action_prefix="enterprise-mirror",
+        pre_commit_repo="https://git.enterprise.example/mirrors/ruff-pre-commit",
+    )
+
+
+def test_build_website_runner_fake_threads_ci_host_config_from_env(
+    run_pipeline_module, monkeypatch
+):
+    """Fake mode (--fake, no live host) still reads the MPC_CI_* env vars and
+    threads the resulting CIHostConfig into WebsiteAgent's constructor."""
+    from model_project_constructor.agents.website.governance_templates import (
+        CIHostConfig,
+    )
+
+    captured = _install_fake_adapters_and_agent(monkeypatch, run_pipeline_module)
+    monkeypatch.setenv(
+        "MPC_CI_BASE_IMAGE", "registry.enterprise.example/python:3.11"
+    )
+    monkeypatch.delenv("MPC_CI_INDEX_URL", raising=False)
+    monkeypatch.delenv("MPC_CI_ACTION_PREFIX", raising=False)
+    monkeypatch.delenv("MPC_CI_PRE_COMMIT_REPO", raising=False)
+
+    _runner, fake_client = run_pipeline_module.build_website_runner(
+        host="gitlab", live=False
+    )
+    assert fake_client is not None
+    assert captured["agent"]["ci_host_config"] == CIHostConfig(
+        base_image="registry.enterprise.example/python:3.11"
+    )
+
+
+def test_build_website_runner_defaults_ci_host_config_when_env_unset(
+    run_pipeline_module, monkeypatch
+):
+    from model_project_constructor.agents.website.governance_templates import (
+        CIHostConfig,
+    )
+
+    captured = _install_fake_adapters_and_agent(monkeypatch, run_pipeline_module)
+    for var in (
+        "MPC_CI_BASE_IMAGE",
+        "MPC_CI_INDEX_URL",
+        "MPC_CI_ACTION_PREFIX",
+        "MPC_CI_PRE_COMMIT_REPO",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+    run_pipeline_module.build_website_runner(host="gitlab", live=False)
+    assert captured["agent"]["ci_host_config"] == CIHostConfig()
+
+
+def test_build_website_runner_live_threads_ci_host_config_from_env(
+    run_pipeline_module, monkeypatch
+):
+    """The LIVE branch (not just --fake) also threads MPC_CI_* into
+    WebsiteAgent — a regression here would pass every other test in this
+    file, since the fake- and live-mode tests exercise separate branches
+    of build_website_runner."""
+    from model_project_constructor.agents.website.governance_templates import (
+        CIHostConfig,
+    )
+
+    captured = _install_fake_adapters_and_agent(monkeypatch, run_pipeline_module)
+    monkeypatch.setenv("MPC_HOST", "gitlab")
+    monkeypatch.setenv("GITLAB_TOKEN", "fake-gl-token")
+    monkeypatch.setenv(
+        "MPC_CI_BASE_IMAGE", "registry.enterprise.example/python:3.11"
+    )
+    monkeypatch.setenv("MPC_CI_ACTION_PREFIX", "enterprise-mirror")
+    monkeypatch.delenv("MPC_CI_INDEX_URL", raising=False)
+    monkeypatch.delenv("MPC_CI_PRE_COMMIT_REPO", raising=False)
+
+    _runner, fake_client = run_pipeline_module.build_website_runner(
+        host="gitlab", live=True
+    )
+    assert fake_client is None
+    assert captured["agent"]["ci_host_config"] == CIHostConfig(
+        base_image="registry.enterprise.example/python:3.11",
+        action_prefix="enterprise-mirror",
+    )

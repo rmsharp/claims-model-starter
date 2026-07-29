@@ -437,6 +437,155 @@ def test_cli_dispatch_routes_through_registry_factory(
 # ---------------------------------------------------------------------------
 
 
+class _RecordingFakeRepoClient(FakeRepoClient):
+    """FakeRepoClient subclass that records its own instance, so a test can
+    inspect ``get_files()`` after invoking the CLI (which constructs the fake
+    client internally and never returns it)."""
+
+    last_instance: _RecordingFakeRepoClient | None = None
+
+    def __init__(self) -> None:
+        super().__init__()
+        type(self).last_instance = self
+
+
+def test_cli_ci_host_overrides_flow_into_emitted_ci_file(
+    intake_report_path: Path,
+    data_report_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Phase C3b: --ci-base-image/--ci-index-url/--ci-action-prefix/
+    --ci-pre-commit-repo thread through WebsiteAgent into the emitted CI and
+    pre-commit files."""
+
+    _RecordingFakeRepoClient.last_instance = None
+    monkeypatch.setattr(
+        "model_project_constructor.agents.website.cli.FakeRepoClient",
+        _RecordingFakeRepoClient,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--intake",
+            str(intake_report_path),
+            "--data",
+            str(data_report_path),
+            "--host",
+            "github",
+            "--fake",
+            "--ci-base-image",
+            "registry.enterprise.example/python:3.11",
+            "--ci-index-url",
+            "https://pypi.enterprise.example/simple",
+            "--ci-action-prefix",
+            "enterprise-mirror",
+            "--ci-pre-commit-repo",
+            "https://git.enterprise.example/mirrors/ruff-pre-commit",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+
+    json_start = result.stdout.find("{")
+    payload = json.loads(result.stdout[json_start:])
+    assert _RecordingFakeRepoClient.last_instance is not None
+    stored = _RecordingFakeRepoClient.last_instance.get_files(payload["project_id"])
+
+    ci_body = stored[".github/workflows/ci.yml"]
+    assert "enterprise-mirror/checkout@v4" in ci_body
+    assert 'UV_INDEX_URL: "https://pypi.enterprise.example/simple"' in ci_body
+    assert "actions/checkout@v4" not in ci_body
+
+    pre_commit_body = stored[".pre-commit-config.yaml"]
+    assert (
+        "https://git.enterprise.example/mirrors/ruff-pre-commit" in pre_commit_body
+    )
+    assert "astral-sh" not in pre_commit_body
+
+
+def test_cli_partial_ci_host_overrides_default_the_rest(
+    intake_report_path: Path,
+    data_report_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only --ci-index-url passed (not the other three) -> that field
+    changes and the other three (base_image, action_prefix, pre_commit_repo)
+    keep their public defaults. Guards the CLI's dict-comprehension override
+    logic (agents/website/cli.py) against a partial-set regression that the
+    all-four and zero-flags tests wouldn't catch."""
+
+    _RecordingFakeRepoClient.last_instance = None
+    monkeypatch.setattr(
+        "model_project_constructor.agents.website.cli.FakeRepoClient",
+        _RecordingFakeRepoClient,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--intake",
+            str(intake_report_path),
+            "--data",
+            str(data_report_path),
+            "--host",
+            "github",
+            "--fake",
+            "--ci-index-url",
+            "https://pypi.enterprise.example/simple",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+
+    json_start = result.stdout.find("{")
+    payload = json.loads(result.stdout[json_start:])
+    assert _RecordingFakeRepoClient.last_instance is not None
+    stored = _RecordingFakeRepoClient.last_instance.get_files(payload["project_id"])
+
+    ci_body = stored[".github/workflows/ci.yml"]
+    assert 'UV_INDEX_URL: "https://pypi.enterprise.example/simple"' in ci_body
+    # Untouched fields keep their public defaults.
+    assert "actions/checkout@v4" in ci_body
+
+    pre_commit_body = stored[".pre-commit-config.yaml"]
+    assert "https://github.com/astral-sh/ruff-pre-commit" in pre_commit_body
+
+
+def test_cli_no_ci_host_overrides_keeps_public_defaults(
+    intake_report_path: Path,
+    data_report_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """No --ci-* flags -> generated CI/pre-commit content is unchanged."""
+
+    _RecordingFakeRepoClient.last_instance = None
+    monkeypatch.setattr(
+        "model_project_constructor.agents.website.cli.FakeRepoClient",
+        _RecordingFakeRepoClient,
+    )
+
+    result = runner.invoke(
+        app,
+        [
+            "--intake",
+            str(intake_report_path),
+            "--data",
+            str(data_report_path),
+            "--fake",
+        ],
+    )
+    assert result.exit_code == 0, result.stdout
+
+    json_start = result.stdout.find("{")
+    payload = json.loads(result.stdout[json_start:])
+    assert _RecordingFakeRepoClient.last_instance is not None
+    stored = _RecordingFakeRepoClient.last_instance.get_files(payload["project_id"])
+    assert "image: python:3.11" in stored[".gitlab-ci.yml"]
+    assert (
+        "https://github.com/astral-sh/ruff-pre-commit"
+        in stored[".pre-commit-config.yaml"]
+    )
+
+
 @pytest.mark.parametrize(
     "removed_flag",
     ["--fake-gitlab", "--gitlab-url", "--group-path"],

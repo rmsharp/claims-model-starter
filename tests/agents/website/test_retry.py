@@ -17,6 +17,9 @@ from typing import Any
 
 from model_project_constructor.agents.website.agent import WebsiteAgent
 from model_project_constructor.agents.website.fake_client import FakeRepoClient
+from model_project_constructor.agents.website.governance_templates import (
+    CIHostConfig,
+)
 from model_project_constructor.agents.website.graph import build_website_graph
 from model_project_constructor.agents.website.nodes import make_nodes
 from model_project_constructor.agents.website.protocol import (
@@ -151,6 +154,7 @@ class TestRetryEndToEnd:
         agent = WebsiteAgent.__new__(WebsiteAgent)
         agent.client = client
         agent.ci_platform = "gitlab"
+        agent.ci_host_config = CIHostConfig()
         agent.graph = build_website_graph(client, sleep=lambda _s: None)
         return agent.run(intake_report, data_report, repo_target)
 

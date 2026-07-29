@@ -62,6 +62,7 @@ def _run_agent(
     data: DataReport,
     *,
     ci_platform: str = "gitlab",
+    ci_host_config: Any = None,
 ) -> tuple[Any, FakeRepoClient]:
     client = FakeRepoClient()
     target = RepoTarget(
@@ -71,7 +72,9 @@ def _run_agent(
         visibility="private",
     )
     platform = cast(Literal["gitlab", "github"], ci_platform)
-    result = WebsiteAgent(client, ci_platform=platform).run(intake, data, target)
+    result = WebsiteAgent(
+        client, ci_platform=platform, ci_host_config=ci_host_config
+    ).run(intake, data, target)
     return result, client
 
 
@@ -641,4 +644,182 @@ class TestVocabularyDriftGuards:
                 set(get_args(RiskTier)), RiskTier, name="_TEST", reconcile_hint="test"
             )
             is None
+        )
+
+
+# ---------------------------------------------------------------------------
+# Phase C3b — generated-project CI portability (enterprise-host overrides)
+# ---------------------------------------------------------------------------
+
+
+class TestCIHostConfigDefaults:
+    """No overrides -> byte-identical to the pre-C3b public-host output."""
+
+    def test_gitlab_ci_default_is_unchanged(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            render_gitlab_ci,
+        )
+
+        out = render_gitlab_ci()
+        assert "image: python:3.11\n" in out
+        assert "- pip install uv\n" in out
+        assert "variables:" not in out
+
+    def test_github_actions_ci_default_is_unchanged(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            render_github_actions_ci,
+        )
+
+        out = render_github_actions_ci()
+        assert out.count("- uses: actions/checkout@v4\n") == 3
+        assert out.count("- uses: actions/setup-python@v5\n") == 3
+        assert out.count("- run: pip install uv\n") == 3
+        assert "env:" not in out
+
+    def test_pre_commit_config_default_is_unchanged(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            render_pre_commit_config,
+        )
+
+        out = render_pre_commit_config()
+        assert "- repo: https://github.com/astral-sh/ruff-pre-commit\n" in out
+
+
+class TestCIHostConfigOverrides:
+    def test_gitlab_ci_base_image_override(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            CIHostConfig,
+            render_gitlab_ci,
+        )
+
+        out = render_gitlab_ci(
+            ci_host_config=CIHostConfig(base_image="registry.enterprise.example/python:3.11")
+        )
+        assert "image: registry.enterprise.example/python:3.11\n" in out
+        assert "python:3.11\n" not in out.replace(
+            "registry.enterprise.example/python:3.11\n", ""
+        )
+        # Sibling fields (index_url unset here) must keep their defaults —
+        # no variables: block, plain "pip install uv".
+        assert "variables:" not in out
+        assert "- pip install uv\n" in out
+
+    def test_gitlab_ci_index_url_override(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            CIHostConfig,
+            render_gitlab_ci,
+        )
+
+        out = render_gitlab_ci(
+            ci_host_config=CIHostConfig(index_url="https://pypi.enterprise.example/simple")
+        )
+        assert 'UV_INDEX_URL: "https://pypi.enterprise.example/simple"' in out
+        assert (
+            "pip install --index-url https://pypi.enterprise.example/simple uv"
+            in out
+        )
+        # Sibling field (base_image unset here) must keep its default.
+        assert "image: python:3.11\n" in out
+
+    def test_github_actions_action_prefix_override(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            CIHostConfig,
+            render_github_actions_ci,
+        )
+
+        out = render_github_actions_ci(
+            ci_host_config=CIHostConfig(action_prefix="enterprise-mirror")
+        )
+        assert out.count("- uses: enterprise-mirror/checkout@v4\n") == 3
+        assert out.count("- uses: enterprise-mirror/setup-python@v5\n") == 3
+        assert "actions/checkout@v4" not in out
+        assert "actions/setup-python@v5" not in out
+        # Sibling field (index_url unset here) must keep its default — no
+        # env: block, plain "pip install uv".
+        assert "env:" not in out
+        assert out.count("- run: pip install uv\n") == 3
+
+    def test_github_actions_index_url_override(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            CIHostConfig,
+            render_github_actions_ci,
+        )
+
+        out = render_github_actions_ci(
+            ci_host_config=CIHostConfig(index_url="https://pypi.enterprise.example/simple")
+        )
+        assert 'UV_INDEX_URL: "https://pypi.enterprise.example/simple"' in out
+        assert out.count("pip install --index-url") == 3
+        # Sibling field (action_prefix unset here) must keep its default.
+        assert out.count("- uses: actions/checkout@v4\n") == 3
+
+    def test_pre_commit_repo_override(self) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            CIHostConfig,
+            render_pre_commit_config,
+        )
+
+        out = render_pre_commit_config(
+            ci_host_config=CIHostConfig(
+                pre_commit_repo="https://git.enterprise.example/mirrors/ruff-pre-commit"
+            )
+        )
+        assert (
+            "- repo: https://git.enterprise.example/mirrors/ruff-pre-commit\n" in out
+        )
+        assert "github.com" not in out
+
+
+class TestCIHostConfigIntegration:
+    """End-to-end: WebsiteAgent(ci_host_config=...) -> emitted file content."""
+
+    @pytest.mark.parametrize("ci_platform", ["gitlab", "github"])
+    def test_agent_threads_ci_host_config_into_emitted_ci_file(
+        self,
+        tier3_intake: IntakeReport,
+        data_report: DataReport,
+        ci_platform: str,
+    ) -> None:
+        from model_project_constructor.agents.website.governance_templates import (
+            CIHostConfig,
+        )
+
+        cfg = CIHostConfig(
+            base_image="registry.enterprise.example/python:3.11",
+            index_url="https://pypi.enterprise.example/simple",
+            action_prefix="enterprise-mirror",
+            pre_commit_repo="https://git.enterprise.example/mirrors/ruff-pre-commit",
+        )
+        result, client = _run_agent(
+            tier3_intake, data_report, ci_platform=ci_platform, ci_host_config=cfg
+        )
+        stored = client.get_files(result.project_id)
+
+        ci_path = ".gitlab-ci.yml" if ci_platform == "gitlab" else ".github/workflows/ci.yml"
+        ci_body = stored[ci_path]
+        assert "enterprise.example" in ci_body
+        assert "docker.io" not in ci_body
+        assert "python:3.11" not in ci_body.replace(
+            "registry.enterprise.example/python:3.11", ""
+        )
+        if ci_platform == "github":
+            assert "enterprise-mirror/checkout@v4" in ci_body
+            assert "github.com/" not in ci_body
+
+        pre_commit_body = stored[".pre-commit-config.yaml"]
+        assert "git.enterprise.example" in pre_commit_body
+        assert "github.com" not in pre_commit_body
+
+    def test_agent_default_ci_host_config_is_unchanged(
+        self,
+        tier3_intake: IntakeReport,
+        data_report: DataReport,
+    ) -> None:
+        """No ``ci_host_config`` passed to ``WebsiteAgent`` -> public defaults."""
+        result, client = _run_agent(tier3_intake, data_report, ci_platform="gitlab")
+        stored = client.get_files(result.project_id)
+        assert "image: python:3.11" in stored[".gitlab-ci.yml"]
+        assert (
+            "https://github.com/astral-sh/ruff-pre-commit"
+            in stored[".pre-commit-config.yaml"]
         )

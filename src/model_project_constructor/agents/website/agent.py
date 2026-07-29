@@ -7,8 +7,10 @@ returns a validated :class:`RepoProjectResult`.
 
 from __future__ import annotations
 
+import dataclasses
 from typing import Any, Literal
 
+from model_project_constructor.agents.website.governance_templates import CIHostConfig
 from model_project_constructor.agents.website.graph import build_website_graph
 from model_project_constructor.agents.website.nodes import build_repo_project_result
 from model_project_constructor.agents.website.protocol import RepoClient
@@ -36,9 +38,11 @@ class WebsiteAgent:
         client: RepoClient,
         *,
         ci_platform: Literal["gitlab", "github"] = "gitlab",
+        ci_host_config: CIHostConfig | None = None,
     ):
         self.client = client
         self.ci_platform: Literal["gitlab", "github"] = ci_platform
+        self.ci_host_config: CIHostConfig = ci_host_config or CIHostConfig()
         self.graph = build_website_graph(client)
 
     def run(
@@ -74,6 +78,7 @@ class WebsiteAgent:
             data_report=data_report.model_dump(mode="json"),
             repo_target=repo_target.model_dump(mode="json"),
             ci_platform=self.ci_platform,
+            ci_host_config=dataclasses.asdict(self.ci_host_config),
         )
 
         self.graph.invoke(state, config=config)
