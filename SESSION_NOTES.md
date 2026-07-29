@@ -6,6 +6,226 @@
 
 ## ACTIVE TASK
 
+### What Session 198 Did
+**Deliverable:** Confirm `.env` credential rotation status (Anthropic API key, GitLab PAT, Bedrock
+bearer token — priority item 1 of Session 197's handoff) with the operator; update the register at
+`audits/2026-07-28-b2-import-readiness.md` §3.3 accordingly. **COMPLETE — but not as scoped.**
+
+**Started / Completed:** 2026-07-29.
+
+**What actually happened:** Asked the operator via `AskUserQuestion` whether the three credentials
+had been rotated. The operator did not answer the question — they asked back: *"why would new
+credentials need to be created for this repository?"*, then, after a first (inaccurate) attempt at
+an answer, pressed further: *"If my credentials are not in the GitHub repository, the clone will
+not get them... Does something need to be done for that to happen prior to forking the
+repository?"* That second question was the one that mattered, and it was correct to push on.
+Verifying it directly (not re-asserting the plan's prose) found that **the entire rotation
+requirement, as stated everywhere it appeared, was based on a false premise.**
+
+**What was verified:**
+- `git check-ignore -v .env` → ignored. `git log --all --oneline -- .env` → empty — `.env` has
+  never entered git history on any ref, confirmed independently this session (not trusted from
+  Session 195's B2 audit).
+- No tracked code auto-loads `.env` — `orchestrator/config.py:5-16` documents that `.env` loading
+  is "the caller's responsibility"; every consumer (`gitlab_adapter.py:54`, `github_adapter.py:65`,
+  `bedrock_client.py:100`, both copies) reads only `os.environ`.
+- **The load-bearing catch:** `docs/planning/enterprise-migration.md` Phase C4 step 1 already
+  mandates `git clone --mirror` over a filesystem copy **specifically because** "a folder copy
+  carries `.env`" (its own words, unchanged by this session). Step 1 already engineered around the
+  exact risk step 9 (rotate the credentials) claimed still needed addressing. Nobody had noticed
+  the two steps were in tension — step 1's chosen mechanism already makes step 9's stated goal
+  ("the clone never depends on personal dev credentials") true by construction, independent of
+  whether the personal keys are ever rotated.
+
+**Conclusion:** rotating the three personal credentials was **neither necessary** (mirror-clone
+already excludes `.env`) **nor sufficient** (a hand-copied `.env` into `<enterprise-clone>` would
+recreate the same dependency regardless of whether the source keys were freshly rotated). What
+actually matters — and was previously unstated anywhere — is that whoever bootstraps
+`<enterprise-clone>`'s runtime config populates it with **enterprise-owned** credentials and does
+not copy the personal `.env` over as a shortcut. That's routine C4-time provisioning, not a
+pre-fork gate.
+
+**Corrections made (four files, one finding):**
+1. `docs/planning/enterprise-migration.md` — new **§1.4** correction subsection (matches the doc's
+   own established §1.1/§1.2/§1.3 pattern: state the original claim, verify, correct, do not
+   silently rewrite). §2.8's "five real items" bullet: struck the wrong rationale, added a pointer
+   to §1.4, left the original claim visible (not deleted) per the doc's own "do not fix the
+   historical record" convention (§1.1). **Phase C4 step 9 rewritten** (this is the one live,
+   forward-looking instruction, not a historical record — correcting it changes what a future
+   session executing C4 will actually do): now says provision `<enterprise-clone>` with
+   enterprise-owned credentials and don't copy the personal `.env`, instead of "rotate the personal
+   credentials." Phase B2's "Delivered" paragraph got an appended correction note, not a rewrite —
+   it remains true that Session 195 didn't perform rotation and named it as an open disposition;
+   what changed is what should happen next.
+2. `audits/2026-07-28-b2-import-readiness.md` §3.3 — rewritten in place (this is a live disposition
+   register per Learning #177, not frozen forensic evidence — same category as the dossier's
+   Open-items table Session 197 updated). Kept Session 195's original measurement facts (credential
+   lengths, gitignore status), replaced the disposition and rationale. Also fixed a stale line
+   citation at the top of the file (`:847-887` → `:884-928`) — dragon #8 ("line numbers shift as
+   you sweep") had already made it wrong before I got to it, from my own §1.4 insertion shifting
+   everything after it; caught by re-grepping rather than trusting the number I'd have otherwise
+   left untouched.
+3. `BACKLOG.md` — B2 bullet's "Not done: the three `.env` credential rotations" line updated in
+   place (live tracker, same convention as every other BACKLOG.md phase-completion edit) to
+   "RESOLVED as not required," pointing at `enterprise-migration.md` §1.4 and the corrected C4
+   step 9.
+4. `SESSION_NOTES.md` (this entry) — records the finding; Session 197's prior entries below are
+   left untouched per the project's narrative-preservation convention.
+
+**Full verification (doc-only changes, ran the full gate anyway per established project
+discipline):** `uv run pytest -q` → **964 passed, 8 live-skipped, 97.75% coverage** (unchanged from
+Session 197 — no code touched this session). `uv run ruff check src/ tests/ packages/ scripts/` and
+`uv run mypy` both clean.
+
+**Not done (explicitly out of scope, not silently dropped):** The operator's original rotation
+question is now moot — there's nothing to rotate before the fork. Whether the operator wants to
+rotate their personal credentials anyway (framed this session as an optional "someday" hygiene
+item, independent of the fork) was not asked or decided. Items 2–6 of Session 197's priority list
+(D10/D13, Guardrails/FIPS, Phase C4 itself, C3, C5) remain untouched.
+
+### Session 197 Handoff Evaluation (by Session 198)
+
+**Score: 7/10.** The handoff correctly scoped the task (confirm rotation status, update the
+register — not perform the rotation) and pointed at the right file (`audits/2026-07-28-b2-import-
+readiness.md` §3.3). Both of those held up. What it didn't do, and couldn't reasonably have been
+expected to do given its own deliverable was unrelated (the license gaps), is notice that the item
+it was carrying forward rested on an unverified premise several sessions upstream (§2.8/Phase B2,
+authored no later than Session 195, possibly earlier).
+
+- **What helped:** The priority-ordered list with item 1 named precisely, plus the correct
+  agent/operator boundary framing ("confirm rotation happened... not to perform it") — this framing
+  is *why* this session asked a question instead of unilaterally touching credentials, which is what
+  let the operator's pushback happen at all.
+- **What was missing:** A pointer that this item, unlike most of the backlog, had never actually
+  been technically re-derived by any session that carried it forward — every session from 195
+  through 197 (and whatever earlier session first drafted §2.8) treated "rotate the credentials
+  because the clone would otherwise depend on them" as settled fact rather than a claim worth
+  checking against the plan's own Phase C4 step 1 text, which — on inspection — already contradicted
+  it. This is a genuinely new gap; see Learning #178 below.
+- **What was wrong:** Nothing in Session 197's own writing — the inaccuracy originates upstream of
+  Session 197 and Session 197 did not introduce or repeat it beyond forwarding the backlog item's
+  existing framing verbatim.
+- **ROI:** positive but lower than Session 196/197's mutual evaluations — the handoff got this
+  session to the right *place* but not to the right *question*; the operator's clarifying pushback
+  did the work the handoff's framing didn't.
+
+### Phase 3B: Self-assess — Session 198 — 8/10
+
+- **The +:** (1) When the operator pushed back a second time with a sharper, correct technical
+  point, did not defend the prior framing or re-explain it more persuasively — actually verified
+  the underlying git/code claim from scratch (`git check-ignore`, `git log --all -- .env`, reading
+  `orchestrator/config.py`) rather than trusting either the audit document or my own first answer.
+  (2) Found the actual root cause — Phase C4 step 1's own design rationale already contradicted step
+  9's stated need — rather than stopping at "the operator is right that `.env` won't leak via git
+  clone" and leaving the deeper "why does the plan say this then" unresolved. (3) Applied this
+  project's two live-vs-frozen-record conventions correctly and distinctly in the same session:
+  added a new numbered correction subsection to `enterprise-migration.md` (matching its own
+  §1.1–§1.3 pattern, preserving the original claim) for the plan document, while updating the B2
+  audit register's §3.3 disposition in place (per Learning #177, since that register's whole
+  purpose is to track evolving dispositions). Did not apply one convention where the other belonged.
+  (4) Rewrote Phase C4 step 9 itself, not just the surrounding commentary — this is the instruction
+  a future session will actually execute, and leaving it uncorrected while only footnoting the
+  rationale elsewhere would have reproduced the same error at execution time. (5) Caught a
+  self-inflicted stale citation (the audit file's `:847-887` phase-location reference, broken by my
+  own §1.4 insertion) by re-grepping rather than assuming line numbers were still valid — direct
+  application of dragon #8. (6) Ran the full pytest/ruff/mypy gate despite the change being doc-only,
+  matching established project discipline rather than assuming doc-only changes don't need
+  verification.
+- **The −:** (1) The session's actual deliverable ended up being "correct a plan error" rather than
+  "confirm rotation status," which is a legitimate and better outcome but is a scope change from
+  what was claimed at Phase 1 — flagged in this handoff's "What actually happened" section rather
+  than silently reported as if this were the originally scoped task. (2) Did not ask the operator
+  whether they still want to rotate their personal credentials for unrelated hygiene reasons,
+  leaving a small open thread rather than fully closing it.
+- **Quality bar:** matches Session 197's rigor in re-verifying claims directly rather than trusting
+  prior documentation; this session's specific contribution is catching an error that had survived
+  three prior sessions' worth of handoffs without being questioned, which is a different failure
+  class than the license-gap discovery work Session 197 did.
+
+### Phase 3C: Learnings — Session 198
+
+- **Candidate #178 — NEW, 1st instance — "A backlog/plan item's disposition ('operator action
+  required,' 'flagged, not performed') can itself rest on an unverified technical premise, and that
+  premise can survive multiple sessions' handoffs unquestioned precisely because each session frames
+  the item as 'not mine to perform' — which discourages anyone from checking *why* it's needed, not
+  just *whether* it's been done. This is distinct from [[Learning #163]]-style 'gaps from memory'
+  (nothing was misremembered; the original claim was simply never technically verified against the
+  plan's own other text) and distinct from Learning #176 (that was about a gate not matching the
+  operator's bar; this is about a gate's stated *reason* being internally inconsistent with a
+  different part of the same document)."** Discovered this session: `enterprise-migration.md` Phase
+  C4 step 1's own rationale for choosing `git clone --mirror` over a filesystem copy ("a folder copy
+  carries `.env`") already solved the problem Phase C4 step 9 and §2.8 separately claimed still
+  required rotating personal credentials to solve — the two passages were never cross-checked
+  against each other by any session that touched either. **When to apply:** when a session inherits
+  a "flagged but not performed, operator action required" item from a prior handoff, and especially
+  when the item has been carried forward unchanged across 2+ sessions — treat its stated rationale
+  as worth one direct verification pass, not just its performed/not-performed status, before
+  re-forwarding it again.
+- **Not promoted to the roster:** 1st instance, no clear match against #172–#177 (all Sessions
+  195–197; none are about a plan item's stated *rationale* being wrong rather than its *gate* or
+  *scope*). `PROJECT_LEARNINGS.md` = 61 rows (unchanged this session — this is a `SESSION_NOTES.md`
+  candidate, not yet promoted). Next candidate number is **#179**. The #172 promotion-threshold
+  discrepancy (2nd-instance vs. 3rd-instance) remains unresolved from Session 196, untouched again
+  this session.
+
+### Phase 3D: Handoff to Session 199
+
+**The `.env` credential-rotation item is fully closed — as "not required," not as "performed."**
+`enterprise-migration.md` (§1.4, §2.8, Phase C4 step 9, Phase B2's delivered-paragraph), the B2
+audit register (§3.3), and `BACKLOG.md` are all consistent with the corrected understanding: no
+action is needed on the operator's personal `.env` before Phase C4 runs. Full gate green: 964
+passed + 8 live-skipped @ 97.75% coverage, ruff clean, mypy clean (no code changed this session).
+
+**What's next — Session 197's priority list, items 2–6, still stands, now minus item 1:**
+1. ~~The three `.env` credential rotations~~ — **RESOLVED this session, not required.**
+2. **D10 (Bedrock Regional vs. Global) + D13 (`require_sigv4`/`http_client` wiring)** — gates the
+   narrowed Phase C1. Independent of the fork; can land anytime.
+3. **The Guardrails/FIPS branching gap** inside Phase C1 — naturally bundled with #2.
+4. **Phase C4 (the fork)** — re-read `enterprise-migration.md:1101-1217`-ish fresh (line numbers
+   have shifted again this session from the §1.4 insertion and the step-9 rewrite — re-grep
+   `^### Phase C4` before trusting any citation, per dragon #8 and this session's own experience
+   catching exactly this in the audit file). **Per Learning #176 (Session 197): explicitly ask the
+   operator whether anything else is load-bearing before treating the written gate as sufficient.**
+   Get D9/D5/D4/D8/D16 live at that session's start. **D4 (DCO) is still explicitly unresolved** —
+   the operator answered "unknown — find out before proceeding" in Session 197 and nothing since has
+   touched it.
+5. **Phase C3** (needs D9 live, already known as GitLab but re-confirm).
+6. **Phase C5** (immediately after C4).
+
+**State you will inherit:**
+1. `master` is clean as of this session — verify fresh with `git status`/`git log -1` before acting
+   on this claim (Learning #163 still applies every session). This session's commit is not yet
+   pushed to `origin` — the branch was already 13 commits ahead of `origin/master` at this session's
+   start (per Phase 0's orientation report) and will be 14 after this session's commit; pushing was
+   not requested and not done.
+2. No feature branch — landed directly on `master`, matching the recent pattern.
+3. Learning candidate #178 is new, 1st instance, not yet promoted. #172's promotion-threshold
+   discrepancy is still unresolved (now three sessions running: 196, 197, 198 all noted it and moved
+   on). `PROJECT_LEARNINGS.md` unchanged at 61 rows. Next candidate number is **#179**.
+4. Line-number citations anywhere in `enterprise-migration.md` past line ~96 have shifted from this
+   session's edits (one ~35-line insertion at §1.4, plus in-place rewrites at §2.8, Phase C4 step 9,
+   and Phase B2's delivered-paragraph). Every citation into that file from any document, including
+   this handoff, should be re-grepped, not trusted, before use — same dragon #8 discipline this
+   session itself had to apply mid-session to `audits/2026-07-28-b2-import-readiness.md`'s own
+   Phase B2 citation.
+
+**Key files:**
+- `docs/planning/enterprise-migration.md` — §1.4 (new correction), §2.8's credential bullet
+  (struck-through + pointer), Phase C4 step 9 (rewritten instruction), Phase B2's "Delivered"
+  paragraph (appended correction note).
+- `audits/2026-07-28-b2-import-readiness.md` §3.3 — rewritten disposition; top-of-file phase
+  citation corrected to `:884-928`.
+- `BACKLOG.md` — B2 bullet's credential-rotation clause updated in place.
+
+**Gotchas:**
+- Don't re-open the rotation question as if it were still pending — it's resolved as "not required,"
+  not "still needs an operator answer." If a future session sees "credential rotation" in an old
+  handoff narrative further down this file (Sessions ≤197's entries, left untouched per convention)
+  and is tempted to re-ask the operator, check this entry first.
+- The operator's own hygiene question — do they still want to rotate their personal credentials for
+  reasons unrelated to the fork — was raised but not resolved this session. Not urgent, not
+  fork-blocking; pick up only if the operator raises it again.
+
 ### What Session 197 Did
 **Deliverable:** Redirected mid-session (operator override) from Phase C4 to: fix the two open
 items the Session 196 stakeholder-readiness dossier surfaced — the generated-project license gap

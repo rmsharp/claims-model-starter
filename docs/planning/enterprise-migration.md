@@ -155,6 +155,39 @@ resolved) **and C2b** (currently ruled fully out of scope on the strength of D14
 deferred set — if D14 turns out *not* to be deferred, C2b reverts to "in scope, blocked on D14"
 rather than "not this repository's phase at all," a bigger reversal than C1/C2's narrowing).
 
+### 1.4 Correction: the `.env` credential-rotation rationale in §2.8 and Phase C4 step 9 was wrong (Session 198, 2026-07-29)
+
+§2.8 and Phase C4 step 9 both instruct rotating the three personal dev credentials (Anthropic API
+key, GitLab PAT, Bedrock bearer token) "so the clone never depends on personal dev credentials."
+**That premise is false, verified this session:**
+
+- Phase C4 step 1 already mandates `git clone --mirror` over a filesystem copy **specifically
+  because** "a folder copy carries `.env`" (line 1132, unchanged by this correction) — i.e. the
+  plan already engineered the fork mechanism to structurally exclude `.env`. Re-confirmed live:
+  `git check-ignore -v .env` → ignored; `git log --all --oneline -- .env` → empty (never
+  committed, any branch, any ref).
+- No tracked code auto-loads `.env` either — `orchestrator/config.py:5-16` documents that `.env`
+  loading is "the caller's responsibility"; every consumer (`gitlab_adapter.py:54`,
+  `github_adapter.py:65`, `bedrock_client.py:100`, etc.) reads only `os.environ`.
+
+So `git clone --mirror` carries **zero** credential values to `<enterprise-clone>` — it gets
+`.env.example` placeholders only. Rotating the *existing* personal credentials is therefore
+**neither necessary** (the mirror-clone mechanism already prevents the dependency) **nor
+sufficient** (if someone manually copied a `.env` into `<enterprise-clone>` anyway, freshly
+rotated-but-still-personal keys would recreate the identical dependency the rotation was meant to
+prevent).
+
+**What actually matters, and replaces the rotation instruction:** whoever bootstraps
+`<enterprise-clone>`'s runtime config (`.env` or the destination host's CI/CD secret variables)
+must populate it with **enterprise-owned** credentials — an org-issued Anthropic key, a token
+scoped to the enterprise GitLab instance/service account, and whatever auth the enterprise AWS
+account uses for Bedrock — and must **not** copy the personal `.env` over as a shortcut. This is
+routine C4-time provisioning, not a pre-fork gate; nothing needs to happen to the personal `.env`
+before Phase C4 runs. Phase C4 step 9 is corrected accordingly below. Rotating the personal
+credentials remains a legitimate "someday" hygiene item for the operator's own continued local
+dev use of this repository, independent of the fork — but it is no longer a named C4 disposition
+or a B2 register item.
+
 ---
 
 ## 2. Evidence-based inventory
@@ -415,10 +448,14 @@ Against that, five real items:
   referred to here only as *the abandoned AWS account id* and *the abandoned support-case number*;
   find them with `git grep -nE '[0-9]{12}|1784409[0-9]+'` scoped to those files.
 - **Three live credentials sit in the local `.env`** (Anthropic key, GitLab PAT, Bedrock bearer
-  token) — rotate them so the enterprise clone never depends on personal dev credentials. This is
-  independent of the GitHub account hosting the public repo/wiki/site, which is **never** closed or
-  decommissioned (§1.2) — "the personal account" here means the personal Anthropic/GitLab/AWS dev
-  credentials, not that account.
+  token). ~~Rotate them so the enterprise clone never depends on personal dev credentials.~~
+  **Corrected, §1.4 (Session 198): this rationale was wrong** — `git clone --mirror` (Phase C4
+  step 1) already carries zero credential values, so rotation doesn't achieve the stated goal.
+  The real requirement is provisioning `<enterprise-clone>` with enterprise-owned credentials at
+  C4 time (step 9), not rotating the personal ones beforehand. This is independent of the GitHub
+  account hosting the public repo/wiki/site, which is **never** closed or decommissioned (§1.2) —
+  "the personal account" here means the personal Anthropic/GitLab/AWS dev credentials, not that
+  account.
 - **Three live GitLab pilot projects exist outside git**, recorded only in the gitignored
   checkpoint store. Invisible to every repo-scoped check.
 - **`.git` is 162 MB with 3148 loose objects and zero packs**, plus 8 unreachable dropped-stash
@@ -853,7 +890,11 @@ and `prs-export.json` (repo root). The three GitLab pilot projects (`subrogation
 `-v3`, all under `rmsharp-modelpilot`) were located via the gitignored checkpoint store and given
 project IDs/URLs in the register. **Not performed:** rotating the three live `.env` credentials —
 that requires operator action against external consoles (Anthropic/GitLab/AWS), named as an open
-disposition in the register rather than silently marked done (see that doc §3.3).
+disposition in the register rather than silently marked done (see that doc §3.3). **Correction,
+§1.4 (Session 198):** this disposition's own rationale ("so the clone never depends on personal
+dev credentials") was wrong — the register entry and this note both describe accurately what
+Session 195 did and found at the time, but the follow-up action is no longer rotation; see §1.4
+and Phase C4 step 9 for what actually replaces it.
 
 **Scope (original):** author `.gitleaksignore` (or the target scanner's baseline) enumerating the ~10 known
 false positives from §2.8 **with the classification table**, so the import request arrives with
@@ -1183,14 +1224,14 @@ never in the current working tree, and nothing here is ever committed or pushed 
    lists them as a genuinely undecided asset alongside the Releases, and this plan does not itself
    recommend migrate-vs-leave for them; do not treat their absence from this step's original text as
    "no action needed."
-   **Rotate the three personal dev credentials** (Anthropic key, GitLab PAT, Bedrock bearer token)
-   so the clone never depends on personal-account secrets — independent of any account closure,
-   since none is planned (§1.2). **This is an operator action, not an agent one** — generating
-   replacements and invalidating the originals happens on external consoles (Anthropic Console,
-   GitLab, AWS IAM) an agent has no access to and should not act on unilaterally (an irreversible
-   external-account action, `SAFEGUARDS.md`). B2 flagged this same item as a named-but-not-performed
-   disposition (`audits/2026-07-28-b2-import-readiness.md` §3.3) rather than silently completing it
-   — this step inherits the same split: the executor confirms rotation happened, they don't do it.
+   **Provision `<enterprise-clone>`'s runtime config with enterprise-owned credentials — do not
+   copy the personal `.env`.** *(Corrected, §1.4: rotating the personal Anthropic key, GitLab PAT,
+   or Bedrock bearer token is neither required nor sufficient here — step 1's `git clone --mirror`
+   already carries zero credential values, so there is no dependency to break by rotating. What
+   this step actually requires: populate `<enterprise-clone>`'s `.env` (or the destination host's
+   CI/CD secret variables) with an org-issued Anthropic key, a token scoped to the enterprise
+   GitLab instance/service account, and whatever auth the enterprise AWS account uses for Bedrock
+   — and confirm no one has manually copied the operator's personal `.env` in as a shortcut.)*
 
 **DONE looks like:** the enterprise remote carries the full history, both tags, and the 23-page
 wiki; `<enterprise-clone>` is a normal (non-bare) working checkout; nothing in the clone's tree

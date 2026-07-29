@@ -1,6 +1,8 @@
 # B2 — Import readiness packet
 
-**Phase:** `docs/planning/enterprise-migration.md` Phase B2 (`:847-887`), Session 195, 2026-07-28.
+**Phase:** `docs/planning/enterprise-migration.md` Phase B2 (`:884-928` as of Session 198 — line
+numbers shift as the plan document is edited; re-verify with `grep -n "^### Phase B2\|^### Phase B3"`
+before trusting this citation), Session 195, 2026-07-28.
 **Purpose:** a reviewer-ready import packet — every non-git asset gets a named disposition, and
 every scanner false positive a security reviewer will hit on import already has its answer written
 down, per B2's DONE criteria: *"a reviewer-ready import packet; every non-git asset has a named
@@ -167,23 +169,32 @@ pointer to the public originals. `enterprise-migration.md` D16's own Recommendat
 names "recreate from `releases-export.json`" as the default, and flags that default as **not yet
 operator-confirmed** (dragon #24) — this session produces the export; it does not resolve D16.
 
-### 3.3 Live `.env` credentials — flagged for rotation, not rotated
+### 3.3 Live `.env` credentials — RESOLVED (Session 198): not a fork-blocking item
 
 Three live credentials sit in the local `.env` (Anthropic API key, GitLab PAT, Bedrock bearer
-token — confirmed present this session by checking each value's length only, never its content:
+token — confirmed present Session 195 by checking each value's length only, never its content:
 108/62/136 characters respectively, all non-empty and far longer than a placeholder; `.env` is
-gitignored, confirmed via `git check-ignore -v .env`). Per §2.8, these should be rotated so the
-enterprise
-clone never depends on personal dev credentials, independent of any account closure (none is
-planned).
+gitignored, confirmed via `git check-ignore -v .env`).
 
-**Disposition: operator action, not performed this session.** Rotating a live Anthropic API key,
-GitLab PAT, or AWS Bedrock bearer token means generating replacements and invalidating the
-originals on external consoles (Anthropic Console, GitLab, AWS IAM) this agent has no access to
-and should not act on unilaterally — an irreversible action against external accounts is exactly
-the class of action `SAFEGUARDS.md` requires stopping for. This register entry is the named
-disposition the phase's DONE criteria calls for ("every non-git asset has a named disposition");
-the rotation itself remains open and is not silently marked done.
+**Original disposition (Session 195): operator action, not performed this session** — rotate
+these on their external consoles (Anthropic Console, GitLab, AWS IAM) "so the enterprise clone
+never depends on personal dev credentials." **Corrected (Session 198,
+`docs/planning/enterprise-migration.md` §1.4): that rationale was wrong.** Phase C4 step 1 already
+mandates `git clone --mirror` over a filesystem copy specifically because a filesystem copy would
+carry `.env` — the mirror-clone mechanism carries zero credential values by construction.
+Re-verified this session: `git log --all --oneline -- .env` → empty (never committed, any ref);
+`orchestrator/config.py:5-16` confirms no tracked code auto-loads `.env` (loading is "the caller's
+responsibility," every consumer reads only `os.environ`). Rotating the existing personal
+credentials would therefore not change whether the clone depends on them — the mirror-clone
+mechanism already prevents that dependency regardless of whether the personal keys are ever
+rotated.
+
+**Current disposition: no action required before Phase C4.** What replaces this item is a C4-time
+provisioning step (Phase C4 step 9, corrected): whoever bootstraps `<enterprise-clone>`'s runtime
+config must populate it with enterprise-owned credentials and must not copy the personal `.env`
+in as a shortcut. Rotating the operator's personal credentials remains an optional hygiene item
+for their own continued local development use of this repository, independent of the fork — it is
+no longer a named disposition this register or Phase C4 tracks.
 
 ---
 

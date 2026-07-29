@@ -39,9 +39,13 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
   `releases-export.json`/`prs-export.json` at repo root. The three GitLab pilot projects
   (`subrogation-pilot`, `-v2`, `-v3`) and the two GitHub Releases + tags are registered with a named
   disposition (undecided/D16 for the Releases and pilot projects — recreate-vs-pointer and
-  migrate-vs-leave stay live D16/operator calls, not pre-decided). **Not done: the three `.env`
-  credential rotations** — flagged as an open, named disposition requiring operator action against
-  external consoles (Anthropic/GitLab/AWS), not something this session could perform. The 162 MB
+  migrate-vs-leave stay live D16/operator calls, not pre-decided). **The three `.env` credential
+  rotations, originally flagged here as not done: RESOLVED as not required (Session 198)** — the
+  rationale ("so the clone never depends on personal dev credentials") was wrong; Phase C4 step 1's
+  `git clone --mirror` already carries zero credential values, so rotation was neither necessary
+  nor sufficient. See `docs/planning/enterprise-migration.md` §1.4 and Phase C4 step 9 (corrected):
+  the real requirement is provisioning `<enterprise-clone>` with enterprise-owned credentials at
+  C4 time, not rotating the personal ones beforehand — no pre-fork action needed. The 162 MB
   `.git`/loose-objects fact from §2.9 is pre-existing repo state, not a B2 action item — `git clone
   --mirror` (C4 step 1) repacks on push regardless.
 - **B3 — LGPL removal.** **DONE** (both LGPL SDKs removed, Sessions 191–193 — see the httpx section
