@@ -109,29 +109,19 @@ The mantle Messages endpoint authorizes on **`bedrock-mantle:CreateInference`** 
 is a **different action namespace** from classic `bedrock:InvokeModel`. A role scoped only to
 `bedrock:*` will 403 the mantle client.
 
-Tightest policy for a **SigV4/role, mantle-only** deployment (replace `ACCOUNT` and the region):
+Tightest policy for a **SigV4/role, mantle-only** deployment (replace `ACCOUNT` and the region) is
+templated at **`docs/deployment/bedrock-mantle-execution-role-permissions.json`** — a reviewable,
+directly-applyable (`aws iam put-role-policy --policy-document file://...`) artifact, not a fenced
+block a security team has to retype. It grants exactly `bedrock-mantle:CreateInference` (scoped by
+the `bedrock-mantle:Model` condition key) plus the one-time Marketplace entitlement check.
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "MantleInference",
-      "Effect": "Allow",
-      "Action": "bedrock-mantle:CreateInference",
-      "Resource": "arn:aws:bedrock-mantle:us-east-1:ACCOUNT:project/*",
-      "Condition": { "StringEquals": { "bedrock-mantle:Model": "anthropic.claude-opus-4-8" } }
-    },
-    {
-      "Sid": "MarketplaceEntitlementCheck",
-      "Effect": "Allow",
-      "Action": "aws-marketplace:ViewSubscriptions",
-      "Resource": "*",
-      "Condition": { "StringEquals": { "aws:CalledViaLast": "bedrock-mantle.amazonaws.com" } }
-    }
-  ]
-}
-```
+The execution role also needs a **trust policy** (who may assume it — a `Principal`, which an
+identity-based permissions policy like the one above can never contain). That shape depends on
+**D14** (the runtime — EKS IRSA vs. EC2 instance profile vs. ECS task role vs. IAM Identity
+Center/SSO), which is deferred post-fork per §1.3. **`docs/deployment/bedrock-mantle-execution-role-trust.json`**
+templates the statement shape with `Principal` left as an explicit placeholder naming D14 — do not
+fill it in without a confirmed runtime shape; guessing one to unblock this phase would silently
+pick the wrong trust relationship.
 
 Notes:
 - **Do NOT add `bedrock-mantle:CallWithBearerToken`** on the pure SigV4/role path — it is only
@@ -162,9 +152,20 @@ Ask and I'll drop the full runtime policy in.)*
   `https://bedrock-mantle.{region}.api.aws/anthropic` resolves to the private ENI automatically.
   **This is the recommended deployment shape.**
 - **Without Private DNS →** the app must target the VPCE DNS name
-  (`https://{vpce-id}.bedrock-mantle.{region}.vpce.amazonaws.com/anthropic`). The repo does **not
-  yet** expose a `base_url` override — that's the first item in the §7 punch-list. (`ANTHROPIC_BASE_URL`
-  is also honored by the SDK.)
+  (`https://{vpce-id}.bedrock-mantle.{region}.vpce.amazonaws.com/anthropic`). **Two ways to set
+  this, no code change needed either way:** (1) the **cheapest lever** — set
+  **`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`** in the environment; `AnthropicBedrockMantle` (SDK
+  0.94.1, `lib/bedrock/_mantle.py`) reads it directly whenever `base_url` isn't passed to the
+  constructor, and `BedrockLLMClient` only passes `base_url` when explicitly given one (see
+  `bedrock_client.py`) — so the env var alone works today, purely inside the SDK. (2) pass
+  `base_url=` to `BedrockLLMClient.__init__` (shipped `56dc700`, §7 punch-list item 1) when
+  constructing the client programmatically. **This is not the same env var other Anthropic SDK
+  clients read for the same purpose** — the plain `anthropic.Anthropic` client and
+  `AnthropicVertex` each resolve `base_url` from their own, non-interchangeable env-var name
+  (`_client.py` and `lib/vertex/_client.py` respectively); the mantle client (`_mantle.py`) honors
+  only the name above. This doc previously named one of the *other* clients' env vars here and
+  said the `base_url` override "does not yet" exist — both were
+  stale/wrong; corrected 2026-07-29.
 - **Egress allowlist** must permit outbound TLS to `bedrock-mantle.{region}.api.aws:443` (or the
   VPCE host). If SigV4/STS is used, **STS** (`sts.{region}.amazonaws.com`, ideally its own
   PrivateLink) and **IMDS** (`169.254.169.254`) must also be reachable. Set `NO_PROXY` so
@@ -233,14 +234,20 @@ The web UI (`go/modelintake`) resolves provider/model from env (`ui/intake/app.p
 | `AWS_BEARER_TOKEN_BEDROCK` | Bearer token (dev only) | **UNSET in prod** — forces role SigV4 |
 | `ANTHROPIC_AWS_API_KEY` | Bearer token, alternate name the SDK also honors (dev only) | **UNSET in prod** — same override risk as `AWS_BEARER_TOKEN_BEDROCK` |
 | `BEDROCK_REQUIRE_SIGV4` | Set (`1`) to make `BedrockLLMClient` reject construction if either bearer-token var above is set | **Set in prod** — turns a stray key into a hard `ValueError` instead of a silent SigV4 bypass (D13, Session 200) |
+| `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` | PrivateLink VPCE host override, read directly by the SDK's mantle client (`_mantle.py`) — **no app code involved**, works even though `BedrockLLMClient` has no env-driven wiring for it | set to the VPCE DNS name (§4) only when Private DNS is **off**; leave unset when Private DNS is on (the default endpoint already resolves to the private ENI) |
 
 AWS credentials themselves are **never** app config — the IAM role supplies them via the chain.
+Not app config either, but sourced the same way: `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` is read
+straight out of the environment by the SDK, not by anything in this repo — there is no
+`BedrockLLMClient` parameter or factory wiring for it, and none is needed.
 
 **Punch-list — the small code changes to add (the "then code" phase; §0 is now settled, 2026-07-29
 — mantle confirmed):**
 1. ✅ **DONE (`56dc700`).** Optional **`base_url`** pass-through on `BedrockLLMClient.__init__` →
    `AnthropicBedrockMantle(base_url=…)` (for PrivateLink without Private DNS, or a GovCloud host).
-   Both client copies (intake + data-agent).
+   Both client copies (intake + data-agent). **Cheaper still: no code needed at all** — leave
+   `base_url` unpassed and set **`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`** in the environment; the SDK
+   reads it directly (§4, §7 table).
 2. ✅ **DONE (`56dc700`).** Optional **`http_client`** pass-through →
    `AnthropicBedrockMantle(http_client=DefaultHttpxClient(proxy=…, verify=<CA>))` (for forward
    proxy / TLS-inspection CA / mTLS). Both client copies.
@@ -278,7 +285,10 @@ capacity is TPM-quota-bound, which matters for enterprise capacity planning.
 - [ ] Target account **has current-gen Claude runtime quota** (non-zero applied TPM / Workbench
       `ping` works) — **expected yes** (established enterprise account) but **not independently
       verified**; check once the account is accessible (§0 Q3)
-- [ ] IAM execution role with the §3 policy, assumable via your IdP (IRSA / instance profile / SSO)
+- [ ] IAM execution role with the §3 permissions policy
+      (`bedrock-mantle-execution-role-permissions.json`), assumable via your IdP (IRSA / instance
+      profile / SSO) once the trust policy's D14-blocked `Principal` placeholder
+      (`bedrock-mantle-execution-role-trust.json`) is filled in for the chosen runtime shape
 - [ ] `AWS_BEARER_TOKEN_BEDROCK` / `ANTHROPIC_AWS_API_KEY` **unset** in the prod profile;
       `BEDROCK_REQUIRE_SIGV4=1` **set** so a stray key hard-fails instead of silently bypassing
       SigV4 (D13, Session 200); `AWS_REGION` set to a mantle region
@@ -289,7 +299,9 @@ capacity is TPM-quota-bound, which matters for enterprise capacity planning.
       region allowlist and AWS application still open)
 - [ ] Model-invocation logging + KMS + geo SCPs provisioned per §6
 - [ ] `INTAKE_LLM_PROVIDER=bedrock` set; smoke-test a live `messages.create`
-- [ ] (if §7 punch-list needed) `base_url` / `http_client` pass-throughs merged
+- [x] `base_url` / `http_client` pass-throughs merged (`56dc700`) — and for the common
+      PrivateLink-without-Private-DNS case, no merge is even required: set
+      `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` in the environment (§4, §7 table)
 
 ---
 

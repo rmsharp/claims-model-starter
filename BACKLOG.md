@@ -55,10 +55,17 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
   wiring), not `http_client`. **`bedrock-enterprise.md` §0's three security questions RESOLVED
   (Session 201, 2026-07-29, operator):** Guardrails not mandated, FIPS not mandated (mantle path
   confirmed correct — the plan's scope, which assumed "no" to both, was right), runtime quota
-  expected yes (established enterprise account) but not independently verified. **This phase is now
-  fully ungated** — D14's one dependency (the IAM trust-policy artifact) is carved out and deferred
-  post-fork; the rest of C1's own scope (the `ANTHROPIC_BASE_URL` doc fix, the §3
-  IAM-permissions-policy extraction) is itself still untouched and is the next session's work.
+  expected yes (established enterprise account) but not independently verified. **Phase C1's own
+  bundled scope is DONE (Session 202, 2026-07-29):** fixed the stale/false `base_url` claims in
+  `bedrock-enterprise.md` §4 (it wrongly said the override "does not yet" exist, and wrongly cited
+  `ANTHROPIC_BASE_URL` — the SDK's Bedrock-mantle client actually reads a different, mantle-specific
+  var, `ANTHROPIC_BEDROCK_MANTLE_BASE_URL`, verified against the installed SDK 0.94.1 source);
+  documented that var in `.env.example` and §7; extracted the §3 IAM policy into two standalone
+  applyable JSON artifacts — `docs/deployment/bedrock-mantle-execution-role-permissions.json` (the
+  real permissions policy) and `docs/deployment/bedrock-mantle-execution-role-trust.json` (the
+  trust policy, `Principal` left an explicit D14-blocked placeholder, not guessed). **Phase C1 is
+  now fully complete** — no scope remains; D14's trust-relationship fill-in is the enterprise
+  clone's own post-fork work, per §1.3.
 - **C2 — Runtime, network, and data-at-rest readiness.** **Narrowed by §1.3.** **D13 RESOLVED
   (Session 200) — D13 was this phase's only gate, so C2 is now fully ungated and schedulable.**
   D15's dependency (index-variable documentation) is carved out and deferred post-fork.
@@ -119,9 +126,11 @@ too (Session 201, 2026-07-29, operator):** Guardrails not mandated, FIPS not man
 confirmed correct), runtime quota expected yes (established enterprise account) but **not
 independently verified** — that verification needs live access to the actual enterprise account
 and is carried forward as a flag, not a blocker, since C1's own remaining scope makes no live AWS
-calls. **Phase C1 is now fully ungated** — C1's own bundled scope (the `ANTHROPIC_BASE_URL` doc
-fix, the §3 IAM-permissions-policy extraction) remains untouched and is the next session's work.
-**Phase C2's gate was already cleared by D13 alone** (D13 was C2's sole listed gate) — C2's own
+calls. **Phase C1 is now fully complete (Session 202, 2026-07-29)** — its own bundled scope (the
+stale `base_url`/`ANTHROPIC_BASE_URL` doc fix, the §3 IAM-permissions-policy extraction into
+applyable JSON artifacts) is done; see the C1 bullet above for the full breakdown. No scope remains
+in this repository for C1. **Phase C2's gate was already cleared by D13 alone** (D13 was C2's sole
+listed gate) — C2's own
 scope (htmx vendoring, intake UI auth posture, the `MPC_HOST_URL` gap, plaintext-at-rest,
 `run_pipeline.py:450`) is itself untouched but no longer blocked from starting.
 

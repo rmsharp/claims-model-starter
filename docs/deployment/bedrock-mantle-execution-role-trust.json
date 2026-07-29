@@ -1,0 +1,11 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "BedrockMantleExecutionRoleTrust",
+      "Effect": "Allow",
+      "Principal": "TODO -- blocked on D14 (runtime shape: EKS IRSA / EC2 instance profile / ECS task role / IAM Identity Center-SSO). The correct Principal shape (e.g. {\"Service\": \"ec2.amazonaws.com\"}, {\"Service\": \"ecs-tasks.amazonaws.com\"}, or a Federated OIDC provider ARN for IRSA), the matching Action (sts:AssumeRole vs sts:AssumeRoleWithWebIdentity), and any accompanying Condition (e.g. StringEquals on the OIDC sub/aud claims for IRSA) all depend on which shape the platform team picks post-fork inside the enterprise clone -- see docs/planning/enterprise-migration.md Decision Register, D14. Do not fill this in without a confirmed runtime shape; guessing would silently grant trust to the wrong principal.",
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "MantleInference",
+      "Effect": "Allow",
+      "Action": "bedrock-mantle:CreateInference",
+      "Resource": "arn:aws:bedrock-mantle:us-east-1:ACCOUNT:project/*",
+      "Condition": { "StringEquals": { "bedrock-mantle:Model": "anthropic.claude-opus-4-8" } }
+    },
+    {
+      "Sid": "MarketplaceEntitlementCheck",
+      "Effect": "Allow",
+      "Action": "aws-marketplace:ViewSubscriptions",
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:CalledViaLast": "bedrock-mantle.amazonaws.com" } }
+    }
+  ]
+}

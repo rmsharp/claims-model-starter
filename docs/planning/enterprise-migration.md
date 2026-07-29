@@ -971,12 +971,13 @@ expected-yes-unverified — mantle path confirmed correct, see Phase 0**). **Thi
 ungated.** **D14 no longer gates this phase** — per §1.3, D14 (runtime shape) is resolved
 post-fork, inside the clone, so the one D14-dependent sub-task below (the IAM *trust* policy) is
 carved out rather than blocking the rest of C1.
-**Ungating this phase does not mean its scope is done** — the phase's own bundled scope (the
-`ANTHROPIC_BASE_URL` fix and the §3 IAM-permissions-policy extraction) is untouched; Session 199
-implemented only D10's own artifact (the residency SCP), Session 200 implemented only D13's
-`require_sigv4` sub-scope (guard completeness + env wiring, not `http_client`), and Session 201
-only answered the §0 questions (no code, no artifact) — none of the three touched the rest of this
-phase's scope, which remains open work for whoever runs it next.
+**Phase C1 is now fully complete (Session 202, 2026-07-29).** Session 199 implemented only D10's
+own artifact (the residency SCP), Session 200 implemented only D13's `require_sigv4` sub-scope
+(guard completeness + env wiring, not `http_client`), Session 201 only answered the §0 questions
+(no code, no artifact) — Session 202 implemented the remaining bundled scope: the `base_url`/
+`ANTHROPIC_BASE_URL` doc fix (see below) and the §3 IAM-permissions-policy extraction. No scope
+remains in this phase; D14's trust-relationship fill-in is the enterprise clone's own post-fork
+work, unaffected by this phase's completion.
 
 **Former ⚠ (resolved, Session 201):** the scope below used to silently assume "no" to Guardrails
 and FIPS with no branch for "yes" — both are now confirmed "no" by the operator (Phase 0), so the
@@ -984,41 +985,50 @@ assumption held and the scope below is correct as written. Runtime quota (Q3) is
 non-blocking item — see Phase 0's note — and does not affect this phase's scope, which involves no
 live AWS calls.
 
-**Scope (remaining — the `require_sigv4` item below is DONE, Session 200):** fix the false
-`ANTHROPIC_BASE_URL` claim at `bedrock-enterprise.md:149` and document
-**`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`** in `.env.example` and §4/§7 — the no-code PrivateLink
-lever and the cheapest item in the punch-list. Refresh §4/§7 to reflect that punch-list items 1–3
-shipped in `56dc700` and item 5 (`aws_profile`) is confirmed supported. ~~Close the `require_sigv4`
-hole~~ — **DONE, Session 200**: both `bedrock_client.py` copies now check both known bearer-token
-env vars (a local mirrored tuple, not a private SDK import — see D13 Decision Register entry) and
-`require_sigv4` defaults from `BEDROCK_REQUIRE_SIGV4`. Record the D10 residency decision in §5 —
-**DONE, Session 199**. Extract the §3 IAM **permissions** policy and the residency SCP into
-**separate applyable artifact files** — a security team will ask for reviewable JSON, not a fenced
-block (the residency SCP itself already exists, Session 199; the IAM **permissions** policy
-extraction is still open). **Leave the IAM policy's `Principal`/trust-relationship block as an
-explicit placeholder** (a comment naming D14 as the blocker) rather than filling it in — that piece
-is the clone's own post-fork work per §1.3; do not guess a runtime shape to unblock this phase.
+**Scope — ALL DONE (Session 202, 2026-07-29):** ~~fix the false `ANTHROPIC_BASE_URL` claim at
+`bedrock-enterprise.md:149` and document `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` in `.env.example` and
+§4/§7~~ — **DONE.** The false claim was actually two-fold once re-investigated against the
+installed SDK (0.94.1): §4 said the `base_url` override "does not yet" exist (stale — shipped
+`56dc700`) *and* cited `ANTHROPIC_BASE_URL` as the relevant env var (wrong — verified in
+`lib/bedrock/_mantle.py` that the mantle client reads the mantle-specific
+`ANTHROPIC_BEDROCK_MANTLE_BASE_URL` instead; `ANTHROPIC_BASE_URL` belongs to the plain
+`anthropic.Anthropic` client, a different code path). Both fixed; the literal string
+`ANTHROPIC_BASE_URL` no longer appears anywhere in `bedrock-enterprise.md`.
+Refreshed §4/§7 to reflect that punch-list items 1–3 shipped in `56dc700` and item 5 (`aws_profile`)
+is confirmed supported. ~~Close the `require_sigv4` hole~~ — **DONE, Session 200**: both
+`bedrock_client.py` copies now check both known bearer-token env vars (a local mirrored tuple, not
+a private SDK import — see D13 Decision Register entry) and `require_sigv4` defaults from
+`BEDROCK_REQUIRE_SIGV4`. Record the D10 residency decision in §5 — **DONE, Session 199**.
+~~Extract the §3 IAM **permissions** policy and the residency SCP into separate applyable artifact
+files~~ — **DONE, Session 202** (the residency SCP itself already existed, Session 199): two new
+files, `docs/deployment/bedrock-mantle-execution-role-permissions.json` (the real permissions
+policy — AWS identity-based policies structurally cannot contain a `Principal`, so this had to be
+separate from the trust policy) and `docs/deployment/bedrock-mantle-execution-role-trust.json`
+(the trust policy, `Principal` left an explicit placeholder naming D14 as the blocker rather than
+guessing a runtime shape).
 
-**DONE looks like:** no false claim in the enterprise guide; ~~`require_sigv4` rejects both env
-vars~~ **(done, Session 200)**; the IAM **permissions** policy and SCP exist as files, with the
-trust-relationship section explicitly marked TODO rather than silently omitted or guessed.
+**DONE looks like:** ~~no false claim in the enterprise guide~~ **(done, Session 202)**;
+~~`require_sigv4` rejects both env vars~~ **(done, Session 200)**; ~~the IAM **permissions** policy
+and SCP exist as files, with the trust-relationship section explicitly marked TODO rather than
+silently omitted or guessed~~ **(done, Session 202 — two files, not one; see above)**.
 
-**Verify:**
+**Verify (all re-run and passing, Session 202):**
 
 ```bash
-grep -n "ANTHROPIC_BASE_URL" docs/deployment/bedrock-enterprise.md   # → 0 (still open, not Session 200's scope)
+grep -n "ANTHROPIC_BASE_URL" docs/deployment/bedrock-enterprise.md   # → 0 ✅ (Session 202)
 grep -rn "ANTHROPIC_AWS_API_KEY" src/ packages/                      # → present in BOTH guards (✅ Session 200)
-ls docs/deployment/*.json                                            # → IAM policy + SCP artifacts (SCP only so far)
-grep -n "D14" docs/deployment/*.json                                 # → the trust-policy TODO marker
+ls docs/deployment/*.json                                            # → permissions + trust + SCP (3 files, ✅ Session 202)
+grep -n "D14" docs/deployment/*.json                                 # → trust-policy TODO marker (✅ Session 202)
 uv run pytest tests/agents/intake/test_bedrock_client.py tests/data_agent_package/test_bedrock_client.py --no-cov   # 25 passed
-uv run pytest -q                                                     # coverage gate must stay ≥95% (970 passed, 8 live-skipped, 97.76%)
+uv run pytest -q                                                     # 970 passed, 8 live-skipped, 97.76% (unchanged — docs/config only)
 ```
 
 **⚠ Coverage trap:** `--cov-fail-under=95` is in the default addopts, so any wiring added without
 tests fails the **entire** suite with a coverage error that looks unrelated. The C4 decoupling
-rule duplicates the clients — **every hook change is a paired edit plus paired tests.**
+rule duplicates the clients — **every hook change is a paired edit plus paired tests.** (Not
+triggered this session — no code changed.)
 
-**Boundary:** one session. Close out. The trust-policy TODO is not this session's to resolve.
+**Boundary:** one session. Close out. **Phase C1 is complete as of this session.**
 
 ---
 

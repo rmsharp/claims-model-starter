@@ -6,6 +6,259 @@
 
 ## ACTIVE TASK
 
+### What Session 202 Did
+**Deliverable:** Phase C1's own remaining bundled scope (per `enterprise-migration.md`'s Phase C1
+section and Session 201's handoff item 1): (1) fix the stale/false `base_url`/`ANTHROPIC_BASE_URL`
+claims in `docs/deployment/bedrock-enterprise.md` §4 and document
+`ANTHROPIC_BEDROCK_MANTLE_BASE_URL` in `.env.example` + §7; (2) extract the §3 IAM permissions
+policy into a standalone applyable JSON artifact, plus a separate trust-policy artifact with
+`Principal` left as an explicit D14-blocked placeholder. **COMPLETE — Phase C1 is now fully done,
+no scope remains.**
+
+**Started / Completed:** 2026-07-29.
+
+**What the "false claim" actually was (re-investigated, not taken at face value from the plan's
+prose):** the plan said "fix the false `ANTHROPIC_BASE_URL` claim at `bedrock-enterprise.md:149`"
+— but that line number had already drifted (Learning-#11/#163 territory: line citations rot).
+Re-grepping found the real claim at §4, and it turned out to be **two** stale statements bundled
+together, not one: (a) "`the repo does **not yet** expose a `base_url` override" — false, shipped
+in `56dc700`; (b) "(`ANTHROPIC_BASE_URL` is also honored by the SDK.)" — also false in this
+context. Verified against the **installed SDK** in this repo's own `.venv` (0.94.1,
+`anthropic/lib/bedrock/_mantle.py`): the Bedrock-mantle client resolves `base_url` from
+**`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`** — a completely different, mantle-specific env var —
+whereas `ANTHROPIC_BASE_URL` is read only by the plain `anthropic.Anthropic` client
+(`_client.py`), a different code path never invoked by `BedrockLLMClient`. **Trap encountered and
+avoided:** the globally-installed `anthropic` package on this machine's system Python
+(`miniforge3`) is an *older* SDK version that doesn't even contain `_mantle.py` — checking it
+first would have produced a confidently wrong "this claim doesn't apply, mantle client doesn't
+exist there" conclusion. Only reading the project's own `.venv` copy gave the true answer (see
+Learning candidate #182 below). This also confirmed the plan's own framing ("the no-code
+PrivateLink lever") is literally true: `BedrockLLMClient` only adds `base_url` to its kwargs when
+explicitly passed (`bedrock_client.py:140-141`), so when unset, the SDK's own env-var fallback
+applies with **zero app code involved** — nothing in this repo wires
+`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`, and nothing needs to.
+
+**What was done (7 files — 5 modified, 2 new; all docs/config, zero code/test changes):**
+1. **`docs/deployment/bedrock-enterprise.md`** — §4 paragraph rewritten (both stale claims fixed,
+   the literal string `ANTHROPIC_BASE_URL` fully removed from the file — verified `grep -c` → 0);
+   §3 fenced JSON policy block replaced with a reference to the two new artifact files (matching
+   the pattern §5 already established for the residency SCP — a file a security team can actually
+   apply, not a block they retype); §7 config-surface table gained a new
+   `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` row; §7 punch-list item 1 gained a note about the no-code
+   env-var path; §9 checklist's IAM bullet now names both new artifact files, and its
+   base_url/http_client bullet is now checked off with the no-code caveat.
+2. **`docs/deployment/bedrock-mantle-execution-role-permissions.json`** *(new)* — the §3 identity-
+   based permissions policy verbatim (grants `bedrock-mantle:CreateInference` scoped by the
+   `bedrock-mantle:Model` condition key, plus the one-time Marketplace entitlement check),
+   directly applyable via `aws iam put-role-policy`.
+3. **`docs/deployment/bedrock-mantle-execution-role-trust.json`** *(new)* — the assume-role trust
+   policy, with `Principal` deliberately left as a placeholder **string** (not a valid Principal
+   shape) naming D14 as the blocker and enumerating the four candidate runtime shapes (EKS IRSA /
+   EC2 instance profile / ECS task role / IAM Identity Center-SSO) plus the Action ambiguity
+   (`sts:AssumeRole` vs. `sts:AssumeRoleWithWebIdentity` for IRSA) — a **design judgment call**:
+   AWS identity-based permissions policies structurally cannot contain a `Principal` element (that
+   would make file 2 invalid for `put-role-policy`), so the plan's singular phrasing ("the IAM
+   policy's `Principal`/trust-relationship block") necessarily meant *two* separate files, not one
+   file with an extra field. Confirmed correct by independent adversarial review (see below).
+4. **`.env.example`** — new commented `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` example in the Bedrock
+   section, with a one-line caveat distinguishing it from `ANTHROPIC_BASE_URL`.
+5. **`docs/planning/enterprise-migration.md`** — Phase C1 section: "ungating ≠ done" framing
+   replaced with "fully complete"; the Scope/DONE/Verify blocks all struck through and marked DONE
+   with Session 202 attribution; **the Verify block's own literal `→ 0 (still open, not Session
+   200's scope)` annotation corrected to `→ 0 ✅ (Session 202)`** — the plan document's own stated
+   verification target is now satisfied, not just referenced.
+6. **`BACKLOG.md`** — the C1 bullet and the "Open decisions" paragraph both rewritten from
+   "untouched, next session's work" to "DONE."
+7. **`SESSION_NOTES.md`** (this entry).
+
+**Verification (docs/config-only; full gate re-run anyway per Session 199's established
+convention):** all of the plan's own Verify-block commands re-run and passing:
+`grep -n "ANTHROPIC_BASE_URL" docs/deployment/bedrock-enterprise.md` → 0 matches;
+`grep -rn "ANTHROPIC_AWS_API_KEY" src/ packages/` → 8 hits (unchanged, Session 200's work);
+`ls docs/deployment/*.json` → 3 files (permissions + trust + the pre-existing SCP);
+`grep -n "D14" docs/deployment/*.json` → 1 hit, in the trust file only. Both bedrock-client test
+files: **25 passed**. Full suite: `uv run ruff check src/ tests/ packages/ scripts/` → clean;
+`uv run mypy` → clean; `uv run pytest -q` → **970 passed, 8 live-skipped, 97.76% coverage** —
+byte-identical to Session 201's baseline, exactly as expected since no code/test file changed.
+
+**Adversarial verification (2 independent read-only subagents, before commit):** (1) an AWS/IAM
+correctness check of both new JSON files — found **zero** problems (valid JSON, correct
+identity-based-policy shape with no stray `Principal`, plausible action/ARN/condition-key forms,
+D14 citation independently confirmed genuine against `enterprise-migration.md`'s Decision
+Register, not fabricated). (2) a doc/SDK-accuracy check re-deriving the whole `base_url` /
+`ANTHROPIC_BASE_URL` / `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` chain independently from the actual SDK
+source files — confirmed the chain, but **caught one real, if minor, inaccuracy in this session's
+own edit**: the doc's §4 paragraph said the plain `anthropic.Anthropic`/`AnthropicVertex` clients
+share `ANTHROPIC_BASE_URL`, but `AnthropicVertex` actually reads a **third**, distinct env var
+(`ANTHROPIC_VERTEX_BASE_URL`, `lib/vertex/_client.py`). Fixed immediately (same fact already being
+edited this session, not scope creep) — verified against the SDK source before fixing, not just
+trusting the sub-agent's claim.
+
+**Design note — why two JSON files, not one, for the "IAM policy's Principal/trust-relationship
+block":** the plan's own wording ("Leave the IAM policy's `Principal`/trust-relationship block as
+an explicit placeholder") reads as if it's one document with an extra field. AWS's actual
+constraint (identity-based / permissions policies, applied via `put-role-policy` or as a managed
+policy, **cannot** contain a `Principal` element — only resource-based policies and trust
+policies can) forced a structural correction: two separate, each-independently-applyable files.
+Judged low-risk and squarely in-scope (same underlying "extract the IAM artifacts" instruction,
+just correctly shaped for AWS's actual policy-document rules rather than the plan's imprecise
+singular phrasing) — this is the Learning #11 family ("trust the code/facts, not an imprecise
+plan/spec wording") applied to an AWS-semantics correction rather than a symbol-rename correction.
+
+**Not done (out of scope, not silently dropped):** nothing — Phase C1's full bundled scope is now
+complete, no deferred items remain in this repository for this phase. (D14's actual trust-policy
+fill-in is explicitly the enterprise clone's own post-fork work per §1.3 — not this repository's
+scope, ever, until the clone exists.)
+
+### Session 201 Handoff Evaluation (by Session 202)
+
+**Score: 9/10.** Handoff candidate item 1 named the exact deliverable (fix the `base_url`/
+`ANTHROPIC_BASE_URL` claim, document `ANTHROPIC_BEDROCK_MANTLE_BASE_URL`, extract the §3 IAM
+permissions policy) and it was used almost verbatim as this session's scope statement to the
+operator.
+
+- **What helped:** the framing was specific enough to start immediately — no time spent deciding
+  which of the 7 candidates to pick, and no time spent re-deriving *what* needed fixing (only
+  independently re-verifying *why*, which is expected Phase-2-Research work for a fix, not a
+  handoff gap). The "Key files" list correctly pointed at `bedrock-enterprise.md` §3/§4/§7/§9 and
+  the plan's Phase C1 section.
+- **What was missing:** nothing that cost real time. The handoff's own line-number citations
+  (`bedrock-enterprise.md:149` for the false claim, inherited unchanged from the plan itself) had
+  already drifted, exactly as Session 201's own "re-grep, don't trust these line numbers" gotcha
+  warned — re-grepping found the real location a few lines away. This is the handoff correctly
+  warning about its own citations' fragility, not a citation failure.
+- **What was wrong:** nothing — the deliverable framing, the file pointers, and the "next
+  session's work" characterization all held up under fresh verification.
+- **ROI:** positive and high — zero backtracking on scope, the one real research cost (confirming
+  the actual SDK env-var name against the installed `.venv`, not the system Python) was inherent
+  to the fix itself, not a handoff shortcoming.
+
+### Phase 3B: Self-assess — Session 202 — 9/10
+
+- **The +:** (1) Did not take the plan's "fix the false `ANTHROPIC_BASE_URL` claim" at face value
+  — independently traced the actual SDK behavior (installed `.venv`, not system Python) and
+  discovered the claim was two-fold, one layer deeper than the plan's own description. (2) Caught
+  and self-corrected a structural imprecision in the plan itself (one IAM artifact vs. two) using
+  AWS's actual policy-document constraints as evidence, rather than mechanically following the
+  plan's singular phrasing. (3) Ran genuine adversarial verification (2 independent subagents)
+  before committing, on a docs-only session where it would have been easy to skip — this caught a
+  real (if minor) inaccuracy in my own first-draft edit and it was fixed before commit, not after.
+  (4) Kept the whole-repo-sweep discipline established by Sessions 199-201 (`bedrock-enterprise.md`
+  + `enterprise-migration.md` + `BACKLOG.md` all updated consistently, including the plan's own
+  Verify-block annotation, not just the prose). (5) Ran the full quality gate even though no code
+  changed, matching established convention for docs-only sessions.
+- **The −:** (1) The `AnthropicVertex` env-var inaccuracy in my own first draft (found by the
+  adversarial pass, not by me) shows a small verify-every-specific-claim gap — I verified the two
+  claims central to the task (mantle vs. plain-client env vars) but wrote a third claim
+  (`AnthropicVertex`'s var) from a slightly-too-confident inference rather than checking its actual
+  source file first. Caught before commit, but should have been caught before the sub-agent had
+  to. (2) Did not spawn the two verification agents as a `pipeline()`/`parallel()` Workflow call
+  despite ultracode being active this session — used two independent `Agent` calls instead, which
+  achieves the same adversarial-verify outcome but without the structured phase/journal tracking a
+  Workflow run would have left behind. Given the task was inherently single-writer/sequential
+  (small, tightly-coupled doc edits, not independently parallelizable subtasks), this was a
+  reasonable judgment call, not an oversight, but worth naming explicitly rather than silently.
+- **Quality bar:** matches or slightly exceeds Sessions 199-201's rigor — this is the first session
+  in this specific D10/D13/§0 chain to run genuine adversarial (not just self-) verification before
+  committing a docs-only change, and the first to catch and fix a plan-structural imprecision
+  (one-file-vs-two) rather than just a plan-factual staleness (a wrong date/number).
+
+### Phase 3C: Learnings — Session 202
+
+**One new learning candidate filed.**
+
+- **Candidate #182 — NEW, 1st instance — "When investigating a third-party dependency's actual
+  runtime behavior (not just running this project's own test/lint/type gates), read the source
+  from the project's OWN dependency install (`.venv`), never a globally-installed copy — installed
+  versions can differ enough to be missing entire modules/classes, silently producing a
+  confidently wrong conclusion."** Discovered this session: this machine's global/system Python
+  (`miniforge3`) has an older `anthropic` package that lacks `lib/bedrock/_mantle.py` entirely —
+  checking it first would have "confirmed" that the Bedrock-mantle client (and therefore the whole
+  premise of the doc fix) didn't exist, a completely wrong and confusing dead end. Only reading
+  `.venv/lib/python3.13/site-packages/anthropic/` (this repo's actual pinned SDK, 0.94.1) gave the
+  correct answer (`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`). **Distinct from Learning #51** (which is
+  about *invocation choice* for this project's own gate commands — `uv run` / `.venv/bin/python`
+  vs. bare `python` — the same package, different runner) — this is about *which installed copy of
+  a third-party dependency* to read when the investigation is about that dependency's own internal
+  implementation, a materially different failure mode (missing functionality, not just a stale
+  path). **When to apply:** whenever a session needs to verify a claim about a third-party
+  library's actual behavior (env vars read, functions available, version-gated features) rather
+  than just running this project's own test suite — read the library from this project's own
+  `.venv`/vendored install, confirmed via `uv run python3 -c "import X; print(X.__file__)"` or
+  equivalent, not from `python3`/`pip show` on the ambient shell.
+
+Reviewed against the existing roster before filing: the two-file-not-one-file IAM design judgment
+(Learning #11 family — trust the actual constraint/code over imprecise spec wording) is a genuine
+instance of an *existing* learning, not a new one — not filed separately. The adversarial-verify-
+on-a-docs-only-session technique matches established practice (Session 196's "research → draft →
+4-lens adversarial verify → fix" workflow) — not new, not filed. **Roster: 61 rows unchanged,
+1 new unpromoted candidate (#182, 1st instance).** Next candidate number: **#183**. The `#172`
+promotion-threshold discrepancy is now unresolved across **seven** consecutive sessions (196–202)
+— flagged once more (naming the count, not silently re-flagging) but not investigated: different
+subject matter (methodology self-consistency) than this session's Bedrock-doc deliverable, and
+Session 201 already named this exact deferral rationale.
+
+### Phase 3D: Handoff to Session 203
+
+**Phase C1 is fully closed — no scope remains in this repository.** All three of C1's gates (D10,
+D13, `bedrock-enterprise.md` §0) were resolved Sessions 199-201; C1's own bundled scope (base_url
+doc fix, IAM artifact extraction) is done this session. The only future touch point for C1 is
+filling in the trust-policy `Principal` placeholder — **explicitly the enterprise clone's own
+post-fork work (D14, per §1.3), not this repository's, ever, until the clone exists.**
+
+**What's next — candidates, not a mandate (unchanged menu from Session 201, minus C1 which is now
+done):**
+1. **Phase C2** — fully ungated since Session 200, untouched since. Scope: htmx vendoring, intake
+   UI auth-posture decision, `MPC_HOST_URL` gap fix, plaintext-at-rest for two stores,
+   `run_pipeline.py:450`. Multi-item scope — expect a multi-session mini-campaign. This is now the
+   most natural next single-phase deliverable, since C1 (the other fully-ungated, ready-to-run
+   phase) is done.
+2. **Phase C4 (the fork)** — gate remains fully satisfied (A1–A4, B1-core, B2), unaffected by
+   today's work. Re-grep `^### Phase C4` fresh before trusting any line-number citation — this
+   session added/removed lines in `enterprise-migration.md` well before that section (net +6
+   lines, per `git diff --stat`). Get D9/D5/D4/D8/D16 live at that session's start. **D4 (DCO) is
+   still explicitly unresolved** — operator answered "unknown — find out before proceeding" in
+   Session 197, untouched since (now 5 sessions later).
+3. **Phase C5** (immediately after C4).
+4. **Wiki refresh** — 7 pages (Session 200's flag, unchanged) describe stale pre-Session-200
+   `require_sigv4` behavior. Now also stale on the base_url/IAM-artifact facts this session
+   changed, if those are covered there — not checked this session (out of scope; flagging for
+   whoever next touches the wiki). Not urgent, growing.
+5. **Housekeeping, not urgent:** `SESSION_NOTES.md` is now even larger (~22,300+ lines, 201
+   sessions worth, never archived) — a future session could split older sessions into an archive
+   file. The `#172` promotion-threshold discrepancy (7 consecutive flags now, Sessions 196-202) —
+   either resolve it (needs a 3rd `#172`-shaped instance or an operator ruling, see Session 196's
+   original note) or explicitly stop re-flagging it if it's not going to be addressed.
+
+**State you will inherit:**
+1. `master` is clean as of this session — verify fresh with `git status`/`git log -1` before
+   acting on this claim (Learning #163 applies every session). Branch was 17 commits ahead of
+   `origin/master` at this session's start and will be 18 after this session's commit; not pushed
+   (not requested).
+2. No feature branch — landed directly on `master`, matching the recent pattern.
+3. One new learning candidate filed this session (#182, 1st instance, see Phase 3C) —
+   `PROJECT_LEARNINGS.md` unchanged at 61 rows. Candidates #178 (Session 198), #179 (Session 199),
+   #180, #181 (both Session 200) remain 1st-instance, not yet promoted; #182 (this session) joins
+   them. Next candidate number is **#183**.
+4. Line-number citations anywhere in `enterprise-migration.md` — already shifting since Sessions
+   199-201 per their own notes — have shifted further from this session's edits (Phase C1 section
+   grew net, plus the D-item table rows were not touched but sit below the edited section). Re-grep
+   before trusting any citation into this file.
+5. Two new files now exist at `docs/deployment/`:
+   `bedrock-mantle-execution-role-permissions.json` (real, applyable) and
+   `bedrock-mantle-execution-role-trust.json` (real file, placeholder `Principal` — do not fill in
+   without D14 confirmed live from the operator).
+
+**Key files:**
+- `docs/deployment/bedrock-enterprise.md` §3 (now references the 2 JSON files instead of a fenced
+  block), §4 (the fixed base_url paragraph), §7 (config table + punch-list), §9 (checklist).
+- `docs/deployment/bedrock-mantle-execution-role-permissions.json`,
+  `docs/deployment/bedrock-mantle-execution-role-trust.json` (both new).
+- `.env.example` (new `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` block, ~line 75-86).
+- `docs/planning/enterprise-migration.md` Phase C1 section (~line 964-1030, re-grep — this session
+  added lines above and within it).
+- `BACKLOG.md` — C1 bullet (~line 53-68), "Open decisions" paragraph (~line 105-133).
+
 ### What Session 201 Did
 **Deliverable:** Get `docs/deployment/bedrock-enterprise.md` §0's three security questions
 (Guardrails mandate? FIPS mandate? current-gen Claude runtime quota in the target account?)
