@@ -6,6 +6,213 @@
 
 ## ACTIVE TASK
 
+### What Session 201 Did
+**Deliverable:** Get `docs/deployment/bedrock-enterprise.md` §0's three security questions
+(Guardrails mandate? FIPS mandate? current-gen Claude runtime quota in the target account?)
+answered by the operator — the sole item Session 200's handoff named as "the actual next gate on
+Phase C1." The plan's own Phase 0 (`docs/planning/enterprise-migration.md:600`) marks this
+explicitly as **"operator action, not a session"** — deliverable was posing the questions and
+recording the answers, not code. **COMPLETE.**
+
+**Started / Completed:** 2026-07-29.
+
+**Answers (posed verbatim from `bedrock-enterprise.md` §0 via `AskUserQuestion`, not paraphrased
+or assumed):**
+1. **Guardrails mandate? → No.**
+2. **FIPS 140-2/3 mandate? → No.**
+3. **Current-gen Claude runtime quota in the target account? → Expected yes** (established
+   enterprise account), **selected as a hedged option, not the hard-confirmed one** — the operator
+   picked "yes / established enterprise account, expected to have it," not "confirmed via Service
+   Quotas / Workbench ping." Recorded as **"expected yes, not independently verified"** everywhere,
+   not upgraded to a hard confirmation — this repository has no access to the target account to
+   check, and the plan's own §0 originally asked for a specific verification action (non-zero
+   applied TPM in Service Quotas, or a successful Workbench `ping`) that has not happened.
+
+**What this resolves:** Q1/Q2 = no confirms the mantle path (current architecture) stays correct —
+the "yes" branch that would have forced a `bedrock-runtime` re-plan did not materialize. Q3 is a
+separate, non-blocking item (a prerequisite for *running* either path, not a path-choice branch,
+per §0's own original framing) — carried forward as an open verification flag, not a gate on
+Phase C1's own (non-AWS-connected) remaining scope.
+
+**What was done (4 files, docs-only, no code/tests changed):**
+1. **`docs/deployment/bedrock-enterprise.md`** — 6 touch points: top status line, §0 fully rewritten
+   (header, all three questions marked answered, new "Resolution" paragraph), §6's Guardrails
+   bullet, §7's punch-list intro line, §9 checklist (item 1 now checked, item 2 annotated with the
+   "expected, not verified" nuance).
+2. **`docs/planning/enterprise-migration.md`** — 6 touch points via a whole-repo grep sweep for
+   every `§0`/"three security questions" mention (matching Session 200's established sweep
+   pattern): §1's "goals and reality" table (line ~42 — **also fixed the pre-existing stale
+   "gated on the still-open D10/D13" phrase that Sessions 199 and 200 had each explicitly left
+   untouched and flagged for a future session** — judgment call, see design note below), the D13
+   Decision Register row's Gates column (~line 556), Phase 0 (~line 605-618), Phase C1's "Gated
+   on" line + the old ⚠ warning paragraph (~line 965-980, now resolved rather than open), Phase
+   C2's comparison sentence (~line 1028), and §6's out-of-scope framing (~line 1441-1447).
+3. **`BACKLOG.md`** — 2 touch points: the C1 bullet, and the "Open decisions this repository still
+   tracks" summary paragraph (rewritten — the security bucket is now fully answered, D-numbered and
+   non-D-numbered alike).
+4. **`SESSION_NOTES.md`** (this entry).
+
+**Design note — why the §1 line-42 fix, breaking a 2-session precedent of leaving it:** Sessions
+199 and 200 each found this same stale sentence and explicitly chose not to fix it, citing
+"matched Session 199's precedent" and flagging it as "an inconsistency for a future session to
+actually resolve." Session 200's own handoff named this as unresolved for a 5th consecutive time
+by implication and cited its own prior words: "repeated flagging without action is itself the
+anti-pattern." This session's edit directly obsoletes part of that same sentence (the "D10/D13"
+reference — both now resolved, plus the §0 trio this session resolved) and the line sits inside
+the very document this session was already editing for the same underlying fact. Judged low-risk
+(one-line factual correction, no restructuring) and clearly in-scope (same fact, not an unrelated
+adjacent finding — Learning #43's "don't bundle unrelated fixes" does not apply, since this isn't a
+different bug, it's the same D10/D13/§0 state restated in one more place) — fixed rather than
+deferred a 3rd time.
+
+**Full verification (docs-only change, ran the full gate anyway per Session 199's established
+project convention for docs/artifact-only sessions):** `uv run ruff check src/ tests/ packages/
+scripts/` → clean. `uv run mypy` → clean. `uv run pytest -q` → **970 passed, 8 live-skipped,
+97.76% coverage** — unchanged from Session 200's baseline, exactly as expected since no code or
+tests were touched.
+
+**Not done (explicitly out of scope, not silently dropped):** Phase C1's own bundled scope (the
+`ANTHROPIC_BASE_URL` doc fix, the §3 IAM-permissions-policy extraction) — now unblocked but
+untouched, remains the next session's work. Q3's independent verification (live Service Quotas
+check / Workbench `ping`) — cannot happen from this repository (no account access); flagged as an
+open item, not resolved. The wiki's 7 stale `require_sigv4` pages (Session 200's flag) — unchanged
+by this session, still open. The `#172` learnings-promotion-threshold discrepancy — now flagged a
+**6th** consecutive time (Sessions 196–201) by implication; not touched this session (different
+subject matter — a methodology self-consistency question, not part of this session's Bedrock-
+security deliverable — expanding into it would itself have been scope creep, unlike the §1 line-42
+fix above which was the same fact this session was already changing).
+
+### Session 200 Handoff Evaluation (by Session 201)
+
+**Score: 9/10.** Item 1 of the "what's next — candidates" list pointed precisely at this session's
+actual deliverable: named the exact document/section (`bedrock-enterprise.md` §0), the exact three
+questions implicitly (via the punch-list pointer chain inherited from its own predecessor), and the
+correct stakes ("a 'yes' invalidates C1's whole scope, not just delays it") — this framing was used
+directly in the `AskUserQuestion` option descriptions without needing to re-derive it.
+
+- **What helped:** the "actual next gate on Phase C1" framing meant zero time spent deciding which
+  of the 7 numbered candidates to pick — item 1 was unambiguously first. The dossier-honesty
+  precedent from D10/D13 (record hedged/uncertain answers as hedged, not upgraded to hard facts)
+  carried over cleanly to Q3's "expected, not verified" treatment without needing to re-derive that
+  norm from scratch.
+- **What was missing:** the handoff didn't mention that Phase 0 itself (`enterprise-migration.md`
+  line 600) explicitly labels this class of work "*(operator action, not a session)*" — a framing
+  detail that shaped how this session scoped itself (posing+recording, not researching a technical
+  answer). Not a real gap, though: finding it required only reading the section the handoff already
+  pointed at, consistent with "citations, not full context, are what a good handoff owes."
+- **What was wrong:** nothing identified — every claim held up under verification (re-grepped Q1-Q3
+  text fresh from `bedrock-enterprise.md` rather than trusting the handoff's own paraphrase).
+- **ROI:** positive — zero backtracking, the pointer chain (handoff → BACKLOG C1 bullet →
+  `bedrock-enterprise.md` §7 → §0) resolved in one pass.
+
+### Phase 3B: Self-assess — Session 201 — 8/10
+
+- **The +:** (1) Posed the exact three questions sourced directly from `bedrock-enterprise.md` §0
+  itself (re-read live, not from memory/paraphrase) via `AskUserQuestion`, rather than inferring or
+  defaulting them. (2) Preserved the operator's Q3 hedge ("expected yes," not a hard confirmation)
+  precisely across all 4 files touched — did not silently upgrade it to a confirmed fact anywhere,
+  including in the one-line BACKLOG/plan summaries where compression pressure is highest. (3) Ran a
+  whole-repo grep sweep for every `§0`/"three security questions" mention (matching Session 200's
+  own established pattern) and found/fixed all 8 distinct mention-sites across 2 planning docs, not
+  just the primary §0 section. (4) Made and explicitly justified the judgment call to finally fix
+  the 3-session-deferred §1 line-42 staleness, citing the specific anti-pattern warning from
+  Sessions 199/200's own words rather than doing it silently or deferring a 4th time by default. (5)
+  Ran the full verification gate even though no code changed, matching Session 199's precedent for
+  docs-only sessions rather than treating it as "obviously unnecessary."
+- **The −:** (1) Could not independently verify Q3 (runtime quota) at all — correctly identified as
+  outside this repository's reach (no AWS account access), but this means the "gate is resolved"
+  claim rests entirely on the operator's own hedged self-report, a real epistemic limit worth
+  naming plainly rather than just noting in passing. (2) The suggestion that Q3 "naturally falls at
+  Phase C4" is this session's own inference, not an operator-confirmed placement or an existing
+  Phase C4 verification step — flagged as such in every file, but it's still speculative scope
+  creep on Phase C4's documented contents if a future session takes it as settled rather than as a
+  flag. (3) Did not touch the wiki despite it already containing stale Bedrock-security-guard
+  content from Session 200 — a deliberate scope cut (matches Session 200's own precedent), not
+  fixed here either.
+- **Quality bar:** matches Session 199/200's rigor on hedge-preservation and whole-repo sweeps;
+  the §1 line-42 judgment call is a new instance of "resolve a repeatedly-flagged item when it's
+  genuinely the same fact you're already changing" rather than a novel discipline of its own.
+
+### Phase 3C: Learnings — Session 201
+
+**No new learning candidate filed this session.** Reviewed the session's own techniques against the
+existing roster before concluding this: the whole-repo grep sweep matches Learning #31 (widest
+reasonable pattern across all affected surfaces); the §1 line-42 fix-vs-defer judgment matches
+Learning #43's boundary precisely (a *different* subject-matter bug found outside scope must be
+flagged not fixed — but this was the *same* D10/D13/§0 fact restated in one more location inside a
+document already being edited for that fact, which Learning #43's own logic does not forbid, so no
+new boundary case was discovered); the hedge-preservation discipline for Q3 is a direct continuation
+of the D10/D13 precedent Sessions 199-200 already established (recommendation-vs-fact distinction),
+not a new mechanism. **Not promoted; roster stays at 61 rows.** Next candidate number remains
+**#182**. The `#172` promotion-threshold discrepancy is now unresolved across **six** consecutive
+sessions (196–201) — flagged once more here (not a 7th silent re-flag: naming the count itself, per
+Session 200's own established practice for this specific item) but not investigated, since it's a
+different subject (methodology self-consistency, needs either a 3rd `#172`-shaped instance or an
+operator ruling per Session 196's original note) than this session's Bedrock-security deliverable.
+
+### Phase 3D: Handoff to Session 202
+
+**The security bucket is fully closed.** Every D-numbered decision (D10, D13) and every
+non-D-numbered item (`bedrock-enterprise.md` §0's three questions) in the "security bucket" is now
+answered. **Phase C1 is fully ungated** — its own bundled scope (the `ANTHROPIC_BASE_URL` doc fix,
+the §3 IAM-permissions-policy extraction) is ready to run, untouched by any of Sessions 199-201.
+**Phase C2 was already fully ungated as of Session 200** (D13 was its sole gate) — unaffected by
+today's work, still untouched.
+
+**What's next — candidates, not a mandate:**
+1. **Phase C1's own scope** — now fully unblocked, no more upstream gates. Fix the false
+   `ANTHROPIC_BASE_URL` claim at `bedrock-enterprise.md:149` (or wherever it re-greps to — re-grep
+   fresh, do not trust this line number) and document `ANTHROPIC_BEDROCK_MANTLE_BASE_URL` in
+   `.env.example` + §4/§7; extract the §3 IAM **permissions** policy into a separate applyable
+   artifact file (leave the trust-relationship block an explicit D14-blocked placeholder, per
+   `enterprise-migration.md`'s Phase C1 scope paragraph — re-grep it fresh, this session's edits
+   added lines above it). See `enterprise-migration.md`'s Phase C1 section for the full Scope/DONE/
+   Verify blocks (unedited by this session beyond the gate-status paragraphs).
+2. **Phase C2** — fully ungated since Session 200, untouched since. Scope: htmx vendoring, intake
+   UI auth-posture decision, `MPC_HOST_URL` gap fix, plaintext-at-rest for two stores,
+   `run_pipeline.py:450`. Multi-item scope — expect a multi-session mini-campaign.
+3. **Phase C4 (the fork)** — gate remains fully satisfied (A1–A4, B1-core, B2), unaffected by
+   today's work. Re-grep `^### Phase C4` fresh before trusting any line-number citation — this
+   session added lines to `enterprise-migration.md` well before that section. Get D9/D5/D4/D8/D16
+   live at that session's start. **D4 (DCO) is still explicitly unresolved** — operator answered
+   "unknown — find out before proceeding" in Session 197, untouched since (now 4 sessions later).
+4. **Q3's independent verification** (live Service Quotas check or Workbench `ping` for current-gen
+   Claude runtime quota) — cannot happen from this repository; a natural fit for whoever first gets
+   live access to the enterprise account (plausibly at or after Phase C4), but this is this
+   session's own inference, **not** a documented Phase C4 step — treat as a flag to fold in when
+   appropriate, not a prescription.
+5. **Phase C5** (immediately after C4).
+6. **Wiki refresh** — 7 pages (Session 200's flag, unchanged) describe stale pre-Session-200
+   `require_sigv4` behavior. Not urgent, growing.
+7. **Housekeeping, not urgent:** `SESSION_NOTES.md` is now even larger (~22,100 lines, 200 sessions
+   worth, never archived) — a future session could split older sessions into an archive file. The
+   `#172` promotion-threshold discrepancy (6 consecutive flags now, Sessions 196-201) — either
+   resolve it (needs a 3rd `#172`-shaped instance or an operator ruling, see Session 196's original
+   note) or explicitly stop re-flagging it if it's not going to be addressed.
+
+**State you will inherit:**
+1. `master` is clean as of this session — verify fresh with `git status`/`git log -1` before
+   acting on this claim (Learning #163 applies every session). Branch was 16 commits ahead of
+   `origin/master` at this session's start and will be 17 after this session's commit; not pushed
+   (not requested).
+2. No feature branch — landed directly on `master`, matching the recent pattern.
+3. No learning candidates filed this session (see Phase 3C). Candidates #178 (Session 198), #179
+   (Session 199), #180, #181 (both Session 200) remain 1st-instance, not yet promoted.
+   `PROJECT_LEARNINGS.md` unchanged at 61 rows. Next candidate number is still **#182**.
+4. Line-number citations anywhere in `enterprise-migration.md` — already shifting since Session
+   199/200 per their own notes — have shifted further from this session's edits (Phase 0, Phase C1,
+   Phase C2, §6, and §1's line-42 table cell were all touched, all grew). Re-grep before trusting
+   any citation into this file, per dragon #8. This session's own citations above are given as
+   approximate (`~line N`) for this reason.
+
+**Key files:**
+- `docs/deployment/bedrock-enterprise.md` §0 (fully rewritten — the resolved three questions), §6,
+  §7, §9 (checklist items 1-2).
+- `docs/planning/enterprise-migration.md` — Phase 0 (~line 605-618), Phase C1 "Gated on" (~line
+  965-980), Phase C2 (~line 1028), §6 (~line 1441-1447), §1 table (~line 42), D13 row Gates column
+  (~line 556) — re-grep, don't trust these line numbers directly.
+- `BACKLOG.md` — C1 bullet (~line 53-60), "Open decisions" paragraph (~line 102-120).
+
 ### What Session 200 Did
 **Deliverable:** Implement D13 (wire `require_sigv4`/`http_client` to app/env) — the operator said
 "D13" following the Session 199 handoff, which named it as the sole remaining decision gating

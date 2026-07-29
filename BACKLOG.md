@@ -52,10 +52,13 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
   below). D11 is moot; no further action.
 - **C1 — Bedrock enterprise correctness.** **Narrowed by §1.3.** **D10 RESOLVED (Session 199):
   Regional. D13 RESOLVED (Session 200):** `require_sigv4` sub-scope only (guard completeness + env
-  wiring), not `http_client`. Still gated on `bedrock-enterprise.md` §0's three security questions
-  (a pre-existing, still-unresolved branch — the plan doesn't yet handle a "yes" answer; flagged,
-  not fixed) — **the only gate this phase still has**. D14's one dependency (the IAM trust-policy
-  artifact) is carved out and deferred post-fork — the rest of C1 stays a live, schedulable phase.
+  wiring), not `http_client`. **`bedrock-enterprise.md` §0's three security questions RESOLVED
+  (Session 201, 2026-07-29, operator):** Guardrails not mandated, FIPS not mandated (mantle path
+  confirmed correct — the plan's scope, which assumed "no" to both, was right), runtime quota
+  expected yes (established enterprise account) but not independently verified. **This phase is now
+  fully ungated** — D14's one dependency (the IAM trust-policy artifact) is carved out and deferred
+  post-fork; the rest of C1's own scope (the `ANTHROPIC_BASE_URL` doc fix, the §3
+  IAM-permissions-policy extraction) is itself still untouched and is the next session's work.
 - **C2 — Runtime, network, and data-at-rest readiness.** **Narrowed by §1.3.** **D13 RESOLVED
   (Session 200) — D13 was this phase's only gate, so C2 is now fully ungated and schedulable.**
   D15's dependency (index-variable documentation) is carved out and deferred post-fork.
@@ -99,24 +102,27 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
   phase; Phase C4's gate (A1–A4, B1-core, B2) remains independently satisfied. Recommendation
   stated in the document: proceed to the fork, carrying the open-items table forward.
 
-**Open decisions this repository still tracks:** none from the D-numbered register — all of D10 and
-D13 (the only two live "security bucket" decisions) are now resolved; the remaining gate is
-`bedrock-enterprise.md` §0's three security questions, which are not D-numbered (see below). **D10
-(Bedrock endpoint Regional vs Global) is RESOLVED (Session 199, 2026-07-29): Regional** — operator
-accepted the recommendation; recorded in `enterprise-migration.md`'s Decision Register and
-`bedrock-enterprise.md` §5, with the hard-block residency SCP templated at
-`docs/deployment/bedrock-residency-scp.json` (specific region allowlist still an open
-platform-team placeholder). **D13 (wire `require_sigv4`/`http_client` to app/env) is RESOLVED
-(Session 200, 2026-07-29)** — its `require_sigv4` sub-scope only: the guard now checks both
-SDK-recognized bearer-token env vars (`AWS_BEARER_TOKEN_BEDROCK` and `ANTHROPIC_AWS_API_KEY`, was
-only the first) and defaults from a new `BEDROCK_REQUIRE_SIGV4` env var when not passed explicitly;
-recorded in `enterprise-migration.md`'s Decision Register and `bedrock-enterprise.md` §7.
-`http_client` wiring remains undone, as the recommendation itself deferred it pending TLS-inspection
-confirmation. **Resolving D10 and D13 does not clear Phase C1 to run** —
-`bedrock-enterprise.md` §0's three security questions (Guardrails/FIPS/quota) are still open, and
-C1's own bundled scope (the `ANTHROPIC_BASE_URL` doc fix, the §3 IAM-permissions-policy extraction)
-is untouched. **Resolving D13 DOES clear Phase C2's gate** (D13 was C2's sole listed gate) — C2's
-own scope (htmx vendoring, intake UI auth posture, the `MPC_HOST_URL` gap, plaintext-at-rest,
+**Open decisions this repository still tracks:** none, from either the D-numbered register or
+`bedrock-enterprise.md` §0's three (non-D-numbered) security questions — **everything in the
+security bucket is now answered.** **D10 (Bedrock endpoint Regional vs Global) is RESOLVED (Session
+199, 2026-07-29): Regional** — operator accepted the recommendation; recorded in
+`enterprise-migration.md`'s Decision Register and `bedrock-enterprise.md` §5, with the hard-block
+residency SCP templated at `docs/deployment/bedrock-residency-scp.json` (specific region allowlist
+still an open platform-team placeholder). **D13 (wire `require_sigv4`/`http_client` to app/env) is
+RESOLVED (Session 200, 2026-07-29)** — its `require_sigv4` sub-scope only: the guard now checks
+both SDK-recognized bearer-token env vars (`AWS_BEARER_TOKEN_BEDROCK` and `ANTHROPIC_AWS_API_KEY`,
+was only the first) and defaults from a new `BEDROCK_REQUIRE_SIGV4` env var when not passed
+explicitly; recorded in `enterprise-migration.md`'s Decision Register and `bedrock-enterprise.md`
+§7. `http_client` wiring remains undone, as the recommendation itself deferred it pending
+TLS-inspection confirmation. **`bedrock-enterprise.md` §0's three security questions are RESOLVED
+too (Session 201, 2026-07-29, operator):** Guardrails not mandated, FIPS not mandated (mantle path
+confirmed correct), runtime quota expected yes (established enterprise account) but **not
+independently verified** — that verification needs live access to the actual enterprise account
+and is carried forward as a flag, not a blocker, since C1's own remaining scope makes no live AWS
+calls. **Phase C1 is now fully ungated** — C1's own bundled scope (the `ANTHROPIC_BASE_URL` doc
+fix, the §3 IAM-permissions-policy extraction) remains untouched and is the next session's work.
+**Phase C2's gate was already cleared by D13 alone** (D13 was C2's sole listed gate) — C2's own
+scope (htmx vendoring, intake UI auth posture, the `MPC_HOST_URL` gap, plaintext-at-rest,
 `run_pipeline.py:450`) is itself untouched but no longer blocked from starting.
 
 **Decisions no longer tracked here (§1.3):** D1, D2, D6, D7, D11, D12 are already answered;

@@ -39,7 +39,7 @@ The operator named three goals. Their true shapes, after measurement:
 |---|---|---|
 | 1 | All branch work into remote `master` | **25 commits**, not 24 — two stacked fast-forwards (9 + 16). Topologically trivial. What makes it non-trivial is that **pushing to `master` is publishing**: it fires a public GitHub Pages deploy that currently leaks documents nobody decided to publish. |
 | 2 | The wiki reflecting all updates | **Already published and byte-identical** — but published *from an unmerged branch*. The public wiki is ahead of the public `master`. The real work is a **merge-status sweep** across 6 pages and **provisioning separate publish machinery for a one-time enterprise clone** — the original's publish machinery is untouched (see §1.2). |
-| 3 | Anything else needed to move to an enterprise environment | A licensing conflict that is a **hard legal gate**, a live public exposure, an unauthenticated web UI, an incomplete security guard, no deployment artifact at all, and a governance/CI surface that is essentially empty. **Only the legal-conflict and public-exposure gaps must be fixed on the original before Phase C4's one-time clone captures them** (see §1.2) — the destination is a non-syncing enterprise fork, not this repo's relocation. **Per §1.3, only the deployment-artifact gap (C2b) is fully out of this repository's scope**, stranded because its one gate (D14) is unanswerable here. The security-guard fix and the web-UI-auth *decision* (C1, C2) remain live pre-fork work this repository still tracks, gated on the still-open D10/D13 security decisions rather than the deferred platform-team bucket. The governance/CI surface splits in two: the generated-projects' CI portability work (C3b) is ungated and tracked here now; the clone's own CI authoring (C3) is still a session this repository schedules — it just needs D9/D15 supplied live by the operator at that session's start, the same pattern C4 uses for D9/D5/D4, rather than a pre-written answer. |
+| 3 | Anything else needed to move to an enterprise environment | A licensing conflict that is a **hard legal gate**, a live public exposure, an unauthenticated web UI, an incomplete security guard, no deployment artifact at all, and a governance/CI surface that is essentially empty. **Only the legal-conflict and public-exposure gaps must be fixed on the original before Phase C4's one-time clone captures them** (see §1.2) — the destination is a non-syncing enterprise fork, not this repo's relocation. **Per §1.3, only the deployment-artifact gap (C2b) is fully out of this repository's scope**, stranded because its one gate (D14) is unanswerable here. The security-guard fix and the web-UI-auth *decision* (C1, C2) remain live pre-fork work this repository still tracks — D10, D13, and `bedrock-enterprise.md` §0's three security questions are all now resolved (Sessions 199–201, 2026-07-29), so both phases are fully ungated; their own bundled scope is separate work, not itself part of this table's snapshot. The governance/CI surface splits in two: the generated-projects' CI portability work (C3b) is ungated and tracked here now; the clone's own CI authoring (C3) is still a session this repository schedules — it just needs D9/D15 supplied live by the operator at that session's start, the same pattern C4 uses for D9/D5/D4, rather than a pre-written answer. |
 
 **The single most important structural finding:** every push to `origin/master` triggers
 `mkdocs gh-deploy --force --clean`, which publishes the **entire non-excluded `docs/` tree** — and
@@ -553,7 +553,7 @@ Phases are gated on these. **Owners are named because most are not engineering c
 | **D10** | Bedrock endpoint: Regional or Global? | **Security + operator** | **ANSWERED (2026-07-29): Regional** — operator accepted the recommendation this session; formal security co-sign is still nominal until an actual security team exists (post-fork). For P&C claims data, residency dominates the ~10% premium. Recorded in `bedrock-enterprise.md` §5; hard-block SCP templated at `docs/deployment/bedrock-residency-scp.json` (specific region allowlist still a platform-team placeholder). | C1 |
 | **D11** | Run the LGPL removal before the corporate move? | **Operator + legal** | **Confirm the corporate copyleft policy first.** Many policies permit LGPL for unmodified, dynamically-imported libraries. If permitted, defer — it is a rewrite of the two least-tested modules immediately before their first live use. | B3 |
 | **D12** | Version/tag the landing? | **Operator** | **ANSWERED (2026-07-27): bump to 0.3.0** — accepted the recommendation, confirmed by proceeding straight to A3. Done in A3: two `pyproject.toml` files, `README.md:3`, **and `uv lock`** (the lock pinned both workspace members at `0.2.0`, `uv.lock:1109`, `:1175`; now `0.3.0`). The actual `git tag` is a separate, still-open action — A3 has no `git tag` command; it belongs with A4 ("Land it") once the version is on `master`. | A3 |
-| **D13** | Wire `http_client`/`require_sigv4` to app/env? | **Operator + platform team** | **RESOLVED (Session 200, 2026-07-29), per its own recommendation:** the `require_sigv4` guard now checks both SDK-recognized bearer-token env vars (`AWS_BEARER_TOKEN_BEDROCK` **and** `ANTHROPIC_AWS_API_KEY` — it previously checked only the first, a real hole) and defaults from a new `BEDROCK_REQUIRE_SIGV4` env var when not passed explicitly, so `INTAKE_LLM_PROVIDER=bedrock` can enforce it purely through config — no call-site change (both `bedrock_client.py` copies + 3 paired tests each; full gate: 970 passed, 8 live-skipped, 97.76% coverage, ruff/mypy clean). **`http_client` wiring left undone, as recommended** — still conditional on TLS-inspection confirmation, which remains unconfirmed. | ~~C2~~ (D13 was C2's sole remaining gate — see corrected Phase C2), C1 (still gated on the three `bedrock-enterprise.md` §0 security questions) |
+| **D13** | Wire `http_client`/`require_sigv4` to app/env? | **Operator + platform team** | **RESOLVED (Session 200, 2026-07-29), per its own recommendation:** the `require_sigv4` guard now checks both SDK-recognized bearer-token env vars (`AWS_BEARER_TOKEN_BEDROCK` **and** `ANTHROPIC_AWS_API_KEY` — it previously checked only the first, a real hole) and defaults from a new `BEDROCK_REQUIRE_SIGV4` env var when not passed explicitly, so `INTAKE_LLM_PROVIDER=bedrock` can enforce it purely through config — no call-site change (both `bedrock_client.py` copies + 3 paired tests each; full gate: 970 passed, 8 live-skipped, 97.76% coverage, ruff/mypy clean). **`http_client` wiring left undone, as recommended** — still conditional on TLS-inspection confirmation, which remains unconfirmed. | ~~C2~~ (D13 was C2's sole remaining gate — see corrected Phase C2), ~~C1~~ (the three `bedrock-enterprise.md` §0 security questions — C1's last gate — are now answered too, Session 201: see corrected Phase C1) |
 | **D14** | **Runtime shape: EKS+IRSA / ECS task role / EC2 instance profile / on-prem VM?** | **Operator + platform team** | Must be answered before the IAM-trust-policy artifact can be filled in, and it also decides whether the live-test credential probe works at all. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C1's own trust-policy sub-task moves with it (see corrected Phase C1, §4); C1's D10/D13-scoped work does not wait on D14. | ~~C1, C2b~~ none — see §1.3 (C2b fully deferred; C1 narrowed) |
 | **D15** | **Package resolution: internal index (Artifactory/Nexus/devpi) or proxied public PyPI?** | **Operator + platform team** | Decide early — `uv sync` is the first command in every documented workflow. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C2's own index-variable-documentation sub-task moves with it (see corrected Phase C2, §4); C2's D13-scoped work does not wait on D15. | ~~C2, C3~~ none — see §1.3 (C2 narrowed; C3 already clone-only) |
 | **D16** | **Disposition and access model of the enterprise CLONE** (repo + wiki + releases) — private from creation? who administers it? are the two GitHub Releases recreated on the clone, or left as a pointer to the public originals? *(The public originals get no disposition decision — they are unchanged; §1.2.)* | **Operator + legal** | Default: clone is private from creation; recreate the releases on the clone from `releases-export.json` (already in C4's scope) rather than a pointer, since the clone has no live link back to the original. The MIT grant on the original's published code is irrevocable regardless of the clone's licence posture. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C5 step 3 records whatever the operator decided, live, rather than gating on a pre-written answer. | ~~C4, C5~~ none — see §1.3 |
@@ -601,21 +601,25 @@ Phases are gated on these. **Owners are named because most are not engineering c
 
 **Revised by §1.3 (Session 190):** D1–D3 (legal) and D4/D5/D8/D9/D14/D15/D16 (platform team) are
 no longer raised here — the operator resolves them post-fork, inside the enterprise clone, and
-their answers are not reported back to this repository. What remains for this phase is **D10/D13
+their answers are not reported back to this repository. What remained for this phase was **D10/D13
 to security, together with `docs/deployment/bedrock-enterprise.md` §0's three existing questions**
 (Guardrails mandate? FIPS mandate? does the target account have current-gen Claude runtime
-quota?). A "yes" on Guardrails or FIPS redirects mantle → `bedrock-runtime`, a materially larger
-change than anything in this plan.
+quota?). A "yes" on Guardrails or FIPS would have redirected mantle → `bedrock-runtime`, a
+materially larger change than anything in this plan.
 
 **DONE:** D1, D2, D6, D7, D12 answered (D1/D2/D6/D7 gate Phase A; D12 gated A3, already executed).
 **D10 answered (Session 199, 2026-07-29): Regional** — see the Decision Register row and
 `bedrock-enterprise.md` §5. **D13 resolved (Session 200, 2026-07-29)** — see the Decision Register
 row; only its `require_sigv4` sub-scope (guard completeness + env wiring), not `http_client`. D3–D9,
 D14–D16 are explicitly not this repository's decisions to track (§1.3). **`bedrock-enterprise.md`
-§0's three security questions remain the only open item for this phase to raise** — they gate
-whether Phase C1's narrowed scope (which assumes "no" to all three) applies at all, or whether a
-"yes" instead requires the materially larger `bedrock-runtime` re-plan noted above. This plan does
-not resolve that branch — flagged, not silently assumed, for whoever runs C1.
+§0's three security questions answered (Session 201, 2026-07-29, operator):** Guardrails — no;
+FIPS — no; runtime quota — expected yes (established enterprise account), **not independently
+verified**. Q1/Q2 = no confirms the mantle path stays correct, so Phase C1's narrowed scope applies
+as written — the "yes" branch (`bedrock-runtime` re-plan) did not materialize. **Phase 0 is now
+fully raised — every item is answered or explicitly deferred post-fork.** The one loose end is Q3's
+independent verification (live Service Quotas / Workbench `ping`), which needs the actual
+enterprise account and so cannot happen from this repository — carried forward as a flag, not a
+blocker on C1's own (non-AWS-connected) scope.
 
 ---
 
@@ -961,22 +965,24 @@ coverage ≥95%.
 
 **Gated on:** ~~D10~~ (**answered, Session 199: Regional** — see Decision Register and
 `bedrock-enterprise.md` §5), ~~D13~~ (**resolved, Session 200** — see Decision Register; only its
-`require_sigv4` sub-scope, not the rest of this phase), and `bedrock-enterprise.md` §0's three
-security questions — **the only gate this phase still has**. **D14 no longer gates this phase** —
-per §1.3, D14 (runtime shape) is resolved post-fork, inside the clone, so the one D14-dependent
-sub-task below (the IAM *trust* policy) is carved out rather than blocking the rest of C1.
-**Answering D10 and D13 does not clear this phase to run** — the three security questions are
-still open, and the phase's own bundled scope (the `ANTHROPIC_BASE_URL` fix and the §3
-IAM-permissions-policy extraction) is untouched; Session 199 implemented only D10's own artifact
-(the residency SCP), and Session 200 implemented only D13's `require_sigv4` sub-scope (guard
-completeness + env wiring, not `http_client`) — neither touched the rest of this phase's scope.
+`require_sigv4` sub-scope, not the rest of this phase), and ~~`bedrock-enterprise.md` §0's three
+security questions~~ (**answered, Session 201, 2026-07-29: Guardrails no, FIPS no, runtime quota
+expected-yes-unverified — mantle path confirmed correct, see Phase 0**). **This phase is now fully
+ungated.** **D14 no longer gates this phase** — per §1.3, D14 (runtime shape) is resolved
+post-fork, inside the clone, so the one D14-dependent sub-task below (the IAM *trust* policy) is
+carved out rather than blocking the rest of C1.
+**Ungating this phase does not mean its scope is done** — the phase's own bundled scope (the
+`ANTHROPIC_BASE_URL` fix and the §3 IAM-permissions-policy extraction) is untouched; Session 199
+implemented only D10's own artifact (the residency SCP), Session 200 implemented only D13's
+`require_sigv4` sub-scope (guard completeness + env wiring, not `http_client`), and Session 201
+only answered the §0 questions (no code, no artifact) — none of the three touched the rest of this
+phase's scope, which remains open work for whoever runs it next.
 
-**⚠ Pre-existing gap, not introduced or resolved by §1.3, flagged rather than silently carried
-forward:** the scope below silently assumes "no" to all three `bedrock-enterprise.md` §0
-questions. Nothing in this phase (or anywhere else in this plan) branches on a "yes" — confirm the
-three answers with the operator/security before starting; a "yes" makes this phase's scope wrong,
-not just incomplete, per Phase 0's own warning that Guardrails/FIPS redirect mantle →
-`bedrock-runtime`, "a materially larger change than anything in this plan."
+**Former ⚠ (resolved, Session 201):** the scope below used to silently assume "no" to Guardrails
+and FIPS with no branch for "yes" — both are now confirmed "no" by the operator (Phase 0), so the
+assumption held and the scope below is correct as written. Runtime quota (Q3) is a separate,
+non-blocking item — see Phase 0's note — and does not affect this phase's scope, which involves no
+live AWS calls.
 
 **Scope (remaining — the `require_sigv4` item below is DONE, Session 200):** fix the false
 `ANTHROPIC_BASE_URL` claim at `bedrock-enterprise.md:149` and document
@@ -1022,8 +1028,9 @@ rule duplicates the clients — **every hook change is a paired edit plus paired
 listed gate, so Phase C2 is now fully ungated and schedulable.** **D15 no longer gates this
 phase** — per §1.3, D15 (package index) is resolved post-fork, inside the clone, so the one
 D15-dependent sub-task below (documenting the index variables) is carved out rather than blocking
-the rest of C2. **Unlike Phase C1** (still gated on the three `bedrock-enterprise.md` §0 security
-questions), resolving D13 fully clears this phase's gate — the scope below (htmx vendoring, intake
+the rest of C2. Resolving D13 fully cleared this phase's gate (D13 was C2's only listed gate) —
+**Phase C1 is now also fully ungated** (its own `bedrock-enterprise.md` §0 gate was answered
+separately, Session 201), so both phases are schedulable. The scope below (htmx vendoring, intake
 UI auth posture, the `MPC_HOST_URL` gap, plaintext-at-rest, `run_pipeline.py:450`) is itself
 untouched and remains this phase's own future session, but nothing blocks starting it.
 
@@ -1434,7 +1441,11 @@ gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # 
   frames and recommends on — **D10 answered (Session 199, 2026-07-29): Regional** (§3 Decision
   Register, Phase 0); **D13 resolved (Session 200, 2026-07-29)** — its `require_sigv4` sub-scope
   only, not `http_client` (§3 Decision Register). `bedrock-enterprise.md` §0's three security
-  questions remain the only fully open item in this bucket.
+  questions are **answered too (Session 201, 2026-07-29)** — Guardrails no, FIPS no, runtime quota
+  expected-yes-unverified. **Nothing D-numbered or §0-numbered remains open in this bucket.** The
+  one loose end anywhere in the security bucket is Q3's independent verification (live Service
+  Quotas / Workbench `ping`), which needs the actual enterprise account and is carried forward as a
+  flag, not a blocker.
 - **Re-planning the httpx/LGPL migration** — it already exists in executable form; B3 references
   and corrects it. **B3 is now fully executed** (both LGPL SDKs removed — see `CHANGELOG.md`
   2026-07-28).

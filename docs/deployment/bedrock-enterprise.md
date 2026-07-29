@@ -9,10 +9,13 @@ code change**, and the §7 punch-list's config pass-throughs (`base_url`, `http_
 now rejects a stray key in *either* SDK-recognized bearer-token env var
 (`AWS_BEARER_TOKEN_BEDROCK` **or** `ANTHROPIC_AWS_API_KEY` — the guard previously checked only
 the first), and it defaults from `BEDROCK_REQUIRE_SIGV4` when not passed explicitly, so
-`INTAKE_LLM_PROVIDER=bedrock` can enforce it purely through env config. What remains open is
-confirming `aws_profile` support (§7 item 5) and — per D13's own recommendation — wiring
-`http_client` from env, deferred until TLS-inspection is confirmed. All facts below are verified
-against official AWS + Anthropic docs (see *Sources*).
+`INTAKE_LLM_PROVIDER=bedrock` can enforce it purely through env config. **§0's three security
+questions answered (2026-07-29, operator):** Guardrails and FIPS are both **not** mandated, so the
+mantle path is confirmed correct — see §0 for the full answers, including the one still-open
+verification item (runtime quota). What remains open is confirming `aws_profile` support (§7 item
+5) and — per D13's own recommendation — wiring `http_client` from env, deferred until
+TLS-inspection is confirmed. All facts below are verified against official AWS + Anthropic docs
+(see *Sources*).
 
 > **Why this exists.** The original testing account was a personal account that hit the
 > current-gen-Claude **account-eligibility gate** (AWS denied the runtime-quota request — see
@@ -22,28 +25,35 @@ against official AWS + Anthropic docs (see *Sources*).
 
 ---
 
-## 0. Decide FIRST — mantle vs. bedrock-runtime (a fork your security team owns)
+## 0. Mantle vs. bedrock-runtime — RESOLVED (2026-07-29, operator)
 
 The app uses **Claude in Amazon Bedrock via the `bedrock-mantle` endpoint** (the
 `AnthropicBedrockMantle` client, native Anthropic Messages API). Two enterprise-security
-mandates, if present, would force the *other* Bedrock path (classic `bedrock-runtime`,
-`InvokeModel`/`Converse`, the `AnthropicBedrock` client) — a larger change. **Confirm these
-before building anything:**
+mandates, if present, would have forced the *other* Bedrock path (classic `bedrock-runtime`,
+`InvokeModel`/`Converse`, the `AnthropicBedrock` client) — a larger change. **Answered by the
+operator, 2026-07-29:**
 
-1. **Do you mandate Bedrock Guardrails on model input/output?** Guardrails are documented for
-   `bedrock-runtime` (InvokeModel/Converse) and the OpenAI-compat path — **not confirmed** for
+1. **Do you mandate Bedrock Guardrails on model input/output? → No.** Guardrails are documented
+   for `bedrock-runtime` (InvokeModel/Converse) and the OpenAI-compat path — **not confirmed** for
    the native Anthropic Messages path on mantle, and one AWS source lists Guardrails as *not
-   supported* on mantle. **If Guardrails are mandatory → use `bedrock-runtime`.**
-2. **Do you mandate a FIPS 140-2/3 endpoint?** There is `bedrock-fips` / `bedrock-runtime-fips`
-   but **no `bedrock-mantle-fips`.** **If FIPS is mandatory → use `bedrock-runtime`.**
-3. **Does the target account already have current-gen Claude runtime quota?** Confirm Opus 4.8
-   (or your chosen model) shows non-zero applied TPM in Service Quotas / a successful Workbench
-   `ping` — established enterprise accounts usually do; a fresh one may hit the same eligibility
-   gate we did. This is the prerequisite for *any* path.
+   supported* on mantle. Answered "no," so this does **not** force `bedrock-runtime`.
+2. **Do you mandate a FIPS 140-2/3 endpoint? → No.** There is `bedrock-fips` /
+   `bedrock-runtime-fips` but **no `bedrock-mantle-fips`.** Answered "no," so this does **not**
+   force `bedrock-runtime`.
+3. **Does the target account already have current-gen Claude runtime quota? → Expected yes**
+   (established enterprise account), **but not independently verified.** The operator has not yet
+   confirmed Opus 4.8 (or the chosen model) shows non-zero applied TPM in Service Quotas, nor run a
+   successful Workbench `ping` — this repository has no access to the target account to check
+   either. Unlike Q1/Q2, a "no" here would not redirect to `bedrock-runtime` — it's the
+   prerequisite for running *either* path, not a path-choice branch. **Still open: verify with a
+   live Service Quotas check or Workbench `ping` once the enterprise account is actually
+   accessible** (naturally falls at or after Phase C4, account provisioning — not yet a listed
+   verification step there; flagged for whoever runs it or first connects live).
 
-The rest of this guide assumes the **mantle path** (Q1 & Q2 = no). If either is "yes," most of
-§2/§4/§5 still applies but the client class, IAM actions, and model-id form change — flag it and
-we re-plan.
+**Resolution: the mantle path is confirmed correct** (Q1 & Q2 = no). §2/§4/§5 below apply as
+written; the client class, IAM actions, and model-id form do **not** need to change. Q3 (runtime
+quota) remains open as a standalone verification item — see the note above, not a re-plan
+trigger.
 
 ---
 
@@ -206,8 +216,8 @@ The app passes **nothing** for these — they are account/role/network config:
   a geography.
 - **Guardrails** — **the one that may need the app.** If mandated, the invoke must carry
   `X-Amzn-Bedrock-GuardrailIdentifier` / `-GuardrailVersion` headers, and support on the native
-  mantle Messages path is **unconfirmed** (see §0 Q1). If Guardrails are required, plan for the
-  `bedrock-runtime` path.
+  mantle Messages path is **unconfirmed**. **Answered "not mandated" (§0 Q1, 2026-07-29)** — if
+  that ever changes, plan for the `bedrock-runtime` path instead.
 
 ---
 
@@ -226,7 +236,8 @@ The web UI (`go/modelintake`) resolves provider/model from env (`ui/intake/app.p
 
 AWS credentials themselves are **never** app config — the IAM role supplies them via the chain.
 
-**Punch-list — the small code changes to add (the "then code" phase, once §0 is settled):**
+**Punch-list — the small code changes to add (the "then code" phase; §0 is now settled, 2026-07-29
+— mantle confirmed):**
 1. ✅ **DONE (`56dc700`).** Optional **`base_url`** pass-through on `BedrockLLMClient.__init__` →
    `AnthropicBedrockMantle(base_url=…)` (for PrivateLink without Private DNS, or a GovCloud host).
    Both client copies (intake + data-agent).
@@ -262,8 +273,11 @@ capacity is TPM-quota-bound, which matters for enterprise capacity planning.
 
 ## 9. Pre-move readiness checklist
 
-- [ ] **§0 answered** — Guardrails mandate? FIPS mandate? (either → `bedrock-runtime`, re-plan)
-- [ ] Target account **has current-gen Claude runtime quota** (non-zero applied TPM / Workbench `ping` works)
+- [x] **§0 answered (2026-07-29, operator):** Guardrails **not** mandated, FIPS **not** mandated —
+      mantle path confirmed, no re-plan needed
+- [ ] Target account **has current-gen Claude runtime quota** (non-zero applied TPM / Workbench
+      `ping` works) — **expected yes** (established enterprise account) but **not independently
+      verified**; check once the account is accessible (§0 Q3)
 - [ ] IAM execution role with the §3 policy, assumable via your IdP (IRSA / instance profile / SSO)
 - [ ] `AWS_BEARER_TOKEN_BEDROCK` / `ANTHROPIC_AWS_API_KEY` **unset** in the prod profile;
       `BEDROCK_REQUIRE_SIGV4=1` **set** so a stray key hard-fails instead of silently bypassing
