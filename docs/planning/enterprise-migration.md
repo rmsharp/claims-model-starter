@@ -553,7 +553,7 @@ Phases are gated on these. **Owners are named because most are not engineering c
 | **D10** | Bedrock endpoint: Regional or Global? | **Security + operator** | **ANSWERED (2026-07-29): Regional** — operator accepted the recommendation this session; formal security co-sign is still nominal until an actual security team exists (post-fork). For P&C claims data, residency dominates the ~10% premium. Recorded in `bedrock-enterprise.md` §5; hard-block SCP templated at `docs/deployment/bedrock-residency-scp.json` (specific region allowlist still a platform-team placeholder). | C1 |
 | **D11** | Run the LGPL removal before the corporate move? | **Operator + legal** | **Confirm the corporate copyleft policy first.** Many policies permit LGPL for unmodified, dynamically-imported libraries. If permitted, defer — it is a rewrite of the two least-tested modules immediately before their first live use. | B3 |
 | **D12** | Version/tag the landing? | **Operator** | **ANSWERED (2026-07-27): bump to 0.3.0** — accepted the recommendation, confirmed by proceeding straight to A3. Done in A3: two `pyproject.toml` files, `README.md:3`, **and `uv lock`** (the lock pinned both workspace members at `0.2.0`, `uv.lock:1109`, `:1175`; now `0.3.0`). The actual `git tag` is a separate, still-open action — A3 has no `git tag` command; it belongs with A4 ("Land it") once the version is on `master`. | A3 |
-| **D13** | Wire `http_client`/`require_sigv4` to app/env? | **Operator + platform team** | **Extend the `require_sigv4` guard to both env vars now** (2 lines × 2 files). Wire `require_sigv4` from env next. Wire `http_client` only if TLS inspection is confirmed. | C1, C2 |
+| **D13** | Wire `http_client`/`require_sigv4` to app/env? | **Operator + platform team** | **RESOLVED (Session 200, 2026-07-29), per its own recommendation:** the `require_sigv4` guard now checks both SDK-recognized bearer-token env vars (`AWS_BEARER_TOKEN_BEDROCK` **and** `ANTHROPIC_AWS_API_KEY` — it previously checked only the first, a real hole) and defaults from a new `BEDROCK_REQUIRE_SIGV4` env var when not passed explicitly, so `INTAKE_LLM_PROVIDER=bedrock` can enforce it purely through config — no call-site change (both `bedrock_client.py` copies + 3 paired tests each; full gate: 970 passed, 8 live-skipped, 97.76% coverage, ruff/mypy clean). **`http_client` wiring left undone, as recommended** — still conditional on TLS-inspection confirmation, which remains unconfirmed. | ~~C2~~ (D13 was C2's sole remaining gate — see corrected Phase C2), C1 (still gated on the three `bedrock-enterprise.md` §0 security questions) |
 | **D14** | **Runtime shape: EKS+IRSA / ECS task role / EC2 instance profile / on-prem VM?** | **Operator + platform team** | Must be answered before the IAM-trust-policy artifact can be filled in, and it also decides whether the live-test credential probe works at all. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C1's own trust-policy sub-task moves with it (see corrected Phase C1, §4); C1's D10/D13-scoped work does not wait on D14. | ~~C1, C2b~~ none — see §1.3 (C2b fully deferred; C1 narrowed) |
 | **D15** | **Package resolution: internal index (Artifactory/Nexus/devpi) or proxied public PyPI?** | **Operator + platform team** | Decide early — `uv sync` is the first command in every documented workflow. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C2's own index-variable-documentation sub-task moves with it (see corrected Phase C2, §4); C2's D13-scoped work does not wait on D15. | ~~C2, C3~~ none — see §1.3 (C2 narrowed; C3 already clone-only) |
 | **D16** | **Disposition and access model of the enterprise CLONE** (repo + wiki + releases) — private from creation? who administers it? are the two GitHub Releases recreated on the clone, or left as a pointer to the public originals? *(The public originals get no disposition decision — they are unchanged; §1.2.)* | **Operator + legal** | Default: clone is private from creation; recreate the releases on the clone from `releases-export.json` (already in C4's scope) rather than a pointer, since the clone has no live link back to the original. The MIT grant on the original's published code is irrevocable regardless of the clone's licence posture. **Timing (2026-07-27, Session 190): resolved post-fork, inside the clone — not reported back here (§1.3).** C5 step 3 records whatever the operator decided, live, rather than gating on a pre-written answer. | ~~C4, C5~~ none — see §1.3 |
@@ -609,12 +609,13 @@ change than anything in this plan.
 
 **DONE:** D1, D2, D6, D7, D12 answered (D1/D2/D6/D7 gate Phase A; D12 gated A3, already executed).
 **D10 answered (Session 199, 2026-07-29): Regional** — see the Decision Register row and
-`bedrock-enterprise.md` §5. D3–D9, D14–D16 are explicitly not this repository's decisions to track
-(§1.3). **D13 and `bedrock-enterprise.md` §0's three security questions remain open items for this
-phase to raise** — D13 gates Phase C1's and Phase C2's narrowed scope (§4); the three security
-questions gate whether C1's narrowed scope (which assumes "no" to all three) applies at all, or
-whether a "yes" instead requires the materially larger `bedrock-runtime` re-plan noted above. This
-plan does not resolve that branch — flagged, not silently assumed, for whoever runs C1.
+`bedrock-enterprise.md` §5. **D13 resolved (Session 200, 2026-07-29)** — see the Decision Register
+row; only its `require_sigv4` sub-scope (guard completeness + env wiring), not `http_client`. D3–D9,
+D14–D16 are explicitly not this repository's decisions to track (§1.3). **`bedrock-enterprise.md`
+§0's three security questions remain the only open item for this phase to raise** — they gate
+whether Phase C1's narrowed scope (which assumes "no" to all three) applies at all, or whether a
+"yes" instead requires the materially larger `bedrock-runtime` re-plan noted above. This plan does
+not resolve that branch — flagged, not silently assumed, for whoever runs C1.
 
 ---
 
@@ -959,13 +960,16 @@ coverage ≥95%.
 ### Phase C1 — Bedrock enterprise correctness *(narrowed by §1.3 — D14's sub-task carved out)*
 
 **Gated on:** ~~D10~~ (**answered, Session 199: Regional** — see Decision Register and
-`bedrock-enterprise.md` §5), D13, and `bedrock-enterprise.md` §0's three security questions. **D14
-no longer gates this phase** — per §1.3, D14 (runtime shape) is resolved post-fork, inside the
-clone, so the one D14-dependent sub-task below (the IAM *trust* policy) is carved out rather than
-blocking the rest of C1. **Answering D10 does not clear this phase to run** — D13 and the three
-security questions are still open, and the phase's own bundled scope (the `ANTHROPIC_BASE_URL` fix,
-`require_sigv4` wiring, and the §3 IAM-permissions-policy extraction) is untouched; Session 199
-implemented only D10's own artifact (the residency SCP), not the rest of this phase's scope.
+`bedrock-enterprise.md` §5), ~~D13~~ (**resolved, Session 200** — see Decision Register; only its
+`require_sigv4` sub-scope, not the rest of this phase), and `bedrock-enterprise.md` §0's three
+security questions — **the only gate this phase still has**. **D14 no longer gates this phase** —
+per §1.3, D14 (runtime shape) is resolved post-fork, inside the clone, so the one D14-dependent
+sub-task below (the IAM *trust* policy) is carved out rather than blocking the rest of C1.
+**Answering D10 and D13 does not clear this phase to run** — the three security questions are
+still open, and the phase's own bundled scope (the `ANTHROPIC_BASE_URL` fix and the §3
+IAM-permissions-policy extraction) is untouched; Session 199 implemented only D10's own artifact
+(the residency SCP), and Session 200 implemented only D13's `require_sigv4` sub-scope (guard
+completeness + env wiring, not `http_client`) — neither touched the rest of this phase's scope.
 
 **⚠ Pre-existing gap, not introduced or resolved by §1.3, flagged rather than silently carried
 forward:** the scope below silently assumes "no" to all three `bedrock-enterprise.md` §0
@@ -974,31 +978,34 @@ three answers with the operator/security before starting; a "yes" makes this pha
 not just incomplete, per Phase 0's own warning that Guardrails/FIPS redirect mantle →
 `bedrock-runtime`, "a materially larger change than anything in this plan."
 
-**Scope:** fix the false `ANTHROPIC_BASE_URL` claim at `bedrock-enterprise.md:149` and document
+**Scope (remaining — the `require_sigv4` item below is DONE, Session 200):** fix the false
+`ANTHROPIC_BASE_URL` claim at `bedrock-enterprise.md:149` and document
 **`ANTHROPIC_BEDROCK_MANTLE_BASE_URL`** in `.env.example` and §4/§7 — the no-code PrivateLink
 lever and the cheapest item in the punch-list. Refresh §4/§7 to reflect that punch-list items 1–3
-shipped in `56dc700` and item 5 (`aws_profile`) is confirmed supported. **Close the
-`require_sigv4` hole** — iterate the SDK's `_MANTLE_API_KEY_ENV_VARS` tuple rather than hardcoding
-one name (2 lines × 2 files, + a test per file). Record the D10 residency decision in §5. Extract
-the §3 IAM **permissions** policy and the residency SCP into **separate applyable artifact
-files** — a security team will ask for reviewable JSON, not a fenced block. **Leave the IAM
-policy's `Principal`/trust-relationship block as an explicit placeholder** (a comment naming D14
-as the blocker) rather than filling it in — that piece is the clone's own post-fork work per §1.3;
-do not guess a runtime shape to unblock this phase.
+shipped in `56dc700` and item 5 (`aws_profile`) is confirmed supported. ~~Close the `require_sigv4`
+hole~~ — **DONE, Session 200**: both `bedrock_client.py` copies now check both known bearer-token
+env vars (a local mirrored tuple, not a private SDK import — see D13 Decision Register entry) and
+`require_sigv4` defaults from `BEDROCK_REQUIRE_SIGV4`. Record the D10 residency decision in §5 —
+**DONE, Session 199**. Extract the §3 IAM **permissions** policy and the residency SCP into
+**separate applyable artifact files** — a security team will ask for reviewable JSON, not a fenced
+block (the residency SCP itself already exists, Session 199; the IAM **permissions** policy
+extraction is still open). **Leave the IAM policy's `Principal`/trust-relationship block as an
+explicit placeholder** (a comment naming D14 as the blocker) rather than filling it in — that piece
+is the clone's own post-fork work per §1.3; do not guess a runtime shape to unblock this phase.
 
-**DONE looks like:** no false claim in the enterprise guide; `require_sigv4` rejects both env
-vars; the IAM **permissions** policy and SCP exist as files, with the trust-relationship section
-explicitly marked TODO rather than silently omitted or guessed.
+**DONE looks like:** no false claim in the enterprise guide; ~~`require_sigv4` rejects both env
+vars~~ **(done, Session 200)**; the IAM **permissions** policy and SCP exist as files, with the
+trust-relationship section explicitly marked TODO rather than silently omitted or guessed.
 
 **Verify:**
 
 ```bash
-grep -n "ANTHROPIC_BASE_URL" docs/deployment/bedrock-enterprise.md   # → 0
-grep -rn "ANTHROPIC_AWS_API_KEY" src/ packages/                      # → present in BOTH guards
-ls docs/deployment/*.json                                            # → IAM policy + SCP artifacts
+grep -n "ANTHROPIC_BASE_URL" docs/deployment/bedrock-enterprise.md   # → 0 (still open, not Session 200's scope)
+grep -rn "ANTHROPIC_AWS_API_KEY" src/ packages/                      # → present in BOTH guards (✅ Session 200)
+ls docs/deployment/*.json                                            # → IAM policy + SCP artifacts (SCP only so far)
 grep -n "D14" docs/deployment/*.json                                 # → the trust-policy TODO marker
-uv run pytest tests/agents/intake/test_bedrock_client.py tests/data_agent_package/test_bedrock_client.py --no-cov
-uv run pytest -q                                                     # coverage gate must stay ≥95%
+uv run pytest tests/agents/intake/test_bedrock_client.py tests/data_agent_package/test_bedrock_client.py --no-cov   # 25 passed
+uv run pytest -q                                                     # coverage gate must stay ≥95% (970 passed, 8 live-skipped, 97.76%)
 ```
 
 **⚠ Coverage trap:** `--cov-fail-under=95` is in the default addopts, so any wiring added without
@@ -1011,9 +1018,14 @@ rule duplicates the clients — **every hook change is a paired edit plus paired
 
 ### Phase C2 — Runtime, network, and data-at-rest readiness *(narrowed by §1.3 — D15's sub-task carved out)*
 
-**Gated on:** D13. **D15 no longer gates this phase** — per §1.3, D15 (package index) is resolved
-post-fork, inside the clone, so the one D15-dependent sub-task below (documenting the index
-variables) is carved out rather than blocking the rest of C2.
+**Gated on:** ~~D13~~ — **resolved, Session 200 (see Decision Register). D13 was this phase's only
+listed gate, so Phase C2 is now fully ungated and schedulable.** **D15 no longer gates this
+phase** — per §1.3, D15 (package index) is resolved post-fork, inside the clone, so the one
+D15-dependent sub-task below (documenting the index variables) is carved out rather than blocking
+the rest of C2. **Unlike Phase C1** (still gated on the three `bedrock-enterprise.md` §0 security
+questions), resolving D13 fully clears this phase's gate — the scope below (htmx vendoring, intake
+UI auth posture, the `MPC_HOST_URL` gap, plaintext-at-rest, `run_pipeline.py:450`) is itself
+untouched and remains this phase's own future session, but nothing blocks starting it.
 
 **Scope:** vendor htmx locally and serve it from a static route (fixes both the browser-egress
 failure and the licence-inventory gap — a vendored copy carries its own LICENSE). Decide and
@@ -1420,7 +1432,9 @@ gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # 
   track at all** — the operator resolves them post-fork, inside the enterprise clone, and the
   outcome is not reported back here. D10, D13 are the live operator/security decisions this plan
   frames and recommends on — **D10 answered (Session 199, 2026-07-29): Regional** (§3 Decision
-  Register, Phase 0); **D13 remains open.**
+  Register, Phase 0); **D13 resolved (Session 200, 2026-07-29)** — its `require_sigv4` sub-scope
+  only, not `http_client` (§3 Decision Register). `bedrock-enterprise.md` §0's three security
+  questions remain the only fully open item in this bucket.
 - **Re-planning the httpx/LGPL migration** — it already exists in executable form; B3 references
   and corrects it. **B3 is now fully executed** (both LGPL SDKs removed — see `CHANGELOG.md`
   2026-07-28).

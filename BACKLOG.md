@@ -51,11 +51,13 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
 - **B3 — LGPL removal.** **DONE** (both LGPL SDKs removed, Sessions 191–193 — see the httpx section
   below). D11 is moot; no further action.
 - **C1 — Bedrock enterprise correctness.** **Narrowed by §1.3.** **D10 RESOLVED (Session 199):
-  Regional.** Still gated on D13 and `bedrock-enterprise.md` §0's three security questions (a
-  pre-existing, still-unresolved branch — the plan doesn't yet handle a "yes" answer; flagged, not
-  fixed). D14's one dependency (the IAM trust-policy artifact) is carved out and deferred
-  post-fork — the rest of C1 stays a live, schedulable phase.
-- **C2 — Runtime, network, and data-at-rest readiness.** **Narrowed by §1.3.** Gated on D13 only —
+  Regional. D13 RESOLVED (Session 200):** `require_sigv4` sub-scope only (guard completeness + env
+  wiring), not `http_client`. Still gated on `bedrock-enterprise.md` §0's three security questions
+  (a pre-existing, still-unresolved branch — the plan doesn't yet handle a "yes" answer; flagged,
+  not fixed) — **the only gate this phase still has**. D14's one dependency (the IAM trust-policy
+  artifact) is carved out and deferred post-fork — the rest of C1 stays a live, schedulable phase.
+- **C2 — Runtime, network, and data-at-rest readiness.** **Narrowed by §1.3.** **D13 RESOLVED
+  (Session 200) — D13 was this phase's only gate, so C2 is now fully ungated and schedulable.**
   D15's dependency (index-variable documentation) is carved out and deferred post-fork.
 - **C2b — Deployment artifact.** **Out of scope for this repository (§1.3)** — its only gate (D14)
   is unanswerable here; this is now the enterprise clone's own future work, not a session this
@@ -97,16 +99,25 @@ not pre-answer those five; whoever runs C4 gets them from the operator directly.
   phase; Phase C4's gate (A1–A4, B1-core, B2) remains independently satisfied. Recommendation
   stated in the document: proceed to the fork, carrying the open-items table forward.
 
-**Open decisions this repository still tracks:** only **D13** (wire `require_sigv4`/`http_client`
-to app/env — operator + platform team); gates Phase C1's and Phase C2's narrowed scope. **D10
+**Open decisions this repository still tracks:** none from the D-numbered register — all of D10 and
+D13 (the only two live "security bucket" decisions) are now resolved; the remaining gate is
+`bedrock-enterprise.md` §0's three security questions, which are not D-numbered (see below). **D10
 (Bedrock endpoint Regional vs Global) is RESOLVED (Session 199, 2026-07-29): Regional** — operator
 accepted the recommendation; recorded in `enterprise-migration.md`'s Decision Register and
 `bedrock-enterprise.md` §5, with the hard-block residency SCP templated at
 `docs/deployment/bedrock-residency-scp.json` (specific region allowlist still an open
-platform-team placeholder). Resolving D10 does not clear Phase C1 to run — D13 and
+platform-team placeholder). **D13 (wire `require_sigv4`/`http_client` to app/env) is RESOLVED
+(Session 200, 2026-07-29)** — its `require_sigv4` sub-scope only: the guard now checks both
+SDK-recognized bearer-token env vars (`AWS_BEARER_TOKEN_BEDROCK` and `ANTHROPIC_AWS_API_KEY`, was
+only the first) and defaults from a new `BEDROCK_REQUIRE_SIGV4` env var when not passed explicitly;
+recorded in `enterprise-migration.md`'s Decision Register and `bedrock-enterprise.md` §7.
+`http_client` wiring remains undone, as the recommendation itself deferred it pending TLS-inspection
+confirmation. **Resolving D10 and D13 does not clear Phase C1 to run** —
 `bedrock-enterprise.md` §0's three security questions (Guardrails/FIPS/quota) are still open, and
-C1's own bundled scope (the `ANTHROPIC_BASE_URL` doc fix, `require_sigv4` wiring, the §3
-IAM-permissions-policy extraction) is untouched.
+C1's own bundled scope (the `ANTHROPIC_BASE_URL` doc fix, the §3 IAM-permissions-policy extraction)
+is untouched. **Resolving D13 DOES clear Phase C2's gate** (D13 was C2's sole listed gate) — C2's
+own scope (htmx vendoring, intake UI auth posture, the `MPC_HOST_URL` gap, plaintext-at-rest,
+`run_pipeline.py:450`) is itself untouched but no longer blocked from starting.
 
 **Decisions no longer tracked here (§1.3):** D1, D2, D6, D7, D11, D12 are already answered;
 **D3, D4, D5, D8, D9, D14, D15, D16** are resolved by the operator after Phase C4 runs, inside the

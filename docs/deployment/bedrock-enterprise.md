@@ -2,12 +2,17 @@
 
 **Audience:** the platform / security / cloud team standing up this project's AWS Bedrock
 Claude integration in an enterprise AWS account with complex security controls.
-**Status (2026-07-27):** the app code is **mantle-migrated and enterprise-*capable* as-is** —
+**Status (2026-07-29):** the app code is **mantle-migrated and enterprise-*capable* as-is** —
 the two hardest requirements (role-based SigV4 auth, AWS PrivateLink) already work with **zero
 code change**, and the §7 punch-list's config pass-throughs (`base_url`, `http_client`,
-`require_sigv4`) have since shipped (`56dc700`) — what remains open is *wiring* `require_sigv4`
-to app/env and confirming `aws_profile` support (§7). All facts below are verified against
-official AWS + Anthropic docs (see *Sources*).
+`require_sigv4`) have since shipped (`56dc700`). **D13 resolved (Session 200):** `require_sigv4`
+now rejects a stray key in *either* SDK-recognized bearer-token env var
+(`AWS_BEARER_TOKEN_BEDROCK` **or** `ANTHROPIC_AWS_API_KEY` — the guard previously checked only
+the first), and it defaults from `BEDROCK_REQUIRE_SIGV4` when not passed explicitly, so
+`INTAKE_LLM_PROVIDER=bedrock` can enforce it purely through env config. What remains open is
+confirming `aws_profile` support (§7 item 5) and — per D13's own recommendation — wiring
+`http_client` from env, deferred until TLS-inspection is confirmed. All facts below are verified
+against official AWS + Anthropic docs (see *Sources*).
 
 > **Why this exists.** The original testing account was a personal account that hit the
 > current-gen-Claude **account-eligibility gate** (AWS denied the runtime-quota request — see
@@ -216,6 +221,8 @@ The web UI (`go/modelintake`) resolves provider/model from env (`ui/intake/app.p
 | `INTAKE_LLM_MODEL` | Optional model-id override | unset → default `anthropic.claude-opus-4-8`, or pin/upgrade here (bare mantle id) |
 | `AWS_REGION` (`AWS_DEFAULT_REGION`) | Region → endpoint host + residency geography | a mantle-supported region |
 | `AWS_BEARER_TOKEN_BEDROCK` | Bearer token (dev only) | **UNSET in prod** — forces role SigV4 |
+| `ANTHROPIC_AWS_API_KEY` | Bearer token, alternate name the SDK also honors (dev only) | **UNSET in prod** — same override risk as `AWS_BEARER_TOKEN_BEDROCK` |
+| `BEDROCK_REQUIRE_SIGV4` | Set (`1`) to make `BedrockLLMClient` reject construction if either bearer-token var above is set | **Set in prod** — turns a stray key into a hard `ValueError` instead of a silent SigV4 bypass (D13, Session 200) |
 
 AWS credentials themselves are **never** app config — the IAM role supplies them via the chain.
 
@@ -228,10 +235,14 @@ AWS credentials themselves are **never** app config — the IAM role supplies th
    proxy / TLS-inspection CA / mTLS). Both client copies.
 3. ✅ **DONE (`56dc700`).** **Invert the client docstrings** — now frame role SigV4 as primary and
    the bearer token as the dev-only fallback.
-4. ✅ **DONE (`56dc700`), as a hard guard rather than a warning.** `require_sigv4=True` raises if
-   `AWS_BEARER_TOKEN_BEDROCK` is set, so a stray token cannot silently bypass role auth. Not yet
-   *wired* to app/env (`INTAKE_LLM_PROVIDER=bedrock` does not set it automatically) — that wiring is
-   `docs/planning/enterprise-migration.md` Phase C1/D13, still open.
+4. ✅ **DONE (`56dc700`), as a hard guard rather than a warning; extended and wired (Session
+   200, D13).** `require_sigv4=True` raises if `AWS_BEARER_TOKEN_BEDROCK` **or**
+   `ANTHROPIC_AWS_API_KEY` is set (the guard originally checked only the first — a stray key in
+   the second silently bypassed it even with the guard enabled). `require_sigv4` now also
+   defaults from `BEDROCK_REQUIRE_SIGV4` when not passed explicitly, so
+   `INTAKE_LLM_PROVIDER=bedrock` can enforce it purely through env config — no code change at the
+   call site. `http_client` wiring from env remains **not done**, per D13's own recommendation:
+   deferred until TLS-inspection is confirmed as needed.
 5. Confirm the SDK's `aws_profile` support if SSO named profiles are needed (SDK-version-specific).
    **Still open.**
 
@@ -254,7 +265,9 @@ capacity is TPM-quota-bound, which matters for enterprise capacity planning.
 - [ ] **§0 answered** — Guardrails mandate? FIPS mandate? (either → `bedrock-runtime`, re-plan)
 - [ ] Target account **has current-gen Claude runtime quota** (non-zero applied TPM / Workbench `ping` works)
 - [ ] IAM execution role with the §3 policy, assumable via your IdP (IRSA / instance profile / SSO)
-- [ ] `AWS_BEARER_TOKEN_BEDROCK` **unset** in the prod profile; `AWS_REGION` set to a mantle region
+- [ ] `AWS_BEARER_TOKEN_BEDROCK` / `ANTHROPIC_AWS_API_KEY` **unset** in the prod profile;
+      `BEDROCK_REQUIRE_SIGV4=1` **set** so a stray key hard-fails instead of silently bypassing
+      SigV4 (D13, Session 200); `AWS_REGION` set to a mantle region
 - [ ] Interface VPC endpoint `com.amazonaws.{region}.bedrock-mantle` with **Private DNS enabled** + endpoint policy
 - [ ] Egress allowlist: `bedrock-mantle.{region}.api.aws:443`, STS, IMDS; `NO_PROXY` for intra-VPC
 - [ ] Region/model-id chosen (bare id; **Regional vs Global residency decision made — D10:

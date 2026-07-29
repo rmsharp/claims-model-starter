@@ -36,13 +36,16 @@ switched this from ``AnthropicBedrock`` (SigV4-only, ``bedrock-runtime``) to
 **Auth (enterprise-first).** ``AnthropicBedrockMantle`` resolves auth from the
 AWS credential chain and signs with **SigV4**, so the recommended production path
 is an **IAM role** (IRSA / instance profile / ECS task role / SSO) with **no
-static keys** and ``AWS_BEARER_TOKEN_BEDROCK`` **unset** — the wheel needs **no
-per-provider key resolver** (the Phase-A-deferred wheel resolver is a no-op for
-Bedrock). As a *dev-only* fallback, a short-term Bedrock API key in
-``AWS_BEARER_TOKEN_BEDROCK`` selects bearer-token mode; it **silently overrides
-SigV4**, so keep it unset in production (pass ``require_sigv4=True`` to turn a
-stray token into a hard error). Region comes from ``aws_region`` or, when unset,
-``AWS_REGION`` / ``AWS_DEFAULT_REGION``; the endpoint then defaults to
+static keys** and ``AWS_BEARER_TOKEN_BEDROCK`` / ``ANTHROPIC_AWS_API_KEY``
+**unset** — the wheel needs **no per-provider key resolver** (the
+Phase-A-deferred wheel resolver is a no-op for Bedrock). As a *dev-only*
+fallback, a short-term Bedrock API key in either ``AWS_BEARER_TOKEN_BEDROCK`` or
+``ANTHROPIC_AWS_API_KEY`` (the SDK honors both — ``_MANTLE_API_KEY_ENV_VARS``)
+selects bearer-token mode; it **silently overrides SigV4**, so keep both unset in
+production (pass ``require_sigv4=True``, or set ``BEDROCK_REQUIRE_SIGV4=1`` in the
+environment, to turn a stray key in *either* variable into a hard error). Region
+comes from ``aws_region`` or, when unset, ``AWS_REGION`` / ``AWS_DEFAULT_REGION``;
+the endpoint then defaults to
 ``https://bedrock-mantle.{region}.api.aws/anthropic``. For enterprise networking,
 pass ``base_url`` to target a PrivateLink VPCE host (when Private DNS is off) or
 a GovCloud host, and ``http_client`` — e.g. ``anthropic.DefaultHttpxClient(proxy=…,
@@ -66,6 +69,16 @@ from model_project_constructor_data_agent.anthropic_client import (
 #: (Session 178; see ``docs/architecture-history/bedrock-testing-enablement.md``).
 DEFAULT_MODEL = "anthropic.claude-opus-4-8"
 
+#: Bedrock-mantle bearer-token / API-key env vars the SDK's
+#: ``AnthropicBedrockMantle`` honors for auth (mirrors
+#: ``anthropic.lib.bedrock._mantle._MANTLE_API_KEY_ENV_VARS`` at SDK 0.94.1) —
+#: either one silently overrides SigV4 when set, so the ``require_sigv4`` guard
+#: below must reject both, not just the first-documented name (D13).
+_BEDROCK_API_KEY_ENV_VARS = ("AWS_BEARER_TOKEN_BEDROCK", "ANTHROPIC_AWS_API_KEY")
+
+#: Case-insensitive truthy spellings accepted by ``BEDROCK_REQUIRE_SIGV4``.
+_TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
+
 
 class BedrockLLMClient(AnthropicLLMClient):
     """:class:`LLMClient` backed by AWS Bedrock-hosted Claude.
@@ -76,7 +89,9 @@ class BedrockLLMClient(AnthropicLLMClient):
     and the JSON parsing are inherited (see the module docstring). The optional
     ``base_url`` / ``http_client`` / ``require_sigv4`` keyword args are
     enterprise-networking / hardening hooks (see the module docstring's Auth
-    note and ``docs/deployment/bedrock-enterprise.md``).
+    note and ``docs/deployment/bedrock-enterprise.md``). ``require_sigv4``
+    defaults from ``BEDROCK_REQUIRE_SIGV4`` when not passed explicitly (D13) —
+    an explicit ``True``/``False`` always wins over the env var.
     """
 
     def __init__(
@@ -88,18 +103,28 @@ class BedrockLLMClient(AnthropicLLMClient):
         aws_region: str | None = None,
         base_url: str | None = None,
         http_client: Any | None = None,
-        require_sigv4: bool = False,
+        require_sigv4: bool | None = None,
     ) -> None:
         if client is None:
             # Lazy import so the factory / package __init__ stay SDK-free at
             # import time (test_factory_import_does_not_load_anthropic). Auth and
             # region self-discover from the environment: SigV4 from the AWS
             # credential chain (an IAM role) by default, or a Bedrock API key in
-            # AWS_BEARER_TOKEN_BEDROCK (dev only); region falls back to
-            # AWS_REGION / AWS_DEFAULT_REGION when not passed.
-            if require_sigv4 and os.environ.get("AWS_BEARER_TOKEN_BEDROCK"):
+            # AWS_BEARER_TOKEN_BEDROCK / ANTHROPIC_AWS_API_KEY (dev only); region
+            # falls back to AWS_REGION / AWS_DEFAULT_REGION when not passed.
+            if require_sigv4 is None:
+                require_sigv4 = (
+                    os.environ.get("BEDROCK_REQUIRE_SIGV4", "").strip().lower()
+                    in _TRUTHY_ENV_VALUES
+                )
+
+            stray_key_env = next(
+                (var for var in _BEDROCK_API_KEY_ENV_VARS if os.environ.get(var)),
+                None,
+            )
+            if require_sigv4 and stray_key_env:
                 raise ValueError(
-                    "require_sigv4=True but AWS_BEARER_TOKEN_BEDROCK is set: a "
+                    f"require_sigv4=True but {stray_key_env} is set: a "
                     "bearer token overrides SigV4 and bypasses the IAM role. "
                     "Unset it for role-based (enterprise) auth."
                 )

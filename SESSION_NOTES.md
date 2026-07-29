@@ -6,6 +6,285 @@
 
 ## ACTIVE TASK
 
+### What Session 200 Did
+**Deliverable:** Implement D13 (wire `require_sigv4`/`http_client` to app/env) — the operator said
+"D13" following the Session 199 handoff, which named it as the sole remaining decision gating
+Phase C1's and Phase C2's narrowed scope. **COMPLETE, scoped to D13's own recommendation.**
+
+**Started / Completed:** 2026-07-29.
+
+**Scope, deliberately narrow (mirrors Session 199's D10-only scoping of Phase C1):** D13's own
+Decision Register recommendation has three clauses — "extend the guard to both env vars now,"
+"wire `require_sigv4` from env next," "wire `http_client` only if TLS inspection is confirmed."
+This session did the first two (unconditional) and explicitly did **not** do the third
+(conditional, unconfirmed). The `ANTHROPIC_BASE_URL` doc fix and the §3 IAM-permissions-policy
+extraction — separate Phase C1 scope items bundled in the same paragraph as D13, not part of D13
+itself (Learning #179) — remain untouched. The wiki (7 pages describing the old "not yet wired"
+behavior) was not touched — out of blast-radius scope for this session, flagged below.
+
+**What was done (9 files — see note on file count below):**
+1. **`src/model_project_constructor/agents/intake/bedrock_client.py`** and
+   **`packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py`** (paired,
+   per the C4 decoupling rule): (a) closed the `require_sigv4` hole — the guard previously checked
+   only `AWS_BEARER_TOKEN_BEDROCK`, but the installed SDK (`anthropic` 0.94.1,
+   `lib/bedrock/_mantle.py:36`) also honors `ANTHROPIC_AWS_API_KEY` as a bearer-token source
+   (`_MANTLE_API_KEY_ENV_VARS`) — a stray key in the second variable silently bypassed the guard
+   even with `require_sigv4=True`. Added a **local mirrored tuple**
+   (`_BEDROCK_API_KEY_ENV_VARS`, not a private-SDK import — see design note below) checked via
+   `next()` so the error message names whichever variable actually triggered it. (b) Wired
+   `require_sigv4` from a new `BEDROCK_REQUIRE_SIGV4` env var: the parameter's default changed
+   from `False` to `None` (tri-state — explicit `True`/`False` always wins; unset resolves from
+   the env var), so `INTAKE_LLM_PROVIDER=bedrock` can enforce the guard purely through config, with
+   **zero changes needed at either factory's call site** (verified — `factory.py` in both packages
+   constructs `BedrockLLMClient(model=...)` with no `require_sigv4` kwarg at all; the env
+   resolution happens entirely inside the client's own `__init__`). Updated both files' module and
+   class docstrings to document the new behavior.
+2. **`tests/agents/intake/test_bedrock_client.py`** and **`tests/data_agent_package/test_bedrock_client.py`**
+   (paired): 3 new tests each — guard rejects `ANTHROPIC_AWS_API_KEY` too; `require_sigv4` defaults
+   from `BEDROCK_REQUIRE_SIGV4` when not passed explicitly; an explicit `require_sigv4=False`
+   overrides a truthy env var. Also hardened 2 existing tests
+   (`test_require_sigv4_allows_construction_when_token_absent` in both files) with an added
+   `monkeypatch.delenv("ANTHROPIC_AWS_API_KEY", ...)` so they stay deterministic against the new
+   second env var.
+3. **`.env.example`** — documented `ANTHROPIC_AWS_API_KEY` (unset in prod, same risk as
+   `AWS_BEARER_TOKEN_BEDROCK`) and `BEDROCK_REQUIRE_SIGV4` (set `1` in prod), matching the existing
+   Bedrock section's style.
+4. **`docs/deployment/bedrock-enterprise.md`** — 5 touch points: top status line, the §7 config
+   table (2 new rows), §7 punch-list item 4 (marked DONE + extended, with `http_client` explicitly
+   still open), and the §9 checklist's `AWS_BEARER_TOKEN_BEDROCK` line (extended to cover both env
+   vars + the new `BEDROCK_REQUIRE_SIGV4`).
+5. **`docs/planning/enterprise-migration.md`** — re-grepped fresh before every edit (dragon #8;
+   line numbers had not shifted from Session 199's citations, confirmed rather than assumed): the
+   D13 Decision Register row (RESOLVED, matching the D10/D6/D7/D12 convention, with the "Gates"
+   column split — `~~C2~~` struck since D13 was C2's sole gate, `C1` kept since the three security
+   questions still gate it), Phase C1's "Gated on" line and Scope/DONE/Verify blocks, Phase C2's
+   "Gated on" line (flagged prominently: **unlike D10, resolving D13 fully clears C2's gate**),
+   Phase 0's open-items line, and the §6 out-of-scope framing sentence (the same "durable
+   structural section, not frozen historical narrative" Session 199 already established as
+   correctable — applied it again here for D13). **Left `docs/planning/enterprise-migration.md:42`
+   (§1's "goals and reality" table) unedited** despite it also now being stale ("gated on the
+   still-open D10/D13 security decisions") — Session 199 left this same line unedited for D10, so
+   this session matched that precedent (treating §1 as scene-setting narrative, not a live
+   tracker) rather than introducing a new correction pattern unilaterally; flagged as an
+   inconsistency for a future session to actually resolve, not silently dropped.
+6. **`BACKLOG.md`** — 3 touch points: the C1 bullet, the C2 bullet, and the "Open decisions this
+   repository still tracks" summary paragraph (rewritten — D10 and D13 are now both resolved, the
+   only remaining gate is the non-D-numbered §0 security-question trio).
+7. **`SESSION_NOTES.md`** (this entry).
+
+**Design note — why a local tuple, not an SDK import:** the plan's prose ("iterate the SDK's
+`_MANTLE_API_KEY_ENV_VARS` tuple") was genuinely ambiguous between importing the SDK's private
+(underscore-prefixed) symbol and locally mirroring its two values. **The plan's own Verify block
+resolved this**: `grep -rn "ANTHROPIC_AWS_API_KEY" src/ packages/` is scoped to this repo's own
+source tree, and would return zero matches if the fix only imported the SDK symbol without the
+literal string appearing in our code — so the plan's own verification step pins the
+local-mirrored-tuple design. Went with that (plus a version-pinned comment noting SDK 0.94.1, so a
+future SDK upgrade that adds a third env var is a visible staleness risk, not a silent one) rather
+than importing a private third-party internal, which would also be more fragile (an unannounced
+SDK-internal rename/removal would `ImportError` at Bedrock-client construction time instead of
+degrading gracefully).
+
+**Full verification:** targeted (`tests/agents/intake/test_bedrock_client.py
+tests/data_agent_package/test_bedrock_client.py --no-cov`) → **25 passed**. Full suite
+(`uv run pytest -q`) → **970 passed, 8 live-skipped, 97.76% coverage** (+6 tests, +~0.01pp
+coverage vs. Session 199's 964/97.75% baseline — consistent with 6 new tests added). `uv run ruff
+check src/ tests/ packages/ scripts/` and `uv run mypy` both clean. The plan's own Phase C1 Verify
+grep (`ANTHROPIC_AWS_API_KEY` present in both guards) independently re-run and confirmed.
+
+**Note on file count (9, exceeding the SAFEGUARDS "5 files" blast-radius convention Session 199
+matched exactly):** judged acceptable, not scope creep — every file is the same single logical
+change (2 source + 2 paired tests + `.env.example`'s config-surface doc + the 3 canonical
+documentation-convergence surfaces this project's own migration goals name explicitly, +
+`SESSION_NOTES.md`). No unrelated module was touched. Recoverability (the rule's actual purpose)
+was intact throughout: started from a clean tree at a known-good commit, no destructive operations,
+full gate green before this write-up. Flagged rather than silently exceeded.
+
+**Not done (explicitly out of scope, not silently dropped):** `http_client` env wiring (D13's own
+recommendation defers it pending TLS-inspection confirmation — unconfirmed, not this repository's
+call to make unilaterally). The `ANTHROPIC_BASE_URL` doc fix and IAM-permissions-policy extraction
+(separate C1 scope items, not part of D13). The wiki's 7 pages describing the old "not yet wired"
+`require_sigv4` behavior (`Changelog.md`, `Software-Bill-of-Materials.md`,
+`Monitoring-and-Operations.md`, `Security-Considerations.md` ×4 mentions, `AI-Dependencies.md`) —
+now stale, not touched, a future session's refresh (matches the existing
+`project_wiki_content_vs_parity` pattern of periodic wiki-content refreshes, not a per-change
+sync). `docs/planning/enterprise-migration.md:42`'s stale D10/D13 mention (see design note above).
+The `#172` learnings-promotion-threshold discrepancy, flagged by Sessions 196–199 and now a 5th
+time by implication (not re-flagging it again here beyond this mention — see Session 199's own
+note that repeated flagging without action is itself the anti-pattern).
+
+### Session 199 Handoff Evaluation (by Session 200)
+
+**Score: 8/10.** The priority list's item 2b pointed accurately at D13, named its current gating
+scope correctly (Phase C1's and Phase C2's narrowed scope — verified true), and pointed at
+`bedrock-enterprise.md` §7 punch-list item 4 for the technical detail, which itself correctly
+onward-pointed to `enterprise-migration.md` Phase C1/D13. The dragon #8 line-number-shift warning
+was accurate and acted on; citations past ~line 550 had in fact **not** shifted from this
+session's starting point, matching Session 199's own "worth noting as a data point" observation
+about its own edits.
+
+- **What helped:** the §7 punch-list pointer saved a full research cycle — went straight to the
+  exact sentence naming the gap ("not yet wired to app/env... Phase C1/D13, still open") instead of
+  re-deriving it from the Decision Register alone. The "independent of the fork" framing meant zero
+  time spent worrying about fork-sequencing interactions.
+- **What was missing:** the handoff didn't flag the second env-var hole
+  (`ANTHROPIC_AWS_API_KEY`) — but this is a Research-phase discovery, not something a handoff
+  should pre-digest; the pointer chain it gave was accurate and sufficient to find it (Decision
+  Register D13 row → Phase C1's own Scope paragraph → `_MANTLE_API_KEY_ENV_VARS`). More
+  substantively missing: no mention that D13 was Phase **C2's sole listed gate** — Session 199's
+  own task was D10-only, so this D13-specific implication wasn't Session 199's to surface, but it's
+  worth naming as the one genuinely useful fact this session had to discover independently rather
+  than inherit.
+- **What was wrong:** nothing identified — every claim held up under verification.
+- **ROI:** positive — the pointer chain worked end-to-end with no backtracking or wrong turns.
+
+### Phase 3B: Self-assess — Session 200 — 8/10
+
+- **The +:** (1) Correctly narrowed D13 to its own recommendation's unconditional clauses,
+  resisting both "finish `http_client` too" (explicitly conditional, unconfirmed) and "fix
+  `ANTHROPIC_BASE_URL` while in the file" (a sibling C1 item, not D13) — directly applying Learning
+  #179 on its first subsequent occurrence. (2) Resolved a genuine implementation-design ambiguity
+  (local tuple vs. private SDK import) using the plan's own Verify block as evidence rather than
+  guessing — an evidence-based design decision, not a coin flip presented as one. (3) Installed-SDK
+  ground truth checked directly (`_mantle.py` read from `.venv`) rather than trusting the plan
+  prose's paraphrase of `_MANTLE_API_KEY_ENV_VARS` at face value. (4) Verified the "zero call-site
+  changes" claim by actually reading both `factory.py` files before asserting it, rather than
+  assuming the tri-state default pattern would compose cleanly. (5) Found and fixed **all** stale
+  D13 mentions via a whole-repo grep sweep (not just the file being edited) after the primary edits
+  — caught 2 additional stale spots (Phase 0's open-items line, the §6 out-of-scope sentence) that
+  a narrower single-file grep would have missed, matching Session 199's own dragon #8 precedent.
+  (6) Did not silently fix `enterprise-migration.md:42` — matched Session 199's established
+  precedent of leaving it, rather than unilaterally introducing a new correction scope; flagged the
+  inconsistency instead. (7) Full gate re-run after every doc-edit batch, not just once at the end.
+- **The −:** (1) Touched 9 files against the 5-file SAFEGUARDS convention Session 199 matched
+  exactly — judged and flagged as acceptable (see note above) rather than silently exceeded, but a
+  more conservative session might have split doc convergence into a second commit/session. (2) The
+  `BEDROCK_REQUIRE_SIGV4` env var name and its truthy-string set (`1`/`true`/`yes`/`on`) are this
+  session's own naming choice, not operator-confirmed or precedented anywhere in the repo — a
+  reasonable judgment call (matches the project's existing env-var-driven config-surface pattern)
+  but not a verified fact, flagged here rather than presented as settled, mirroring how Session 199
+  flagged its own placeholder region allowlist. (3) Did not touch the wiki despite it now
+  containing 7 stale mentions of the old behavior — a deliberate scope cut, but means the wiki and
+  the code have drifted further apart until a refresh session runs.
+- **Quality bar:** matches Session 199's rigor — re-verified citations directly, used primary
+  sources (installed SDK, actual `factory.py` call sites) over trusting prose paraphrase, and
+  distinguished "this decision's own scope is resolved" from "the phase it partially gates is
+  clear to run."
+
+### Phase 3C: Learnings — Session 200
+
+- **Candidate #180 — NEW, 1st instance — "A plan's Verify block is an executable specification,
+  not just a checklist — when prose recommendation text is ambiguous about an implementation
+  detail, the Verify block's literal grep targets (specific strings, specific paths) can pin the
+  actual intended design even when the prose alone supports multiple readings."** Discovered this
+  session: "iterate the SDK's `_MANTLE_API_KEY_ENV_VARS` tuple rather than hardcoding one name"
+  read equally well as "import the private SDK symbol" or "mirror its values in a local tuple."
+  Phase C1's Verify block (`grep -rn "ANTHROPIC_AWS_API_KEY" src/ packages/`) is scoped to this
+  repo's own source, not `.venv` — an SDK-only import would leave that grep at zero matches,
+  failing the plan's own stated verification. This resolved the ambiguity in favor of the more
+  robust design (no private-API dependency) using evidence internal to the plan, rather than
+  guessing or arbitrarily picking the more "sophisticated-sounding" reading. **When to apply:**
+  whenever a plan's prose recommendation is ambiguous about an implementation detail and that same
+  plan includes a Verify block — read the Verify block's literal grep/test targets as
+  disambiguating evidence before making a unilateral design call.
+- **Candidate #181 — NEW, 1st instance — "A single Decision Register item can gate multiple phases
+  asymmetrically — resolving it can fully clear one phase's gate while leaving a sibling phase
+  still gated by unrelated items, and this must be checked and stated per-phase rather than
+  assumed uniform."** Discovered this session: D13 gated both Phase C1 (alongside the three
+  `bedrock-enterprise.md` §0 security questions) and Phase C2 (as its *only* listed gate).
+  Resolving D13 left C1 still blocked but fully unblocked C2 — an asymmetry invisible unless each
+  phase's "Gated on:" line is checked individually against the resolved decision, rather than
+  inferring phase status from the decision's resolution status alone. This extends Learning #179
+  (bundled-phase partial resolution) with a distinct mechanic: multi-phase gating with unequal
+  outcomes per phase, discovered because D13 (unlike D10) happened to gate two phases at once.
+  **When to apply:** whenever a Decision Register's "Gates" column lists more than one phase for a
+  resolved decision — check each named phase's own "Gated on:" line individually; do not assume
+  resolving the decision has the same practical effect (fully clears / partially clears / doesn't
+  clear) on every phase it's listed against.
+- **Not promoted to the roster:** both 1st instance. `PROJECT_LEARNINGS.md` unchanged at 61 rows.
+  Next candidate number is **#182**. The #172 promotion-threshold discrepancy is now unresolved
+  across **five** consecutive sessions (196–200) — this session did not attempt to fix it
+  (out of scope for "D13"), but explicitly names the escalating count rather than re-flagging it
+  identically a fifth time with no acknowledgment of the pattern.
+
+### Phase 3D: Handoff to Session 201
+
+**D13 is resolved: `require_sigv4` guard-completeness + env wiring.** Both `bedrock_client.py`
+copies now reject a stray bearer-token key in *either* `AWS_BEARER_TOKEN_BEDROCK` or
+`ANTHROPIC_AWS_API_KEY`, and `require_sigv4` defaults from `BEDROCK_REQUIRE_SIGV4` when not passed
+explicitly. Recorded in `enterprise-migration.md`'s Decision Register, Phase C1, Phase C2, Phase 0,
+and §6; in `bedrock-enterprise.md` §7 and §9; in `BACKLOG.md`'s C1/C2 bullets and the open-decisions
+summary; and in `.env.example`. Full gate green: 970 passed + 8 live-skipped @ 97.76% coverage,
+ruff clean, mypy clean.
+
+**The practically important finding: Phase C2 is now fully ungated** (D13 was its sole listed
+gate) — it's schedulable any time, independent of the fork, though its own scope (vendor htmx
+locally, decide the intake UI's auth posture, fix the `MPC_HOST_URL` gap, resolve plaintext-at-rest
+for two stores, fix `run_pipeline.py:450`'s `--model` default) is itself completely untouched.
+**Phase C1 remains gated** — `bedrock-enterprise.md` §0's three security questions
+(Guardrails/FIPS/quota) are the only gate left, and per the plan's own warning, a "yes" on either
+of the first two forces a `bedrock-runtime` re-plan materially larger than anything in this plan —
+get those three answered by the operator/security **before** anyone starts C1's own scope (the
+`ANTHROPIC_BASE_URL` fix, the IAM-permissions-policy extraction).
+
+**Open decisions this repository tracks: zero D-numbered items remain** (D10 and D13, the only two
+live "security bucket" decisions, are both resolved). The only remaining gate anywhere in the
+security bucket is the non-D-numbered §0 security-question trio in `bedrock-enterprise.md`.
+
+**What's next — candidates, not a mandate:**
+1. **Get the `bedrock-enterprise.md` §0 three security questions answered** (operator/security) —
+   this is the actual next gate on Phase C1, and per the plan's own dragon, unblocks nothing else
+   productively started until it's answered (a "yes" invalidates C1's whole scope, not just delays
+   it).
+2. **Phase C2** — fully ungated now, schedulable independent of the above. Scope: htmx vendoring,
+   intake UI auth-posture decision, `MPC_HOST_URL` gap fix, plaintext-at-rest for two stores,
+   `run_pipeline.py:450`. Multi-item scope — expect this to be its own multi-session mini-campaign,
+   not one session, per the DEVELOPMENT_WORKSTREAM "campaign" framing.
+3. **Phase C1's own scope** (the `ANTHROPIC_BASE_URL` fix + IAM-permissions-policy extraction) —
+   still gated on item 1 above; do not start until the three security questions are answered.
+4. **Phase C4 (the fork)** — gate remains fully satisfied (A1–A4, B1-core, B2), unaffected by
+   today's work. Re-grep `^### Phase C4` fresh before trusting any line-number citation — this
+   session's edits added net lines to `enterprise-migration.md` before that section (D13's Decision
+   Register row alone grew substantially), so citations past ~line 600 have likely shifted further
+   from Session 199's already-noted shift. Get D9/D5/D4/D8/D16 live at that session's start.
+   **D4 (DCO) is still explicitly unresolved** — operator answered "unknown — find out before
+   proceeding" in Session 197, untouched since (now 3 sessions later).
+5. **Phase C5** (immediately after C4).
+6. **Wiki refresh** — 7 pages across `Changelog.md`, `Software-Bill-of-Materials.md`,
+   `Monitoring-and-Operations.md`, `Security-Considerations.md` (×4), `AI-Dependencies.md` describe
+   the pre-Session-200 `require_sigv4` behavior ("not yet wired," checks only
+   `AWS_BEARER_TOKEN_BEDROCK`) — now stale. Not urgent (wiki-content staleness has an established
+   periodic-refresh pattern, not a per-change sync obligation), but growing.
+7. **Housekeeping, not urgent:** `SESSION_NOTES.md` is ~3.8 MB / ~21,900 lines (199 sessions,
+   never archived) — a future session could split older sessions into a `SESSION_NOTES_ARCHIVE.md`
+   or similar, keeping only recent + ACTIVE TASK in the main file. Also:
+   `docs/planning/enterprise-migration.md:42` still has the stale "still-open D10/D13" phrase
+   (matched Session 199's precedent of leaving it — see this session's "not done" list above) — an
+   actual future fix, not just a repeated flag, would resolve the inconsistency either by fixing it
+   or by explicitly documenting §1 as frozen narrative so no one flags it again.
+
+**State you will inherit:**
+1. `master` is clean as of this session — verify fresh with `git status`/`git log -1` before
+   acting on this claim (Learning #163 applies every session). Branch was 15 commits ahead of
+   `origin/master` at this session's start and will be 16 after this session's commit; not pushed
+   (not requested).
+2. No feature branch — landed directly on `master`, matching the recent pattern.
+3. Learning candidates #180 and #181 (this session), plus #178 (Session 198) and #179 (Session
+   199), are all 1st-instance, not yet promoted. `PROJECT_LEARNINGS.md` unchanged at 61 rows. Next
+   candidate number is **#182**.
+4. Line-number citations anywhere in `enterprise-migration.md` past line ~550 have shifted from
+   this session's edits (the D13 row grew substantially; Phase C1's and Phase C2's "Gated on"
+   lines, Scope/DONE/Verify blocks, Phase 0's open-items paragraph, and §6's framing sentence were
+   all touched). Re-grep before trusting any citation into this file, per dragon #8.
+
+**Key files:**
+- `src/model_project_constructor/agents/intake/bedrock_client.py` and
+  `packages/data-agent/src/model_project_constructor_data_agent/bedrock_client.py` — the D13
+  implementation (`_BEDROCK_API_KEY_ENV_VARS`, `_TRUTHY_ENV_VALUES`, the tri-state `require_sigv4`
+  default, the `__init__` guard logic).
+- `docs/deployment/bedrock-enterprise.md` §7 (config table + punch-list item 4), §9 (checklist).
+- `docs/planning/enterprise-migration.md` — D13 Decision Register row (~line 556), Phase C1
+  (~line 961), Phase C2 (~line 1020) — re-grep, don't trust these line numbers directly.
+
 ### What Session 199 Did
 **Deliverable:** Implement recommended D10 (Bedrock endpoint: Regional, not Global) — the operator
 accepted the plan's recommendation this session, after a conversational walkthrough of the
