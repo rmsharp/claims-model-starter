@@ -6,6 +6,190 @@
 
 ## ACTIVE TASK
 
+### What Session 203 Did
+**Deliverable:** Phase 3 (optional) of `docs/planning/httpx-adapter-migration.md` — mechanical
+rename `PythonGitLabAdapter → GitLabAdapter`, `PyGithubAdapter → GitHubAdapter` across `src/`,
+`tests/`, and `docs/wiki/`; finalize the `CHANGELOG.md` entry; reconcile the SBOM version table.
+**COMPLETE.** Selected explicitly by the operator this session (DP1 = rename), overriding the
+plan's own default recommendation to keep the names / skip Phase 3.
+
+**Started / Completed:** 2026-07-29.
+
+**How the deliverable was selected:** Phase 0's orientation report listed two active threads
+(enterprise migration, httpx adapter migration) but wasn't phrased as a formal numbered question.
+The operator's reply — bare "2" — was genuinely ambiguous (could have indexed the two-thread list,
+or something inside either thread). Rather than guess and risk burning the whole session on the
+wrong deliverable, used `AskUserQuestion` with the most likely interpretations; operator confirmed
+"httpx Phase 3 rename."
+
+**Evidence-based inventory, not the plan's original file list taken at face value:** the plan's
+§2.2/§2.3 inventory was written during Phase 1/2 planning (2026-07-17), before Phase 3 was ever
+executed. Fresh `grep -rln -E "PythonGitLabAdapter|PyGithubAdapter"` across `src/`, `tests/`, and
+`docs/wiki/` (not trusting the plan's stale list, same discipline as Session 202's line-number
+re-grep) found **two test files outside the plan's listed inventory** that also needed the rename:
+`tests/scripts/test_run_pipeline_adapter.py` and `tests/orchestrator/test_host_registry_extensibility.py`
+— both call `monkeypatch.setattr(module, "PythonGitLabAdapter", ...)` / `"PyGithubAdapter"` with
+the **class name as a string literal**, which would have raised `AttributeError` at test time post-
+rename if left unchanged (the attribute no longer exists on the module under the old name). Also
+found `docs/wiki/claims-model-starter/Security-Considerations.md` needed the same rename — it
+documents the adapters' current `__init__` signatures by class name — despite not being in the
+plan's original Phase 3 file list (Agent-Reference/Architecture-Decisions/Extending-the-Pipeline/
+Schema-Reference only). A supplementary case-insensitive/snake_case grep additionally caught two
+test function names spelling out the old SDK names literally
+(`test_cli_host_gitlab_with_token_invokes_python_gitlab_adapter`,
+`..._invokes_pygithub_adapter`) — renamed to `..._invokes_gitlab_adapter` / `..._invokes_github_adapter`
+as an in-scope extension of DP1's stated intent ("drop the SDK names now baked into misnomers"),
+not scope creep (same underlying identifier-naming problem, just snake_case instead of PascalCase).
+Verified no collision before the mass-rename: grepped for any pre-existing `GitLabAdapter`/
+`GitHubAdapter` identifier — none, other than the unrelated `_StandinGitLabAdapter`/
+`_StandinGitHubAdapter` test doubles in `test_cli.py` (distinct names, no conflict).
+
+**What was done (17 files across 3 commits — 0 code files beyond the class rename itself, i.e.
+zero test-*logic* changes, pure identifier rename):**
+1. **`2538f8f`** — `src/model_project_constructor/agents/website/gitlab_adapter.py` /
+   `github_adapter.py` (class def, docstring usage example, `__all__`); `agents/website/__init__.py`
+   (re-export + `__all__`); `orchestrator/config.py` (lazy-import factories in
+   `_make_gitlab_adapter`/`_make_github_adapter`); `tests/agents/website/test_gitlab_adapter.py`,
+   `test_github_adapter.py` (import + every reference); `tests/agents/website/test_cli.py` (4
+   `monkeypatch.setattr` patch strings, 1 docstring, 2 test function names); the 2 test files
+   outside the plan's inventory (`test_run_pipeline_adapter.py`, `test_host_registry_extensibility.py`
+   — their `monkeypatch.setattr` string targets updated to match the new attribute names, otherwise
+   the patch would have silently targeted a non-existent attribute).
+2. **`36734a9`** — the 5 wiki pages listed above (Security-Considerations.md included, outside the
+   plan's original list). `Changelog.md`/`Evolution.md` in the same wiki directory deliberately
+   left untouched — historical record per the plan's own §2.5 "leave" list and this project's
+   Learning #32 convention (matches PROJECT_LEARNINGS.md's own established practice of not
+   rewriting history). Wiki auto-published to the live GitHub Wiki via the tracked `post-commit`
+   hook (dragon #5 of the plan) — expected, not a surprise.
+3. **`46b7a2f`** — `CHANGELOG.md` (new 2026-07-29 entry), `BACKLOG.md` (Phase 3 bullet removed per
+   the file's own "no checked-off items" convention; summary rewritten to "all three phases DONE"),
+   `ROADMAP.md` (M4 feature-inventory line's class names updated).
+
+**"Reconcile the SBOM version table" — investigated concretely, not skipped as N/A:**
+`docs/wiki/claims-model-starter/Software-Bill-of-Materials.md` contains zero adapter class-name
+references (its "Locked version snapshot" table is package/version pairs, unrelated to identifier
+names), so there was nothing to *rename* there. Independently re-verified the table's 11 rows
+against the current `uv.lock` (`grep -A1 "^name = \"<pkg>\"$" uv.lock`) — all 11 versions
+(`anthropic` 0.94.1, `httpx` 0.28.1, `boto3`/`botocore` 1.43.32, etc.) still match exactly. Treated
+"reconcile" as "confirm accuracy," not "find something to change" — confirmed, no edit needed.
+
+**"Finalize the CHANGELOG.md `[Unreleased]` entry" — plan wording didn't match current practice,
+followed the actual convention instead:** `grep -n "^## \["  CHANGELOG.md` shows the file has no
+live `## [Unreleased]` heading right now — the most recent heading is `## [0.3.0] - 2026-07-27`,
+and Sessions 191/193 both landed their entries as dated `### <date> — ...` sub-entries directly
+under that heading, not under an `[Unreleased]` staging section (that convention appears to have
+lapsed sometime after the Session ~78-91 era visible deeper in this file's history). Followed the
+demonstrated current practice — added a new dated sub-entry in the same style, positioned
+immediately after Session 193's entry (same thread) — rather than resurrecting a heading style the
+project has already moved away from. This is the Learning #11 family (trust the current
+code/convention over stale spec wording) applied to a documentation-process convention rather than
+a code fact.
+
+**Noticed, deliberately NOT touched (out of scope, flagged for a future session, not silently
+fixed or silently dropped):** immediately after Session 193's CHANGELOG entry sits an entry
+describing the Bedrock-mantle `AnthropicBedrock` → `AnthropicBedrockMantle` swap with **no `### `
+date/title heading at all** (just raw paragraphs) — every other entry in the file has one. This is
+a pre-existing gap unrelated to the httpx rename; fixing it would have been an unrequested,
+unrelated edit to a file already in this session's diff (a "while I'm at it" trap per SAFEGUARDS.md).
+Named here so a future session can decide whether it's worth a small dedicated fix.
+
+**Verification:** `grep -rn "PyGithubAdapter\|PythonGitLabAdapter" src/ tests/ docs/wiki` → 0
+matches outside `Changelog.md`/`Evolution.md` (the two historical carve-outs, expected non-zero
+per plan §2.5). Full gate re-run twice (after the code commit, and again after the docs-only
+commit per established docs-only-session convention): `uv run ruff check src/ tests/` → clean;
+`uv run mypy` → clean; `uv run pytest -q` → **970 passed, 8 live-skipped, 97.76% coverage** —
+byte-identical to Session 202's baseline both times, exactly as expected for a pure rename with
+zero behavior change.
+
+**Not done (out of scope, not silently dropped):** the headerless CHANGELOG entry noted above.
+Nothing else — Phase 3 was the last phase of `httpx-adapter-migration.md`; that plan document now
+has zero open scope in this repository.
+
+### Session 202 Handoff Evaluation (by Session 203)
+
+**Score: N/A — not applicable.** Session 202's handoff (evaluated by Session 202 itself as a
+follow-on to Session 201's Phase C1 work) pointed toward continuing the enterprise-migration
+thread, not the httpx-adapter-migration thread this session actually executed. This isn't a
+scoring failure of Session 202's handoff — the operator, when given an explicit choice between the
+two active threads Phase 0 surfaced, chose the other one. Session 202's write-up was read in full
+during this session's Phase 0 orientation and was accurate and well-structured (see this session's
+own Phase 0 report to the operator); it simply wasn't the thread selected. **What did carry
+forward and helped regardless of thread:** the general discipline pattern Session 202 reinforced —
+re-grep before trusting a plan document's stated file inventory, since line numbers and file lists
+both rot — was directly and successfully applied to this session's own httpx Phase 3 work (see
+above: it caught 2 test files and 1 wiki file the original plan didn't list).
+
+### Phase 3B: Self-assess — Session 203 — 9/10
+
+- **The +:** (1) Recognized a genuinely ambiguous user reply ("2" against an unstructured report)
+  and asked rather than guessed — a wrong guess here would have risked an entire wasted session
+  under the "1 and done" rule. (2) Did not trust the plan's 12-day-old file inventory — fresh greps
+  caught 2 test files and 1 wiki file the plan's Phase 3 scope didn't name, one of which
+  (`Security-Considerations.md`) documents current adapter behavior and the other two of which
+  (`test_run_pipeline_adapter.py`, `test_host_registry_extensibility.py`) contained a real
+  functional dependency on the old string literal via `monkeypatch.setattr` — missing those would
+  have left the rename incomplete and (for the two test files) broken at test-collection/run time.
+  (3) Extended the rename to two snake_case test function names on the same DP1 rationale rather
+  than either over-literally matching only the plan's exact casing or under-scoping to "just the
+  class") — judged, not assumed. (4) Investigated "reconcile the SBOM table" and "finalize the
+  Unreleased entry" concretely instead of treating either as boilerplate to check off — the first
+  confirmed accuracy (11-row cross-check against `uv.lock`), the second correctly deviated from the
+  plan's literal wording once the file's actual current convention (no live `[Unreleased]` heading)
+  was checked. (5) Noticed the headerless Bedrock-mantle CHANGELOG entry and explicitly declined to
+  fix it, naming it in the handoff instead — avoided the SAFEGUARDS.md "while I'm at it" trap on a
+  file already in this session's diff, where the temptation to just fix it in passing was real.
+  (6) Verified no naming collision before the mass-rename (checked for pre-existing `GitLabAdapter`/
+  `GitHubAdapter` identifiers) rather than assuming the target names were free. (7) Ran the full
+  gate twice and it was byte-identical both times — a real double-check, not just claimed.
+- **The −:** (1) Did not use a `Workflow`/parallel-subagent structure despite ultracode being
+  active this session — same judgment call Session 202 made and named explicitly: this was a
+  small, tightly-coupled, single-writer mechanical rename across files that reference each other
+  (a class renamed in `gitlab_adapter.py` must be renamed consistently everywhere else in the same
+  pass), not independently parallelizable work, so sequential Edit calls were the right tool — but
+  worth naming again rather than letting it go unstated. (2) Three separate commits (rename /
+  wiki / finalize) mirrors Session 193's precedent but wasn't independently re-justified against
+  simpler alternatives (e.g., two commits, folding the wiki rename into the code commit) before
+  defaulting to that precedent — a reasonable choice, but "because Session 193 did it that way" is
+  weaker than a reasoned justification for this specific, much smaller diff.
+- **Quality bar:** matches Session 202's rigor on the specific discipline that mattered most here
+  (re-grep before trusting a plan's stated inventory) and applied it successfully to catch real
+  gaps in a 12-day-old plan document, on a different workstream (development/rename vs. Session
+  202's docs/config fix).
+
+### Phase 3C: Learnings — Session 203
+
+**One new learning candidate filed.**
+
+- **Candidate #183 — NEW, 1st instance — "A plan document's evidence-based file inventory
+  (§2.2/§2.3-style grep results) is a snapshot from its planning session, not a living index —
+  re-run the same grep fresh at implementation time, especially for a deferred/optional phase
+  executed sessions after the plan was written."** Discovered this session: `httpx-adapter-
+  migration.md`'s Phase 3 file list (written 2026-07-17, executed 2026-07-29 — 12 days and 12+
+  sessions later) missed two test files (`test_run_pipeline_adapter.py`,
+  `test_host_registry_extensibility.py`) that didn't exist, or didn't yet reference the adapter
+  classes by monkeypatched string name, at plan-writing time — both were probably added or grew
+  that reference during the Phase 1/Phase 2 implementation sessions themselves, after the plan's
+  own inventory was frozen. **Distinct from the existing "line numbers rot" learning family**
+  (Session 202's `bedrock-enterprise.md:149` case, and the broader Learning #11 family) — this is
+  about the *file list itself* going stale (files added/changed after the grep was run), not a
+  citation within an unchanged file drifting. **When to apply:** before executing any plan-document
+  phase whose own evidence-based inventory (grep results) was captured more than a session or two
+  before execution — re-run the plan's own listed grep commands fresh, don't just trust the
+  enumerated file list, especially for phases explicitly marked "optional" or deferred (the exact
+  shape most likely to be executed long after the plan's inventory was frozen).
+
+Reviewed against the existing roster (61 rows + Candidate #182 from Session 202) before filing:
+Candidate #182 (read a third-party dependency from the project's own `.venv`, not system Python)
+is a different failure mode — missing functionality in an external package, not a stale internal
+file list — not the same learning. The Learning #11 family (trust current code/convention over
+imprecise spec wording) is the closest existing match but is about a single fact/wording being
+wrong, not an inventory's *coverage* going stale as time passes between planning and execution —
+judged genuinely distinct, filed as new. **Roster: 61 rows unchanged, 2 unpromoted candidates
+(#182 from Session 202, #183 new this session).** Next candidate number: **#184**. The `#172`
+promotion-threshold discrepancy is now unresolved across **eight** consecutive sessions (196–203)
+— flagged once more (count updated, not re-investigated): still a different subject (methodology
+self-consistency) than either of the last two sessions' deliverables.
+
 ### What Session 202 Did
 **Deliverable:** Phase C1's own remaining bundled scope (per `enterprise-migration.md`'s Phase C1
 section and Session 201's handoff item 1): (1) fix the stale/false `base_url`/`ANTHROPIC_BASE_URL`
