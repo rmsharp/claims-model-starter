@@ -148,7 +148,7 @@ The pipeline depends on one external API per run for its AI steps. An outage at 
 Two providers are implemented (`anthropic`, `bedrock`), but both serve the same model family (Claude) through the same `anthropic` SDK, and the provider is fixed for the duration of a run. There is no automatic failover.
 
 - **Containment.** The provider seam ([§3](#3-the-model-as-a-dependency)) is designed so that adding a backend is one new client module plus one factory branch — no changes at the call sites ([Architecture Decisions AD-2](Architecture-Decisions)). `bedrock` is that seam exercised once, and it lets an operator move the trust boundary to an AWS account they control.
-- **Residual.** The `bedrock` backend is **implemented but not live-validated** — every governance and evaluation result recorded in this project was produced on the `anthropic` provider, and the live-evaluation test tier skips `bedrock` for want of credentials. Treat it as a documented migration path, not a tested redundancy: a cutover needs its own live verification first. Provider choice is also fixed per run, so an in-flight Anthropic outage still has no fallback path — and because both providers serve one model family through one SDK, a defect in that SDK or that model family is not diversified away by switching. Treating multi-provider resilience as "available" would be over-claiming.
+- **Residual.** The `bedrock` backend is **implemented but not live-validated** — every governance and evaluation result recorded in this project was produced on the `anthropic` provider, and the live-evaluation test tier skips `bedrock` for want of credentials. Treat it as a documented migration path, not a tested redundancy: a cutover needs its own live verification first. Provider choice is also fixed per run, so an in-flight Anthropic outage still has no fallback path — and because both providers serve one model family through one SDK, a defect in that SDK or that model family is not diversified away by switching. Treating multi-provider resilience as "available" would be over-claiming. **Planned path to genuine diversification:** see [§9](#9-planned-extension-cli-adapter-portability-accepted-2026-08-01) — a 2026-08-01 decision accepted extending the provider seam via CLI-tool adapters, starting with OpenCode.
 
 ### 6.8 AI supply-chain surface
 
@@ -193,10 +193,35 @@ The AI integration pulls a transitive stack — `langchain-core`, `langsmith`, `
 
 ---
 
+## 9. Planned extension: CLI-adapter portability (accepted 2026-08-01)
+
+**This section is forward-looking.** Unlike §1-8, its claims are about external tools this project does not yet integrate, not this repo's own code — nothing below is enforced or exercised here yet. Dates matter more than usual: agentic CLI tooling is moving fast (see the Gemini CLI finding below), so re-verify against current vendor docs before implementing rather than trusting this snapshot.
+
+**Why this exists.** [§6.7](#67-provider-concentration) names the core gap: `anthropic` and `bedrock` are the only two wired providers, and both serve the same model family through the same SDK. The provider seam ([§3](#3-the-model-as-a-dependency), [Architecture Decisions AD-2](Architecture-Decisions)) was built to make adding a real, differently-sourced backend cheap — but nothing has exercised that design goal yet. On 2026-08-01, prompted by an operator question about whether this pipeline could target enterprise environments standardized on a different AI CLI, four candidate agentic CLIs were researched as potential subprocess-driven `LLMClient`/`IntakeLLMClient` implementations, and the operator accepted a recommendation. This section is the record of that research and decision — see also [Architecture Decisions AD-11](Architecture-Decisions#ad-11-cli-adapter-portability-opencode-selected-as-the-first-non-anthropic-provider-seam).
+
+### 9.1 The decision
+
+**Build the `OpenCodeLLMClient` adapter first.** Specing it out (matching the `AnthropicLLMClient`/`BedrockLLMClient` shape already in `agents/intake/` and `packages/data-agent/`) is queued as a follow-up session — see `BACKLOG.md`. No implementation exists yet; this section captures the research that led to the choice, so that session doesn't have to re-derive it.
+
+### 9.2 Candidates evaluated
+
+| Tool | Headless mode | Structured output | Underlying model | Auth for automation | Verdict |
+|---|---|---|---|---|---|
+| **OpenCode** (`anomalyco/opencode`, formerly `sst/opencode`) | `opencode run "..." --format json`; `opencode serve` for a long-lived server | `--format json` emits a JSON event stream (exact schema not yet published — verify empirically) | **Vendor-agnostic multiplexer** — Vercel AI SDK + Models.dev, 75+ providers (Anthropic, OpenAI, Gemini, Bedrock, Azure, OpenRouter, local/self-hosted) | API-key env vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.) for most providers; a few (GitHub Copilot, ChatGPT-Plus login) need interactive OAuth and are not CI-clean | **Selected.** One adapter unlocks many vendors via OpenCode's own config — matches the portability goal directly. |
+| **Codex CLI** (`openai/codex`) | `codex exec "..."` — `--json` (JSONL event stream) or `--output-schema <file>` (schema-constrained final answer) | Yes — clean stdout/stderr separation even without `--json` | OpenAI's own models by default; `model_providers` config can reach other backends, but only ones speaking the OpenAI Responses/Chat-Completions wire format (a translation proxy like LiteLLM is needed for Anthropic-shaped backends) | `CODEX_API_KEY` / `codex login --with-api-key` — fully CI-viable; docs explicitly cover CI/scheduled-job use and ship an official `codex-action` GitHub Action | Good second candidate for a pure OpenAI *capability* comparison; doesn't advance portability the way OpenCode does — it's welded to OpenAI's wire protocol. |
+| **Gemini CLI** (`google-gemini/gemini-cli`) | `gemini -p "..."` (also auto-triggers when stdin/stdout isn't a TTY) | `--output-format json` / `stream-json`; documented exit codes (0/1/42/53) for CI branching | Google/Gemini family only (Gemini API or Vertex AI backend, not swappable to another vendor) | `GEMINI_API_KEY` or Vertex AI service-account JSON — both CI-viable; "Login with Google" OAuth is explicitly documented as unusable headless | **Deprioritized.** Google discontinued Gemini CLI for free/personal accounts on **2026-06-18**, redirecting new investment to a separate closed-source "Antigravity CLI." Paid API-key/Vertex access still works, but this is a live maintenance-parity risk for a build meant to outlast this migration. |
+| **GitHub Copilot CLI** (`github/copilot-cli`, npm `@github/copilot`) | `copilot -p "..." --allow-all-tools --no-ask-user` | `--output-format json` (JSONL event stream) | **Already a multiplexer** — routes among Anthropic Claude, OpenAI GPT, and Google Gemini per GitHub's own entitlement/routing policy | Requires a fine-grained PAT (`Copilot Requests` permission) or GitHub App token tied to a **paid, seat-assigned Copilot subscription** — not a portable API key; GitHub's Acceptable Use Policy flags "excessive automated/scripted use" as an abuse-detection trigger (soft risk, not a hard ban) | **Rejected as a provider target.** Wrapping it trades single-vendor lock-in for GitHub subscription/seat/policy lock-in — a lateral move, not a portability win, for this specific goal. |
+
+### 9.3 What "build the OpenCode adapter" concretely means
+
+A new `LLMProvider` member (`"opencode"`) in both `factory.py` modules, plus one new client module per agent (`agents/intake/opencode_client.py`, `packages/data-agent/.../opencode_client.py`) implementing `IntakeLLMClient`/`LLMClient` by shelling out to `opencode run --format json` per call and parsing the response into the same dataclasses the Anthropic/Bedrock clients already produce — analogous to how `BedrockLLMClient` subclasses `AnthropicLLMClient` today, except the new client is subprocess-based rather than SDK-based, so it needs its own process-invocation, timeout, and error-mapping logic (there is no existing subprocess-driven client in this codebase to subclass). The `--format json` event schema should be verified against a live `opencode run` invocation before the parsing logic is written, per the caveat in §9.2's table.
+
+---
+
 ## Related pages
 
 - [Security Considerations](Security-Considerations) — credential handling, network boundaries, exactly what the LLM sees, read-only DB contract.
 - [Software Bill of Materials](Software-Bill-of-Materials) — full dependency tables, transitive tree, and locked versions.
-- [Architecture Decisions](Architecture-Decisions) — AD-2 (LangGraph + provider seam), AD-9 (no LLM-generated SQL executes against production).
+- [Architecture Decisions](Architecture-Decisions) — AD-2 (LangGraph + provider seam), AD-9 (no LLM-generated SQL executes against production), AD-11 (CLI-adapter portability decision, OpenCode selected).
 - [Agent Reference](Agent-Reference) — per-agent inputs, outputs, and failure modes.
 - [Governance Framework](Governance-Framework) — what the LLM's governance classification drives.

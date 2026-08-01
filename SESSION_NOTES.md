@@ -6,6 +6,141 @@
 
 ## ACTIVE TASK
 
+### What Session 210 Did
+**Deliverable:** Record, in the wiki, the findings and accepted decision from this session's CLI-vendor-portability
+research — plus queue "spec the `OpenCodeLLMClient` adapter" as an explicit follow-up session in `BACKLOG.md`.
+**COMPLETE.**
+
+**Started / Completed:** 2026-08-01.
+
+**Trigger:** Session opened as ordinary Phase 0 orientation (clean handoff from Session 209, nothing queued beyond
+the standing Phase C4 gate). The operator then asked two research questions in sequence, not a session task yet:
+(1) "Is this pipeline built to be able to use other vendor models?" and (2) a follow-up naming four candidate
+agentic CLIs (Codex CLI, Gemini CLI, GitHub Copilot CLI, OpenCode) and asking whether GitHub Copilot would work and
+which vendor to recommend. Both were answered via `Workflow`-orchestrated research (parallel subagents; see below)
+rather than from memory, consistent with Auto Mode's exploratory-question guidance ("recommend and stop, don't
+implement"). Before answering the second question, used `AskUserQuestion` to clarify scope — the operator's answer
+reframed the ask entirely: not "which coding-assistant CLI should I use," but "prepare this pipeline to be
+adaptable to other CLI platforms, because it's headed into an enterprise environment that may standardize on a
+different one." That reframing is what turned the second research pass into a real engineering-feasibility question
+(headless/scriptable invocation, structured output, CI-viable auth) rather than a preference question. The operator
+then explicitly accepted the OpenCode recommendation and asked for it to be **saved to the wiki**, with the actual
+adapter build **queued, not started** — this session's deliverable is exactly that save-and-queue step, not the
+adapter.
+
+**What was done (3 files, 1 commit; wiki commit auto-published to the live GitHub Wiki via the tracked
+`post-commit` hook):**
+1. **Research pass 1 (`Workflow`, 6 parallel agents, ~1.35M subagent tokens):** swept the codebase — intake agent,
+   data agent, website agent, shared/orchestrator client code, dependency manifests + config, and test doubles — to
+   establish the *current* state: both LLM-calling agents (`agents/intake/`, `packages/data-agent/`) already sit
+   behind a vendor-neutral `Protocol` (`IntakeLLMClient` / `LLMClient`) plus a `make_llm_client(provider)` factory,
+   but only two providers are wired (`anthropic`, `bedrock`) and both are Claude through the same SDK — confirmed
+   via `AI-Dependencies.md`'s own §6.7 finding that "treating multi-provider resilience as available would be
+   over-claiming." **One finder agent (`data-agent`) returned a degenerate placeholder result** (`"summary": "test"`,
+   `"file": "a.py"`) despite spending 81s/15 tool calls/290k tokens — caught by reading the raw task-notification
+   output rather than trusting the truncated `resultPreview`, and patched by reading
+   `packages/data-agent/.../cli.py` and `factory.py` directly rather than re-running the workflow. **Anti-pattern
+   worth naming for a future session:** a workflow finder agent can burn real tool calls/tokens and still emit a
+   placeholder `StructuredOutput` call — don't trust a schema-shaped result just because it validated; skim it for
+   plausibility (a one-word `"summary": "test"` is an obvious tell) before building on it.
+2. **Research pass 2 (`Workflow`, 4 parallel agents with live web search, ~180k subagent tokens):** researched
+   headless/scriptable invocation, structured-output support, underlying-vendor flexibility, CI-viable auth, and
+   ToS/rate-limit posture for Codex CLI, Gemini CLI, GitHub Copilot CLI, and OpenCode — each with primary-source
+   citations (official docs URLs). Key findings that shaped the recommendation: OpenCode is *itself* a
+   vendor-agnostic multiplexer (75+ providers via the Vercel AI SDK / Models.dev) with a genuine `opencode run
+   --format json` headless mode and CI-friendly API-key auth — one adapter buys many vendors. GitHub Copilot CLI is
+   *also* already a multiplexer (Anthropic/OpenAI/Gemini) but gated by a paid, seat-assigned subscription and a
+   specific fine-grained-PAT permission rather than a portable API key — wrapping it swaps vendor lock-in for
+   platform lock-in, a poor fit for the operator's stated "portability / no lock-in" priority. Gemini CLI is a live
+   maintenance-parity risk: Google discontinued it for free/personal accounts on 2026-06-18 in favor of a separate
+   closed-source "Antigravity CLI." Codex CLI has excellent CLI ergonomics (`codex exec --json`/`--output-schema`)
+   but is welded to OpenAI's wire protocol for reaching non-OpenAI backends.
+3. **Wrote up findings + decision in the wiki** (not `docs/planning/` or `docs/architecture-history/` — the
+   operator specifically said "the wiki"): new `AI-Dependencies.md` §9 ("Planned extension: CLI-adapter portability,
+   accepted 2026-08-01") with the full four-candidate comparison table and a §9.3 note on what "build the OpenCode
+   adapter" concretely means (new `LLMProvider` member, new subprocess-based client module per agent, no existing
+   subprocess-driven client in this codebase to model it on beyond the SDK-based `AnthropicLLMClient`/
+   `BedrockLLMClient` pattern). New `Architecture-Decisions.md` AD-11 recording the decision itself in the page's
+   existing terse Decision/Rationale format. Cross-linked both directions, plus a forward-pointer from the existing
+   §6.7 "Provider concentration" residual paragraph (the risk this decision addresses) to the new §9.
+   **Anchor-safety fix caught before commit:** the first AD-11 heading draft used an em dash (`—`), which under
+   GitHub's slug algorithm produces an unpredictable double-hyphen anchor (verified by hand-deriving the slug, not
+   assumed) — reworded to a second colon (`AD-11: CLI-adapter portability: OpenCode selected...`), matching the
+   punctuation-and-spacing pattern every other AD heading in this file already uses safely.
+4. **Queued the follow-up in `BACKLOG.md`** under a new "CLI-adapter portability — spec the `OpenCodeLLMClient`
+   adapter" open item: states the accepted decision, points to both new wiki sections so the next session doesn't
+   re-derive the comparison, and is explicit that the next session's deliverable is a **spec**, not an
+   implementation — flagging the one real unknown (OpenCode's `--format json` event schema isn't published;
+   verifying it against a live invocation is prerequisite spec work, not an assumption to carry forward).
+5. **Verification:** ran `tests/test_wiki_no_line_citations.py` (the guard that keeps wiki pages from citing
+   line numbers that go stale) after every wiki edit — 3 passed both times. No source file touched, so the full
+   test/lint/type gate was not re-run, matching the established docs-only-session convention (Sessions 203/206/
+   208/209); Session 209's own gate run (989 passed + 8 skipped @ 97.78%, ruff clean, mypy clean) is the most
+   recent baseline and nothing in this session invalidates it. `git diff --stat` reviewed before commit: exactly
+   the three intended files (`BACKLOG.md`, `AI-Dependencies.md`, `Architecture-Decisions.md`), 56 insertions / 2
+   deletions.
+
+### Session 209 Handoff Evaluation (by Session 210)
+
+**Score: 8/10.** The handoff correctly stated no other open, actionable item existed beyond the standing Phase C4
+gate, which matched what this session found at Phase 0 (`BACKLOG.md` had nothing else open) — so the orientation
+step cost nothing extra. **What helped:** the explicit instruction to re-check `BACKLOG.md`/issues fresh rather
+than trust the prior statement — followed literally at Phase 0, and it held. **What was missing:** nothing —
+this session's actual deliverable came from a new operator request made mid-session, not from anything Session 209
+could have anticipated or should have flagged; the handoff can't be faulted for not predicting an unscoped
+follow-up conversation. **What was wrong:** nothing found. **ROI:** neutral-to-positive — the handoff's main value
+this session was confirming there was nothing stale to clean up before the operator's new request arrived, which
+it did correctly.
+
+### Phase 3B: Self-assess — Session 210 — 8/10
+
+- **The +:** (1) Answered both research questions with actual `Workflow`-orchestrated evidence (codebase sweep,
+  then live web research with citations) rather than from training-data memory of these CLI tools — material given
+  Gemini CLI's landscape changed as recently as 2026-06-18, well inside a plausible knowledge-cutoff blind spot.
+  (2) Used `AskUserQuestion` before the second research pass instead of guessing the goal — the answer materially
+  changed the shape of the work (from "pick a coding assistant" to "build a portability adapter"), so the pause
+  was load-bearing, not ceremony. (3) Caught the degenerate `data-agent` finder result by reading the raw
+  task-notification output instead of trusting a `resultPreview` string, and closed the gap directly rather than
+  re-running the whole workflow. (4) Verified the wiki cross-reference anchors by hand-deriving GitHub's slug
+  algorithm rather than assuming em-dash punctuation would resolve safely, and fixed the one heading that would
+  have produced a broken in-wiki link. (5) Per the operator's explicit instruction, stopped at "spec it out as a
+  follow-up session" rather than starting the `OpenCodeLLMClient` implementation — matches this project's own
+  `feedback_advice_not_action` memory pattern (advise/recommend on request, act only on explicit go-ahead) and
+  `SAFEGUARDS.md`'s prohibition on architecture work without a commit boundary.
+- **The −:** (1) Did not run the workflow's per-candidate research through an adversarial/verification pass (e.g.
+  a second, skeptical agent re-checking each citation) — the findings are cited to primary sources and internally
+  consistent, but a genuinely "ultracode"-thorough treatment could have added a verify stage given the stakes
+  (this becomes the basis for a real architecture decision). Judged proportionate for a research-and-record
+  session rather than a security-critical one, but naming the gap in case a future reader wants higher confidence
+  before the `OpenCodeLLMClient` spec session relies on it. (2) The wiki additions are moderately long (§9 alone
+  runs to a full comparison table plus three subsections); this matches the page's existing density (§6 alone runs
+  to eight risk subsections) but is worth flagging in case a future session judges it should be trimmed once the
+  adapter actually ships and the "planned, not yet built" framing becomes stale.
+
+**What's next:** Spec out the `OpenCodeLLMClient` adapter — see the new `BACKLOG.md` "CLI-adapter portability" open
+item for the full brief. Read `docs/wiki/claims-model-starter/AI-Dependencies.md` §9 and `Architecture-Decisions.md`
+AD-11 first; both were written specifically so that session doesn't have to re-derive the four-candidate comparison.
+The one concrete piece of prerequisite research that session still needs to do: verify OpenCode's `opencode run
+--format json` event schema against a live invocation (not published in the docs surveyed here) before designing
+the response-parsing logic. Phase C4 (the enterprise-clone fork) remains on hold pending the operator's live
+enterprise consultation, unchanged from Session 209's handoff — do not resume without the operator initiating and
+supplying the 5 live decisions per `enterprise-migration.md` Phase C4's "Before step 1" note.
+
+**Key files:** `docs/wiki/claims-model-starter/AI-Dependencies.md` §9 (new — CLI-adapter portability findings);
+`docs/wiki/claims-model-starter/Architecture-Decisions.md` AD-11 (new — the decision record); `BACKLOG.md` (new
+"CLI-adapter portability" open item, above the enterprise-migration entry). For the eventual implementation
+session: `src/model_project_constructor/agents/intake/anthropic_client.py` / `bedrock_client.py` / `factory.py`
+and the parallel trio under `packages/data-agent/src/model_project_constructor_data_agent/` are the shape to match.
+
+**Gotchas:** (1) A `Workflow` finder agent can spend real tool calls and tokens and still return a degenerate
+placeholder `StructuredOutput` result — always sanity-check `resultPreview`/summaries for plausibility, don't
+assume schema validation means the content is real. (2) GitHub wiki heading anchors with em dashes or other
+padded punctuation produce non-obvious (often double-hyphen) slugs — hand-derive the slug or avoid the punctuation
+rather than guessing. (3) OpenCode's `--format json` schema is unverified/unpublished as of this session's
+research (2026-08-01) — the next session must confirm it empirically, not assume the shape. (4) Gemini CLI's
+free/personal-account access was discontinued 2026-06-18; if OpenCode or Codex CLI also ever gets deprioritized,
+re-verify current status before trusting this session's snapshot, since this whole CLI landscape is moving fast.
+
 ### What Session 209 Did
 **Deliverable:** Fix `README.md`'s repo-layout tree per-directory test-count staleness (flagged by
 Session 208) — update every stale per-directory comment and add missing entries for `tests/eval/`

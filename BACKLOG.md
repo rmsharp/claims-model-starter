@@ -4,6 +4,29 @@
 
 ## Open Items
 
+### CLI-adapter portability — spec the `OpenCodeLLMClient` adapter
+
+**Decision accepted by the operator, 2026-08-01:** extend the LLM provider seam (`LLMProvider` in both agents'
+`factory.py` modules — currently `"anthropic"` | `"bedrock"`) with a new `"opencode"` branch, shelling out to the
+`opencode` CLI (`github.com/anomalyco/opencode`) rather than calling an SDK directly. OpenCode is itself a
+vendor-agnostic multiplexer (75+ model providers via the Vercel AI SDK / Models.dev), so one adapter unlocks many
+underlying vendors through OpenCode's own config — the actual goal being prepared for is an enterprise environment
+that may standardize on a different AI CLI than Anthropic's. Full research (four candidates compared: OpenCode,
+Codex CLI, Gemini CLI, GitHub Copilot CLI — headless-mode syntax, structured-output support, auth mechanics,
+portability verdicts, citations) and the decision record live in
+`docs/wiki/claims-model-starter/AI-Dependencies.md` §9 and `docs/wiki/claims-model-starter/Architecture-Decisions.md`
+AD-11 — read both before starting, so the next session doesn't re-derive the comparison.
+
+**Next session's deliverable is a *spec*, not an implementation:** design `OpenCodeLLMClient` to match the
+`AnthropicLLMClient`/`BedrockLLMClient` shape already in `src/model_project_constructor/agents/intake/` and
+`packages/data-agent/src/model_project_constructor_data_agent/` — same `IntakeLLMClient`/`LLMClient` Protocol
+methods, same JSON-parse-and-validate pattern (`_call_json`/`_call_claude` today parse an SDK response object; the
+new client instead parses the stdout of a subprocess call to `opencode run --format json`, which is a different
+error surface — process spawn failure, non-zero exit, timeout, and malformed JSON all need mapping to
+`IntakeLLMError`/`LLMParseError`, none of which the SDK-based clients have to handle today). AI-Dependencies.md §9.2
+flags that OpenCode's `--format json` event schema is not yet published/verified against a live invocation — that
+verification is prerequisite spec work, not an assumption to carry into the design.
+
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 
 Land the `feat/bedrock-mantle-migration` branch on `origin/master`, converge the three
