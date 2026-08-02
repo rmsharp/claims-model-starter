@@ -6,6 +6,176 @@
 
 ## ACTIVE TASK
 
+### What Session 212 Did
+**Deliverable:** Spec Phase 1 — the OpenCode live verification spike (`docs/planning/opencode-adapter-spec.md`
+§9 Phase 1). **COMPLETE.** No production code written (FM #18 held).
+
+**Started / Completed:** 2026-08-01. **Commit:** see `git log` for this session's single commit.
+
+**Trigger:** the operator replied "1" to the Phase 0 orientation report, selecting item (1) of the two open items
+— the same one-character selection pattern Sessions 209 and 211 handled. Interpretation was stated back before any
+work began, per Phase 1.
+
+**Two operator decisions were required before work could start** (asked via `AskUserQuestion`, both blocking and
+genuinely operator-owned: installing software on their machine, and spending provider tokens). Both recommendations
+were accepted: install via **`npm i -g opencode-ai`** (reversible in one command, no new Homebrew tap, no piping a
+remote script to a shell), and supply the credential **through the child environment only** rather than
+`opencode auth login`.
+
+**What was done:**
+1. **Pre-flight drift check first**, as Session 211's handoff instructed — re-fetched the upstream repo state via
+   the GitHub API. **Zero drift:** branch `dev` still @ `32f278b48f1a`, `run.ts` still last modified
+   `20445ca03133`, release still v1.18.11. Every `[source-verified]` claim in spec §3 held. Also re-confirmed the
+   §3.1 flag table against `opencode run --help` on the installed binary — including the load-bearing absence of
+   any `--system` flag, which is D2's entire premise.
+2. **Installed `opencode` v1.18.11** — exactly the release the spec pinned.
+3. **Ran all seven probes** plus targeted hazard tests. Cost: **$0.1295 over 16 billed model calls.**
+4. **Resolved all four `[unverified]` markers** (Appendix A.1), annotating each inline in §3/§4 as well as in the
+   appendix so an executor reading the design sees the resolution in place.
+5. **Committed six verbatim fixtures** to `tests/fixtures/opencode/` with a provenance README. Leak-checked
+   against the live key and against `sk-ant-`/`AWS_`/`BEARER` patterns before writing into the repo — clean.
+6. **Wrote spec §13 Appendix A** (findings, measurements, corrections, and an explicit "what Phase 1 did NOT
+   settle" section), and updated the spec header, §9 Phase 1 status, §10 dragon 1, §11 Q3/Q4, and the §12 risk
+   register (risk 6 raised to High; three new risks added).
+7. **Two new learnings** (#64, #65) appended to `PROJECT_LEARNINGS.md`, and **learning #63 corrected** — it carried
+   a now-disproven safety claim that would otherwise have propagated.
+
+**The headline result — a safety defect in the spec.** Spec hazard H4 claimed "the default is already safe"
+because unanswered permission requests are auto-rejected. **False.** With no `--auto`, a live run listed the
+sandbox, **read a file, and disclosed its contents**, exit 0. Session 211's source reading was accurate; the
+inference was not — the source showed what the permission handler does to requests reaching it, not which tools
+route through it. The tool-denying agent definition (with `read: deny`) is therefore **mandatory, not
+defence-in-depth**, and it is verified to work (zero `tool_use` events, explicit refusal). §4.4's "caller supplied
+their own agent ⇒ adapter writes nothing" escape hatch must be removed or hard-gated in Phase 2.
+
+**Six further corrections (Appendix A.4):** stderr is empty on the error path, so §4.7's `{stderr_tail}` message
+yields `""` — build it from the stdout `error` event's `name`/`message`/`ref`; `step_finish` carries
+`reason`/`tokens`/`cost`, which **restores the truncation guard §3.3 declared impossible** and adds per-call
+telemetry the SDK clients lack; blind concatenation of `text` events picks up narration on multi-step runs (prefer
+the final step's text); a malformed agent file fails as usage-help-on-stderr with **empty stdout** and a non-zero
+exit — a shape nothing in the spec anticipated, and flow-style YAML triggers it; the sandbox needs a **runtime npm
+install** once an agent file is present (~1 MB, 62 MB observed), making npm reachability a deployment prerequisite;
+and sessions persist prompt/response text in a **global SQLite DB** that survives sandbox deletion.
+
+**The replace-vs-append question — the spec's largest open risk — is resolved quantitatively: partial replace.**
+A custom agent's prompt drops ~4,720 tokens of built-in persona, but a **constant ~4,830-token scaffold survives
+every call** and `--pure` does not reduce it. Method: token accounting across controlled variations (9,552 → 4,832;
++2,000 prompt tokens → 6,836, a delta of exactly the added text). That also prices the design: **~120 k extra input
+tokens per 25-call interview** — trivial on Haiku, material on an Opus-class model, and invisible to quality-only
+thresholds.
+
+**D2 validated end-to-end:** the real `next_question` payload (`SYSTEM_INTERVIEWER` + a 10-pair transcript), folded
+exactly as D2 prescribes, ran three times → exit 0, `reason: "stop"`, fenced JSON, and **all three parse with the
+project's own unmodified `_extract_json`** yielding exactly `{question, believe_enough_info}`. Questions were
+on-domain and followed the prompt's specific instructions. **This is a smoke test, not a quality measurement** —
+one method, one model, three runs — and the appendix says so explicitly.
+
+**Verification:** `tests/test_wiki_no_line_citations.py` 3 passed (planning docs are out of its scope, re-confirmed
+from its source). `pytest --collect-only` → **997 tests collected**, exactly the 989-passed + 8-skipped baseline,
+confirming the new fixture files break no collection. No `src/`, `packages/`, or `scripts/` file was touched, so
+the full gate was not re-run — the docs-only convention Sessions 203/206/208/209/210/211 established; Session 209's
+gate run remains the baseline.
+
+**One mid-session correction I made to my own work:** I initially inferred from a 62 MB sandbox that OpenCode
+installs an npm tree into any `--dir`. A controlled test with a virgin `mkdtemp` showed it stays **0 bytes** — the
+trigger is the presence of an agent definition, not `--dir` itself. Corrected before it reached the appendix.
+
+### Session 211 Handoff Evaluation (by Session 212)
+
+**Score: 9.5/10.** The best handoff I have inherited in this project's recent history, and the score is earned on
+what it caused me to *do*, not on how it read.
+
+**What helped, specifically:** (1) It named the deliverable, the exact spec sections to read (§9 Phase 1's seven
+probes, §3's four markers), and the file. Zero discovery cost. (2) It told me `opencode` **is not installed on this
+machine** and that this makes the first act an operator-owned install decision — precisely the framing I needed,
+and exactly the gap it had criticised in *its own* predecessor. That is the compounding loop working as designed.
+(3) It listed three install methods, so the `AskUserQuestion` options were concrete rather than researched. (4)
+Gotcha (2) — "the spec's line numbers are a snapshot at `a3f33d8`, re-run the §6 searches" — was correct and I did
+not have to discover it. (5) **Gotcha (4), "re-fetch `run.ts` and diff before Phase 1," was the single most
+valuable line**: it made drift-checking the first action, which cost two minutes and licensed me to trust all of
+§3. Had it drifted, everything downstream would have been built on stale source.
+
+**What was missing:** almost nothing. Two small things. (a) It did not mention that `.env` already contains a
+populated `ANTHROPIC_API_KEY` — I checked and found it, but the handoff framed credentials as an open question when
+half the answer was already in the repo. (b) It did not anticipate that the *model list itself* is credential-gated,
+which turned out to be a free way to settle a marker; not a fault, just an opportunity its probe list did not see.
+
+**What was wrong:** one thing, and it is the interesting one. §3.5's H4 mitigation asserted "the default is already
+safe." It was wrong, and it was wrong in the most defensible possible way — derived carefully from real source, at
+a pinned commit, with line citations. **This is the strongest argument for the Phase-1-before-Phase-2 discipline
+the spec itself imposed:** the spec's own structure caught its own error. Notably Session 211's self-assessment
+predicted the risk in a different place (D2/dragon 1) and D2 came through *fine*; the defect was in a hazard row it
+had marked as closed. Confidence and correctness were anti-correlated.
+
+**ROI:** strongly positive. I spent no time on orientation-to-task translation and all of it on probing.
+
+### Phase 3B: Self-assess — Session 212 — 9/10
+
+- **The +:** (1) Ran the drift check *first*, as instructed, before trusting any inherited claim. (2) Asked the two
+  genuinely operator-owned questions up front rather than assuming consent to install software and spend tokens —
+  and did the free, non-committal work (toolchain survey, credential inventory, drift check) *before* asking, so
+  the question was concrete. (3) **Found the safety defect by probing the negative case** — asking the tool to do
+  the forbidden thing rather than confirming the happy path. The happy-path-only version of this session would have
+  reported "Phase 1 green" and shipped an unsafe design. (4) Answered the largest open question **quantitatively**
+  via token accounting rather than by asking the model about itself, and got a decomposition (constant base +
+  linear custom prompt) rather than a binary answer. (5) Validated D2 against the *real* payload and the *project's
+  own parser*, not a synthetic stand-in — the strongest available evidence short of the eval. (6) Caught and
+  corrected my own wrong inference about the npm install before it reached the deliverable. (7) Leak-checked
+  fixtures against the live key before writing into the repo. (8) Corrected the now-false safety clause in learning
+  #63 instead of silently appending a contradicting row. (9) Held scope: no client code, despite having everything
+  needed to write it.
+- **The −:** (1) **`mode: primary` was never isolated** — every successful run set it, so I cannot say whether it
+  is required. Disclosed in A.1 #3 and A.5, and harmless (Phase 2 keeps setting it), but it is a probe I could have
+  run for free. (2) **I did not chase the 1 MB vs 62 MB sandbox discrepancy to a definitive root cause.** I
+  established the trigger (agent file present) and bounded the range, and I judged further investigation
+  lower-value than the deliverable — but Phase 2 will meet whichever case it meets, and "up to 62 MB" is a wider
+  bound than it needed to be. (3) **No non-Anthropic provider was exercised at all**, so the entire portability
+  premise — the *reason* this adapter exists — is still unmeasured. That was out of Phase 1's stated scope and is
+  flagged in A.5, but it means the spike validated the transport without validating the purpose. (4) The spec is
+  now ~660 lines with corrections layered on top of superseded prose; §3/§4 would read better rewritten than
+  annotated, but rewriting would have destroyed the provenance trail of what was believed when.
+
+**What's next:** **Spec Phase 2 — both clients, both factory branches, the registry entry, and the deterministic
+test tier**, in ONE session (the twin-drift guard is only writable once both copies exist; precedent is Session 162
+shipping both Bedrock clients together). **Read Appendix A before §3/§4** — seven corrections change the design,
+and one is a safety defect. Pre-flight per spec §9 Phase 2: re-run every §6 search (line numbers are a snapshot at
+`a3f33d8` and are now two commits stale), re-run `rg '"openai"' tests/` for the sentinel, and read both
+`anthropic_client.py` and both `bedrock_client.py` as the structural template. Phase 2 earns a `CHANGELOG.md`
+entry (it ships code). Phase C4 of the enterprise migration remains operator-gated and unchanged.
+
+**Key files:** `docs/planning/opencode-adapter-spec.md` — **§13 Appendix A is the new required reading**; A.1
+(resolved markers), A.2 (measurements), A.3 (D2 validation), **A.4 (the seven corrections)**, A.5 (what is still
+unsettled). `tests/fixtures/opencode/` — six verbatim fixtures + `README.md` with full provenance. For Phase 2:
+`src/model_project_constructor/agents/intake/anthropic_client.py:363-401` (`_call_json`, the method to override)
+and `bedrock_client.py:86-145` (the subclass pattern); the wheel's `anthropic_client.py:376-405` (`_call_claude`)
+and `:112-113` (`LLMParseError`); both `factory.py` (Literal at intake `:32` / wheel `:33`);
+`orchestrator/config.py:158-161` (`LLM_PROVIDERS`); `tests/test_llm_json_parity.py:145-156` (`_SEAMS`).
+
+**Gotchas:**
+1. **The agent definition is a SAFETY control, not a nicety.** Without `read: deny`, the agent reads files and
+   discloses contents — verified live, exit 0, no `--auto`. Phase 2 must ship a **negative test** asserting a read
+   request is refused, and must remove or hard-gate §4.4's "caller supplied an agent ⇒ adapter writes nothing".
+2. **Emit block-style YAML in the generated agent file.** Flow-style (`permission: {edit: deny, …}`) silently
+   breaks agent loading and surfaces as usage-help-on-stderr with **empty stdout** and a non-zero exit. Since the
+   adapter generates this file, this failure is a bug in *our* code, and it must be diagnosed distinctly from a
+   provider error.
+3. **Never inherit stdin — verified, not theoretical.** An open inherited stdin blocked the full 25 s timeout with
+   zero output. Write the prompt to a pipe and close it, or use `DEVNULL`, plus a hard timeout.
+4. **Create the sandbox once per client instance, never per call** — an agent file triggers a `.opencode/
+   node_modules` install (~1 MB, 62 MB observed) and therefore needs npm-registry reachability at runtime.
+5. **`{stderr_tail}` is useless on the error path** — stderr is empty; the diagnostics are the stdout `error`
+   event's `name`/`message`/`ref`. The message is generic ("Unexpected server error"), so the `ref` is the only
+   distinguishing detail.
+6. **The fixtures pin v1.18.11 and OpenCode ships daily.** If a Phase 2 test fails after an upgrade, suspect the
+   schema before the test — and **re-capture** rather than hand-editing a fixture, or the test starts asserting the
+   spec instead of OpenCode.
+7. **`LLM_PROVIDERS` and the two `LLMProvider` `Literal`s are kept in lockstep by convention, not by a test** (C4
+   forbids the parity guard). Three hand edits, one session, or the registry silently drifts.
+8. **`opencode` is now installed globally on this machine** (`npm i -g opencode-ai`). If a future session wants a
+   clean-room test of the "binary absent" error path, uninstall with `npm uninstall -g opencode-ai` first.
+
+### What Session 211 Did
+
 ### What Session 211 Did
 **Deliverable:** Spec the `OpenCodeLLMClient` adapter — a design document only, no implementation
 (per `BACKLOG.md`'s "CLI-adapter portability" open item and Session 210's handoff). **COMPLETE.**

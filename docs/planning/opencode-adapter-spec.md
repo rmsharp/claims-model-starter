@@ -3,6 +3,7 @@
 **Author:** Session 211 (spec session) — 2026-08-01.
 **Baseline commit:** `a3f33d8` — tree clean on `master`. Last full gate (Session 209): 989 passed + 8 skipped @ 97.78%, ruff clean, mypy clean. This session changes no `src/`, `packages/`, `scripts/`, or `tests/` file.
 **Status:** Specification for executor review. **This document is the deliverable of Session 211.** Failure modes #18 (planning-to-implementation bleed) and #19 (plan-mode bypass) are the primary risks for the sessions that follow.
+**⚠ Phase 1 is COMPLETE (Session 212, 2026-08-01) — read [Appendix A](#appendix-a--phase-1-live-verification-findings-session-212-2026-08-01) BEFORE Phase 2.** All four `[unverified]` markers are resolved and §3/§4 are annotated inline, but Phase 1 also produced **seven corrections to this spec, one of them a safety defect**: §3.5's hazard H4 claim that "the default is already safe" is **false** — a live run read a file and disclosed its contents without `--auto`. Fixtures: `tests/fixtures/opencode/`.
 **Decision being implemented:** AD-11 (`docs/wiki/claims-model-starter/Architecture-Decisions.md`) — accepted by the operator 2026-08-01. Research behind it: `docs/wiki/claims-model-starter/AI-Dependencies.md` §9.
 **Governing workstream:** `docs/methodology/workstreams/ARCHITECTURE_WORKSTREAM.md` (interface-first design, failure-mode analysis, honest alternatives). *Not* `DESIGN_WORKSTREAM.md`, which is UI/UX-specific.
 
@@ -163,6 +164,8 @@ function emit(type: string, data: Record<string, unknown>) {
 
 **The assistant's answer is the concatenation, in emission order, of `part.text` over every `type == "text"` event.** Multiple `text` events per run are possible (a multi-step agent turn), so the adapter must join them, not take the first.
 
+⚠ **Phase 1 amends this (Appendix A.4 C4): blind concatenation is unsafe once tools fire.** An observed 3-step run emitted three `text` events, two of them narration (`"I'll list the files…"`, `"Now let me read…"`) ahead of the real answer. Prefer the text of the **final step** — the one whose `step_finish.reason == "stop"` — and rely on tool denial to keep runs single-step. Also note `step_finish`'s part carries more than this table records: **`reason`** (`"stop"` / `"tool-calls"`), **`tokens{input,output,total,cache{write,read}}`**, and **`cost`** (Appendix A.4 C3).
+
 **Termination and exit status** (`run.ts:788-794`, `:828-872`): the event loop breaks on `session.status` with `status.type === "idle"`. `process.exitCode` is set to `1` when the loop recorded a session error, when the prompt/command call returned an error, or when the stream threw. **Success ⇒ exit 0; any of those failures ⇒ exit 1.** There is no richer documented exit-code vocabulary — treat "non-zero" as the failure signal, not just `1`.
 
 **Non-JSON lines can appear on stdout.** Early `UI.error(...)` / `die(...)` paths (e.g. `run.ts:420-423`, `:425-428`) run *before* any JSON is emitted. The parser must therefore **skip unparseable lines rather than fail on them**, and use the exit code — not stream contents — as the authority on success.
@@ -172,18 +175,18 @@ function emit(type: string, data: Record<string, unknown>) {
 | Concept in the current clients | OpenCode | Consequence |
 |---|---|---|
 | per-call `system=` | **absent** — no flag **[source-verified]** | D2: fold into the message. The largest quality risk. |
-| `max_tokens=16384` | no `run` flag **[source-verified]** | `max_tokens` becomes **inert** for this provider. The inherited truncation guard has no analogue: a truncated answer surfaces as an `_extract_json` failure instead of the pointed "raise max_tokens" message. Document it on the constructor. |
+| `max_tokens=16384` | no `run` flag **[source-verified]** | `max_tokens` becomes **inert** for this provider. ⚠ **Amended by Phase 1 (Appendix A.4 C3): the truncation guard DOES have an analogue** — `step_finish.reason` (observed `"stop"` and `"tool-calls"`). Prefer it over letting truncation surface as an opaque `_extract_json` failure. The same part also exposes `tokens` and `cost`, i.e. **per-call telemetry the SDK clients do not provide** — surface it. (No truncation was forced in Phase 1, so the exact `length`-style value is inferred, not observed.) |
 | `temperature` | not a `run` flag; settable per-agent in config **[docs]** | Out of scope; note for the eval's non-determinism policy. |
 | schema-constrained output | **not shipped** — an open feature request (`anomalyco/opencode` issue #9320) proposes `--json <schema>` **[verified: the issue is a request, not documentation of existing behaviour]** | Decision C of the prior plan carries unchanged: keep fenced-text + `_extract_json`. |
 
 ### 3.4 Auth and configuration **[docs]**
 
 - OpenCode resolves credentials from **provider-specific environment variables** and from a credential store written by its interactive `/connect` flow at `~/.local/share/opencode/auth.json`. The providers page explicitly names, among others, `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_PROFILE` / `AWS_REGION` / `AWS_BEARER_TOKEN_BEDROCK`, `AZURE_RESOURCE_NAME`, `CLOUDFLARE_API_TOKEN`, `GOOGLE_APPLICATION_CREDENTIALS` / `GOOGLE_CLOUD_PROJECT`, `NVIDIA_API_KEY`, `GITLAB_TOKEN`, `SNOWFLAKE_CORTEX_TOKEN`.
-  **[unverified — Phase 1 must confirm]** The page fetched this session did **not** name `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Session 210's research recorded them; the AI SDK's conventional names make them very likely. **Do not encode either name anywhere in this project until Phase 1 confirms it empirically** — and per §4.8 the design does not need them, which is why this unknown does not block.
+  **[RESOLVED — Phase 1, Appendix A.1 #1]** `ANTHROPIC_API_KEY` **is** honoured; the docs page was merely incomplete. Verified free of charge: `opencode models` returns 7 ids without a credential and 24 (incl. 17 `anthropic/*`) with the env var set. Supplying it through the child environment writes **no** `auth.json`, which is how Phase 1 avoided creating the second at-rest credential store §11 Q4 asks about.
 - Config lives in `opencode.json` (`$schema: https://opencode.ai/config.json`), with a `provider` block naming the `@ai-sdk/...` npm package, `options.baseURL`, and a `models` map — i.e. **an enterprise can point OpenCode at an internal gateway**, which is the enterprise-migration-relevant property.
 - Provider registry: *"OpenCode uses the AI SDK and Models.dev to support 75+ LLM providers."*
 - Agents are defined in `~/.config/opencode/agents/` (global) or `.opencode/agents/` (project), as markdown with YAML frontmatter — `description`, `mode: primary|subagent|all`, `model`, `temperature`, and `permission: {edit|bash|write: allow|ask|deny}` (the older `tools` key is deprecated in favour of `permission`). **The file's basename is the agent id.** The frontmatter body is the agent's system prompt (`prompt` may instead point at a file via `{file:./path}`).
-  **[unverified — Phase 1 must confirm]** Whether an agent's prompt *replaces* or *appends to* OpenCode's built-in coding-agent system prompt. This materially affects D2's residual risk (§10, dragon 1).
+  **[RESOLVED — Phase 1, Appendix A.1 #2]** **Partial replace.** A custom agent's prompt replaces ~4,720 tokens of built-in *persona*, but a **constant ~4,830-token scaffold survives** and cannot be removed via the agent file (`--pure` does not help). Measured by token accounting: 9,552 → 4,832 cache-write tokens, with a 2,000-token-longer prompt landing at 6,836 (delta exactly the added text).
 
 ### 3.5 Hazards — each one closed by a specific adapter decision
 
@@ -192,7 +195,7 @@ function emit(type: string, data: Record<string, unknown>) {
 | H1 | **Indefinite hang.** `const piped = process.stdin.isTTY ? undefined : await Bun.stdin.text()` (`run.ts:416`) — a child spawned with an inherited non-TTY stdin that never closes blocks forever, *before* any timeout inside the model call. | [source-verified] | Always spawn with `stdin` bound to a pipe the adapter closes (writing the prompt then closing), or `DEVNULL`. **Never inherit stdin.** Plus a hard `subprocess` timeout. |
 | H2 | **Prompt content leaks into the process table.** Interview transcripts and `DataRequest` free text may contain PII (`AI-Dependencies.md` §6.3). Anything in `argv` is world-readable via `ps`. | Standard POSIX | Pass the prompt on **stdin**, never as a positional argument (§3.1 shows this is supported). |
 | H3 | **The agent reads or writes the host repository.** `opencode` is a coding agent; by default `--dir` is the cwd, and it discovers `AGENTS.md` / project config by walking the tree. | [docs] + `run.ts:820` | `--dir <ephemeral temp dir outside the repo>` + an agent definition denying `edit`/`write`/`bash`. |
-| H4 | **`--auto` auto-approves tool permissions.** Its own help string says `(dangerous!)`. | `run.ts:242-244` [source-verified] | Never pass it. **The default is already safe:** without `--auto`, `permission.asked` is auto-**rejected** (`run.ts:805-815`), and non-interactive runs install a ruleset denying `question`, `plan_enter`, `plan_exit` (`run.ts:430-448`). So headless runs do not hang on a permission prompt — they refuse. |
+| H4 | **`--auto` auto-approves tool permissions.** Its own help string says `(dangerous!)`. | `run.ts:242-244` [source-verified] | Never pass it. ⚠ **THE CLAIM THAT "THE DEFAULT IS ALREADY SAFE" IS FALSE — DISPROVEN IN PHASE 1 (Appendix A.4 C1).** Without `--auto`, a live run still listed the directory, **read a file, and disclosed its contents**, exit 0. Permission auto-reject does **not** cover the `read` tool. Headless runs do not hang — but they also do not refuse reads. **The tool-denying agent definition (with `read: deny`) is therefore MANDATORY, not defence-in-depth.** Verified to work: with it, zero `tool_use` events and an explicit refusal. |
 | H5 | **Session state accumulates on disk.** Every `run` creates a session (`run.ts:671-676`); `--continue`/`--session` exist to resume them. One interview is ~25 calls ⇒ ~25 sessions. | [source-verified] | Not blocking, but the operator checklist must mention it. Phase 1 measures where sessions are stored and how large they get. |
 | H6 | **Agentic multi-step behaviour.** The model may emit `tool_use` / `step_*` events instead of a single text answer, and text may arrive in several parts. | [source-verified] | Concatenate all `text` events; deny tools via the agent definition; treat a run with **zero** `text` events as an error (§4.7). |
 
@@ -228,7 +231,7 @@ Both seams pass a per-method system prompt (intake: `SYSTEM_INTERVIEWER`, `SYSTE
 
 ### 4.3 D3 — Process-per-call
 
-`opencode run` spawns a fresh Bun process, creates a session, subscribes to the event stream, and tears down — per call. An interview is ~20-25 calls. **[unverified — Phase 1 must measure]** the per-call process overhead; expect it to be small relative to model latency, but measure rather than assume.
+`opencode run` spawns a fresh Bun process, creates a session, subscribes to the event stream, and tears down — per call. An interview is ~20-25 calls. **[MEASURED — Phase 1, Appendix A.1 #4]** per-call process overhead is **~0.77 s** (0.77/0.77/0.76 over three billing-free runs) — ~24 % on top of a 3.2 s call, or **~19 s per 25-call interview**. Real, but not enough on its own to justify the `serve` lifecycle.
 
 `opencode serve` + `run --attach http://localhost:PORT` amortises startup. Deliberately deferred: it adds a server lifecycle (start, health-check, shutdown, port allocation, auth via `OPENCODE_SERVER_USERNAME`/`OPENCODE_SERVER_PASSWORD`) for a latency win that has not been measured. Because `--attach` is a flag on the *same* command, adopting it later is a constructor argument, not a rewrite. Record the measured per-call overhead in Phase 1 so the decision to revisit has a number behind it.
 
@@ -241,7 +244,7 @@ opencode run --format json [--model <provider/model>] [--agent <name>] --dir <sa
 with:
 
 - **prompt on stdin**, then stdin closed (H1, H2);
-- **`--dir <sandbox>`** — a `tempfile.mkdtemp()` directory owned by the client instance, created lazily on first call, well outside the repository tree (H3). The client writes `.opencode/agents/<agent>.md` into it, unless the caller supplied an `agent=` name (in which case the operator's own definition governs and the adapter writes nothing);
+- **`--dir <sandbox>`** — a `tempfile.mkdtemp()` directory owned by the client instance, created lazily on first call, well outside the repository tree (H3). The client writes `.opencode/agents/<agent>.md` into it. ⚠ **Phase 1 amends this twice.** (a) The original "unless the caller supplied an `agent=` name, in which case the adapter writes nothing" escape hatch is **unsafe and must be removed or hard-gated** — per Appendix A.4 C1 the tool denial is the only thing preventing file reads, so an operator-supplied agent must still be validated as denying tools. (b) The sandbox is **not free**: an empty `--dir` stays 0 bytes, but once an agent file is present OpenCode materialises `.opencode/node_modules` (~1 MB, up to 62 MB observed) and therefore **needs npm-registry reachability**. **Create it once per client instance and reuse it — never per call** (Appendix A.4 C6);
 - the bundled agent definition denying every mutating tool:
 
   ```yaml
@@ -255,7 +258,7 @@ with:
   ---
   ```
 
-  **[unverified — Phase 1 must confirm]** the exact frontmatter keys accepted by the installed version, and whether `mode: primary` is required for `--agent` on a top-level `run`;
+  **[RESOLVED — Phase 1, Appendix A.1 #3]** accepted keys at v1.18.11: `description`, `mode`, and `permission:` with `edit`/`write`/`bash`/`read`/`webfetch`. Agent id = file basename; `.opencode/agents/` (plural) alone suffices. **The YAML must be block-style — flow-style `permission: {edit: deny, …}` silently breaks agent loading and makes `opencode` print usage help to stderr with empty stdout and a non-zero exit (Appendix A.4 C5).** Whether `mode: primary` is strictly *required* was never isolated — keep setting it. **Add `read: deny`: Appendix A.4 C1 proves the default is NOT safe and reads succeed without it;**
 - **no `--auto`** (H4);
 - `env` passed through unchanged — OpenCode needs the operator's provider credentials (§3.4), and the adapter has no business filtering them.
 
@@ -291,7 +294,8 @@ Every failure below maps to the **seam's own** error class (`IntakeLLMError` for
 | binary missing | `shutil.which(...) is None` at construction | `"opencode executable not found on PATH (looked for {name!r}); install it or pass executable=..."` |
 | timeout | `subprocess.TimeoutExpired` | `"opencode run timed out after {timeout}s"` — chain the original via `from exc` |
 | spawn failure | `OSError` from `subprocess.run` | `"failed to spawn opencode: {exc}"` |
-| non-zero exit | `returncode != 0` | `"opencode run exited {rc}: {stderr_tail}"` — include the last N chars of stderr **and** any `error`-event payloads seen on stdout |
+| non-zero exit | `returncode != 0` | ⚠ **Amended by Phase 1 (Appendix A.4 C2): stderr is EMPTY on this path** — `{stderr_tail}` would yield `""`. Build the message from the stdout `error` event: `error.name`, `error.data.message`, and **`error.data.ref`** (the payload is otherwise generic — `"Unexpected server error"` — so the `ref` is the only distinguishing detail). Keep a stderr tail only as a fallback. |
+| non-zero exit with **zero stdout lines** | `returncode != 0` and no parseable line | **New in Phase 1 (Appendix A.4 C5).** This is the malformed-agent-definition path: OpenCode prints usage help to *stderr* and emits nothing on stdout. Diagnose it distinctly — `"opencode rejected its invocation (likely a malformed agent definition); stderr: {stderr_tail}"` — because it is a bug in the adapter's own generated file, not a provider failure. |
 | `error` event with exit 0 | an `error`-typed line was emitted but the process exited 0 | same as above; do not silently succeed |
 | no `text` events | zero `type == "text"` lines | `"opencode returned no assistant text"` — the structural analogue of the old empty-content guard |
 | malformed JSON in the assistant text | the inherited `_extract_json` raises | unchanged, inherited |
@@ -484,7 +488,9 @@ Capture the JSONL fixtures **from the Phase 1 live run** and commit them. Fixtur
 
 > ⚠ **Here be dragons: Phase 1 and Phase 4.** Phase 2 is mechanical once Phase 1's facts are in hand. Phase 1 is where the unverified claims get settled — if it finds that agent prompts *append* rather than replace, or that `--agent` behaves differently on a top-level `run`, D2 and D4 need revisiting **before** any client is written. Phase 4 is the quality judgement.
 
-### Phase 1 — Live verification spike (no production code)
+### Phase 1 — Live verification spike (no production code) — ✅ **DONE (Session 212, 2026-08-01)**
+
+**Outcome:** all seven probes run against v1.18.11; four `[unverified]` markers resolved; six fixtures committed to `tests/fixtures/opencode/`; findings in **Appendix A**; **seven corrections to this spec recorded (A.4), one a safety defect (C1)**. Spend: $0.1295 over 16 billed calls. What Phase 1 deliberately did *not* settle is listed in A.5 — chiefly that the eval gate remains entirely undischarged.
 
 **Work.** Install `opencode`, run the probe set below in a scratch directory, and commit the captured outputs as test fixtures plus a short findings note. Settle every **[unverified]** marker in §3.
 
@@ -535,7 +541,7 @@ Probe set (run each with the prompt on stdin, `--dir` a temp dir):
 
 ## 10. Here be dragons
 
-1. **Prompt-role change (D2).** System instructions delivered as user text, inside OpenCode's own agent framing. This is the difference between "the adapter runs" and "the adapter is usable". If Phase 1 finds that a custom agent's prompt *appends to* rather than replaces the built-in coding-agent prompt, the residual risk grows and the eval becomes the only thing standing between a plausible-looking adapter and quietly degraded intake reports.
+1. **Prompt-role change (D2).** System instructions delivered as user text, inside OpenCode's own agent framing. This is the difference between "the adapter runs" and "the adapter is usable". **Phase 1 resolved the open question and the answer is in between (Appendix A.1 #2): a custom agent's prompt *partially* replaces the built-in one — ~4,720 tokens of persona go, a constant ~4,830-token scaffold stays and cannot be removed.** So this project's prompts are never the only instruction the model sees. Mitigating evidence: the real `next_question` payload ran three times under the fold and produced on-domain, schema-valid output that parses with the project's own `_extract_json` (A.3). **That is a smoke test, not a quality measurement** — one method, one model, three runs. The eval remains the only thing standing between a plausible-looking adapter and quietly degraded intake reports.
 2. **Schema stability.** The JSON event shape is an implementation detail of a project shipping releases daily. It is pinned here by source at a known commit and will be pinned by fixtures at a known version — but it is not a contract. Expect to re-verify.
 3. **The agentic loop.** Everything else in this project calls a completion API. This calls an *agent*, which may take steps, call tools, and decide to do something other than answer. The tool denial and the "no text events ⇒ error" rule are the guards; neither is a proof.
 4. **Silent quality regression is the actual risk, not breakage.** Breakage is loud and cheap. A provider that parses perfectly and mis-tiers governance risk is the failure this whole apparatus exists to catch — see the prior plan's §3.4 and risk #1.
@@ -547,7 +553,9 @@ Probe set (run each with the prompt on stdin, `--dir` a temp dir):
 1. **`DEFAULT_MODEL = None`, or pin a verified id?** (§4.6.) `None` maximises portability and defers to the operator's own OpenCode config; a pinned id maximises reproducibility. The spec recommends `None` **plus** a mandatory explicit model for every evaluated run. This is a reversible one-line decision either way.
 2. **Which underlying vendor should the first measured run target?** Choosing a non-Anthropic model is the only way this adapter delivers the *model-family* diversification `AI-Dependencies.md` §6.7 says is still missing; choosing Anthropic isolates the transport change from the model change and makes the eval a cleaner A/B. The spec has no preference — it is a measurement-design call.
 3. **How does `opencode` get installed in the enterprise environment?** Internal npm mirror, vendored binary, or container base image. This connects directly to `docs/planning/enterprise-migration.md` Phase C3 and to the `CIHostConfig` work from Session 205.
+   **⚠ Sharpened by Phase 1 (Appendix A.4 C6): this is no longer only a packaging question.** OpenCode installs `.opencode/node_modules` into the sandbox at *runtime* whenever an agent definition is present, so it needs **npm-registry reachability from wherever the pipeline runs** — not just at image-build time. An air-gapped runtime would need the sandbox pre-seeded or the registry mirrored.
 4. **Is the credential store at `~/.local/share/opencode/auth.json` acceptable at-rest?** A second on-disk credential location beyond the AWS/Anthropic paths already reviewed.
+   **⚠ Largely defused by Phase 1:** passing the credential through the **child environment** works and writes **no** `auth.json` (verified by absence). The adapter should therefore never invoke `opencode auth login`, and this question narrows to "does any *operator* workflow need it?" **Note a separate at-rest fact did surface (A.4 C7): session content — i.e. prompt and response text, which may contain claim data — persists in a global SQLite database at `~/.local/share/opencode/opencode.db`, and it survives deletion of the sandbox.** That is the at-rest question worth the operator's attention now.
 
 ---
 
@@ -560,10 +568,13 @@ Probe set (run each with the prompt on stdin, `--dir` a temp dir):
 | 3 | The `_extract_assistant_text` twins drift (the `_extract_json` story repeating) | Medium | §7.2 parity battery, written the same session as the twins |
 | 4 | Subprocess hangs forever on inherited stdin (H1) | Medium if unguarded | Never inherit stdin; hard timeout; explicit test |
 | 5 | Prompt content leaks via `ps` (H2) | Medium if unguarded | Prompt on stdin; explicit test asserting it is not in argv |
-| 6 | The agent touches the host repo (H3/H4) | Low-Medium | Ephemeral `--dir`; tool-denying agent; never `--auto`; explicit negative test |
+| 6 | The agent touches the host repo (H3/H4) | ⚠ **RAISED to High by Phase 1** — reads succeed by default (Appendix A.4 C1); only the sandbox and the tool-denying agent stand in the way | Ephemeral `--dir`; tool-denying agent **with `read: deny`, now mandatory not optional**; never `--auto`; explicit negative test asserting a read request is refused |
 | 7 | `LLM_PROVIDERS` / `LLMProvider` lockstep broken (no parity test exists — C4) | Medium | Three named edits in one session, listed in §6.2; call it out in the commit message |
 | 8 | Binary absent in a deployment that selected the provider | Medium | Fail fast at construction with an install hint |
-| 9 | Session state accumulates on disk (H5) | Low | Measured in Phase 1; operator checklist item |
+| 9 | Session state accumulates on disk (H5) | Low | **Measured (A.4 C7): a global SQLite DB, 576 KB + WAL after ~20 runs — not files, not in the sandbox, and it survives sandbox deletion.** Operator checklist item; note it holds prompt/response text. |
+| 10 | **New (A.4 C6): the sandbox needs a runtime npm install** — `.opencode/node_modules` is materialised whenever an agent file is present (~1 MB, 62 MB observed) | Medium | Create the sandbox **once per client instance**, never per call; treat npm reachability as a deployment prerequisite (§11 Q3) |
+| 11 | **New (A.4 C5): the adapter's own generated agent file is malformed** → usage help on stderr, empty stdout, non-zero exit | Medium | Emit **block-style** YAML (flow-style breaks it); diagnose "non-zero exit + zero stdout lines" distinctly; cover with a test |
+| 12 | **New (A.2): per-call token overhead** — ~4,830 scaffold tokens survive even with a custom agent, ~120 k extra input tokens per 25-call interview, invisible to quality thresholds | Medium-High on expensive models | Phase 4 must report **cost per interview** alongside quality, not quality alone |
 
 ---
 
@@ -575,6 +586,102 @@ Probe set (run each with the prompt on stdin, `--dir` a temp dir):
 - **Code evidence:** every file and line number in §2 and §6 was read or searched during Session 211 at `a3f33d8`.
 - **External evidence:** `anomalyco/opencode` — `packages/opencode/src/cli/cmd/run.ts` fetched via the GitHub API (default branch `dev` @ `32f278b48f1a`, 2026-08-01; the file itself last modified in `20445ca03133`, 2026-06-30); release `v1.18.11` (2026-08-01); MIT. Docs pages `opencode.ai/docs/cli/`, `/docs/agents/`, `/docs/providers/`, `/docs/`. Issue `anomalyco/opencode#9320` for the schema-constrained-output status. **No claim in §3 comes from training-data memory** — this tooling post-dates and out-paces it.
 - **What this spec did NOT do:** run `opencode`. The binary is not installed on this machine (`which opencode` → not found), and a live invocation costs provider tokens and an install decision that belongs to the operator. The schema question §9.2 raised is answered from source, which is stronger for that question; everything a live run answers *better* is Phase 1's explicit job and is marked `[unverified]` above rather than assumed.
+
+---
+
+## Appendix A — Phase 1 live-verification findings (Session 212, 2026-08-01)
+
+**Status: Phase 1 COMPLETE.** `opencode` **v1.18.11** installed via `npm i -g opencode-ai`. All seven probes in §9
+Phase 1 ran against `anthropic/claude-haiku-4-5`, prompt on stdin, `--dir` an ephemeral temp dir, never `--auto`.
+Credential supplied through the child environment only — **no `opencode auth login`, and no `~/.local/share/opencode/auth.json` was created** (verified by absence after the runs), so §11 Q4's second at-rest credential store was avoided entirely rather than accepted.
+
+**Cost of the whole spike: $0.1295 across 16 billed model calls.** Fixtures: `tests/fixtures/opencode/` (verbatim
+captures + a provenance README).
+
+**Upstream drift check, run first per Session 211's handoff:** none. At capture time the repo was still default
+branch `dev` @ `32f278b48f1a`, `run.ts` still last modified `20445ca03133`, release still v1.18.11 — identical to
+the spec's pins. **Every [source-verified] claim in §3 held.** The flag table in §3.1 was additionally re-confirmed
+against `opencode run --help` on the installed binary, including the load-bearing absence: **there is no
+`--system` flag.**
+
+### A.1 The four `[unverified]` markers — all resolved
+
+| # | Question (§) | Resolution | Evidence |
+|---|---|---|---|
+| 1 | Is `ANTHROPIC_API_KEY` honoured? (§3.4) | **YES.** The docs page that omitted it was simply incomplete. | `opencode models` returns **7** ids (all `opencode/*`) with no credential, and **24** ids incl. **17 `anthropic/*`** with the env var set. The model list is credential-gated, which made this free to test. |
+| 2 | Does a custom agent's prompt **replace** or **append to** the built-in coding-agent prompt? (§3.4, dragon 1) | **PARTIAL REPLACE — quantified.** The custom prompt replaces ~4,720 tokens of built-in *persona*, but a **constant ~4,830-token scaffold survives** and is not removable via the agent file. | No agent: `cache.write` **9,552**. Custom agent (short prompt): **4,832**. Custom agent with ~2,000 extra prompt tokens: **6,836** — a delta of 2,004, exactly the added text. So base is constant and the custom prompt adds linearly on top. `--pure` does **not** reduce it (9,539). |
+| 3 | Which frontmatter keys are accepted; is `mode: primary` required? (§4.4) | **Partially resolved.** Accepted, block-style: `description`, `mode: primary`, and `permission:` with `edit`/`write`/`bash`/`read`/`webfetch`. Agent id = file basename. `.opencode/agents/` (plural) alone is sufficient. **Still unknown: whether `mode: primary` is strictly required** — every successful run set it, so this was never isolated. *Consequence: harmless — Phase 2 should keep setting it.* | Probes 5, 5b, 5c and a controlled cold-sandbox run. |
+| 4 | Per-call process overhead (§4.3) | **~0.77 s**, very stable (0.77 / 0.77 / 0.76 over three runs with no model call). | Timed runs against an invalid model id, which creates a session but bills nothing. |
+
+### A.2 Measured behaviour
+
+- **Latency.** Trivial prompt 2.13–2.28 s. Realistic `next_question` payload (`SYSTEM_INTERVIEWER` + 10-pair
+  transcript, 4,655 bytes) **3.20 / 3.28 / 4.41 s** over three runs. Cold sandbox costs ~1.5 s extra on first use.
+- **Startup floor ~0.77 s** ⇒ roughly **24 % overhead** on a 3.2 s call, or **~19 s per 25-call interview**. This is
+  the number §4.3 said to measure before revisiting `opencode serve`; it is real but not alarming.
+- **Token overhead is the more significant cost.** Even with the locked-down agent, every call carries ~4,830
+  tokens of OpenCode scaffold — **~120 k extra input tokens per 25-call interview**. On Haiku this is fractions of a
+  cent per call ($0.0061–0.0081 measured); **on an Opus-class model it becomes material**, and it is invisible to
+  the existing eval's quality thresholds. Phase 4 must report cost per interview alongside quality.
+
+### A.3 D2 validated end-to-end — the spec's largest risk is materially reduced
+
+The real `next_question` payload was folded exactly as D2 prescribes (`system + "\n\n" + user`) and run three times.
+All three: exit 0, `reason: "stop"`, correctly fenced JSON, and — the decisive check — **all three parse with the
+project's own unmodified `_extract_json`**, yielding exactly `{question, believe_enough_info}`. The generated
+questions were on-domain and followed `SYSTEM_INTERVIEWER`'s specific instructions (probing the value-measurement
+plan and concrete data sources), i.e. **the system prompt is being honoured despite arriving as user text.**
+
+This does **not** discharge the eval gate — three runs on one method with one model is a smoke test, not a quality
+measurement, and dragon 4 (silent quality regression) is untouched. But D1 and D2 are now demonstrated rather than
+merely argued.
+
+### A.4 Corrections to this specification — read before Phase 2
+
+Seven things the spec got wrong or did not know. **C1 is a safety defect.**
+
+- **C1 — §3.5 H4 is WRONG. "The default is already safe" is false.** Without `--auto`, the agent successfully
+  listed the sandbox, **read a file, and disclosed its contents**, exiting 0 (`multistep_tool_use.jsonl`; reproduced
+  with no agent in a second probe). Permission auto-reject does **not** cover the `read` tool. **Consequence: the
+  tool-denying agent definition is MANDATORY, not optional** — §4.4's "unless the caller supplied an `agent=` name,
+  in which case the adapter writes nothing" is an unsafe escape hatch and must be removed or hard-gated. The
+  ephemeral `--dir` is the only other barrier between this adapter and the host repository, including `.env`.
+  **The mitigation is verified to work:** with `read: deny`, the same request produced zero `tool_use` events and an
+  explicit refusal.
+- **C2 — §4.7's error message shape is unusable as written.** It prescribes `{stderr_tail}`; **stderr is empty** on
+  the error path. Every diagnostic arrives on *stdout* as an `error` event. Build the message from
+  `error.name`, `error.data.message`, and `error.data.ref` instead. (Observed payload is generic —
+  `"Unexpected server error"` + a `ref` id — so include the `ref`, it is the only distinguishing detail.)
+- **C3 — `step_finish` carries more than §3.2 records**, and it repairs a gap §3.3 declared unfixable. The part
+  includes `reason` (`"stop"` / `"tool-calls"`), `tokens{input,output,total,cache{write,read}}`, and `cost`. §3.3
+  says `max_tokens` is inert with "no analogue" for the inherited truncation guard — **`reason` is that analogue**,
+  and `tokens`/`cost` give per-call telemetry the SDK clients do not expose. Phase 2 should surface both.
+- **C4 — §3.2's extraction rule is unsafe when tools fire.** "Concatenate every `text` event" is correct for
+  single-step runs but on a 3-step agentic run produced narration + answer:
+  `"I'll list the files…" + "Now let me read…" + "<the actual answer>"`. Prefer the text of the **final step**
+  (the one whose `step_finish.reason == "stop"`), and rely on tool denial to keep runs single-step.
+- **C5 — A malformed agent definition fails in a shape nothing in the spec anticipates:** OpenCode prints its
+  **usage help to stderr, emits nothing on stdout, and exits non-zero**. It is not an `error` event. **Flow-style
+  YAML** (`permission: {edit: deny, …}`) triggers this; block-style works. Since the adapter *generates* this file,
+  Phase 2 must emit block-style YAML and treat "non-zero exit with zero stdout lines" as its own diagnosed error.
+- **C6 — Writing the agent definition into the sandbox is not free.** A virgin `--dir` stays **0 bytes**, but once
+  `.opencode/agents/*.md` is present OpenCode materialises `.opencode/node_modules` and a `.gitignore` (**~1 MB** in
+  a controlled cold run; one longer-lived sandbox reached **62 MB** with a `package.json` pinning
+  `@opencode-ai/plugin`). **This implies npm-registry reachability at runtime** — which turns §11 Q3 (enterprise
+  install path) from a packaging question into a runtime-network question. **Create the sandbox once per client
+  instance and reuse it; never per call.**
+- **C7 — H5 answered: sessions are not files.** They live in a global SQLite database
+  (`~/.local/share/opencode/opencode.db`, 576 KB + WAL after ~20 runs), not as JSON, and not in the sandbox. Growth
+  is modest but unbounded and **survives sandbox deletion** — so an operator-facing cleanup note is still warranted.
+
+### A.5 What Phase 1 did NOT settle
+
+- Whether `mode: primary` is strictly required (A.1 #3) — never isolated; keep setting it.
+- Quality under D2 at scale: three runs, one method (`next_question`), one model. `draft_report` and the governance
+  path were not exercised. **The eval gate stands entirely undischarged.**
+- Non-Anthropic providers were not exercised at all — the whole portability premise (§11 Q2) is still unmeasured.
+- Whether a `length`-style `reason` value appears on truncation (C3 infers the mechanism; no truncation was forced).
+- Timeout behaviour under a genuinely slow model, and the concurrency story if interviews ever run in parallel.
 
 ---
 

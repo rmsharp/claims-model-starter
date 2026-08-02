@@ -29,12 +29,33 @@ pair), a risk register, and four build phases. **AI-Dependencies.md §9.2's prer
 `text`/`reasoning`/`tool_use`/`step_start`/`step_finish`/`error`, pinned from OpenCode's own emitter source at a
 recorded commit — see spec §3.2.
 
-**Next session's deliverable is spec Phase 1 — the live verification spike, no production code.** Install
-`opencode`, run the seven probes in spec §9 Phase 1, commit the captured JSONL as test fixtures, and resolve every
-`[unverified]` marker in spec §3 (chiefly: whether a custom agent's prompt replaces or appends to OpenCode's
-built-in coding-agent prompt, which is the residual risk behind the spec's largest design decision). Phases 2-4
-(the clients, the eval wiring, the live shadow run) follow one per session; Phase 4 is operator-gated and needs the
-operator to name the model to pin. Two questions in spec §11 are the operator's to answer before Phase 4.
+**Phase 1 (the live verification spike) is DONE (Session 212, 2026-08-01)** — `opencode` **v1.18.11** installed
+(`npm i -g opencode-ai`), all seven probes run, six verbatim fixtures committed to `tests/fixtures/opencode/`, and
+findings recorded as spec **§13 Appendix A** with §3/§4 annotated inline. Cost: $0.1295 over 16 billed calls. All
+four `[unverified]` markers resolved — notably the replace-vs-append question behind the spec's largest design
+risk: **partial replace**, a custom agent's prompt drops ~4,720 tokens of built-in persona but a constant
+**~4,830-token scaffold survives** every call. D2 (folding the system prompt into the user message) was validated
+end-to-end: the real `next_question` payload produced schema-valid output that parses with the project's own
+unmodified `_extract_json`.
+
+**⚠ Phase 1 also produced seven corrections to the spec (Appendix A.4), one of them a safety defect.** Hazard
+H4's claim that "the default is already safe" is **false**: without `--auto`, a live run listed the sandbox, **read
+a file and disclosed its contents**, exit 0. The tool-denying agent definition (with `read: deny`) is therefore
+**mandatory, not defence-in-depth**, and the "caller supplied their own agent ⇒ adapter writes nothing" escape
+hatch in §4.4 must be removed or hard-gated. Also corrected: stderr is empty on the error path (so §4.7's
+`{stderr_tail}` message yields `""` — build it from the stdout `error` event's `name`/`message`/`ref`);
+`step_finish` exposes `reason`/`tokens`/`cost`, which restores the truncation guard §3.3 declared impossible;
+blind concatenation of `text` events picks up narration on multi-step runs; a malformed agent file fails as
+usage-help-on-stderr with empty stdout; the sandbox needs a **runtime npm install** (so npm reachability is a
+deployment prerequisite, sharpening §11 Q3); and sessions persist prompt/response text in a **global SQLite DB**
+that survives sandbox deletion.
+
+**Next session's deliverable is spec Phase 2 — both clients, both factory branches, the registry entry, and the
+deterministic test tier.** Read **Appendix A before §3/§4** — the corrections change the design. Phase 2 is one
+session for both packages (the twin-drift guard is only writable once both copies exist). Phases 3-4 follow one
+per session; Phase 4 is operator-gated and needs the operator to name the model to pin. Spec §11 now carries two
+live operator questions (Q1 `DEFAULT_MODEL`, Q2 which vendor to measure first); Q3 and Q4 were sharpened and
+largely defused respectively by Phase 1.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 
