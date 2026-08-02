@@ -17,15 +17,24 @@ portability verdicts, citations) and the decision record live in
 `docs/wiki/claims-model-starter/AI-Dependencies.md` §9 and `docs/wiki/claims-model-starter/Architecture-Decisions.md`
 AD-11 — read both before starting, so the next session doesn't re-derive the comparison.
 
-**Next session's deliverable is a *spec*, not an implementation:** design `OpenCodeLLMClient` to match the
-`AnthropicLLMClient`/`BedrockLLMClient` shape already in `src/model_project_constructor/agents/intake/` and
-`packages/data-agent/src/model_project_constructor_data_agent/` — same `IntakeLLMClient`/`LLMClient` Protocol
-methods, same JSON-parse-and-validate pattern (`_call_json`/`_call_claude` today parse an SDK response object; the
-new client instead parses the stdout of a subprocess call to `opencode run --format json`, which is a different
-error surface — process spawn failure, non-zero exit, timeout, and malformed JSON all need mapping to
-`IntakeLLMError`/`LLMParseError`, none of which the SDK-based clients have to handle today). AI-Dependencies.md §9.2
-flags that OpenCode's `--format json` event schema is not yet published/verified against a live invocation — that
-verification is prerequisite spec work, not an assumption to carry into the design.
+**The spec is DONE (Session 211, 2026-08-01): `docs/planning/opencode-adapter-spec.md`.** It specifies
+`OpenCodeLLMClient` for both packages as a **transport-method override** — subclass each package's
+`AnthropicLLMClient` and replace only `__init__` plus `_call_json` (intake) / `_call_claude` (data agent), so every
+prompt, dataclass builder, and `_extract_json` is inherited and prompt drift across providers is structurally
+impossible. It carries the full interface contract, the error-mapping table (spawn failure / non-zero exit /
+timeout / no-assistant-text / malformed JSON → `IntakeLLMError`/`LLMParseError`), a grep-based file inventory with
+line numbers at `a3f33d8`, the test plan (including the drift guard C4 forces for the *new* duplicated helper
+pair), a risk register, and four build phases. **AI-Dependencies.md §9.2's prerequisite is discharged:** the
+`--format json` event stream is JSONL of shape `{type, timestamp, sessionID, ...payload}` with types
+`text`/`reasoning`/`tool_use`/`step_start`/`step_finish`/`error`, pinned from OpenCode's own emitter source at a
+recorded commit — see spec §3.2.
+
+**Next session's deliverable is spec Phase 1 — the live verification spike, no production code.** Install
+`opencode`, run the seven probes in spec §9 Phase 1, commit the captured JSONL as test fixtures, and resolve every
+`[unverified]` marker in spec §3 (chiefly: whether a custom agent's prompt replaces or appends to OpenCode's
+built-in coding-agent prompt, which is the residual risk behind the spec's largest design decision). Phases 2-4
+(the clients, the eval wiring, the live shadow run) follow one per session; Phase 4 is operator-gated and needs the
+operator to name the model to pin. Two questions in spec §11 are the operator's to answer before Phase 4.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 

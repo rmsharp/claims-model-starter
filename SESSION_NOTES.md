@@ -6,6 +6,166 @@
 
 ## ACTIVE TASK
 
+### What Session 211 Did
+**Deliverable:** Spec the `OpenCodeLLMClient` adapter — a design document only, no implementation
+(per `BACKLOG.md`'s "CLI-adapter portability" open item and Session 210's handoff). **COMPLETE.**
+
+**Started / Completed:** 2026-08-01.
+
+**Trigger:** the operator's first message after the Phase 0 orientation report was the single character "1",
+selecting item (1) of the two open items the report enumerated (the `OpenCodeLLMClient` spec vs. Phase C4, which
+stays operator-gated). Same one-character selection pattern Session 209 handled; interpretation was confirmed back
+to the operator before any work started, per Phase 1.
+
+**Workstream:** `docs/methodology/workstreams/ARCHITECTURE_WORKSTREAM.md`. Both candidate workstreams were read
+before choosing — `DESIGN_WORKSTREAM.md` is UI/UX-specific (components, layout zones, star component) and does not
+fit an interface/adapter contract; ARCHITECTURE's Phase 3 (interface-first design, error contracts, failure-mode
+analysis, honest alternatives) is the right template and its document skeleton shaped the deliverable's sections.
+
+**What was done (3 files, 1 commit):**
+1. **Read the seam as-built rather than from memory** — `agents/intake/protocol.py`, `anthropic_client.py`,
+   `bedrock_client.py`, `factory.py`; the data-agent wheel's `llm.py`, `anthropic_client.py`, `factory.py`;
+   `orchestrator/config.py`'s `LLMProviderSpec`/`LLM_PROVIDERS`; `tests/test_llm_json_parity.py` in full;
+   `tests/eval/eval_cutover.py`; and the prior `docs/architecture-history/multi-provider-llm-plan.md` (all 404
+   lines, both pages). **The key structural finding that drove the whole design:** in both packages, *only*
+   `__init__` and one transport method (`_call_json` / `_call_claude`) touch the provider — every prompt, every
+   dataclass builder, and `_extract_json` are already provider-agnostic. So the adapter is a **transport-method
+   override**, not a new client: subclass `AnthropicLLMClient`, replace `__init__` + the one transport method,
+   inherit everything else. Prompt drift across providers becomes structurally impossible, which is the same
+   argument `BedrockLLMClient` makes one level up (it overrides the client *object*; this overrides the *method*).
+2. **Discharged `AI-Dependencies.md` §9.2's prerequisite — the unpublished `--format json` event schema — from
+   OpenCode's own source, not from a live run.** Fetched `packages/opencode/src/cli/cmd/run.ts` from
+   `anomalyco/opencode` via the GitHub API and read the emitter. **Result:** `--format json` writes **JSONL**, one
+   object per line, of shape `{type, timestamp, sessionID, ...payload}`; the complete emitted type set is
+   `text` / `reasoning` / `tool_use` / `step_start` / `step_finish` / `error`; the assistant's answer is the
+   concatenation of `part.text` over `type == "text"` events (several are possible per run); the loop terminates on
+   `session.status: idle`; exit is 0 on success and non-zero on session/prompt/stream error; and **non-JSON lines
+   can appear on stdout** from pre-stream `UI.error`/`die` paths, so a parser must skip unparseable lines and treat
+   the exit code as the authority. This is *stronger* evidence than one live invocation for the schema question
+   specifically — a live run shows only the event types that run happened to produce. Provenance pinned in the
+   spec: default branch `dev` @ `32f278b48f1a` (2026-08-01), `run.ts` last modified `20445ca03133` (2026-06-30),
+   release v1.18.11 (2026-08-01), MIT.
+3. **Found six invocation hazards no prior document had named**, each traced to a source line and each closed by a
+   specific decision in the spec: (H1) `run.ts:416` `await`s stdin to EOF whenever stdin is not a TTY — a child
+   spawned with inherited stdin **hangs forever, before any model timeout**; (H2) prompt content (which may carry
+   PII per `AI-Dependencies.md` §6.3) in `argv` is world-readable via `ps`, and `resolveRunInput` at `run.ts:40-50`
+   confirms **stdin-only invocation is supported**, so pass the prompt there; (H3) `opencode` is a *coding agent*
+   that defaults to cwd and discovers `AGENTS.md`/config by walking up — so `--dir` must point at an ephemeral
+   sandbox outside the repo; (H4) `--auto`'s own help string says `(dangerous!)`, and the **default is already
+   safe** (`run.ts:805-815` auto-*rejects* permission requests, and non-interactive runs deny `question`/
+   `plan_enter`/`plan_exit`) — so never pass it; (H5) every `run` creates a persisted session (~25 per interview);
+   (H6) text may arrive in several parts, so concatenate and treat zero text events as an error.
+4. **Wrote `docs/planning/opencode-adapter-spec.md`** (active plans live in `docs/planning/`; `docs/architecture-
+   history/` is the archive, per `docs/methodology/PROJECT_CONVENTIONS.md` §3). 13 sections: the external contract
+   with every claim tagged **[source-verified] / [docs] / [unverified — Phase 1 must confirm]**; eight design
+   decisions each with honest rejected alternatives (notably D1's rejection of an SDK-shaped duck-typed shim — it
+   would reuse three inherited guards that check *invented* fields, "not reuse, camouflage"); the full interface
+   contract for both packages; the error-mapping table discharging the prior plan's Trap 5; a grep-based inventory
+   with line numbers at `a3f33d8` split into files-created / files-edited / **files verified as needing no edit**;
+   a test plan; a failure-mode table; four build phases with DONE criteria and verification commands; a dragons
+   section; four operator questions; and a risk register.
+5. **Trap re-check against the prior plan** (all five, explicitly): Trap 2's `"openai"` unknown-provider sentinel is
+   **not** triggered — `rg '"openai"' tests/` returns 6 files and `"opencode"` neither contains nor is contained by
+   `"openai"`, so every assertion survives (re-verify at pre-flight anyway). Trap 3 was already fixed in Session
+   163. Traps 1/4/5 apply and are addressed in the spec.
+6. **Verification:** ran `tests/test_wiki_no_line_citations.py` (3 passed) after confirming from its source that it
+   scans only `docs/wiki/claims-model-starter/` — the new file is in `docs/planning/`, so it is out of that guard's
+   scope and the line numbers it carries are legitimate (planning docs cite line numbers by design; wiki pages must
+   not). No source file touched, so the full test/lint/type gate was not re-run — the docs-only-session convention
+   Sessions 203/206/208/209/210 established; Session 209's gate run (989 passed + 8 skipped @ 97.78%, ruff clean,
+   mypy clean) remains the baseline and nothing here invalidates it. **Two citation errors caught in my own draft
+   during verification and fixed before commit:** (a) I had inherited the prior plan's "Learning #28 — re-confirm
+   line numbers before editing" citation, but `PROJECT_LEARNINGS.md` #28 is actually about treating a handoff's
+   prescribed fix-shape as a hint — the prior plan's citation is wrong and I removed rather than propagated it;
+   (b) an off-by-one on `config.py`'s `require_llm_api_key` span (`:302-330` → `:302-331`). Also verified the
+   proposed 600s default timeout against the installed SDK rather than asserting it: `anthropic 0.94.1`'s
+   `DEFAULT_TIMEOUT` is `Timeout(connect=5.0, read=600, write=600, pool=600)`.
+7. **Two new project learnings appended** to `PROJECT_LEARNINGS.md` (#62 source-before-live-verification with
+   pinned SHAs; #63 agentic-CLI adapters need a hazard enumeration and *negative* tests). **`BACKLOG.md` rewritten**
+   so the open item now records the spec as done, summarises the schema finding so nobody re-derives it, and names
+   Phase 1 (the live verification spike) as the next session's deliverable.
+8. **No CHANGELOG.md entry** — docs-only session, per `docs/methodology/PROJECT_CONVENTIONS.md` §2's cadence rule
+   (verified by reading it, not assumed).
+
+### Session 210 Handoff Evaluation (by Session 211)
+
+**Score: 8/10.** **What helped:** the "What's next" section named the deliverable, pointed at the two wiki sections
+written specifically so this session wouldn't re-derive the four-candidate comparison (it didn't have to — I read
+§9/AD-11 once and never revisited the candidate question), and named the *one* concrete prerequisite (the
+unverified `--format json` schema). That prerequisite framing was the single most valuable line in the handoff: it
+correctly identified where the real work was. Gotcha (4) — "this CLI landscape is moving fast, re-verify" — proved
+literally true: OpenCode shipped release v1.18.11 the same day, which is why the spec pins commit SHAs rather than
+just naming the tool. Every factual claim I tested held. **What was missing (three things, each costing real
+time):** (1) it did not mention `docs/architecture-history/multi-provider-llm-plan.md` — the prior five-phase plan
+for *this exact seam*, with the Decisions/Traps/threshold table this spec had to carry forward. It is the highest-
+value prior art for the task and I found it by grepping, not by pointer. (2) Likewise `Extending-the-Pipeline.md`'s
+"add a provider" recipe (the 4-step, both-packages-plus-one-registry-entry list). (3) It never checked whether
+`opencode` was installed — a two-second `which opencode` (it is not) would have told this session up front that
+"verify against a live invocation" implies an install-and-token decision belonging to the operator, which reframes
+the prerequisite. **What was wrong:** nothing factual. One framing quibble: prescribing "verify against a live
+invocation" specified a *method* where the *goal* was "pin the schema" — and the method it named turned out to be
+the weaker of the two available (see learning #62). **ROI:** clearly positive — the pointers it did give were
+load-bearing, and its gotchas were accurate.
+
+### Phase 3B: Self-assess — Session 211 — 8.5/10
+
+- **The +:** (1) Discharged the stated prerequisite with *better* evidence than requested, and was explicit in the
+  document about what a live run still answers better — rather than declaring the prerequisite closed. (2) Tagged
+  every external claim `[source-verified]` / `[docs]` / `[unverified]`, so the executor knows exactly which
+  sentences to re-check and which are load-bearing assumptions; four unverified markers survive deliberately, each
+  with its consequence stated. (3) Read the implementations before designing (ARCHITECTURE workstream Step 3;
+  PROJECT_LEARNINGS #6's "a plan written from memory is an assumption") — which is what surfaced the
+  transport-method insight that made the whole design cheap. (4) Found six safety/correctness hazards from source
+  that no prior document had, and specified each mitigation as a *negative* test (`--auto` absent from argv; prompt
+  absent from argv) rather than a prose warning. (5) Verified my own draft's citations and caught two errors,
+  including one inherited from a document I was treating as authoritative. (6) Held scope hard — I had enough
+  detail to write the client and did not (FM #18). (7) Chose the workstream by reading both candidates rather than
+  defaulting to the first plausible one.
+- **The −:** (1) Did not install or run `opencode`. Defensible — the install decision and provider tokens belong to
+  the operator, and source-reading is stronger for the schema question — and it is disclosed in the spec's §13, but
+  it does mean four `[unverified]` markers pass through to Phase 1, the most consequential being whether a custom
+  agent's prompt *replaces or appends to* OpenCode's built-in coding-agent prompt. That one bears directly on D2,
+  the spec's largest risk. (2) No independent adversarial pass over the spec's design decisions — D2 (folding the
+  per-call `system` prompt into the user message) deserves a skeptical second read that it did not get. Mitigated
+  by naming it dragon #1 and gating it behind the existing eval thresholds, but the gap is real; note that this
+  environment's standing instruction is not to spawn agents or workflows unless the operator requests them, so this
+  was a constraint rather than an oversight — a future session wanting higher confidence should ask for it
+  explicitly. (3) The spec runs long (~450 lines). It matches house style (the prior plan is 404 lines for five
+  phases) and every section earns its place today, but §3 and §4 should be tightened once Phase 1 converts the
+  unverified markers into facts.
+
+**What's next:** **Spec Phase 1 — the live verification spike, no production code.** Read
+`docs/planning/opencode-adapter-spec.md` §9 Phase 1 for the seven probes and §3 for the four `[unverified]` markers
+to resolve. Install `opencode` (npm `opencode-ai`, `curl -fsSL https://opencode.ai/install | bash`, or
+`brew install anomalyco/tap/opencode`) — **it is not installed on this machine**, so the session's first act is an
+install decision that belongs to the operator, and the probes spend provider tokens. Deliverable: committed JSONL
+fixtures captured from real runs (Phase 2's tests must not invent them — fixtures written from the spec would test
+the spec, not OpenCode), plus a findings note appended to the spec as §13 Appendix A. **Before Phase 1 re-fetch
+`run.ts` and diff it against the pinned `20445ca03133`** — the upstream ships releases daily. Phase C4 (the
+enterprise-clone fork) remains on hold pending the operator's live consultation, unchanged since Session 209.
+
+**Key files:** `docs/planning/opencode-adapter-spec.md` (new — the deliverable; §3 external contract, §4 the eight
+decisions, §5 interface contract, §6 grep inventory, §9 phases). `BACKLOG.md` (rewritten CLI-adapter item).
+`PROJECT_LEARNINGS.md` #62/#63. For Phase 2: `src/model_project_constructor/agents/intake/anthropic_client.py:363-401`
+(`_call_json`, the method to override) and `bedrock_client.py:86-145` (the subclass pattern to match); the wheel's
+`anthropic_client.py:376-405` (`_call_claude`) and `:112-113` (`LLMParseError`); both `factory.py` (Literal at
+intake `:32` / wheel `:33`); `orchestrator/config.py:158-161` (`LLM_PROVIDERS`); `tests/test_llm_json_parity.py:145-156`
+(`_SEAMS`); `tests/eval/eval_cutover.py:36,41-60`.
+
+**Gotchas:** (1) **`LLM_PROVIDERS` and the two `LLMProvider` `Literal`s are kept in lockstep by convention, not by
+a test** — C4 forbids the parity guard, and both `config.py:152-157` and `Extending-the-Pipeline.md` say so
+explicitly. Three hand edits, one session, or the registry silently drifts. (2) **The spec's line numbers are a
+snapshot at `a3f33d8`** — re-run the §6 searches before editing, they drift. (3) **Phase 2 creates a new pair of
+duplicated helpers** (`_extract_assistant_text`, one per package, forced by C4). The `_extract_json` twins drifted
+once and cost three sessions to repair (Sessions 98-100, traced to a Session-51 live crash) — the parity battery
+for the new twins must land in the *same* session that creates them, not later. (4) **`opencode` is on a daily
+release train** (v1.18.11 shipped 2026-08-01); its JSON event shape is an implementation detail, not a stability
+contract — record the binary version in any parse-failure error text so a future breakage is one line from
+"you're on a version we haven't validated". (5) The `"openai"` unknown-provider sentinel survives `"opencode"`, but
+re-run `rg '"openai"' tests/` at pre-flight rather than trusting this note — the failure mode is silent.
+
+### What Session 210 Did
+
 ### What Session 210 Did
 **Deliverable:** Record, in the wiki, the findings and accepted decision from this session's CLI-vendor-portability
 research — plus queue "spec the `OpenCodeLLMClient` adapter" as an explicit follow-up session in `BACKLOG.md`.
