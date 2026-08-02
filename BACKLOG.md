@@ -62,16 +62,27 @@ the parsed event list rather than raw `stdout`.
 that way: spec risk #1 (parses fine, quality silently degrades under the D2 prompt-role change) is untouched, and
 no data-agent method has been exercised against OpenCode at all.
 
-**Next session's deliverable is spec Phase 3 — eval wiring + documentation** (spec §7.4 and §9 Phase 3): add
-`"opencode"` to `CANDIDATE_PROVIDERS` and a `shutil.which`-based branch to `provider_creds_available` in
-`tests/eval/eval_cutover.py` (keep it side-effect-free — no process spawn at collection time), then the doc sweep
-(`AI-Dependencies.md` §9 planned → as-built plus its §6.7 residual paragraph, an as-built note under
-`Architecture-Decisions.md` AD-11, `Extending-the-Pipeline.md`'s provider recipe gaining the subprocess-client
-variant, and the §8 operator-checklist items — binary version pinning, session state in a global SQLite DB,
-runtime npm reachability). Phase 4 (the live shadow run) follows and is operator-gated: it needs the operator to
-name the model to pin. Spec §11 still carries two live operator questions — Q1 (`DEFAULT_MODEL`: shipped as
-`None`, reversible in one line) and Q2 (which vendor to measure first — choosing a non-Anthropic model is the only
-way this adapter delivers the model-family diversification `AI-Dependencies.md` §6.7 says is still missing).
+**Phase 3 (eval wiring + documentation) is DONE (Session 214, 2026-08-01)** — `"opencode"` is a candidate in the
+Phase E cutover gate with all eight thresholds PENDING, and thirteen wiki pages plus `README.md`, `OPERATIONS.md`,
+`.env.example` and the published `docs/tutorial.md` now describe a shipped third provider. Gate: **1110 passed + 12 live-skipped @ 97.79%**, mypy and ruff clean. **One deliberate
+deviation from spec §7.4, chosen by the operator before implementation:** the credential probe requires the
+`opencode` binary **and** `OPENCODE_EVAL_MODEL`, not the binary alone. Binary-only was unsafe — the binary is
+installed globally on this machine and `addopts` carries no `-m 'not live'`, so it would have turned every
+`uv run pytest -q` here into a billable live run while CI still looked hermetic. The same variable is the pinned
+model id (new `provider_eval_model`, threaded through `test_eval_live.py` and `shadow_run.py`), which makes D6's
+"every evaluated run passes an explicit model" true and discharges Phase 4's "operator names the model to pin"
+pre-flight. Both the spec's §7.4 and its Phase 3 entry carry the correction inline.
+
+**Next session's deliverable is spec Phase 4 — the live shadow run + cutover decision. It is operator-gated and
+cannot start without two answers.** (a) **§11 Q2 — which vendor to measure first?** A non-Anthropic model is the
+only choice that delivers the model-family diversification `AI-Dependencies.md` §6.7 still names as missing; an
+Anthropic model isolates the transport change and makes a cleaner A/B. This is a measurement-design call the spec
+has no preference on. (b) **The model id to pin**, which becomes `OPENCODE_EVAL_MODEL`. Also needed: credentials
+for whichever vendor is chosen, configured in the operator's own OpenCode config (this project reads none). The
+run must report **cost per interview** alongside quality — the adapter carries a constant ~4,830-token scaffold
+per call (spec risk #12) that no §3.4 threshold can see. **No cutover on an unmet or unmeasured threshold**; that
+rule is encoded in `evaluate_cutover` and must not be relaxed to produce a green report. Spec §11 Q1
+(`DEFAULT_MODEL` shipped as `None`) remains open and is reversible in one line.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 

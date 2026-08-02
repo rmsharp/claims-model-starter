@@ -269,7 +269,7 @@ sources, which the driver already handles:
 - **One deterministic metric** — `json_parse`: **not** a live rate. §3.4's oracle
   is the provider-parametrized parity battery (`test_llm_json_parity.py`, which
   covers every registered `(seam, provider)` parser incl. `bedrock`); the driver
-  records **`1.0`** since both providers reuse the shared `_extract_json` parsers
+  records **`1.0`** since every provider reuses the shared `_extract_json` parsers
   (confirm with `uv run pytest tests/test_llm_json_parity.py -q`). A real-output
   parse failure surfaces instead as a *live-capability* miss (they raise on
   unparseable provider JSON — and the driver counts that as a failed rate).

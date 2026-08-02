@@ -246,7 +246,7 @@ Framework additions are pure content. They flow through `IntakeReport.governance
 
 ## 6. Extension surface: adding a new LLM provider
 
-Use case: route the agents to a further LLM backend (e.g., an OpenAI-compatible endpoint, a self-hosted model) without editing any call site. Two providers already ship — `anthropic` and `bedrock` (AWS Bedrock-hosted Claude, added Session 162) — so the recipe below has been executed for real, not merely designed. (The `bedrock` client is wired and unit-tested; it has not been run against a live endpoint.) Each agent talks to its LLM only through a `Protocol`, and the provider choice flows through a small **factory** — a `Protocol` + factory boundary, analogous to (but separate from) the `RepoClient` `Protocol` used for repo-host adapters in §3.
+Use case: route the agents to a further LLM backend (e.g., an OpenAI-compatible endpoint, a self-hosted model) without editing any call site. Three providers already ship — `anthropic`, `bedrock` (AWS Bedrock-hosted Claude, added Session 162), and `opencode` (the `opencode` CLI driven as a subprocess, added Session 213) — so the recipe below has been executed for real twice, not merely designed. (Neither non-default client has been exercised live: `bedrock` has never reached a live endpoint, and `opencode`'s output quality is unmeasured.) Each agent talks to its LLM only through a `Protocol`, and the provider choice flows through a small **factory** — a `Protocol` + factory boundary, analogous to (but separate from) the `RepoClient` `Protocol` used for repo-host adapters in §3.
 
 ### Two parallel factories (not shared)
 
@@ -261,7 +261,7 @@ Both factories have the same shape:
 
 ```python
 # agents/intake/factory.py (the data-agent factory mirrors this)
-LLMProvider = Literal["anthropic", "bedrock"]
+LLMProvider = Literal["anthropic", "bedrock", "opencode"]
 KNOWN_PROVIDERS: tuple[str, ...] = get_args(LLMProvider)
 
 def make_llm_client(
@@ -286,6 +286,21 @@ def make_llm_client(
             BedrockLLMClient,
         )
         return BedrockLLMClient(model=DEFAULT_MODEL if model is None else model)
+    if provider == "opencode":
+        # Same lazy-import convention even though this client imports no SDK
+        # at all. Its DEFAULT_MODEL is None (the operator's own OpenCode
+        # config picks the vendor), which is str | None where the siblings'
+        # are str — hence the import alias: all branches share one function
+        # scope, so importing the bare name twice is a type conflict.
+        from model_project_constructor.agents.intake.opencode_client import (
+            DEFAULT_MODEL as OPENCODE_DEFAULT_MODEL,
+        )
+        from model_project_constructor.agents.intake.opencode_client import (
+            OpenCodeLLMClient,
+        )
+        return OpenCodeLLMClient(
+            model=OPENCODE_DEFAULT_MODEL if model is None else model
+        )
     raise ValueError(
         f"Unknown LLM provider {provider!r}. "
         f"Known providers: {', '.join(KNOWN_PROVIDERS)}."
@@ -301,10 +316,36 @@ Two conventions make this surface safe:
 
 Steps 1-3 are the same three-step recipe applied independently to each agent; step 4 is done once:
 
-1. **New client module** implementing the agent's protocol — `IntakeLLMClient` for intake (mirror `src/model_project_constructor/agents/intake/anthropic_client.py`) and `LLMClient` for the data agent (mirror `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py`). Expose a `DEFAULT_MODEL` constant and accept `model=` as a keyword argument, as the existing Anthropic clients do.
+1. **New client module** implementing the agent's protocol — `IntakeLLMClient` for intake (mirror `src/model_project_constructor/agents/intake/anthropic_client.py`) and `LLMClient` for the data agent (mirror `packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py`). Expose a `DEFAULT_MODEL` constant and accept `model=` as a keyword argument, as the existing Anthropic clients do. **Prefer subclassing `AnthropicLLMClient` and overriding only the transport method** — see "Transport override" below; both shipped non-default providers do this, and it is what keeps the prompts from drifting between providers.
 2. **One branch** in that package's `make_llm_client`, lazy-importing the new client.
 3. **One member** in that package's `LLMProvider` `Literal` (which automatically updates `KNOWN_PROVIDERS`, the error message, and the data-agent CLI help).
 4. **One entry** in the orchestrator's `LLM_PROVIDERS` registry (`src/model_project_constructor/orchestrator/config.py`) — done once, not per package, since the standalone wheel cannot import the orchestrator (C4). Map the provider name to an `LLMProviderSpec`, setting `api_key_env_var` to the env var carrying its credential, or `None` when the provider authenticates by another mechanism (as `bedrock` does, via the AWS credential chain). `OrchestratorSettings.require_llm_api_key` rejects any provider missing from this registry; unlike `REPO_PLATFORMS`/`HostLiteral` there is **no** import-time parity guard tying it to the agents' `LLMProvider` `Literal`s — the module comment explains why — so the lockstep is a documented convention you must keep by hand.
+
+### Transport override: write a transport, not a client
+
+Both non-default providers subclass their package's `AnthropicLLMClient` and replace **one** method rather than implementing the protocol afresh:
+
+| Provider | What it overrides | What it inherits |
+|---|---|---|
+| `bedrock` | `__init__` and `DEFAULT_MODEL` | everything else — the SDK's Bedrock client is signature-identical to the base one |
+| `opencode` | `__init__` plus the single transport method — `_call_json` (intake, returns parsed JSON) or `_call_claude` (data agent, returns raw text) | all four interview methods / all six generation methods, every prompt, every JSON-shape instruction, the dataclass builders, and `_extract_json` |
+
+**Why this is the recommended shape.** The prompts are the expensive, hard-to-review part of each client, and duplicating them per provider is how prompt drift starts. The `_extract_json` twins in this project drifted once and cost three sessions to repair — so the rule is: if your backend can be reached by replacing the transport, replace only the transport. Note the seams are deliberately **asymmetric** — the intake transport returns parsed JSON, the data agent's returns raw text — because each package's methods expect that; match your package's, don't unify them.
+
+The naming consequence is worth stating so nobody "fixes" it: a client class may inherit from `AnthropicLLMClient` while talking to a different vendor entirely. The base class is this project's *prompt-and-parse* layer that happens to carry an Anthropic transport; the subclass replaces the transport.
+
+### Variant: driving an external CLI as the transport (the `opencode` pattern)
+
+If the backend is a command-line agent rather than an HTTP API, the recipe is unchanged but the client carries obligations an SDK client does not. Read `src/model_project_constructor/agents/intake/opencode_client.py` as the worked example; its module docstring records why each of these exists.
+
+- **Fail fast at construction, not mid-run.** Check the executable is on `PATH` in `__init__` and raise the seam's own error type with an install hint. A missing binary discovered halfway through an interview is a much worse failure than one discovered at startup.
+- **Never put the prompt in `argv`.** Interview transcripts contain stakeholder text; command lines are world-readable via the process table. Write the prompt to the child's **stdin**, and pass it as an input string so the pipe is opened and closed for you — an inherited stdin will hang until your timeout with no output.
+- **Always set a timeout**, and map its expiry onto the seam's error type like any other transport failure.
+- **Assume the tool is agentic until proven otherwise.** A coding CLI may read files, run commands, or take multiple steps before answering. Give it an ephemeral working directory it cannot escape *and* an explicit tool-denying configuration — do not rely on a documented "safe default" without verifying it, which is precisely the assumption that proved false here. Never pass a flag that auto-approves tool use, and pin that with a negative test.
+- **Extract the answer, don't concatenate the stream.** A multi-step run emits narration before the answer ("I'll list the files…"), so naive concatenation of every text event returns narration plus answer. Take the text of the final step that stopped cleanly.
+- **Diagnose "the tool rejected our invocation" separately from "the model failed."** A malformed configuration file that *you* generated typically surfaces as usage help on stderr with empty stdout and a non-zero exit — that is your bug, and the error message should say so rather than blaming the provider.
+- **Pin the output schema with committed fixtures captured verbatim from a known binary version**, and record that version in your error text. CLI tools ship far more often than SDKs; when a fixture-backed test fails after an upgrade, treat it as a schema change and re-capture rather than editing the fixture to match.
+- **Duplicated helpers need a parity guard in the same commit that creates them.** The standalone wheel cannot import the orchestrator, so a subprocess client's stream-parsing helpers must exist in both packages. Write the behavioural battery immediately — and include at least one test that pins the *rule* rather than only the sameness, because a sameness-only battery is blind to a bug both copies share.
 
 ### Provider-selection surfaces
 

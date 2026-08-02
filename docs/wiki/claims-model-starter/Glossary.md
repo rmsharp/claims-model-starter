@@ -75,6 +75,6 @@
 | **Pydantic** | Python library for data validation using type annotations. v2 provides high-performance validation via a Rust core. |
 | **uv** | Fast Python package installer and resolver. Used as the project's package manager with workspace support. |
 | **RepoClient** | Python protocol defining the interface for repository operations (`create_project`, `commit_files`). |
-| **IntakeLLMClient** | Python protocol for the Intake Agent's LLM client. Two implementations exist: `AnthropicLLMClient` (first-party Anthropic API) and `BedrockLLMClient` (a thin subclass pointed at AWS Bedrock-hosted Claude). Client selection is routed through the `make_llm_client(provider)` factory, whose provider vocabulary is `LLMProvider = Literal["anthropic", "bedrock"]`. |
+| **IntakeLLMClient** | Python protocol for the Intake Agent's LLM client. Three implementations exist: `AnthropicLLMClient` (first-party Anthropic API), `BedrockLLMClient` (a thin subclass pointed at AWS Bedrock-hosted Claude), and `OpenCodeLLMClient` (a subclass that replaces the transport with a subprocess call to the `opencode` CLI). Client selection is routed through the `make_llm_client(provider)` factory, whose provider vocabulary is `LLMProvider = Literal["anthropic", "bedrock", "opencode"]`. |
 | **SSE** | Server-Sent Events. HTTP-based protocol for streaming data from server to client. Used by the intake web UI. |
 | **HTMX** | Lightweight JavaScript library for building dynamic UIs using HTML attributes instead of JavaScript. |

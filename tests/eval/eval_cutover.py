@@ -315,7 +315,9 @@ def render_agreement_report(
 
     One column per provider (baseline first); one row per §3.4 threshold showing
     each provider's measured value and PASS/FAIL/PENDING. A measured live run of
-    both providers reproduces this exact table — that is the §5 verification.
+    every provider reproduces this exact table — that is the §5 verification.
+    The column count follows ``decisions``, so adding a candidate needs no change
+    here.
     """
     providers = list(decisions)
     role = {p: "baseline" if p == baseline else "candidate" for p in providers}

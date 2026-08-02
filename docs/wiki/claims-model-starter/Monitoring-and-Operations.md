@@ -15,7 +15,7 @@ Every secret and configuration parameter is read from the environment — the or
 | `MPC_LOG_LEVEL` | No | `INFO` | Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL |
 | `MPC_NAMESPACE` | No | -- | Target group/org path (e.g. `rmsharp-modelpilot`); must be a path, not a URL |
 | `INTAKE_DB_PATH` | No | `./intake_sessions.db` | SQLite file for intake web UI sessions |
-| `INTAKE_LLM_PROVIDER` | No | `anthropic` | LLM backend for the intake web UI: `anthropic` or `bedrock`. An unknown value is rejected at app startup. Read only by the UI; `scripts/run_pipeline.py` and the data-agent CLI use `--provider` instead. **`bedrock` is implemented and unit-tested but has never been exercised live** — every measured result in this project is `anthropic`-only; verify it in your own AWS account before depending on it. |
+| `INTAKE_LLM_PROVIDER` | No | `anthropic` | LLM backend for the intake web UI: `anthropic`, `bedrock`, or `opencode`. An unknown value is rejected at app startup. Read only by the UI; `scripts/run_pipeline.py` and the data-agent CLI use `--provider` instead. **Neither non-default provider has been validated** — every measured result in this project is `anthropic`-only. `bedrock` has never been exercised live; `opencode` runs but its output quality is unmeasured, and it additionally needs the `opencode` binary on `PATH` plus an explicitly chosen model (it pins no default). Verify either in your own environment before depending on it. |
 | `INTAKE_LLM_MODEL` | No | Provider default | Model-id override for the intake web UI. Leave unset to get each provider's own default id (Bedrock ids carry an `anthropic.` prefix). Read only by the UI. |
 | `AWS_REGION` / `AWS_DEFAULT_REGION` | If provider is `bedrock` | -- | Region for the Bedrock-hosted Claude client, unless the region already resolves from an AWS profile or instance metadata. Bedrock authenticates through the AWS credential chain rather than `ANTHROPIC_API_KEY`. |
 | `AWS_BEARER_TOKEN_BEDROCK` | No (**dev only**) | -- | Short-term Bedrock API key. **Leave unset in production.** At the locked SDK version the Bedrock client switches to bearer auth when it is set, silently bypassing the IAM role unless `BedrockLLMClient(require_sigv4=True)` is passed (default `False`); see [Security Considerations](Security-Considerations) §1.2. |
@@ -97,7 +97,7 @@ The project's own CI (`.github/workflows/ci.yml`) runs four jobs:
 |-----|---------------|
 | **Lint** | `ruff check src/ tests/ packages/ scripts/` |
 | **Type check** | `mypy` (strict mode, config-driven) |
-| **Tests** | `pytest -q` (923 passing tests at 97.41% coverage against a 95% floor, plus 8 credential-gated `live` evaluation tests that skip when no provider credentials are present — 931 collected total) |
+| **Tests** | `pytest -q` (1110 passing tests at 97.79% coverage against a 95% floor, plus 12 credential-gated `live` evaluation tests that skip when no provider credentials are present — 1122 collected total) |
 | **Decoupling** | Data Agent has zero imports from intake schemas |
 
 CI runs on push to `master` and on pull requests.

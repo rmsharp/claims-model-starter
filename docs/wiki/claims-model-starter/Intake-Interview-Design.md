@@ -244,7 +244,7 @@ Useful fixtures ship in `tests/fixtures/`:
 
 The FastAPI web UI in `src/model_project_constructor/ui/intake/` reuses the same compiled graph but builds its LLM client through the provider factory — `make_llm_client(provider, model=model)`, where `provider` resolves from the `create_app(provider=...)` argument, then `INTAKE_LLM_PROVIDER`, then `DEFAULT_LLM_PROVIDER` (`anthropic`), and `model` from the `create_app(model=...)` argument, then `INTAKE_LLM_MODEL`, else the provider's own default — plus a `SqliteSaver` checkpointer so interview state survives server restart. An unknown provider raises at app construction, not at the first interview. The UI is what `go/modelintake` points to in a deployed environment. Environment variables:
 
-- `INTAKE_LLM_PROVIDER` (optional; `anthropic` (default) or `bedrock` — the `bedrock` path is implemented and unit-tested but has never been exercised against a live endpoint)
+- `INTAKE_LLM_PROVIDER` (optional; `anthropic` (default), `bedrock`, or `opencode` — neither non-default path is validated: `bedrock` is implemented and unit-tested but has never been exercised against a live endpoint, and `opencode` runs but its output quality is unmeasured)
 - `INTAKE_LLM_MODEL` (optional; defaults to the selected provider's own model id)
 - `ANTHROPIC_API_KEY` (required **only** when the provider resolves to `anthropic`; `bedrock` authenticates via the AWS credential chain)
 - `INTAKE_DB_PATH` (optional; defaults to `./intake_sessions.db`)

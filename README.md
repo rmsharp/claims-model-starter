@@ -93,12 +93,12 @@ packages/data-agent/                    # standalone: model-project-constructor-
 tests/
   schemas/                              # 99 schema tests
   agents/data/                          # 19 end-to-end Data Agent tests
-  agents/intake/                        # 109 intake tests (graph, nodes, CLI, Anthropic)
+  agents/intake/                        # 155 intake tests (graph, nodes, CLI, Anthropic, Bedrock, OpenCode)
   agents/website/                       # 199 website agent tests (templates, fake client, nodes, agent, CLI, governance, retry, gitlab + github adapters)
-  orchestrator/                         # 249 orchestrator tests (pipeline halt paths, adapters, checkpoints, config, logging, metrics)
+  orchestrator/                         # 250 orchestrator tests (pipeline halt paths, adapters, checkpoints, config, logging, metrics)
   ui/intake/                            # 32 web UI tests (FastAPI, runner, SQLite resume, SSE)
-  data_agent_package/                   # 161 CLI + AnthropicLLMClient tests
-  eval/                                 # 80 eval/parity harness tests (corpus, scoring, cutover gate, interview sweep, stakeholder sim, live)
+  data_agent_package/                   # 207 CLI + Anthropic/Bedrock/OpenCode client tests
+  eval/                                 # 94 eval/parity harness tests (corpus, scoring, cutover gate, interview sweep, stakeholder sim, live)
   scripts/                              # 22 run_pipeline.py adapter + resume CLI tests
   fixtures/sample_request.json          # canonical DataRequest fixture
   fixtures/subrogation.yaml             # canonical intake fixture (§4.1 worked example)
@@ -130,7 +130,7 @@ uv sync --extra agents --extra ui --extra dev
 uv run pytest
 ```
 
-All 989 tests should pass (8 more skip without live LLM credentials) with coverage above 95% (currently ≈97.78%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
+All 1110 tests should pass (12 more skip without live LLM credentials) with coverage above 95% (currently ≈97.79%). `uv sync` uses a workspace to build and install both `model-project-constructor` and `model-project-constructor-data-agent` editable in one step.
 
 Production deployments read every secret and every deployment-variable parameter from the environment (or from a `.env` file loaded by the caller). See `.env.example` for the full matrix and `OPERATIONS.md` for the runbook. Common failure modes live in `TROUBLESHOOTING.md`; resume a halted run with `scripts/run_pipeline.py --resume <run_id>` (see `OPERATIONS.md` §5).
 
@@ -159,7 +159,7 @@ uv run python -m model_project_constructor.agents.intake \
 
 This drives a synthetic interview via the real LangGraph interrupt/resume loop and writes a validated `IntakeReport` JSON document.
 
-To start the Intake Agent **web UI** (Phase 3B, requires credentials for the selected LLM provider to drive a real interview — `ANTHROPIC_API_KEY` for the default `anthropic`, or AWS credentials for `bedrock`):
+To start the Intake Agent **web UI** (Phase 3B, requires credentials for the selected LLM provider to drive a real interview — `ANTHROPIC_API_KEY` for the default `anthropic`, AWS credentials for `bedrock`, or the `opencode` binary plus its own configuration for `opencode`):
 
 ```bash
 uv sync --extra agents --extra ui --extra dev

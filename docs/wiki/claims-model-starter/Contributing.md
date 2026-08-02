@@ -97,12 +97,14 @@ uv run pytest -k "test_envelope"    # by name pattern
 uv run pytest -m "not live"         # skip the live-LLM eval tier (see below)
 ```
 
-**The `live` tier.** `tests/eval/` holds the LLM eval corpus. Most of it is hermetic, but `tests/eval/test_eval_live.py` is marked `live` file-wide (four test functions, each parametrized over both providers) and calls a **real** LLM. The marker is registered under `[tool.pytest.ini_options]` in `pyproject.toml`. A `live` test auto-skips when the provider it targets has no credentials (`anthropic` → `ANTHROPIC_API_KEY`; `bedrock` → the AWS credential chain), which is how CI stays hermetic — CI runs with none. If you have provider credentials exported, a bare `uv run pytest -q` **will make billable API calls**: pass `-m "not live"` to deselect the tier, or `-m live` to run it deliberately.
+**The `live` tier.** `tests/eval/` holds the LLM eval corpus. Most of it is hermetic, but `tests/eval/test_eval_live.py` is marked `live` file-wide (four test functions, each parametrized over every shadow provider) and calls a **real** LLM. The marker is registered under `[tool.pytest.ini_options]` in `pyproject.toml`. A `live` test auto-skips when the provider it targets has no credentials (`anthropic` → `ANTHROPIC_API_KEY`; `bedrock` → the AWS credential chain; `opencode` → its binary on `PATH` **and** `OPENCODE_EVAL_MODEL` naming the model to pin), which is how CI stays hermetic — CI runs with none. If you have provider credentials exported, a bare `uv run pytest -q` **will make billable API calls**: pass `-m "not live"` to deselect the tier, or `-m live` to run it deliberately.
 
-Current snapshot: **829 test functions** across `tests/` subdirectories (`orchestrator/` 210, `data_agent_package/` 150, `agents/website/` 137, `agents/intake/` 101, `schemas/` 81, `eval/` 69, `ui/intake/` 32, `scripts/` 17, `agents/data/` 16), plus 16 across the top-level files `test_data_agent_decoupling.py`, `test_llm_json_parity.py`, `test_vocab_guard.py`, and `test_wiki_no_line_citations.py`. This number drifts as tests are added; recompute it with:
+`opencode` takes two signals rather than one for exactly that reason. Its binary is installed globally on any machine that has worked on the adapter, so gating on the binary alone would silently turn every `uv run pytest -q` on a contributor's machine into a billable run while CI, which has no binary, still looked hermetic. Setting `OPENCODE_EVAL_MODEL` is the deliberate opt-in — and it is also the model id the run pins, since that provider ships no default model.
+
+Current snapshot: **997 test functions** across `tests/` subdirectories (`orchestrator/` 211, `data_agent_package/` 199, `agents/website/` 191, `agents/intake/` 150, `schemas/` 81, `eval/` 75, `ui/intake/` 32, `scripts/` 22, `agents/data/` 16), plus 20 across the top-level files `test_data_agent_decoupling.py`, `test_llm_json_parity.py`, `test_vocab_guard.py`, and `test_wiki_no_line_citations.py`. (Test *functions*, not collected tests — parametrization makes the collected count higher; `pytest -q` currently reports 1110 passed plus 12 credential-gated `live` cases that skip.) This number drifts as tests are added; recompute it with:
 
 ```bash
-grep -rhE '^\s*(async )?def test_' tests/ | wc -l   # 829 at time of writing
+grep -rhE '^\s*(async )?def test_' tests/ | wc -l   # 997 at time of writing
 ```
 
 ### 2.4 Data-agent decoupling

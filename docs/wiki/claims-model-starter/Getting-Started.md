@@ -7,7 +7,7 @@
 - Git
 
 For live runs (optional):
-- An Anthropic API key (`ANTHROPIC_API_KEY`) -- or, to run the Intake/Data agents on AWS Bedrock instead (`--provider bedrock`, or `INTAKE_LLM_PROVIDER=bedrock` for the intake web UI), AWS credentials resolvable from the standard credential chain (IAM role, SSO login, or profile) plus a region (`AWS_REGION`). Bedrock has no single API-key env var. The `bedrock` provider is implemented and unit-tested but has **never been exercised against a live endpoint** -- every measured result in this project is `anthropic`-only, so verify it in your own AWS account before depending on it.
+- An Anthropic API key (`ANTHROPIC_API_KEY`) -- or one of two alternative backends. **AWS Bedrock** (`--provider bedrock`, or `INTAKE_LLM_PROVIDER=bedrock` for the intake web UI) needs AWS credentials resolvable from the standard credential chain (IAM role, SSO login, or profile) plus a region (`AWS_REGION`); it has no single API-key env var. **The OpenCode CLI** (`--provider opencode`) needs the `opencode` binary on `PATH` (`npm i -g opencode-ai`), an explicitly chosen model -- it pins no default, so pass `--model <provider>/<model>` or configure one in your own `opencode.json` -- and whatever credential that tool itself is set up to use; this project reads none. Neither alternative is validated here: `bedrock` has **never been exercised against a live endpoint**, and `opencode` runs but its **output quality is unmeasured**. Every measured result in this project is `anthropic`-only, so verify either in your own environment before depending on it.
 - A GitLab personal access token with `api` scope (`GITLAB_TOKEN`), or
 - A GitHub PAT with `repo` scope (`GITHUB_TOKEN`)
 

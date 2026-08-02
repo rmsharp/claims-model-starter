@@ -446,9 +446,10 @@ assert rate.meets(thresholds.INTERVIEW_CONVERGENCE_MIN), (
 )
 ```
 
-It runs under `pytest -m live`, is parametrized over both providers, and is
-auto-skipped per provider when that provider's credentials are absent (so
-continuous integration (CI), which has no credentials, stays hermetic). A
+It runs under `pytest -m live`, is parametrized over every shadow provider
+(currently three), and is auto-skipped per provider when that provider's
+credentials are absent (so continuous integration (CI), which has no
+credentials, stays hermetic). A
 sub-threshold result **fails the run**. The failure message reports both the
 sample count and how many samples were excluded as transient.
 

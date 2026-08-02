@@ -158,8 +158,9 @@ The generated claims-model-starter repository has its own, much smaller dependen
 
 | Variable | Scope | Purpose |
 |----------|-------|---------|
-| `ANTHROPIC_API_KEY` | Live agent runs on the `anthropic` provider | Claude API authentication — not used by the `bedrock` provider, which authenticates from the AWS credential chain |
+| `ANTHROPIC_API_KEY` | Live agent runs on the `anthropic` provider | Claude API authentication — not used by `bedrock` (AWS credential chain) or `opencode` (whatever the CLI's own config uses) |
 | `AWS_REGION` / `AWS_DEFAULT_REGION` | `bedrock` provider | Selects the regional Bedrock endpoint and the data-residency geography |
+| `OPENCODE_EVAL_MODEL` | Provider eval tier only | Names the OpenCode model id a shadow run pins — and is the opt-in that makes the `opencode` live tests runnable at all. Not read by the pipeline itself |
 | `GITLAB_TOKEN` | GitLab live mode | GitLab API (Website Agent) |
 | `GITHUB_TOKEN` | GitHub live mode | GitHub API (Website Agent) |
 | `MPC_CHECKPOINT_DIR` | All runs | Orchestrator handoff storage |
@@ -168,8 +169,8 @@ The generated claims-model-starter repository has its own, much smaller dependen
 | `MPC_LOG_LEVEL` | All runs | Logging verbosity (default: INFO) |
 | `MPC_NAMESPACE` | Live host runs | Target GitLab group / GitHub org **path** (never a URL — a URL is rejected) |
 | `INTAKE_DB_PATH` | Web UI only | SQLite session state |
-| `INTAKE_LLM_PROVIDER` | Intake web UI | LLM backend: `anthropic` (default) or `bedrock` |
-| `INTAKE_LLM_MODEL` | Intake web UI | Model-id override; when unset, each provider uses its own `DEFAULT_MODEL` |
+| `INTAKE_LLM_PROVIDER` | Intake web UI | LLM backend: `anthropic` (default), `bedrock`, or `opencode` |
+| `INTAKE_LLM_MODEL` | Intake web UI | Model-id override; when unset, each provider uses its own `DEFAULT_MODEL` — note `opencode`'s is `None`, so on that provider an unset value means "let the `opencode` config decide" |
 
 One more variable is honoured by the Bedrock SDK client, documented (in `.env.example`) and guardable via `require_sigv4=True` (default `False`):
 
@@ -185,6 +186,19 @@ The intake web UI uses **no JavaScript build tools**. It relies on:
 - [HTMX](https://htmx.org/) loaded from CDN for form/SSE interactions
 
 There is no `package.json`, `npm`, or `node_modules`.
+
+### Non-Python runtime dependency: the `opencode` binary
+
+One dependency is deliberately **not** in any of the tables above, because it is not a Python package and `uv.lock` does not pin it. Selecting the `opencode` LLM provider requires the `opencode` executable on `PATH` — installed from npm as `opencode-ai`, so also a Node.js runtime. The provider adds **zero** Python packages: its client modules are stdlib-only (`subprocess`, `json`, `shutil`, `tempfile`) and neither `pyproject.toml` changed for it.
+
+Four supply-chain consequences, none of which apply to the SDK-backed providers:
+
+- **Version drift is unmanaged by this project's tooling.** Nothing in `uv.lock` constrains it, and the vendor ships releases daily. The client's parsing is validated against fixtures captured from one known version, and it reports the observed version in its error text so a schema break is self-diagnosing. Pin it yourself in any deployment that selects this provider.
+- **Python-tree vulnerability scanning will not see it.** It needs to be covered by whatever scans your host or container image, not by a `uv`/`pip` audit.
+- **It needs npm-registry reachability at run time, not just at build time.** OpenCode materialises a `node_modules` tree inside the client's sandbox on first use. An air-gapped runtime needs that sandbox pre-seeded or the registry mirrored.
+- **It brings its own on-disk state.** Session content — prompt and response text — is persisted to a SQLite database under the invoking user's home directory, outside this project's own checkpoint and interview stores. See [AI Dependencies](AI-Dependencies).
+
+The provider is not the default and nothing installs the binary implicitly; a deployment that never selects `opencode` carries none of this.
 
 ---
 

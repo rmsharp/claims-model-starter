@@ -637,9 +637,11 @@ blocker on C1's own (non-AWS-connected) scope.
    and `docs/planning/httpx-adapter-migration.md`. Per §6, `SESSION_NOTES.md`, `CHANGELOG.md` and
    `docs/architecture-history/` keep the old path as historical record; add one line to the new
    `audits/README` noting the former location.
-3. **Fix `docs/tutorial.md`:** `:522` ("Only `anthropic` exists today" → two providers ship),
-   `:53` ("422+ tests" → the single-sourced number or drop it), `:218` (wiki-relative link that
-   404s).
+3. **Fix `docs/tutorial.md`:** ~~`:522` (the provider count)~~ **— done Session 214, and note it is
+   now *three* providers, not two: `anthropic`, `bedrock`, `opencode`.** Still open: `:53`
+   ("422+ tests" → the single-sourced number or drop it), `:218` (wiki-relative link that 404s).
+   ⚠ This page is published by `publish-tutorial.yml` and is **outside** `docs/wiki/`, which is why
+   a wiki-scoped documentation sweep missed it (Session 214 did, and an adversarial pass caught it).
 4. **Add a `concurrency:` block to `publish-tutorial.yml`** so deploys serialize.
 5. *(Optional)* `validation: links: unrecognized_links: warn` in `mkdocs.yml` — `--strict` alone
    does **not** catch the `:218` class of error.
