@@ -11,7 +11,11 @@ on the Phase B golden corpus, side-by-side with the incumbent.
   production default.
 - **Candidates:** `bedrock` (AWS Bedrock-hosted Claude, Phase C) and `opencode`
   (the `opencode` CLI as a subprocess transport, `docs/planning/opencode-adapter-spec.md`,
-  added as a candidate Session 214). Neither has been measured.
+  added as a candidate Session 214). **`opencode` is measured** — first in Session
+  216 (NO-GO on `sql_exec`) and re-measured on the SQL thresholds in Session 218,
+  which flipped it to **GO**. `bedrock` has never been measured (no AWS
+  credentials). *This line said "Neither has been measured" until Session 218; it
+  had been stale since S216.*
 
 ## Decision (Session 165): **NO-GO — keep `anthropic` primary; harness not yet trustworthy**
 
@@ -160,6 +164,85 @@ supplies the pinned model id (that provider pins no default of its own, spec D6)
 so the Phase 4 pre-flight "the operator names the model to pin" is discharged by
 setting one variable. **Decision stays NO-GO.**
 
+**Update — Session 218 (2026-08-02): `sql_exec` RE-MEASURED under the dialect fix, at a 3.6–6.8× larger denominator. It PASSES for both providers — `anthropic` 18/18, `opencode` 34/34, zero execution errors. The `opencode` verdict flips NO-GO → GO.**
+
+This is the re-measure Session 217 deliberately deferred, run with operator spend
+authorization. **The production default was NOT changed** — this session records a
+verdict, it does not act on one. `DEFAULT_LLM_PROVIDER` is still `anthropic`.
+
+#### What was measured, and the harness change that made it worth measuring
+
+The SQL/QC block was the only one of the three measurement blocks that did not
+sample: governance runs 5 cases × N≥5, the interview sweep runs 4 cases × N≥5, and
+the SQL block ran its 3 primary cases **once each**. That put `sql_exec` on a ~5
+model-chosen-query denominator against a 95% bar — pass-only-if-perfect, where one
+stochastic miss reads as a 20-point quality drop — and `qc_structural` on **three
+booleans** against a 100% bar. It is why S216 and S217 each measured this metric
+and each had to write "do not quote this as a rate" instead of a result.
+
+Session 218 gave the SQL block the same N≥5 sampling every other capability already
+had (`4e2c8ec`), extracted as `tests/eval/sql_sweep.py` so the shadow driver and the
+live assertion tier share one implementation — the `interview_sweep.py` precedent,
+and the same drift seam S169 closed for interviews. **No threshold moved.**
+`SQL_EXECUTABLE_MIN` is still 0.95. The denominator moved.
+
+| provider | `sql_parse` | `sql_exec` | `qc_structural` | calls | wall | cost |
+| --- | --- | --- | --- | --- | --- | --- |
+| `anthropic` (baseline) | 18/18 | **18/18** | 15/15 | 30 | 7.2 min | **$0.63** (token-derived, 30/30 calls) |
+| `opencode` (candidate) | 34/34 | **34/34** | 15/15 | 30 | 16.8 min | ~$1.00 (char-derived estimate — see below) |
+
+Both pinned to `claude-sonnet-4-6` / `anthropic/claude-sonnet-4-6`, the same model id
+S216 used, so this remains an A/B on transport. **Zero execution errors on either
+provider** — no `DATEDIFF`, no `PERCENTILE_CONT ... WITHIN GROUP`, no `MEDIAN`, no
+`ILIKE`. The entire S216 failure class is gone.
+
+`opencode` again writes more queries than `anthropic` (34 vs 18 from the same 15
+samples), reproducing the S216 observation that drove the denominator instability —
+but now every one of them executes, so writing more no longer costs it anything.
+
+#### The verdict, and exactly how much of it is fresh
+
+Rendered by the **unmodified** `evaluate_cutover` from a mapping of three
+freshly-measured values plus five carried forward from Session 216:
+
+- **Fresh (this session, live):** `sql_parse`, `sql_exec`, `qc_structural`.
+- **Carried forward from S216:** `json_parse`, `governance_cycle_time_agreement`,
+  `governance_laxer_miss`, `interview_convergence`, `interview_premature`.
+
+Carrying those five forward is a deliberate, defended choice, not a shortcut. They
+are produced by the **intake** client, built by a different factory
+(`agents/intake/factory.py`) whose signature accepts no `sql_dialect`; nothing under
+`agents/intake/` imports the data-agent package at all. A Session 218 adversarial
+pass ran three independent refutation lenses against the claim "the dialect note
+cannot move these five" and **none produced a path by which the note changes one of
+those values.** What the refuters *did* establish is a different and real property:
+the changed line sits upstream of the governance and interview blocks, so anything
+that *raises* there loses the whole run — a failure-mode coupling, not a value
+coupling. That argues for isolating the measurement (which this session did) rather
+than against carrying the values forward.
+
+**⚠ What this does NOT establish.**
+
+1. **It is not a full fresh sweep.** Five of eight cells are S216's. A GO resting
+   partly on carried-forward values is weaker than a GO on eight fresh ones. If the
+   cutover is actually going to be *taken*, re-measure all eight in one session.
+2. **One run per provider.** n is now 18 and 34 queries rather than ~5, which is
+   what makes a 95% bar decidable at all — but run-to-run variance is still
+   unmeasured. Two consecutive clean runs would be worth more than one.
+3. **`opencode`'s cost figure is an estimate, not a measurement.** Its subprocess
+   transport never touches `messages.create`, so no `usage` block is reachable and
+   the ~$1.00 is derived from character counts at a ~3.6 chars/token assumption.
+   Treat it as an order of magnitude. `anthropic`'s $0.63 *is* token-derived, from
+   usage on all 30 calls.
+4. **Latency is not in any threshold and got worse.** `opencode` p50 **33.5 s** vs
+   `anthropic` p50 **18.0 s**, max 84.8 s vs 38.5 s — roughly 2× on the same model.
+   A cutover carries that, and no §3.4 row will ever object to it.
+5. **`bedrock` remains PENDING.** No AWS credentials; unchanged since S164.
+6. **Only one of the three dialect-injected prompts is actually measured for
+   dialect effect.** `qc_structural` scores `len(qc_lists) == n_primary_queries` and
+   never parses or executes the QC SQL; `generate_baseline_query` is never called by
+   the gate at all. See `BACKLOG.md`.
+
 **Update — Session 217 (2026-08-02): the `sql_exec` dialect cause is FIXED at the source. The recorded rates below are now stale-by-construction; they were measured with a dialect-blind prompt that no longer exists.**
 
 Session 216 (below) diagnosed `sql_exec` as a dialect mismatch and left the fix
@@ -276,23 +359,29 @@ single-pass baseline is preserved in "Baseline findings" below.)
 | Capability | Metric | Threshold | anthropic (baseline) | bedrock (candidate) | opencode (candidate) |
 | --- | --- | --- | --- | --- | --- |
 | Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
-| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
-| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | 60.0% (FAIL; re-confirmed S216) | — (PENDING) | 42.9% (FAIL) |
-| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80; re-confirmed S216 25/25) | — (PENDING) | 100.0% (PASS) |
-| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20; re-confirmed S216) | — (PENDING) | 0 (PASS) |
-| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
-| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
-| Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) | 0 (PASS) |
+| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS; S218 18/18) | — (PENDING) | 100.0% (PASS; S218 34/34) |
+| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | **100.0% (PASS; S218 18/18)** | — (PENDING) | **100.0% (PASS; S218 34/34)** |
+| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80; re-confirmed S216 25/25) | — (PENDING) | 100.0% (PASS, S216) |
+| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20; re-confirmed S216) | — (PENDING) | 0 (PASS, S216) |
+| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS; S218 15/15) | — (PENDING) | 100.0% (PASS; S218 15/15) |
+| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS, S216 20/20) |
+| Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) | 0 (PASS, S216) |
 
 - **bedrock: PENDING** — Undecided — keep anthropic primary until measured.
-- **opencode: NO-GO** — Do NOT cut over — keep anthropic primary. opencode fails: sql_exec.
-- **⚠ The `sql_exec` row is stale-by-construction as of Session 217.** Both
-  recorded rates (60.0% / 42.9%) were measured with a dialect-blind prompt that
-  no longer exists — the dialect fix landed in `9c9fe35`. The row is left
-  unedited because it is a faithful record of what was measured, not a claim
-  about current behaviour; **do not cite it as the provider's SQL quality**, and
-  do not treat the fix as a re-score. Re-measuring is a full sweep, unrun. See
-  §"Update — Session 217" above.
+- **opencode: GO** — Cut over: opencode meets every §3.4 threshold.
+- **⚠ GO is a verdict, not an action taken.** `DEFAULT_LLM_PROVIDER` is unchanged
+  and `anthropic` remains the production default. Acting on this verdict is an
+  operator decision, and §"Update — Session 218" lists six things this
+  measurement does **not** establish — most importantly that five of the eight
+  cells above are **carried forward from Session 216**, not re-measured under the
+  dialect fix. Rows marked `S218` are fresh; rows marked `S216`/`S175`/`S176` are
+  not. A cutover that is actually going to be *taken* should rest on one session
+  that measures all eight.
+- **The `sql_exec` row's former stale-by-construction warning is discharged.** It
+  previously carried 60.0% / 42.9%, both measured against the dialect-blind prompt
+  that `9c9fe35` replaced. Those numbers are now **superseded**, not merely stale;
+  they survive in §"Update — Session 216" as the historical record of what the
+  dialect-blind prompt produced. Do not quote them as current provider SQL quality.
 
 *The `opencode` column is **measured** as of Session 216 (2026-08-02) — 451 live
 calls, `anthropic/claude-sonnet-4-6`, $13.99. It replaces the hand-added PENDING

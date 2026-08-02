@@ -95,7 +95,22 @@ measurable — `opencode` ties the baseline on governance (`cycle_time` 100%, la
 now quantified (risk #12): mean $0.0310/call, p99 latency 105.8 s, 4.4% of calls >60 s taking 14% of spend, only
 8.4% of calls getting any prompt-cache read. See `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 216".
 
-### `sql_exec` — dialect cause FIXED (Session 217); the re-measure is what remains
+### `sql_exec` — CLOSED (Session 218): cause fixed S217, re-measured S218, both providers PASS
+
+**Resolved.** Session 218 re-measured under the dialect fix at an N≥5-sampled denominator:
+**`anthropic` 18/18 and `opencode` 34/34 executable, zero execution errors** — no `DATEDIFF`,
+`PERCENTILE_CONT ... WITHIN GROUP`, `MEDIAN` or `ILIKE`. The entire S216 failure class is gone.
+`SQL_EXECUTABLE_MIN` was never lowered; the SQL block simply got the same N≥5 sampling every other
+capability already had (`4e2c8ec`, extracted to `tests/eval/sql_sweep.py`). 60 live calls, $0.63
+measured + ~$1.00 estimated, 24 min. **The `opencode` cutover verdict flipped NO-GO → GO** — but
+five of its eight cells are carried forward from S216, and **no production default was changed**.
+See `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 218", including its six explicit
+non-establishments. **What remains open is the cutover *decision*, not the measurement:** if the
+swap is going to be taken, one session should measure all eight thresholds fresh.
+
+The original entry follows as the historical record.
+
+#### (historical) dialect cause FIXED (Session 217); the re-measure is what remains
 
 **The root cause is closed.** Session 216 diagnosed `sql_exec` as a SQL *dialect* mismatch — both providers
 emit competent *warehouse* SQL (`DATEDIFF(...)`, `PERCENTILE_CONT(...) WITHIN GROUP`, `MEDIAN(...)`), the eval
@@ -122,6 +137,57 @@ denominator, never a bare rate. Reopening the `opencode` cutover decision is dow
 **Still open on the adapter:** spec §11 Q1 (`DEFAULT_MODEL` shipped as `None`) — reversible in one line. The
 non-Anthropic measurement that discharges `AI-Dependencies.md` §6.7's model-family diversification is a **second**
 run and is now unblocked, since the transport itself is cleared on 7/8.
+
+### `sql_dialect_from_url` raises `ValueError` on a non-numeric port — breaks its own contract
+
+**Found Session 218** while scoping the re-measure (adversarial blast-radius pass); **filed, not fixed**, by
+operator decision — the session stayed scoped to measurement. Small and self-contained.
+
+`packages/data-agent/src/model_project_constructor_data_agent/db.py` — `sql_dialect_from_url` catches only
+`sa.exc.ArgumentError`, but `sa.make_url` calls `int()` on the port segment and raises a **bare `ValueError`**
+for a non-numeric one. `ArgumentError` is not a `ValueError` subclass (`ArgumentError -> SQLAlchemyError ->
+Exception`), so it escapes. Verified live:
+
+```
+sql_dialect_from_url("postgresql://u:p@host:$DB_PORT/claims")
+  -> ValueError: invalid literal for int() with base 10: '$DB_PORT'
+sql_dialect_from_url("not a url at all")   -> None      # the ArgumentError path works
+```
+
+**Why it matters:** the function's own docstring promises the opposite — "Returns `None` for a URL SQLAlchemy
+cannot parse, so a malformed `--db-url` degrades to today's dialect-silent prompt **rather than raising here** —
+the URL's real failure surfaces at `ReadOnlyDB.connect`, which is the error path callers already handle." Two
+**production** seams pass a user-supplied URL straight in: `cli.py:129` (`db.dialect`) and
+`scripts/run_pipeline.py:175` (`sql_dialect_from_url(db_url)`). A user whose `--db-url` carries an unexpanded
+env-var port (`...@host:$DB_PORT/db`) or ODBC-style extras gets an uncaught `ValueError` instead of the clean
+`DBConnectionError` the design intends. It is also evaluated *before* the DB is connected, so it pre-empts the
+error path that was supposed to report it.
+
+**Fix:** widen to `except (sa.exc.ArgumentError, ValueError)` — one line — plus a regression test for the
+non-numeric-port case. Note `ValueError` is the broader catch and subsumes nothing else here that should
+propagate; the function is parse-only and has no other failure mode worth surfacing.
+
+**Not a blocker for the eval**: the eval DB URL is a well-formed `sqlite:///` path, so no measurement is
+affected.
+
+### The gate measures only ONE of the three dialect-injected prompts
+
+**Found Session 218**, recorded rather than fixed (scope). Session 217 injected the dialect note into three
+methods — `generate_primary_queries`, `generate_quality_checks`, `generate_baseline_query`. The Phase E gate
+exercises the effect of exactly one:
+
+| method | called by the gate? | scored how |
+| --- | --- | --- |
+| `generate_primary_queries` | yes | `sql_parse` + `sql_exec` — SQL is parsed **and executed**, so a dialect miss is visible |
+| `generate_quality_checks` | yes | `qc_structural` only, which is `len(qc_lists) == n_primary_queries` — the QC SQL is **never parsed or executed** |
+| `generate_baseline_query` | **never called** | no gate key exists |
+
+`grep -rn "generate_baseline_query" tests/eval/` returns zero hits in any `.py`. The `kind: baseline` corpus case
+(`subrogation_recovery_rate`, `corpus/sql_cases.yaml`) is filtered out of every live path by
+`if case.kind != "primary": continue`; its only consumers are two deterministic oracle self-tests that score the
+**human-authored** `reference_sql`, no LLM involved. So baseline-query dialect correctness is unmeasured, and QC
+dialect correctness is unmeasured. Closing either means a new scorer (parse/execute the QC SQL) and, for the
+baseline case, a gate key that does not exist yet — a design change, not a wiring fix.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 
