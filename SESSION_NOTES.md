@@ -6,6 +6,186 @@
 
 ## ACTIVE TASK
 
+### What Session 215 Did
+**Deliverable:** **Made the eval harness able to drive the `opencode` provider end-to-end — spec Phase 4's real
+pre-flight, recorded as new spec §9 Phase 3b. COMPLETE.** **No live run, no cutover, no production default
+touched, no `src/` change at all** — deterministic and zero-API-spend by construction. FM #18 held.
+
+**Started / Completed:** 2026-08-01. **Commits:** `a0c3930` (the fix + 11 tests), `7af60c8` (spec Phase 3b, §11
+Q2, `CHANGELOG.md`, `BACKLOG.md`), plus this close-out.
+
+**Trigger and re-scope.** The operator replied "1" to the Phase 0 report, selecting spec **Phase 4** — the same
+one-character selection pattern Sessions 209–214 handled. Phase 1 pre-flight then proved Phase 4 could not run,
+so I stopped and put the scope decision to the operator via `AskUserQuestion` with three options and a
+recommendation. They chose the harness fix. **The deliverable changed because the evidence changed, not because
+I preferred a smaller job** — Phase 4 would have failed.
+
+**Workstream:** `docs/methodology/workstreams/DEVELOPMENT_WORKSTREAM.md`, read in full before any edit. Its Phase 2
+order (read the code you will modify → then the tests → then the docs) is what surfaced the second defect.
+
+#### The two defects — both proven live at $0 before any billable call
+
+1. **`stakeholder_sim.py` could not drive a subprocess provider.** It reached through to
+   `intake_client._client.messages.create(...)`, assuming every provider is SDK-backed. `OpenCodeLLMClient` sets
+   `_client` to the `_UNUSED_SDK_CLIENT` placeholder whose `__getattr__` raises **by design** (spec D5, pinned by
+   `test_opencode_client.py:430`). Observed: `AttributeError: OpenCodeLLMClient does not use an Anthropic SDK
+   client (attempted access: 'messages')`. It is a **bare `AttributeError`**, not `StakeholderSimError`, so it is
+   **not** in `interview_sweep._TRANSIENT_ERRORS` (`:82-87`) → it propagates and **aborts the whole run**.
+   `measure_provider` orders governance → sql → interview, so a Phase 4 shadow run would have **billed ~31 live
+   `opencode` calls and then crashed with no report**, leaving `interview_convergence` and `interview_premature`
+   permanently unmeasurable.
+2. **The pinned model reached only half of each interview.** `shadow_run.py` and `test_eval_live.py` both built the
+   simulator with **no `model=`**, so the simulated *stakeholder* ran unpinned while the *interviewer* ran pinned —
+   and for this provider unpinned means no `--model` flag at all (`DEFAULT_MODEL is None`, D6). Two model tiers in
+   one measured conversation, invisible in the report.
+
+**Why no test caught either:** the live tier auto-skips, so both paths are green-badged and unexercised. That is
+learning #71.
+
+#### The fix
+
+A provider-agnostic `TextCompleter` seam — `(system, user) -> str` — resolved by **transport shape** rather than
+provider name, so a fourth provider shaped like either existing one needs no change here: `_text_completer_for`
+returns the client's own `_run` for subprocess transports and a closure over `messages.create` for SDK ones. A
+client with neither shape raises **`TypeError` at construction** — deliberately *not* `StakeholderSimError`, which
+is in `_TRANSIENT_ERRORS` and would get every interview retried then **silently excluded**, converting "nobody
+taught the harness this provider" into an empty result set instead of a loud abort (learning #73). Model threaded
+to both halves at both call sites.
+
+**The proportionality evidence:** the **five pre-existing simulator tests pass unmodified**. That is what says
+SDK-provider behaviour is unchanged and the recorded `anthropic` baseline stays valid.
+
+**One deliberate behaviour change, contract-aligning rather than new policy:** `_call_text`'s shared guard now
+rejects a whitespace-only answer on every transport, where the SDK path previously returned it verbatim.
+`interview_sweep.py:73` — untouched — **already** documented `StakeholderSimError` as covering "an empty simulated
+answer", so the code now matches a contract that was already written. I verified that line myself rather than
+taking the verifier's word for it. It cannot move the recorded baseline, which is at its ceiling on both affected
+keys (convergence 100%, 20/20; premature 0).
+
+**Verification:** the exact reproduction that failed at session start now resolves to `OpenCodeLLMClient._run`
+with the pinned model on the client and no SDK handle touched. Full gate **1121 passed + 12 live-skipped @
+97.79%** (from 1110 + 12); `uv run mypy` clean (68 files); `uv run ruff check src/ tests/ packages/ scripts/`
+clean. +11 tests, every one hermetic — the end-to-end case drives the **real** client through the real factory
+branch, replaying committed fixture `tests/fixtures/opencode/success_with_agent.jsonl` via a stubbed runner and
+`shutil.which`, asserting both the parsed answer and that the pinned model reaches the argv.
+
+#### The adversarial pass found nothing — and that is a weaker result than Session 214's, honestly reported
+
+Four lenses (correctness, hermeticity/CI, regression/scope, docs) raised **12 findings; all 12 were refuted**,
+each by an agent instructed to default to refuted. One genuine code observation survived as an observation but not
+as a defect — the blank-answer guard above — and it is documented rather than dropped. The docs lens's findings
+were all pre-existing drift in files this change does not touch (`tests/eval/README.md`'s convergence caveat has
+been stale since the commit *immediately after* the one that wrote it, ~109 commits ago); I deliberately left them
+for a docs-sweep session rather than widening scope. **Caveat on this result:** a 0-confirmed outcome is weaker
+evidence than 10-confirmed. It may mean the diff is clean, or that four lenses over a ~120-line test-tree change
+is more review than the surface warrants.
+
+### Session 214 Handoff Evaluation (by Session 215)
+
+**Score: 8/10.** Accurate, specific, and its gotchas did real work; two points off because it asserted Phase 4 was
+ready to run, and the evidence that it was not sat in a file that session had just edited.
+
+**What helped, specifically:** (1) **Gotcha 1** — "Setting `OPENCODE_EVAL_MODEL` in your shell makes
+`uv run pytest -q` run the live tier and spend money… do not export it in a `.env` or a shell profile 'to be
+ready'. Set it inline on the one command that should measure." I followed that literally for every probe I ran;
+without it my first reproduction attempt would plausibly have been an exported variable and a billable suite run.
+(2) **Gotcha 2** — "Nothing has ever been measured against this provider. Do not let a green test suite, a clean
+skip, or the phrase 'the adapter works' become evidence about output quality." That is the exact scepticism that
+made me check whether the harness could *run* before assuming Phase 4 was ready, and it is why this session found
+the blocker instead of the operator finding it via a failed paid run. **Highest-value line in the handoff.**
+(3) The **"What's next"** section named both operator-gated questions precisely, so my `AskUserQuestion` was a
+5-minute job rather than a re-derivation. (4) The **key files** list (`eval_cutover.py`'s `provider_eval_model`,
+`shadow_run.py`, `test_eval_live.py`) was correct and took me straight to both defect sites.
+
+**What was missing — and it is the deduction:** the handoff described Phase 4's pre-flight as the model id plus
+credentials. It never asked whether the harness could drive the provider end-to-end. That is forgivable in the
+abstract — but **Session 214 edited both defective files, and defect #2 is in its own diff**: `git show a2da53e --
+tests/eval/shadow_run.py` shows it changing `make_intake_client(provider)` → `make_intake_client(provider,
+model=model)` with the unpinned `stakeholder_simulator_for(fixture, provider=provider)` sitting **five lines
+below, inside the same function and the same hunk's context**. Its own self-assessment minus-list even names the
+lesson ("re-grep the page you just edited") — applied to docs, not to code. Learning #72.
+
+**What was wrong:** nothing. Every line number, every gotcha, and the §7.4 deviation account all held exactly.
+
+**ROI:** high. Gotcha 2 is the reason this session cost $0 instead of ~31 billed calls and a crash.
+
+### Phase 3B: Self-assess — Session 215 — 8/10
+
+- **The +:** (1) **Checked before spending, and the check was free.** Constructing the simulator for the provider
+  spawns no process and costs nothing; it took one command and it saved a failed paid run. (2) **Escalated the
+  re-scope rather than deciding it** — the deliverable the operator selected turned out to be impossible, which is
+  their call to re-aim, so I brought three options with trade-offs and a recommendation. (3) **Proved both defects
+  live before proposing anything**, so the re-scope conversation rested on observed output, not on my reading.
+  (4) **Chose the exception type against the handler**, not against severity — `TypeError` over `StakeholderSimError`
+  specifically because the latter is in `_TRANSIENT_ERRORS` and would have made an untaught provider look like a
+  measurement of nothing. (5) **Kept the fix in the test tree**: no `src/` change, and the `_UNUSED_SDK_CLIENT`
+  guard that made this loud is untouched. (6) **Let the five pre-existing tests pass unmodified as the
+  proportionality check** rather than rewriting them to fit a nicer design. (7) **Re-verified the adversarial
+  pass's key refutation by hand** (`interview_sweep.py:73`) instead of trusting the agents. (8) **Held scope**
+  against three separately-tempting doc fixes the review surfaced.
+- **The −:** (1) **I very nearly shipped the wrong exception type.** The first draft raised `StakeholderSimError`
+  from `_text_completer_for`; I caught it only when writing the docstring and going to read `_TRANSIENT_ERRORS`.
+  Had I written the tests first (the workstream's own anti-pattern #3, test-last) the retry-then-exclude behaviour
+  would have shown up as a test I had to think about, rather than as prose I happened to be writing. (2) **My
+  four-lens review was probably over-scaled for a ~120-line test-tree diff** — 12 findings, 0 confirmed, ~1.1M
+  subagent tokens. Session 214's identical apparatus over a 17-file doc sweep returned 10 real defects. The lesson
+  is to size the review to the surface, and I did not. (3) **I did not check whether the *data-agent* seam has the
+  same class of problem.** The interview sweep is intake-only, so it is genuinely out of scope, but I only
+  established that late and by inspection, not deliberately. (4) The `KNOWN_PROVIDERS` sentinel test is a
+  name-equality assertion — it forces a *look* when a fourth provider lands, but it does not prove that provider is
+  drivable. A stronger guard would construct each provider's client and resolve its completer; I could not make
+  that hermetic (anthropic needs a key, bedrock a region, opencode the binary) and settled rather than solving it.
+
+**What's next:** **Spec Phase 4 — the live shadow run + cutover decision.** Now genuinely unblocked. **§11 Q2 is
+ANSWERED (operator, 2026-08-01): measure an Anthropic model through `opencode` first**, holding the model constant
+so the A/B isolates the transport change (which is what tests risk #1); the non-Anthropic run that discharges
+`AI-Dependencies.md` §6.7's diversification is a **second** measurement, after the adapter is cleared. **Still
+needed live at that session's start:** (a) **the model id to pin** — it becomes `OPENCODE_EVAL_MODEL`; and (b)
+**credentials for that vendor**, configured in the operator's own OpenCode config (this project reads none).
+The run must report **cost per interview** alongside quality — the adapter carries a constant ~4,830-token
+scaffold per call (spec risk #12) that no §3.4 threshold can see. **No cutover on an unmet or unmeasured
+threshold**; that rule is encoded in `evaluate_cutover` and must not be relaxed to produce a green report. If the
+operator is not ready, the other open item (enterprise migration — C4 the fork, or C2, both ungated) is the
+alternative.
+
+**Key files:** `tests/eval/stakeholder_sim.py` — `TextCompleter` (the seam), `_text_completer_for` (transport-shape
+resolution; read its docstring on the `TypeError` choice), `_sdk_completer`, and `StakeholderSimulator._call_text`.
+`tests/eval/test_stakeholder_sim.py` — 16 tests; read `test_stakeholder_simulator_for_pins_the_model_on_a_real_opencode_client`
+first, it is the end-to-end one and covers both defects. `tests/eval/shadow_run.py:151` and
+`tests/eval/test_eval_live.py:161-168` — the threaded call sites. `tests/eval/interview_sweep.py:82-87` —
+`_TRANSIENT_ERRORS`, the list that decides whether your exception aborts or is silently excluded; **read it before
+raising anything new in this subsystem.** `docs/planning/opencode-adapter-spec.md` §9 Phase 3b and Phase 4's
+amended pre-flight; §11 Q2's resolution box.
+
+**Gotchas:**
+1. **Run the cheap pre-flight before authorising any spend.** Build the simulator for the provider and resolve its
+   completer — no process spawn, no cost. If it raises, the sweep will abort mid-run *after* the governance and SQL
+   tiers have billed. This is now written into spec Phase 4's pre-flight; do it anyway.
+2. **`OPENCODE_EVAL_MODEL` is still both the opt-in and the pinned model.** Setting it in your shell makes a bare
+   `uv run pytest -q` spend money (Session 214's gotcha 1, unchanged and still true). Set it inline on the one
+   command that should measure.
+3. **Nothing has still ever been measured against this provider.** A green suite, a clean skip, and now "the
+   harness can drive it" are all still *not* evidence about output quality. Spec risk #1 is completely untouched.
+4. **`interview_sweep._TRANSIENT_ERRORS` silently excludes rather than failing.** Anything you raise inside the
+   sweep that lands in that tuple gets retried three times and then dropped from the result set — an empty result
+   set reads as "measured nothing", not as "broken". Pick exception types against that list.
+5. **The `KNOWN_PROVIDERS` sentinel in `test_stakeholder_sim.py` will go red when a fourth provider is added.**
+   That is intentional. Do not just widen the set — add the provider to the completer-resolution tests, or confirm
+   its client exposes `_run` or `_client`.
+6. **Two pre-existing doc-drift items were found and deliberately NOT fixed** (out of scope for a harness fix, and
+   both predate it): `tests/eval/README.md`'s caveat #2 still calls the convergence scorer's `status==COMPLETE`
+   requirement and the `max_tokens` truncation outstanding — both were fixed in Sessions 167/168 and the caveat has
+   been stale since the very next commit (~109 commits ago); and `README.md:81-84` still says
+   `interview_convergence` "is still not green" when Session 170 measured it at 100%. A short docs-sweep session
+   would clear both.
+7. **Session 214's gotchas 4–8 all still apply verbatim** (wiki auto-publish on commit; `docs/tutorial.md` lives
+   outside `docs/wiki/` and is published separately; the wiki `Changelog.md`'s stale httpx claim; the
+   `Extending-the-Pipeline.md` code block is an unguarded paraphrase; OpenCode session state persists to a global
+   SQLite DB holding prompt/response text — a Phase 4 run over the corpus **will** put real fixture transcripts
+   there).
+8. **38 commits were unpushed at this session's start** (now 41). `origin/master` has not been updated since before
+   Session 186. Not this session's call to make, but the operator should know.
+
 ### What Session 214 Did
 **Deliverable:** Spec Phase 3 — eval wiring + the documentation sweep (`docs/planning/opencode-adapter-spec.md`
 §7.4 and §9 Phase 3). **COMPLETE.** No live run, no cutover, no production default touched — that is Phase 4,
