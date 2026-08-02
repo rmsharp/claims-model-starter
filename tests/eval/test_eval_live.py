@@ -158,7 +158,13 @@ def test_live_interview_converges(provider: str) -> None:
             session_id=f"live-{fixture['session_id']}",
             domain=fixture.get("domain", "pc_claims"),
             initial_problem=fixture.get("initial_problem"),
-            answer_provider=stakeholder_simulator_for(fixture, provider=provider),
+            # The pinned model goes to *both* halves of the interview: a provider
+            # that pins no default of its own (opencode, spec D6) would otherwise
+            # run the simulated stakeholder unpinned while the interviewer ran
+            # pinned — two model tiers in one measured conversation.
+            answer_provider=stakeholder_simulator_for(
+                fixture, provider=provider, model=provider_eval_model(provider)
+            ),
             review_responses=review_sequence_from_fixture(fixture),
         )
 

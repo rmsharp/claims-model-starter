@@ -148,7 +148,10 @@ def measure_provider(
             session_id=f"shadow-{provider}-{fixture['session_id']}",
             domain=fixture.get("domain", "pc_claims"),
             initial_problem=fixture.get("initial_problem"),
-            answer_provider=stakeholder_simulator_for(fixture, provider=provider),
+            # Both halves of the interview run on the pinned model: a provider
+            # with no default of its own (opencode, spec D6) would otherwise run
+            # the simulated stakeholder unpinned while the interviewer ran pinned.
+            answer_provider=stakeholder_simulator_for(fixture, provider=provider, model=model),
             review_responses=review_sequence_from_fixture(fixture),
         )
 
