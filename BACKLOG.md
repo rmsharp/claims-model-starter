@@ -84,17 +84,39 @@ pinned. Fixed with a transport-shape-resolved `TextCompleter` seam; no productio
 tests. Gate: **1121 passed + 12 live-skipped @ 97.79%**, mypy and ruff clean. See `CHANGELOG.md`'s 2026-08-01
 entry and spec §9 Phase 3b.
 
-**Next session's deliverable is spec Phase 4 — the live shadow run + cutover decision. It is operator-gated.**
-**§11 Q2 is now ANSWERED (operator, 2026-08-01): measure an Anthropic model through `opencode` first** — holding
-the model constant makes the A/B against the recorded baseline isolate the transport change, which is what tests
-risk #1 (quality degrading under the D2 prompt-role fold); a simultaneous model-family change would confound it.
-The non-Anthropic run that delivers `AI-Dependencies.md` §6.7's diversification is a **second** measurement, after
-the adapter is cleared. **Still needed live at that session's start:** the **model id to pin** (it becomes
-`OPENCODE_EVAL_MODEL`) and credentials for that vendor, configured in the operator's own OpenCode config — this
-project reads none. The run must report **cost per interview** alongside quality — the adapter carries a constant
-~4,830-token scaffold per call (spec risk #12) that no §3.4 threshold can see. **No cutover on an unmet or
-unmeasured threshold**; that rule is encoded in `evaluate_cutover` and must not be relaxed to produce a green
-report. Spec §11 Q1 (`DEFAULT_MODEL` shipped as `None`) remains open and is reversible in one line.
+**Phase 4 (the live shadow run + cutover decision) is DONE (Session 216, 2026-08-02) — verdict NO-GO,
+`anthropic` stays primary.** 451 live calls pinned to `anthropic/claude-sonnet-4-6` (the baseline's own model id,
+so the A/B isolates the transport change per §11 Q2), $13.99, 99.5 min, plus a 31-call same-session `anthropic`
+governance+SQL refresh. **7 of 8 thresholds PASS; `sql_exec` FAILs at 42.9%.**
+
+**The result that matters: spec risk #1 did not materialize.** The D2 prompt-role fold degraded nothing
+measurable — `opencode` ties the baseline on governance (`cycle_time` 100%, laxer 0), `qc_structural` (100%),
+`sql_parse` (100%), and **both interview thresholds** (`convergence` 100% at 20/20, `premature` 0). Cost profile
+now quantified (risk #12): mean $0.0310/call, p99 latency 105.8 s, 4.4% of calls >60 s taking 14% of spend, only
+8.4% of calls getting any prompt-cache read. See `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 216".
+
+### `sql_exec` measures the harness, not the model — fix the metric (NEW, Session 216)
+
+**The one threshold blocking `opencode`'s cutover also fails the incumbent, and Session 216 diagnosed why:
+it is a SQL *dialect* mismatch.** Every execution failure on *both* providers is an unsupported-function error
+against SQLite — `DATEDIFF(...)` (MySQL/SQL Server/Snowflake), `PERCENTILE_CONT(...) WITHIN GROUP`
+(Postgres/Oracle), `MEDIAN(...)`. Both providers emit competent *warehouse* SQL; the eval runs it on SQLite and
+nothing in the data-agent prompt names the dialect. S165 guessed "model SQL **or** an incomplete seed schema" —
+it is neither, and that mis-attribution has stood since.
+
+**The metric is also unstable: its denominator is model-chosen** (how many queries the model writes), so the rate
+moves run to run and the provider ordering *reverses* — sweep `anthropic` 3/5 = 60.0% vs `opencode` 3/7 = 42.9%;
+diagnostic re-run `anthropic` 2/4 = 50.0% vs `opencode` 4/7 = 57.1%. The recorded gap is therefore **not** evidence
+of a transport regression.
+
+Two candidate fixes, both un-scoped: name the execution dialect in the data-agent prompt, or execute generated SQL
+against a warehouse-dialect target. **Do not "fix" this by lowering `SQL_EXECUTABLE_MIN`** — the §5 rule is encoded
+in `evaluate_cutover` and must not be relaxed to produce a green report. Reopening the `opencode` cutover decision
+is downstream of this, not a substitute for it.
+
+**Still open on the adapter:** spec §11 Q1 (`DEFAULT_MODEL` shipped as `None`) — reversible in one line. The
+non-Anthropic measurement that discharges `AI-Dependencies.md` §6.7's model-family diversification is a **second**
+run and is now unblocked, since the transport itself is cleared on 7/8.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 

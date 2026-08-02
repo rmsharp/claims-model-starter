@@ -160,6 +160,67 @@ supplies the pinned model id (that provider pins no default of its own, spec D6)
 so the Phase 4 pre-flight "the operator names the model to pin" is discharged by
 setting one variable. **Decision stays NO-GO.**
 
+**Update — Session 216 (2026-08-02): `opencode` MEASURED for the first time. Verdict NO-GO (7/8 PASS, `sql_exec` FAIL) — but the one failing threshold is a harness dialect artifact that fails the incumbent too.**
+
+The adapter spec's Phase 4 ran: 451 live `opencode` calls pinned to
+**`anthropic/claude-sonnet-4-6`** — deliberately the same model id the recorded
+baseline uses (`anthropic_client.py:43`, unchanged since the first commit), so the
+A/B isolates the *transport* change rather than confounding it with a model change
+(spec §11 Q2, resolved by the operator). Cost **$13.99**, wall **99.5 min**. The
+`anthropic` governance+SQL tiers were re-measured in the same session (31 calls,
+6.1 min) so the comparison rests on same-day numbers; its interview sweep was
+deliberately *not* re-paid, being at ceiling and stable since S170.
+
+**The headline is what did NOT happen.** Spec risk #1 — "parses fine, quality
+silently degrades under the D2 prompt-role fold" — is the reason this whole gate
+exists. It did not materialize on any measurable threshold. `opencode` matches the
+baseline exactly on governance (`cycle_time` 100%, laxer misses 0), `qc_structural`
+(100%), `sql_parse` (100%), and **both interview thresholds** (`convergence` 100%
+20/20, `premature` 0) — the two that were unmeasurable at all until Session 215
+fixed the harness. Folding the system prompt into the user message, inside
+OpenCode's own agent framing and its irreducible ~4,830-token scaffold, did not
+measurably degrade output quality on this corpus.
+
+**`sql_exec` is the one FAIL, and it is diagnosed — it is a SQL *dialect* mismatch,
+not model quality and not (as S165 guessed) an incomplete seed schema.** Every
+execution failure on *both* providers is an unsupported-function error against
+SQLite: `DATEDIFF(...)` (MySQL/SQL Server/Snowflake), `PERCENTILE_CONT(...) WITHIN
+GROUP` (Postgres/Oracle), `MEDIAN(...)`. Both providers emit competent *warehouse*
+SQL; the eval executes it on SQLite, and nothing in the prompt names the dialect.
+
+**The metric is also unstable, and the provider ordering reverses.** Its denominator
+is model-chosen — how many queries the model decides to write — so the rate moves
+run to run. A follow-up diagnostic pass the same session measured:
+
+| | shadow sweep | diagnostic re-run |
+| --- | --- | --- |
+| `anthropic` | 3/5 = 60.0% | **2/4 = 50.0%** |
+| `opencode` | 3/7 = 42.9% | **4/7 = 57.1%** |
+
+In the sweep `opencode` trails; on the re-run it leads. **The 42.9%-vs-60.0% gap in
+the table above is therefore not stable evidence that the transport degraded SQL
+generation** — both providers produced the same absolute number of executable
+queries (3) in the sweep, and `opencode` simply wrote more queries, each additional
+one another chance to hit the dialect wall. Do not read the recorded gap as a
+model-quality finding.
+
+**What this does NOT license.** The NO-GO stands and `anthropic` stays primary. The
+§5 rule — cutover only on *every* threshold met — is encoded in `evaluate_cutover`
+and must not be relaxed to produce a green report, and the honest position is that
+`sql_exec` is unmet for both providers. The correct next move is to **fix the metric,
+not to waive it**: either name the execution dialect in the data-agent prompt, or
+execute the generated SQL against a warehouse-dialect target. Until then `sql_exec`
+measures the harness, exactly as the S165 baseline findings warned.
+
+**Cost telemetry (spec risk #12, now quantified).** No §3.4 threshold can see per-call
+cost, so it is recorded here. Mean **$0.0310/call**; p50 latency 7.8 s, p90 17.3 s,
+**p99 105.8 s, max 233.3 s**. The tail is expensive: 20 of 451 calls (4.4%) exceeded
+60 s and consumed 14% of total spend — consistent with the adapter invoking an
+*agent* that may take multiple steps (spec dragon #3), not a single completion.
+Prompt-cache reuse is rare: only **38 of 451 calls (8.4%)** registered any
+`cache_read`, so ~92% re-pay the cache-*write* premium on the constant scaffold.
+A cutover would carry this cost profile into production.
+
 ### Agreement table
 
 Re-measured live **2026-06-18 (Session 170)** via [`tests/eval/shadow_run.py`](shadow_run.py)
@@ -176,24 +237,22 @@ single-pass baseline is preserved in "Baseline findings" below.)
 
 | Capability | Metric | Threshold | anthropic (baseline) | bedrock (candidate) | opencode (candidate) |
 | --- | --- | --- | --- | --- | --- |
-| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS) | — (PENDING) | — (PENDING) |
-| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS) | — (PENDING) | — (PENDING) |
-| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | 60.0% (FAIL) | — (PENDING) | — (PENDING) |
-| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80) | — (PENDING) | — (PENDING) |
-| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20) | — (PENDING) | — (PENDING) |
-| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS) | — (PENDING) | — (PENDING) |
-| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) | — (PENDING) |
-| Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) | — (PENDING) |
+| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
+| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
+| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | 60.0% (FAIL; re-confirmed S216) | — (PENDING) | 42.9% (FAIL) |
+| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80; re-confirmed S216 25/25) | — (PENDING) | 100.0% (PASS) |
+| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20; re-confirmed S216) | — (PENDING) | 0 (PASS) |
+| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
+| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
+| Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) | 0 (PASS) |
 
 - **bedrock: PENDING** — Undecided — keep anthropic primary until measured.
-- **opencode: PENDING** — Undecided — keep anthropic primary until measured.
+- **opencode: NO-GO** — Do NOT cut over — keep anthropic primary. opencode fails: sql_exec.
 
-*The `opencode` column is hand-added (Session 214) in the renderer's exact cell
-format, not pasted from a run — there was no run. `json_parse` is the one row a
-future `opencode` measurement can fill without live calls: it is the deterministic
-parity result, and `test_llm_json_parity.py` already covers this provider's seams.
-It is deliberately left PENDING rather than pre-filled `1.0`, because a green cell
-here would make the report read as partially measured when it is not.*
+*The `opencode` column is **measured** as of Session 216 (2026-08-02) — 451 live
+calls, `anthropic/claude-sonnet-4-6`, $13.99. It replaces the hand-added PENDING
+column Session 214 placed here. `json_parse` is the deterministic parity result
+(`test_llm_json_parity.py`), not a live rate, exactly as for the baseline.*
 
 ## Baseline findings (Session 165) — artifact vs signal
 

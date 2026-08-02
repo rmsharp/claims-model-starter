@@ -6,6 +6,163 @@
 
 ## ACTIVE TASK
 
+### What Session 216 Did
+**Deliverable:** **Spec Phase 4 — the first live measurement of the `opencode` provider, and the cutover
+decision. COMPLETE. Verdict: NO-GO; `anthropic` stays primary.** No production default changed, no `src/`
+change at all — this session measured, diagnosed, and recorded.
+
+**Started / Completed:** 2026-08-02. **Trigger:** the operator replied `push` (see below), then `1` to the
+Phase 0 report — the same one-character selection pattern Sessions 209–215 handled.
+
+**Also this session, before the deliverable:** the operator asked to `push`. 41 commits (Sessions 186–215)
+went to `origin/master`, which had been stale since before Session 186. Pre-publish scan found no credential
+material — the only secret-shaped strings in the outgoing diff were `xxxxx` placeholders in `.env.example`.
+This clears Session 215's gotcha 8. The remote is public (`rmsharp/claims-model-starter`), which is the
+intended state per the enterprise-migration plan.
+
+#### The result
+
+451 live calls pinned to **`anthropic/claude-sonnet-4-6`**, **$13.99**, **99.5 min**, plus a 31-call
+same-session `anthropic` governance+SQL refresh (6.1 min). **7 of 8 §3.4 thresholds PASS; `sql_exec` FAILs at
+42.9%.** The NO-GO is produced by the unmodified `evaluate_cutover`, not asserted by hand.
+
+**The model choice is load-bearing.** `claude-sonnet-4-6` is the baseline's own id
+(`anthropic_client.py:43`, unchanged since the first commit), so the A/B isolates the *transport* change
+rather than confounding it with a model change — §11 Q2's whole point.
+
+**Spec risk #1 did not materialize.** The D2 prompt-role fold — system instructions delivered as user text,
+inside OpenCode's agent framing and its irreducible ~4,830-token scaffold — is the specific hazard this gate
+exists to catch. `opencode` ties the baseline on governance (`cycle_time` 100%, laxer 0), `qc_structural`
+(100%), `sql_parse` (100%), and **both interview thresholds** (`convergence` 100% at 20/20, `premature` 0) —
+the two that were unmeasurable for this provider until Session 215's fix.
+
+#### The one FAIL is a harness artifact, and diagnosing it changed what the number means
+
+A 6-call diagnostic captured the real DB exception per generated query. **Every** exec failure on **both**
+providers is an unsupported-function error against SQLite: `DATEDIFF(...)`, `PERCENTILE_CONT(...) WITHIN
+GROUP`, `MEDIAN(...)`. Both providers emit competent *warehouse* SQL; the eval runs it on SQLite and nothing
+in the data-agent prompt names the dialect. **S165's standing guess — "model SQL *or* an incomplete seed
+schema" — is neither**, and had gone unchallenged ~50 sessions.
+
+**The metric is unstable and the ordering reverses.** Its denominator is model-chosen:
+
+| | shadow sweep | diagnostic re-run |
+| --- | --- | --- |
+| `anthropic` | 3/5 = 60.0% | 2/4 = 50.0% |
+| `opencode` | 3/7 = 42.9% | **4/7 = 57.1%** |
+
+In the sweep **both produced the same absolute number of executable queries (3)** — `opencode` merely wrote
+more, each an extra chance to hit the dialect wall. **Do not read the 42.9%-vs-60.0% gap as a transport
+regression.** Learning #74.
+
+#### Cost profile (spec risk #12, previously unquantified)
+
+Mean **$0.0310/call**; p50 latency 7.8 s, p90 17.3 s, **p99 105.8 s, max 233.3 s**. 20 of 451 calls (4.4%)
+exceeded 60 s and took **14% of total spend** — consistent with the adapter invoking an *agent* that may take
+multiple steps (dragon #3). Only **38 of 451 calls (8.4%)** registered any `cache_read`, so ~92% re-pay the
+cache-*write* premium on the constant scaffold. A cutover carries this profile into production.
+
+### Session 215 Handoff Evaluation (by Session 216)
+
+**Score: 8/10.** Its gotchas did real work and everything load-bearing held; marked down for one wrong file
+citation and for offering no cost or duration estimate on a session whose only gate was operator spend.
+
+**What helped:** (1) **Gotcha 1** — "run the cheap pre-flight before authorising any spend; build the
+simulator and resolve its completer." I did exactly that, it passed at $0, and it is the reason I started the
+paid run with evidence rather than hope. (2) **Gotcha 2** — "`OPENCODE_EVAL_MODEL` is both the opt-in and the
+pinned model; set it inline on the one command that should measure." Followed literally on every command, and
+I used `env -u OPENCODE_EVAL_MODEL -u ANTHROPIC_API_KEY` for the final gate so the hermetic suite could not
+silently bill. (3) **Gotcha 4** — `_TRANSIENT_ERRORS` silently excludes rather than failing — is why I armed a
+monitor covering abort signatures instead of only success markers. (4) **"What's next"** named both operator
+inputs precisely, and §11 Q2's recorded resolution meant I only had to ask the model id, not re-derive the
+measurement design.
+
+**What was missing — the deduction:** (a) **No cost or duration estimate.** The entire session was gated on
+operator spend authorization, and the handoff offered no figure for what Phase 4 would cost or how long it
+would take. I had to derive it, and got it wrong twice before the data settled it (learning #77). (b) The
+handoff said the operator must supply "the model id to pin" without noting that **§11 Q2's own logic makes the
+baseline's id the answer** — one line naming `claude-sonnet-4-6` would have made that question nearly
+rhetorical. (c) `_text_completer_for` requires a `max_tokens` keyword; the gotcha described the call but not
+its signature, costing two `TypeError` round trips.
+
+**What was wrong:** one citation. Gotcha 6 pointed at `README.md:81-84` for a stale "`interview_convergence`
+is still not green" claim. **That text is not there** — those lines are a file-tree listing, and
+`grep -n "interview_convergence\|not green" README.md` returns zero matches. The *other* half of that gotcha
+(`tests/eval/README.md`'s caveat) is real and correctly flagged. I only caught this because I verified every
+line number I was about to repeat; had I trusted it, I would have propagated a phantom TODO into a third
+handoff. Nothing load-bearing depended on it.
+
+**ROI:** high. Gotcha 2 alone prevents an accidental billable `pytest` run every session it is read.
+
+### Phase 3B: Self-assess — Session 216 — 8/10
+
+- **The +:** (1) **Measured cost instead of estimating it** — a $0.06 two-call probe, and it changed my
+  projection twice. (2) **Drove the sanctioned path** (`shadow_run.measure_provider`), so the numbers come from
+  the same code the live assert tier uses; the driver added only telemetry and the operator-chosen scope split.
+  (3) **Diagnosed the FAIL rather than reporting it** — 6 calls overturned a mis-attribution standing since
+  S165 (learning #75). (4) **Caught that the two `sql_exec` rates share a numerator**, which reframed the
+  entire result from "candidate is worse" to "metric is denominator-unstable." (5) **Ran the diagnostic
+  re-run** that showed the ordering reverses — the single most important thing preventing the next session from
+  misreading the table. (6) **Held the NO-GO** despite having a good story for why the failing threshold is a
+  harness artifact; the §5 rule is not mine to relax. (7) **Scoped the baseline refresh to the cheap tiers**,
+  buying the interpretive value without a second 90-min sweep. (8) **Corrected my own wrong claim** to the
+  operator when fuller data contradicted it.
+- **The −:** (1) **I stated a universal from n=3** — "cache_read is 0 on every call" — and the full record
+  said 8.4% nonzero. The directional point held; the quantifier did not, and it had already been said out loud
+  (learning #76). (2) **Two wrong runtime estimates in opposite directions**, the second an over-correction off
+  a *single* 65 s outlier — exactly the error the end-of-run p99 analysis explains (learning #77). (3) **The
+  `sql_diag.py` script crashed on a trivial non-serializable-object bug.** It crashed *before* spending, which
+  was luck, not design — I did not dry-run it. (4) **I did not characterize *why* `opencode` writes more
+  queries than `anthropic`.** That is the actual mechanism behind the rate gap; it may be the D2 fold making
+  the model more expansive, which would be a real (if benign) transport effect and is left unknown. (5) My
+  monitor filter fired per-case on the anthropic tier, producing 8 low-value notifications.
+
+**What's next — two independent options, both ungated:**
+
+1. **Fix the `sql_exec` metric** (new `BACKLOG.md` item, this session). It is the only threshold blocking
+   `opencode`, it fails the incumbent too, and it currently measures dialect mismatch rather than SQL quality.
+   Two candidate fixes, neither scoped: name the execution dialect in the data-agent prompt, or execute
+   generated SQL against a warehouse-dialect target. **Do not lower `SQL_EXECUTABLE_MIN`** — that would
+   manufacture a green report. Reopening the `opencode` cutover is downstream of this, not a substitute.
+2. **Enterprise migration** — C4 (the fork) or C2, both ungated. C4 needs D9/D5/D4/D8/D16 from the operator
+   live at session start.
+
+Also open but smaller: the **non-Anthropic `opencode` run** that discharges `AI-Dependencies.md` §6.7's
+model-family diversification. It is now genuinely unblocked — the transport is cleared on 7/8 — and is a
+second measurement, not a re-run.
+
+**Key files:** `tests/eval/PHASE_E_AGREEMENT_REPORT.md` — the measured `opencode` column plus §"Update —
+Session 216" (the diagnosis, the reversal table, the cost profile). **Read that update before touching
+`sql_exec`.** `docs/planning/opencode-adapter-spec.md` §9 Phase 4 (marked DONE with the verdict).
+`tests/eval/eval_thresholds.py:26` — `SQL_EXECUTABLE_MIN = 0.95`, the constant that must **not** be lowered.
+`tests/eval/eval_cutover.py:237-248` — `CutoverDecision.decision`, which encodes the §5 rule.
+`tests/eval/eval_scoring.py:99-106` — `sql_executes`, which swallows *any* DB exception into `False`, which is
+why the dialect cause was invisible until this session captured the exception text.
+
+**Gotchas:**
+1. **The `opencode` column in the agreement report is now MEASURED, not PENDING.** Do not re-run Phase 4
+   expecting to fill blanks — it is filled. A re-run is only warranted after the `sql_exec` metric is fixed.
+2. **`sql_exec` cannot be compared across providers as a rate.** Its denominator is model-chosen. Report
+   numerator and denominator, and re-run before believing any ordering (learning #74).
+3. **`sql_executes` catches bare `Exception` and returns `False`** — every failure mode collapses to one bit.
+   If you touch SQL evaluation, capture the exception text or you will re-derive this session's diagnosis from
+   scratch.
+4. **Session 215's gotchas 1-5 all still apply verbatim** — the cheap pre-flight, `OPENCODE_EVAL_MODEL` being
+   both opt-in and pin, "nothing measured" no longer being true but "nothing measured on a *non-Anthropic*
+   model" still being true, `_TRANSIENT_ERRORS` silently excluding, and the `KNOWN_PROVIDERS` sentinel.
+5. **A live run writes real fixture transcripts to OpenCode's global SQLite DB**
+   (`~/.local/share/opencode/opencode.db`), which survives sandbox deletion — Session 214's gotcha, now
+   actually exercised by 451 calls of corpus content. Spec §11 Q4.
+6. **⚠ S215's gotcha 6 was half wrong — corrected here.** It flagged two doc-drift items. The first is
+   **real**: `tests/eval/README.md:57-59` and `:67-76` still describe `interview_convergence` as blocked by the
+   scripted-replay caveat and a `max_tokens` truncation, both fixed in S167/S168 and measured at 100% since
+   S170 — and now at 100% for a *second* provider. Still not fixed (deliberately out of scope again). The
+   second is **not real**: S215 cited `README.md:81-84` for a "still not green" claim about
+   `interview_convergence`. That text does not exist there — those lines are a file-tree listing, and
+   `grep -n "interview_convergence\|not green" README.md` returns **zero matches**. Do not go looking for it.
+   I verified this rather than carrying the citation forward, which is the whole point of FM #11.
+7. **`origin/master` is current as of this session's start** (41 commits pushed). Do not assume it is stale.
+
 ### What Session 215 Did
 **Deliverable:** **Made the eval harness able to drive the `opencode` provider end-to-end — spec Phase 4's real
 pre-flight, recorded as new spec §9 Phase 3b. COMPLETE.** **No live run, no cutover, no production default

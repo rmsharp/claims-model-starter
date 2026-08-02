@@ -577,7 +577,29 @@ five pre-existing simulator tests pass **unmodified**, which is the evidence tha
 unchanged and the recorded `anthropic` baseline stays valid. Gate: **1121 passed + 12 live-skipped @ 97.79%**,
 mypy and ruff clean.
 
-### Phase 4 — Live shadow run + cutover decision (operator-gated)
+### Phase 4 — Live shadow run + cutover decision (Session 216, 2026-08-02) — ✅ **DONE. Verdict: NO-GO.**
+
+**Result.** 451 live calls pinned to `anthropic/claude-sonnet-4-6`, $13.99, 99.5 min, plus a
+31-call same-session `anthropic` governance+SQL refresh. **7 of 8 thresholds PASS; `sql_exec`
+FAILs at 42.9%.** `evaluate_cutover` returns NO-GO and `anthropic` stays primary everywhere.
+
+**Risk #1 did not materialize.** The D2 prompt-role fold — the specific hazard this gate was
+built to catch — degraded nothing measurable. `opencode` ties the baseline on governance
+(`cycle_time` 100%, laxer 0), `qc_structural` (100%), `sql_parse` (100%), and both interview
+thresholds (`convergence` 100% at 20/20, `premature` 0).
+
+**The one FAIL is a harness dialect artifact, not a transport regression.** Every exec failure
+on *both* providers is an unsupported-function error against SQLite — `DATEDIFF`,
+`PERCENTILE_CONT ... WITHIN GROUP`, `MEDIAN`. The metric's denominator is model-chosen, so the
+rate is unstable and the ordering reverses on re-run (`anthropic` 60.0%→50.0%, `opencode`
+42.9%→57.1%). Fix the metric — name the dialect in the data-agent prompt, or execute against a
+warehouse target — rather than waiving the threshold. **Do not relax `evaluate_cutover`.**
+
+**Cost profile (risk #12, quantified).** Mean $0.0310/call; p50 7.8 s, p99 105.8 s, max 233.3 s;
+4.4% of calls exceeded 60 s and took 14% of spend; only 8.4% registered any prompt-cache read.
+Full detail in `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 216".
+
+**Original plan, for the record:**
 
 **Work.** Run the golden corpus against `opencode` with an explicitly pinned model, side by side with the `anthropic` baseline; fill the §3.4 thresholds; produce the go/no-go.
 **Pre-flight:** Phases 1-3 merged; **Phase 3b merged** (without it the run aborts mid-way, after billing); the binary installed; credentials for whichever underlying vendor is being measured; **the operator names the model to pin**.
