@@ -2,17 +2,20 @@
 
 This is the **Phase E shadow run** (multi-provider LLM plan §5 Phase E): every
 test is parametrized over :data:`SHADOW_PROVIDERS` (``anthropic`` baseline +
-``bedrock`` candidate), so a single ``pytest -m live`` measures both providers
-side-by-side on the same corpus. The per-provider measurements feed the cutover
-gate (``eval_cutover``); the committed go/no-go is ``PHASE_E_AGREEMENT_REPORT.md``.
+the ``bedrock`` and ``opencode`` candidates), so a single ``pytest -m live``
+measures every runnable provider side-by-side on the same corpus. The
+per-provider measurements feed the cutover gate (``eval_cutover``); the committed
+go/no-go is ``PHASE_E_AGREEMENT_REPORT.md``.
 
 **Per-provider skip (``tests/eval/conftest``).** Each provider's cases are
 auto-skipped when *that* provider's credentials are absent
 (``eval_cutover.provider_creds_available``): ``anthropic`` needs
-``ANTHROPIC_API_KEY``; ``bedrock`` needs the AWS credential chain. CI (no creds
-for any provider) skips the whole tier, staying hermetic; a Bedrock-only
-environment runs only the Bedrock half. ``-m 'not live'`` deselects the tier
-anywhere.
+``ANTHROPIC_API_KEY``; ``bedrock`` needs the AWS credential chain; ``opencode``
+needs its binary on ``PATH`` **and** ``OPENCODE_EVAL_MODEL`` set — the model
+variable is the deliberate opt-in, because the binary alone is present on any
+machine that ran the adapter's Phase 1 spike. CI (no creds for any provider)
+skips the whole tier, staying hermetic; a Bedrock-only environment runs only the
+Bedrock half. ``-m 'not live'`` deselects the tier anywhere.
 
 **DEFERRED (Sessions 161–164).** No credentials available, so every case is
 skipped; the measured baseline + candidate pass-rates and the threshold
@@ -23,9 +26,14 @@ calibration are a logged follow-up — see ``README.md`` §"Phase E" and
 **Non-determinism (§3.4).** Each governed case is sampled ``N_SAMPLES`` (≥5)
 times and judged on a pass-RATE plus structural/semantic invariants, never exact
 text. Claude-family models reject ``temperature``, so we sample and rely on the
-invariants rather than pinning ``temperature=0``. ``model=None`` is passed to
-every factory so each provider uses its own native default id (a ``bedrock``
-client gets the ``anthropic.``-prefixed default, never a bare first-party id).
+invariants rather than pinning ``temperature=0``.
+
+**Which model each provider runs (``provider_eval_model``).** The SDK providers
+get ``None`` so each uses its own native default id (a ``bedrock`` client gets
+the ``anthropic.``-prefixed default, never a bare first-party id). ``opencode``
+gets the id in ``OPENCODE_EVAL_MODEL``, because it pins no default of its own —
+the adapter deliberately leaves the vendor choice to the operator's OpenCode
+config (spec D6), which means an unpinned run would measure an unrecorded model.
 
 **Interview answers — robust stakeholder simulator.** ``test_live_interview_
 converges`` drives the live interviewer with a :class:`StakeholderSimulator`
@@ -64,7 +72,7 @@ from tests.eval.eval_corpus import (
     load_sql_cases,
     pc_inventory_from_db,
 )
-from tests.eval.eval_cutover import SHADOW_PROVIDERS
+from tests.eval.eval_cutover import SHADOW_PROVIDERS, provider_eval_model
 from tests.eval.eval_scoring import (
     pass_rate,
     quality_checks_structural_ok,
@@ -85,7 +93,7 @@ def test_live_governance_cycle_time_agreement_and_no_laxer_miss(provider: str) -
     # laxer-miss check — a stricter-than-reference tier is the prompt-instructed
     # direction ("pick the stricter tier if in doubt"), so it is not a miss. See
     # eval_scoring.GovernanceScore.
-    client = make_intake_client(provider)
+    client = make_intake_client(provider, model=provider_eval_model(provider))
     cycle_matches: list[bool] = []
     laxer_misses = 0
     for case in load_governance_cases():
@@ -107,7 +115,7 @@ def test_live_governance_cycle_time_agreement_and_no_laxer_miss(provider: str) -
 
 @pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
 def test_live_primary_sql_parses_and_executes(provider: str, seeded_pc_db: ReadOnlyDB) -> None:
-    client = make_data_client(provider)
+    client = make_data_client(provider, model=provider_eval_model(provider))
     inventory = pc_inventory_from_db(seeded_pc_db)
     parse_results: list[bool] = []
     exec_results: list[bool] = []
@@ -124,7 +132,7 @@ def test_live_primary_sql_parses_and_executes(provider: str, seeded_pc_db: ReadO
 
 @pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
 def test_live_quality_checks_structural(provider: str) -> None:
-    client = make_data_client(provider)
+    client = make_data_client(provider, model=provider_eval_model(provider))
     ok: list[bool] = []
     for case in load_sql_cases():
         if case.kind != "primary":
@@ -144,7 +152,7 @@ def test_live_interview_converges(provider: str) -> None:
     # is unchanged. See ``interview_sweep``.
     def run_one(case: InterviewCase) -> IntakeReport:
         fixture = load_fixture(case.fixture_path)
-        agent = IntakeAgent(llm=make_intake_client(provider))
+        agent = IntakeAgent(llm=make_intake_client(provider, model=provider_eval_model(provider)))
         return agent.run_scripted(
             stakeholder_id=fixture["stakeholder_id"],
             session_id=f"live-{fixture['session_id']}",

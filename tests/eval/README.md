@@ -11,11 +11,11 @@ Phase E gate). It is deliberately the "here be dragons" phase.
 | Tier | Files | Marker | Credentials | Runs |
 |------|-------|--------|-------------|------|
 | **Deterministic** | `test_eval_corpus.py`, `test_eval_scoring.py`, `test_eval_cutover.py` | *(none)* | not needed | every PR / CI, offline |
-| **Live** | `test_eval_live.py` | `@pytest.mark.live` | per provider (`anthropic` → `ANTHROPIC_API_KEY`; `bedrock` → AWS chain) | periodic / pre-cutover (Phase E shadow run) |
+| **Live** | `test_eval_live.py` | `@pytest.mark.live` | per provider (`anthropic` → `ANTHROPIC_API_KEY`; `bedrock` → AWS chain; `opencode` → binary on `PATH` **and** `OPENCODE_EVAL_MODEL`) | periodic / pre-cutover (Phase E shadow run) |
 
 ```bash
 uv run pytest -m 'not live'                              # deterministic tier — explicit live-deselect
-ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run pytest -m live   # shadow run — measures both providers
+ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run pytest -m live   # shadow run — every runnable provider
 ```
 
 CI hermeticity is preserved **without** a `-m 'not live'` flag: the four
@@ -23,10 +23,23 @@ CI hermeticity is preserved **without** a `-m 'not live'` flag: the four
 and `tests/eval/conftest.py::pytest_collection_modifyitems` auto-skips each
 `live`-marked case when *its provider's* credentials are absent
 (`eval_cutover.provider_creds_available`: `anthropic` → `ANTHROPIC_API_KEY`,
-`bedrock` → the AWS chain). With no creds for any provider, CI skips the whole
-tier; a Bedrock-only environment runs only the Bedrock half. `-m 'not live'` is
-the explicit deselect (useful locally when creds *are* present). The skip is
-keyed on the `live` marker only — non-eval tests are unaffected.
+`bedrock` → the AWS chain, `opencode` → see below). With no creds for any
+provider, CI skips the whole tier; a Bedrock-only environment runs only the
+Bedrock half. `-m 'not live'` is the explicit deselect (useful locally when creds
+*are* present). The skip is keyed on the `live` marker only — non-eval tests are
+unaffected.
+
+**Why `opencode` needs two signals.** Its binary is installed globally on any
+machine that ran the adapter's Phase 1 spike, so gating on `shutil.which` alone
+would make a bare `uv run pytest -q` *on a developer machine* run and bill the
+live tier — while CI, which has no binary, still looked hermetic. So the probe
+also requires `OPENCODE_EVAL_MODEL`, which is simultaneously the deliberate
+opt-in and the model id the run pins: that provider deliberately pins no default
+model of its own (adapter spec D6, so the vendor choice stays in the operator's
+OpenCode config), which means an unpinned run would measure an unrecorded model.
+`eval_cutover.provider_eval_model` reads the same variable and both the live tier
+and `shadow_run.py` pass it to the factory; the SDK providers get `None` and stay
+on their own native default ids.
 
 **The deterministic tier proves the *harness* measures correctly** (the scorers
 and oracles, fed reference / deliberately-perturbed data). **The live tier feeds
@@ -83,10 +96,10 @@ then, **only** for a genuine "threshold too strict" miss, adjust
 
 ## Phase E — shadow run + cutover gate
 
-`test_eval_live.py` is parametrized over **both** providers
-(`eval_cutover.SHADOW_PROVIDERS` — `anthropic` baseline + `bedrock` candidate), so
-one `pytest -m live` runs the **shadow run**: the same corpus through each
-provider, side-by-side. The per-provider pass-rates feed the **cutover gate** in
+`test_eval_live.py` is parametrized over **every** shadow provider
+(`eval_cutover.SHADOW_PROVIDERS` — `anthropic` baseline + the `bedrock` and
+`opencode` candidates), so one `pytest -m live` runs the **shadow run**: the same
+corpus through each provider, side-by-side. The per-provider pass-rates feed the **cutover gate** in
 [`eval_cutover.py`](eval_cutover.py) — pure, deterministic logic
 (`test_eval_cutover.py` proves it offline, no key) that decides go/no-go against
 every §3.4 threshold. The §5 rule: **cutover only if the candidate meets every
@@ -100,9 +113,18 @@ recipe for each.
 
 The committed decision, the run procedure, and the per-entrypoint cutover steps
 live in [`PHASE_E_AGREEMENT_REPORT.md`](PHASE_E_AGREEMENT_REPORT.md). **Current
-decision: NO-GO** — the Anthropic baseline is measured (S165) but the incumbent
-fails 5/8 thresholds on harness/corpus artifacts (see §"Live baseline" above), and
-`bedrock` is still unmeasured; the gate keeps `anthropic` primary.
+decision: NO-GO** — the Anthropic baseline is measured (S165, re-measured through
+S177) but `sql_exec` still fails, and both candidates (`bedrock`, `opencode`) are
+entirely unmeasured; the gate keeps `anthropic` primary.
+
+**`opencode` is wired, not endorsed (Session 214).** It joined `CANDIDATE_PROVIDERS`
+so the gate *can* judge it; every one of its cells is PENDING, and the §5 rule
+("an unmeasured threshold cannot certify GO") is what keeps `anthropic` primary
+until a shadow run fills them. Its specific quality risk is the adapter's D2
+prompt-role change — the system prompt is folded into the user message, inside
+OpenCode's own agent scaffold — which is exactly the "parses fine, quality
+silently degrades" failure this gate exists to catch. Do not read "the provider
+constructs and the tests skip cleanly" as evidence about its output.
 
 ## Thresholds (§3.4 — proposed)
 

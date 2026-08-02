@@ -16,11 +16,20 @@ rule is the whole point: **production cutover only if the candidate meets EVERY
 The committed agreement report (``PHASE_E_AGREEMENT_REPORT.md``) is therefore a
 no-go-by-default (keep Anthropic primary) until a shadow run fills the numbers;
 see that file and ``README.md`` §"Phase E — shadow run + cutover gate".
+
+**Third candidate (Session 214): ``opencode``.** The CLI-adapter provider
+(``docs/planning/opencode-adapter-spec.md``) joins :data:`CANDIDATE_PROVIDERS`
+here so the gate *can* judge it — every one of its cells is PENDING and the §5
+rule keeps ``anthropic`` primary while they stay that way. Wiring it in is not
+an endorsement: nothing about its output quality has been measured, and the D2
+prompt-role change (its system prompt is folded into the user message) is the
+specific risk this gate exists to catch.
 """
 
 from __future__ import annotations
 
 import os
+import shutil
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,9 +42,14 @@ from tests.eval import eval_thresholds as thresholds
 #: The incumbent production default (orchestrator ``DEFAULT_LLM_PROVIDER``).
 BASELINE_PROVIDER = "anthropic"
 #: Providers evaluated as cutover candidates against the baseline.
-CANDIDATE_PROVIDERS: tuple[str, ...] = ("bedrock",)
+CANDIDATE_PROVIDERS: tuple[str, ...] = ("bedrock", "opencode")
 #: Every provider the shadow run measures, baseline first.
 SHADOW_PROVIDERS: tuple[str, ...] = (BASELINE_PROVIDER, *CANDIDATE_PROVIDERS)
+
+#: Names the model id an ``opencode`` shadow run pins — and doubles as that
+#: provider's opt-in signal. Both jobs land on one variable deliberately; see
+#: :func:`provider_creds_available` and :func:`provider_eval_model`.
+OPENCODE_MODEL_ENV = "OPENCODE_EVAL_MODEL"
 
 
 def provider_creds_available(provider: str) -> bool:
@@ -48,6 +62,9 @@ def provider_creds_available(provider: str) -> bool:
     boto3's full credential chain (no IMDS lookup at collection time, which would
     slow every ``-m 'not live'`` run); an operator whose creds arrive via a
     mechanism this misses can set ``AWS_PROFILE`` or run the module directly.
+
+    ``opencode`` needs **two** signals rather than one, and the second is the
+    load-bearing one — see the branch comment.
     """
     if provider == "anthropic":
         return bool(os.environ.get("ANTHROPIC_API_KEY"))
@@ -57,7 +74,37 @@ def provider_creds_available(provider: str) -> bool:
             or os.environ.get("AWS_PROFILE")
             or (Path.home() / ".aws" / "credentials").exists()
         )
+    if provider == "opencode":
+        # The adapter spec's §7.4 proposed the binary check alone. That is not
+        # sufficient: the binary is installed globally on any machine that ran
+        # the Phase 1 spike, so a bare ``uv run pytest -q`` there would start
+        # *billing* for this tier rather than skipping it (CI, with no binary,
+        # would look fine). The model variable is what makes opting in
+        # deliberate. It is also required for the run to mean anything:
+        # ``OpenCodeLLMClient.DEFAULT_MODEL`` is ``None`` (spec D6), so an
+        # unpinned run measures whatever the operator's ``opencode.json``
+        # happens to select that day. ``provider_eval_model`` reads the same
+        # variable and the live tier passes it to the factory, so opting in and
+        # pinning are one gesture. Whatever credential the underlying vendor
+        # needs lives in the operator's own OpenCode config and is not
+        # introspectable from here — that part stays best-effort.
+        return bool(os.environ.get(OPENCODE_MODEL_ENV)) and shutil.which("opencode") is not None
     return False
+
+
+def provider_eval_model(provider: str) -> str | None:
+    """The model id a shadow run pins for ``provider``; ``None`` = its own default.
+
+    Only ``opencode`` needs one. Its ``DEFAULT_MODEL`` is ``None`` by design
+    (spec D6 — naming a vendor there would re-introduce into *this* repository
+    the vendor choice the adapter exists to remove), so the operator names the
+    model for the run through :data:`OPENCODE_MODEL_ENV`. The SDK providers get
+    ``None`` and keep using their own native default id, which is what stops a
+    ``bedrock`` client from being handed a bare first-party id (a 400).
+    """
+    if provider == "opencode":
+        return os.environ.get(OPENCODE_MODEL_ENV)
+    return None
 
 
 # --- The §3.4 threshold gate ------------------------------------------------

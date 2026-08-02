@@ -315,7 +315,7 @@ capacity is TPM-quota-bound, which matters for enterprise capacity planning.
 | Endpoint (automatic) | `https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages` | AWS Opus 4.8 model card |
 | Model-id format | bare `anthropic.` prefix, **no** version suffix, **no** `us.`/`global.` inference-profile prefix (mantle) | AWS model card |
 | Provider selection | explicit: `make_llm_client(provider="bedrock")` / `--provider bedrock` / `INTAKE_LLM_PROVIDER=bedrock`; model override via `INTAKE_LLM_MODEL`; default provider is `anthropic` | `factory.py:37-76` |
-| Why the live eval tier skips bedrock today | no working access in the personal test account (see *Why this exists* above) → `provider_creds_available("bedrock")` fails / a live call fails → live tests auto-skip | `conftest.py:47-60`, `eval_cutover.py:52-59` |
+| Why the live eval tier skips bedrock today | no working access in the personal test account (see *Why this exists* above) → `provider_creds_available("bedrock")` fails / a live call fails → live tests auto-skip | `conftest.py:56-69`, `eval_cutover.py:71-76` (re-cited Session 214, when a third provider shifted the ranges) |
 
 ## Appendix B: Bedrock TPM (tokens-per-minute) quota codes (reference)
 

@@ -6,6 +6,12 @@
 
 ## ACTIVE TASK
 
+### What Session 214 Did
+**Deliverable:** Spec Phase 3 — eval wiring (`tests/eval/eval_cutover.py`) + the four-surface documentation
+sweep (`docs/planning/opencode-adapter-spec.md` §7.4 and §9 Phase 3). (IN PROGRESS)
+**Started:** 2026-08-01
+**Status:** Session claimed. Work beginning.
+
 ### What Session 213 Did
 **Deliverable:** Spec Phase 2 — `OpenCodeLLMClient` in both packages (intake agent + data-agent wheel), both
 `factory.py` branches, the `LLM_PROVIDERS` registry entry, and the deterministic test tier

@@ -12,7 +12,14 @@ sub-threshold result is data (a NO-GO), not a failed run. It calls the live API,
 so it requires credentials — run it explicitly::
 
     ANTHROPIC_API_KEY=… uv run python tests/eval/shadow_run.py                 # anthropic only
-    ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run python tests/eval/shadow_run.py   # both providers
+    ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run python tests/eval/shadow_run.py   # + bedrock
+    OPENCODE_EVAL_MODEL=anthropic/claude-… uv run python tests/eval/shadow_run.py   # + opencode
+
+``opencode`` additionally needs its binary on ``PATH``; ``OPENCODE_EVAL_MODEL``
+is both the opt-in and the pinned model id, since that provider pins no default
+of its own (adapter spec D6). Each provider's model comes from
+``provider_eval_model`` — ``None`` for the SDK providers, which keeps them on
+their own native default ids.
 
 ``json_parse`` is the deterministic parity result (``test_llm_json_parity``), not
 a live rate — recorded as ``1.0`` when that battery passes for the provider's
@@ -52,6 +59,7 @@ from tests.eval.eval_cutover import (
     SHADOW_PROVIDERS,
     evaluate_cutover,
     provider_creds_available,
+    provider_eval_model,
     render_agreement_report,
 )
 from tests.eval.eval_scoring import (
@@ -74,8 +82,9 @@ def measure_provider(
     provider: str, db: ReadOnlyDB, *, n_samples: int = N_SAMPLES
 ) -> dict[str, float]:
     """Measure ``provider``'s §3.4 pass-rates over the Phase B corpus (live)."""
-    intake = make_intake_client(provider)
-    data = make_data_client(provider)
+    model = provider_eval_model(provider)
+    intake = make_intake_client(provider, model=model)
+    data = make_data_client(provider, model=model)
     inventory = pc_inventory_from_db(db)
 
     # governance (S173 faithfulness fix): the two labels are scored separately.
@@ -133,7 +142,7 @@ def measure_provider(
     # propagates (aborts the run) instead of being silently counted as a miss.
     def _run_interview(case: InterviewCase) -> IntakeReport:
         fixture = load_fixture(case.fixture_path)
-        agent = IntakeAgent(llm=make_intake_client(provider))
+        agent = IntakeAgent(llm=make_intake_client(provider, model=model))
         return agent.run_scripted(
             stakeholder_id=fixture["stakeholder_id"],
             session_id=f"shadow-{provider}-{fixture['session_id']}",

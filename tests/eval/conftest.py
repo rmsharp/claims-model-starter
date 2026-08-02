@@ -6,7 +6,8 @@ over :data:`SHADOW_PROVIDERS` (``test_eval_live.py``); each item's provider come
 from its ``provider`` parameter (defaulting to :data:`BASELINE_PROVIDER` for an
 unparametrized live test), and ``eval_cutover.provider_creds_available`` decides
 whether that provider is runnable (``anthropic`` → ``ANTHROPIC_API_KEY``;
-``bedrock`` → the AWS credential chain).
+``bedrock`` → the AWS credential chain; ``opencode`` → the binary on ``PATH``
+**and** ``OPENCODE_EVAL_MODEL`` naming the model to pin).
 
 CI runs ``uv run pytest -q`` with **no** credentials
 (``.github/workflows/ci.yml``), so every provider's cases skip and the tier stays
@@ -14,6 +15,14 @@ out of CI via this hook — not a ``-m 'not live'`` flag. A Bedrock-only
 environment runs only the Bedrock half; ``-m 'not live'`` is the explicit way to
 deselect the whole tier anywhere. The skip is keyed on the ``live`` marker only,
 so non-eval tests are never affected.
+
+The ``opencode`` probe deliberately takes **two** signals. A developer machine
+that ran the adapter's Phase 1 spike has the binary installed globally, so a
+binary-only probe would make a bare ``uv run pytest -q`` *there* start billing
+for the live tier while CI — which has no binary — still looked hermetic. The
+model variable is the deliberate opt-in, and it is also what an ``opencode`` run
+needs to be reproducible at all (that provider pins no default model). See
+``eval_cutover.provider_creds_available``.
 """
 
 from __future__ import annotations

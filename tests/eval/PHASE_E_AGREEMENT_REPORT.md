@@ -9,7 +9,9 @@ on the Phase B golden corpus, side-by-side with the incumbent.
 
 - **Baseline (incumbent):** `anthropic` (first-party Claude) — the current
   production default.
-- **Candidate:** `bedrock` (AWS Bedrock-hosted Claude, Phase C).
+- **Candidates:** `bedrock` (AWS Bedrock-hosted Claude, Phase C) and `opencode`
+  (the `opencode` CLI as a subprocess transport, `docs/planning/opencode-adapter-spec.md`,
+  added as a candidate Session 214). Neither has been measured.
 
 ## Decision (Session 165): **NO-GO — keep `anthropic` primary; harness not yet trustworthy**
 
@@ -137,6 +139,27 @@ and the 100% remains **corpus-validated**. **The overall Phase E decision stays 
 (`sql_exec` 60% + `bedrock` unmeasured). With this, the gap #2 cadence-hardening item is
 CLOSED and `BACKLOG.md` is empty.
 
+**Update — Session 214 (2026-08-01): a third provider enters the gate, entirely unmeasured — `opencode`.**
+The CLI-adapter provider ([spec](../../docs/planning/opencode-adapter-spec.md), shipped
+Session 213) is now in `CANDIDATE_PROVIDERS`, so the live tier is parametrized
+over three providers and the table below carries an `opencode` column in which
+**every cell is PENDING**. Nothing was measured this session and nothing about
+its output quality is claimed — the wiring exists so the gate *can* judge it, and
+the §5 rule ("an unmeasured threshold cannot certify GO") is what keeps
+`anthropic` primary meanwhile. Its distinctive risk is not transport failure but
+**silent quality degradation**: the adapter has no `--system` flag available to
+it, so each call folds the system prompt into the user message *inside OpenCode's
+own ~4,830-token agent scaffold* (spec D2 / Appendix A.1). That is precisely the
+"parses fine, subtly worse content" failure mode this gate exists to catch, and
+it is undischarged. **Its live cases auto-skip on two signals, not one:** the
+`opencode` binary on `PATH` **and** `OPENCODE_EVAL_MODEL` naming the model to
+pin. The binary alone is not enough deliberately — it is installed globally on
+any machine that ran the adapter's Phase 1 spike, so a binary-only probe would
+make a bare `uv run pytest -q` there run and bill this tier. The same variable
+supplies the pinned model id (that provider pins no default of its own, spec D6),
+so the Phase 4 pre-flight "the operator names the model to pin" is discharged by
+setting one variable. **Decision stays NO-GO.**
+
 ### Agreement table
 
 Re-measured live **2026-06-18 (Session 170)** via [`tests/eval/shadow_run.py`](shadow_run.py)
@@ -151,18 +174,26 @@ single-pass baseline is preserved in "Baseline findings" below.)
 <!-- Regenerate after a live run: feed the per-capability rates to
   eval_cutover.evaluate_cutover and render_agreement_report — see §"Filling this report". -->
 
-| Capability | Metric | Threshold | anthropic (baseline) | bedrock (candidate) |
-| --- | --- | --- | --- | --- |
-| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS) | — (PENDING) |
-| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS) | — (PENDING) |
-| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | 60.0% (FAIL) | — (PENDING) |
-| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80) | — (PENDING) |
-| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20) | — (PENDING) |
-| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS) | — (PENDING) |
-| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) |
-| Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) |
+| Capability | Metric | Threshold | anthropic (baseline) | bedrock (candidate) | opencode (candidate) |
+| --- | --- | --- | --- | --- | --- |
+| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS) | — (PENDING) | — (PENDING) |
+| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS) | — (PENDING) | — (PENDING) |
+| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | 60.0% (FAIL) | — (PENDING) | — (PENDING) |
+| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80) | — (PENDING) | — (PENDING) |
+| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20) | — (PENDING) | — (PENDING) |
+| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS) | — (PENDING) | — (PENDING) |
+| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) | — (PENDING) |
+| Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) | — (PENDING) |
 
 - **bedrock: PENDING** — Undecided — keep anthropic primary until measured.
+- **opencode: PENDING** — Undecided — keep anthropic primary until measured.
+
+*The `opencode` column is hand-added (Session 214) in the renderer's exact cell
+format, not pasted from a run — there was no run. `json_parse` is the one row a
+future `opencode` measurement can fill without live calls: it is the deterministic
+parity result, and `test_llm_json_parity.py` already covers this provider's seams.
+It is deliberately left PENDING rather than pre-filled `1.0`, because a green cell
+here would make the report read as partially measured when it is not.*
 
 ## Baseline findings (Session 165) — artifact vs signal
 
@@ -200,9 +231,18 @@ rather than asserting, so a sub-threshold result is data, not a crash:
 
 ```bash
 # Measures whichever providers have creds; prints rates + the agreement table:
-ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run python tests/eval/shadow_run.py   # both
+ANTHROPIC_API_KEY=… AWS_PROFILE=… uv run python tests/eval/shadow_run.py   # + bedrock
 ANTHROPIC_API_KEY=…                uv run python tests/eval/shadow_run.py   # baseline only
+# opencode: the binary on PATH plus the model to pin (that provider has no default):
+ANTHROPIC_API_KEY=… OPENCODE_EVAL_MODEL=anthropic/claude-… uv run python tests/eval/shadow_run.py
 ```
+
+The model each provider runs comes from `eval_cutover.provider_eval_model`:
+`None` for the SDK providers (each keeps its own native default id — this is what
+stops a Bedrock client being handed a bare first-party id) and
+`$OPENCODE_EVAL_MODEL` for `opencode`. **Record the `opencode` model id in this
+report** when its column is filled: unlike the SDK providers, the id is not
+recoverable from the code afterwards.
 
 The **assert-based** tier (`uv run pytest -m live tests/eval/ -rs`) is the
 same corpus with the §3.4 thresholds enforced as test assertions — useful as a
@@ -410,8 +450,18 @@ see "Baseline findings" for the diagnosis), in rough priority:**
 
 **Still open from earlier phases:**
 
-5. **`bedrock` candidate unmeasured** — no AWS creds; run the Bedrock half to
-   complete the comparison (the `anthropic` baseline is now measured).
+5. **Both candidates unmeasured.** `bedrock` — no AWS creds (and the personal
+   test account was abandoned after AWS declined the runtime quota); run the
+   Bedrock half in the enterprise account to complete that comparison.
+   `opencode` — wired Session 214, never run: it needs its binary plus an
+   operator-named model in `OPENCODE_EVAL_MODEL`, and **which vendor to point it
+   at is itself an open operator question** (adapter spec §11 Q2 — a
+   non-Anthropic model is the only choice that delivers the model-family
+   diversification the wiki's AI Dependencies page says is still missing; an
+   Anthropic model isolates the transport change and makes a cleaner A/B).
+   Whichever is chosen, report **cost per interview** alongside quality: the
+   adapter carries a constant ~4,830-token scaffold per call (spec risk #12),
+   which no §3.4 threshold can see.
 6. **Thresholds remain proposed** — the baseline did **not** calibrate them
    (failures were harness artifacts, not too-strict thresholds). Re-run once the
    harness fixes above land; only then is "Anthropic clears its own bar" a valid

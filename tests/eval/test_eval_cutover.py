@@ -19,10 +19,12 @@ from tests.eval.eval_cutover import (
     BASELINE_PROVIDER,
     CANDIDATE_PROVIDERS,
     CHECK_KEYS,
+    OPENCODE_MODEL_ENV,
     SHADOW_PROVIDERS,
     evaluate_cutover,
     pending_decision,
     provider_creds_available,
+    provider_eval_model,
     render_agreement_report,
 )
 
@@ -185,14 +187,114 @@ def test_creds_probe_unknown_provider_is_false() -> None:
     assert provider_creds_available("openai") is False
 
 
+# --- opencode: the two-signal probe ------------------------------------------
+#
+# Every case below stubs BOTH signals. `opencode` is installed globally on the
+# machine the adapter was built on, so a test that reads the real PATH would
+# pass there and fail in CI (or vice versa) — it would be measuring the host,
+# not the code.
+
+
+@pytest.mark.parametrize(
+    ("binary_present", "model_env", "expected"),
+    [
+        (False, None, False),  # CI: neither signal
+        (True, None, False),   # a dev box that ran the Phase 1 spike — the case
+                               # a binary-only probe would get wrong, and the
+                               # reason this probe takes two signals: the live
+                               # tier would run and bill instead of skipping.
+        (False, "anthropic/claude-haiku-4-5", False),  # opted in, nothing to run
+        (True, "anthropic/claude-haiku-4-5", True),    # deliberate opt-in
+    ],
+)
+def test_creds_probe_opencode_needs_binary_and_pinned_model(
+    monkeypatch: pytest.MonkeyPatch,
+    binary_present: bool,
+    model_env: str | None,
+    expected: bool,
+) -> None:
+    monkeypatch.setattr(
+        "shutil.which", lambda name: "/usr/local/bin/opencode" if binary_present else None
+    )
+    if model_env is None:
+        monkeypatch.delenv(OPENCODE_MODEL_ENV, raising=False)
+    else:
+        monkeypatch.setenv(OPENCODE_MODEL_ENV, model_env)
+    assert provider_creds_available("opencode") is expected
+
+
+def test_creds_probe_opencode_looks_for_the_binary_by_name(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Pin *what* is probed, not just that something is: a rename would otherwise
+    # pass by accident against a stub that answers any name.
+    looked_up: list[str] = []
+
+    def _which(name: str) -> str | None:
+        looked_up.append(name)
+        return "/usr/local/bin/opencode"
+
+    monkeypatch.setattr("shutil.which", _which)
+    monkeypatch.setenv(OPENCODE_MODEL_ENV, "anthropic/claude-haiku-4-5")
+    assert provider_creds_available("opencode") is True
+    assert looked_up == ["opencode"]
+
+
+def test_creds_probe_is_side_effect_free_for_opencode(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The docstring promises no process spawn at collection time — this tier
+    # runs on every PR, and `opencode` is an agent that would make billable
+    # model calls. Fail loudly if anything here ever reaches subprocess.
+    import subprocess
+
+    def _boom(*args: object, **kwargs: object) -> None:
+        raise AssertionError("provider_creds_available spawned a process")
+
+    monkeypatch.setattr(subprocess, "run", _boom)
+    monkeypatch.setattr(subprocess, "Popen", _boom)
+    monkeypatch.setattr("shutil.which", lambda name: "/usr/local/bin/opencode")
+    monkeypatch.setenv(OPENCODE_MODEL_ENV, "anthropic/claude-haiku-4-5")
+    assert provider_creds_available("opencode") is True
+
+
+def test_eval_model_is_pinned_for_opencode_and_native_for_the_sdk_providers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(OPENCODE_MODEL_ENV, "openai/gpt-5")
+    assert provider_eval_model("opencode") == "openai/gpt-5"
+    # None keeps each SDK provider on its own native default id — the thing that
+    # stops a bedrock client being handed a bare first-party id (a 400).
+    assert provider_eval_model("anthropic") is None
+    assert provider_eval_model("bedrock") is None
+    assert provider_eval_model("openai") is None
+
+
+def test_eval_model_is_none_for_opencode_when_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Unreachable in a real run (the probe gates on the same variable), but the
+    # function must not invent a model id if the two ever drift apart.
+    monkeypatch.delenv(OPENCODE_MODEL_ENV, raising=False)
+    assert provider_eval_model("opencode") is None
+
+
+def test_opencode_is_a_candidate_not_the_baseline() -> None:
+    # Spec risk #1: the adapter is wired but entirely unmeasured, so it must
+    # never be the incumbent. A cutover requires every threshold measured and
+    # met — `evaluate_cutover` enforces that; this pins the role.
+    assert "opencode" in CANDIDATE_PROVIDERS
+    assert BASELINE_PROVIDER == "anthropic"
+    assert pending_decision("opencode").decision == "PENDING"
+    assert "keep anthropic primary" in pending_decision("opencode").recommendation.lower()
+
+
 def test_render_agreement_report_pending_state() -> None:
     decisions = {p: pending_decision(p) for p in SHADOW_PROVIDERS}
     report = render_agreement_report(decisions)
     assert "anthropic (baseline)" in report
     assert "bedrock (candidate)" in report
+    assert "opencode (candidate)" in report
     assert "PENDING" in report
     # No candidate verdict line should claim GO/NO-GO while unmeasured.
     assert "bedrock: PENDING" in report
+    assert "opencode: PENDING" in report
     # The baseline never gets its own verdict line (it is the incumbent).
     assert "anthropic: " not in report
 
