@@ -10,7 +10,7 @@
 **Deliverable:** Spec Phase 1 — the OpenCode live verification spike (`docs/planning/opencode-adapter-spec.md`
 §9 Phase 1). **COMPLETE.** No production code written (FM #18 held).
 
-**Started / Completed:** 2026-08-01. **Commit:** see `git log` for this session's single commit.
+**Started / Completed:** 2026-08-01. **Commit:** `7e9af53` (deliverable) + this hash-recording follow-up.
 
 **Trigger:** the operator replied "1" to the Phase 0 orientation report, selecting item (1) of the two open items
 — the same one-character selection pattern Sessions 209 and 211 handled. Interpretation was stated back before any
