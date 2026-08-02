@@ -160,6 +160,44 @@ supplies the pinned model id (that provider pins no default of its own, spec D6)
 so the Phase 4 pre-flight "the operator names the model to pin" is discharged by
 setting one variable. **Decision stays NO-GO.**
 
+**Update — Session 217 (2026-08-02): the `sql_exec` dialect cause is FIXED at the source. The recorded rates below are now stale-by-construction; they were measured with a dialect-blind prompt that no longer exists.**
+
+Session 216 (below) diagnosed `sql_exec` as a dialect mismatch and left the fix
+to a later session. That fix has landed (`9c9fe35`): the data agent is now told
+which SQL dialect it is writing for, derived from the database the caller
+configured, and the eval harness passes `db.dialect` rather than nothing. The
+same instruction reaches production — the CLI and `scripts/run_pipeline.py`
+derive it from `--db-url` — because the silence was never eval-specific.
+
+**The cheap live A/B that verified it.** Six live `anthropic` calls pinned to
+`claude-sonnet-4-6`, one session, the same three `kind: primary` corpus cases,
+the same seeded SQLite DB, run twice — once with the pre-fix dialect-blind
+prompt, once with the dialect named:
+
+| arm | `sql_dialect` | executable | parse-valid |
+| --- | --- | --- | --- |
+| dialect-blind (the prompt S216 measured) | `None` | **2/5** | 5/5 |
+| dialect-aware (as shipped) | `sqlite` | **4/4** | 4/4 |
+
+Every dialect-blind failure is the predicted class, and the probe found a
+**fourth** offender S216's list did not contain: alongside `DATEDIFF(...)` and
+`PERCENTILE_CONT(...) WITHIN GROUP` it emitted **`ILIKE`** (PostgreSQL). That
+widens the diagnosis rather than narrowing it — the problem was never three
+specific functions, it was that the model had to guess a dialect and guessed a
+warehouse. Parse-validity is 100% in *both* arms, which is exactly why this
+failed silently: an unstated dialect is invisible until execution.
+
+**What this probe does NOT establish, and must not be quoted as.** It is a
+diagnostic, not a re-score. **No threshold was re-scored, no cutover verdict
+changed, and `SQL_EXECUTABLE_MIN` remains 0.95.** Specifically: n is tiny (5 and
+4 queries); the denominator is still model-chosen, so S216 gotcha 2 still applies
+and 4/4 is *not* "100% ≥ 95% PASS"; only `anthropic` was measured, so `opencode`
+and `bedrock` remain unmeasured under the fix; and it was a single run with no
+repeat sampling, so run-to-run variance is unknown. **The agreement table below
+still carries the Session 216 numbers and the standing NO-GO.** Re-scoring
+`sql_exec` requires a full sweep through `shadow_run.measure_provider` — that is
+a separate, operator-authorized session.
+
 **Update — Session 216 (2026-08-02): `opencode` MEASURED for the first time. Verdict NO-GO (7/8 PASS, `sql_exec` FAIL) — but the one failing threshold is a harness dialect artifact that fails the incumbent too.**
 
 The adapter spec's Phase 4 ran: 451 live `opencode` calls pinned to
@@ -248,6 +286,13 @@ single-pass baseline is preserved in "Baseline findings" below.)
 
 - **bedrock: PENDING** — Undecided — keep anthropic primary until measured.
 - **opencode: NO-GO** — Do NOT cut over — keep anthropic primary. opencode fails: sql_exec.
+- **⚠ The `sql_exec` row is stale-by-construction as of Session 217.** Both
+  recorded rates (60.0% / 42.9%) were measured with a dialect-blind prompt that
+  no longer exists — the dialect fix landed in `9c9fe35`. The row is left
+  unedited because it is a faithful record of what was measured, not a claim
+  about current behaviour; **do not cite it as the provider's SQL quality**, and
+  do not treat the fix as a re-score. Re-measuring is a full sweep, unrun. See
+  §"Update — Session 217" above.
 
 *The `opencode` column is **measured** as of Session 216 (2026-08-02) — 451 live
 calls, `anthropic/claude-sonnet-4-6`, $13.99. It replaces the hand-added PENDING

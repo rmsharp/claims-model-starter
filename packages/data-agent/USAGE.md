@@ -273,14 +273,45 @@ request = DataRequest(
     data_source_inventory=inventory,
 )
 
+db = ReadOnlyDB("postgresql+psycopg://readonly_user@db.internal/claims")
+
 report = DataAgent(
-    llm=AnthropicLLMClient(),
-    db=ReadOnlyDB("postgresql+psycopg://readonly_user@db.internal/claims"),
+    # Tell the model which dialect it is writing for — see "SQL dialect" below.
+    llm=AnthropicLLMClient(sql_dialect=db.dialect),
+    db=db,
 ).run(request)
 
 for pq in report.primary_queries:
     print(f"{pq.name} referenced: {pq.inventory_entries_used}")
 ```
+
+### SQL dialect
+
+`AnthropicLLMClient(sql_dialect=...)` (and `make_llm_client(..., sql_dialect=...)`)
+names the dialect the generated SQL must execute on. **Pass it whenever you pass
+a `db`.** Without it the model is left to infer the dialect and infers a
+*warehouse*: a live A/B on the eval corpus (Session 217, one model, one session)
+had the dialect-blind prompt produce 2 of 5 executable queries against SQLite —
+the failures being `DATEDIFF`, `PERCENTILE_CONT … WITHIN GROUP` and `ILIKE` —
+against 4 of 4 with the dialect named. The SQL still *parses* either way, so an
+unstated dialect fails late, at execution.
+
+Derive it rather than hardcoding it:
+
+```python
+from model_project_constructor_data_agent.db import ReadOnlyDB, sql_dialect_from_url
+
+db = ReadOnlyDB(url)
+client = AnthropicLLMClient(sql_dialect=db.dialect)      # from the DB object
+client = AnthropicLLMClient(sql_dialect=sql_dialect_from_url(url))  # or the URL
+```
+
+Both parse the URL string only — no connection and no installed driver is
+required, so the dialect is available before the first query is generated (the
+DB is not connected until the QC-execution stage). An unparseable URL yields
+`None`, and `None` reproduces the dialect-silent prompt exactly. The `model-data-agent`
+CLI and `scripts/run_pipeline.py` derive it from `--db-url` automatically; only
+direct library callers need to pass it themselves.
 
 Precedence rules when both `database_hint` and `data_source_inventory` are
 set: the inventory wins (richer signal subsumes the hint); the hint is still

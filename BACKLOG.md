@@ -95,24 +95,29 @@ measurable — `opencode` ties the baseline on governance (`cycle_time` 100%, la
 now quantified (risk #12): mean $0.0310/call, p99 latency 105.8 s, 4.4% of calls >60 s taking 14% of spend, only
 8.4% of calls getting any prompt-cache read. See `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 216".
 
-### `sql_exec` measures the harness, not the model — fix the metric (NEW, Session 216)
+### `sql_exec` — dialect cause FIXED (Session 217); the re-measure is what remains
 
-**The one threshold blocking `opencode`'s cutover also fails the incumbent, and Session 216 diagnosed why:
-it is a SQL *dialect* mismatch.** Every execution failure on *both* providers is an unsupported-function error
-against SQLite — `DATEDIFF(...)` (MySQL/SQL Server/Snowflake), `PERCENTILE_CONT(...) WITHIN GROUP`
-(Postgres/Oracle), `MEDIAN(...)`. Both providers emit competent *warehouse* SQL; the eval runs it on SQLite and
-nothing in the data-agent prompt names the dialect. S165 guessed "model SQL **or** an incomplete seed schema" —
-it is neither, and that mis-attribution has stood since.
+**The root cause is closed.** Session 216 diagnosed `sql_exec` as a SQL *dialect* mismatch — both providers
+emit competent *warehouse* SQL (`DATEDIFF(...)`, `PERCENTILE_CONT(...) WITHIN GROUP`, `MEDIAN(...)`), the eval
+runs it on SQLite, and nothing in the data-agent prompt named the dialect. **Session 217 fixed it at the source
+(`9c9fe35`), choosing the prompt fix over the warehouse-target-DB alternative:** the dialect is derived from the
+database the caller configured (`ReadOnlyDB.dialect` / `sql_dialect_from_url`, parse-only, no connection) and
+injected into the three SQL-emitting prompts. This also fixes **production**, where the same silence shipped —
+the CLI and `scripts/run_pipeline.py` now derive it from `--db-url`. A 6-call live A/B on `anthropic` measured
+**2/5 executable dialect-blind vs 4/4 dialect-aware**, and surfaced a fourth offender S216 had not seen:
+**`ILIKE`**. Parse-validity was 100% in both arms — which is why it failed silently.
 
-**The metric is also unstable: its denominator is model-chosen** (how many queries the model writes), so the rate
-moves run to run and the provider ordering *reverses* — sweep `anthropic` 3/5 = 60.0% vs `opencode` 3/7 = 42.9%;
-diagnostic re-run `anthropic` 2/4 = 50.0% vs `opencode` 4/7 = 57.1%. The recorded gap is therefore **not** evidence
-of a transport regression.
+**What remains open — the re-measure, which this session deliberately did NOT do.** The probe is a diagnostic,
+not a re-score: tiny n, model-chosen denominator, `anthropic` only, single run. **`SQL_EXECUTABLE_MIN` stays
+0.95, the recorded 60.0% / 42.9% rates stand, and the `opencode` NO-GO stands.** Re-scoring means a full
+`shadow_run.measure_provider` sweep (S216's cost `anthropic` + `opencode`: $13.99 / 99.5 min) and is a separate,
+operator-authorized session. **Do not "fix" this by lowering `SQL_EXECUTABLE_MIN`** — the §5 rule is encoded in
+`evaluate_cutover` and must not be relaxed to produce a green report.
 
-Two candidate fixes, both un-scoped: name the execution dialect in the data-agent prompt, or execute generated SQL
-against a warehouse-dialect target. **Do not "fix" this by lowering `SQL_EXECUTABLE_MIN`** — the §5 rule is encoded
-in `evaluate_cutover` and must not be relaxed to produce a green report. Reopening the `opencode` cutover decision
-is downstream of this, not a substitute for it.
+**Still note when re-measuring:** the metric's denominator is model-chosen (how many queries the model writes),
+so the rate moves run to run and the provider ordering *reverses* — sweep `anthropic` 3/5 = 60.0% vs `opencode`
+3/7 = 42.9%; diagnostic re-run `anthropic` 2/4 = 50.0% vs `opencode` 4/7 = 57.1%. Report numerator and
+denominator, never a bare rate. Reopening the `opencode` cutover decision is downstream of the re-measure.
 
 **Still open on the adapter:** spec §11 Q1 (`DEFAULT_MODEL` shipped as `None`) — reversible in one line. The
 non-Anthropic measurement that discharges `AI-Dependencies.md` §6.7's model-family diversification is a **second**

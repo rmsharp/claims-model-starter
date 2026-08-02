@@ -250,4 +250,10 @@ diverge, not just where they are co-linear.
 4. **SQL executability fairness** — the live SQL test passes a
    `DataSourceInventory` introspected from the seeded schema
    (`pc_inventory_from_db`) so the model can name real tables; executability is
-   meaningless without it.
+   meaningless without it. **It also passes `sql_dialect=seeded_pc_db.dialect`
+   (Session 217).** Until then the harness named the tables but not the dialect,
+   so providers wrote warehouse SQL (`DATEDIFF`, `PERCENTILE_CONT … WITHIN
+   GROUP`, `ILIKE`) that no SQLite target can execute, and `sql_exec` measured
+   dialect mismatch rather than SQL quality. The dialect is **derived from the
+   DB object, never hardcoded**, so it cannot mislabel the target if the eval
+   ever runs on something other than SQLite.

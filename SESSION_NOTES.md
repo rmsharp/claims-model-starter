@@ -7,15 +7,181 @@
 ## ACTIVE TASK
 
 ### What Session 217 Did
-**Deliverable:** Fix the `sql_exec` metric — the one Phase E threshold blocking `opencode`'s cutover, which
-Session 216 diagnosed as a SQL *dialect* mismatch that fails the incumbent too. (IN PROGRESS)
-**Started:** 2026-08-02
-**Status:** Session claimed. Work in progress. Operator selected option 1 of Session 216's two "what's next"
-options, then chose the scope after the Phase 2 inventory: **candidate fix A — dialect-aware prompt**
-(thread the configured DB's dialect into the data agent's three SQL-emitting prompts, production *and* eval),
-**not** the warehouse-target-DB alternative. Verification scope: full deterministic suite at $0 **plus a cheap
-live probe** (~6 calls, `anthropic` only, ~$0.30) to show generated SQL actually becomes executable. **No full
-re-measure, no cutover re-scoring, no threshold change** — those stay a separate session.
+**Deliverable:** **Fixed the root cause behind the failing `sql_exec` threshold — the data agent now knows
+which SQL dialect it is writing for. COMPLETE.** **No threshold changed, no cutover verdict re-scored, no
+recorded rate edited.**
+
+**Started / Completed:** 2026-08-02. **Commits:** `9c9fe35` (the fix + tests), plus this close-out.
+**Trigger:** the operator replied `1` to the Phase 0 report — option 1 of Session 216's two "what's next"
+options. The same one-character selection pattern Sessions 209–216 handled.
+
+**Workstream:** `docs/methodology/workstreams/DEVELOPMENT_WORKSTREAM.md`, read in full before any edit. Its
+Phase 2 order (read the code you will modify → then the tests → then the docs) is what surfaced that the DB is
+already in scope at the point the prompt is built.
+
+**Two scope decisions were the operator's, not mine.** Session 216 named two candidate fixes and scoped
+neither, so after the Phase 2 inventory I put both to the operator with a recommendation and the evidence
+behind it. They chose **fix A — the dialect-aware prompt** over the warehouse-target-DB alternative, and
+**deterministic tests + a cheap live probe** over both "$0, no evidence" and "full re-measure".
+
+#### What was actually wrong — and it was not only an eval problem
+
+The data agent generated SQL for a dialect nobody named, so it inferred one, and it inferred a **warehouse**.
+Session 216 framed this as "`sql_exec` measures the harness, not the model" — correct about the *metric*, but
+that framing hides the more important half: **the same silence ships to production.** An organization on
+Snowflake, PostgreSQL or SQL Server got whatever dialect the model picked. The failure is quiet by
+construction: the SQL parses, returns, and only fails at execution. That is why the eval-only variant (pass
+`sql_dialect` on the harness client alone — the smallest possible diff) was **explicitly rejected**: it would
+have made the eval flatter the shipped behaviour rather than measure it. Learning #79.
+
+The dialect is **derived** from the database the caller already configured, never configured separately:
+
+```
+ReadOnlyDB.dialect / sql_dialect_from_url   parse-only: sa.make_url(url).get_backend_name()
+  -> make_llm_client(provider, sql_dialect=...)
+  -> AnthropicLLMClient(sql_dialect=...)     [bedrock + opencode inherit the prompts, forward the kwarg]
+  -> _dialect_note() into the SYSTEM string of generate_primary_queries,
+     generate_quality_checks, generate_baseline_query
+```
+
+Parse-only is load-bearing: `generate_queries` is the **first** node in the graph and the DB is not connected
+until `execute_qc`, so a dialect that needed a live connection would arrive too late to reach the prompt.
+There is deliberately **no `--sql-dialect` flag** — a second source of truth is a second thing to get wrong;
+deriving it makes "agent points at PostgreSQL, prompt says SQLite" unrepresentable rather than merely
+discouraged.
+
+#### The 6-call A/B that verified it — and what it does NOT establish
+
+Same model (`claude-sonnet-4-6`), same three `kind: primary` corpus cases, same seeded SQLite DB, one session,
+run twice:
+
+| arm | `sql_dialect` | executable | parse-valid |
+| --- | --- | --- | --- |
+| dialect-blind (the prompt S216 measured) | `None` | **2/5** | 5/5 |
+| dialect-aware (as shipped) | `sqlite` | **4/4** | 4/4 |
+
+Every blind failure is the predicted class, and the probe surfaced a **fourth** offender S216's list did not
+contain: **`ILIKE`** (PostgreSQL), alongside `DATEDIFF` and `PERCENTILE_CONT … WITHIN GROUP`. That *widens* the
+diagnosis — the problem was never three specific functions, it was that the model had to guess. Parse-validity
+is 100% in both arms, which is exactly why this failed silently for ~50 sessions.
+
+**This is a diagnostic, not a re-score, and the next session must not quote it as one.** n is tiny; the
+denominator is still model-chosen (S216 gotcha 2 stands, so 4/4 is **not** "100% ≥ 95% PASS"); only
+`anthropic` was measured; single run, so variance is unknown. `SQL_EXECUTABLE_MIN` is still 0.95, the recorded
+60.0% / 42.9% still stand in the agreement table, and the `opencode` **NO-GO still stands**.
+
+**Cost: not instrumented.** 6 calls with a small payload — well under the ~$0.30–0.50 the operator authorized,
+but I did not capture per-call usage, so I am not reporting a figure. That is a gap, not an estimate.
+
+### Session 216 Handoff Evaluation (by Session 217)
+
+**Score: 9/10.** The best handoff in this run. Its diagnosis *was* my Phase 2 — I inherited a solved
+attribution problem and spent the session on the fix instead of re-deriving the cause. Marked down for one
+framing omission that would have produced the wrong fix if I had accepted it, and for repeating the estimate
+gap it had itself docked S215 for.
+
+**What helped:** (1) **The diagnosis itself.** S216 captured the real DB exception per generated query and
+named the cause. Without it this session is a diagnosis session, not a fix session. (2) **Gotcha 2** —
+"`sql_exec` cannot be compared across providers as a rate; its denominator is model-chosen; report numerator
+and denominator." Followed literally in the probe and in every doc line I wrote; it is why the record says
+2/5 and 4/4 rather than 40% and 100%. (3) **Gotcha 3** — "`sql_executes` catches bare `Exception` and returns
+`False`; capture the exception text or you will re-derive this diagnosis from scratch." I built
+`execute_capturing_error` into the probe *because of this line*, and it is what surfaced `ILIKE` — a finding
+that would otherwise have collapsed to one bit. (4) **"Do not lower `SQL_EXECUTABLE_MIN`"**, stated in three
+places, framed the entire task as fix-the-cause-not-the-score. (5) **Every key-file citation verified correct**
+— `eval_thresholds.py:26`, `eval_scoring.py:99-106`, `eval_cutover.py:237-248` all land exactly where claimed.
+I checked all three rather than trusting them (FM #11), and unlike S216's experience with S215, found nothing
+wrong. (6) **Naming two candidate fixes** gave the operator a real choice instead of one I had invented.
+
+**What was missing — the deduction:** (a) **It framed the defect as harness-only.** "`sql_exec` measures the
+harness, not the model" is true of the metric and misleading about the system: the same unstated dialect ships
+to production, one inference from S216's own sentence "nothing in the data-agent prompt names the dialect."
+A session that accepted the framing would have shipped the eval-only fix and left the product defect in place.
+(b) **No scoping signal on the two candidates** — "neither scoped" was accurate but left unstated that one is
+a prompt change and the other needs a new dependency plus a re-authored corpus and reference SQL
+(`julianday()` is SQLite-only). I built that comparison before the operator could choose. This is the same
+cost/estimate gap S216 docked S215 for, repeated. (c) **No pointer to where the dialect would come from.**
+`ReadOnlyDB` already holds the URL and `build_graph` already receives the db — one line naming that would have
+shortened Phase 2 materially.
+
+**What was wrong:** nothing found. All three key-file citations verified against bytes; gotcha 7's
+`origin/master` claim was consistent with what I found at start (1 ahead, being S216's own close-out).
+
+**ROI:** very high. Gotcha 3 alone converted a one-bit failure into a named fourth root cause.
+
+### Phase 3B: Self-assess — Session 217 — 8/10
+
+- **The +:** (1) **Fixed the root cause, not the metric** — and specifically rejected the eval-only variant
+  that would have turned the threshold green while leaving the product defect shipping. (2) **Verified the
+  blast radius rather than assuming it** — an 8-agent adversarial inventory established that
+  `generate_primary_queries` has exactly one implementation and that **no test asserts prompt text**, which I
+  then re-confirmed by hand before editing. (3) **Designed the cheapest experiment that isolates the cause** —
+  6 calls, not a $14 sweep, and it varies only the suspected cause (learning #78). (4) **Dry-ran the probe at
+  $0 before spending**, directly applying S216's own "it crashed before spending, which was luck, not design"
+  self-criticism. (5) **Held the line on scope** — no threshold lowered, no verdict re-scored, no recorded
+  rate edited, despite having a green-looking result in hand. (6) **Covered the silent-failure modes with
+  tests**: subclass keyword forwarding (invisible if dropped) and a factory test parametrized over
+  `KNOWN_PROVIDERS` so a fourth provider cannot ship dialect-blind. (7) **Gave the shadow driver its first
+  $0 tests** — the path whose untestedness let S215's defect survive. (8) **Marked the agreement table's
+  `sql_exec` row stale-by-construction** rather than editing history or leaving it to be misquoted.
+- **The −:** (1) **I did not instrument the probe's cost**, on a session whose scope was explicitly defined by
+  a spend ceiling. Reporting "well under $1" instead of a number is exactly the gap I docked S216 for one
+  section above. (2) **I ran `uv run mypy .` first and read 134 errors as a possible regression** before
+  checking that the project's gate is `uv run mypy` with a configured package list; ~2 minutes lost to not
+  reading the config first. (3) **The probe measured `anthropic` only.** `opencode` is the provider whose
+  cutover this unblocks, and its D2 prompt-role fold is exactly the mechanism that might absorb a system-string
+  instruction differently — that is a real unknown I am handing on rather than closing. (4) **I did not
+  characterize why the two arms produced different query counts** (5 vs 4). It is probably noise at n=3 cases,
+  but it is the same model-chosen-denominator effect S216 flagged and I left it unexamined. (5) The workflow I
+  used for the inventory produced ~730K subagent tokens for what was ultimately ~8 load-bearing facts; the
+  adversarial verify pass earned its keep (it caught several off-by-one citations) but the sweep was wider than
+  the task needed.
+
+**What's next — three options, all ungated:**
+
+1. **Re-measure `sql_exec` under the fix** (the natural successor). A full `shadow_run.measure_provider` sweep
+   re-scores the threshold for `anthropic` and `opencode` and would reopen the `opencode` cutover verdict.
+   **Needs operator spend authorization** — S216's comparable run was $13.99 / 99.5 min. Read
+   `PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 217" first; do **not** treat this session's 4/4 as a PASS.
+2. **Enterprise migration** — C4 (the fork) or C2, both ungated. C4 needs D9/D5/D4/D8/D16 from the operator
+   live at session start.
+3. **The non-Anthropic `opencode` run** that discharges `AI-Dependencies.md` §6.7's model-family
+   diversification. Unblocked since S216; a second measurement, not a re-run.
+
+**Key files:** `packages/data-agent/src/model_project_constructor_data_agent/db.py` —
+`sql_dialect_from_url` + `ReadOnlyDB.dialect` (parse-only; works before `connect()`).
+`.../anthropic_client.py` — `_dialect_note()` and the three injection points; `sql_dialect=None` reproduces the
+old prompt byte for byte. `.../factory.py` — the `sql_dialect=` kwarg on all three provider branches.
+`tests/eval/test_shadow_run.py` — **new**; the first $0 coverage of the shadow driver's wiring.
+`tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 217" — the probe, and an explicit list of what it
+does not establish. `tests/eval/eval_thresholds.py:26` — `SQL_EXECUTABLE_MIN = 0.95`, still not to be lowered.
+
+**Gotchas:**
+1. **The 2/5 → 4/4 probe is NOT a threshold re-score.** Tiny n, model-chosen denominator, `anthropic` only,
+   single run. Quoting 4/4 as "100% PASS" would manufacture a green report by a different route than lowering
+   the constant. The agreement table still carries S216's numbers and the standing NO-GO — deliberately.
+2. **The agreement table's `sql_exec` row is stale-by-construction.** Both recorded rates were measured with a
+   dialect-blind prompt that no longer exists. The row is left unedited as a faithful historical record; a
+   bullet under the table says so. Do not cite it as current provider SQL quality.
+3. **`opencode` has never been run with the dialect instruction.** Its D2 fold delivers the system string as
+   user text inside OpenCode's agent framing — the one provider where a system-string instruction might land
+   differently. Unknown, and the most interesting thing about a re-measure.
+4. **Adding a constructor keyword to `AnthropicLLMClient` requires forwarding it in BOTH subclasses.** They
+   inherit the prompts but re-declare `__init__` with explicit `super()` keywords. An unforwarded keyword fails
+   silently — output still builds and parses. Pinned by per-subclass tests plus a `KNOWN_PROVIDERS`-parametrized
+   factory test (learning #80).
+5. **`ANTHROPIC_API_KEY` is not in the ambient shell** — it lives in the repo's `.env`. Live work needs
+   `set -a && . ./.env && set +a`. My first probe attempt died on auth **before spending anything**; that was
+   the intended failure mode, not luck, but budget a round trip for it.
+6. **The project's mypy gate is `uv run mypy` (bare), not `mypy .`.** `[tool.mypy] packages = [...]` scopes it
+   to the two source packages; `mypy .` additionally lints `tests/` and reports 134 pre-existing errors that are
+   **not** a regression. Do not "fix" them.
+7. **Session 216's gotchas 2, 3 and 5 all still apply verbatim.** Gotcha 1 is now superseded (the `opencode`
+   column is measured *and* the prompt it was measured against has changed); gotcha 6's real half —
+   `tests/eval/README.md:57-59` and `:67-76` still describing `interview_convergence` as blocked — **is still
+   unfixed**, deliberately out of scope for a third session running.
+8. **`origin/master` is 2 commits behind local** as of this close-out (`9c9fe35` + this one). Session 216's
+   close-out was also unpushed at my start.
 
 ### What Session 216 Did
 **Deliverable:** **Spec Phase 4 — the first live measurement of the `opencode` provider, and the cutover
