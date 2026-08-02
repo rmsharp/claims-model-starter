@@ -12,7 +12,7 @@
 (`docs/planning/opencode-adapter-spec.md` §9 Phase 2). **COMPLETE.** No eval wiring, no docs sweep (those are
 Phase 3) — FM #18 held.
 
-**Started / Completed:** 2026-08-01. **Commit:** `[recorded below]`.
+**Started / Completed:** 2026-08-01. **Commit:** `aa2c96d` (deliverable) + this hash-recording follow-up.
 
 **Trigger:** the operator replied "1" to the Phase 0 orientation report, selecting item (1) of the two open items
 — the same one-character selection pattern Sessions 209, 211 and 212 handled. Interpretation was stated back
