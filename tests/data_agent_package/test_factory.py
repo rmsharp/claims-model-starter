@@ -28,6 +28,12 @@ from model_project_constructor_data_agent.factory import (
     make_llm_client,
 )
 from model_project_constructor_data_agent.llm import LLMClient
+from model_project_constructor_data_agent.opencode_client import (
+    DEFAULT_MODEL as OPENCODE_DEFAULT_MODEL,
+)
+from model_project_constructor_data_agent.opencode_client import (
+    OpenCodeLLMClient,
+)
 
 
 @pytest.fixture
@@ -52,6 +58,21 @@ def _stub_bedrock(monkeypatch: pytest.MonkeyPatch) -> object:
     sentinel = object()
     monkeypatch.setattr(anthropic, "AnthropicBedrockMantle", lambda *a, **k: sentinel)
     return sentinel
+
+
+@pytest.fixture
+def _stub_opencode_binary(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make the ``opencode`` binary look installed.
+
+    The OpenCode client checks ``shutil.which`` at construction so a missing
+    binary fails fast rather than mid-run. CI deliberately does not install
+    ``opencode`` (hermeticity), so the factory branch is exercised against a
+    stubbed lookup. No process is spawned either way — nothing here calls the
+    client's transport.
+    """
+    import shutil
+
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/local/bin/{name}")
 
 
 def test_default_provider_returns_anthropic_client(_stub_anthropic: object) -> None:
@@ -99,6 +120,29 @@ def test_bedrock_model_is_plumbed_through(_stub_bedrock: object) -> None:
     assert client._model == "anthropic.claude-test"
 
 
+def test_opencode_returns_opencode_client(_stub_opencode_binary: None) -> None:
+    assert isinstance(make_llm_client("opencode"), OpenCodeLLMClient)
+
+
+def test_opencode_client_satisfies_protocol(_stub_opencode_binary: None) -> None:
+    """The factory's return type is the protocol, not a concrete class — pin that
+    the new branch actually satisfies it (``LLMClient`` is ``runtime_checkable``)."""
+    assert isinstance(make_llm_client("opencode"), LLMClient)
+
+
+def test_opencode_default_model_is_unset(_stub_opencode_binary: None) -> None:
+    """Spec D6: this provider pins no model — the operator's own OpenCode config
+    picks the vendor, which is the entire point of the adapter. ``_model`` is
+    typed ``str`` by the parent, so "unset" is stored as ``""``."""
+    assert OPENCODE_DEFAULT_MODEL is None
+    assert make_llm_client("opencode")._model == ""
+
+
+def test_opencode_model_is_plumbed_through(_stub_opencode_binary: None) -> None:
+    client = make_llm_client("opencode", model="anthropic/claude-haiku-4-5")
+    assert client._model == "anthropic/claude-haiku-4-5"
+
+
 def test_unknown_provider_raises_value_error() -> None:
     with pytest.raises(ValueError) as exc_info:
         make_llm_client("openai")
@@ -113,6 +157,7 @@ def test_known_providers_derived_from_literal() -> None:
     assert get_args(LLMProvider) == KNOWN_PROVIDERS
     assert "anthropic" in KNOWN_PROVIDERS
     assert "bedrock" in KNOWN_PROVIDERS
+    assert "opencode" in KNOWN_PROVIDERS
 
 
 def test_unknown_provider_does_not_construct_sdk(

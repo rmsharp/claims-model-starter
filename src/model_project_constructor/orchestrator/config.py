@@ -152,12 +152,17 @@ class LLMProviderSpec:
 #: The LLM-provider vocabulary the orchestrator knows. ``anthropic`` resolves an
 #: env-var key (``ANTHROPIC_API_KEY``); ``bedrock`` (AWS Bedrock-hosted Claude,
 #: plan Phase C) authenticates via the boto3 credential chain and so carries no
-#: ``api_key_env_var``. Kept in lockstep with the agent factories' ``LLMProvider``
+#: ``api_key_env_var``; ``opencode`` (the ``opencode`` CLI, AD-11) carries none
+#: either, for a different reason — its credential depends on whichever vendor
+#: the *operator's* OpenCode config routes to, and may live in OpenCode's own
+#: credential store rather than in any environment variable, so there is no single
+#: name to record here. Kept in lockstep with the agent factories' ``LLMProvider``
 #: ``Literal``s, which live in the decoupled agent packages and so cannot be
 #: parity-guarded from here the way ``REPO_PLATFORMS`` is against ``HostLiteral``.
 LLM_PROVIDERS: dict[str, LLMProviderSpec] = {
     "anthropic": LLMProviderSpec(api_key_env_var="ANTHROPIC_API_KEY"),
     "bedrock": LLMProviderSpec(api_key_env_var=None),
+    "opencode": LLMProviderSpec(api_key_env_var=None),
 }
 
 #: The provider assumed when a caller does not name one. Matches the agent

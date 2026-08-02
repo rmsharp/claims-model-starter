@@ -3,6 +3,8 @@
 **Author:** Session 211 (spec session) — 2026-08-01.
 **Baseline commit:** `a3f33d8` — tree clean on `master`. Last full gate (Session 209): 989 passed + 8 skipped @ 97.78%, ruff clean, mypy clean. This session changes no `src/`, `packages/`, `scripts/`, or `tests/` file.
 **Status:** Specification for executor review. **This document is the deliverable of Session 211.** Failure modes #18 (planning-to-implementation bleed) and #19 (plan-mode bypass) are the primary risks for the sessions that follow.
+**✅ Phase 2 is COMPLETE (Session 213, 2026-08-01)** — both clients, both factory branches, the registry entry and the deterministic tier are shipped and on `master`; see `CHANGELOG.md`'s 2026-08-01 entry for the full breakdown and the two as-built deviations (§4.4/§5.1's `agent=` escape hatch removed; §5.3's helper signatures take parsed events). **Phase 3 (eval wiring + docs) is next.** Gate: 1100 passed + 8 live-skipped @ 97.79%, mypy and ruff clean.
+
 **⚠ Phase 1 is COMPLETE (Session 212, 2026-08-01) — read [Appendix A](#appendix-a--phase-1-live-verification-findings-session-212-2026-08-01) BEFORE Phase 2.** All four `[unverified]` markers are resolved and §3/§4 are annotated inline, but Phase 1 also produced **seven corrections to this spec, one of them a safety defect**: §3.5's hazard H4 claim that "the default is already safe" is **false** — a live run read a file and disclosed its contents without `--auto`. Fixtures: `tests/fixtures/opencode/`.
 **Decision being implemented:** AD-11 (`docs/wiki/claims-model-starter/Architecture-Decisions.md`) — accepted by the operator 2026-08-01. Research behind it: `docs/wiki/claims-model-starter/AI-Dependencies.md` §9.
 **Governing workstream:** `docs/methodology/workstreams/ARCHITECTURE_WORKSTREAM.md` (interface-first design, failure-mode analysis, honest alternatives). *Not* `DESIGN_WORKSTREAM.md`, which is UI/UX-specific.
@@ -244,7 +246,7 @@ opencode run --format json [--model <provider/model>] [--agent <name>] --dir <sa
 with:
 
 - **prompt on stdin**, then stdin closed (H1, H2);
-- **`--dir <sandbox>`** — a `tempfile.mkdtemp()` directory owned by the client instance, created lazily on first call, well outside the repository tree (H3). The client writes `.opencode/agents/<agent>.md` into it. ⚠ **Phase 1 amends this twice.** (a) The original "unless the caller supplied an `agent=` name, in which case the adapter writes nothing" escape hatch is **unsafe and must be removed or hard-gated** — per Appendix A.4 C1 the tool denial is the only thing preventing file reads, so an operator-supplied agent must still be validated as denying tools. (b) The sandbox is **not free**: an empty `--dir` stays 0 bytes, but once an agent file is present OpenCode materialises `.opencode/node_modules` (~1 MB, up to 62 MB observed) and therefore **needs npm-registry reachability**. **Create it once per client instance and reuse it — never per call** (Appendix A.4 C6);
+- **`--dir <sandbox>`** — a `tempfile.mkdtemp()` directory owned by the client instance, created lazily on first call, well outside the repository tree (H3). The client writes `.opencode/agents/<agent>.md` into it. ⚠ **Phase 1 amends this twice.** (a) The original "unless the caller supplied an `agent=` name, in which case the adapter writes nothing" escape hatch is **unsafe and must be removed or hard-gated** — per Appendix A.4 C1 the tool denial is the only thing preventing file reads, so an operator-supplied agent must still be validated as denying tools. **AS BUILT (Session 213): removed.** The parameter is now `agent_name`, which renames the generated definition; the adapter always writes and selects its own (see §5.1's as-built note). (b) The sandbox is **not free**: an empty `--dir` stays 0 bytes, but once an agent file is present OpenCode materialises `.opencode/node_modules` (~1 MB, up to 62 MB observed) and therefore **needs npm-registry reachability**. **Create it once per client instance and reuse it — never per call** (Appendix A.4 C6);
 - the bundled agent definition denying every mutating tool:
 
   ```yaml
@@ -258,7 +260,7 @@ with:
   ---
   ```
 
-  **[RESOLVED — Phase 1, Appendix A.1 #3]** accepted keys at v1.18.11: `description`, `mode`, and `permission:` with `edit`/`write`/`bash`/`read`/`webfetch`. Agent id = file basename; `.opencode/agents/` (plural) alone suffices. **The YAML must be block-style — flow-style `permission: {edit: deny, …}` silently breaks agent loading and makes `opencode` print usage help to stderr with empty stdout and a non-zero exit (Appendix A.4 C5).** Whether `mode: primary` is strictly *required* was never isolated — keep setting it. **Add `read: deny`: Appendix A.4 C1 proves the default is NOT safe and reads succeed without it;**
+  **[RESOLVED — Phase 1, Appendix A.1 #3]** accepted keys at v1.18.11: `description`, `mode`, and `permission:` with `edit`/`write`/`bash`/`read`/`webfetch`. Agent id = file basename; `.opencode/agents/` (plural) alone suffices. **The YAML must be block-style — flow-style `permission: {edit: deny, …}` silently breaks agent loading and makes `opencode` print usage help to stderr with empty stdout and a non-zero exit (Appendix A.4 C5).** Whether `mode: primary` is strictly *required* was never isolated — keep setting it. **Add `read: deny`: Appendix A.4 C1 proves the default is NOT safe and reads succeed without it.** **AS BUILT (Session 213):** the shipped definition denies all five accepted keys — `edit`, `write`, `bash`, `read` **and `webfetch`**. `webfetch` goes beyond the spec's instruction deliberately: it is the one remaining tool that could move prompt content (interview transcripts, `DataRequest` free text) off the machine, and denying it costs nothing for a structured-output adapter that should never browse;
 - **no `--auto`** (H4);
 - `env` passed through unchanged — OpenCode needs the operator's provider credentials (§3.4), and the adapter has no business filtering them.
 
@@ -333,7 +335,7 @@ class OpenCodeLLMClient(AnthropicLLMClient):
         max_tokens: int = DEFAULT_MAX_TOKENS,   # inert; kept for signature parity — document it
         *,
         executable: str = DEFAULT_EXECUTABLE,
-        agent: str | None = None,               # None -> adapter writes its own locked-down agent
+        agent: str | None = None,               # ⚠ AS BUILT: REMOVED — see the note below
         workdir: str | None = None,             # None -> ephemeral mkdtemp sandbox
         timeout: float = DEFAULT_TIMEOUT_S,
         runner: Callable[..., CompletedProcess[str]] | None = None,   # test seam
@@ -343,6 +345,8 @@ class OpenCodeLLMClient(AnthropicLLMClient):
 ```
 
 - `__init__` must **not** construct `anthropic.Anthropic()`. Pass an unused sentinel to `super().__init__(client=..., model=..., max_tokens=...)` so `self._model` / `self._max_tokens` are still set by the parent — a `None` would trigger the parent's SDK construction (`anthropic_client.py:278-281`) and demand an `ANTHROPIC_API_KEY` that this provider does not need.
+- **⚠ AS BUILT (Session 213) — `agent=` was removed, not hard-gated.** Appendix A.4 C1 required one or the other; removal is the stronger choice, because a caller-supplied agent name cannot be validated (the definition may live in the caller's `~/.config/opencode/agents/`, outside the sandbox the adapter owns). The shipped signature carries **`agent_name: str = DEFAULT_AGENT_NAME`**, which renames the *generated* tool-denying definition; the adapter always writes it and always passes `--agent`. There is deliberately no path to an unlocked agent. Pinned by `test_the_tool_denial_cannot_be_switched_off` in both packages.
+- **⚠ AS BUILT (Session 213) — `max_tokens` inertness is now partial.** It still never reaches the argv (no flag exists), but Appendix A.4 C3's `step_finish.reason` gives the truncation guard an analogue, so a truncated response raises rather than silently reaching `_extract_json`. The error text deliberately does **not** say "raise max_tokens" — that would send the operator somewhere with no effect; it points at the OpenCode model config instead.
 - `runner` defaults to `subprocess.run` and is the **only** thing tests replace. No test spawns a process.
 - `_call_json` returns `_extract_json(text)` — same return contract as the parent (parsed JSON), so all four interview methods are inherited untouched.
 - The four `IntakeLLMClient` methods, `_build_draft`, `_build_governance`, `_format_qa`, `_draft_as_dict`, `_extract_json`, and every prompt constant: **inherited, not overridden.**
@@ -508,7 +512,9 @@ Probe set (run each with the prompt on stdin, `--dir` a temp dir):
 **Verification:** the captured stdout is real terminal output, pasted verbatim, not reconstructed. Version and date recorded.
 **Session boundary:** one session. Close out. **No client code.**
 
-### Phase 2 — Both clients, both factory branches, the registry entry, the deterministic tier
+### Phase 2 — Both clients, both factory branches, the registry entry, the deterministic tier — ✅ **DONE (Session 213, 2026-08-01)**
+
+**Outcome:** shipped as specified, with the seven Appendix A corrections applied and **two as-built deviations** (both recorded in place below): §4.4/§5.1's `agent=` escape hatch was **removed**, not merely hard-gated — replaced by `agent_name: str`, which renames the generated tool-denying definition rather than substituting a caller-owned one, so no constructor path reaches an unlocked agent; and §5.3's helpers take the already-parsed event list rather than raw `stdout`, so the skip-unparseable-lines rule lives in one place. +111 tests (43 intake, 42 data agent, the rest factory/registry/parity). Every verification command below was run and passed. One assumption of the executor's own was disproven by its own test and is documented rather than dropped — see the `CHANGELOG.md` entry's "wrong assumption" bullet.
 
 **Work.** Everything in §5, §6.1-6.2, §7.1-7.3. Both packages in **one** session — precedent: Session 162 shipped both Bedrock clients together, and the §7.2 twin guard is only writable once both copies exist.
 **DONE looks like:** `make_llm_client("opencode")` constructs in both packages; `KNOWN_PROVIDERS` auto-includes it; the deterministic tier is green with no process spawned; the `_SEAMS` rows and the new helper-parity battery are in; C4 and the lazy-import invariants are green.

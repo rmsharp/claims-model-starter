@@ -200,6 +200,16 @@ class TestLLMProvidersRegistry:
         assert "bedrock" in LLM_PROVIDERS
         assert LLM_PROVIDERS["bedrock"].api_key_env_var is None
 
+    def test_opencode_has_no_env_var_key(self) -> None:
+        """``opencode`` carries no ``api_key_env_var`` — but for a different reason
+        than Bedrock's. Its credential depends on whichever vendor the *operator's*
+        OpenCode config routes to (75+ are possible) and may live in OpenCode's own
+        credential store rather than any environment variable, so there is no
+        single name to record. ``require_llm_api_key`` must therefore refuse with a
+        pointed message rather than invent one (AD-11 / spec D8)."""
+        assert "opencode" in LLM_PROVIDERS
+        assert LLM_PROVIDERS["opencode"].api_key_env_var is None
+
     def test_default_provider_is_registered(self) -> None:
         assert DEFAULT_LLM_PROVIDER in LLM_PROVIDERS
 

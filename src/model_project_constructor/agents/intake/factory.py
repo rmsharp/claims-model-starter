@@ -27,9 +27,11 @@ from model_project_constructor.agents.intake.protocol import IntakeLLMClient
 #: Providers this factory can construct. Add a member here (and a branch in
 #: :func:`make_llm_client`) when wiring a new backend; the unknown-provider
 #: error derives its list from this. ``bedrock`` is AWS Bedrock-hosted Claude
-#: (plan Phase C) — kept in lockstep with the data-agent factory's ``Literal``
-#: and the orchestrator ``LLM_PROVIDERS`` registry.
-LLMProvider = Literal["anthropic", "bedrock"]
+#: (plan Phase C); ``opencode`` shells out to the ``opencode`` CLI, which is
+#: itself a multi-vendor multiplexer (AD-11) — kept in lockstep with the
+#: data-agent factory's ``Literal`` and the orchestrator ``LLM_PROVIDERS``
+#: registry.
+LLMProvider = Literal["anthropic", "bedrock", "opencode"]
 
 KNOWN_PROVIDERS: tuple[str, ...] = get_args(LLMProvider)
 
@@ -70,6 +72,25 @@ def make_llm_client(
         )
 
         return BedrockLLMClient(model=DEFAULT_MODEL if model is None else model)
+    if provider == "opencode":
+        # Lazy import for consistency with the branches above — this client
+        # imports no SDK at all (stdlib only), but the convention is what
+        # ``test_factory_import_does_not_load_anthropic`` pins, and consistency
+        # is cheaper than an exception. ``DEFAULT_MODEL`` is ``None`` here: the
+        # operator's own OpenCode config picks the vendor, which is the point
+        # (spec D6). Construction fails fast if the binary is absent.
+        #
+        # Aliased on import because this provider's ``DEFAULT_MODEL`` is
+        # ``str | None`` while its siblings' are ``str``; the branches share one
+        # function scope, so importing the bare name twice is a type conflict.
+        from model_project_constructor.agents.intake.opencode_client import (
+            DEFAULT_MODEL as OPENCODE_DEFAULT_MODEL,
+        )
+        from model_project_constructor.agents.intake.opencode_client import (
+            OpenCodeLLMClient,
+        )
+
+        return OpenCodeLLMClient(model=OPENCODE_DEFAULT_MODEL if model is None else model)
     raise ValueError(
         f"Unknown LLM provider {provider!r}. "
         f"Known providers: {', '.join(KNOWN_PROVIDERS)}."

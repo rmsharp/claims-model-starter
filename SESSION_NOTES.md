@@ -6,6 +6,167 @@
 
 ## ACTIVE TASK
 
+### What Session 213 Did
+**Deliverable:** Spec Phase 2 — `OpenCodeLLMClient` in both packages (intake agent + data-agent wheel), both
+`factory.py` branches, the `LLM_PROVIDERS` registry entry, and the deterministic test tier
+(`docs/planning/opencode-adapter-spec.md` §9 Phase 2). **COMPLETE.** No eval wiring, no docs sweep (those are
+Phase 3) — FM #18 held.
+
+**Started / Completed:** 2026-08-01. **Commit:** `[recorded below]`.
+
+**Trigger:** the operator replied "1" to the Phase 0 orientation report, selecting item (1) of the two open items
+— the same one-character selection pattern Sessions 209, 211 and 212 handled. Interpretation was stated back
+before any work began, per Phase 1.
+
+**Workstream:** `docs/methodology/workstreams/DEVELOPMENT_WORKSTREAM.md` (feature implementation). Read in full
+before coding; its Phase 2 (read the code you will modify, then the tests, then the docs — in that order) and
+Phase 3 (write the implementation plan before writing code) shaped the session's order of work.
+
+**Pre-flight (all four items from Session 212's handoff, run before any edit):** re-ran every §6 search — the
+line numbers held exactly (intake `factory.py:32` Literal / branches `:52`,`:63`; wheel `:33` / `:53`,`:63`;
+`config.py:158-161`); re-ran `rg '"openai"' tests/` — 13 hits across 6 files, all still valid since `"opencode"`
+neither contains nor is contained by `"openai"`; read both `anthropic_client.py` and both `bedrock_client.py` as
+the structural template; and read Appendix A **before** §3/§4 as instructed.
+
+**What was shipped (15 files — 4 new source/test modules, 7 edited, 4 procedural):**
+1. **Two client modules**, each subclassing its package's `AnthropicLLMClient` and overriding **only** `__init__`
+   plus the one transport method — `_call_json` (intake, returns parsed JSON) and `_call_claude` (wheel, returns
+   raw text). The §2.1 seam asymmetry is preserved deliberately and asserted.
+2. **All seven Appendix A corrections implemented**, not just acknowledged: final-step text extraction (C4),
+   `error`-event-based messages because stderr is empty (C2), the `step_finish.reason == "length"` truncation
+   guard plus `tokens`/`cost` surfaced as `last_usage` (C3), the distinct "non-zero exit + zero parseable stdout"
+   diagnosis (C5), one sandbox per client instance (C6), block-style YAML (C5), and the mandatory tool denial (C1).
+3. **The three-edit lockstep** (both `Literal`s + `LLM_PROVIDERS`) done in one session, as risk #7 requires.
+4. **+111 tests**, all hermetic: 43 intake, 42 wheel, the rest factory/registry/parity. Every JSONL sample is a
+   verbatim Phase 1 capture; no test spawns a process.
+5. **The new twins' drift guard, written the same commit as the twins** — a 16-case behavioural battery through
+   both copies plus a rule-pinning test and an `AGENT_DEFINITION`-equality test.
+
+**The safety defect is closed by removal, not by a gate.** Appendix A.4 C1 required §4.4's "caller supplied an
+agent ⇒ the adapter writes nothing" hatch to be "removed or hard-gated." I removed it. A gate needs something to
+check, and a caller-supplied agent id may resolve to a definition in `~/.config/opencode/agents/` — outside the
+sandbox the adapter owns — so the adapter *cannot* verify it denies tools. The parameter is now `agent_name`,
+which renames the definition the adapter **generates**; it always writes it and always passes `--agent`. The
+shipped definition denies all five accepted keys, including `webfetch`, which goes one beyond the spec's
+instruction: it is the one remaining tool that could move transcript or `DataRequest` text off the machine.
+
+**A wrong assumption of mine, caught by my own test.** I wrote a test asserting the OpenCode provider constructs
+with **no SDK in `sys.modules`**. It failed — `opencode_client` imports its parent, which imports
+`anthropic.types.TextBlock` at module level. Spec D5's real claim is narrower (no new *Python dependency*;
+`pyproject.toml` unchanged). I replaced it with an AST-based guard on the module's own imports and wrote the gap
+into the test's docstring under "what this does NOT claim", rather than deleting the test. Recorded as learning
+#66.
+
+**Verification (every command in spec §9 Phase 2's list, all run):** `uv run pytest -q` → **1100 passed + 8
+live-skipped @ 97.79%** (baseline 989 + 8 @ 97.78%); `uv run mypy` → clean, 68 files; `uv run ruff check src/
+tests/ packages/ scripts/` → clean; `test_data_agent_decoupling.py` + `test_llm_json_parity.py` → 36 passed;
+`rg -n "subprocess" packages/data-agent/src/` → the new client only; importing the wheel's factory loads no SDK.
+Both new modules at **98% branch coverage** — the residue is `_default_runner`'s single `subprocess.run` line,
+deliberately never exercised, plus three defensive branch arcs.
+
+### Session 212 Handoff Evaluation (by Session 213)
+
+**Score: 10/10.** The first handoff in this project I have not been able to fault on anything that cost me time.
+
+**What helped, specifically:** (1) The **pre-flight list was executable as written** — four items, each a command
+or a file, and running them was literally my first action. Three of the four found "no change," which sounds like
+wasted effort and is the opposite: it licensed me to trust §6's inventory and skip re-deriving it. (2) **"Read
+Appendix A before §3/§4" was the single highest-value line.** §3.5's H4 row and §4.7's error table both still read,
+in place, as if the original claims held; only the inline ⚠ annotations correct them. Reading Appendix A first is
+what made those annotations legible instead of confusing. Had I read top-to-bottom I would have implemented a
+`{stderr_tail}` message that renders as `""` and an escape hatch that disables the only working safety control.
+(3) **Gotcha 1 named the deliverable's hardest decision** ("must remove or hard-gate") rather than the symptom, so
+I spent my thinking on *which*, not on *whether*. (4) Gotchas 2, 3, 5 each map one-to-one onto a line of shipped
+code and a test — block-style YAML, `input=` instead of an inherited stdin, the `ref` in the error message. (5)
+Gotcha 8 ("`opencode` is now installed globally on this machine") told me the construction check would *pass*
+locally and *fail* in CI, which is exactly why the tests resolve `sys.executable` instead of assuming a binary.
+(6) The key-files list gave me `anthropic_client.py:363-401` and `bedrock_client.py:86-145` — both correct, both
+read first, zero search cost.
+
+**What was missing:** genuinely nothing I needed. Two things I would call *opportunities* rather than gaps. (a) It
+did not mention that the `_extract_json` twins are reused rather than re-copied by subclass providers (the
+existing `_SEAMS` Bedrock comment explains it), so I confirmed that from the test file myself — 60 seconds. (b) It
+did not anticipate that `DEFAULT_MODEL: str | None` collides with the sibling providers' `str` in the shared
+factory function scope; mypy caught it in the first run and an import alias fixed it. Neither is a fault: both are
+the kind of thing that only surfaces with a compiler.
+
+**What was wrong:** nothing. Every factual claim I checked — line numbers, the sentinel, the fixture contents, the
+`cache.write` values, the stderr-is-empty finding, the multi-step narration ordering — held exactly.
+
+**ROI:** the highest of any handoff I have inherited here. Orientation-to-first-edit was under fifteen minutes,
+and the two most expensive possible mistakes (an unsafe escape hatch, an empty error message) were pre-empted by
+prose rather than discovered by me.
+
+### Phase 3B: Self-assess — Session 213 — 8.5/10
+
+- **The +:** (1) Ran the full pre-flight before touching anything, including re-verifying the line numbers I had
+  been told were stale. (2) **Implemented all seven corrections, including the two the spec still contradicts in
+  its own §3/§4 prose** — the failure mode here was reading the annotated section and following the un-annotated
+  sentence. (3) Chose *removal* over a gate on the safety hatch and wrote down why the gate would have been
+  theatre, rather than taking the cheaper branch of an "or". (4) **Wrote the twin drift guard in the same commit
+  as the twins**, as §7.2 demands — and then noticed that a sameness-only battery is blind to a shared bug, so
+  added a rule-pinning test and a per-tool assertion on the shared constant (learning #68). (5) Caught my own
+  wrong claim via a test I wrote, and **weakened the claim rather than the test**, documenting the shortfall in
+  place. (6) Held scope precisely: no eval wiring, no wiki edits, despite `eval_cutover.py:36` being a two-line
+  change I had already located. (7) Every fixture used is a Phase 1 capture; I hand-wrote no event JSON except
+  clearly-synthetic single-event streams for defensive branches.
+- **The −:** (1) **`_default_runner` is never executed by any test** (2 uncovered lines per module). It is the one
+  line that actually spawns `opencode`, and "no test spawns a process" is a rule about *opencode*, not about
+  subprocesses in general — two existing tests already spawn a Python interpreter. I could have proved the kwarg
+  contract end-to-end against a harmless command and did not. (2) **The `"length"` truncation reason is still
+  inferred, not observed** (Appendix A.5 flagged this and I inherited it rather than resolving it). Forcing a
+  truncation would have cost cents; I judged it out of Phase 2's stated scope, which is defensible, but it means a
+  guard now exists whose trigger value has never been seen in the wild. (3) **The version probe fires
+  `opencode --version` lazily on two error paths**, which means an already-failing call makes a second spawn. It
+  is guarded and tested, but it is extra behaviour on the unhappy path that the spec asked for in one sentence and
+  I could have implemented as a constant instead. (4) I did not re-read the *whole* spec after finishing — I
+  re-read §5/§6/§7/§9. §8's failure-mode table and §12's risk register were only skimmed at the end, and both
+  arguably deserve as-built annotations I did not write.
+
+**What's next:** **Spec Phase 3 — eval wiring + documentation**, one session. Two halves: (a) `tests/eval/
+eval_cutover.py` — add `"opencode"` to `CANDIDATE_PROVIDERS` (`:36`) and a branch to `provider_creds_available`
+(`:41-60`) whose runnability probe is `shutil.which("opencode") is not None`; it **must stay side-effect-free and
+must not spawn at collection time**, per that function's own docstring, and `tests/eval/conftest.py:52-54` then
+auto-skips the live cases so CI stays hermetic with no further change. (b) The doc sweep listed in spec §9 Phase 3
+— `AI-Dependencies.md` §9 planned → as-built (and its §6.7 residual paragraph, since this *is* the diversification
+it forecast), an as-built note under `Architecture-Decisions.md` AD-11, `Extending-the-Pipeline.md`'s provider
+recipe gaining the subprocess-client variant, and the §8 operator-checklist items. **Any wiki edit auto-publishes
+via the `post-commit` hook** — expect that commit to touch the live GitHub Wiki. Phase 4 (live shadow run) is
+operator-gated and needs the operator to name the model to pin. Phase C4 of the enterprise migration remains
+operator-gated and unchanged.
+
+**Key files:** `src/model_project_constructor/agents/intake/opencode_client.py` and `packages/data-agent/src/
+model_project_constructor_data_agent/opencode_client.py` — the two clients; their module docstrings carry the
+safety rationale and the naming caveat. `tests/agents/intake/test_opencode_client.py` (43 tests) and
+`tests/data_agent_package/test_opencode_client.py` (42). `tests/test_llm_json_parity.py` — `_SEAMS` rows plus the
+new `EVENT_STREAM_CASES` battery and `test_opencode_shared_constants_are_identical`. For Phase 3:
+`tests/eval/eval_cutover.py:36` (`CANDIDATE_PROVIDERS`) and `:41-60` (`provider_creds_available`),
+`tests/eval/conftest.py:52-54` (the auto-skip), `docs/planning/opencode-adapter-spec.md` §7.4 and §9 Phase 3.
+
+**Gotchas:**
+1. **The two client modules are twins and must stay byte-identical below the `# --- JSONL event helpers` marker**
+   (only the cross-reference comment differs, by design). `tests/test_llm_json_parity.py` catches behavioural
+   drift but **not** a shared bug — that is why the rule-pinning tests exist next to the sameness battery. If you
+   fix one copy, fix both in the same commit or the battery will report your *fix* as the failure.
+2. **`shutil.which("opencode")` succeeds on this machine and fails in CI.** Any new test that constructs a client
+   must inject `executable=sys.executable` (the client tests) or stub `shutil.which` (the factory tests). A test
+   that "works locally" here is not evidence it works in CI.
+3. **Do not add `"opencode"` to any live-eval path expecting it to run.** Phase 3's job is to make it *skippable*
+   and auto-skipped. The eight §3.4 thresholds are all PENDING and `evaluate_cutover` keeps `anthropic` primary
+   while any threshold is unmeasured — that rule must not be relaxed to make a green report.
+4. **`DEFAULT_MODEL` is `str | None` here while the sibling providers' are `str`.** Both factory branches import
+   it **aliased** (`DEFAULT_MODEL as OPENCODE_DEFAULT_MODEL`) because all branches share one function scope and
+   mypy rejects the re-import otherwise. Do not "tidy" the alias away.
+5. **The `"length"` truncation reason has never been observed** — it is inferred from the AI SDK's finish-reason
+   vocabulary (Appendix A.5). If Phase 4 ever forces a truncation, confirm the spelling; the guard is a one-word
+   change if it is wrong.
+6. **`max_tokens` is inert but the truncation guard is not.** The error text deliberately does not say "raise
+   max_tokens" — there is no flag for it. Do not "helpfully" restore the inherited wording.
+7. **The fixtures pin v1.18.11 and OpenCode ships daily.** A Phase 3+ failure after an upgrade is a schema change
+   until proven otherwise — **re-capture**, never hand-edit, or the test starts asserting the spec.
+8. **`opencode` is installed globally on this machine** (`npm i -g opencode-ai`; uninstall with
+   `npm uninstall -g opencode-ai` for a clean-room test of the binary-absent path).
+
 ### What Session 212 Did
 **Deliverable:** Spec Phase 1 — the OpenCode live verification spike (`docs/planning/opencode-adapter-spec.md`
 §9 Phase 1). **COMPLETE.** No production code written (FM #18 held).

@@ -56,9 +56,11 @@ from typing import Any
 import pytest
 from anthropic.types import TextBlock
 from model_project_constructor_data_agent import anthropic_client as da_client
+from model_project_constructor_data_agent import opencode_client as da_opencode
 from model_project_constructor_data_agent.anthropic_client import LLMParseError
 
 from model_project_constructor.agents.intake import anthropic_client as intake_client
+from model_project_constructor.agents.intake import opencode_client as intake_opencode
 from model_project_constructor.agents.intake.protocol import IntakeLLMError
 
 # The two parsers under test — the same private helper, one per package. The
@@ -153,6 +155,13 @@ _SEAMS: list[_Seam] = [
     # Bedrock provider parses + raises through its seam's error class.
     _Seam("intake", "bedrock", intake_client._extract_json, IntakeLLMError),
     _Seam("data_agent", "bedrock", da_client._extract_json, LLMParseError),
+    # AD-11 — the ``opencode`` CLI. ``OpenCodeLLMClient`` also *subclasses* each
+    # package's ``AnthropicLLMClient``, overriding only the transport method, so it
+    # too reuses that package's ``_extract_json`` and seam error class — there is
+    # no third parser copy to drift. What this provider DOES add is a new twin
+    # pair (the JSONL event helpers), guarded by the separate battery below.
+    _Seam("intake", "opencode", intake_client._extract_json, IntakeLLMError),
+    _Seam("data_agent", "opencode", da_client._extract_json, LLMParseError),
 ]
 
 
@@ -265,6 +274,149 @@ def test_guard_max_tokens_truncation_message_parity() -> None:
         "Claude response truncated at max_tokens=16384 (stop_reason='max_tokens'); "
         "the response is incomplete. Raise max_tokens for this client."
     )
+
+
+# --- the OpenCode JSONL-event twins (spec §7.2) ---------------------------
+#
+# A SECOND twin pair was born with the ``opencode`` provider: each package's
+# ``opencode_client.py`` carries its own copy of the JSONL event helpers, forced
+# by the same C4 boundary that forced the ``_extract_json`` twins. Those drifted
+# once and cost three sessions to repair (Sessions 98-100, traceable to a Session
+# 51 live crash), so this battery lands in the same commit that creates the new
+# copies rather than "later" — on the day they are born they have a guard.
+#
+# The battery is deliberately behavioural, not source-identity: an AST comparison
+# trips on a benign one-sided reformat (the same reasoning that retired the plan's
+# §5.4 backstop for the ``_extract_json`` twins).
+
+_TEXT_EVENT = '{"type": "text", "part": {"type": "text", "text": %s}}'
+_STEP_FINISH = '{"type": "step_finish", "part": {"reason": %s}}'
+_ERROR_EVENT = (
+    '{"type": "error", "error": {"name": "UnknownError", '
+    '"data": {"message": "Unexpected server error.", "ref": "err_abc123"}}}'
+)
+
+#: The same input battery through both copies. Each case is a raw stdout string,
+#: exercising the behaviours spec §7.2 enumerates: no text events, several text
+#: events, non-JSON lines, error lines, unknown event types — plus the
+#: final-step-wins rule (Appendix A.4 C4) and the no-``step_finish`` fallback.
+EVENT_STREAM_CASES: list[tuple[str, str]] = [
+    ("empty stream", ""),
+    ("only whitespace", "\n   \n"),
+    ("no text events", '{"type": "step_start", "part": {}}'),
+    (
+        "single text event, closed",
+        "\n".join([_TEXT_EVENT % '"answer"', _STEP_FINISH % '"stop"']),
+    ),
+    (
+        "several text events in one step",
+        "\n".join([_TEXT_EVENT % '"one "', _TEXT_EVENT % '"two"', _STEP_FINISH % '"stop"']),
+    ),
+    (
+        "final step wins over earlier narration",
+        "\n".join(
+            [
+                _TEXT_EVENT % '"narration"',
+                _STEP_FINISH % '"tool-calls"',
+                _TEXT_EVENT % '"answer"',
+                _STEP_FINISH % '"stop"',
+            ]
+        ),
+    ),
+    ("text with no step_finish at all", _TEXT_EVENT % '"unterminated"'),
+    (
+        "non-JSON preamble is skipped",
+        "\n".join(["Loading config...", "[]", _TEXT_EVENT % '"answer"', _STEP_FINISH % '"stop"']),
+    ),
+    ("error event only", _ERROR_EVENT),
+    (
+        "error event alongside text",
+        "\n".join([_TEXT_EVENT % '"answer"', _ERROR_EVENT, _STEP_FINISH % '"stop"']),
+    ),
+    (
+        "unknown event types are ignored",
+        "\n".join(
+            [
+                '{"type": "reasoning", "part": {"text": "thinking"}}',
+                '{"type": "tool_use", "part": {"tool": "read"}}',
+                '{"type": "brand_new_event_type", "part": {"text": "surprise"}}',
+                _TEXT_EVENT % '"answer"',
+                _STEP_FINISH % '"stop"',
+            ]
+        ),
+    ),
+    ("malformed part payloads", '{"type": "text", "part": null}\n{"type": "step_finish"}'),
+    # Defensive shapes: the event schema is an implementation detail of a project
+    # shipping releases daily (dragon 2), so both copies must degrade the same way
+    # rather than one raising while the other shrugs.
+    ("error payload is not an object", '{"type": "error", "error": "plain string"}'),
+    ("error payload has no data", '{"type": "error", "error": {"name": "Boom"}}'),
+    ("step_finish part is not an object", '{"type": "step_finish", "part": "surprise"}'),
+    ("stream is a JSON array, not objects", "[1, 2, 3]"),
+]
+
+
+@pytest.mark.parametrize(
+    ("label", "stdout"),
+    EVENT_STREAM_CASES,
+    ids=[case[0] for case in EVENT_STREAM_CASES],
+)
+def test_opencode_event_helper_parity(label: str, stdout: str) -> None:
+    """Both copies of the JSONL event helpers agree on every input in the battery.
+
+    Asserted as equality between the two copies rather than against a pinned
+    expectation, because the property under guard is *sameness*: a one-sided edit
+    to either package's copy fails here on the offending commit instead of
+    surfacing as a live-run divergence between two providers of the same pipeline.
+    """
+    intake_events = intake_opencode._iter_events(stdout)
+    da_events = da_opencode._iter_events(stdout)
+    assert intake_events == da_events, label
+    assert intake_opencode._extract_assistant_text(
+        intake_events
+    ) == da_opencode._extract_assistant_text(da_events), label
+    assert intake_opencode._error_payloads(intake_events) == da_opencode._error_payloads(
+        da_events
+    ), label
+    assert intake_opencode._final_step_summary(intake_events) == da_opencode._final_step_summary(
+        da_events
+    ), label
+    assert intake_opencode._tail(stdout) == da_opencode._tail(stdout), label
+
+
+def test_opencode_final_step_rule_is_pinned_not_just_mirrored() -> None:
+    """Sameness is not enough on its own — two copies can be identically wrong.
+
+    This pins the actual rule the twins implement (Appendix A.4 C4): the answer is
+    the text of the last step whose ``reason`` is ``"stop"``, NOT the concatenation
+    of every ``text`` event, which on a real 3-step run returned narration glued
+    ahead of the answer.
+    """
+    stdout = "\n".join(
+        [
+            _TEXT_EVENT % '"narration"',
+            _STEP_FINISH % '"tool-calls"',
+            _TEXT_EVENT % '"answer"',
+            _STEP_FINISH % '"stop"',
+        ]
+    )
+    for module in (intake_opencode, da_opencode):
+        assert module._extract_assistant_text(module._iter_events(stdout)) == "answer"
+
+
+def test_opencode_shared_constants_are_identical() -> None:
+    """The D2 fold separator and the locked-down agent definition are twins too.
+
+    A divergence here would mean the two packages send differently-shaped prompts
+    (silent quality drift, dragon 4) or run under **different tool permissions** —
+    and the tool denial is a safety control, not a nicety (Appendix A.4 C1).
+    """
+    assert intake_opencode.SYSTEM_USER_SEPARATOR == da_opencode.SYSTEM_USER_SEPARATOR == "\n\n"
+    assert intake_opencode.AGENT_DEFINITION == da_opencode.AGENT_DEFINITION
+    assert intake_opencode.DEFAULT_AGENT_NAME == da_opencode.DEFAULT_AGENT_NAME
+    assert intake_opencode.DEFAULT_MODEL is da_opencode.DEFAULT_MODEL is None
+    for tool in ("edit", "write", "bash", "read", "webfetch"):
+        assert f"  {tool}: deny" in intake_opencode.AGENT_DEFINITION
 
 
 # --- §2.3 the intentional error-class divergence -------------------------

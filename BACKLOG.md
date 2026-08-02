@@ -50,12 +50,28 @@ usage-help-on-stderr with empty stdout; the sandbox needs a **runtime npm instal
 deployment prerequisite, sharpening §11 Q3); and sessions persist prompt/response text in a **global SQLite DB**
 that survives sandbox deletion.
 
-**Next session's deliverable is spec Phase 2 — both clients, both factory branches, the registry entry, and the
-deterministic test tier.** Read **Appendix A before §3/§4** — the corrections change the design. Phase 2 is one
-session for both packages (the twin-drift guard is only writable once both copies exist). Phases 3-4 follow one
-per session; Phase 4 is operator-gated and needs the operator to name the model to pin. Spec §11 now carries two
-live operator questions (Q1 `DEFAULT_MODEL`, Q2 which vendor to measure first); Q3 and Q4 were sharpened and
-largely defused respectively by Phase 1.
+**Phase 2 (both clients, both factory branches, the registry entry, the deterministic tier) is DONE (Session 213,
+2026-08-01)** — `"opencode"` is a live provider in both packages, shipped with all seven Appendix A corrections
+applied. See `CHANGELOG.md`'s 2026-08-01 entry. Gate: **1100 passed + 8 live-skipped @ 97.79%**, mypy and ruff
+clean. **Two as-built deviations**, both recorded in the spec: §4.4/§5.1's `agent=` escape hatch was **removed**
+(not merely hard-gated) in favour of `agent_name`, which renames the generated tool-denying definition rather than
+substituting a caller-owned one — so no constructor path reaches an unlocked agent; and §5.3's twin helpers take
+the parsed event list rather than raw `stdout`.
+
+**⚠ The adapter is wired but entirely unmeasured.** `anthropic` remains the default everywhere, and it must stay
+that way: spec risk #1 (parses fine, quality silently degrades under the D2 prompt-role change) is untouched, and
+no data-agent method has been exercised against OpenCode at all.
+
+**Next session's deliverable is spec Phase 3 — eval wiring + documentation** (spec §7.4 and §9 Phase 3): add
+`"opencode"` to `CANDIDATE_PROVIDERS` and a `shutil.which`-based branch to `provider_creds_available` in
+`tests/eval/eval_cutover.py` (keep it side-effect-free — no process spawn at collection time), then the doc sweep
+(`AI-Dependencies.md` §9 planned → as-built plus its §6.7 residual paragraph, an as-built note under
+`Architecture-Decisions.md` AD-11, `Extending-the-Pipeline.md`'s provider recipe gaining the subprocess-client
+variant, and the §8 operator-checklist items — binary version pinning, session state in a global SQLite DB,
+runtime npm reachability). Phase 4 (the live shadow run) follows and is operator-gated: it needs the operator to
+name the model to pin. Spec §11 still carries two live operator questions — Q1 (`DEFAULT_MODEL`: shipped as
+`None`, reversible in one line) and Q2 (which vendor to measure first — choosing a non-Anthropic model is the only
+way this adapter delivers the model-family diversification `AI-Dependencies.md` §6.7 says is still missing).
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 
