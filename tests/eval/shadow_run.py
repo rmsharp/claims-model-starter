@@ -35,7 +35,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-from model_project_constructor_data_agent.anthropic_client import LLMParseError
 from model_project_constructor_data_agent.db import ReadOnlyDB
 from model_project_constructor_data_agent.factory import make_llm_client as make_data_client
 
@@ -62,14 +61,9 @@ from tests.eval.eval_cutover import (
     provider_eval_model,
     render_agreement_report,
 )
-from tests.eval.eval_scoring import (
-    pass_rate,
-    quality_checks_structural_ok,
-    score_governance,
-    sql_executes,
-    sql_parse_valid,
-)
+from tests.eval.eval_scoring import pass_rate, score_governance
 from tests.eval.interview_sweep import N_SAMPLES, sweep_interview_convergence
+from tests.eval.sql_sweep import sweep_sql_capabilities
 from tests.eval.stakeholder_sim import stakeholder_simulator_for
 
 
@@ -116,30 +110,16 @@ def measure_provider(
             gov_risk_acceptable.append(score.risk_tier_acceptable)
             laxer += int(score.laxer_tier_miss)
 
-    # SQL parse/exec + QC structural over the primary cases on the seeded schema
-    parse_results: list[bool] = []
-    exec_results: list[bool] = []
-    qc_ok: list[bool] = []
-    for case in load_sql_cases():
-        if case.kind != "primary":
-            continue
-        try:
-            specs = data.generate_primary_queries(case.request, data_source_inventory=inventory)
-        except LLMParseError as exc:
-            _warn(f"sql/{case.name}: {type(exc).__name__} on primary queries -> parse+exec fail")
-            parse_results.append(False)
-            exec_results.append(False)
-            qc_ok.append(False)
-            continue
-        for spec in specs:
-            parse_results.append(sql_parse_valid(spec.sql))
-            exec_results.append(sql_executes(db, spec.sql))
-        try:
-            qc_lists = data.generate_quality_checks(case.request, specs)
-            qc_ok.append(quality_checks_structural_ok(len(specs), qc_lists))
-        except LLMParseError as exc:
-            _warn(f"qc/{case.name}: {type(exc).__name__} on quality checks -> structural fail")
-            qc_ok.append(False)
+    # SQL parse/exec + QC structural over the primary cases on the seeded schema.
+    # Sampled N>=5 per case and pooled (Session 218) — the same discipline the
+    # governance loop above and the interview sweep below already use. Before
+    # that this block ran each case exactly once, so ``sql_exec`` was a ~5-query
+    # denominator judged against a 95% bar and ``qc_structural`` was 3 booleans
+    # against a 100% bar; both Session 216 and Session 217 had to caveat the
+    # resulting number rather than quote it. The thresholds are unchanged.
+    sql = sweep_sql_capabilities(
+        load_sql_cases(), data, db, inventory=inventory, n_samples=n_samples, on_event=_warn
+    )
 
     # interview convergence + premature-convergence count (gap #1c): sample each
     # converging case N>=5 times and pool, and retry/exclude a transient API/sim
@@ -168,14 +148,14 @@ def measure_provider(
     return {
         # deterministic parity battery (test_llm_json_parity), not a live rate:
         "json_parse": 1.0,
-        "sql_parse": pass_rate("sql_parse", parse_results).rate,
-        "sql_exec": pass_rate("sql_exec", exec_results).rate,
+        "sql_parse": pass_rate("sql_parse", sql.parse_results).rate,
+        "sql_exec": pass_rate("sql_exec", sql.exec_results).rate,
         "governance_cycle_time_agreement": pass_rate("gov_cycle_time", gov_cycle_matches).rate,
         "governance_laxer_miss": float(laxer),
         # diagnostic only (not a gate key — risk_tier is gated by laxer_miss):
         # the risk_tier match-or-stricter rate, surfaced for the agreement report.
         "governance_risk_tier_acceptable": pass_rate("gov_risk_tier", gov_risk_acceptable).rate,
-        "qc_structural": pass_rate("qc", qc_ok).rate,
+        "qc_structural": pass_rate("qc", sql.qc_results).rate,
         "interview_convergence": pass_rate("interview", sweep.convergence_results).rate,
         "interview_premature": float(sweep.premature_count),
     }

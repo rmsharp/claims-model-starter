@@ -6,6 +6,19 @@
 
 ## ACTIVE TASK
 
+### What Session 218 Did
+**Deliverable:** Re-measure `sql_exec` under Session 217's dialect fix, and re-score the Phase E cutover
+verdict on the result. (IN PROGRESS)
+**Started:** 2026-08-02
+**Status:** Session claimed. Work beginning.
+**Trigger:** the operator replied `1` to the Phase 0 report — option 1 of Session 217's three "what's next"
+options. Same one-character selection pattern Sessions 209–217 handled.
+**Workstream:** `docs/methodology/workstreams/AUDIT_WORKSTREAM.md` (this is a quality-gate review against a
+fixed standard — the eight §3.4 thresholds — not a feature build). If a harness defect must be fixed to make
+the measurement possible, `DEVELOPMENT_WORKSTREAM.md` governs that sub-task, as it did in Session 215.
+**⚠ Gated on operator spend authorization.** Session 216's comparable run was $13.99 / 99.5 min. Scoping the
+run to the minimum that answers the question, and getting a number authorized, precedes any live call.
+
 ### What Session 217 Did
 **Deliverable:** **Fixed the root cause behind the failing `sql_exec` threshold — the data agent now knows
 which SQL dialect it is writing for. COMPLETE.** **No threshold changed, no cutover verdict re-scored, no

@@ -96,14 +96,29 @@ def sql_parse_valid(sql: str) -> bool:
     return ok
 
 
-def sql_executes(db: ReadOnlyDB, sql: str) -> bool:
-    """Whether ``sql`` executes against the seeded DB without raising."""
+def sql_execution_error(db: ReadOnlyDB, sql: str) -> str | None:
+    """``None`` if ``sql`` executes against the seeded DB, else the error text.
+
+    The §3.4 metric only needs the boolean :func:`sql_executes`, but collapsing
+    every failure mode to one bit is what let the Session 216 diagnosis stay
+    hidden for ~50 sessions: a dialect mismatch, a hallucinated column and a type
+    error are indistinguishable in the rate. Returning the message lets a sweep
+    report *why* a query failed without changing what is scored — the boolean
+    below is still the single source of the gate's truth, derived from this one
+    execution rather than a second one.
+    """
     try:
         db.execute(sql)
-    except Exception:
-        # Any DB-level error (bad column, type mismatch, dialect) = not executable.
-        return False
-    return True
+    except Exception as exc:  # noqa: BLE001 - any DB-level error = not executable
+        # Bad column, type mismatch, unsupported function (dialect) — all count
+        # the same for the metric; the text is for diagnosis only.
+        return f"{type(exc).__name__}: {exc}"
+    return None
+
+
+def sql_executes(db: ReadOnlyDB, sql: str) -> bool:
+    """Whether ``sql`` executes against the seeded DB without raising."""
+    return sql_execution_error(db, sql) is None
 
 
 def quality_checks_structural_ok(n_primary_queries: int, qc_lists: Sequence[Any]) -> bool:

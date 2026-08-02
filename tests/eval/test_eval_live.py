@@ -73,14 +73,9 @@ from tests.eval.eval_corpus import (
     pc_inventory_from_db,
 )
 from tests.eval.eval_cutover import SHADOW_PROVIDERS, provider_eval_model
-from tests.eval.eval_scoring import (
-    pass_rate,
-    quality_checks_structural_ok,
-    score_governance,
-    sql_executes,
-    sql_parse_valid,
-)
+from tests.eval.eval_scoring import pass_rate, score_governance
 from tests.eval.interview_sweep import N_SAMPLES, sweep_interview_convergence
+from tests.eval.sql_sweep import sweep_sql_capabilities
 from tests.eval.stakeholder_sim import stakeholder_simulator_for
 
 pytestmark = pytest.mark.live
@@ -114,7 +109,16 @@ def test_live_governance_cycle_time_agreement_and_no_laxer_miss(provider: str) -
 
 
 @pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
-def test_live_primary_sql_parses_and_executes(provider: str, seeded_pc_db: ReadOnlyDB) -> None:
+def test_live_sql_capabilities(provider: str, seeded_pc_db: ReadOnlyDB) -> None:
+    """All three SQL thresholds off ONE sampled sweep (Session 218).
+
+    Was two tests. They each paid for their own ``generate_primary_queries``
+    calls over the same corpus — and the QC one built its client *without*
+    ``sql_dialect`` (Session 217 fixed only the parse/exec test), so it measured
+    the pre-fix prompt while its sibling measured the fixed one. Sharing
+    ``sweep_sql_capabilities`` with ``shadow_run`` removes both the duplicated
+    spend and the seam where the two loops disagreed.
+    """
     # ``sql_dialect`` comes from the fixture DB, not a literal: the client must be
     # told the dialect its SQL is executed against, or this measures dialect
     # mismatch rather than SQL quality (Session 216 / Session 217).
@@ -123,31 +127,28 @@ def test_live_primary_sql_parses_and_executes(provider: str, seeded_pc_db: ReadO
         model=provider_eval_model(provider),
         sql_dialect=seeded_pc_db.dialect,
     )
-    inventory = pc_inventory_from_db(seeded_pc_db)
-    parse_results: list[bool] = []
-    exec_results: list[bool] = []
-    for case in load_sql_cases():
-        if case.kind != "primary":
-            continue
-        specs = client.generate_primary_queries(case.request, data_source_inventory=inventory)
-        for spec in specs:
-            parse_results.append(sql_parse_valid(spec.sql))
-            exec_results.append(sql_executes(seeded_pc_db, spec.sql))
-    assert pass_rate("sql_parse", parse_results).meets(thresholds.SQL_PARSE_VALID_MIN)
-    assert pass_rate("sql_exec", exec_results).meets(thresholds.SQL_EXECUTABLE_MIN)
-
-
-@pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
-def test_live_quality_checks_structural(provider: str) -> None:
-    client = make_data_client(provider, model=provider_eval_model(provider))
-    ok: list[bool] = []
-    for case in load_sql_cases():
-        if case.kind != "primary":
-            continue
-        specs = client.generate_primary_queries(case.request)
-        qc_lists = client.generate_quality_checks(case.request, specs)
-        ok.append(quality_checks_structural_ok(len(specs), qc_lists))
-    assert pass_rate("qc_structural", ok).meets(thresholds.QUALITY_CHECKS_STRUCTURAL_MIN)
+    sweep = sweep_sql_capabilities(
+        load_sql_cases(),
+        client,
+        seeded_pc_db,
+        inventory=pc_inventory_from_db(seeded_pc_db),
+    )
+    parse = pass_rate("sql_parse", sweep.parse_results)
+    execs = pass_rate("sql_exec", sweep.exec_results)
+    qc = pass_rate("qc_structural", sweep.qc_results)
+    assert parse.meets(thresholds.SQL_PARSE_VALID_MIN), (
+        f"sql_parse {sum(sweep.parse_results)}/{len(sweep.parse_results)}"
+    )
+    # The denominator is model-chosen (S216 gotcha 2), so the failure message
+    # carries numerator and denominator, plus *why* each query failed — without
+    # which this rate is a single uninterpretable bit (S216 gotcha 3).
+    assert execs.meets(thresholds.SQL_EXECUTABLE_MIN), (
+        f"sql_exec {sum(sweep.exec_results)}/{len(sweep.exec_results)}; "
+        f"errors={sweep.exec_errors}"
+    )
+    assert qc.meets(thresholds.QUALITY_CHECKS_STRUCTURAL_MIN), (
+        f"qc_structural {sum(sweep.qc_results)}/{len(sweep.qc_results)}"
+    )
 
 
 @pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
