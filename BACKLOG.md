@@ -73,16 +73,28 @@ model id (new `provider_eval_model`, threaded through `test_eval_live.py` and `s
 "every evaluated run passes an explicit model" true and discharges Phase 4's "operator names the model to pin"
 pre-flight. Both the spec's §7.4 and its Phase 3 entry carry the correction inline.
 
-**Next session's deliverable is spec Phase 4 — the live shadow run + cutover decision. It is operator-gated and
-cannot start without two answers.** (a) **§11 Q2 — which vendor to measure first?** A non-Anthropic model is the
-only choice that delivers the model-family diversification `AI-Dependencies.md` §6.7 still names as missing; an
-Anthropic model isolates the transport change and makes a cleaner A/B. This is a measurement-design call the spec
-has no preference on. (b) **The model id to pin**, which becomes `OPENCODE_EVAL_MODEL`. Also needed: credentials
-for whichever vendor is chosen, configured in the operator's own OpenCode config (this project reads none). The
-run must report **cost per interview** alongside quality — the adapter carries a constant ~4,830-token scaffold
-per call (spec risk #12) that no §3.4 threshold can see. **No cutover on an unmet or unmeasured threshold**; that
-rule is encoded in `evaluate_cutover` and must not be relaxed to produce a green report. Spec §11 Q1
-(`DEFAULT_MODEL` shipped as `None`) remains open and is reversible in one line.
+**Phase 3b (unplanned — the eval harness could not drive the provider at all) is DONE (Session 215, 2026-08-01)**
+— `a0c3930`. Phase 4 was blocked and nobody knew, because the live tier skips so no test could see it. The
+stakeholder simulator reached through to `intake_client._client.messages.create`, which for this provider is the
+`_UNUSED_SDK_CLIENT` placeholder that raises by design; the resulting bare `AttributeError` is not in
+`interview_sweep._TRANSIENT_ERRORS`, so a shadow run would have **billed ~31 live calls and then aborted with no
+report**, leaving `interview_convergence` and `interview_premature` unmeasurable. A second defect on the same path
+would have run the simulated-stakeholder half of every interview on **no model** while the interviewer half ran
+pinned. Fixed with a transport-shape-resolved `TextCompleter` seam; no production code touched; +11 hermetic
+tests. Gate: **1121 passed + 12 live-skipped @ 97.79%**, mypy and ruff clean. See `CHANGELOG.md`'s 2026-08-01
+entry and spec §9 Phase 3b.
+
+**Next session's deliverable is spec Phase 4 — the live shadow run + cutover decision. It is operator-gated.**
+**§11 Q2 is now ANSWERED (operator, 2026-08-01): measure an Anthropic model through `opencode` first** — holding
+the model constant makes the A/B against the recorded baseline isolate the transport change, which is what tests
+risk #1 (quality degrading under the D2 prompt-role fold); a simultaneous model-family change would confound it.
+The non-Anthropic run that delivers `AI-Dependencies.md` §6.7's diversification is a **second** measurement, after
+the adapter is cleared. **Still needed live at that session's start:** the **model id to pin** (it becomes
+`OPENCODE_EVAL_MODEL`) and credentials for that vendor, configured in the operator's own OpenCode config — this
+project reads none. The run must report **cost per interview** alongside quality — the adapter carries a constant
+~4,830-token scaffold per call (spec risk #12) that no §3.4 threshold can see. **No cutover on an unmet or
+unmeasured threshold**; that rule is encoded in `evaluate_cutover` and must not be relaxed to produce a green
+report. Spec §11 Q1 (`DEFAULT_MODEL` shipped as `None`) remains open and is reversible in one line.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 

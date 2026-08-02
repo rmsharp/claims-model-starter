@@ -545,10 +545,44 @@ Probe set (run each with the prompt on stdin, `--dir` a temp dir):
 **DONE looks like:** `pytest -m 'not live'` green offline; the live tier auto-skips `opencode` when the binary is absent; the wiki pages describe a shipped provider; `PHASE_E_AGREEMENT_REPORT.md` lists `opencode` with all thresholds PENDING.
 **Session boundary:** one session. Close out.
 
+### Phase 3b — Eval-harness transport gap (Session 215, 2026-08-01) — ✅ **DONE**
+
+**Not in the original phase list.** Phase 4's pre-flight below listed the binary, the credentials and the pinned
+model — but never *"the eval harness can actually drive this provider."* Nobody had checked, because the live tier
+skips, so no test could see it. Session 215 checked before spending, and it could not.
+
+**The defect.** `tests/eval/stakeholder_sim.py` reached through to `intake_client._client.messages.create(...)`,
+assuming every provider is SDK-backed. `OpenCodeLLMClient` sets `_client` to the `_UNUSED_SDK_CLIENT` placeholder
+whose `__getattr__` raises (D5, and `test_opencode_client.py` pins it) — so the simulator died with a bare
+`AttributeError`, which is **not** in `interview_sweep._TRANSIENT_ERRORS` and therefore **aborted the whole run**
+instead of being retried. `measure_provider` orders governance → sql → interview, so Phase 4 would have **billed
+~31 `opencode` calls and then crashed with no report**. Two of the eight gate keys (`interview_convergence`,
+`interview_premature`) were unmeasurable for this provider.
+
+**Second defect, same path.** `shadow_run.py` and `test_eval_live.py` both called `stakeholder_simulator_for(...)`
+with **no `model=`**, so the *simulated stakeholder* half of every interview would have run unpinned — and for this
+provider unpinned means no `--model` flag at all (D6's `DEFAULT_MODEL = None`) — while the interviewer half ran on
+the pinned model. Two model tiers in one measured conversation, invisible in the report.
+
+**The fix.** A provider-agnostic `TextCompleter` seam (`(system, user) -> str`), resolved per **transport shape**
+rather than per provider name: the client's own `_run` for subprocess transports, a closure over `messages.create`
+for SDK ones. A client with neither shape now raises `TypeError` at *construction* — deliberately not
+`StakeholderSimError`, which the sweep would retry-then-exclude, converting an untaught-provider bug into a
+silently empty result set. The pinned model is threaded to both halves at both call sites. **No production code
+changed** — the `_UNUSED_SDK_CLIENT` guard that made this loud is untouched.
+
+**Verification:** +11 tests, all hermetic (the end-to-end case drives the *real* client through the committed
+`tests/fixtures/opencode/success_with_agent.jsonl` with a stubbed runner — no binary, no network, no spend). The
+five pre-existing simulator tests pass **unmodified**, which is the evidence that SDK-provider behaviour is
+unchanged and the recorded `anthropic` baseline stays valid. Gate: **1121 passed + 12 live-skipped @ 97.79%**,
+mypy and ruff clean.
+
 ### Phase 4 — Live shadow run + cutover decision (operator-gated)
 
 **Work.** Run the golden corpus against `opencode` with an explicitly pinned model, side by side with the `anthropic` baseline; fill the §3.4 thresholds; produce the go/no-go.
-**Pre-flight:** Phases 1-3 merged; the binary installed; credentials for whichever underlying vendor is being measured; **the operator names the model to pin**.
+**Pre-flight:** Phases 1-3 merged; **Phase 3b merged** (without it the run aborts mid-way, after billing); the binary installed; credentials for whichever underlying vendor is being measured; **the operator names the model to pin**.
+> **§11 Q2 answered by the operator (2026-08-01): measure an *Anthropic* model through `opencode` first** — it holds the model constant so the A/B against the recorded baseline actually isolates the transport change, which is what tests risk #1 (quality degrading under the D2 prompt-role fold). The non-Anthropic run that delivers `AI-Dependencies.md` §6.7's model-family diversification follows once the adapter itself is cleared.
+> **Before spending, re-run the cheap pre-flight Session 215 wishes had existed:** build the simulator for the provider and resolve its completer (no process spawn, no cost). If that raises, the sweep will abort mid-run.
 **DONE looks like:** every threshold has a measured number and a verdict; the recommendation follows the numbers. **No cutover on an unmet or unmeasured threshold.**
 **Session boundary:** one session. Close out. Flipping any production default is a separate, operator-gated action.
 
@@ -567,6 +601,7 @@ Probe set (run each with the prompt on stdin, `--dir` a temp dir):
 
 1. **`DEFAULT_MODEL = None`, or pin a verified id?** (§4.6.) `None` maximises portability and defers to the operator's own OpenCode config; a pinned id maximises reproducibility. The spec recommends `None` **plus** a mandatory explicit model for every evaluated run. This is a reversible one-line decision either way.
 2. **Which underlying vendor should the first measured run target?** Choosing a non-Anthropic model is the only way this adapter delivers the *model-family* diversification `AI-Dependencies.md` §6.7 says is still missing; choosing Anthropic isolates the transport change from the model change and makes the eval a cleaner A/B. The spec has no preference — it is a measurement-design call.
+   > ✅ **RESOLVED (operator, 2026-08-01): Anthropic first.** Holding the model constant is what makes the first run a test of *the adapter* — risk #1 is that the D2 prompt-role fold degrades quality, and a simultaneous model-family change would confound it beyond diagnosis. The non-Anthropic run that discharges §6.7 is a **second** measurement, once the transport is cleared. Q1 (`DEFAULT_MODEL = None`) stays open and is unaffected.
 3. **How does `opencode` get installed in the enterprise environment?** Internal npm mirror, vendored binary, or container base image. This connects directly to `docs/planning/enterprise-migration.md` Phase C3 and to the `CIHostConfig` work from Session 205.
    **⚠ Sharpened by Phase 1 (Appendix A.4 C6): this is no longer only a packaging question.** OpenCode installs `.opencode/node_modules` into the sandbox at *runtime* whenever an agent definition is present, so it needs **npm-registry reachability from wherever the pipeline runs** — not just at image-build time. An air-gapped runtime would need the sandbox pre-seeded or the registry mirrored.
 4. **Is the credential store at `~/.local/share/opencode/auth.json` acceptable at-rest?** A second on-disk credential location beyond the AWS/Anthropic paths already reviewed.
