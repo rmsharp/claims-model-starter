@@ -7,10 +7,170 @@
 ## ACTIVE TASK
 
 ### What Session 214 Did
-**Deliverable:** Spec Phase 3 — eval wiring (`tests/eval/eval_cutover.py`) + the four-surface documentation
-sweep (`docs/planning/opencode-adapter-spec.md` §7.4 and §9 Phase 3). (IN PROGRESS)
-**Started:** 2026-08-01
-**Status:** Session claimed. Work beginning.
+**Deliverable:** Spec Phase 3 — eval wiring + the documentation sweep (`docs/planning/opencode-adapter-spec.md`
+§7.4 and §9 Phase 3). **COMPLETE.** No live run, no cutover, no production default touched — that is Phase 4,
+which is operator-gated. FM #18 held.
+
+**Started / Completed:** 2026-08-01. **Commits:** `a2da53e` (eval wiring), `7f617ff` (doc sweep — auto-published
+13 pages to the live GitHub Wiki as `41c7f72`), plus this close-out.
+
+**Trigger:** the operator replied "1" to the Phase 0 orientation report, selecting item (1) of the two open items
+— the same one-character selection pattern Sessions 209, 211, 212 and 213 handled. Interpretation was stated back
+before any work began, per Phase 1.
+
+**Workstream:** `docs/methodology/workstreams/DEVELOPMENT_WORKSTREAM.md`, read in full first. Its Phase 2 order
+(read the code you will modify → then the tests → then the docs) is what surfaced the safety defect below before
+a line was written.
+
+#### The one decision that mattered, and it was the operator's
+
+Spec §7.4 says the `opencode` provider is "runnable" iff `shutil.which("opencode") is not None`. **Implementing
+that literally would have been a real defect on this machine.** Session 212 installed the binary globally during
+Phase 1, and `pyproject.toml`'s `addopts` carries **no** `-m 'not live'` — live tests are collected and *run*,
+with only the conftest skip hook between a contributor and a bill. So a binary-only probe would have made every
+bare `uv run pytest -q` here execute four live cases (the convergence sweep alone is hundreds of model calls),
+while CI — which has no binary — still looked hermetic, so nothing would have flagged it.
+
+I stopped and asked via `AskUserQuestion` with three options. The operator chose **binary + `OPENCODE_EVAL_MODEL`**,
+and the same variable carries the pinned model id, threaded to both factories through a new `provider_eval_model`.
+That is not just a safety gate: `DEFAULT_MODEL` is `None` for this provider (spec D6), so D6's standing rule —
+*every evaluated run must pass an explicit model* — was previously unsatisfiable by the eval tier, and now is
+satisfied. It also discharges Phase 4's "the operator names the model to pin" pre-flight with one variable. The
+deviation is recorded inline in the spec's §7.4 **and** its Phase 3 entry, so a reader of either finds it.
+
+#### What shipped
+
+1. **Eval wiring (`a2da53e`)** — `CANDIDATE_PROVIDERS` gains `"opencode"`; new `OPENCODE_MODEL_ENV` and
+   `provider_eval_model`; the two-signal probe; `test_eval_live.py` (4 sites) and `shadow_run.py` (3) pass the
+   pinned model; `conftest.py`, `tests/eval/README.md`, the `live` marker text, and `PHASE_E_AGREEMENT_REPORT.md`
+   updated. **+10 deterministic tests**, every one stubbing *both* signals so no test reads the real `PATH`.
+2. **Doc sweep (`7f617ff`)** — 13 wiki pages plus `README.md`, `OPERATIONS.md`, `.env.example` and the published
+   `docs/tutorial.md`. Three additions the phase list did not ask for but a reader needs: `AI-Dependencies.md`
+   **§6.9** (the risks specific to a subprocess *agent* in the call path), a **non-Python runtime dependency**
+   section in the SBOM (the binary is a real supply-chain dependency `uv.lock` cannot pin), and a **transport
+   override** + CLI-transport recipe in `Extending-the-Pipeline.md` §6, written as obligations rather than
+   description.
+3. **The agreement report lists `opencode` with all eight thresholds PENDING** — the spec's own DONE criterion.
+   `json_parse` is left PENDING rather than pre-filled `1.0`, even though the deterministic parity battery already
+   covers its seams, because one green cell would make the report read as partially measured.
+
+#### The adversarial pass earned its keep — my sweep's scope was wrong
+
+A four-lens verification fan-out (each finding independently refutation-tested) returned **ten defects, and all ten
+held when I re-checked them myself.** The costly class was files **outside `docs/wiki/`**, which my claim-shape
+grep had been scoped to: **`docs/tutorial.md` — the one page `publish-tutorial.yml` actually publishes — still read
+"Two providers ship today"**; `OPERATIONS.md` and `.env.example` enumerated `INTAKE_LLM_PROVIDER` without
+`opencode`. Two more survived *on pages I had already edited* (`Security-Considerations.md`'s env-var table, ~90
+lines from a line I corrected). Also caught: `tests/eval/__init__.py` and a docstring still saying "both
+providers", stale test counts on two more pages, and an off-by-one in my own CHANGELOG entry. All fixed before the
+docs commit; the explainer `.qmd` was corrected **and re-rendered** so its committed PDF does not drift.
+
+**Verification (every command in spec §9 Phase 3's DONE list, all run):** `uv run pytest -q` → **1110 passed + 12
+live-skipped @ 97.79%** (baseline 1100 + 8 @ 97.79%); `-m 'not live'` green; `-m live` collects 12 and skips all 12
+**on a machine where the binary is present**, and the probe flips to runnable the moment the model variable is set
+— the gate was checked in both directions; `uv run mypy` clean (68 files); `uv run ruff check src/ tests/ packages/
+scripts/` clean; the wiki no-line-citation guard green.
+
+### Session 213 Handoff Evaluation (by Session 214)
+
+**Score: 9/10.** A very strong handoff whose gotchas did real work; one point off for a scope framing that, taken
+at face value, would have under-covered the deliverable.
+
+**What helped, specifically:** (1) **Gotcha 2 is the reason this session did not ship a billable test suite.**
+"`shutil.which("opencode")` succeeds on this machine and fails in CI. A test that 'works locally' here is not
+evidence it works in CI" — I read that *before* reading §7.4, so when §7.4 said "gate on `shutil.which`" the
+contradiction was immediate rather than something I might have discovered after committing. That one sentence is
+the highest-value line in the handoff and it changed the deliverable's design. (2) **Gotcha 3** ("do not add
+`opencode` to any live-eval path expecting it to run — Phase 3's job is to make it *skippable* and auto-skipped")
+told me the intent behind §7.4 rather than its letter, which is what let me deviate from the letter confidently.
+(3) **Gotcha 4** (the `DEFAULT_MODEL as OPENCODE_DEFAULT_MODEL` alias, "do not tidy the alias away") pre-empted a
+tidy-up I would plausibly have made while writing the `Extending-the-Pipeline.md` code block — I documented the
+alias *and its reason* instead. (4) The **"What's next"** section named exact line numbers (`eval_cutover.py:36`,
+`:41-60`, `conftest.py:52-54`) and every one was correct, so orientation-to-first-edit was minutes. (5) The
+self-assessment's own **minus list was honest and useful** — "the `"length"` truncation reason is still inferred,
+not observed" is exactly the kind of thing I needed when writing §6.9's schema-stability paragraph.
+
+**What was missing:** one thing, and it is the point I deducted. The handoff (and the spec) framed the doc half as
+**four surfaces**. The honest scope was seventeen files, because shipping a third provider falsifies claims
+anywhere a provider is counted or enumerated — including `docs/tutorial.md`, which `publish-tutorial.yml`
+publishes and which is arguably the most reader-facing document in the repo. Session 213 had no reason to know the
+exact list, but it *did* know it had added a provider, and "grep for every place a provider count appears" is a
+half-line that would have redirected my whole approach. I found nine of those files by claim-shape grep and missed
+three more until an adversarial pass caught them.
+
+**What was wrong:** nothing. Every line number, the `_SEAMS` claim, the twin-drift warning, the fixture-version
+caveat, and the global-install note all held exactly.
+
+**ROI:** high, and concentrated: gotcha 2 alone prevented a defect that would have cost the operator money and
+would not have been caught by CI.
+
+### Phase 3B: Self-assess — Session 214 — 8/10
+
+- **The +:** (1) **Caught the §7.4 hazard before writing code, and escalated it rather than deciding unilaterally**
+  — it changed the operator's own `pytest` cost profile, which is their call, and I gave three options with the
+  trade-offs and a recommendation. (2) **Wired the model id rather than just an on/off flag**, so the opt-in and
+  the reproducibility requirement (D6) are one gesture and cannot drift apart — the cheaper `OPENCODE_EVAL_ENABLE`
+  option would have left D6 unmet and a second variable to invent in Phase 4. (3) **Every new test stubs both
+  signals**, so none of them measure the host; the side-effect-free promise in the probe's docstring is now
+  *enforced* by a test rather than asserted in prose. (4) **Recorded the deviation in two places in the spec**
+  (§7.4 inline **and** the Phase 3 entry), applying the lesson Session 213 taught me about §3.5's un-annotated
+  prose reading as if the original claim held. (5) **Ran an adversarial pass over my own work and acted on all ten
+  findings** after re-verifying each one myself, rather than trusting the agents. (6) Held scope: no live run, no
+  cutover, no `Evolution.md` rewrite, no fixing the wiki `Changelog.md`'s unrelated stale httpx claim.
+- **The −:** (1) **My sweep scope was wrong and an adversarial pass had to correct it.** I grepped for claim
+  shapes — good instinct — but scoped the grep to `docs/wiki/`, so I missed the *published* tutorial, `OPERATIONS.md`
+  and `.env.example`. I should have grepped the repo root with a named exclusion list from the start; that is
+  learning #70 and it cost a full extra verify-and-fix cycle. (2) **I missed two enumerations on pages I had
+  already edited**, because I was hunting prose sentences and these were table cells ~90 lines away. "Re-grep the
+  page you just edited" is a 5-second check I did not do. (3) **I let an off-by-one into my own CHANGELOG entry**
+  ("11 wiki pages" while naming 12) — a number I could have derived from `git diff --name-only` and instead
+  counted by hand. (4) The `Extending-the-Pipeline.md` factory code block is a **paraphrase** of the real branch
+  (line-wrapped, comments trimmed); that matches the block's existing style but it is not byte-identical to the
+  source, and nothing guards it against drift.
+
+**What's next:** **Spec Phase 4 — the live shadow run + cutover decision.** It is **operator-gated and cannot
+start without two answers from the operator, live, at that session's start:** (a) **spec §11 Q2 — which vendor to
+measure first?** A non-Anthropic model is the only choice that delivers the model-family diversification
+`AI-Dependencies.md` §6.7 still names as missing; an Anthropic model isolates the transport change and makes a
+cleaner A/B. The spec has no preference — it is a measurement-design call. (b) **The model id to pin**, which
+becomes `OPENCODE_EVAL_MODEL`. Also needed: credentials for whichever vendor is chosen, configured in the
+operator's own OpenCode config (this project reads none). The run must report **cost per interview** alongside
+quality — the adapter carries a constant ~4,830-token scaffold per call (spec risk #12) that no §3.4 threshold can
+see. **No cutover on an unmet or unmeasured threshold**; that rule is encoded in `evaluate_cutover` and must not be
+relaxed to produce a green report. If the operator is not ready for Phase 4, the other open backlog item
+(enterprise migration — Phase C4 the fork, or C2, both ungated) is the alternative.
+
+**Key files:** `tests/eval/eval_cutover.py` — `CANDIDATE_PROVIDERS`, `OPENCODE_MODEL_ENV`, the two-signal
+`provider_creds_available` branch, and `provider_eval_model`. `tests/eval/test_eval_cutover.py` — the 10 new tests
+(the 4-case probe matrix is the one to read first). `tests/eval/test_eval_live.py` and `tests/eval/shadow_run.py` —
+the model is threaded through `provider_eval_model(provider)` at 4 and 3 construction sites respectively.
+`tests/eval/PHASE_E_AGREEMENT_REPORT.md` — the standing NO-GO, the `opencode` column, and §"How to run the shadow
+run" (the exact command lines Phase 4 needs). `docs/planning/opencode-adapter-spec.md` §7.4 (deviation annotated
+inline) and §9 Phase 4.
+
+**Gotchas:**
+1. **Setting `OPENCODE_EVAL_MODEL` in your shell makes `uv run pytest -q` run the live `opencode` tier and spend
+   money.** That is the intended design — it is the deliberate opt-in — but do not export it in a `.env` or a
+   shell profile "to be ready". Set it inline on the one command that should measure.
+2. **Nothing has ever been measured against this provider.** Do not let a green test suite, a clean skip, or the
+   phrase "the adapter works" become evidence about output quality. Spec risk #1 (parses fine, quality silently
+   degrades under the D2 prompt-role change) is completely untouched.
+3. **The eight §3.4 thresholds are still PROPOSED, and the incumbent itself fails one** (`sql_exec` 60%, gap #4).
+   A Phase 4 report that shows `opencode` "beating" the baseline on a threshold the baseline fails is not a
+   cutover argument. Read `PHASE_E_AGREEMENT_REPORT.md` §"Baseline findings" before interpreting any number.
+4. **Wiki edits auto-publish.** `7f617ff` pushed 13 pages to the live GitHub Wiki (`41c7f72`) via the tracked
+   `post-commit` hook. Any Phase 4 doc edit under `docs/wiki/` will do the same — that is a public write.
+5. **`docs/tutorial.md` is published by `publish-tutorial.yml` and lives outside `docs/wiki/`.** It is the easiest
+   documentation surface in this repo to forget; I did. `enterprise-migration.md`'s mkdocs item still carries two
+   open fixes for it (`:53` stale test count, `:218` broken wiki-relative link) that I deliberately left alone.
+6. **The wiki `Changelog.md` is stale in a way unrelated to this work** — its `[Unreleased]` section still says the
+   httpx adapter migration is "Planned, not executed", which Sessions 191–193 falsified. Out of scope here (that
+   page's cadence is episodic/curated), but it is a real defect someone should schedule.
+7. **The `Extending-the-Pipeline.md` factory code block is a paraphrase**, not a copy, and no test guards it.
+   If the real factory changes shape, that block drifts silently.
+8. **Session state on this provider is written to a machine-global SQLite DB** under `~/.local/share/opencode/`
+   that survives sandbox deletion and holds prompt/response text. A Phase 4 run over the interview corpus will put
+   real fixture transcripts there. Documented in `AI-Dependencies.md` §4.3 and its operator checklist.
 
 ### What Session 213 Did
 **Deliverable:** Spec Phase 2 — `OpenCodeLLMClient` in both packages (intake agent + data-agent wheel), both
