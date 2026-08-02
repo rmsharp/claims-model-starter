@@ -19,12 +19,41 @@ class DBConnectionError(Exception):
     """Raised when the Data Agent cannot reach its database."""
 
 
+def sql_dialect_from_url(url: str) -> str | None:
+    """Return the SQLAlchemy backend name for ``url`` (e.g. ``"sqlite"``).
+
+    The generated SQL has to run on *this* database, so the LLM needs to know
+    which dialect it is writing for. ``make_url`` parses the URL string only —
+    it neither connects nor requires the driver package to be installed, so the
+    dialect is knowable before the first node runs (and even when the DB is
+    unreachable). ``get_backend_name()`` strips any ``+driver`` suffix, so
+    ``postgresql+psycopg://…`` yields ``"postgresql"``, not ``"postgresql+psycopg"``.
+
+    Returns ``None`` for a URL SQLAlchemy cannot parse, so a malformed
+    ``--db-url`` degrades to today's dialect-silent prompt rather than raising
+    here — the URL's real failure surfaces at :meth:`ReadOnlyDB.connect`, which
+    is the error path callers already handle.
+    """
+    try:
+        return str(sa.make_url(url).get_backend_name())
+    except sa.exc.ArgumentError:
+        return None
+
+
 class ReadOnlyDB:
     """Thin SQLAlchemy wrapper used by EXECUTE_QC."""
 
     def __init__(self, url: str) -> None:
         self.url = url
         self._engine: sa.Engine | None = None
+
+    @property
+    def dialect(self) -> str | None:
+        """The SQL dialect of this database, or ``None`` if the URL is unparseable.
+
+        Available before :meth:`connect` — see :func:`sql_dialect_from_url`.
+        """
+        return sql_dialect_from_url(self.url)
 
     def connect(self) -> None:
         """Open the engine and round-trip ``SELECT 1`` to prove reachability."""

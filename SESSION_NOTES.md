@@ -6,6 +6,17 @@
 
 ## ACTIVE TASK
 
+### What Session 217 Did
+**Deliverable:** Fix the `sql_exec` metric — the one Phase E threshold blocking `opencode`'s cutover, which
+Session 216 diagnosed as a SQL *dialect* mismatch that fails the incumbent too. (IN PROGRESS)
+**Started:** 2026-08-02
+**Status:** Session claimed. Work in progress. Operator selected option 1 of Session 216's two "what's next"
+options, then chose the scope after the Phase 2 inventory: **candidate fix A — dialect-aware prompt**
+(thread the configured DB's dialect into the data agent's three SQL-emitting prompts, production *and* eval),
+**not** the warehouse-target-DB alternative. Verification scope: full deterministic suite at $0 **plus a cheap
+live probe** (~6 calls, `anthropic` only, ~$0.30) to show generated SQL actually becomes executable. **No full
+re-measure, no cutover re-scoring, no threshold change** — those stay a separate session.
+
 ### What Session 216 Did
 **Deliverable:** **Spec Phase 4 — the first live measurement of the `opencode` provider, and the cutover
 decision. COMPLETE. Verdict: NO-GO; `anthropic` stays primary.** No production default changed, no `src/`

@@ -41,6 +41,7 @@ def make_llm_client(
     provider: str = "anthropic",
     *,
     model: str | None = None,
+    sql_dialect: str | None = None,
 ) -> LLMClient:
     """Construct the concrete :class:`LLMClient` for ``provider``.
 
@@ -51,6 +52,14 @@ def make_llm_client(
 
     ``model`` is forwarded to the concrete client; when ``None`` (the default)
     the provider's own default model is used.
+
+    ``sql_dialect`` names the dialect the generated SQL must execute on (e.g.
+    ``"sqlite"``, ``"postgresql"``). Callers that have a database URL should
+    derive it with
+    :func:`model_project_constructor_data_agent.db.sql_dialect_from_url` rather
+    than hardcoding a string, so the prompt cannot drift from the database the
+    SQL actually runs against. ``None`` (the default) leaves the dialect
+    unstated — the pre-dialect behaviour.
     """
     if provider == "anthropic":
         # Lazy import so this module — and the package __init__ that re-exports
@@ -61,7 +70,9 @@ def make_llm_client(
             AnthropicLLMClient,
         )
 
-        return AnthropicLLMClient(model=DEFAULT_MODEL if model is None else model)
+        return AnthropicLLMClient(
+            model=DEFAULT_MODEL if model is None else model, sql_dialect=sql_dialect
+        )
     if provider == "bedrock":
         # Lazy import (same rationale as the anthropic branch): keep this module
         # SDK-free at import time. ``BedrockLLMClient`` is the anthropic client
@@ -71,7 +82,9 @@ def make_llm_client(
             BedrockLLMClient,
         )
 
-        return BedrockLLMClient(model=DEFAULT_MODEL if model is None else model)
+        return BedrockLLMClient(
+            model=DEFAULT_MODEL if model is None else model, sql_dialect=sql_dialect
+        )
     if provider == "opencode":
         # Lazy import for consistency with the branches above — this client
         # imports no SDK at all (stdlib only), but the convention is what
@@ -90,7 +103,10 @@ def make_llm_client(
             OpenCodeLLMClient,
         )
 
-        return OpenCodeLLMClient(model=OPENCODE_DEFAULT_MODEL if model is None else model)
+        return OpenCodeLLMClient(
+            model=OPENCODE_DEFAULT_MODEL if model is None else model,
+            sql_dialect=sql_dialect,
+        )
     raise ValueError(
         f"Unknown LLM provider {provider!r}. "
         f"Known providers: {', '.join(KNOWN_PROVIDERS)}."

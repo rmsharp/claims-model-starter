@@ -17,6 +17,16 @@ Design notes:
 - The default model is ``claude-sonnet-4-6`` (fast, cost-effective for SQL
   authoring). Callers can override via the ``model`` argument.
 
+- The optional ``sql_dialect`` argument names the dialect the generated SQL
+  must run on. It is injected into the system string of every SQL-emitting
+  method by :func:`_dialect_note`. Without it the model is left to guess, and
+  it guesses *warehouse* SQL — the Session 216 eval found every execution
+  failure on every provider was an unsupported-function error (``DATEDIFF``,
+  ``PERCENTILE_CONT … WITHIN GROUP``, ``MEDIAN``) against the SQLite target,
+  not a modelling mistake. Callers derive it from their own database URL via
+  :func:`model_project_constructor_data_agent.db.sql_dialect_from_url`;
+  ``None`` (the default) reproduces the pre-dialect prompt byte for byte.
+
 - Parsing is defensive: Claude sometimes wraps JSON in ``` ```json ... ``` ```
   code fences, sometimes with surrounding prose. :func:`_extract_json` tries
   a bare parse first (fast path for clean JSON) and falls back to a
@@ -65,6 +75,24 @@ DEFAULT_MAX_TOKENS = 16384
 
 MAX_INVENTORY_ENTRIES_IN_PROMPT = 20
 MAX_INVENTORY_FIELD_CHARS = 2000
+
+
+def _dialect_note(dialect: str | None) -> str:
+    """Render the target-SQL-dialect instruction, or ``""`` when unknown.
+
+    Appended to the *system* string of every SQL-emitting method. Returning the
+    empty string for ``None`` is load-bearing: a caller that never configured a
+    database gets a prompt byte-identical to the pre-dialect one, so this is
+    strictly additive (pinned by ``test_dialect_absent_leaves_prompt_unchanged``).
+    """
+    if not dialect:
+        return ""
+    return (
+        f"\n\nTarget SQL dialect: {dialect}. The SQL you return is executed "
+        f"verbatim against a {dialect} database, so use only functions, "
+        f"operators and syntax that {dialect} supports. Do not use constructs "
+        "borrowed from other dialects."
+    )
 
 # The expected_row_count_order enumeration offered in generate_primary_queries'
 # prompt is single-sourced from its schema Literal (schemas.RowCountOrder), so the
@@ -121,6 +149,8 @@ class AnthropicLLMClient:
         client: Any | None = None,
         model: str = DEFAULT_MODEL,
         max_tokens: int = DEFAULT_MAX_TOKENS,
+        *,
+        sql_dialect: str | None = None,
     ) -> None:
         if client is None:
             import anthropic
@@ -129,6 +159,7 @@ class AnthropicLLMClient:
         self._client = client
         self._model = model
         self._max_tokens = max_tokens
+        self._sql_dialect = sql_dialect
 
     def generate_primary_queries(
         self,
@@ -151,6 +182,7 @@ class AnthropicLLMClient:
             "You are a senior P&C insurance data analyst. Given a data "
             "collection request, return one or more primary SQL queries that "
             "extract the target population. Always return valid SELECT SQL."
+            + _dialect_note(self._sql_dialect)
         )
         user = (
             f"DataRequest:\n{_dump_request(request)}{retry_hint}{inventory_hint}\n\n"
@@ -189,6 +221,7 @@ class AnthropicLLMClient:
             "You are a senior P&C insurance data analyst. For each primary "
             "query, write quality-check SQL that verifies assumptions about "
             "row counts, non-null keys, and value ranges."
+            + _dialect_note(self._sql_dialect)
         )
         queries_block = "\n".join(
             f"[{i}] name={q.name} purpose={q.purpose}\nSQL:\n{q.sql}"
@@ -301,6 +334,7 @@ class AnthropicLLMClient:
             "SELECT query that computes the scalar baseline value for the "
             "current state of the business. Return ONE row whose FIRST "
             "column is the scalar value."
+            + _dialect_note(self._sql_dialect)
         )
         user = (
             f"DataRequest:\n{_dump_request(request)}\n\n"

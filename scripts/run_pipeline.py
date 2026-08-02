@@ -155,16 +155,25 @@ def build_data_runner(*, llm_mode: str, db_url: str | None, model: str, provider
     In "data" or "both" mode, binds a real
     ``DataAgent(make_llm_client(provider, model=model), db)`` to its ``.run``
     method, which already matches the ``DataRunner`` shape.
+
+    The client is told which SQL dialect to write for, derived from ``db_url``
+    so the prompt cannot drift from the database the SQL is executed against.
+    With no ``--db-url`` there is no target to name and the dialect stays
+    unstated (the pre-dialect prompt).
     """
     if llm_mode == "none":
         data = load_data_fixture()
         return lambda _req: data
 
     from model_project_constructor_data_agent.agent import DataAgent
-    from model_project_constructor_data_agent.db import ReadOnlyDB
+    from model_project_constructor_data_agent.db import ReadOnlyDB, sql_dialect_from_url
     from model_project_constructor_data_agent.factory import make_llm_client
 
-    llm = make_llm_client(provider, model=model)
+    llm = make_llm_client(
+        provider,
+        model=model,
+        sql_dialect=sql_dialect_from_url(db_url) if db_url else None,
+    )
     db = ReadOnlyDB(db_url) if db_url else None
     return DataAgent(llm=llm, db=db).run
 

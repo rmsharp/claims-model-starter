@@ -21,6 +21,7 @@ from model_project_constructor_data_agent.anthropic_client import (
     AnthropicLLMClient,
     LLMParseError,
     _build_inventory_block,
+    _dialect_note,
     _dump_request,
     _extract_json,
     _sanitize_prompt_field,
@@ -920,3 +921,152 @@ class TestStatisticalTermsNoteInjection:
 
         system = msgs.calls[0]["system"]
         assert self._GLOSSARY_PATH not in system
+
+
+class TestSqlDialect:
+    """The target-SQL-dialect instruction (Session 217).
+
+    Session 216 measured ``sql_exec`` at 42.9% (opencode) / 60.0% (anthropic)
+    and diagnosed every failure on both providers as the same thing: the model
+    writes competent *warehouse* SQL (``DATEDIFF``, ``PERCENTILE_CONT … WITHIN
+    GROUP``, ``MEDIAN``) while the eval executes it on SQLite, because nothing
+    in the prompt named the dialect. These tests pin the fix at the seam where
+    it is injected.
+    """
+
+    #: Every method that emits SQL the caller will execute. ``summarize``,
+    #: ``generate_datasheet`` and ``rank_candidate_tables`` are deliberately
+    #: absent — they produce prose or scores, never SQL.
+    SQL_EMITTING = ("primary", "quality_checks", "baseline")
+
+    @staticmethod
+    def _invoke(client: AnthropicLLMClient, which: str, request: DataRequest) -> None:
+        if which == "primary":
+            client.generate_primary_queries(request)
+        elif which == "quality_checks":
+            client.generate_quality_checks(request, [])
+        elif which == "baseline":
+            client.generate_baseline_query(request, "rate", "a/b", "trailing 12 months")
+        else:  # pragma: no cover - guards a typo in the parametrization
+            raise AssertionError(f"unknown method key {which!r}")
+
+    @staticmethod
+    def _canned(which: str) -> str:
+        if which == "primary":
+            return (
+                '[{"name": "q", "sql": "SELECT 1",'
+                ' "purpose": "x", "expected_row_count_order": "tens"}]'
+            )
+        if which == "quality_checks":
+            return "[]"
+        return '{"metric_name": "rate", "sql": "SELECT 1", "measurement_unit": "ratio"}'
+
+    @pytest.mark.parametrize("which", SQL_EMITTING)
+    def test_dialect_named_in_every_sql_emitting_prompt(
+        self, which: str, request_obj: DataRequest
+    ) -> None:
+        fake, msgs = _fake_client([self._canned(which)])
+        client = AnthropicLLMClient(
+            client=fake, model="fake-model", sql_dialect="sqlite"
+        )
+
+        self._invoke(client, which, request_obj)
+
+        system = msgs.calls[0]["system"]
+        assert "Target SQL dialect: sqlite." in system
+        assert "only functions, operators and syntax that sqlite supports" in system
+
+    @pytest.mark.parametrize("which", SQL_EMITTING)
+    def test_absent_dialect_leaves_prompt_byte_identical(
+        self, which: str, request_obj: DataRequest
+    ) -> None:
+        """``sql_dialect=None`` must reproduce the pre-dialect prompt exactly.
+
+        Asserted as an equality against the *reconstructed* dialect prompt, not
+        merely as a substring absence: this proves the note is the ONLY
+        difference between the two prompts, so the feature is strictly additive
+        for every caller that never configured a database.
+        """
+        fake_none, msgs_none = _fake_client([self._canned(which)])
+        self._invoke(
+            AnthropicLLMClient(client=fake_none, model="fake-model"),
+            which,
+            request_obj,
+        )
+        fake_pg, msgs_pg = _fake_client([self._canned(which)])
+        self._invoke(
+            AnthropicLLMClient(
+                client=fake_pg, model="fake-model", sql_dialect="postgresql"
+            ),
+            which,
+            request_obj,
+        )
+
+        silent = msgs_none.calls[0]["system"]
+        assert "dialect" not in silent.lower()
+        assert silent + _dialect_note("postgresql") == msgs_pg.calls[0]["system"]
+        # The user message carries the request payload, never the dialect note.
+        assert msgs_none.calls[0]["messages"] == msgs_pg.calls[0]["messages"]
+
+    @pytest.mark.parametrize(
+        "which", ["summarize", "datasheet", "rank"]
+    )
+    def test_prose_and_scoring_surfaces_never_mention_dialect(
+        self, which: str, request_obj: DataRequest
+    ) -> None:
+        """Only SQL-emitting methods carry the note.
+
+        A dialect instruction on a prose surface would waste tokens and invite
+        the model to editorialize about SQL in a datasheet or summary.
+        """
+        canned = {
+            "summarize": (
+                '{"summary": "s", "confirmed_expectations": [],'
+                ' "unconfirmed_expectations": [], "data_quality_concerns": []}'
+            ),
+            "datasheet": (
+                '{"motivation": "m", "composition": "c", "collection_process": "cp",'
+                ' "preprocessing": "p", "uses": "u", "known_biases": [],'
+                ' "maintenance": "mt"}'
+            ),
+            "rank": (
+                '[{"fully_qualified_name": "public.claims",'
+                ' "relevance_score": 0.5, "relevance_reason": "x"}]'
+            ),
+        }[which]
+        fake, msgs = _fake_client([canned])
+        client = AnthropicLLMClient(
+            client=fake, model="fake-model", sql_dialect="sqlite"
+        )
+        spec = PrimaryQuerySpec(
+            name="q", sql="SELECT 1", purpose="x", expected_row_count_order="tens"
+        )
+
+        if which == "summarize":
+            client.summarize(request_obj, [spec], [], db_executed=True)
+        elif which == "datasheet":
+            client.generate_datasheet(request_obj, spec)
+        else:
+            client.rank_candidate_tables(entries=_sample_entries()[:1], request_context="x")
+
+        assert "Target SQL dialect" not in msgs.calls[0]["system"]
+
+    def test_default_is_dialect_silent(self) -> None:
+        """Constructing without the keyword must not opt a caller in."""
+        fake, _ = _fake_client([])
+        assert AnthropicLLMClient(client=fake, model="fake-model")._sql_dialect is None
+
+    @pytest.mark.parametrize("falsy", [None, ""])
+    def test_note_is_empty_for_falsy_dialect(self, falsy: str | None) -> None:
+        """An empty string is treated as "unknown", not as a dialect named "".
+
+        ``sql_dialect_from_url`` returns ``None`` for an unparseable URL, but a
+        caller threading a config value could hand through ``""``; emitting
+        "Target SQL dialect: ." would be worse than staying silent.
+        """
+        assert _dialect_note(falsy) == ""
+
+    def test_note_is_non_empty_and_leading_separated_for_a_real_dialect(self) -> None:
+        note = _dialect_note("sqlite")
+        assert note.startswith("\n\n"), "note must not run into the preceding sentence"
+        assert "sqlite" in note

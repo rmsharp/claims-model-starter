@@ -219,3 +219,26 @@ def test_explicit_require_sigv4_false_overrides_env_var(
 
     monkeypatch.setattr(anthropic, "AnthropicBedrockMantle", _FakeMantle)
     BedrockLLMClient(require_sigv4=False)  # must not raise
+
+
+def test_forwards_sql_dialect_to_the_inherited_prompt_builder() -> None:
+    """The dialect must survive the subclass constructor (Session 217).
+
+    ``BedrockLLMClient`` re-declares ``__init__`` and calls ``super().__init__``
+    with explicit keywords, so a new base-class keyword is silently dropped
+    unless it is forwarded — and the drop would be invisible: the prompt would
+    still build, still parse, and only the SQL executability rate would move.
+    """
+    fake = _FakeAnthropic(
+        [
+            '[{"name": "q", "sql": "SELECT 1", "purpose": "x",'
+            ' "expected_row_count_order": "tens"}]'
+        ]
+    )
+    client = BedrockLLMClient(client=fake, sql_dialect="postgresql")
+
+    assert client._sql_dialect == "postgresql"
+
+
+def test_sql_dialect_defaults_to_none() -> None:
+    assert BedrockLLMClient(client=_FakeAnthropic([]))._sql_dialect is None

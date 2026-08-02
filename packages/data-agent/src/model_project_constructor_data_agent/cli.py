@@ -117,8 +117,17 @@ def run(
 ) -> None:
     """Run the Data Agent end-to-end on a request and write a DataReport."""
     request_obj = _load_request(request)
-    llm = _build_llm(fake_llm=fake_llm, provider=provider, model=model)
     db = ReadOnlyDB(db_url) if db_url else None
+    # The SQL is executed verbatim against this database, so tell the model which
+    # dialect to write for. Derived from the URL (no connection needed) rather
+    # than configured separately, so prompt and target cannot drift apart. With
+    # no --db-url there is no target to name and the dialect stays unstated.
+    llm = _build_llm(
+        fake_llm=fake_llm,
+        provider=provider,
+        model=model,
+        sql_dialect=db.dialect if db is not None else None,
+    )
 
     try:
         agent = DataAgent(llm=llm, db=db)
@@ -210,10 +219,12 @@ def _load_request(path: Path) -> DataRequest:
     return DataRequest.model_validate(data)
 
 
-def _build_llm(*, fake_llm: bool, provider: str, model: str) -> LLMClient:
+def _build_llm(
+    *, fake_llm: bool, provider: str, model: str, sql_dialect: str | None = None
+) -> LLMClient:
     if fake_llm:
         return _FakeCLIClient()
-    return make_llm_client(provider, model=model)
+    return make_llm_client(provider, model=model, sql_dialect=sql_dialect)
 
 
 class _FakeCLIClient:

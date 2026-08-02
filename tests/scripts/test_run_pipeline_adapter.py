@@ -158,6 +158,48 @@ def test_build_data_runner_data_mode_routes_through_factory(
     assert _RecordingDataLLM.last_model == "claude-test-model"
 
 
+@pytest.mark.parametrize(
+    ("db_url", "expected_dialect"),
+    [
+        ("sqlite:///:memory:", "sqlite"),
+        ("postgresql+psycopg://user:pw@warehouse.internal/claims", "postgresql"),
+        (None, None),
+    ],
+)
+def test_build_data_runner_derives_sql_dialect_from_db_url(
+    run_pipeline_module, monkeypatch, db_url, expected_dialect
+):
+    """The pipeline runner names the dialect of the DB it hands the agent.
+
+    Derived from ``--db-url`` rather than configured separately (Session 217), so
+    the prompt and the execution target cannot disagree. ``None`` when no DB is
+    supplied: on that path the SQL is never executed, so naming a dialect would
+    assert something about a database the caller never provided.
+
+    The Postgres case is deliberately an unreachable host — dialect derivation is
+    URL parsing only, so it must not require a connection or an installed driver.
+    """
+
+    class _RecordingDataLLM:
+        last_dialect: str | None = "<unset>"
+
+        def __init__(self, **kwargs):
+            type(self).last_dialect = kwargs.get("sql_dialect")
+
+    import model_project_constructor_data_agent.anthropic_client as ac_mod
+
+    monkeypatch.setattr(ac_mod, "AnthropicLLMClient", _RecordingDataLLM)
+
+    run_pipeline_module.build_data_runner(
+        llm_mode="data",
+        db_url=db_url,
+        model="claude-test-model",
+        provider="anthropic",
+    )
+
+    assert _RecordingDataLLM.last_dialect == expected_dialect
+
+
 def test_build_data_runner_unknown_provider_raises(run_pipeline_module):
     """An unknown --provider surfaces the factory's ValueError (proves routing)."""
     with pytest.raises(ValueError, match="bogus"):

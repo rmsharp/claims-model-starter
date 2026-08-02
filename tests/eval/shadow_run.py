@@ -84,7 +84,13 @@ def measure_provider(
     """Measure ``provider``'s §3.4 pass-rates over the Phase B corpus (live)."""
     model = provider_eval_model(provider)
     intake = make_intake_client(provider, model=model)
-    data = make_data_client(provider, model=model)
+    # The measured SQL is executed against ``db``, so the client is told that
+    # database's dialect — derived from ``db`` itself, never hardcoded, so the
+    # prompt cannot drift from the execution target. Without it the models write
+    # warehouse SQL (DATEDIFF, PERCENTILE_CONT ... WITHIN GROUP, MEDIAN) that no
+    # SQLite target can run, and ``sql_exec`` measures the harness rather than
+    # the provider — the Session 216 diagnosis.
+    data = make_data_client(provider, model=model, sql_dialect=db.dialect)
     inventory = pc_inventory_from_db(db)
 
     # governance (S173 faithfulness fix): the two labels are scored separately.

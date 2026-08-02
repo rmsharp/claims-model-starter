@@ -333,3 +333,82 @@ def test_cli_discover_unreachable_db_errors(runner: CliRunner, tmp_path: Path) -
     )
     assert result.exit_code != 0
     assert not out.exists()
+
+
+def test_cli_derives_sql_dialect_from_db_url(
+    runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``--db-url`` must reach the prompt as a dialect (Session 217).
+
+    The CLI is the seam where the execution target becomes known, so it is where
+    the target must be named. Deriving it here — rather than accepting a
+    separate flag — is what makes it impossible to point the agent at Postgres
+    while telling the model to write SQLite.
+    """
+    import model_project_constructor_data_agent.cli as cli_mod
+
+    recorded: dict[str, object] = {}
+
+    def _fake_factory(provider: str, **kwargs: object) -> object:
+        recorded.update(kwargs)
+        return cli_mod._FakeCLIClient()
+
+    monkeypatch.setattr(cli_mod, "make_llm_client", _fake_factory)
+
+    db_path = tmp_path / "smoke.db"
+    engine = sa.create_engine(f"sqlite:///{db_path}")
+    try:
+        with engine.begin() as conn:
+            conn.execute(sa.text("CREATE TABLE claims (id INTEGER PRIMARY KEY)"))
+    finally:
+        engine.dispose()
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--request",
+            str(FIXTURE_REQUEST),
+            "--output",
+            str(tmp_path / "report.json"),
+            "--db-url",
+            f"sqlite:///{db_path}",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert recorded["sql_dialect"] == "sqlite"
+
+
+def test_cli_leaves_dialect_unset_without_a_db(
+    runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No ``--db-url`` ⇒ no execution target ⇒ nothing to name.
+
+    Guessing a dialect here would be worse than silence: the SQL is not executed
+    at all on this path (the SKIP_EXECUTION off-ramp), so any named dialect would
+    be an unfounded claim about a database the caller never supplied.
+    """
+    import model_project_constructor_data_agent.cli as cli_mod
+
+    recorded: dict[str, object] = {}
+
+    def _fake_factory(provider: str, **kwargs: object) -> object:
+        recorded.update(kwargs)
+        return cli_mod._FakeCLIClient()
+
+    monkeypatch.setattr(cli_mod, "make_llm_client", _fake_factory)
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--request",
+            str(FIXTURE_REQUEST),
+            "--output",
+            str(tmp_path / "report.json"),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert recorded["sql_dialect"] is None

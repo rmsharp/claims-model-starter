@@ -206,3 +206,40 @@ def test_factory_import_does_not_load_anthropic() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert "sdk-free" in result.stdout
+
+
+def test_sql_dialect_defaults_to_none(_stub_anthropic: object) -> None:
+    """Omitting the keyword must not opt any caller into a dialect."""
+    assert make_llm_client("anthropic")._sql_dialect is None  # type: ignore[union-attr]
+
+
+def test_sql_dialect_is_plumbed_through_anthropic(_stub_anthropic: object) -> None:
+    client = make_llm_client("anthropic", sql_dialect="sqlite")
+    assert client._sql_dialect == "sqlite"  # type: ignore[union-attr]
+
+
+def test_sql_dialect_is_plumbed_through_bedrock(_stub_bedrock: object) -> None:
+    client = make_llm_client("bedrock", sql_dialect="postgresql")
+    assert client._sql_dialect == "postgresql"  # type: ignore[union-attr]
+
+
+def test_sql_dialect_is_plumbed_through_opencode(_stub_opencode_binary: None) -> None:
+    client = make_llm_client("opencode", sql_dialect="snowflake")
+    assert client._sql_dialect == "snowflake"  # type: ignore[union-attr]
+
+
+@pytest.mark.parametrize("provider", KNOWN_PROVIDERS)
+def test_every_known_provider_accepts_sql_dialect(
+    provider: str,
+    _stub_anthropic: object,
+    _stub_bedrock: object,
+    _stub_opencode_binary: None,
+) -> None:
+    """Parametrized over the Literal so a fourth provider cannot silently skip it.
+
+    Adding a branch to ``make_llm_client`` that forgets ``sql_dialect=`` would
+    ship a provider whose SQL is dialect-blind while every other provider's is
+    not — exactly the kind of per-provider drift the shared-prompt design exists
+    to prevent.
+    """
+    assert make_llm_client(provider, sql_dialect="sqlite")._sql_dialect == "sqlite"  # type: ignore[union-attr]

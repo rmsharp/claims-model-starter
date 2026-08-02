@@ -518,3 +518,18 @@ def test_close_does_not_delete_a_caller_supplied_workdir(tmp_path: Path) -> None
     client._call_claude("sys", "user")
     client.close()
     assert tmp_path.exists()
+
+
+def test_forwards_sql_dialect_to_the_inherited_prompt_builder() -> None:
+    """The dialect must survive the subclass constructor (Session 217).
+
+    Same hazard as ``BedrockLLMClient``: this class re-declares ``__init__`` and
+    calls ``super().__init__`` with explicit keywords, so an unforwarded new
+    keyword degrades silently to the dialect-blind prompt.
+    """
+    client = _client(_FakeRunner(), sql_dialect="sqlite")
+    assert client._sql_dialect == "sqlite"
+
+
+def test_sql_dialect_defaults_to_none() -> None:
+    assert _client(_FakeRunner())._sql_dialect is None

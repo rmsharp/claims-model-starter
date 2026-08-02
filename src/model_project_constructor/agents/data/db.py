@@ -5,6 +5,10 @@ still works after the Phase 2B restructure. Canonical source:
 ``packages/data-agent/src/model_project_constructor_data_agent/db.py``.
 """
 
-from model_project_constructor_data_agent.db import DBConnectionError, ReadOnlyDB
+from model_project_constructor_data_agent.db import (
+    DBConnectionError,
+    ReadOnlyDB,
+    sql_dialect_from_url,
+)
 
-__all__ = ["DBConnectionError", "ReadOnlyDB"]
+__all__ = ["DBConnectionError", "ReadOnlyDB", "sql_dialect_from_url"]

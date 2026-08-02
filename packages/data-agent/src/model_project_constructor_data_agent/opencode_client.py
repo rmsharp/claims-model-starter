@@ -200,6 +200,7 @@ class OpenCodeLLMClient(AnthropicLLMClient):
         workdir: str | None = None,
         timeout: float = DEFAULT_TIMEOUT_S,
         runner: Runner | None = None,
+        sql_dialect: str | None = None,
     ) -> None:
         if shutil.which(executable) is None:
             raise LLMParseError(
@@ -210,6 +211,7 @@ class OpenCodeLLMClient(AnthropicLLMClient):
             client=_UNUSED_SDK_CLIENT,
             model=model or _NO_MODEL,
             max_tokens=max_tokens,
+            sql_dialect=sql_dialect,
         )
         self._executable = executable
         self._agent_name = agent_name

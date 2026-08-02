@@ -104,6 +104,7 @@ class BedrockLLMClient(AnthropicLLMClient):
         base_url: str | None = None,
         http_client: Any | None = None,
         require_sigv4: bool | None = None,
+        sql_dialect: str | None = None,
     ) -> None:
         if client is None:
             # Lazy import so the factory / package __init__ stay SDK-free at
@@ -139,4 +140,6 @@ class BedrockLLMClient(AnthropicLLMClient):
             if http_client is not None:
                 kwargs["http_client"] = http_client
             client = anthropic.AnthropicBedrockMantle(**kwargs)
-        super().__init__(client=client, model=model, max_tokens=max_tokens)
+        super().__init__(
+            client=client, model=model, max_tokens=max_tokens, sql_dialect=sql_dialect
+        )

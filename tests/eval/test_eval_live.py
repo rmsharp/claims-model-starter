@@ -115,7 +115,14 @@ def test_live_governance_cycle_time_agreement_and_no_laxer_miss(provider: str) -
 
 @pytest.mark.parametrize("provider", SHADOW_PROVIDERS)
 def test_live_primary_sql_parses_and_executes(provider: str, seeded_pc_db: ReadOnlyDB) -> None:
-    client = make_data_client(provider, model=provider_eval_model(provider))
+    # ``sql_dialect`` comes from the fixture DB, not a literal: the client must be
+    # told the dialect its SQL is executed against, or this measures dialect
+    # mismatch rather than SQL quality (Session 216 / Session 217).
+    client = make_data_client(
+        provider,
+        model=provider_eval_model(provider),
+        sql_dialect=seeded_pc_db.dialect,
+    )
     inventory = pc_inventory_from_db(seeded_pc_db)
     parse_results: list[bool] = []
     exec_results: list[bool] = []
