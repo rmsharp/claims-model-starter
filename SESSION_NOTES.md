@@ -6,6 +6,209 @@
 
 ## ACTIVE TASK
 
+### What Session 220 Did
+**Deliverable:** **The `opencode` SQL-block variance probe. COMPLETE. The transient that produced the
+S219 NO-GO did NOT reproduce in 45 fresh samples; all three failing cells measure 100% at a 3.4× larger
+denominator.** **The recorded verdict was deliberately NOT re-scored — `opencode` stays NO-GO.**
+**No harness change, no threshold change, no production default change.**
+
+**Started / Completed:** 2026-08-02. **Commits:** this close-out (documentation-only — see "No CHANGELOG
+entry" below). **Trigger:** the operator asked what open item #1 actually proposed, then chose "run probe
+1st" — S219's "what's next" option 2.
+
+**Workstream:** `docs/methodology/workstreams/AUDIT_WORKSTREAM.md` — measurement against a fixed standard,
+as for S216/S218/S219. Its Phase 2 order (define criteria → inventory scope → **read the implementation** →
+challenge scope) is what produced the A-vs-B fork below: reading `sql_sweep.py` and `interview_sweep.py`
+side by side is what showed the two modules argue *opposite* rationales for the same failure class.
+
+#### The result
+
+| repeat | `sql_parse` | `sql_exec` | `qc_structural` | transients | calls | cost | wall |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 35/35 | 35/35 | 15/15 | 0 | 30 | $1.779 | 17.8 min |
+| 2 | 33/33 | 33/33 | 15/15 | 0 | 30 | $1.788 | 19.5 min |
+| 3 | 34/34 | 34/34 | 15/15 | 0 | 30 | $1.773 | 16.1 min |
+| **pooled** | **102/102 = 100%** | **102/102 = 100%** | **45/45 = 100%** | **0** | **90** | **$5.341** | **53.4 min** |
+
+**Zero transients in 45 samples.** Rule of three bounds the per-sample rate at **≤6.7% (95% confidence)** —
+exactly the rate S219 observed at 1/15. Pooled across both sessions: **1 event in 60 samples (1.7%)**.
+So a **~1-in-60 blip decided a recorded cutover verdict.** That is an argument *for* the retry-asymmetry
+fix, not against it.
+
+#### What was deliberately NOT done
+
+**The verdict was not re-scored.** Three of eight cells is a diagnostic, not a gate run — S217's own
+precedent (*"the probe is a diagnostic, not a re-score"*). A 100%/100%/100% result on precisely the cells
+that failed is the most tempting possible moment to flip a verdict, and flipping it from a partial sweep
+is how a gate stops being a gate. **`opencode` remains NO-GO. Do not quote this section as a GO.**
+
+#### ⚠ The probe could NOT attribute the S219 event — half its purpose went unmet
+
+It was instrumented specifically to capture `str(exc)`, which `sql_sweep.py:146-148` discards (it logs
+`type(exc).__name__` only), so a recurrence could be traced to one of the nine `LLMParseError` raise
+sites. **No recurrence ⇒ no attribution.** Whether S219's event was transport (timeout / spawn / non-zero
+exit / no-assistant-text) or genuine malformed JSON is **still unknown** — and that is exactly the
+distinction the retry fix's design fork turns on. I framed the probe as able to resolve that fork; it could
+only ever have done so on a recurrence, and I should have said so up front.
+
+#### Two findings filed in `BACKLOG.md`
+
+1. **An unset `ANTHROPIC_API_KEY` scores as 45 model-quality failures.** The first probe attempt returned
+   **0/45 on all three thresholds in 36 s at $0**. Cause: `opencode auth list` holds **0 credentials**, and
+   the client shells out with **no `env=`** (`opencode_client.py:174`), so `ANTHROPIC_API_KEY` from `.env`
+   is the only way an `anthropic/…` model authenticates. Unauthenticated it exits 1 with
+   `UnknownError: Unexpected server error … (ref=…)` — naming neither auth nor the variable. The harness
+   scores that **identically** to a provider that cannot write SQL.
+2. **The retry-asymmetry item now carries the probe data and an explicit A-vs-B implementation fork**
+   (retry the whole `LLMParseError` class, mirroring `interview_sweep`, vs. retry only the transport subset
+   and keep real JSON-parse failures as misses — the latter needs new exception subtypes in **shipped**
+   `packages/` code). `sql_sweep.py:38-43` argues for today's behaviour **deliberately**, so the fix
+   overturns a documented decision; the rationale is that the exception type is too coarse to carry the
+   policy, not that S218 was careless.
+
+#### Cost model corrected
+
+**The SQL block costs $0.0593/call — 1.9× `opencode`'s global mean of $0.0318.** Nobody had isolated this
+before. Estimating SQL-block spend from the global mean understates it by ~47%. Also: **SQL-block latency
+p50 27.7 s, p90 62.6 s, max 233.6 s**, against S219's whole-corpus p50 7.7 s / max 129.1 s — the tail lives
+in this block, and its max is **1.8× the worst figure S219 recorded**. No §3.4 threshold can see it.
+
+**Spend: $5.341 against a ~$3 estimate (78% over).** The void first run cost $0. Both the 3-repeat scope
+and the overrun were put to the operator with costed options — the overrun mid-run, at repeat 1, before the
+remaining two-thirds were spent.
+
+### Session 219 Handoff Evaluation (by Session 220)
+
+**Score: 8/10.** The best pre-designed experiment any handoff in this series has left: option 2 specified
+the scope, the repeats, *and what each outcome would mean* before I read a line of code. Marked down for a
+cost/time estimate that was wrong by 5-7× on wall clock, and two omissions that each cost real time.
+
+**What helped:** (1) **Option 2 as a designed experiment**, not a suggestion — "re-run the SQL block alone
+two or three times… if it never recurs, the finding is 'one transient decided a gate'; if it recurs at
+~1-in-15, that is a provider-reliability signal in its own right." That is the deliverable, pre-specified,
+including the interpretation of both branches. (2) **Key files naming `sql_sweep.py:144-153` and
+`interview_sweep.py:82-87,152-180` with "diff these two."** Doing exactly that is what surfaced the A-vs-B
+fork and the fact that the two modules argue opposite rationales — the single most useful thing I learned.
+(3) **The scratchpad pointer to `full_sweep.py`** — it survived, and I reused its `Meter` and
+`install_opencode_meter` verbatim. Saved ~20 minutes and a class of metering bugs. (4) **Gotcha 8
+(`last_usage["cost"]`)** meant the meter was right on the first try; the $0.0593/call finding exists
+because of it. (5) **Gotcha 6 (`PYTHONPATH=.`)** — correct, applied from the first command. (6) **Gotchas 1
+and 2** ("do not quote the GO"; "equally, do not quote the NO-GO as a quality finding") kept me from
+mis-stating the verdict in *either* direction — load-bearing, because my result is exactly the kind that
+invites a premature re-score.
+
+**What was wrong:** **option 2's estimate, "~$1, ~7 min."** Actual: **$1.78 and 17.8 min per repeat**, and
+option 2 called for two or three of them — so **$3.6–5.3 and 36–53 min**, 5-7× the quoted wall time. The
+error was applying `opencode`'s whole-corpus p50 (7.7 s) to a block whose calls are the heavy ones, when
+S218 had **directly measured this same block at 16.8 min**. S219 had diagnosed that exact confusion in
+S218's "2× slower" claim *in the same document*, then reproduced it in its own recommendation. It
+propagated into my quote to the operator before I caught it.
+
+**What was missing:** (a) **No pointer that an `opencode` run needs `.env` sourced.** Gotcha 5 discusses
+`.env` and says what it does *not* supply, while S219's own driver docstring shows
+`set -a && . ./.env && set +a` applied to **both** stages. One clause — "the CLI has no stored credentials;
+it inherits `ANTHROPIC_API_KEY`" — would have prevented a void run. This is the same shape as the omission
+S219 docked S218 for. (b) **No pointer that `sql_sweep.py` logs only the exception type and discards the
+message.** S219 quoted that WARN line verbatim in three documents and never noted that it cannot attribute
+the failure — the single most important fact for the successor task, found only by reading the source.
+
+**ROI: high.** The pre-designed experiment and the reusable metered driver were worth more than the wrong
+estimate cost.
+
+### Phase 3B: Self-assess — Session 220 — 8/10
+
+- **The +:** (1) **Caught S219's estimate error before spending** and re-quoted to the operator, rather
+  than inheriting it — the exact failure S219 committed against S218. (2) **Self-tested the instrument at
+  $0 (14/14) before spending**, including a *transparency* check proving the observer changes nothing the
+  sweep sees, so these numbers are comparable with S219's. (3) **Did not touch the committed sweep** — the
+  probe observes by wrapping the runner, so `sweep_sql_capabilities` ran exactly as the gate runs it.
+  (4) **Refused to re-score the verdict** on a result that invites it — the most important call in the
+  session and the tempting one to get wrong. (5) **Surfaced the 78% cost overrun mid-run, at repeat 1**,
+  with options, instead of continuing silently or quietly truncating to 2. (6) **Converted the void run
+  into a filed finding** — it cost $0 and produced the auth-diagnosability defect. (7) **Asserted a
+  stray-SDK meter at 0**, so "nothing billed a second provider" is measured rather than assumed.
+- **The −:** (1) **The void run was my error** — I inferred from S219's gotcha 5 that `.env` was
+  *unnecessary*, when the gotcha only said what `.env` does not supply, and S219's own driver docstring
+  showed the opposite. The correct information was in a file I had already read. (2) **I repeated the
+  estimate error I had just corrected**: fixed S219's latency-from-global-mean, then projected *cost* from
+  the global mean and came in 78% over. Caught at repeat 1, not before spending. (3) **I over-promised the
+  attribution.** I told the operator the probe "answers the A-vs-B fork that item #1 cannot currently
+  answer" — true only on a recurrence. A null result was always the likely branch and I should have said
+  what it would and would not settle. (4) **No `anthropic` control arm.** ~$0.5 would have said whether the
+  1-in-60 is provider-specific; S219's 0/15 is a weak existing control and I never considered adding one.
+  (5) **Polled the background run four times** when the completion notification alone was sufficient; two
+  of those checks returned nothing new.
+
+**No CHANGELOG entry, deliberately.** `docs/methodology/PROJECT_CONVENTIONS.md` §2 gates an entry on
+changing shipped code (`src/`, `packages/`, `scripts/`) or `tests/` **test logic**. This session changed
+neither — the probe driver is scratch-only and nothing under `tests/` was modified. ⚠ **The convention vs.
+precedent conflict S219 flagged is still unresolved** (S216 was measurement-only and *does* carry an
+entry). Second session running to follow the written rule. Still worth an operator ruling.
+
+**What's next — five options, all ungated:**
+
+1. **Fix the SQL/QC retry asymmetry** (`BACKLOG.md`). **Recommended** — the probe was explicitly its
+   precondition, and the item now carries the 1-in-60 rate plus the A-vs-B fork spelled out. **Read the
+   fork before coding: A is a pure test-harness change; B needs new exception subtypes in shipped
+   `packages/` code.** Add `{exc}` to `sql_sweep.py`'s two `notify(...)` calls as part of it, so the next
+   occurrence is self-attributing — this session proved that gap is real. **Thresholds must not move.**
+   The `opencode` re-measure that follows is a *separate* session (~$16.4, ~130 min).
+2. **Bundle the auth-diagnosability defect with option 1** — same class (the harness cannot distinguish a
+   seam failure from a quality failure), and both touch the same two `notify` lines.
+3. **`tests/eval/README.md` drift** — now unfixed for a **sixth** session. **Verified this session, and the
+   precise locations differ from how S219 described them:** `:49` is the heading
+   *"## Live baseline (measured — harness not yet trustworthy)"*, false since S219 closed that arc
+   (`anthropic` now clears all eight); `:51-52` still says the live Anthropic baseline "were deferred (no
+   credentials)", stale since S165; and the paragraph at `:86` says the §3.4 thresholds "remain
+   **proposed**" and lists **SQL executability** and gap #1b among harness fixes not yet landed — SQL
+   executability landed S217/S218. Cheap, $0.
+4. **`sql_dialect_from_url` `ValueError` on a non-numeric port** — one-line fix + regression test, hits two
+   production seams (`cli.py:129`, `scripts/run_pipeline.py:175`). Filed S218, still open.
+5. **Enterprise migration** — C4 (the fork) or C2, both ungated. C4 needs D9/D5/D4/D8/D16 from the operator
+   live at session start.
+
+**Key files:**
+- `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 220" — the numbers, what they establish, and
+  the four things they do **not**. **Read before quoting any verdict.** Header provenance list at `:12-21`
+  updated to include S220.
+- `tests/eval/sql_sweep.py:144-153` (primary-query handler) **and `:163-171` (the QC handler — the BACKLOG
+  entry named only the first; both need the fix)**. `:38-43` is the docstring that argues for today's
+  behaviour deliberately.
+- `tests/eval/interview_sweep.py:82-87,152-180` — the sibling that retries. Diff against the above.
+- `tests/eval/eval_thresholds.py:25` (`SQL_PARSE_VALID_MIN = 1.00`), `:36`
+  (`QUALITY_CHECKS_STRUCTURAL_MIN = 1.00`), `:26` (`SQL_EXECUTABLE_MIN = 0.95`). **Do not lower them.**
+- `packages/data-agent/src/model_project_constructor_data_agent/opencode_client.py:174` — the
+  `subprocess.run(argv, **kwargs)` with no `env=`. Why `.env` is load-bearing.
+- `BACKLOG.md` §"The SQL/QC sweep does not retry transients" (updated) and §"An unset `ANTHROPIC_API_KEY`
+  scores as 45 model-quality failures" (new).
+- Scratch, not committed: `…/29b217be-…/scratchpad/probe.py` (the driver — 14 self-tests at `selftest`,
+  observer + meters), `probe_result.json` (raw record, 45 samples), `probe_result_VOID_noauth.json` (the
+  void run, kept as the evidence for finding 1), `probe.log`.
+- S219's scratch driver survives at `…/16073e42-…/scratchpad/full_sweep.py` with `result_opencode.json` /
+  `result_anthropic.json`. **Reusable — do not rebuild the meters.**
+
+**Gotchas:**
+1. **Do not quote S220 as a GO.** Three of eight cells is a diagnostic. **The recorded verdict is NO-GO**,
+   unchanged since S219. (S219 gotchas 1 and 2 both still apply verbatim.)
+2. **Source `.env` for any `opencode` run** — `set -a && . ./.env && set +a`. The CLI holds **0 stored
+   credentials** and inherits `ANTHROPIC_API_KEY` from the parent environment. Without it you get 0/45 on
+   every SQL threshold in 36 s at $0, and the error message names neither auth nor the variable.
+   **This corrects the reading S219's gotcha 5 invites** — that gotcha is true about what `.env` does *not*
+   supply, and says nothing about whether it is needed.
+3. **`OPENCODE_EVAL_MODEL=anthropic/claude-sonnet-4-6` inline, plus `PYTHONPATH=.`** (S219 gotchas 5, 6 —
+   re-verified; both still correct).
+4. **Cost the SQL block at $0.0593/call, not the $0.0318 global mean.** 30 calls per 5-sample sweep ≈
+   **$1.78 and ~18 min**. Do not project block cost or latency from a whole-run figure — the blocks are not
+   alike (learning #89).
+5. **Before believing any live rate, check calls > 0 and spend > 0.** A 0% across every threshold at
+   implausible speed is an environment failure, not a quality finding (learning #91).
+6. **The S219 transient is still unattributed** — no recurrence in 45 samples, so nobody knows which of the
+   nine raise sites fired. Do not assume it was malformed JSON; the same type covers timeout and spawn
+   failure.
+7. **Background runs survive past the documented 600000 ms `Bash` ceiling** (S219 gotcha 7, re-confirmed —
+   a 53-min run completed under `run_in_background`, and the completion notification fired reliably on both
+   the successful run *and* the failed one).
+
 ### What Session 219 Did
 **Deliverable:** **The first full eight-cell same-session sweep. COMPLETE. `opencode` flips GO → NO-GO;
 the incumbent `anthropic` clears all eight for the first time.** **No production default changed, no

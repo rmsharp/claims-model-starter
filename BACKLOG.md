@@ -209,6 +209,34 @@ and recovered (100%); the SQL one was scored as three failures and **produced th
 `sql_parse` 29/30, `qc_structural` 14/15 — while every query and QC list the provider actually produced
 was valid (29/29 parse, 29/29 executable, 14/14 QC).
 
+**Quantified by the Session 220 variance probe: the deciding event is a ~1-in-60.** Three unmodified
+`sweep_sql_capabilities` runs against live `opencode` (45 samples, 90 calls, $5.34, 53 min) hit **zero**
+transients and scored **`sql_parse` 102/102, `sql_exec` 102/102, `qc_structural` 45/45 — 100% on all
+three**. Rule of three bounds the per-sample rate at **≤6.7% (95%)**; pooled with S219 it is **1 event in
+60 samples**. So a 1-in-60 blip decided a recorded cutover verdict, which is the argument for this item
+rather than against it. **The verdict was deliberately NOT re-scored** (three of eight cells; S217's
+"a probe is a diagnostic, not a re-score" precedent). See `tests/eval/PHASE_E_AGREEMENT_REPORT.md`
+§"Update — Session 220".
+
+⚠ **The probe could not attribute the S219 event, because it never recurred.** It was instrumented to
+capture `str(exc)` (which `sql_sweep.py:146-148` discards, logging only the type) precisely so a
+recurrence could be traced to one of the nine `LLMParseError` raise sites. **Whoever implements this fix
+still does not know whether S219's event was transport (timeout/spawn/exit) or genuine malformed JSON** —
+and that is exactly the distinction the A-vs-B design choice below turns on. Cheapest way to close it:
+add `{exc}` to the two `notify(...)` calls as part of the fix, so the next occurrence is self-attributing.
+
+**Two ways to implement it — this is a real fork, not a detail.** `LLMParseError` is raised at nine sites
+covering five conditions (spawn failure / non-zero exit / timeout / no-assistant-text / malformed JSON —
+the adapter spec's error-mapping table), and `IntakeLLMError` is its structural twin in the intake package
+for the same five. **(A)** Retry the whole class, mirroring `interview_sweep` exactly: pure test-harness
+change, matches the S169 precedent, but converts a genuine "model emits garbage JSON three times running"
+into an exclusion. **(B)** Retry only the transport/process subset and keep real JSON-parse failures as
+misses: says what is actually meant, but the exception type cannot distinguish them today, so it needs new
+exception subtypes in **shipped** `packages/` code (or fragile message-sniffing) and implicitly reopens
+gap #1c on the interview side. Note `sql_sweep.py:38-43` argues for today's behaviour **deliberately** —
+so this item overturns a documented decision, and the rationale is that *the exception type is too coarse
+to carry the policy*, not that S218 was careless.
+
 **Fixing it is a harness change that will move a recorded verdict, so it must be its own session, and the
 thresholds must not move with it.** Give `sweep_sql_capabilities` the `interview_sweep` treatment: a
 `_TRANSIENT_ERRORS` tuple, bounded retries, exclude-with-note on exhaustion, and an `excluded_transient`
@@ -217,6 +245,34 @@ Then re-measure `opencode` — a GO produced by the fixed harness would be the f
 same-session cells *and* symmetric retry policy. **Do not lower `SQL_PARSE_VALID_MIN` or
 `QUALITY_CHECKS_STRUCTURAL_MIN`** — three sessions running have refused to calibrate a bar to a number,
 and this is a denominator/policy defect, not a bar that is too strict (learning #82).
+
+### An unset `ANTHROPIC_API_KEY` scores as 45 model-quality failures (`opencode` diagnosability)
+
+**Found Session 220**, cost $0 to find and voided one probe run; **filed, not fixed** — that session was
+measurement-only. Not a blocker: every committed live path already sources `.env`.
+
+Running the SQL sweep against `opencode` **without `ANTHROPIC_API_KEY` in the environment** returns
+**0/45 on `sql_parse`, `sql_exec` and `qc_structural` in 36 seconds at $0**, with every sample logging
+`LLMParseError on primary queries -> parse+exec+qc fail`. Three facts combine:
+
+1. `opencode auth list` reports **0 stored credentials** — the CLI has no auth of its own here.
+2. `packages/data-agent/.../opencode_client.py:174` shells out via `subprocess.run(argv, **kwargs)` with
+   **no `env=`**, so the child inherits the parent environment; `ANTHROPIC_API_KEY` is the only way an
+   `anthropic/…` model authenticates.
+3. Unauthenticated, the CLI exits 1 with
+   `UnknownError: Unexpected server error. Check server logs for details. (ref=…)` — **a message that
+   names neither auth nor the missing variable**, and which reads like a provider-side outage.
+
+**Why it matters:** a misconfigured environment and a provider that genuinely cannot write SQL produce
+**the same 0% on the same three gate keys**, and the fast-and-free signature (36 s, $0, 45/45) is only
+obvious if someone thinks to check call count and spend. This is the same diagnosability class as the
+retry-asymmetry item above — the harness cannot tell a seam failure from a quality failure — and the two
+should probably be fixed together.
+
+**Sketch:** have `OpenCodeLLMClient.__init__` (or the eval credential probe in `tests/eval/`) fail fast
+with a named error when the selected model's provider prefix has neither a stored credential nor the
+corresponding key in the environment. Cheaper interim: add `{exc}` to `sql_sweep.py`'s two `notify(...)`
+calls so the message reaches the log, where `ref=…` at least makes the cause searchable.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 

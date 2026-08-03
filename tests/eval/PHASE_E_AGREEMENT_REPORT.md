@@ -12,10 +12,13 @@ on the Phase B golden corpus, side-by-side with the incumbent.
 - **Candidates:** `bedrock` (AWS Bedrock-hosted Claude, Phase C) and `opencode`
   (the `opencode` CLI as a subprocess transport, `docs/planning/opencode-adapter-spec.md`,
   added as a candidate Session 214). **`opencode` is measured** — Session 216
-  (NO-GO on `sql_exec`), Session 218 (SQL thresholds only → **GO**), and Session
+  (NO-GO on `sql_exec`), Session 218 (SQL thresholds only → **GO**), Session
   219 (**first full eight-cell same-session sweep → back to NO-GO**, failing
-  `sql_parse` and `qc_structural`). **The current verdict is NO-GO; S218's GO did
-  not survive a full sweep.** `bedrock` has never been measured (no AWS
+  `sql_parse` and `qc_structural`), and Session 220 (**targeted variance probe:
+  the failing cells measure 100% over 45 fresh samples and the deciding transient
+  did not reproduce — a diagnostic, not a re-score**). **The current verdict is
+  NO-GO; S218's GO did not survive a full sweep, and S220 did not restore it.**
+  `bedrock` has never been measured (no AWS
   credentials). *This line said "Neither has been measured" until Session 218; it
   had been stale since S216.*
 
@@ -165,6 +168,96 @@ make a bare `uv run pytest -q` there run and bill this tier. The same variable
 supplies the pinned model id (that provider pins no default of its own, spec D6),
 so the Phase 4 pre-flight "the operator names the model to pin" is discharged by
 setting one variable. **Decision stays NO-GO.**
+
+**Update — Session 220 (2026-08-02): targeted variance probe — the transient that produced the S219 NO-GO did NOT reproduce in 45 fresh samples. All three SQL/QC cells measure 100% at a 3.4× larger denominator. This is a DIAGNOSTIC, not a re-score: the recorded verdict stays NO-GO.**
+
+Session 219 concluded that `opencode`'s NO-GO rested on a **single** un-retried
+`LLMParseError` and wrote: *"nobody has checked whether it reproduces."* This is
+that check — S219's "what's next" option 2, chosen by the operator. It ran the
+**unmodified** `sweep_sql_capabilities` three times against live `opencode`.
+
+| repeat | `sql_parse` | `sql_exec` | `qc_structural` | transients | calls | cost | wall |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 35/35 | 35/35 | 15/15 | 0 | 30 | $1.779 | 17.8 min |
+| 2 | 33/33 | 33/33 | 15/15 | 0 | 30 | $1.788 | 19.5 min |
+| 3 | 34/34 | 34/34 | 15/15 | 0 | 30 | $1.773 | 16.1 min |
+| **pooled** | **102/102 = 100%** | **102/102 = 100%** | **45/45 = 100%** | **0** | **90** | **$5.341** | **53.4 min** |
+
+#### What this establishes
+
+1. **The transient did not reproduce: 0 events in 45 samples.** By the rule of
+   three, that bounds the per-sample rate at **≤6.7% with 95% confidence** — which
+   is exactly the rate S219 observed (1/15). Pooling both sessions gives **1 event
+   in 60 samples (1.7%)**. The event is real but rare, and S219's verdict turned on
+   it firing once.
+2. **All three cells clear their bars at the largest denominator ever measured**
+   — 102 query specs against S219's 30 and S218's 34; `qc_structural` over 45
+   samples against S219's 15. `sql_parse` 100% (bar 100%), `sql_exec` 100%
+   (bar 95%), `qc_structural` 100% (bar 100%).
+3. **S217's dialect fix continues to hold, decisively** — 102/102 executable,
+   **zero** execution errors across 45 fresh samples. No `DATEDIFF`,
+   `PERCENTILE_CONT … WITHIN GROUP`, `MEDIAN` or `ILIKE`. This is now the
+   strongest evidence for that fix by a wide margin.
+4. **The SQL block's true per-call cost is $0.0593** — measured over 90/90 priced
+   calls. That is **1.9× `opencode`'s global mean of $0.0318** (S219). Estimating
+   SQL-block spend from the global mean understates it by ~47%; this session did
+   exactly that and came in 78% over its own estimate. **Use $0.059/call for the
+   SQL block.**
+5. **The latency tail is worse than the global figure shows.** SQL-block p50
+   **27.7 s**, p90 **62.6 s**, max **233.6 s** — against S219's whole-corpus p50
+   7.7 s / max 129.1 s. The SQL block is where the tail lives, and its max is
+   **1.8× the worst figure S219 recorded**. Still no §3.4 threshold can see it.
+
+#### What it does NOT establish
+
+1. **The recorded verdict is unchanged. `opencode` stays NO-GO.** This probe
+   measured three of eight cells; a verdict comes from `evaluate_cutover` over a
+   full same-session sweep. Session 217 set this precedent explicitly — *"the probe
+   is a diagnostic, not a re-score"* — and it is followed here. **Nothing in this
+   section should be quoted as a GO.**
+2. **It does not vindicate the harness.** The opposite: it shows a **1-in-60**
+   event decided a recorded cutover verdict. That strengthens, not weakens, the
+   `BACKLOG.md` retry-asymmetry item.
+3. **The attribution question is still open.** The probe was instrumented to
+   capture `str(exc)` — which `sql_sweep.py:146-148` discards, logging only the
+   type — precisely so a recurrence could be traced to one of the nine
+   `LLMParseError` raise sites. **No recurrence, so no attribution.** Whether S219's
+   event was a transport artifact (timeout/spawn/exit) or genuine malformed JSON
+   remains unknown, and that distinction is what the retry-policy fix turns on.
+4. **`anthropic` was not re-probed.** Its S219 SQL/QC cells (18/18, 18/18, 15/15)
+   stand; this probe covers the candidate only.
+
+#### ⚠ New gotcha: an unset `ANTHROPIC_API_KEY` scores as 45 quality failures
+
+The first attempt at this probe returned **0/45 on all three thresholds in 36
+seconds at $0**, with every sample logging
+`LLMParseError on primary queries -> parse+exec+qc fail`. The cause was **not**
+model quality and **not** an outage:
+
+* `opencode auth list` reports **0 stored credentials** on this machine;
+* the client shells out via `subprocess.run(argv, **kwargs)`
+  (`opencode_client.py:174`) with **no `env=`**, so the CLI inherits the parent
+  environment and `ANTHROPIC_API_KEY` from `.env` is the only way it can
+  authenticate an `anthropic/…` model;
+* run without it, every call exits 1 with
+  `UnknownError: Unexpected server error. Check server logs for details. (ref=…)`
+  — a message that names neither auth nor the missing variable.
+
+**The harness scores that identically to catastrophic model failure.** A
+misconfigured environment and a provider that cannot write SQL produce the same
+0% on the same three gate keys. Filed in `BACKLOG.md` as a diagnosability defect;
+not fixed here (measurement-only session). Practical consequence: **source `.env`
+for an `opencode` run.** S219's gotcha 5 says `.env` supplies neither the binary
+nor `OPENCODE_EVAL_MODEL`, which is true — but it is not the same as saying `.env`
+is unnecessary, and reading it that way cost this session a void run.
+
+#### Spend
+
+**$5.341 over 90/90 priced calls, 53.4 min**, against a ~$3 / ~50 min estimate —
+**78% over on cost, on time.** Both the 3-repeat scope and the overrun were put to
+the operator with costed options before and during the run; the void first attempt
+cost $0. Stray Anthropic SDK calls during the run: **0**, asserted by a second
+meter, so nothing billed a second provider.
 
 **Update — Session 219 (2026-08-02): the FIRST full eight-cell same-session sweep. `opencode` flips back GO → NO-GO on `sql_parse` and `qc_structural`. The incumbent `anthropic` clears all eight for the first time. `DEFAULT_LLM_PROVIDER` unchanged.**
 
