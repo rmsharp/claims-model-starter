@@ -189,6 +189,35 @@ exercises the effect of exactly one:
 dialect correctness is unmeasured. Closing either means a new scorer (parse/execute the QC SQL) and, for the
 baseline case, a gate key that does not exist yet — a design change, not a wiring fix.
 
+### The SQL/QC sweep does not retry transients — the interview sweep does (gap #1c, half-applied)
+
+**Found Session 219, and it decided a cutover verdict.** The two live measurement blocks apply opposite
+policies to the same class of failure — a transient malformed/truncated LLM response:
+
+| block | policy on a transient LLM/seam error | effect on the rate |
+| --- | --- | --- |
+| `interview_sweep.py:82-87,152-180` | retry up to 3 attempts, then **exclude** the sample with a logged note | does not count against the rate |
+| `sql_sweep.py:144-153` | **no retry** — record one parse miss + one exec miss + one QC miss, continue | counts as three immediate failures |
+
+Session 169 fixed this for interviews (gap #1c) and the sibling block never got the treatment. Because
+`SQL_PARSE_VALID_MIN` and `QUALITY_CHECKS_STRUCTURAL_MIN` are both **1.00**, a single blip is sufficient
+to fail the gate outright.
+
+**This is not hypothetical.** The Session 219 sweep hit exactly one `LLMParseError`
+(`sql/property_severity[3/5]`) and two transient `IntakeLLMError`s. The interview transients were retried
+and recovered (100%); the SQL one was scored as three failures and **produced the `opencode` NO-GO** —
+`sql_parse` 29/30, `qc_structural` 14/15 — while every query and QC list the provider actually produced
+was valid (29/29 parse, 29/29 executable, 14/14 QC).
+
+**Fixing it is a harness change that will move a recorded verdict, so it must be its own session, and the
+thresholds must not move with it.** Give `sweep_sql_capabilities` the `interview_sweep` treatment: a
+`_TRANSIENT_ERRORS` tuple, bounded retries, exclude-with-note on exhaustion, and an `excluded_transient`
+count on `SqlSweepResult` so exclusions stay visible rather than silently shrinking the denominator.
+Then re-measure `opencode` — a GO produced by the fixed harness would be the first one resting on eight
+same-session cells *and* symmetric retry policy. **Do not lower `SQL_PARSE_VALID_MIN` or
+`QUALITY_CHECKS_STRUCTURAL_MIN`** — three sessions running have refused to calibrate a bar to a number,
+and this is a denominator/policy defect, not a bar that is too strict (learning #82).
+
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 
 Land the `feat/bedrock-mantle-migration` branch on `origin/master`, converge the three

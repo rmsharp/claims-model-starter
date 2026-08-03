@@ -6,6 +6,195 @@
 
 ## ACTIVE TASK
 
+### What Session 219 Did
+**Deliverable:** **The first full eight-cell same-session sweep. COMPLETE. `opencode` flips GO → NO-GO;
+the incumbent `anthropic` clears all eight for the first time.** **No production default changed, no
+threshold changed, no harness changed.**
+
+**Started / Completed:** 2026-08-02. **Commits:** this close-out (documentation-only — see "No CHANGELOG
+entry" below). **Trigger:** the operator agreed to S218's "what's next" option 1, **explicitly limited to
+sub-decision (a), the measurement**; (b), flipping `DEFAULT_LLM_PROVIDER`, was excluded by them and was not
+touched.
+
+**Workstream:** `docs/methodology/workstreams/AUDIT_WORKSTREAM.md` — a quality-gate review against a fixed
+standard. Its Phase 2 order (define criteria → inventory scope → **read the implementation** → challenge
+scope) is what produced both the scope correction and the root-cause diagnosis; the implementation read
+(`sql_sweep.py`) is where the whole finding lives.
+
+#### The result
+
+| provider | scope | calls | wall | cost |
+| --- | --- | --- | --- | --- |
+| `anthropic` (baseline) | governance + SQL/QC fresh; interview carried from **S170** | 55 | 11.3 min | **$0.903** (token-derived, 55/55) |
+| `opencode` (candidate) | **all eight cells fresh** | 515 | 130.5 min | **$16.396** (measured, 515/515) |
+
+**`opencode`: NO-GO** — fails `sql_parse` (96.7%, bar 100%) and `qc_structural` (93.3%, bar 100%).
+**`anthropic`: passes all eight** (governance 25/25, SQL 18/18 parse + 18/18 exec, QC 15/15).
+
+#### ⚠ The NO-GO is one un-retried transient — read this before acting on it
+
+All three sub-threshold numbers come from a **single** logged event:
+`# WARN sql/property_severity[3/5]: LLMParseError on primary queries -> parse+exec+qc fail`.
+`sql_sweep.py:144-153` scores one `LLMParseError` as one parse miss + one exec miss + one QC miss, **with no
+retry**. Back it out and every artifact the provider actually produced was valid: **29/29 parse, 29/29
+executable** (zero execution errors — the S216 dialect failure class is still gone), **14/14 QC**.
+
+The same run hit **two** transient `IntakeLLMError`s in the interview block. Those were **retried and
+recovered**, because `interview_sweep._TRANSIENT_ERRORS` retries up to 3 attempts then *excludes*. So the two
+blocks apply **opposite policies to the same failure class**, and against two zero-tolerance 100% bars one
+blip decides the verdict. This is gap #1c, fixed for interviews at S169 and never applied to the sibling.
+**Filed in `BACKLOG.md`; deliberately NOT fixed here** — a harness change made after seeing a disliked number
+is how a gate stops being a gate (learning #86).
+
+#### What is now settled, and what is not
+
+- **The incumbent passes all eight for the first time**: 5/8 fail (S165) → 3/8 (S170) → 1/8 (S175–S216) →
+  **0/8**, six of eight cells fresh. The harness-trustworthiness arc opened at S165 is closed.
+- **`opencode`'s cost is measured, not estimated**: $16.396 over 515/515 priced calls, read from
+  `last_usage["cost"]` (the `step_finish` event). Mean **$0.0318/call**, vindicating S216's $0.0310 estimate.
+  **S218's ~$1.00 char-derived estimate is superseded**, and its stated reason for it ("no usage is
+  reachable") was wrong — the production client has exposed real cost since S213 (learning #88).
+- **Latency**: `opencode` p50 **7.7 s**, p90 18.9 s, **max 129.1 s**. S218's "2× slower" was an artifact of
+  measuring the SQL block alone (its calls are the heavy ones); across the full corpus `opencode` tracks
+  S216's p50 7.8 s. **The 129 s tail is real and no §3.4 threshold can see it.**
+- **NOT settled — one run per provider.** The verdict now turns on a single stochastic event and nobody has
+  checked whether it reproduces.
+- **NOT settled — `anthropic`'s two interview cells are S170** and have not been re-measured since.
+- **`bedrock` remains PENDING** — no AWS credentials, unchanged since S164.
+
+#### Spend: $17.30 against a ~$16.3 estimate (6% over)
+
+`opencode` issued **515** calls where the S216-derived projection was ~475. Scope was the operator's choice
+from three costed options, put to them **after** I found and corrected my own mis-quote (below).
+
+### Session 218 Handoff Evaluation (by Session 219)
+
+**Score: 8/10.** Strong, and two of its gotchas paid for themselves in the first ten minutes. Marked down for
+one wrong provenance claim, one omission that was the exact structural sibling of the omission S218 itself
+docked S217 for, and a cost figure that propagated into an operator decision before I caught it.
+
+**What helped:** (1) **The six "what this does NOT establish" items, especially #1** — "five of eight cells
+are carried forward; if the cutover is going to be taken, measure all eight in one session." That *is* this
+session; it defined the deliverable precisely and told me exactly which cells were stale. (2) **Gotcha 4 —
+`opencode` needs BOTH `OPENCODE_EVAL_MODEL` and the binary, and `.env` supplies neither, while
+`AWS_BEARER_TOKEN_BEDROCK` cannot accidentally opt `bedrock` in.** Used verbatim on every live command;
+verified true; removed a real wrong-account billing risk. (3) **Gotcha 5 — the scratch driver needs
+`PYTHONPATH=.`** Correct, applied from the first command, saved the predicted round trip. (4) **Key files
+naming `tests/eval/sql_sweep.py` as the new owner of the SQL statistics** — that is exactly where the root
+cause turned out to live; reading it is what produced the diagnosis. (5) **Gotcha 2 — `SQL_EXECUTABLE_MIN` is
+still 0.95 and must not be lowered; if a future run drops below it, the first question is n, not the bar.**
+Load-bearing when my run *did* drop below two bars: it kept me off the thresholds. (Directionally right but
+incomplete — the answer here was neither n nor the bar, it was retry policy.) (6) **Its own self-assessed
+minus #2** ("`opencode`'s cost is still an estimate… I did not reach for the event stream") pointed straight
+at `last_usage` and closed itself in ~10 minutes. Learning #88 exists because S218 wrote its gap down honestly.
+
+**What was wrong:** **the carried-forward provenance.** S218 recorded `interview_convergence` /
+`interview_premature` among cells "carried forward from S216". For `opencode` that is right; for `anthropic`
+it is not — S216 explicitly declined to re-pay the baseline's interview sweep ("at ceiling and stable since
+S170"), so those cells are **S170**, and the agreement-table rows were untagged. A re-measure session depends
+on exactly this kind of provenance claim, and I only caught it by re-reading the record rather than trusting
+the handoff.
+
+**What was missing:** (a) **No pointer that the SQL/QC block has no retry policy.** S218 worked inside
+`sql_sweep.py`, *wrote the docstring for the `LLMParseError` handler*, and did not note that its sibling
+retries while it does not. One line would have let me predict this failure mode before spending $16 — and it
+is precisely the omission S218 docked S217 for ("here is the next task" vs "here is what the next task will
+run into"). (b) **"A full sweep is S216-shaped, ~$14/100 min" is wrong for a full sweep** — S216 never re-paid
+the baseline interview block. I inherited the framing and repeated it to the operator (learning #87).
+
+**ROI:** high. Gotchas 4 and 5 paid immediately; the non-establishments list defined the session.
+
+### Phase 3B: Self-assess — Session 219 — 8.5/10
+
+- **The +:** (1) **Caught my own cost mis-quote before any money moved** and put three costed scopes back to
+  the operator rather than proceeding on a number I no longer believed or silently narrowing the work.
+  (2) **Refused to fix the harness defect that would have restored the GO** — the single most important call
+  in the session, and the tempting one to get wrong. (3) **Diagnosed the failure to one line and proved what
+  it was not**: every artifact the provider produced was valid, so the report says what the number *means*.
+  (4) **Meter self-tested 10/10 at $0 before spending**, replaying the committed fixture through the real
+  client — which is why `opencode`'s cost is a measurement and not a third consecutive estimate.
+  (5) **Verified provenance against the record instead of trusting the handoff**, which found S218's
+  S170-vs-S216 error. (6) **Ran the cheap stage first** to validate the pipeline before the 130-min one.
+  (7) **Armed a watcher that fires on death as well as success** — silence would otherwise have been
+  indistinguishable from progress. (8) **Followed the CHANGELOG convention when it cost me** a finished entry
+  I had already written (below). (9) **Fixed doc drift that would have mis-executed a real cutover** — the
+  `cli.py` row listed one hardcoded provider default where the code has two.
+- **The −:** (1) **I mis-quoted the sweep cost to the operator** (~$14 for a full both-provider sweep) by
+  inheriting S218's framing without checking what S216's $13.99 bought. Caught before spending, but only
+  after it had already informed their choice to proceed. (2) **Still 6% over the corrected estimate** — I
+  projected 475 calls from S216's 451 on a provider whose call count is model-chosen and *known* unstable
+  (learning #74 is about exactly this metric), and added no margin. (3) **One run per provider, again.**
+  Having concluded that the verdict hangs on a single stochastic event, I did not propose the cheap targeted
+  re-run (SQL block only, ~$1, ~7 min) that would have tested whether 29/30 reproduces. That is the obvious
+  next experiment and I left it for my successor instead of costing it out. (4) **I set the `opencode` run's
+  `Bash` timeout to 600000 ms** — below the ~105 min it needed — then armed a watcher to cover a risk I had
+  created myself; the `anthropic` run had 1800000. (5) **Loaded the `Monitor` tool, read its docs, and
+  concluded I did not need it** — that determination was available before loading.
+
+**No CHANGELOG entry, deliberately.** `docs/methodology/PROJECT_CONVENTIONS.md` §2 gates an entry on changing
+shipped code (`src/`, `packages/`, `scripts/`) or `tests/` **test logic**. This session changed neither — only
+markdown. I wrote a full entry, then removed it on reading the convention. ⚠ **Note for a future session:**
+S216 was also measurement-only ("no `src/` change at all") and *does* carry an entry, so the convention and
+the precedent disagree. I followed the written rule. Worth an operator ruling rather than silent drift.
+
+**What's next — four options, all ungated:**
+
+1. **Fix the SQL/QC retry asymmetry, then re-measure** (`BACKLOG.md`, the new item). This is the natural
+   successor and the one this session sets up. Give `sweep_sql_capabilities` the `interview_sweep` treatment
+   (`_TRANSIENT_ERRORS`, bounded retries, exclude-with-note, an `excluded_transient` counter so exclusions
+   stay visible). **Harness change only — the thresholds must not move.** Then re-run `opencode` (~$16.4,
+   ~130 min): a GO from the fixed harness would be the first resting on eight same-session cells *and*
+   symmetric retry policy. ⚠ This changes a recorded verdict, so it must be its own session with the fix and
+   the re-measure clearly separated.
+2. **Cheap variance probe first (~$1, ~7 min).** Before any harness change, re-run the SQL block alone for
+   `opencode` (`sweep_sql_capabilities`, 15 samples) two or three times and see whether the `LLMParseError`
+   reproduces. If it never recurs, the finding is "one transient decided a gate"; if it recurs at ~1-in-15,
+   that is a provider-reliability signal in its own right and worth recording separately. **Recommended
+   before option 1** — it is the measurement my minus #3 says I should have proposed.
+3. **`tests/eval/README.md` drift** — still unfixed for a fifth session, and now wrong in a new way: its
+   line 49 heading and the paragraph at line 86 list "SQL executability" as an outstanding harness fix and
+   `interview_convergence` as not green. Both were already false; the file now also predates a verdict
+   reversal. Cheap, $0.
+4. **Enterprise migration** — C4 (the fork) or C2, both ungated. C4 needs D9/D5/D4/D8/D16 from the operator
+   live at session start.
+
+**Key files:**
+- `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 219" — the numbers, the cause, and what the run
+  does *not* establish. **Read before quoting any verdict.** Agreement table at ~`:457` re-scored with S219
+  provenance; cutover-procedure table at ~`:498` corrected.
+- `tests/eval/sql_sweep.py:144-153` — the no-retry `LLMParseError` handler. **The whole finding.**
+- `tests/eval/interview_sweep.py:82-87,152-180` — the sibling that *does* retry. Diff these two.
+- `tests/eval/eval_thresholds.py:25` (`SQL_PARSE_VALID_MIN = 1.00`) and `:36`
+  (`QUALITY_CHECKS_STRUCTURAL_MIN = 1.00`) — the zero-tolerance bars that turn one transient into a verdict.
+  **Do not lower them.** (`SQL_EXECUTABLE_MIN = 0.95` sits at `:26` and passed at 96.7%.)
+- `BACKLOG.md` §"The SQL/QC sweep does not retry transients" — the filed item, with the fix sketched.
+- Scratch, not committed: `…/scratchpad/full_sweep.py` (metered driver, three stages),
+  `test_meters.py` (10 self-tests, $0), `result_anthropic.json`, `result_opencode.json` (raw records).
+
+**Gotchas:**
+1. **Do not quote "opencode is GO at 8/8" — that verdict is superseded.** S218's GO rested on five S216 cells
+   and did not reproduce. The current verdict is **NO-GO**.
+2. **Equally, do not quote the NO-GO as a quality finding.** Every query and QC list the provider produced was
+   valid. The gate failed on retry policy, not output.
+3. **`SQL_PARSE_VALID_MIN` and `QUALITY_CHECKS_STRUCTURAL_MIN` are both 1.00.** With no retry policy, any
+   transient fails them outright. Four sessions running have refused to lower a bar to make a number; do not
+   be the first.
+4. **`anthropic`'s interview cells are S170, not S216** — S218's handoff says otherwise and is wrong. If you
+   need a fully fresh baseline, that block is ~420 calls and ~$8-9, and nobody has paid it since S170.
+5. **A live `opencode` run needs `OPENCODE_EVAL_MODEL=anthropic/claude-sonnet-4-6` inline plus the binary**;
+   `.env` supplies neither. Sourcing `.env` opts in `anthropic` only and cannot bill the abandoned AWS account.
+   (S218 gotcha 4, re-verified.)
+6. **The scratch driver needs `PYTHONPATH=.`** (S218 gotcha 5, re-verified.)
+7. **`Bash` documents a 600000 ms timeout ceiling.** The 130-min `opencode` run completed anyway under
+   `run_in_background`, so background tasks appear exempt — but I would not rely on it. Arm a watcher that
+   reports **death as well as success**, or the run's silence is unreadable.
+8. **Real `opencode` cost is free to collect** — `OpenCodeLLMClient.last_usage["cost"]` after each `_run`.
+   Do not rebuild a char-derived estimate; S218's stated reason for one was incorrect.
+9. **`origin/master` is 6 commits behind local, 7 once this close-out lands.** Verified with
+   `git log origin/master..HEAD --oneline | wc -l`, not counted by hand. Stale since before S216.
+
+### What Session 218 Did
+
 ### What Session 218 Did
 **Deliverable:** **Re-measured `sql_exec` under Session 217's dialect fix and re-scored the Phase E cutover
 verdict. COMPLETE. Both providers PASS; the `opencode` verdict flips NO-GO → GO.** **No production default

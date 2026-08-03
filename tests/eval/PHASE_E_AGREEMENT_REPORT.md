@@ -11,9 +11,11 @@ on the Phase B golden corpus, side-by-side with the incumbent.
   production default.
 - **Candidates:** `bedrock` (AWS Bedrock-hosted Claude, Phase C) and `opencode`
   (the `opencode` CLI as a subprocess transport, `docs/planning/opencode-adapter-spec.md`,
-  added as a candidate Session 214). **`opencode` is measured** — first in Session
-  216 (NO-GO on `sql_exec`) and re-measured on the SQL thresholds in Session 218,
-  which flipped it to **GO**. `bedrock` has never been measured (no AWS
+  added as a candidate Session 214). **`opencode` is measured** — Session 216
+  (NO-GO on `sql_exec`), Session 218 (SQL thresholds only → **GO**), and Session
+  219 (**first full eight-cell same-session sweep → back to NO-GO**, failing
+  `sql_parse` and `qc_structural`). **The current verdict is NO-GO; S218's GO did
+  not survive a full sweep.** `bedrock` has never been measured (no AWS
   credentials). *This line said "Neither has been measured" until Session 218; it
   had been stale since S216.*
 
@@ -163,6 +165,102 @@ make a bare `uv run pytest -q` there run and bill this tier. The same variable
 supplies the pinned model id (that provider pins no default of its own, spec D6),
 so the Phase 4 pre-flight "the operator names the model to pin" is discharged by
 setting one variable. **Decision stays NO-GO.**
+
+**Update — Session 219 (2026-08-02): the FIRST full eight-cell same-session sweep. `opencode` flips back GO → NO-GO on `sql_parse` and `qc_structural`. The incumbent `anthropic` clears all eight for the first time. `DEFAULT_LLM_PROVIDER` unchanged.**
+
+Session 218 recorded a GO in which five of `opencode`'s eight cells were carried
+forward from S216, and said in this file: *"If the cutover is actually going to be
+taken, re-measure all eight in one session."* This is that session. The answer is
+that **the GO does not survive the re-measure.**
+
+| provider | scope | calls | wall | cost |
+| --- | --- | --- | --- | --- |
+| `anthropic` (baseline) | governance + SQL/QC fresh; interview carried from S170 | 55 | 11.3 min | **$0.903** (token-derived, 55/55) |
+| `opencode` (candidate) | **all eight cells fresh** (governance + SQL/QC + interview) | 515 | 130.5 min | **$16.396** (measured, 515/515) |
+
+#### The verdicts, from the unmodified `evaluate_cutover`
+
+| capability | threshold | `anthropic` | `opencode` |
+| --- | --- | --- | --- |
+| `json_parse` | ≥ 99% | 100% PASS | 100% PASS |
+| `sql_parse` | **≥ 100%** | 100% PASS (18/18) | **96.7% FAIL (29/30)** |
+| `sql_exec` | ≥ 95% | 100% PASS (18/18) | 96.7% PASS (29/30) |
+| `governance_cycle_time` | ≥ 90% | 100% PASS (25/25) | 100% PASS |
+| `governance_laxer_miss` | ≤ 0 | 0 PASS | 0 PASS |
+| `qc_structural` | **≥ 100%** | 100% PASS (15/15) | **93.3% FAIL (14/15)** |
+| `interview_convergence` | ≥ 95% | 100% *(carried, S170)* | 100% PASS |
+| `interview_premature` | ≤ 0 | 0 *(carried, S170)* | 0 PASS |
+
+#### ⚠ The cause is ONE un-retried transient — and it is a harness asymmetry, not model quality
+
+All three failing numbers trace to a **single** event, logged once:
+
+```
+# WARN sql/property_severity[3/5]: LLMParseError on primary queries -> parse+exec+qc fail
+```
+
+`sql_sweep.py:144-153` catches `LLMParseError` and records **one parse miss, one
+exec miss and one QC miss** for that sample, with **no retry**. Back out that one
+synthetic triple and the picture inverts:
+
+* **every SQL query `opencode` actually produced parsed: 29/29**;
+* **every one of them executed: 29/29**, zero execution errors, no `DATEDIFF` /
+  `PERCENTILE_CONT` / `MEDIAN` / `ILIKE` — the S216 dialect failure class is still gone;
+* **every QC list it produced was structurally valid: 14/14.**
+
+The same run hit **two** transient `IntakeLLMError`s in the interview block
+(`subrogation`, `pricing_optimization`). Those were **retried and recovered** —
+`interview_sweep._TRANSIENT_ERRORS` retries up to three attempts and then
+*excludes* the sample rather than scoring it `False`. So the harness applies
+**opposite policies to the same class of failure**: the interview block retries a
+transient LLM/seam error away; the SQL/QC block scores it as three immediate
+failures. Because `sql_parse` and `qc_structural` are **zero-tolerance 100% bars**,
+one blip is sufficient to produce a NO-GO.
+
+This is the same defect class as gap #1c, which Session 169 fixed **for interviews
+only** — the sibling block never got the treatment. Filed in `BACKLOG.md`.
+**It is deliberately NOT fixed here:** this session's deliverable is the
+measurement, and a harness change made *after* seeing a disliked number is how a
+gate stops being a gate. The fix, and the re-measure that follows it, are a
+separate session.
+
+#### What this run DOES establish
+
+1. **The incumbent passes all eight for the first time.** `anthropic` failed 5/8
+   at S165, 3/8 at S170, 1/8 from S175 through S216, and now **0/8** — with six of
+   the eight cells measured fresh today. The harness-trustworthiness arc opened at
+   Session 165 is closed. (The gate scores any provider, so the baseline renders as
+   "GO"; for the incumbent that means *it clears its own quality gate*, **not**
+   "cut over to `anthropic`.")
+2. **`opencode`'s cost is now MEASURED, not estimated** — $16.396 across 515/515
+   calls, read from each call's `step_finish` `cost` via `OpenCodeLLMClient.last_usage`.
+   S218 shipped a ~$1.00 char-derived estimate and flagged that as its own gap; the
+   real figure was reachable from the production client all along (since S213).
+   Mean **$0.0318/call**, which vindicates S216's $0.0310/call estimate.
+3. **Latency: `opencode` p50 7.7 s, p90 18.9 s, max 129.1 s** over the full corpus.
+   The 2× gap S218 reported was an artifact of measuring the SQL block alone (its
+   calls are the heavy ones); across the whole corpus `opencode` tracks S216's
+   p50 7.8 s. **But the max is 129 s**, and no §3.4 threshold can see tail latency.
+
+#### What it does NOT establish
+
+1. **`anthropic`'s two interview cells are still carried forward — from Session 170
+   (100%, 20/20), not re-measured since.** S176's N=20 re-confirmation was
+   *governance*; S216 explicitly declined to re-pay this sweep. Scope B (operator
+   decision, below) did not re-pay it either. So this is a full fresh sweep **for the
+   candidate**, and a six-of-eight fresh refresh for the baseline.
+2. **One run per provider.** Run-to-run variance is still unmeasured — and this
+   result is precisely the case where that matters, since the verdict now turns on a
+   single stochastic event.
+3. **`bedrock` remains PENDING.** No AWS credentials; unchanged since S164.
+
+#### Scope and spend
+
+Scope was the operator's decision, taken before spending, from three costed
+options: **candidate fully fresh + baseline governance/SQL refresh**, over a
+both-providers-fully-fresh sweep (~$24) and a candidate-only sweep (~$14.7).
+**Actual spend $17.30 against a ~$16.3 estimate — 6% over**, driven by `opencode`
+issuing 515 calls where the S216-derived projection was ~475.
 
 **Update — Session 218 (2026-08-02): `sql_exec` RE-MEASURED under the dialect fix, at a 3.6–6.8× larger denominator. It PASSES for both providers — `anthropic` 18/18, `opencode` 34/34, zero execution errors. The `opencode` verdict flips NO-GO → GO.**
 
@@ -358,25 +456,33 @@ single-pass baseline is preserved in "Baseline findings" below.)
 
 | Capability | Metric | Threshold | anthropic (baseline) | bedrock (candidate) | opencode (candidate) |
 | --- | --- | --- | --- | --- | --- |
-| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS) |
-| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS; S218 18/18) | — (PENDING) | 100.0% (PASS; S218 34/34) |
-| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | **100.0% (PASS; S218 18/18)** | — (PENDING) | **100.0% (PASS; S218 34/34)** |
-| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80; re-confirmed S216 25/25) | — (PENDING) | 100.0% (PASS, S216) |
-| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20; re-confirmed S216) | — (PENDING) | 0 (PASS, S216) |
-| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS; S218 15/15) | — (PENDING) | 100.0% (PASS; S218 15/15) |
-| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS) | — (PENDING) | 100.0% (PASS, S216 20/20) |
-| Intake interview | premature convergences | ≤ 0 | 0 (PASS) | — (PENDING) | 0 (PASS, S216) |
+| Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS; S219) | — (PENDING) | 100.0% (PASS; S219) |
+| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS; S219 18/18) | — (PENDING) | **96.7% (FAIL; S219 29/30)** |
+| generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | **100.0% (PASS; S219 18/18)** | — (PENDING) | 96.7% (PASS; S219 29/30) |
+| classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80; re-confirmed **S219 25/25**) | — (PENDING) | 100.0% (PASS, **S219**) |
+| classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20; re-confirmed **S219**) | — (PENDING) | 0 (PASS, **S219**) |
+| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS; S219 15/15) | — (PENDING) | **93.3% (FAIL; S219 14/15)** |
+| Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS, **S170 20/20 — carried, not re-measured since**) | — (PENDING) | 100.0% (PASS, **S219**) |
+| Intake interview | premature convergences | ≤ 0 | 0 (PASS, **S170 — carried, not re-measured since**) | — (PENDING) | 0 (PASS, **S219**) |
 
 - **bedrock: PENDING** — Undecided — keep anthropic primary until measured.
-- **opencode: GO** — Cut over: opencode meets every §3.4 threshold.
-- **⚠ GO is a verdict, not an action taken.** `DEFAULT_LLM_PROVIDER` is unchanged
-  and `anthropic` remains the production default. Acting on this verdict is an
-  operator decision, and §"Update — Session 218" lists six things this
-  measurement does **not** establish — most importantly that five of the eight
-  cells above are **carried forward from Session 216**, not re-measured under the
-  dialect fix. Rows marked `S218` are fresh; rows marked `S216`/`S175`/`S176` are
-  not. A cutover that is actually going to be *taken* should rest on one session
-  that measures all eight.
+- **opencode: NO-GO** — Do NOT cut over — keep anthropic primary. Fails `sql_parse`
+  and `qc_structural`.
+- **⚠ Read the cause before acting on the NO-GO.** All three of `opencode`'s
+  sub-threshold numbers come from **one un-retried `LLMParseError`** on a single
+  sample, which `sql_sweep` scores as three simultaneous failures against two
+  zero-tolerance 100% bars. Every query and QC list the provider actually produced
+  was valid (29/29 parse, 29/29 executable, 14/14 QC). The interview block hit two
+  transient errors in the same run and **retried them away**. See §"Update —
+  Session 219" — this is a harness-fairness asymmetry, filed in `BACKLOG.md`, and
+  it was deliberately not fixed in the session that measured it.
+- **All eight `opencode` cells are S219-fresh** — this is the full same-session
+  sweep S218 asked for. `anthropic` is S219-fresh on six of eight; its two
+  interview cells are **S170**, and S218's claim that the baseline's interview rows
+  were re-confirmed at S216 was wrong (S216 re-confirmed *governance* and
+  explicitly declined to re-pay the interview sweep).
+- **S218's GO is superseded.** It rested on five S216 cells; the full sweep does not
+  reproduce it. Do not quote "opencode is GO at 8/8" — that verdict is now history.
 - **The `sql_exec` row's former stale-by-construction warning is discharged.** It
   previously carried 60.0% / 42.9%, both measured against the dialect-blind prompt
   that `9c9fe35` replaced. Those numbers are now **superseded**, not merely stale;
@@ -503,9 +609,13 @@ a real cutover touches three entrypoints:
 
 | Entrypoint | How its default provider is chosen today | Cutover action |
 | --- | --- | --- |
-| Intake web UI | falls back to `DEFAULT_LLM_PROVIDER` (`config.py:165`) or `INTAKE_LLM_PROVIDER` env (Phase D) | set `DEFAULT_LLM_PROVIDER = "bedrock"`, or `INTAKE_LLM_PROVIDER=bedrock` per deployment |
-| `scripts/run_pipeline.py` | `--provider` default is **hardcoded** `"anthropic"` (`:459`) | change the literal to `bedrock` **or** pass `--provider bedrock` |
-| data-agent `cli.py` | `--provider` default is **hardcoded** `"anthropic"` (`:107`) | change the literal to `bedrock` **or** pass `--provider bedrock` |
+| Intake web UI | falls back to `DEFAULT_LLM_PROVIDER` (`config.py:170`) or `INTAKE_LLM_PROVIDER` env (Phase D) | set `DEFAULT_LLM_PROVIDER = "<candidate>"`, or `INTAKE_LLM_PROVIDER=<candidate>` per deployment |
+| `scripts/run_pipeline.py` | `--provider` default is **hardcoded** `"anthropic"` (`:498`) | change the literal **or** pass `--provider <candidate>` |
+| data-agent `cli.py` | `--provider` default is **hardcoded** `"anthropic"` at **two** sites (`:106` and `:186`) | change **both** literals **or** pass `--provider <candidate>` |
+
+*Line numbers re-verified Session 219. They had drifted since Session 164 (`config.py:165`→`:170`,
+`run_pipeline.py:459`→`:498`), and the `cli.py` row listed **one** site where the code has **two** — a
+cutover that edited only the first would have left the second command silently on `anthropic`.*
 
 **Prerequisite for a `run_pipeline.py` Bedrock cutover — the model-id gap.**
 `run_pipeline.py --model` defaults to the first-party Opus id
@@ -514,6 +624,14 @@ a real cutover touches three entrypoints:
 `--model anthropic.claude-…` or make the `--model` default provider-aware first
 (the deferred follow-up). The intake web UI already avoids this (`model=None`,
 Phase D); the data-agent CLI takes its own `--model`.
+
+**The same gap applies to `opencode`, in a different shape (verified Session 219).**
+`run_pipeline.py:489` defaults `--model` to `PILOT_DEFAULT_MODEL = "claude-opus-4-7"`, a bare
+first-party id, and `OpenCodeLLMClient.__init__` forwards whatever it is given straight to
+`--model` on the CLI — which expects `provider/model` form (`anthropic/claude-sonnet-4-6`). A
+cutover that flipped the provider and left the model default alone would hand the binary an id it
+cannot resolve. The provider-aware `--model` default is the fix for both candidates, not just
+Bedrock.
 
 The cutover itself (editing the defaults) is **operator-gated** and may be its
 own follow-up session (§5). Keep the shadow run as a periodic regression after
