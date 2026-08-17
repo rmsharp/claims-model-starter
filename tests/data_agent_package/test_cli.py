@@ -380,6 +380,66 @@ def test_cli_derives_sql_dialect_from_db_url(
     assert recorded["sql_dialect"] == "sqlite"
 
 
+def test_cli_survives_a_non_numeric_port_in_db_url(
+    runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A bad port must not crash the CLI before the DB is ever reached.
+
+    Regression test for the Session 218 defect fixed in Session 223. ``db.dialect``
+    is evaluated at ``cli.py:129``, *outside* the ``try`` that begins on the next
+    statement, so the bare ``ValueError`` ``make_url`` raises on a non-numeric
+    port escaped Typer as a rendered traceback and exited non-zero.
+
+    ⚠ **What this does NOT establish.** The command now exits 0 with a report
+    whose only trace of the problem is the canned "database unreachable at QC
+    execution time" concern — byte-identical to what a well-formed but
+    unreachable URL produces. The operator cannot tell "I forgot to export
+    ``$DB_PORT``" from "the warehouse is down", and there is **no**
+    ``FAILED_AT_DATA`` off-ramp for either: ``nodes.py``'s ``execute_qc``
+    discards the ``DBConnectionError`` and ``agent.py`` reports ``COMPLETE``
+    regardless. That silence is pre-existing and applies to every malformed URL;
+    this fix makes the non-numeric-port case consistent with the rest instead of
+    uniquely fatal. It is filed in ``BACKLOG.md`` as its own item.
+
+    The unit test in ``tests/data_agent_package/test_db.py`` pins the derivation;
+    this pins the *seam*, which is the part a user actually meets.
+    """
+    import model_project_constructor_data_agent.cli as cli_mod
+
+    recorded: dict[str, object] = {}
+
+    def _fake_factory(provider: str, **kwargs: object) -> object:
+        recorded.update(kwargs)
+        return cli_mod._FakeCLIClient()
+
+    monkeypatch.setattr(cli_mod, "make_llm_client", _fake_factory)
+
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--request",
+            str(FIXTURE_REQUEST),
+            "--output",
+            str(tmp_path / "report.json"),
+            "--db-url",
+            "postgresql://user:pw@warehouse.internal:$DB_PORT/claims",
+        ],
+    )
+
+    # "Survives" has to mean the command actually completed, not merely that it
+    # avoided one exception type: without the exit-code assertion this test stays
+    # green through any crash that happens after the dialect derivation.
+    assert result.exit_code == 0, result.output
+    assert result.exception is None, result.output
+    # The factory must have been reached at all — under the pre-fix catch the CLI
+    # died before `_build_llm`, leaving `recorded` empty. Asserting membership
+    # first turns that into a named failure instead of a bare KeyError.
+    assert "sql_dialect" in recorded, f"CLI never reached the factory: {result.output}"
+    # The dialect is unknowable, so it is left unstated rather than guessed.
+    assert recorded["sql_dialect"] is None
+
+
 def test_cli_leaves_dialect_unset_without_a_db(
     runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

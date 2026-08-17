@@ -33,10 +33,49 @@ def sql_dialect_from_url(url: str) -> str | None:
     ``--db-url`` degrades to today's dialect-silent prompt rather than raising
     here — the URL's real failure surfaces at :meth:`ReadOnlyDB.connect`, which
     is the error path callers already handle.
+
+    ⚠ **That last clause overstates what callers currently do, and Session 223
+    verified it rather than repeating it.** :meth:`ReadOnlyDB.connect` does build
+    a message naming the exact cause (``DBConnectionError: cannot connect to
+    '…:$DB_PORT/claims': invalid literal for int() with base 10: '$DB_PORT'``),
+    but the only caller on the run path — ``nodes.py``'s ``execute_qc`` — catches
+    ``DBConnectionError`` without binding it and returns ``db_executed=False``,
+    and ``agent.py`` then substitutes the fixed string "database unreachable at
+    QC execution time" and reports ``status="COMPLETE"``. So a bad URL is
+    *degraded* but not *reported*: it is indistinguishable from a database that
+    is genuinely down. That is a pre-existing property of the DB error path, not
+    of this function, and it applies equally to every malformed URL — this fix
+    makes the non-numeric-port case consistent with the rest rather than
+    uniquely fatal. It is filed in ``BACKLOG.md``; do not read the sentence
+    above as a promise that the operator finds out.
+
+    **Both** exception types are required to honour that contract, and neither
+    subsumes the other: ``ArgumentError`` derives from ``SQLAlchemyError``, not
+    from ``ValueError``. ``make_url`` reports a structurally unparseable URL
+    (and a non-string argument) as ``ArgumentError``, but it coerces the port
+    segment with a bare ``int()``, so a *non-numeric port* escapes as the raw
+    ``ValueError`` that ``int()`` raises. Measured against SQLAlchemy 2.0.49,
+    five inputs take that second path: an unexpanded environment variable
+    (``@host:$DB_PORT/``), an alphabetic port, an **empty** port (``@host:/``),
+    a float port, and an IPv6 host with either of those. The first is the one
+    that bites in practice — a ``--db-url`` templated from a shell environment
+    where the port variable was never exported. Catching only ``ArgumentError``
+    made the paragraph above false for exactly those cases (fixed Session 223;
+    filed Session 218).
+
+    The catch is bounded on the other side too: only *parse* failures degrade.
+    An unexpected exception propagates, because silently returning ``None`` for
+    a genuine defect would drop the dialect from the prompt and reintroduce the
+    wrong-database SQL this function exists to prevent.
+
+    Note this deliberately does *not* validate the port's range or meaning: a
+    negative or absurdly large port parses fine here, because ``int()`` accepts
+    it and dialect derivation is not URL validation. Judging the URL remains
+    :meth:`ReadOnlyDB.connect`'s job.
     """
     try:
         return str(sa.make_url(url).get_backend_name())
-    except sa.exc.ArgumentError:
+    except (sa.exc.ArgumentError, ValueError):
         return None
 
 

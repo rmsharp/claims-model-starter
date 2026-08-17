@@ -164,6 +164,15 @@ def test_build_data_runner_data_mode_routes_through_factory(
         ("sqlite:///:memory:", "sqlite"),
         ("postgresql+psycopg://user:pw@warehouse.internal/claims", "postgresql"),
         (None, None),
+        # An unexpanded shell variable in the port. Until Session 223 this seam
+        # raised a bare ValueError out of ``sql_dialect_from_url`` — an uncaught
+        # traceback out of ``build_data_runner`` and then out of ``main()``,
+        # before any pipeline stage ran. It now degrades to None like every other
+        # unparseable URL. Note the pipeline then reports COMPLETE and exits 0:
+        # there is no FAILED_AT_DATA off-ramp for a bad --db-url (the halt at
+        # pipeline.py:460 gates on a non-COMPLETE DataReport, and the data agent
+        # cannot produce one for a DB problem). Filed in BACKLOG.md.
+        ("postgresql://user:pw@warehouse.internal:$DB_PORT/claims", None),
     ],
 )
 def test_build_data_runner_derives_sql_dialect_from_db_url(
