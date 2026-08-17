@@ -14,10 +14,13 @@ on the Phase B golden corpus, side-by-side with the incumbent.
   added as a candidate Session 214). **`opencode` is measured** — Session 216
   (NO-GO on `sql_exec`), Session 218 (SQL thresholds only → **GO**), Session
   219 (**first full eight-cell same-session sweep → back to NO-GO**, failing
-  `sql_parse` and `qc_structural`), and Session 220 (**targeted variance probe:
+  `sql_parse` and `qc_structural`), Session 220 (**targeted variance probe:
   the failing cells measure 100% over 45 fresh samples and the deciding transient
-  did not reproduce — a diagnostic, not a re-score**). **The current verdict is
-  NO-GO; S218's GO did not survive a full sweep, and S220 did not restore it.**
+  did not reproduce — a diagnostic, not a re-score**), and Session 221 (**the
+  harness fix that closed the retry asymmetry those two sessions diagnosed — no
+  live call was made and no cell was re-measured**). **The current verdict is
+  NO-GO; S218's GO did not survive a full sweep, S220 did not restore it, and
+  S221 deliberately did not re-score it.**
   `bedrock` has never been measured (no AWS
   credentials). *This line said "Neither has been measured" until Session 218; it
   had been stale since S216.*
@@ -169,6 +172,68 @@ supplies the pinned model id (that provider pins no default of its own, spec D6)
 so the Phase 4 pre-flight "the operator names the model to pin" is discharged by
 setting one variable. **Decision stays NO-GO.**
 
+**Update — Session 221 (2026-08-17): the retry asymmetry is CLOSED. `sweep_sql_capabilities` now retries a transient before scoring it, so the class of event that produced the S219 NO-GO can no longer decide a verdict on its own. NO live call was made, NO cell was re-measured, NO threshold moved, and the recorded verdict stays NO-GO.**
+
+The defect S219 diagnosed and S220 quantified: the two live measurement blocks
+applied **opposite policies to the same failure class**. `interview_sweep` retried a
+transient seam error up to three attempts and excluded it; `sql_sweep` scored one
+`LLMParseError` as one parse miss + one exec miss + one QC miss with no retry. Against
+the 1.00 `sql_parse` and `qc_structural` bars, one blip was sufficient — and at S219
+one blip was exactly what happened, at a rate S220 measured as **1 event in 60 samples**.
+
+**What shipped — a two-tier policy, not the one-tier mirror the backlog specified:**
+
+| class | retried? | on exhaustion | why |
+| --- | --- | --- | --- |
+| `LLMParseError` (`_TRANSIENT_SCORED`) | yes, 3 attempts | **scored a miss**, exactly as before | the denominator must not shrink |
+| `APITimeoutError` / `APIConnectionError` (`_TRANSIENT_EXCLUDED`) | yes, 3 attempts | **excluded**, counted in `excluded_transient` | no model output exists to judge |
+| everything else, incl. `APIStatusError` | no | propagates | a real harness/API bug must surface loudly (FM #18) |
+
+**Why not simply mirror `interview_sweep` and exclude?** Because exclusion drops the
+sample from the denominator while every surviving sample is clean by construction. A
+provider failing 14 of 15 samples would score **1/1 = 100% and PASS** a bar it fails
+6.7% of today. At the measured 1-in-60 rate, three failures running is a ~1-in-216,000
+event, so an exhaustion is never a transient in practice — it is systematic, which is
+precisely what the gate exists to catch. This path is also the live tier's **only**
+observation that a provider can emit parseable JSON at all (`shadow_run` records
+`json_parse` as a hardcoded 1.0 from the deterministic parity battery). The operator
+chose this branch over the backlog's literal text on that evidence.
+
+**The transport tier is new coverage, not just a policy change.** The data-agent package
+wraps no SDK transport error anywhere, so before this session an `APITimeoutError`
+during the SQL block propagated straight out and **aborted the whole live run** — the
+hole Session 171 closed for `interview_sweep` and never applied here. A ~2.5-hour
+`opencode` sweep could die on a single network blip at minute 140.
+
+**⚠ What this does NOT establish, and what it costs:**
+
+1. **No verdict was re-scored.** `opencode` remains **NO-GO**. The two FAIL cells in the
+   agreement table are pre-fix numbers, correct for the harness that produced them. A
+   harness change made after seeing a disliked number is how a gate stops being a gate
+   (learning #86); the re-measure is a separate session (~$16.4, ~130 min at S219's rates).
+2. **Post-fix numbers are not comparable with S219's or S220's.** Best-of-3 turns a
+   per-sample failure rate `p` into `p³` against unchanged bars — a provider whose true
+   rate is 20% goes from a 3.5% chance of clearing `sql_parse` to 88.6%. That is a real
+   loss of detection power and no threshold diff will show it. `transient_retries` is
+   reported so the first-attempt rate stays recoverable; **quote both numbers**.
+3. **The gate now measures a system more forgiving than the one that ships.**
+   `except LLMParseError` appears nowhere in `packages/` — production retries this class
+   zero times. The retry is auditable (the sample stays in numerator and denominator, and
+   the counters are reported) but the divergence is real.
+4. **Worst-case spend and wall clock triple on a run that is doomed anyway.** 30 calls per
+   sweep become up to 90. No circuit breaker was built; it is filed.
+5. **The S219 event is still unattributed.** Both `notify(...)` calls now carry
+   `str(exc)`, so the *next* occurrence traces to one of the 18 `LLMParseError` raise
+   sites. The original cannot be recovered.
+6. **Learning #86 is only half-closed.** `shadow_run`'s governance loop is a **third**
+   block with a **fourth** policy — it catches `IntakeLLMError` with no retry and scores
+   it a non-agreement against `GOVERNANCE_LAXER_MISSES_MAX = 0`, a zero-tolerance bar fed
+   by an un-retried transient: the exact S219 shape. Filed, deliberately not fixed here.
+
+**Verified deterministically, not live:** 1187 passed + 9 live-skipped @ 97.98% coverage
+(was 1175 + 9 @ 97.98%); `ruff check .` clean; `mypy` 0 issues in 68 files. The
+deliverable is the robustness fix, **not** a measured live-green confirmation.
+
 **Update — Session 220 (2026-08-02): targeted variance probe — the transient that produced the S219 NO-GO did NOT reproduce in 45 fresh samples. All three SQL/QC cells measure 100% at a 3.4× larger denominator. This is a DIAGNOSTIC, not a re-score: the recorded verdict stays NO-GO.**
 
 Session 219 concluded that `opencode`'s NO-GO rested on a **single** un-retried
@@ -226,6 +291,14 @@ that check — S219's "what's next" option 2, chosen by the operator. It ran the
    remains unknown, and that distinction is what the retry-policy fix turns on.
 4. **`anthropic` was not re-probed.** Its S219 SQL/QC cells (18/18, 18/18, 15/15)
    stand; this probe covers the candidate only.
+
+*[Session 221 notes on this section: item 2's retry-asymmetry item is now closed —
+see §"Update — Session 221" and the `CHANGELOG.md` entry. Item 3's factual claim
+about `sql_sweep.py:146-148` discarding `str(exc)` was true when written and is no
+longer: both `notify(...)` calls now carry the message text, so the **next**
+occurrence is self-attributing. The S219 event itself remains unattributed — that
+cannot be recovered retroactively. Item 3 also says "nine `LLMParseError` raise
+sites"; S221's inventory counted **18** across the two data-agent clients.]*
 
 #### ⚠ New gotcha: an unset `ANTHROPIC_API_KEY` scores as 45 quality failures
 
@@ -316,6 +389,10 @@ only** — the sibling block never got the treatment. Filed in `BACKLOG.md`.
 measurement, and a harness change made *after* seeing a disliked number is how a
 gate stops being a gate. The fix, and the re-measure that follows it, are a
 separate session.
+
+*[Fixed in Session 221 — see §"Update — Session 221". Every number and every
+description of harness behaviour in this section stands as the accurate record of
+the harness as it was at S219; the re-measure it calls for has still not happened.]*
 
 #### What this run DOES establish
 
@@ -550,11 +627,11 @@ single-pass baseline is preserved in "Baseline findings" below.)
 | Capability | Metric | Threshold | anthropic (baseline) | bedrock (candidate) | opencode (candidate) |
 | --- | --- | --- | --- | --- | --- |
 | Any JSON method | parse via both _extract_json copies (deterministic: test_llm_json_parity, not live tier) | ≥ 99% | 100.0% (PASS; S219) | — (PENDING) | 100.0% (PASS; S219) |
-| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS; S219 18/18) | — (PENDING) | **96.7% (FAIL; S219 29/30)** |
+| generate_primary_queries | SQL parse-valid | ≥ 100% | 100.0% (PASS; S219 18/18) | — (PENDING) | **96.7% (FAIL; S219 29/30 — pre-fix harness)** |
 | generate_primary_queries | SQL executable on the seeded P&C schema | ≥ 95% | **100.0% (PASS; S219 18/18)** | — (PENDING) | 96.7% (PASS; S219 29/30) |
 | classify_governance | cycle_time exact agreement vs reference (S173: scored per-label) | ≥ 90% | 100% (PASS, S175; confirmed S176 N=20, 80/80; re-confirmed **S219 25/25**) | — (PENDING) | 100.0% (PASS, **S219**) |
 | classify_governance | risk_tier laxer-tier misses (less strict than ref; stricter allowed) | ≤ 0 | 0 (PASS, S175; confirmed S176 N=20; re-confirmed **S219**) | — (PENDING) | 0 (PASS, **S219**) |
-| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS; S219 15/15) | — (PENDING) | **93.3% (FAIL; S219 14/15)** |
+| generate_quality_checks | outer array length == #primary queries | ≥ 100% | 100.0% (PASS; S219 15/15) | — (PENDING) | **93.3% (FAIL; S219 14/15 — pre-fix harness)** |
 | Intake interview | believe_enough_info within the 20-question cap | ≥ 95% | 100.0% (PASS, **S170 20/20 — carried, not re-measured since**) | — (PENDING) | 100.0% (PASS, **S219**) |
 | Intake interview | premature convergences | ≤ 0 | 0 (PASS, **S170 — carried, not re-measured since**) | — (PENDING) | 0 (PASS, **S219**) |
 
@@ -567,8 +644,18 @@ single-pass baseline is preserved in "Baseline findings" below.)
   zero-tolerance 100% bars. Every query and QC list the provider actually produced
   was valid (29/29 parse, 29/29 executable, 14/14 QC). The interview block hit two
   transient errors in the same run and **retried them away**. See §"Update —
-  Session 219" — this is a harness-fairness asymmetry, filed in `BACKLOG.md`, and
-  it was deliberately not fixed in the session that measured it.
+  Session 219" — this is a harness-fairness asymmetry, and it was deliberately
+  not fixed in the session that measured it.
+- **The asymmetry is closed (Session 221) — and the verdict above still stands.**
+  `sweep_sql_capabilities` now retries a transient before scoring it, so the
+  single event that produced this NO-GO would no longer decide it. **Nothing was
+  re-measured**: the two FAIL cells are pre-fix numbers, correct for the harness
+  that produced them, and a harness change is not a re-score (learning #86 —
+  changing the instrument after seeing a disliked number is how a gate stops
+  being a gate). Whoever re-measures `opencode` gets a genuine verdict from the
+  fixed harness; until then **`opencode` remains NO-GO**. Note also that the
+  post-fix instrument is *different*: best-of-3 makes its numbers non-comparable
+  with S219's and S220's best-of-1. See §"Update — Session 221".
 - **All eight `opencode` cells are S219-fresh** — this is the full same-session
   sweep S218 asked for. `anthropic` is S219-fresh on six of eight; its two
   interview cells are **S170**, and S218's claim that the baseline's interview rows
@@ -618,8 +705,12 @@ the *providers*.
 The **driver** [`tests/eval/shadow_run.py`](shadow_run.py) is the way to produce
 this report: it measures every provider whose credentials are present (the others
 skip), prints each provider's per-capability rates, and renders the agreement
-table directly. It *records* failures (a parse error counts as a missed rate)
-rather than asserting, so a sub-threshold result is data, not a crash:
+table directly. It *records* failures rather than asserting, so a sub-threshold
+result is data, not a crash. Since Session 221 that recording is two-branched: a
+transient is retried first, and only then does an exhausted `LLMParseError` count
+as a missed rate, while an exhausted **transport** error (SDK timeout / connection)
+is *excluded* from the denominator and counted in `sql_excluded_transient` — there
+is no model output to judge. Anything outside those classes still propagates:
 
 ```bash
 # Measures whichever providers have creds; prints rates + the agreement table:
@@ -641,12 +732,26 @@ same corpus with the §3.4 thresholds enforced as test assertions — useful as 
 pass/fail gate once the harness is trustworthy, but it does not emit the rates
 this report needs (use the driver for those).
 
-Each capability is sampled N ≥ 5 times (governance and interview; gap #1c) and
-judged on a pass-*rate* + structural invariants (§3.4 non-determinism handling);
-the interview sweep also retries/excludes a transient API/sim error rather than
-scoring it a non-convergence (`interview_sweep.py`). `model=None` is passed so
-each provider uses its native default id (Bedrock gets the `anthropic.`-prefixed
-default — no cross-provider 400).
+Each capability is sampled N ≥ 5 times — governance and interview since gap #1c
+(Session 169), **and the SQL/QC block since Session 218** — and judged on a
+pass-*rate* + structural invariants (§3.4 non-determinism handling).
+
+**Transient-failure policy (symmetric since Session 221).** Both sweeps retry a
+transient seam error up to 3 attempts before scoring anything. They differ on
+exhaustion, deliberately: `interview_sweep.py` *excludes* the sample, while
+`sql_sweep.py` excludes only an exhausted **transport** error and *scores* an
+exhausted `LLMParseError` as a miss. The reason is that exclusion shrinks the
+denominator while every surviving sample is clean by construction, so against the
+1.00 `sql_parse` / `qc_structural` bars a provider failing 14 of 15 samples would
+score 1/1 and pass. Scoring keeps the denominator whole; transport errors are
+excluded because no model output exists to judge. **Consequence to remember when
+reading any post-S221 number: best-of-3 turns a per-sample failure rate `p` into
+`p³` against unchanged bars, so post-fix figures are not comparable with S219's
+or S220's.** `transient_retries` is reported precisely so the first-attempt rate
+stays recoverable.
+
+`model=None` is passed so each provider uses its native default id (Bedrock gets
+the `anthropic.`-prefixed default — no cross-provider 400).
 
 ### Filling this report from a live run
 
@@ -665,6 +770,13 @@ sources, which the driver already handles:
   (confirm with `uv run pytest tests/test_llm_json_parity.py -q`). A real-output
   parse failure surfaces instead as a *live-capability* miss (they raise on
   unparseable provider JSON — and the driver counts that as a failed rate).
+  **This escape hatch is load-bearing and it is why `sql_sweep` scores an
+  exhausted `LLMParseError` rather than excluding it (Session 221):** the SQL/QC
+  block is the only place a *live* provider's JSON emission is observed at all,
+  so excluding those samples would leave `json_parse` asserting 1.0 with nothing
+  anywhere measuring the real thing. The hatch is now narrower than it reads,
+  though — it holds for a provider that fails persistently, not for one that
+  fails once, since a single blip is retried away by design.
 
 If the **baseline** fails a threshold, do **not** reflexively lower it — first
 decide whether the failure is a harness/corpus artifact (see "Baseline findings")

@@ -7,12 +7,220 @@
 ## ACTIVE TASK
 
 ### What Session 221 Did
-**Deliverable:** Fix the SQL/QC retry asymmetry (gap #1c, half-applied) in `tests/eval/sql_sweep.py`
-— give it the `interview_sweep` treatment (transient classification, bounded retries,
-exclude-with-note, an `excluded_transient` count). **Plus:** file a BACKLOG item for renaming the
-repository to `model-project-constructor`, including the documentation-reference sweep. (IN PROGRESS)
-**Started:** 2026-08-17
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **The SQL/QC retry asymmetry (gap #1c's other half) is FIXED. COMPLETE.** The sweep now
+retries a transient before scoring it, under a **two-tier** policy that is deliberately *not* the
+byte-for-byte mirror `BACKLOG.md` prescribed. **Plus** the operator's second ask: a BACKLOG item for
+renaming the repository to `model_project_constructor`, filed with a live grep inventory.
+**No threshold changed, no production code changed, `interview_sweep.py` is byte-identical, and NO
+recorded verdict was re-scored — `opencode` stays NO-GO.**
+
+**Started / Completed:** 2026-08-17. **Commits:** `5d906e9` (rename backlog item + Phase 1B stub),
+`752e79b` (the fix), this close-out. **Trigger:** the operator picked S220's "what's next" option 1
+and added the rename filing.
+
+**Workstream:** `docs/methodology/workstreams/DEVELOPMENT_WORKSTREAM.md`. Its Phase 2 Step 3 ("read the
+code you will modify — not the documentation, not the tests") is what produced the design fork below:
+the BACKLOG's remedy reads fine and is wrong, and only tracing it against `eval_scoring.CapabilityRate`
+shows why.
+
+#### The design, and why it deviates from the filed remedy
+
+| class | retried? | on exhaustion | why |
+| --- | --- | --- | --- |
+| `LLMParseError` (`_TRANSIENT_SCORED`) | 3 attempts | **scored a miss**, as before | the denominator must not shrink |
+| `APITimeoutError` / `APIConnectionError` (`_TRANSIENT_EXCLUDED`) | 3 attempts | **excluded** + counted | no model output exists to judge |
+| everything else, incl. `APIStatusError` | no | propagates | a real API/harness bug must surface (FM #18) |
+
+`BACKLOG.md` specified *exclude on exhaustion*, mirroring `interview_sweep`. **That inverts the gate.**
+Exclusion drops the sample while every survivor is clean by construction, so a provider failing 14 of 15
+samples scores **1/1 = 100% and PASSES** a bar it fails 6.7% of today. At the S220-measured 1-in-60 rate,
+three failures running is ~1-in-216,000 — so an exhaustion is never a transient in practice, it is
+systematic, which is exactly what the gate exists to catch. The path is also the live tier's **only**
+observation of live JSON emission (`shadow_run.py` hardcodes `json_parse` to 1.0). **The operator was
+shown that arithmetic and chose this branch**; both fork questions went to them before any code was
+written.
+
+**The transport tier is new coverage, not a policy tweak.** `grep -rn "APIConnectionError\|APITimeoutError"
+packages/data-agent/src/` → **0**. Before this, an SDK timeout in the SQL block propagated out and
+**aborted the whole live run** — the hole S171 closed for `interview_sweep`, never applied here.
+
+**Design B (exception subtypes in shipped code) was priced and rejected.** Blocked by
+`tests/test_llm_json_parity.py:425`, which asserts pairwise `not issubclass` across seam error classes —
+a subtype breaks it *by construction*, and its docstring calls that invariant "intentional and
+load-bearing (plan §2.3)". It also cannot classify `opencode_client.py:284`, where an unset API key and a
+genuine provider blip emit the same message. Blast radius: **18** raise sites (not the 9 the BACKLOG
+claims — verified), 25 `IntakeLLMError` twins, 59 tests across 9 files.
+
+#### Adversarial review found three real defects in my own code — all fixed pre-commit
+
+18 agents, 14 claims, **11 refuted on evidence, 3 confirmed**, each reproduced by mutating the module,
+not argued:
+
+1. **`excluded` was last-attempt-wins.** A sample raising `LLMParseError` twice then timing out was
+   **excluded** despite two observed model-quality failures. Measured: 6 observed parse failures across
+   3 samples scored **0** misses and **PASSED** the 1.00 bar — the exact hole I rejected design A for,
+   reintroduced through the back door. Now any scored failure beats an exclusion.
+2. **`_MAX_TRANSIENT_RETRIES = 2` was unpinned.** Every retry test injected the bound, so mutating the
+   default to 0 reverted **both** live call sites to S218 best-of-1 with 1187 tests green.
+3. **`transient_retries` was unpinned** on the exhaustion path and across the whole QC seam.
+
+All four mutants now die (verified by re-running each mutation). Tests 9 → 24.
+
+#### ⚠ What this costs, stated because no diff will show it
+
+**Best-of-3 turns a per-sample failure rate `p` into `p³` against unchanged bars.** A provider whose true
+rate is 20% goes from a 3.5% chance of clearing `sql_parse` to **88.6%**. That is a real loss of
+detection power, invisible in `eval_thresholds.py`. `transient_retries` is reported so the first-attempt
+rate stays recoverable. **Post-fix numbers are NOT comparable with S219's or S220's best-of-1.**
+Also: the gate now retries a class production retries **zero** times (`except LLMParseError` appears
+nowhere in `packages/` — verified), and worst-case spend/wall-clock **triples** (30 calls → 90).
+
+#### Four findings filed, deliberately not fixed
+
+1. **Re-measure `opencode` under the fixed harness** (~$16.4, ~130 min) — its own session.
+2. **Three blocks, three policies.** `shadow_run.py`'s governance loop is a *third* policy (no retry,
+   scored a non-agreement against `GOVERNANCE_LAXER_MISSES_MAX = 0`, a zero-tolerance bar fed by an
+   un-retried transient — the exact S219 shape), and `test_eval_live.py`'s governance test is a *fourth*
+   (no handler; it aborts). The driver and the assertion gate disagree with each other.
+3. **A bare `KeyError` aborts the whole sweep.** `anthropic_client.py:203-215` builds `PrimaryQuerySpec`
+   from `item["name"]` etc. with no guard, so a well-formed array of wrong-keyed objects raises an
+   exception no tier of the taxonomy catches. **The intake twin already guards this** at
+   `intake/anthropic_client.py:439-440` — the fix mirrors a shipped convention.
+4. **No circuit breaker** on a systematically-failing sweep; the retry made the worst case 3× worse.
+
+#### The rename item (second deliverable, `5d906e9`)
+
+Filed with a live inventory: **644 hits / 50 files**, counted **per grep pattern** (learning #8) because
+each form has a different fix — wiki source path 509, wiki clone name 89, repo URL 35, Pages URL 25,
+title-case prose 2, underscore form **0**. Exposed surfaces enumerated with line numbers; historical
+records keep the old name per the S144 `SR 11-7 → SR 26-2` precedent (`bfd9f36`) and learning #32. Five
+dragons, **two of which bite on the landing commit itself**: `publish_wiki.sh:72-75` is a guard that
+greps for the literal old wiki-clone name (wiki publishing fails closed, via the post-commit hook), and
+`SESSION_RUNNER.md:209` names the wiki path but is synced-from-canonical and must not be edited — that
+correction belongs in `CLAUDE.md`'s adaptations seam.
+
+**Phase 3C note:** no workstream document was edited. `docs/methodology/` is third-party synced material
+(`NOTICE` §1, `CLAUDE.md`) and must stay byte-identical; learnings #92–94 went to `PROJECT_LEARNINGS.md`,
+which `CLAUDE.md` designates as this project's learnings home. This is compliance with 3C, not a skip.
+
+**CHANGELOG entry written** — unlike S219/S220 this session changed `tests/` test logic, which
+`docs/methodology/PROJECT_CONVENTIONS.md` §2 gates an entry on. ⚠ **The convention-vs-precedent conflict
+S219 and S220 both flagged is still unresolved** and now un-asked for a third session: S216 was
+measurement-only and *does* carry an entry, while S219/S220 followed the written rule and did not. Worth
+an operator ruling.
+
+### Session 220 Handoff Evaluation (by Session 221)
+
+**Score: 8/10.** The most operationally useful handoff in this series — one line in it prevented me from
+shipping half a fix — but its recommended *remedy* was wrong on the branch that decides whether the gate
+works, and I would have shipped an inverted gate had I implemented it as written.
+
+**What helped:** (1) **"`sql_sweep.py:144-153` (primary-query handler) **and `:163-171` (the QC handler —
+the BACKLOG entry named only the first; both need the fix)**."** The BACKLOG genuinely names only the
+primary seam; implementing from it alone fixes half the bug. This single parenthetical is the highest-ROI
+sentence in the handoff. (2) **"Read the fork before coding: A is a pure test-harness change; B needs new
+exception subtypes in shipped `packages/` code."** Correct framing, and it let me price B in one pass
+instead of discovering the blocker mid-implementation. (3) **"Add `{exc}` to `sql_sweep.py`'s two
+`notify(...)` calls as part of it… this session proved that gap is real."** Cheap, specific, done.
+(4) **"Thresholds must not move"** repeated in three places — the frame held all session. (5) **Gotcha 1
+("Do not quote S220 as a GO… the recorded verdict is NO-GO")** was load-bearing for every `PHASE_E`
+edit: my result *invites* a re-score and the gotcha is what kept the verdict untouched. (6) **Gotcha 6
+("do not assume it was malformed JSON; the same type covers timeout and spawn failure")** is what made me
+price a transport tier at all — without it I would have shipped the `LLMParseError` tier alone and left
+the run-aborting hole open. (7) **The re-measure cost (~$16.4, ~130 min) and the $0.0593/call SQL-block
+figure** transferred straight into the new BACKLOG item.
+
+**What was wrong:** **the prescribed remedy inverts the gate.** `BACKLOG.md:241-243` specified
+"exclude-with-note on exhaustion, and an `excluded_transient` count" — and exclusion on a 1.00 bar lets a
+provider failing 14 of 15 samples score 1/1 and PASS. To S220's credit it *named* the cost ("converts a
+genuine 'model emits garbage JSON three times running' into an exclusion") — but as one line of a
+tradeoff, not as the gate inversion it is, and it then recommended that branch anyway. It also inherited
+`interview_sweep`'s exclusion as validated precedent; that precedent is **unaudited** —
+`grep -rn excluded_transient` finds exactly one non-test consumer, inside an assertion f-string that
+never prints on a PASS. **Also wrong: "nine `LLMParseError` raise sites"** (S219's number, repeated by
+S220). The real count is **18** — 10 in `anthropic_client.py`, 8 in `opencode_client.py` — which matters
+because it is the denominator for pricing design B.
+
+**What was missing:** (a) **That `sql_sweep` catches no SDK transport error at all**, so an
+`APITimeoutError` aborts the entire live run. Findable in the file the handoff points at, in the module
+whose retry policy is the subject, and it is a strictly larger hole than the one being fixed. (b) **That
+`test_eval_live.py` passes no `on_event`**, which makes S220's own `{exc}` recommendation half-effective
+— the notes it adds are discarded inside the assertion gate, the surface that most needs them.
+
+**ROI: high.** The QC-handler pointer alone repaid the read; gotcha 6 produced the transport tier.
+
+### Phase 3B: Self-assess — Session 221 — 8/10
+
+- **The +:** (1) **Did not implement the filed remedy on autopilot** — priced it, found it inverts the
+  gate, and put the arithmetic to the operator with the alternative before writing code. (2) **Both fork
+  decisions went to the operator, pre-code**, with the numbers rather than a preference. (3) **Fixed both
+  seams**, not just the one the BACKLOG names. (4) **Adversarially reviewed my own diff and found three
+  real defects**, one of which reintroduced — through a subtle last-wins assignment — the exact hole I
+  had rejected design A for. Every one was reproduced by mutation and every fix re-verified by killing
+  the mutant. (5) **Measured the pre-change baseline directly** (stash → run → pop) instead of quoting
+  the CHANGELOG's number, which would have been wrong (1175, not 1166). (6) **Wrote down what the fix
+  costs** — the p→p³ shift, the production-divergence, the 3× worst-case spend — in the docstring, the
+  CHANGELOG, the README and the report, rather than only what it buys. (7) **Refused to re-score the
+  verdict** and tagged the two FAIL cells "pre-fix harness" instead.
+- **The −:** (1) **The last-wins bug was mine**, and it is the *same class* of error as the one I had
+  just spent the session arguing about — I reasoned carefully about which branch each class takes and
+  then wrote a loop that only remembers the last one. Caught by review, not by me. (2) **I shipped the
+  first draft with three mutation-survivable gaps**, including the default-bound one, which means my own
+  test suite would not have noticed the fix being turned off. "24 tests, all green" was not evidence.
+  (3) **I did not verify the "nine raise sites" figure before the workflow did it for me** — I carried a
+  predecessor's number into my own planning for the first half of the session. (4) **The doc sweep found
+  more stale sites than I would have found alone** (the `json_parse` escape-hatch paragraph in
+  particular); left to myself I would have updated the obvious three files and missed it. (5) **I asked
+  the operator two questions in one round-trip but only after ~20 minutes of analysis** — the transport
+  question was answerable much earlier and could have been folded into an earlier check-in.
+
+**What's next — five options, all ungated:**
+
+1. **Re-measure `opencode` under the fixed harness** (`BACKLOG.md`). The natural successor: this session
+   built the instrument and deliberately did not use it. **~$16.4, ~130 min, its own session.** Source
+   `.env` first. Quote `transient_retries` alongside every rate, and do not compare the result to S219's
+   numbers — different instrument.
+2. **Close the third and fourth transient policies** (`BACKLOG.md`) — the governance loop in
+   `shadow_run.py:97-111` and the handler-less governance test. **Recommended if you want the harness
+   consistent before spending $16 measuring with it**, since the governance keys are the ones with a
+   zero-tolerance bar. `_call_with_retries` is already generic over the call; note the transient *tuples*
+   cannot be shared.
+3. **The `KeyError` guard** (`BACKLOG.md`) — shipped-package code, mirrors an existing intake convention,
+   small and well-specified.
+4. **`tests/eval/README.md` drift** — now a **seventh** session unfixed. S220's verified locations
+   (`:49`, `:51-52`, `:86`) still stand; this session added a new "Transient-failure policy" paragraph
+   nearby but deliberately did not touch the stale ones. Cheap, $0.
+5. **The repository rename** (`BACKLOG.md`, new) — read its three sub-decisions and five dragons first;
+   sub-decision 3 recommends splitting it into two sessions.
+
+**Key files:**
+- `tests/eval/sql_sweep.py` — `_TRANSIENT_SCORED` / `_TRANSIENT_EXCLUDED` / `_TRANSIENT_ERRORS` and
+  `_call_with_retries`. **The module docstring carries the full rationale, including what the fix costs.
+  Read it before changing the policy.**
+- `tests/eval/test_sql_sweep.py` — 24 tests. `test_the_default_retry_bound_is_what_the_live_call_sites_get`
+  and the two `test_mixed_class_exhaustion_*` tests exist because mutants survived without them.
+- `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 221" — what the fix does and the six things
+  it does **not** establish. **Read before quoting any verdict.**
+- `BACKLOG.md` — four new items plus the amended auth-diagnosability item and the rename item.
+- `PROJECT_LEARNINGS.md` #92 (accumulate, don't last-win), #93 (pin the default), #94 (price a filed
+  remedy before executing it); #86's Source cell amended with what closing it revealed.
+
+**Gotchas:**
+1. **Do not quote any post-S221 SQL/QC number against S219's or S220's.** Best-of-3 vs best-of-1 —
+   different instrument. Report `transient_retries` beside every rate.
+2. **`opencode` is still NO-GO.** The fix did not re-score anything; the two FAIL cells are tagged
+   "pre-fix harness" precisely so nobody reads them as current.
+3. **`_MAX_TRANSIENT_RETRIES` is the only knob the live gate actually uses** — both call sites omit the
+   keyword. It is pinned by exactly one test; if you change it, that test is the one that should fail.
+4. **Exclusion is one-directional by design:** any `LLMParseError` among a sample's attempts makes it
+   scored, whatever landed last. Do not "simplify" that back to reading the final exception.
+5. **`interview_sweep.py` must stay byte-identical** unless the session owns re-validating the recorded
+   interview numbers. This session did not touch it.
+6. **The retry cannot pass `previous_error`** — it would inject "Return corrected SQL this time" and turn
+   `sql_parse` into a repaired-query metric behind an unchanged 1.00 bar. `functools.partial` binds a
+   zero-argument call to make that structurally impossible; a test pins it.
+7. **A green suite is not evidence a new tunable is pinned.** Mutate the default and re-run — that is how
+   three of this session's defects were found (learnings #92, #93).
 
 ### What Session 220 Did
 **Deliverable:** **The `opencode` SQL-block variance probe. COMPLETE. The transient that produced the

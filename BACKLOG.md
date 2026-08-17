@@ -189,62 +189,77 @@ exercises the effect of exactly one:
 dialect correctness is unmeasured. Closing either means a new scorer (parse/execute the QC SQL) and, for the
 baseline case, a gate key that does not exist yet — a design change, not a wiring fix.
 
-### The SQL/QC sweep does not retry transients — the interview sweep does (gap #1c, half-applied)
+### Re-measure `opencode` under the fixed (retry-symmetric) harness
 
-**Found Session 219, and it decided a cutover verdict.** The two live measurement blocks apply opposite
-policies to the same class of failure — a transient malformed/truncated LLM response:
+**Unblocked by Session 221**, which closed the retry asymmetry that produced the S219 NO-GO. That
+session deliberately **did not re-score** the verdict — a harness change made after seeing a disliked
+number is how a gate stops being a gate (learning #86) — so the recorded verdict is still **NO-GO** and
+the two failing cells in `tests/eval/PHASE_E_AGREEMENT_REPORT.md` are pre-fix numbers.
 
-| block | policy on a transient LLM/seam error | effect on the rate |
+A GO produced by the fixed harness would be the first one resting on eight same-session cells **and** a
+symmetric retry policy. Cost at S219's measured rates: **~$16.4, ~130 min** for the full eight-cell
+`opencode` sweep (the SQL block alone is ~$1.78 / ~18 min per 5-sample pass — cost it at $0.0593/call,
+not the $0.0318 global mean). **Its own session**, and read these before quoting anything it produces:
+
+1. **Post-fix numbers are not comparable with S219's or S220's.** Best-of-3 turns a per-sample failure
+   rate `p` into `p³` against unchanged bars. Quote `transient_retries` alongside every rate — it is
+   what makes the first-attempt rate recoverable.
+2. **Do not lower `SQL_PARSE_VALID_MIN` or `QUALITY_CHECKS_STRUCTURAL_MIN`** (learning #82). Four
+   sessions running have refused to calibrate a bar to a number.
+3. **Source `.env`** — `set -a && . ./.env && set +a`. Without it every sample fails at $0 in ~36 s and
+   the harness scores that as 45 model-quality failures (see the item below).
+
+### The three live measurement blocks still apply three different transient policies
+
+**Filed Session 221, deliberately not fixed there** — that session's deliverable was the SQL/QC half,
+and widening it mid-session is the scope creep `SAFEGUARDS.md` exists to prevent. Session 221 closed the
+SQL-vs-interview asymmetry and, in doing so, established that the problem is wider than the two blocks
+`BACKLOG` had named:
+
+| block | on a transient seam error | gate keys it feeds |
 | --- | --- | --- |
-| `interview_sweep.py:82-87,152-180` | retry up to 3 attempts, then **exclude** the sample with a logged note | does not count against the rate |
-| `sql_sweep.py:144-153` | **no retry** — record one parse miss + one exec miss + one QC miss, continue | counts as three immediate failures |
+| `interview_sweep.py:82-87,152-180` | retry 3x, then **exclude** | `interview_convergence` (0.95), `interview_premature` (≤0) |
+| `sql_sweep.py` (S221) | retry 3x, then **score** a parse miss / **exclude** a transport miss | `sql_parse` (1.00), `sql_exec` (0.95), `qc_structural` (1.00) |
+| `shadow_run.py:97-111` (governance loop) | **no retry** — scored an immediate non-agreement | `governance_cycle_time_agreement` (0.90), `governance_laxer_miss` (**≤0**) |
+| `test_eval_live.py`'s governance test | **no handler at all** — the seam error aborts the gate | same two keys |
 
-Session 169 fixed this for interviews (gap #1c) and the sibling block never got the treatment. Because
-`SQL_PARSE_VALID_MIN` and `QUALITY_CHECKS_STRUCTURAL_MIN` are both **1.00**, a single blip is sufficient
-to fail the gate outright.
+The governance rows are the sharp end: `GOVERNANCE_LAXER_MISSES_MAX = 0` is a **zero-tolerance** bar fed
+by an un-retried transient, which is precisely the S219 shape that cost a cutover verdict. Worse, the
+driver and the assertion gate disagree with *each other* — one scores the error, the other dies on it.
 
-**This is not hypothetical.** The Session 219 sweep hit exactly one `LLMParseError`
-(`sql/property_severity[3/5]`) and two transient `IntakeLLMError`s. The interview transients were retried
-and recovered (100%); the SQL one was scored as three failures and **produced the `opencode` NO-GO** —
-`sql_parse` 29/30, `qc_structural` 14/15 — while every query and QC list the provider actually produced
-was valid (29/29 parse, 29/29 executable, 14/14 QC).
+**Sketch:** give the governance loop the same treatment (`_call_with_retries` in `sql_sweep.py` is
+already generic over the call; a shared helper is the obvious home, but note S221's finding that the
+transient *tuples* cannot be shared — `interview_sweep`'s members are `RuntimeError` subclasses from the
+intake package, `sql_sweep`'s is a `ValueError` from the data-agent wheel). Add a handler to
+`test_eval_live.py`'s governance test so the two surfaces agree. **`interview_sweep.py` must stay
+byte-stable** unless the session explicitly owns re-validating the recorded interview numbers.
 
-**Quantified by the Session 220 variance probe: the deciding event is a ~1-in-60.** Three unmodified
-`sweep_sql_capabilities` runs against live `opencode` (45 samples, 90 calls, $5.34, 53 min) hit **zero**
-transients and scored **`sql_parse` 102/102, `sql_exec` 102/102, `qc_structural` 45/45 — 100% on all
-three**. Rule of three bounds the per-sample rate at **≤6.7% (95%)**; pooled with S219 it is **1 event in
-60 samples**. So a 1-in-60 blip decided a recorded cutover verdict, which is the argument for this item
-rather than against it. **The verdict was deliberately NOT re-scored** (three of eight cells; S217's
-"a probe is a diagnostic, not a re-score" precedent). See `tests/eval/PHASE_E_AGREEMENT_REPORT.md`
-§"Update — Session 220".
+### A bare `KeyError` from a well-formed-but-wrong-keyed model response aborts the whole sweep
 
-⚠ **The probe could not attribute the S219 event, because it never recurred.** It was instrumented to
-capture `str(exc)` (which `sql_sweep.py:146-148` discards, logging only the type) precisely so a
-recurrence could be traced to one of the nine `LLMParseError` raise sites. **Whoever implements this fix
-still does not know whether S219's event was transport (timeout/spawn/exit) or genuine malformed JSON** —
-and that is exactly the distinction the A-vs-B design choice below turns on. Cheapest way to close it:
-add `{exc}` to the two `notify(...)` calls as part of the fix, so the next occurrence is self-attributing.
+**Filed Session 221** (found while pricing the exception taxonomy), **not fixed** — it is shipped
+package code under `mypy --strict`, out of scope for a harness session.
 
-**Two ways to implement it — this is a real fork, not a detail.** `LLMParseError` is raised at nine sites
-covering five conditions (spawn failure / non-zero exit / timeout / no-assistant-text / malformed JSON —
-the adapter spec's error-mapping table), and `IntakeLLMError` is its structural twin in the intake package
-for the same five. **(A)** Retry the whole class, mirroring `interview_sweep` exactly: pure test-harness
-change, matches the S169 precedent, but converts a genuine "model emits garbage JSON three times running"
-into an exclusion. **(B)** Retry only the transport/process subset and keep real JSON-parse failures as
-misses: says what is actually meant, but the exception type cannot distinguish them today, so it needs new
-exception subtypes in **shipped** `packages/` code (or fragile message-sniffing) and implicitly reopens
-gap #1c on the interview side. Note `sql_sweep.py:38-43` argues for today's behaviour **deliberately** —
-so this item overturns a documented decision, and the rationale is that *the exception type is too coarse
-to carry the policy*, not that S218 was careless.
+`packages/data-agent/src/model_project_constructor_data_agent/anthropic_client.py:203-215` builds
+`PrimaryQuerySpec(name=str(item["name"]), sql=str(item["sql"]), purpose=…, expected_row_count_order=…)`
+with **no guard**. A model that returns a well-formed JSON array of objects with the wrong keys raises a
+bare `KeyError` — not an `LLMParseError` — so it is caught by no tier of the sweep's transient taxonomy
+and **kills the run mid-sweep** instead of scoring one miss. The same gap sits at `:401-407`
+(`rank_candidate_tables`).
 
-**Fixing it is a harness change that will move a recorded verdict, so it must be its own session, and the
-thresholds must not move with it.** Give `sweep_sql_capabilities` the `interview_sweep` treatment: a
-`_TRANSIENT_ERRORS` tuple, bounded retries, exclude-with-note on exhaustion, and an `excluded_transient`
-count on `SqlSweepResult` so exclusions stay visible rather than silently shrinking the denominator.
-Then re-measure `opencode` — a GO produced by the fixed harness would be the first one resting on eight
-same-session cells *and* symmetric retry policy. **Do not lower `SQL_PARSE_VALID_MIN` or
-`QUALITY_CHECKS_STRUCTURAL_MIN`** — three sessions running have refused to calibrate a bar to a number,
-and this is a denominator/policy defect, not a bar that is too strict (learning #82).
+**The intake twin already does this correctly:** `src/model_project_constructor/agents/intake/anthropic_client.py:439-440`
+wraps the identical pattern in `_build_draft`. So the fix is to mirror an existing, shipped convention —
+wrap in `try/except KeyError` and re-raise as `LLMParseError` — not to invent one. Add a regression test
+per call site; the wheel's error-mapping tests live in `tests/data_agent_package/test_anthropic_client.py`.
+
+### No circuit breaker on a systematically-failing live sweep
+
+**Filed Session 221.** The retry the same session added tripled the worst case: a sweep's 30 calls
+become up to 90 when every sample exhausts. Against `DEFAULT_TIMEOUT_S = 600.0`
+(`opencode_client.py`), a timeout-shaped systematic failure goes from ~2.5 h to ~7.5 h before the run
+reports anything. The cheap, already-diagnosed signature to break on is the one from the item below —
+a run whose calls are failing at $0 is an environment fault, not a measurement. **Sketch:** abort the
+sweep with a named error after K consecutive exhausted samples (K ≈ 5), so the operator gets the
+diagnosis in one minute instead of seven hours of billed nothing.
 
 ### An unset `ANTHROPIC_API_KEY` scores as 45 model-quality failures (`opencode` diagnosability)
 
@@ -266,13 +281,19 @@ Running the SQL sweep against `opencode` **without `ANTHROPIC_API_KEY` in the en
 **Why it matters:** a misconfigured environment and a provider that genuinely cannot write SQL produce
 **the same 0% on the same three gate keys**, and the fast-and-free signature (36 s, $0, 45/45) is only
 obvious if someone thinks to check call count and spend. This is the same diagnosability class as the
-retry-asymmetry item above — the harness cannot tell a seam failure from a quality failure — and the two
-should probably be fixed together.
+retry asymmetry closed in Session 221 (see that `CHANGELOG.md` entry) — the harness cannot tell a seam
+failure from a quality failure.
+
+**Half-fixed, Session 221.** The cheap interim landed: both `sql_sweep.py` `notify(...)` calls now carry
+`str(exc)`, so the `ref=…` reaches the log and the cause is searchable. **The item stays open** — the
+message still names neither auth nor the variable, so a reader must already know what they are looking
+at. Session 221 also **worsened the cost profile of this exact scenario**: the doomed run's call count
+rises 45 → 135 as every sample burns its full retry budget (still ~$0 and fast, since the CLI fails in
+under a second — but see the circuit-breaker item above, which this scenario is the motivating case for).
 
 **Sketch:** have `OpenCodeLLMClient.__init__` (or the eval credential probe in `tests/eval/`) fail fast
 with a named error when the selected model's provider prefix has neither a stored credential nor the
-corresponding key in the environment. Cheaper interim: add `{exc}` to `sql_sweep.py`'s two `notify(...)`
-calls so the message reaches the log, where `ref=…` at least makes the cause searchable.
+corresponding key in the environment.
 
 ### Rename the repository `claims-model-starter` → `model_project_constructor`
 

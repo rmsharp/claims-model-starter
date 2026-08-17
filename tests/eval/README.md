@@ -160,6 +160,22 @@ judges a pass-*rate* + structural/semantic invariants — never exact text.
 Claude-family models reject `temperature`, so we sample and rely on the
 invariants rather than pinning `temperature=0`.
 
+**Transient-failure policy (Session 221):** sampling is only half the story, and
+the missing half is what let a single blip produce a recorded NO-GO at Session
+219. Both sweeps now retry a transient seam error up to 3 attempts before scoring
+anything. On exhaustion they differ deliberately: `interview_sweep` excludes the
+sample; `sql_sweep` excludes only an exhausted **transport** error
+(`APITimeoutError` / `APIConnectionError`) and **scores** an exhausted
+`LLMParseError` as a miss, because excluding it would shrink the denominator while
+every surviving sample is clean by construction — a provider failing 14 of 15
+samples would then score 1/1 and pass a 100% bar. Anything outside those classes
+still propagates, so a real harness bug surfaces loudly rather than becoming a
+rate. **Reading any post-S221 number: best-of-3 makes the effective per-sample
+failure rate `p³` against unchanged thresholds, so these figures are not
+comparable with Sessions 219 and 220.** Every reporting surface carries
+`transient_retries` and `excluded_transient` so the first-attempt rate and the
+true denominator stay recoverable.
+
 ## Corpus
 
 | Capability | Source | Cases |
