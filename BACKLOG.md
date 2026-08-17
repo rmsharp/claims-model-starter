@@ -274,6 +274,120 @@ with a named error when the selected model's provider prefix has neither a store
 corresponding key in the environment. Cheaper interim: add `{exc}` to `sql_sweep.py`'s two `notify(...)`
 calls so the message reaches the log, where `ref=…` at least makes the cause searchable.
 
+### Rename the repository `claims-model-starter` → `model_project_constructor`
+
+**Operator ask, 2026-08-17 (Session 221), filed not executed.** Rename the GitHub repository
+`rmsharp/claims-model-starter` to **`model_project_constructor`** and update every reference to the
+old name **in currently exposed documentation**. The local working directory and the import package
+are already `model_project_constructor`; only the *published* repository still carries the old name.
+
+**The name form is underscores, and it is deliberate.** The operator corrected an initial
+hyphenated reading (`model-project-constructor`) to `model_project_constructor` within the same
+session. Note the divergence this creates and do **not** "fix" it: the PyPI-style distribution names
+stay hyphenated (`pyproject.toml:2` `model-project-constructor`,
+`packages/data-agent/pyproject.toml:2` `model-project-constructor-data-agent`), the import package
+and the repository are underscored. Three naming conventions, one project, on purpose.
+
+#### Evidence-based inventory (run 2026-08-17, Session 221; live at filing time)
+
+**644 hits across 50 tracked files.** Counted per grep pattern, not as one total (learning #8) —
+each form has a different fix:
+
+| # | Pattern | Hits | What it is |
+| --- | --- | --- | --- |
+| 1 | `docs/wiki/claims-model-starter` | 509 | the wiki **source directory** path (25 pages) |
+| 2 | `claims-model-starter.wiki` | 89 | the wiki **clone** name/URL (`<repo>.wiki.git`) |
+| 3 | `github.com/rmsharp/claims-model-starter` | 35 | repository and wiki-page URLs |
+| 4 | `rmsharp.github.io/claims-model-starter` | 25 | the **GitHub Pages** site URL |
+| 5 | `Claims Model Starter` (title case) | 2 | published wiki titles — `_Sidebar.md:1`, `Home.md:1` |
+| 6 | `claims_model_starter` (underscore) | 0 | this form does not exist; do not grep for it |
+
+**Exposed surfaces — these change.** Everything below is either live config, an executable path, or
+documentation a reader can reach today:
+
+| File | Lines | What |
+| --- | --- | --- |
+| `mkdocs.yml` | `:3`, `:4`, `:5` | `site_url`, `repo_url`, `repo_name` — the Pages site moves |
+| `README.md` | `:7`, `:9` | the repo-naming sentence itself, and the published-tutorial URL |
+| `SECURITY.md` | `:9` | security-advisory URL |
+| `CONTRIBUTING.md` | `:6` | Contributing wiki-page URL |
+| `docs/tutorial.md` | `:218` | Intake-Interview-Design wiki URL |
+| `scripts/publish_wiki.sh` | `:2`, `:11`, `:19`, `:23-24`, `:42`, `:44`, `:63`, `:72`, `:75` | `WIKI_CLONE` default, clone URL, `SOURCE_DIR`, **and the remote-URL guard** that greps for the literal `claims-model-starter.wiki` |
+| `.githooks/post-commit` | `:3`, `:18` | the `git diff-tree \| grep '^docs/wiki/claims-model-starter/'` trigger |
+| `tests/test_wiki_no_line_citations.py` | `:7`, `:38` | `WIKI_DIR` constant |
+| `THIRD-PARTY-LICENSES` | `:50` | wiki path reference |
+| `docs/style/statistical_terms.md` | `:7`, `:103`, `:137`, `:165` | wiki path references |
+| `docs/methodology/PROJECT_CONVENTIONS.md` | `:11`, `:24`, `:25`, `:42` | wiki path references (project-owned, editable) |
+| `executive-summaries/stakeholder-readiness-dossier.qmd` | `:57`, `:95` | wiki path references |
+| `BACKLOG.md` | `:17` | wiki path reference (this file) |
+| `docs/wiki/claims-model-starter/*.md` | 8 files, 12 hits | **published wiki content**: `_Sidebar.md`, `Home.md`, `Changelog.md`, `Contributing.md`, `Development-Workflow.md`, `Evolution.md`, `License.md`, `Software-Bill-of-Materials.md` |
+| `docs/planning/enterprise-migration.md` | 43 hits | **an active plan, not history** — see dragon 3 |
+| `docs/planning/opencode-adapter-spec.md`, `docs/planning/httpx-adapter-migration.md` | 5 hits | active plans |
+
+**Historical records — these keep the old name.** Precedent: the SR 11-7 → SR 26-2 rename
+(Session 144, `bfd9f36`) whose commit message states it outright — *"Historical records (root
+CHANGELOG, SESSION_NOTES, architecture-history, audits, wiki Changelog Phase 4B entry,
+banner-anchored Evolution) deliberately retain the old name."* Learning #32 is the general rule and
+learning #60 says to derive this scope from the precedent diff, so **run
+`git show --stat bfd9f36` before starting**:
+
+`CHANGELOG.md` (117) · `SESSION_NOTES.md` (293) · `docs/architecture-history/*` (125 across 20
+files) · `audits/*` (12) · `PROJECT_LEARNINGS.md` (2) · `prs-export.json`, `releases-export.json`
+(1 each — frozen GitHub API exports, not prose).
+
+#### Sub-decisions the executing session must settle first
+
+1. **Does the wiki source directory rename too?** `docs/wiki/claims-model-starter/` →
+   `docs/wiki/model_project_constructor/`. It drives pattern #1 (509 hits) and is the difference
+   between a ~60-hit change and a ~570-hit change. **Recommended: yes** — the directory is named
+   after the repository, and the publish script pairs it with a clone whose name is derived from the
+   repository (`<repo>.wiki.git`), so leaving it stale splits one name across two conventions.
+   It is a `git mv` of 25 files plus four executable references (`publish_wiki.sh:44`,
+   `post-commit:3,18`, `test_wiki_no_line_citations.py:38`); the remaining path hits are prose.
+2. **Do the published wiki titles change?** `_Sidebar.md:1` "**Claims Model Starter**" and
+   `Home.md:1` "# Claims Model Starter Wiki" are reader-visible branding, not paths. Renaming the
+   repository does not automatically mean rebranding the wiki — **ask the operator.**
+3. **Is this one session or two?** The exposed-documentation sweep and the wiki-directory `git mv`
+   are separable. If sub-decision 1 is "yes", strongly prefer **two sessions**: sweep first, `git mv`
+   second, so a bisect can separate a prose change from a path change.
+
+#### ⚠ Dragons
+
+1. **`SESSION_RUNNER.md:209` names `docs/wiki/claims-model-starter/` — and that file must not be
+   edited.** It is synced from the canonical methodology repo and local edits block future syncs
+   (`CLAUDE.md` → Project-Specific Methodology Adaptations). If sub-decision 1 is "yes", that line
+   goes stale and **the correction belongs in `CLAUDE.md`'s adaptations section**, which exists as
+   the customization seam for exactly this. Do not edit the synced file to "fix" it.
+2. **`scripts/publish_wiki.sh:72-75` is a guard, not a comment.** It refuses to publish unless the
+   clone's `origin` URL contains the literal string `claims-model-starter.wiki`. Rename the repo
+   without updating it and **wiki publishing fails closed** — which is the safe direction, but it
+   will fail on the very commit that lands the rename, via the `post-commit` hook.
+3. **`docs/planning/enterprise-migration.md` is mid-execution and holds 43 hits**, including live
+   `curl` verification commands against `rmsharp.github.io/claims-model-starter/…` (`:831-833`,
+   `:1356`, `:1520`). Those are executable acceptance criteria for Phases C2/C4, not prose. Either
+   update them in the same commit or the enterprise-migration executor runs stale checks. Also note
+   that plan's **whole purpose is to fork this repository into an enterprise clone** — sequencing a
+   rename against it is an operator call, not an implementer's.
+4. **Out-of-repo surfaces the sweep cannot reach.** The wiki clone at
+   `~/Development/claims-model-starter.wiki` (also tracked as its own project by the methodology
+   dashboard, currently 16/100) must be re-cloned or have its remote re-pointed; the dashboard's
+   project list will show the old name until it is. Any local clone needs
+   `git remote set-url origin`.
+5. **GitHub's redirect softens but does not remove the break.** Renaming leaves a permanent redirect
+   from the old URL, so existing links and clones keep working — which means a half-done sweep will
+   *look* fine indefinitely. Do not treat "the links still work" as evidence the sweep is complete.
+   The Pages URL and the wiki clone URL are the parts that genuinely move.
+
+#### Completion criteria
+
+- `grep -rIl "claims-model-starter" . | grep -v '^\./\.git/'` returns **only** the historical-record
+  files enumerated above — every remaining hit classified, none unclassified.
+- `gh repo view --json nameWithOwner` → `rmsharp/model_project_constructor`.
+- `curl -sf https://rmsharp.github.io/model_project_constructor/tutorial/` → HTTP 200.
+- `scripts/publish_wiki.sh` runs clean against the re-pointed clone (it is idempotent; a no-op run is
+  a pass).
+- `uv run pytest tests/test_wiki_no_line_citations.py` passes (its `WIKI_DIR` still resolves).
+
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 
 Land the `feat/bedrock-mantle-migration` branch on `origin/master`, converge the three

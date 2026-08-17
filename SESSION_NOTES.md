@@ -6,6 +6,14 @@
 
 ## ACTIVE TASK
 
+### What Session 221 Did
+**Deliverable:** Fix the SQL/QC retry asymmetry (gap #1c, half-applied) in `tests/eval/sql_sweep.py`
+— give it the `interview_sweep` treatment (transient classification, bounded retries,
+exclude-with-note, an `excluded_transient` count). **Plus:** file a BACKLOG item for renaming the
+repository to `model-project-constructor`, including the documentation-reference sweep. (IN PROGRESS)
+**Started:** 2026-08-17
+**Status:** Session claimed. Work beginning.
+
 ### What Session 220 Did
 **Deliverable:** **The `opencode` SQL-block variance probe. COMPLETE. The transient that produced the
 S219 NO-GO did NOT reproduce in 45 fresh samples; all three failing cells measure 100% at a 3.4× larger
