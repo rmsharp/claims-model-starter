@@ -295,6 +295,37 @@ under a second — but see the circuit-breaker item above, which this scenario i
 with a named error when the selected model's provider prefix has neither a stored credential nor the
 corresponding key in the environment.
 
+### The `SESSION_NOTES.md` shard is past the agent read cap and nothing watches it
+
+**Filed Session 222 by the session that created it**, deliberately not fixed there — the fix lives
+upstream in a repository this project does not own.
+
+`docs/architecture-history/SESSION_NOTES-through-S216.md` is **24,564 lines**. An agent `Read` of it
+truncates at 2,000 lines with **no error and no missing-data marker** — the exact defect the trim was
+scoped to remove, relocated rather than eliminated. Verified: `READ_CAP_WATCHED`
+(`methodology_dashboard.py:287-288`, consumed at `:1481`) is an **exact-path membership test** over
+`SESSION_NOTES.md`, `CHANGELOG.md`, `HANDOFFS.md` and three `BACKLOG.md` locations. The shard is in
+none of them, is not LOC-discounted as a framework doc (`FRAMEWORK_SEED_DOCS` is root-anchored,
+`:684-690`), and raises no "large files" row either (that check gates on `ext in SOURCE_EXTS`,
+`:2929-2936`). **So no tooling will ever warn about it.**
+
+**What ships today is prose, and prose only:** the pointer block's second paragraph in
+`SESSION_NOTES.md`, the fifth paragraph of the shard's own banner, and the `CLAUDE.md` adaptations
+subsection. Three warnings in three files is weaker than one entry in a watched set.
+
+**Why it was not fixed in Session 222.** The remedy is a `READ_CAP_WATCHED` entry (or a glob) in
+`methodology_dashboard.py`, which lives at `~/Development/methodology` and is synced to 13 projects.
+Editing it here is forbidden (`CLAUDE.md`; `NOTICE` §1) and editing it upstream is a change to shared
+fleet tooling — **an operator call, not an implementer's**, and a different repository's session.
+
+**Options, in ascending cost:** (a) add the shard's path to `READ_CAP_WATCHED` upstream — smallest,
+but hardcodes one adopter's filename into fleet tooling; (b) make the watch a **glob** over
+`docs/archive/**` and `docs/architecture-history/SESSION_NOTES-through-*.md` — generalises to every
+adopter that ever shards a ledger, and is the shape the dashboard's own comment implies it wanted;
+(c) accept prose-only and record the acceptance. **Recommended: (b)**, upstream, its own session in
+the methodology repo. Note (b) also fixes the same blind spot for the 5 fleet projects that already
+have shards under `docs/archive/`.
+
 ### Rename the repository `claims-model-starter` → `model_project_constructor`
 
 **Operator ask, 2026-08-17 (Session 221), filed not executed.** Rename the GitHub repository

@@ -26,20 +26,229 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 222 Did
-**Deliverable:** Lossless trim of `SESSION_NOTES.md` (25,562 lines, past the 2,000-line agent read
-cap — the dashboard's HIGH-risk driver for this project) (IN PROGRESS)
-**Started:** 2026-08-17
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **`SESSION_NOTES.md` trimmed 25,578 → 1,033 lines. COMPLETE, and the move is
+*proved* lossless, not asserted.** Sessions 216 → 1 (206 record headings, 24,564 lines, 4,073,396 B)
+moved verbatim into `docs/architecture-history/SESSION_NOTES-through-S216.md`, beside a re-runnable
+`.verify.sh` that ships its own falsification test. **The dashboard's HIGH risk flag on this project
+cleared to medium** (health unchanged at 95/100). **Zero production code touched; documentation-only.**
 
-**Pre-flight finding (recorded here in case this session dies):** the canonical ledger trimmer
-`methodology_trim.py` **refuses this file by design.** Its `LEDGERS` table has exactly two entries —
-`CHANGELOG.md` and `HANDOFFS.md` — and the dashboard's own comment (`methodology_dashboard.py:360-366`)
-states that `READ_CAP_WATCHED` is deliberately wider, "including SESSION_NOTES.md", and that "the
-trimmer answers NO_CONFIG on every one of those by design ('there is deliberately no generic fallback:
-a generic rule is what would mis-zone a differently-shaped ledger')." So the remedy here is a
-project-owned trim that **borrows the trimmer's proof discipline** (L1 concatenation identity scoped to
-the records zone, L2 zone pinning, L3 per-record partition by identity+order+bytes), not the trimmer
-itself. The tool is also not installed in this repo (it is in 5 sibling projects).
+**Started / Completed:** 2026-08-17. **Commits:** `f91f8e0` (Phase 1B claim, deliberately its own
+commit), `a9510ca` (the trim), this close-out. **Trigger:** operator ask — "lossless trim of
+SESSION_NOTES.md" — which was *not* among S221's five "what's next" options.
+
+**Workstream:** `docs/methodology/workstreams/DEVELOPMENT_WORKSTREAM.md`. Its Phase 2 Step 3 ("read
+the code you will modify — not the documentation, not the tests") is what produced the session's
+governing finding, below: the remedy this task appears to call for does not exist, and only reading
+the tool shows why.
+
+#### The finding that shaped everything: the canonical tool refuses this file *on purpose*
+
+`methodology_trim.py` is the fleet's lossless ledger trimmer. Its `LEDGERS` table holds exactly two
+entries — `CHANGELOG.md` and `HANDOFFS.md` — and it answers `NO_CONFIG` for anything else. That is
+not an oversight to patch. `methodology_dashboard.py:360-366` states the reason and names this file
+specifically: `READ_CAP_WATCHED` is *deliberately wider*, "including SESSION_NOTES.md", and "the
+trimmer answers NO_CONFIG on every one of those **by design** ('there is deliberately no generic
+fallback: a generic rule is what would mis-zone a differently-shaped ledger')." It goes further —
+naming the trimmer as the remedy for a file it refuses "would be a pointer the adopter cannot follow."
+
+**So the refusal is a specification.** This session borrowed the tool's *discipline* and none of its
+*config*: `methodology_trim.py` was not edited, not installed, and not run. It is also, notably, not
+installed in this repo at all — it is present in 5 of the 13 fleet projects.
+
+Three eras of grammar in one file justified that refusal empirically: a file-tail
+`### Session N ARCHIVED ACTIVE TASK` zone (froze at S112), an inline-at-top demotion marker era
+(S114–S178), and the current bare-consecutive-records era (S179–). A generic rule would have
+mis-zoned at least one of them.
+
+#### What "lossless" was made to mean
+
+Not "it's in git." Not a whole-file checksum — **the manual whole-file procedure this replaces passed
+while a paragraph was permanently lost**, because moving text from a live file into an archive is
+*exactly* byte-preserving under concatenation. And a whole-file check is unsatisfiable here anyway:
+the live file gained a pointer block, the shard gained a banner. So four scoped assertions, all
+re-derived from git, none of them trusting the partition that produced the trim:
+
+| | asserts | why it is not redundant |
+| --- | --- | --- |
+| **L0** | no trailing file-scoped block below the last record | in a newest-on-top ledger the footer sits exactly where the cut takes from; `footer_mode=none` must mean "I looked" |
+| **L1** | `retained ++ archived == before`, scoped to the records zone | the primary byte-level detector; operand order is load-bearing (newest-on-top ⇒ retained first) |
+| **L2** | front matter changed *only* by the declared pointer insertion, no line leaked into the shard | **the only** catcher for two of the nine mutants |
+| **L3** | per-record identity, order, and byte-equality | names *which* record moved or was edited; classifies added vs absent |
+
+**`--self-test` is the anti-vacuity gate, and it is the part I would defend hardest.** A green proof
+tells you nothing broke; it does not tell you the proof *can* break. The canonical tool's own first
+build printed three OKs while silently dropping a record, because it asserted over
+`records[:k] ++ records[k:] == records` — an identity that can never fire. So every assertion here
+runs on **re-parsed artifacts**, and the proof ships 9 mutants. **All 9 caught.** The self-test prints
+*every* assertion that fires per mutant, not just the first, specifically so no reader concludes L3 is
+an independent second opinion when L1 is doing the work.
+
+#### Two operator decisions, both taken before any file was written
+
+1. **Retention: through S217 (6 sessions, 1,014 lines).** **Measured after this close-out: 1,240
+   lines** — 760 under the cap, ≈**4.1 sessions** of headroom at the observed 184 lines/session.
+   (I predicted ~1,186; the close-out ran longer than modelled. Use 1,240, not the prediction.)
+   Rejected 10 sessions (re-fires next session) and 4 (thin for Phase 3A, and puts the boundary
+   beside the S218 duplicate stub).
+2. **Shard location: `docs/architecture-history/`, not the fleet's `docs/archive/`.** Decisive
+   evidence: all **328** of `enterprise-migration.md`'s grep-gate hits sit in the archived region and
+   stay excluded by that plan's existing `^docs/architecture-history/` filter. **Delta zero, zero
+   edits to a mid-execution plan**, one of whose occurrences is annotated *"do not narrow it."*
+   `docs/archive/` would have created 328 new gate failures.
+
+#### ⚠ What this does NOT establish
+
+1. **The proof is a byte claim, not a judgement.** It says every byte of the pre-trim records zone is
+   present, in the right file, unedited and in order. It says **nothing** about whether S217 was the
+   right cut, whether the pointer text is accurate, or whether any record's content is true.
+2. **The shard is 24,564 lines and *nothing watches it*.** `READ_CAP_WATCHED` is an exact-path set
+   that does not contain it; it is not LOC-discounted and triggers no "large files" row. A future
+   session that `Read`s it gets the exact silent truncation this session removed, relocated. The only
+   guards are prose — the pointer block's second paragraph, the shard banner, and `CLAUDE.md`. **There
+   is no automated catch. This is the deliverable's real residual risk.**
+3. **Nothing was cleaned up.** Zero transform. The 5 duplicate zero-body stubs, the deliberate
+   mojibake at old-line 7,901, the lone tab, all 20,335 non-ASCII characters — carried verbatim.
+   Tidying them in the trim commit would have made "the move was verbatim" unfalsifiable.
+4. **No `CHANGELOG.md` entry**, per `PROJECT_CONVENTIONS.md` §2's cadence gate: no `src/`, `packages/`,
+   `scripts/` or `tests/` logic changed. ⚠ The convention-vs-precedent conflict S219/S220/S221 each
+   flagged is now **un-asked for a fourth session** — S216 was measurement-only and *does* carry an
+   entry. Worth an operator ruling.
+
+#### Three commits, not one — and this is now a written rule
+
+The trim commit contains **no record edit**, so the proof reports `added by the trim commit: 0` and
+stays green permanently. This is not fastidiousness: **5 of the 20 proofs shipped across this
+operator's fleet currently FAIL with zero data loss**, because the session bundled its own close-out
+into the archive commit. This project's protocol *guarantees* that shape unless it is designed out —
+Phase 1B and Phase 3 both write to the newest retained record. Hence claim / trim / close out as three
+commits, recorded in `CLAUDE.md`.
+
+### Session 221 Handoff Evaluation (by Session 222)
+
+**Score: 6/10.** Among the best-*formed* handoffs in this series — its structure is the template I
+imitated — but its ROI for *this* session was near zero, and it shares in a 202-session-wide blind
+spot that this session's task existed to fix.
+
+**What helped.** (1) **Gotcha 7 — "A green suite is not evidence a new tunable is pinned. Mutate the
+default and re-run — that is how three of this session's defects were found."** This is the single
+highest-ROI sentence I inherited, and it is *why this deliverable ships `--self-test` at all*. I was
+building a proof with no test suite behind it; S221's gotcha is what turned "write the assertions"
+into "write the assertions and then prove they can fail." Traceable, direct, load-bearing.
+(2) **Learning #94 (price a filed remedy before executing it)**, which S221 coined, is exactly the
+move that produced this session's governing finding — I priced "add a `LedgerSpec` for
+SESSION_NOTES.md" and found the refusal was deliberate. (3) **The handoff's own form** — key files
+with paths, numbered gotchas, explicit non-establishments — is what I copied above.
+
+**What was missing — and it is systemic, not S221's alone.** The handoff offers five "what's next"
+options. **None is the 25,562-line ledger that makes every session's `Read` of the continuity file
+silently truncate**, and which was this project's *only* HIGH-risk dashboard row. Verified, not
+asserted: `grep -icE "read cap|read-cap|2,?000-line"` over the entire 202-session archive returns
+**2 hits, both inside the banner I wrote today**. Against **23** mentions of the HIGH-risk flag. So
+for 202 sessions the flag was seen, reported, and never traced to its cause. S221 inherits a share of
+that, not the whole of it.
+
+**The irony worth recording.** The discipline that produces these handoffs — six mandatory elements,
+explicit non-establishments, numbered gotchas — is precisely what grew the file past the cap.
+Handoff quality and ledger readability were in direct tension for ~100 sessions and no session costed
+it. The retention rule now in `CLAUDE.md` is the first thing that does.
+
+**What was wrong:** nothing. No claim in S221's handoff that I exercised proved inaccurate.
+
+**ROI: low for this session, through no fault of its content.** The operator pivoted outside its five
+options. Its transferable value was two general-purpose disciplines, not any of its specifics.
+
+### Phase 3B: Self-assess — Session 222 — 8.5/10
+
+- **The +:** (1) **Read the tool before designing around it** and found the refusal was deliberate —
+  the alternative (adding a `LedgerSpec` to canonical third-party material) would have been wrong on
+  licence grounds *and* on design grounds, and it was the obvious first move. (2) **Shipped a proof
+  that can fail, and proved it** — 9 mutants, all caught, with the per-mutant assertion breakdown
+  printed so the proof cannot be over-read. (3) **Designed out the failure mode before hitting it**:
+  the three-commit split was chosen from evidence (5 of 20 fleet proofs are red for exactly this
+  reason) rather than discovered. (4) **Independently re-derived every load-bearing number** from the
+  research pass — sha256, 25,578/4,153,325, 213 headings/208 ids, the cut at 1,015, and the byte sum —
+  before writing a byte. (5) **Verified two things myself instead of asking**: mkdocs publish scope
+  (fail-closed allowlist ⇒ no leak) and the `PROJECT_CONVENTIONS.md` licence question (`NOTICE` says
+  12 files, the directory holds 13; `git log` shows in-project authorship). (6) **Corrected a
+  predecessor's number rather than copying it** — the rename inventory's "644 hits across 50 files"
+  was already low at filing time; `git grep` at `5d906e9` gives 659/50. (7) **Wrote down what the
+  deliverable does not establish**, including a residual risk with no automated catch.
+- **The −:** (1) **The shard's read-cap exposure is real and I mitigated it only with prose.** I moved
+  a silent-truncation hazard rather than eliminating it; three warnings in three files is weaker than
+  one line in `READ_CAP_WATCHED`, which lives in a file I do not own. I did not file a backlog item to
+  close it properly — see "What's next" #1. (2) **L3's ORDER clause is never the sole catcher** in the
+  self-test; L1 fires first on every reordering mutant. L3 earns its place by *naming* what moved, not
+  by independent detection, and I only made that visible after a second pass. (3) **I let the research
+  agents establish the anomaly inventory** (the 16 headless sessions, the 7 `should do` headings, the
+  20B/20A ids) and verified rather than derived it — the same shape as S221's self-criticism #3.
+  (4) **One avoidable round-trip**: `Path.read_text(newline=…)` is 3.13-only and failed on first run;
+  a 10-second check of the interpreter version would have caught it. (5) **This close-out is ~150
+  lines in the file I just trimmed** — I tightened it, but the tension named above is one I am also
+  contributing to.
+
+**Phase 3C note:** no workstream document was edited. `docs/methodology/workstreams/` is third-party
+synced material (`NOTICE` §1, `CLAUDE.md`) and must stay byte-identical; learning **#95** went to
+`PROJECT_LEARNINGS.md`, which `CLAUDE.md` designates as this project's learnings home, and rows
+#35/#39/#42 were annotated. `PROJECT_CONVENTIONS.md` **was** edited — it is the one file in
+`docs/methodology/` that is project-owned, verified before touching it. This is compliance with 3C,
+not a skip.
+
+**What's next — five options, all ungated:**
+
+1. **Close the shard's read-cap exposure properly** (nothing filed yet — file it first). The shard is
+   24,564 lines and no tooling watches it; the mitigation shipped today is prose in three files. The
+   real fix lives in `methodology_dashboard.py`'s `READ_CAP_WATCHED` / the canonical trimmer, i.e.
+   **upstream in `~/Development/methodology`, not here** — which makes it an operator call, not an
+   implementer's. **Recommended first**, because it is the one thing this session knowingly left open.
+2. **Re-measure `opencode` under the fixed harness** (`BACKLOG.md`) — S221's option 1, still the
+   natural successor to the eval thread. **~$16.4, ~130 min, its own session.** Source `.env` first;
+   quote `transient_retries` beside every rate; do not compare to S219/S220 numbers.
+3. **Close the third and fourth transient policies** (`BACKLOG.md`) — the governance loop in
+   `shadow_run.py:97-111` and the handler-less governance test. S221 recommended this *before*
+   spending $16 measuring with the instrument.
+4. **The `KeyError` guard** (`BACKLOG.md`) — shipped-package code, mirrors an existing intake
+   convention, small and well-specified.
+5. **The repository rename** (`BACKLOG.md`) — its inventory is now accurate post-trim (see the
+   Session 222 note in that item). Read the three sub-decisions and five dragons first.
+
+**Key files:**
+- `docs/architecture-history/SESSION_NOTES-through-S216.md` — the shard. **`grep` it. Never `Read`
+  it.** Its banner states what it holds and what was not altered.
+- `docs/architecture-history/SESSION_NOTES-through-S216.md.verify.sh` — the proof. Run it before
+  trusting anything about the archive; run `--self-test` before trusting the proof. Its header
+  explains why four assertions replace one checksum.
+- `CLAUDE.md` → "**`SESSION_NOTES.md` is trimmed (Session 222)**" — the retention rule, the
+  three-commit rule, the declared grammar, and the two `SESSION_RUNNER.md` steps that need **no**
+  override (14 and 18 — stated so nobody re-litigates them).
+- `PROJECT_LEARNINGS.md` **#95** (refusal-as-specification + the four transferable rules); #35/#39/#42
+  annotated.
+- `docs/methodology/PROJECT_CONVENTIONS.md` §3 — the ledger-shard exception to "append-only logs do
+  not move."
+
+**Gotchas:**
+1. **Three commits, always: claim → trim → close out.** A record edit bundled into a trim commit
+   registers as an added record and holds the proof red forever *with zero data loss*. The proof
+   treats `added != 0` as a **FAIL** (a deliberate divergence from the canonical tool, which
+   downgraded it to a note because the canonical repo bundles by practice).
+2. **The `^### Session .* ARCHIVED ACTIVE TASK` grep in Learnings #35/#39/#42 now returns EMPTY**
+   against the live file. All **58** headings are in the shard. Empty output reads as "not found"; it
+   means "moved." Do not re-create the zone.
+3. **Shards are write-once.** The trim script aborts if the target exists. A second trim writes a new
+   cut key; it never appends to `SESSION_NOTES-through-S216.md`.
+4. **Do not borrow the canonical trimmer's *trigger*** — only its proof. At this file's ~184-lines-
+   per-record density its stop condition is unsatisfiable at *every* retention depth including one
+   record, so a trimmer using it would trim to empty and still report the trigger unmet. The rule in
+   `CLAUDE.md` (fire above 1,500, cut to ≤1,050, floor of 4 sessions) is a level with hysteresis, and
+   it is labelled as judgement.
+5. **A record is a heading-delimited byte span, never a session.** 16 sessions have no heading at all,
+   5 headings are duplicate zero-body stubs, one record swallows ten sessions. None of that is
+   special-cased and none of it needs to be — but any future statement of the form "record N is
+   Session N's work" is false, and was false before the trim too.
+6. **Derive a cut index from a session id, never type a line number.** `KEEP_THROUGH` is the only
+   tunable in the trim script; a hardcoded line number mis-cuts the instant a session is appended.
+7. **Regenerating the proof is not free.** Its pointer block is lifted verbatim from the live file at
+   generation time, so re-running the generator after the pointer changes would silently re-baseline
+   L2. If the pointer text must change, change it *and* re-run `--self-test`.
 
 ### What Session 221 Did
 **Deliverable:** **The SQL/QC retry asymmetry (gap #1c's other half) is FIXED. COMPLETE.** The sweep now
