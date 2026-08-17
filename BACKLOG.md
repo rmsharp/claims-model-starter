@@ -352,9 +352,19 @@ banner-anchored Evolution) deliberately retain the old name."* Learning #32 is t
 learning #60 says to derive this scope from the precedent diff, so **run
 `git show --stat bfd9f36` before starting**:
 
-`CHANGELOG.md` (117) · `SESSION_NOTES.md` (293) · `docs/architecture-history/*` (125 across 20
-files) · `audits/*` (12) · `PROJECT_LEARNINGS.md` (2) · `prs-export.json`, `releases-export.json`
-(1 each — frozen GitHub API exports, not prose).
+`CHANGELOG.md` (117) · `SESSION_NOTES.md` (**0** since the Session 222 trim — its 293 hits moved
+into `docs/architecture-history/SESSION_NOTES-through-S216.md` and are counted in the next entry) ·
+`docs/architecture-history/*` (**418 across 21 files**, of which the shard is 293; was 125 across 20
+before the trim) · `audits/*` (12) · `PROJECT_LEARNINGS.md` (2) · `prs-export.json`,
+`releases-export.json` (1 each — frozen GitHub API exports, not prose).
+
+**Session 222 note.** The trim moved hits between files; it changed no per-pattern total, so the
+pattern table above stands unedited. It also does not change the rename's *scope* — the shard is a
+historical record and keeps the old name, per the same S144 precedent. Two corrections while
+re-deriving: **the headline "644 hits across 50 tracked files" was already low at filing time** —
+`git grep -c` at the filing commit `5d906e9` gives **659 across 50**, and the same 659/50 holds at
+`8bc3ef3`, at `f91f8e0` and post-trim. Re-derive rather than copy at execution time:
+`git grep -c "claims-model-starter" -- . | awk -F: '{s+=$NF} END {print s}'`.
 
 #### Sub-decisions the executing session must settle first
 

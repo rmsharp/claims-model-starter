@@ -48,6 +48,8 @@ Replace `YYYY-MM-DD` with the date the document is moved (not the date it was wr
 
 **What does *not* move.** Freshness-tracked state (wiki pages, `BACKLOG.md`, `ROADMAP.md`), append-only logs (`SESSION_NOTES.md`, `CHANGELOG.md`), and active plans (whose primary scope is still being delivered).
 
+**Ledger shards are the one exception (Session 222).** The *live* append-only log never moves — but a **frozen shard of its retired records** does, as `<STEM>-through-<CUTKEY>.md` beside a `<same>.verify.sh` proving the move was byte-for-byte lossless. This is a size remedy, not an archaeology judgement: a ledger past the 2,000-line agent read cap is silently truncated on every `Read`, with no error and no missing-data marker. A shard therefore does **NOT** carry the concept-era banner above — that banner says "describes the system as designed on YYYY-MM-DD", which is false of a session log — it carries its own banner naming its record count, its session span, and the fact that nothing below it was altered. First and only instance: `docs/architecture-history/SESSION_NOTES-through-S216.md`. The canonical `methodology_trim.py` deliberately refuses `SESSION_NOTES.md` (no generic grammar fallback), so the shard is hand-built and its proof ships a `--self-test` that proves the proof itself can fail.
+
 **SESSION_RUNNER.md references to `docs/planning/` are unchanged by this convention.** The runner points to `docs/planning/` as the canonical location for *active* plans; the archive move is a retrospective action for plans whose work is done.
 
 ---

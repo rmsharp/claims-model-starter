@@ -116,9 +116,11 @@ tests/
   test_wiki_no_line_citations.py        # wiki fragile-citation guard (3 tests)
 docs/planning/                          # active (not-yet-archived) plans
 docs/architecture-history/              # archived plans (concept-era + delivered): architecture-plan.md + 17 others + initial_purpose.txt
+  SESSION_NOTES-through-S216.md         # frozen SESSION_NOTES records, Sessions 216->1 (grep it; do not Read it)
+  SESSION_NOTES-through-S216.md.verify.sh  # re-runnable proof that the move was byte-for-byte lossless
 SESSION_RUNNER.md                       # per-session operating procedure
 SAFEGUARDS.md                           # commit discipline and blast-radius rules
-SESSION_NOTES.md                        # session-by-session continuity log
+SESSION_NOTES.md                        # session-by-session continuity log (newest ~6 sessions; older in the shard above)
 ```
 
 ## Getting started
