@@ -2,6 +2,60 @@
 
 **Open work only.** Completed items move to `CHANGELOG.md` (chronological, session-numbered). Milestone-grouped summaries live in `ROADMAP.md`. **Do not leave checked-off `[x]` items here** — remove the line on completion and record the work in `CHANGELOG.md` per `docs/methodology/README.md` §templates (v2.1 three-file split).
 
+---
+
+## Plain-language index — read this to the operator in Phase 0
+
+**Why this exists.** In Session 223 the operator read a Phase 0 report that listed the open items by
+their headings and said: *"I do not understand any of the 9 listed items."* That was a fair
+complaint — the items below are written by sessions for sessions, and their headings are opaque
+without the shared vocabulary. This section is the translation, **written once so no future session
+has to regenerate it**, at the operator's explicit instruction (2026-08-17).
+
+**Maintain it.** When you open, close, or materially change an item below, update its row here in the
+same commit. A row that disagrees with its item is worse than no row.
+
+### The vocabulary the headings assume
+
+The pipeline's agents call a **large language model (LLM)**. Three routes to one are wired:
+`anthropic` (the direct API — **the default, and what actually runs**), `bedrock` (Amazon's hosting),
+and `opencode` (a command-line program fronting ~75 vendors, added so an enterprise standardising on
+a different AI CLI is not a rewrite). Before any route becomes the default it must pass a **gate**:
+eight measurements against real live calls, costing real money. The code that runs them is the
+**eval harness** (`tests/eval/`) — test scaffolding, not shipped product. A **sweep** is one batch
+run of it. A **transient** is a momentary glitch (timeout, dropped connection, one garbled reply) as
+opposed to the model genuinely being bad at the task.
+
+The eight gate measurements: valid JSON emitted; SQL syntactically valid; SQL actually executes;
+agreement with reference answers on claim cycle-time; **never** rating a risk less severe than the
+reference (zero tolerance); quality-check queries structurally correct; the interview reaches a
+complete picture; **never** ending an interview early (zero tolerance).
+
+### The items, in plain terms
+
+**Five of these are one complaint** — *the measuring instrument cannot reliably tell "the model is
+bad" from "something hiccuped."* That is what cost `opencode` its recorded verdict.
+
+| Item (heading below) | In plain terms | Cost / note |
+|---|---|---|
+| Re-measure `opencode` | `opencode` was recorded NO-GO on a single glitch in 15 samples. Session 220 re-ran 45 samples and it never recurred; Session 221 then fixed the harness to retry a glitch before scoring it — and deliberately did **not** re-run the measurement, because changing your instrument after seeing a number you dislike is how a gate stops being a gate. The verdict on the books rests on an instrument since repaired. | **~$16.40, ~130 min.** The only item that costs real money. Source `.env` first. |
+| Three different transient policies | Four places make live calls; each handles a glitch differently — retry-then-discard, retry-then-score, no retry at all, and crash the whole run. The one that does **not** retry feeds the strictest bar in the gate (never under-rate a risk, zero misses allowed). So the exact bug that cost `opencode` its verdict is still live in the highest-stakes measurement, and two of the four surfaces disagree with each other. | Harness only. No money. |
+| A bare `KeyError` aborts the whole sweep | If the model returns valid JSON with the *wrong field names*, the code dies on an unhandled error that no part of the harness catches — killing a run that may be an hour in, instead of recording one failure and moving on. | Small. Mirrors a convention the intake agent already ships. |
+| No circuit breaker | A run failing for a systemic reason grinds on sample after sample. The retry added in Session 221 tripled the worst case: **~7.5 hours of billed nothing** before it reports anything. | Small. Should abort after ~5 consecutive total failures. |
+| Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
+| The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
+| `SESSION_NOTES.md` shard past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
+| Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. 644 references across 50 files. | **Two traps spring on the landing commit itself** — the wiki publish script greps for the literal old name and fails closed, and one reference lives in a synced file that must not be edited. |
+| Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
+| `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
+| A bad `--db-url` fails silently | Filed Session 223. `connect()` builds a message naming the exact cause; the next line catches the error **without binding it** and throws the message away. The run then reports `COMPLETE` and exits 0 with **every quality check unexecuted**. A typo'd port, an unexported shell variable, and a genuine warehouse outage produce byte-identical reports. | Pre-existing and wider than the S223 fix — **not** a reason to revert it. The cheapest two-thirds is small; the third option changes when a pipeline run is allowed to "succeed" and needs an operator ruling. |
+| CLI-adapter portability (`opencode` spec) | Not a bug — the umbrella record of the four-phase `opencode` adapter build. **All four phases are DONE.** It stays here as the provenance trail for the measurement items above. | Nothing to execute. |
+| `sql_exec` — CLOSED | Historical marker, kept deliberately. Nothing to do. | Nothing to execute. |
+
+**Also standing, not an item below:** `tests/eval/README.md` has three stale statements (`:49`, `:51-52`, `:86`), unfixed for a seventh session. $0, no risk.
+
+---
+
 ## Open Items
 
 ### CLI-adapter portability — spec the `OpenCodeLLMClient` adapter
@@ -138,38 +192,6 @@ denominator, never a bare rate. Reopening the `opencode` cutover decision is dow
 non-Anthropic measurement that discharges `AI-Dependencies.md` §6.7's model-family diversification is a **second**
 run and is now unblocked, since the transport itself is cleared on 7/8.
 
-### `sql_dialect_from_url` raises `ValueError` on a non-numeric port — breaks its own contract
-
-**Found Session 218** while scoping the re-measure (adversarial blast-radius pass); **filed, not fixed**, by
-operator decision — the session stayed scoped to measurement. Small and self-contained.
-
-`packages/data-agent/src/model_project_constructor_data_agent/db.py` — `sql_dialect_from_url` catches only
-`sa.exc.ArgumentError`, but `sa.make_url` calls `int()` on the port segment and raises a **bare `ValueError`**
-for a non-numeric one. `ArgumentError` is not a `ValueError` subclass (`ArgumentError -> SQLAlchemyError ->
-Exception`), so it escapes. Verified live:
-
-```
-sql_dialect_from_url("postgresql://u:p@host:$DB_PORT/claims")
-  -> ValueError: invalid literal for int() with base 10: '$DB_PORT'
-sql_dialect_from_url("not a url at all")   -> None      # the ArgumentError path works
-```
-
-**Why it matters:** the function's own docstring promises the opposite — "Returns `None` for a URL SQLAlchemy
-cannot parse, so a malformed `--db-url` degrades to today's dialect-silent prompt **rather than raising here** —
-the URL's real failure surfaces at `ReadOnlyDB.connect`, which is the error path callers already handle." Two
-**production** seams pass a user-supplied URL straight in: `cli.py:129` (`db.dialect`) and
-`scripts/run_pipeline.py:175` (`sql_dialect_from_url(db_url)`). A user whose `--db-url` carries an unexpanded
-env-var port (`...@host:$DB_PORT/db`) or ODBC-style extras gets an uncaught `ValueError` instead of the clean
-`DBConnectionError` the design intends. It is also evaluated *before* the DB is connected, so it pre-empts the
-error path that was supposed to report it.
-
-**Fix:** widen to `except (sa.exc.ArgumentError, ValueError)` — one line — plus a regression test for the
-non-numeric-port case. Note `ValueError` is the broader catch and subsumes nothing else here that should
-propagate; the function is parse-only and has no other failure mode worth surfacing.
-
-**Not a blocker for the eval**: the eval DB URL is a well-formed `sqlite:///` path, so no measurement is
-affected.
-
 ### The gate measures only ONE of the three dialect-injected prompts
 
 **Found Session 218**, recorded rather than fixed (scope). Session 217 injected the dialect note into three
@@ -250,6 +272,98 @@ and **kills the run mid-sweep** instead of scoring one miss. The same gap sits a
 wraps the identical pattern in `_build_draft`. So the fix is to mirror an existing, shipped convention —
 wrap in `try/except KeyError` and re-raise as `LLMParseError` — not to invent one. Add a regression test
 per call site; the wheel's error-mapping tests live in `tests/data_agent_package/test_anthropic_client.py`.
+
+### A bad or unreachable `--db-url` fails silently: exit 0, `COMPLETE`, and the message naming the cause is discarded
+
+**Found Session 223** by the adversarial review of the `sql_dialect_from_url` fix — the reviewer asked
+whether degrading to `None` is *safe*, which requires the real error to be reported somewhere, and
+measured that it is not. **Filed, not fixed:** the remedy changes `DataReport` status semantics, which
+gates the orchestrator's `FAILED_AT_DATA` halt — a design change across two packages, not a bug fix.
+
+**The message exists and is thrown away.** `ReadOnlyDB.connect` builds exactly the right text:
+
+```
+DBConnectionError: cannot connect to 'postgresql://user:pw@host:$DB_PORT/claims':
+  invalid literal for int() with base 10: '$DB_PORT'
+```
+
+Then `packages/data-agent/.../nodes.py:118-120` does `except DBConnectionError: return {"db_executed": False}`
+— **without binding the exception**, so the text is unrecoverable. `agent.py:138-142` appends the fixed
+string `"database unreachable at QC execution time; quality checks not executed"`, and `agent.py:147`
+returns `status="COMPLETE"` unconditionally (the only non-COMPLETE statuses are `INCOMPLETE_REQUEST`
+for a vacuous request and `EXECUTION_FAILED` when a node *raises* — and this path deliberately does
+not raise). `src/model_project_constructor/orchestrator/pipeline.py:460` halts with `FAILED_AT_DATA`
+only `if executed and data_report.status != "COMPLETE"`, so it never fires here.
+
+**Measured consequences.** The data-agent CLI prints `wrote report.json (COMPLETE)` and exits 0. The
+full pipeline prints `Status: COMPLETE`, generates all 38 project files, and exits 0. The report from
+`@host:$DB_PORT/claims` is **byte-identical** (modulo `created_at`) to the report from a well-formed
+but unreachable `@warehouse.invalid:5432/claims`. So three very different situations — a typo'd port,
+an unexported shell variable, and a genuine warehouse outage — are indistinguishable to the operator
+and to CI, and **every quality check silently goes unexecuted while the run reports success.**
+
+**⚠ This is pre-existing and wider than the Session 223 fix — established by control, not by
+assertion.** The reviewer who found it framed it as "the S223 fix is incomplete"; a second pass
+**refuted that framing** by running the arm the first pass omitted. With the catch reverted to the
+pre-fix `except sa.exc.ArgumentError:`, `--db-url 'not-a-url'` — an `ArgumentError` case that was
+*always* caught and that the S223 change does not touch — produces the same `wrote report.json
+(COMPLETE)`, exit 0, and the same canned concern. Post-fix, the reports from all three inputs
+(bad port / `not-a-url` / well-formed-but-unreachable) are byte-identical modulo `created_at`. So
+the indistinguishability is a property of the DB error path, not of that diff.
+
+What S223 changed is only that the non-numeric-port case stopped being *uniquely* fatal and joined
+the silent majority. Pre-fix it at least crashed with the cause in the traceback. **Do not read that
+as an argument for reverting S223** — a raw `ValueError` traceback out of prompt construction is not
+a diagnostic, and the inconsistency was the filed bug. It *is* the argument for closing this item.
+
+**Options, ascending cost.** (a) Bind the exception at `nodes.py:119` and carry `str(e)` into
+`data_quality_concerns` instead of the canned string — smallest, keeps `COMPLETE`, makes the cause
+visible in the report. (b) Additionally warn at the derivation site when a non-`None` `--db-url`
+yields a `None` dialect, so the *parse* failure is distinguishable from the *connect* failure.
+(c) Give the report a status that makes `pipeline.py:460` halt — most correct, and the one with real
+blast radius: runs that silently "succeed" today would start failing, which is the point but is an
+operator-visible behaviour change and needs their ruling first. **Recommended: (a) + (b), leaving (c)
+as a separate decision.**
+
+### `probe_information_schema` says it "never raises" and can raise — same defect class as the S218/S223 one
+
+**Found Session 223** by the blast-radius sweep that accompanied the `sql_dialect_from_url` fix — an
+explicit search for *other* instances of that defect class. **Filed, not fixed:** one deliverable per
+session, and this is a different function in a different module. It is the **only** same-class site
+the sweep found in shipped code; everything else it flagged (`_extract_json`, the `_build_draft`
+pairs, the `opencode_client._run` twins) was ruled LEAVE because those functions make no
+graceful-degradation promise in a docstring, which is the third criterion of the class.
+
+`packages/data-agent/src/model_project_constructor_data_agent/discovery.py:70` promises: *"Returns a
+valid `DataSourceInventory` — never raises for probe failures."* Two escapes:
+
+1. **Too-narrow `except` (read from source, not run).** The guard at `:80` is
+   `except (SQLAlchemyError, NotImplementedError, RuntimeError)`, around `db.get_information_schema(...)`.
+   That call reaches `ReadOnlyDB._reflect_entity` (`db.py:129-176`), which does unguarded dict
+   subscripts — `fk["referred_table"]`, `fk["constrained_columns"]`, `fk["referred_columns"]`
+   (`:150-152`), `col["name"]`, `col["type"]` (`:158`, `:162`) — on inspector-returned dicts. A
+   dialect whose reflection dicts omit a key raises `KeyError`, which is not in the tuple.
+2. **No `except` at all (provable from the code as written, and the larger half).** Lines `:96` and
+   `:98-118` sit **outside** the try entirely. `:96` calls `_entry_from_reflection`, which subscripts
+   `table["name"]`/`table["entity_kind"]` and constructs a pydantic model (`ValidationError`). `:99`
+   calls `llm.rank_candidate_tables(...)`, which reaches `anthropic_client.py:395-408` and can raise
+   `LLMParseError`, `KeyError` on `item["fully_qualified_name"]`, `ValueError`/`TypeError` from
+   `float(item["relevance_score"])`, and any SDK error from `_call_claude`. **The only caller,
+   `cli.py:204-209`, wraps it in `try:`/`finally:` with no `except` clause** — so
+   `mpc-data discover --rank-with-llm` against a malformed LLM response is an uncaught traceback out
+   of a function whose docstring says it never raises. This is the same shape as the defect closed in
+   Session 223, and it shares a root cause with the `KeyError` item above.
+
+**Sketch:** move `:96` and `:98-118` inside the existing try and widen the tuple — `KeyError` at
+minimum, or `Exception`, since the handler already stringifies the error into `ProducerMetadata.notes`
+so nothing is silently lost. ~20-40 changed lines plus 3-5 tests, one file, no public API change, no
+caller change. **Honest caveat carried from the finding:** escape (1) is read-from-source and has no
+measured trigger — unlike the `make_url` bug, nobody has produced a dialect that omits a reflection
+key. Escape (2) needs no trigger; it is unguarded by inspection. Fix (2) with confidence; treat (1)
+as defence-in-depth.
+
+⚠ `discovery.py` is **not** twinned with an intake copy, so `tests/test_llm_json_parity.py`'s
+pairwise battery does not force a matching edit — unlike most of this package's error-handling code.
 
 ### No circuit breaker on a systematically-failing live sweep
 
