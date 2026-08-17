@@ -26,16 +26,210 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 223 Did
-**Deliverable:** Fix `sql_dialect_from_url`'s contract violation — a non-numeric port in a `--db-url`
-raises a bare `ValueError` instead of degrading to `None` (`BACKLOG.md`, filed Session 218). Shipped
-package code. (IN PROGRESS)
-**Started:** 2026-08-17
-**Status:** Session claimed. Work beginning.
-**Also carried, by operator instruction (2026-08-17):** (1) the CHANGELOG cadence ruling —
-*measurement-only sessions do NOT write a CHANGELOG entry; the written convention is right and
-S216's entry was the deviation* — to be recorded in `docs/methodology/PROJECT_CONVENTIONS.md` §2 so
-it stops being re-asked for a fifth session; (2) a plain-language index of the open backlog items,
-written into `BACKLOG.md` so Phase 0 step 3 finds it without regenerating the translation.
+**Deliverable:** **`sql_dialect_from_url` honours its own contract. COMPLETE.** A non-numeric port in
+a `--db-url` degrades to `None` like every other unparseable URL instead of raising a bare
+`ValueError` at two production seams. **One line of logic changed** in shipped package code;
+everything else is tests and documentation. **No threshold, no default, no pipeline behaviour
+changed.**
+
+**Started / Completed:** 2026-08-17. **Commits:** `38d1dea` (Phase 1B claim, its own commit),
+`2733df0` (the fix), `99e9abf` (rulings + index + findings), this close-out. **Trigger:** the
+operator read the Phase 0 report, said *"I do not understand any of the 9 listed items"*, and after
+the translation picked item #5 — plus two carried asks.
+
+**Workstream:** `docs/methodology/workstreams/DEVELOPMENT_WORKSTREAM.md`. Its Phase 2 **Step 6**
+("verify assumptions — *this function is only called from X*, verify with grep") is what produced the
+session's two most useful findings, both of which contradicted a written claim.
+
+#### The fix, and how the filed remedy was incomplete
+
+`BACKLOG.md` prescribed `except (sa.exc.ArgumentError, ValueError)`. **That was correct** — the first
+filed remedy in four sessions that survived pricing intact (contrast learning #94). But its
+*characterisation* was too narrow, and only measurement showed it.
+
+A 24-case probe against SQLAlchemy 2.0.49 established the failure surface instead of reading it:
+
+| | outcome | note |
+| --- | --- | --- |
+| structurally unparseable, wrong-type (`None`, `int`) | `ArgumentError` | already handled |
+| **five** port shapes — unexpanded env var, alphabetic, **empty** (`@host:/`), float, IPv6-with-either | **bare `ValueError`** | the bug; BACKLOG named **one** |
+| negative port, 20-digit port, whitespace port, newline in URL | **parse fine** | why the fix stops short of range validation |
+
+The empty-port case is the same shell template with the variable set to `""` — as plausible as the
+one that was filed. **`ArgumentError` is not a `ValueError` subclass** (`-> SQLAlchemyError`), so the
+library's own error type does not cover the library's own failure mode.
+
+#### The over-catch was invisible to a complete-looking suite
+
+Mutating in **three** directions, not one:
+
+| mutant | tests killed |
+| --- | --- |
+| `except sa.exc.ArgumentError:` (the original bug) | **10** |
+| `except ValueError:` (drops the old arm) | **3** |
+| `except Exception:` (over-catch) | **0 → 1** |
+
+The over-catch mutant **survived the first suite that looked finished**. Silently returning `None` for
+a genuine defect drops the dialect from the prompt and reintroduces wrong-database SQL — the exact
+failure the module exists to prevent. One monkeypatch test closed it. **A widened `except` has two
+bounds and mutation testing only finds the one you thought about** (learning #96).
+
+**Neither production seam had regression coverage.** `tests/scripts/test_run_pipeline_adapter.py` and
+`tests/data_agent_package/test_cli.py` both exercised these seams with well-formed URLs only and
+**would not have caught this**. Both new cases die under the reverted catch — verified, not assumed.
+
+#### ⚠ Adversarial review refuted my own write-up — read this before quoting the fix
+
+3 claims raised, **1 confirmed, 2 refuted.** The confirmed one was mine:
+
+**I wrote a falsehood into the CHANGELOG, inherited from a recon agent and never run.** I claimed the
+post-fix path reaches `Status: FAILED_AT_DATA`. **There is no such off-ramp for any DB problem.**
+Verified by reading the code myself: `nodes.py:118-120` catches `DBConnectionError` **without binding
+it**, `agent.py:147` returns `status="COMPLETE"` unconditionally, and `pipeline.py:460` halts only on
+a non-COMPLETE report. Corrected in four places, with the correction *stated* rather than quietly
+patched. This is failure mode #11 (claims from memory) in its agent-mediated form: **a subagent's
+finding is a claim, not a measurement.**
+
+**The reviewer's own headline claim — "the fix is incomplete" — was then refuted by the verify pass**,
+which ran the control arm the first pass omitted: with the catch reverted, `--db-url 'not-a-url'` (an
+`ArgumentError` case the fix does not touch) *also* yields `COMPLETE`/exit 0. So the silence is a
+property of the DB error path, **not of this diff**. Filed as its own item with that control recorded,
+explicitly flagged **not a reason to revert S223**.
+
+**What the fix therefore buys: consistency, not diagnosability.** Pre-fix this one case crashed with
+the cause in the traceback; post-fix it is quiet like every other bad URL. That is the right trade —
+a raw `ValueError` out of prompt construction is not a diagnostic — but it is a trade, and the
+docstring, both test docstrings, the CHANGELOG and the BACKLOG all now say so.
+
+#### Two operator asks, both landed
+
+1. **CHANGELOG cadence — SETTLED** in `PROJECT_CONVENTIONS.md` §2. Measurement-only sessions get no
+   entry; the written gate was right; **S216 was the deviation and is neither backfilled nor
+   amended** (append-only ledger). Un-asked for four sessions; now un-askable.
+2. **Plain-language index** at the top of `BACKLOG.md` — vocabulary, the five-items-are-one-complaint
+   grouping, one row per open item with real cost, and a maintenance rule. **12 rows against 12 open
+   headings, cross-checked.**
+
+#### ⚠ What this does NOT establish
+
+1. **The silent-failure item is filed, not fixed.** A pipeline run against a bad `--db-url` still
+   reports `COMPLETE` at exit 0 with **every quality check unexecuted**. Its option (c) changes when
+   a run may report success — an operator ruling, not an implementer's.
+2. **`discovery.py`'s escape (1) has no measured trigger.** Read from source. Escape (2) needs none.
+3. **No live call was made and no eval number moved.** `opencode` is still NO-GO.
+4. **`ruff format` is still not applied** and the tree is not formatter-clean. That is correct — CI
+   runs `ruff check` only. Do not "fix" it.
+
+### Session 222 Handoff Evaluation (by Session 223)
+
+**Score: 9/10.** The most useful handoff in this series, and the first whose highest-value content was
+a *warning about itself*. Marked down only for a self-report that its own BACKLOG entry contradicts.
+
+**What helped.** (1) **The trimmed ledger itself.** S222's deliverable *was* my Phase 0: reading
+SESSION_NOTES cost one paginated read instead of a silent truncation. The pointer block's "`grep` that
+shard; never `Read` it" is the single most load-bearing sentence, because the failure it prevents is
+**invisible** — I would not have known I was missing 24,564 lines. (2) **"Run `--self-test` before
+trusting a green run."** I ran the proof during Phase 0 (green, `added: 0`), and the framing —
+*"a proof that has never been falsified proves less than it appears to"* — is verbatim why I mutated
+my own fix in **three** directions instead of one, which is what caught the over-catch. Directly
+traceable to this sentence. (3) **The three-commit rule in `CLAUDE.md`**, applied without thinking
+about it. (4) **Gotcha 5** ("a record is a byte span, never a session") stopped me miscounting records
+during the close-out. (5) **Explicit non-establishments**, which I copied as a section.
+
+**What was wrong — one thing, and it is small.** S222's "what's next" #1 says the shard read-cap item
+has **"nothing filed yet — file it first."** It *was* filed, by S222 itself, at `BACKLOG.md` — the
+entry even reads "**Filed Session 222 by the session that created it**." A close-out written against
+the plan rather than the tree. Cost me one grep; cost a less careful successor a duplicate item.
+
+**What was missing.** Nothing I needed. The five options were accurate and correctly costed, and the
+operator picked outside them again — which is now the third session running, and is a signal about the
+*options*, not about the handoffs: they are written for an implementer and the operator reads them as
+a menu. **The plain-language index this session added is the first structural answer to that.**
+
+**ROI: high.** Two disciplines transferred directly into the deliverable's quality.
+
+### Phase 3B: Self-assess — Session 223 — 8/10
+
+- **The +:** (1) **Measured the failure surface instead of reading it** — a 24-case probe found the
+  trigger is five classes wide, not one, and found the four shapes that *don't* raise, which is what
+  kept the fix from over-reaching into range validation. (2) **Mutated in three directions and found
+  the one I hadn't thought of** — the `except Exception` over-catch survived a suite I would otherwise
+  have called done. (3) **Reverted my own tooling damage**: `ruff format` reflowed three unrelated
+  functions; I caught it, checked CI, found no formatter gate, and restored a 1-line logic diff.
+  (4) **Ran an adversarial pass on my own work and acted on it against my own interest** — it found a
+  falsehood I had written. (5) **Verified the confirmed finding myself** by reading `nodes.py`,
+  `agent.py` and `pipeline.py`, rather than accepting the agent's word. (6) **Kept the refutation**:
+  when the verify pass overturned the reviewer's framing, I recorded the control experiment instead of
+  quietly keeping the more dramatic version. (7) **Filed two findings rather than fixing them.**
+- **The −:** (1) **I propagated a recon agent's unverified claim into a CHANGELOG entry.** The
+  `FAILED_AT_DATA` sentence was never run by me or by the agent that wrote it. Caught by my own review,
+  but it was committed-adjacent — one step from shipping as fact. **This is the session's real error.**
+  (2) **I designed the review to mutate the file under review in the shared working tree**, then ran my
+  own measurement against it concurrently and got a false pre-fix reproduction that looked exactly like
+  "the fix doesn't work." `isolation: 'worktree'` existed and I did not use it. A state guard caught it
+  on the second attempt — after the first had already misled me. (3) **I ran `ruff format` reflexively**
+  in an unfamiliar-to-me lint setup without checking what CI enforces. (4) **Three broken shell
+  harnesses in a row** on the final mutation sweep — a `\Q\E` that corrupted the replacement, then twice
+  assuming POSIX word-splitting in **zsh**, where unquoted `$VAR` does not split. Four wasted round
+  trips on a check I had already done correctly by hand earlier. (5) **The first CLI test under-asserted**
+  relative to its own name — it omitted `exit_code == 0`. The reviewer was right that it could be
+  stronger even though the claim was refuted as a defect.
+
+**Phase 3C note:** no workstream document was edited — `docs/methodology/workstreams/` is third-party
+synced material (`NOTICE` §1, `CLAUDE.md`). Learnings **#96–98** went to `PROJECT_LEARNINGS.md` and
+`CLAUDE.md`'s count was updated 95 → 98. `PROJECT_CONVENTIONS.md` **was** edited — the one
+project-owned file in `docs/methodology/`, re-verified before touching it.
+
+**CHANGELOG entry written** — this session changed `packages/` and `tests/` logic, which
+`PROJECT_CONVENTIONS.md` §2 gates an entry on. **The convention-vs-precedent conflict flagged by
+S219/S220/S221/S222 is now CLOSED by operator ruling** and recorded in §2; do not re-open it.
+
+**What's next — five options, all ungated:**
+
+1. **The `KeyError` guard** (`BACKLOG.md`). **Recommended.** Shipped-package code, mirrors a shipped
+   intake convention at `intake/anthropic_client.py:439-440`, small and well-specified — and it is the
+   same root cause as the `discovery.py` item this session filed, so doing them together is defensible
+   if you want one slightly larger session instead of two small ones.
+2. **`probe_information_schema`** (`BACKLOG.md`, new this session) — fix escape (2) with confidence;
+   treat escape (1) as defence-in-depth. One file, ~20-40 lines, 3-5 tests. Not twinned, so no parity
+   battery to satisfy.
+3. **The silent `--db-url` failure** (`BACKLOG.md`, new this session). Options (a)+(b) are small;
+   **(c) needs your ruling first** because it changes when a pipeline run is allowed to report success.
+4. **Re-measure `opencode` under the fixed harness** (`BACKLOG.md`) — **~$16.4, ~130 min, its own
+   session.** Source `.env` first; quote `transient_retries` beside every rate.
+5. **The three transient policies** (`BACKLOG.md`) — the governance loop's zero-tolerance bar is still
+   fed by an un-retried transient. Recommended *before* spending $16 measuring with the instrument.
+
+**Key files:**
+- `packages/data-agent/src/model_project_constructor_data_agent/db.py:22-79` — the fix. **The
+  docstring's ⚠ paragraph is the important part**: it states what the degradation does *not* buy.
+- `tests/data_agent_package/test_db.py` — 23 tests. `test_unexpected_error_propagates_rather_than_degrading`
+  exists because the `except Exception` mutant survived without it. **Do not delete it as redundant.**
+- `BACKLOG.md` — **the plain-language index is at the top**; read it to the operator in Phase 0 and
+  update a row whenever you change its item.
+- `docs/methodology/PROJECT_CONVENTIONS.md` §2 — the CHANGELOG ruling. Settled; do not re-ask.
+- `PROJECT_LEARNINGS.md` #96 (three-direction mutation), #97 (worktree-isolate mutating reviewers),
+  #98 (run the real lint gate).
+
+**Gotchas:**
+1. **A subagent's finding is a claim, not a measurement.** A recon agent told me the post-fix path
+   reaches `FAILED_AT_DATA`; it does not, and I put it in a CHANGELOG entry before checking. **Read
+   the file the agent cites before repeating what it says.**
+2. **Do not run mutating review agents in the shared tree while measuring.** Use
+   `isolation: 'worktree'`, or guard every measurement with a file-state check **before and after** —
+   a mutation can land mid-run. I have a false reproduction to show for skipping this.
+3. **`ruff format` is NOT a project gate.** CI runs `ruff check src/ tests/ packages/ scripts/` and
+   nothing else. The tree is deliberately not formatter-clean; running it reflows unrelated code.
+4. **This is zsh, not bash.** Unquoted `$VAR` holding space-separated paths does **not** word-split.
+   `uv run pytest $TESTS` silently runs nothing and prints "no tests ran" — which reads like a
+   filtering mistake, not a shell bug. Inline the paths or use an array.
+5. **The fix buys consistency, not diagnosability.** A bad `--db-url` still reports `COMPLETE` at exit
+   0. Do not cite this fix as "bad database URLs are now handled properly" — the item is open.
+6. **`SESSION_NOTES.md` is 1,448 lines against a 1,500-line trim trigger** (`CLAUDE.md`) — **52 lines
+   of headroom, well under one session's ~184.** The next close-out crosses it. Read the retention
+   rule *and* gotcha 4 of S222's record before trimming: three commits, cut to ≤1,050, floor of 4
+   sessions, and **do not borrow the canonical trimmer's trigger** — at this density its stop
+   condition is unsatisfiable and would trim to empty.
 
 ### What Session 222 Did
 **Deliverable:** **`SESSION_NOTES.md` trimmed 25,578 → 1,033 lines. COMPLETE, and the move is
