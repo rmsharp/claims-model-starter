@@ -6,6 +6,22 @@
 
 ## ACTIVE TASK
 
+### What Session 222 Did
+**Deliverable:** Lossless trim of `SESSION_NOTES.md` (25,562 lines, past the 2,000-line agent read
+cap — the dashboard's HIGH-risk driver for this project) (IN PROGRESS)
+**Started:** 2026-08-17
+**Status:** Session claimed. Work beginning.
+
+**Pre-flight finding (recorded here in case this session dies):** the canonical ledger trimmer
+`methodology_trim.py` **refuses this file by design.** Its `LEDGERS` table has exactly two entries —
+`CHANGELOG.md` and `HANDOFFS.md` — and the dashboard's own comment (`methodology_dashboard.py:360-366`)
+states that `READ_CAP_WATCHED` is deliberately wider, "including SESSION_NOTES.md", and that "the
+trimmer answers NO_CONFIG on every one of those by design ('there is deliberately no generic fallback:
+a generic rule is what would mis-zone a differently-shaped ledger')." So the remedy here is a
+project-owned trim that **borrows the trimmer's proof discipline** (L1 concatenation identity scoped to
+the records zone, L2 zone pinning, L3 per-record partition by identity+order+bytes), not the trimmer
+itself. The tool is also not installed in this repo (it is in 5 sibling projects).
+
 ### What Session 221 Did
 **Deliverable:** **The SQL/QC retry asymmetry (gap #1c's other half) is FIXED. COMPLETE.** The sweep now
 retries a transient before scoring it, under a **two-tier** policy that is deliberately *not* the
