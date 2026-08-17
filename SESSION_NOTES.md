@@ -25,6 +25,18 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 223 Did
+**Deliverable:** Fix `sql_dialect_from_url`'s contract violation — a non-numeric port in a `--db-url`
+raises a bare `ValueError` instead of degrading to `None` (`BACKLOG.md`, filed Session 218). Shipped
+package code. (IN PROGRESS)
+**Started:** 2026-08-17
+**Status:** Session claimed. Work beginning.
+**Also carried, by operator instruction (2026-08-17):** (1) the CHANGELOG cadence ruling —
+*measurement-only sessions do NOT write a CHANGELOG entry; the written convention is right and
+S216's entry was the deviation* — to be recorded in `docs/methodology/PROJECT_CONVENTIONS.md` §2 so
+it stops being re-asked for a fifth session; (2) a plain-language index of the open backlog items,
+written into `BACKLOG.md` so Phase 0 step 3 finds it without regenerating the translation.
+
 ### What Session 222 Did
 **Deliverable:** **`SESSION_NOTES.md` trimmed 25,578 → 1,033 lines. COMPLETE, and the move is
 *proved* lossless, not asserted.** Sessions 216 → 1 (206 record headings, 24,564 lines, 4,073,396 B)
