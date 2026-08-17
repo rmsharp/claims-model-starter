@@ -68,7 +68,12 @@ from tests.eval.stakeholder_sim import stakeholder_simulator_for
 
 
 def _warn(message: str) -> None:
-    """Note a caught seam failure to stderr (it is recorded as a measured miss)."""
+    """Note a caught seam failure to stderr.
+
+    It is recorded as a measured miss — or, for an exhausted *transport*
+    transient in the SQL/QC sweep, as an exclusion (Session 221). Retry notes
+    arrive here too, and every one carries ``str(exc)``.
+    """
     print(f"# WARN {message}", file=sys.stderr)
 
 
@@ -117,6 +122,13 @@ def measure_provider(
     # denominator judged against a 95% bar and ``qc_structural`` was 3 booleans
     # against a 100% bar; both Session 216 and Session 217 had to caveat the
     # resulting number rather than quote it. The thresholds are unchanged.
+    #
+    # Since Session 221 this block also retries a transient, so it and the
+    # interview sweep below finally apply one policy to one gate (learning #86).
+    # The two exhaustion branches differ deliberately: an exhausted
+    # ``LLMParseError`` is scored a miss (the denominator must not shrink), an
+    # exhausted transport error is excluded. Best-of-3 makes these numbers
+    # non-comparable with Sessions 219 and 220, which measured best-of-1.
     sql = sweep_sql_capabilities(
         load_sql_cases(), data, db, inventory=inventory, n_samples=n_samples, on_event=_warn
     )
@@ -156,6 +168,12 @@ def measure_provider(
         # the risk_tier match-or-stricter rate, surfaced for the agreement report.
         "governance_risk_tier_acceptable": pass_rate("gov_risk_tier", gov_risk_acceptable).rate,
         "qc_structural": pass_rate("qc", sql.qc_results).rate,
+        # diagnostic only (not a gate key — ``eval_cutover`` reads a fixed key
+        # set and ignores the rest): how many SQL/QC samples were dropped after
+        # exhausting retries on a transport transient. Without it a pooled
+        # denominator and a shrunken one look identical in the report.
+        "sql_excluded_transient": float(sql.excluded_transient),
+        "sql_transient_retries": float(sql.transient_retries),
         "interview_convergence": pass_rate("interview", sweep.convergence_results).rate,
         "interview_premature": float(sweep.premature_count),
     }

@@ -53,6 +53,8 @@ threshold itself is unchanged (a harness-statistics fix, not a #129 loosening).
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 from model_project_constructor_data_agent.db import ReadOnlyDB
 from model_project_constructor_data_agent.factory import make_llm_client as make_data_client
@@ -127,27 +129,38 @@ def test_live_sql_capabilities(provider: str, seeded_pc_db: ReadOnlyDB) -> None:
         model=provider_eval_model(provider),
         sql_dialect=seeded_pc_db.dialect,
     )
+    # ``on_event`` is not optional here (Session 221): without a sink the sweep's
+    # ``notify`` is a no-op, so every retry and exclusion note — including the
+    # ``str(exc)`` that makes a failure attributable at all — is discarded inside
+    # the gate that most needs it. ``shadow_run`` has passed ``_warn`` since
+    # Session 218; this call site never did.
     sweep = sweep_sql_capabilities(
         load_sql_cases(),
         client,
         seeded_pc_db,
         inventory=pc_inventory_from_db(seeded_pc_db),
+        on_event=lambda message: print(f"# WARN {message}", file=sys.stderr),
     )
     parse = pass_rate("sql_parse", sweep.parse_results)
     execs = pass_rate("sql_exec", sweep.exec_results)
     qc = pass_rate("qc_structural", sweep.qc_results)
+    # Every message carries the retry/exclusion counters (Session 221): a pooled
+    # denominator and a denominator shrunk by exclusions are otherwise
+    # indistinguishable, and ``transient_retries`` is what makes the first-attempt
+    # rate recoverable after a best-of-3 run. The thresholds are untouched.
+    counters = f"retries={sweep.transient_retries}, excluded_transient={sweep.excluded_transient}"
     assert parse.meets(thresholds.SQL_PARSE_VALID_MIN), (
-        f"sql_parse {sum(sweep.parse_results)}/{len(sweep.parse_results)}"
+        f"sql_parse {sum(sweep.parse_results)}/{len(sweep.parse_results)} ({counters})"
     )
     # The denominator is model-chosen (S216 gotcha 2), so the failure message
     # carries numerator and denominator, plus *why* each query failed — without
     # which this rate is a single uninterpretable bit (S216 gotcha 3).
     assert execs.meets(thresholds.SQL_EXECUTABLE_MIN), (
-        f"sql_exec {sum(sweep.exec_results)}/{len(sweep.exec_results)}; "
+        f"sql_exec {sum(sweep.exec_results)}/{len(sweep.exec_results)} ({counters}); "
         f"errors={sweep.exec_errors}"
     )
     assert qc.meets(thresholds.QUALITY_CHECKS_STRUCTURAL_MIN), (
-        f"qc_structural {sum(sweep.qc_results)}/{len(sweep.qc_results)}"
+        f"qc_structural {sum(sweep.qc_results)}/{len(sweep.qc_results)} ({counters})"
     )
 
 
