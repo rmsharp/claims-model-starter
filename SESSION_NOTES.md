@@ -25,6 +25,20 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 224 Did
+**Deliverable:** Second lossless trim of `SESSION_NOTES.md`. The live file stands at 1,448 lines
+against `CLAUDE.md`'s 1,500-line trim trigger with ~52 lines of headroom, and this session's own
+close-out (~184 lines at observed density) crosses it. Retire the oldest records into a **new
+write-once shard** under `docs/architecture-history/` with its own cut key, beside a re-runnable
+`.verify.sh` that ships its own falsification test (`--self-test`), and cut the live file to
+≤ 1,050 lines while retaining no fewer than 4 sessions. Documentation only — no production code.
+(IN PROGRESS)
+**Started:** 2026-08-18
+**Status:** Session claimed. Work beginning.
+**Three commits, per `CLAUDE.md`:** this claim is committed alone, the trim lands alone with **no**
+record edit in it, and the close-out follows. A bundled record edit registers as an added record and
+holds the proof red forever.
+
 ### What Session 223 Did
 **Deliverable:** **`sql_dialect_from_url` honours its own contract. COMPLETE.** A non-numeric port in
 a `--db-url` degrades to `None` like every other unparseable URL instead of raising a bare
