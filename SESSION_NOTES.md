@@ -45,17 +45,215 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 225 Did
-**Deliverable:** Unify the transient policy across the eval harness's **governance** surfaces
-(`BACKLOG.md` → "The three live measurement blocks still apply three different transient policies").
-(IN PROGRESS)
-**Started:** 2026-08-19
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **The eval harness's governance measurement now applies one transient policy across
+both of its live surfaces. COMPLETE.** `BACKLOG.md`'s "three live measurement blocks / three
+different transient policies" item is closed: the two hand-written governance loops — the
+measure-and-report driver and the assertion gate — are replaced by a shared
+`tests/eval/governance_sweep.py`. **Harness only. No `src/`, no `packages/`, no threshold, no live
+call, no verdict re-scored.**
 
-**Scope, stated up front:** a new shared `tests/eval/governance_sweep.py` (sample + bounded retry +
-two-tier exhaustion, mirroring `sql_sweep`), consumed by **both** `shadow_run.measure_provider` and
-`test_eval_live.test_live_governance_cycle_time_agreement_and_no_laxer_miss`, plus unit tests.
-`interview_sweep.py` and `sql_sweep.py` stay **byte-stable** (the backlog item pins the first; the
-second is pinned by choice, to avoid a cross-module refactor `SAFEGUARDS.md` gates behind plan mode).
+**Started:** 2026-08-19. **Completed:** 2026-08-19. **Commits:** `90a50d5` (Phase 1B claim, its own
+commit), `2f853f7` (the fix), `fcb4366` (acting on the adversarial review), `27c2007` (the documents
+that describe the structure), and this close-out.
+
+**Gate: 1230 passed + 9 live-skipped @ 97.98% coverage** (was 1202, Session 223 baseline — +28 tests);
+`uv run ruff check src/ tests/ packages/ scripts/` and `uv run mypy` both clean. Plus a **12-mutant
+matrix over `governance_sweep.py`, 12/12 caught** — which is not the same claim as the green suite,
+and the difference mattered (below).
+
+#### The defect, as read in the code rather than inherited from the backlog's summary
+
+| surface | before | after |
+| --- | --- | --- |
+| `shadow_run.measure_provider` | caught `IntakeLLMError`, **no retry**, scored an immediate non-agreement | shared sweep: retry → score |
+| `test_eval_live`'s governance test | **no handler at all** — the seam error aborted the gate | shared sweep: retry → score |
+| both | **no transport handler**, and `classify_governance` wraps none | retry → exclude, counted |
+
+The third row is the one the backlog did not name and the one that mattered most.
+`AnthropicLLMClient._call_json` (`anthropic_client.py:363-370`) calls `messages.create` **bare**, so an
+`APITimeoutError` raised after the SDK exhausts its own retries propagated past *both* governance
+surfaces and **aborted a ~2.5-hour live run mid-measurement**. That is the hole S171 closed for
+interviews and S221 for SQL/QC. I found it by reading `_call_json`, not by trusting the item.
+
+#### The design decision, and why it went the way it did
+
+An exhausted `IntakeLLMError` is **scored** a non-agreement, not excluded — the opposite of what
+`interview_sweep` does with the *same exception class*. That is deliberate and is the crux of the
+whole item. Excluding shrinks a denominator whose survivors are clean by construction, so a provider
+failing 24 of 25 samples would score 1/1 = 100% and **pass**. An interview sample is a whole
+multi-turn run that a seam failure leaves with no report to judge; a governance sample is one call
+whose failure **is** the measured capability. `sql_sweep` made the same call for the same reason in
+S221; I followed it, and it also preserves `shadow_run`'s existing semantics, so the retry is the only
+semantic change on that surface.
+
+**A seam failure never increments `laxer_misses`.** No prediction means no risk tier, and fabricating a
+miss against `GOVERNANCE_LAXER_MISSES_MAX = 0` would turn one blip into a NO-GO — the exact S219 shape
+the item exists to remove. `shadow_run` already behaved this way; it is now tested at both the sweep
+level and the driver level.
+
+#### The review found three false claims of mine, and the mutants found a fourth
+
+23 agents, 5 lenses, 3-refuter majority panels. **24 findings; my verification cap of 6 left 18
+unverified, and adjudicating those 18 by hand produced more real defects than the verified 6 did** —
+see learning **#104**, which is the most transferable thing in this session.
+
+**Three docstrings I wrote were false:**
+1. "All three blocks now apply one transient policy." They do not — `interview_sweep` *excludes* an
+   exhausted seam error where the other two *score* it. The true, checkable claim is the weaker one:
+   **no hand-written measurement loop remains.** Learning **#103**.
+2. "This driver's SQL call site had the S221 missing-sink defect for three sessions." It has passed
+   `on_event=_warn` since `4e2c8ec` (S218) — the sink-less site was `test_eval_live`'s, which that
+   file already says at `:164-165`. I invented a history that the repo contradicted in the file I was
+   editing.
+3. `_warn`'s enumeration omitted the interview sweep it also serves.
+
+**⚠ And then a mutant caught a fourth, after the review.** I closed a finding that the summary-line
+test asserted labels but no values — then ran a 12-mutant matrix, and the mutant *swapping the two
+fractions* **survived**: I had set both `cycle_matches` and `risk_acceptable` to 2/3, so the swap
+rendered identically. The assertion I had just written specifically to catch that was unfalsifiable
+because its operands coincided. **This is S224's failure exactly one session later, one layer down**
+— #99 says every assertion needs a mutant; #102 says the mutant cannot reach the assertion if the
+fixture's values are degenerate. Only running the mutants found it. 11/12 → fix → 12/12.
+
+**Two findings the panel KILLED were true on the facts** (learning #100, applied): a transport
+exclusion leaves a *rate* unbiased but can only move the zero-tolerance `governance_laxer_miss`
+**count** toward PASS; and the tiers key on exception *class*, so `opencode`'s subprocess adapter —
+which maps spawn failure, non-zero exit and timeout onto `IntakeLLMError` — lands its transport
+failures in the **scored** tier where an SDK provider's are excluded. Both are now documented; the
+second is **filed as a new backlog item**, because fixing it means changing the adapter's error
+mapping, not the harness.
+
+#### Scope held
+
+`interview_sweep.py` and `sql_sweep.py` are **byte-stable**. Hoisting one generic `_call_with_retries`
+into a shared module is a cross-module refactor `SAFEGUARDS.md` gates behind plan mode, so the
+near-duplicate is documented as a deferral in its own docstring rather than smuggled into a fix. Two
+review findings that were real but out of scope were **filed, not fixed**.
+
+### Session 224 Handoff Evaluation (by Session 225)
+
+**Score: 9/10.** Its content was about a trim and my task was an eval-harness fix, so almost none of it
+applied by subject — and it still moved my behaviour four separate times, which is the better test.
+
+**What helped, measurably:**
+- **Gotcha 7 ("this is zsh; single-quote your heredoc delimiters").** I used `<<'PYEOF'` / `<<'PY'`
+  for every heredoc in this session and spent **zero** round trips on quoting failures, against the
+  four S224 burned and the ones S223 burned before it. A gotcha that costs one line to write and
+  saves four round trips is the highest-ROI thing in the file.
+- **"Use an odd panel and a majority rule next time"** — S224 designed a 2-agent panel under
+  `kills >= 1` and one API death silently made a finding single-vote. I ran 3-refuter panels under a
+  strict majority, and one finding split 2/3 vs 3/3 across two lenses, which is exactly the case a
+  1-vote rule would have decided wrongly.
+- **Learning #97's state guard**, applied as a control: `sha256` over all five artifacts before
+  launching 23 agents, re-checked after. All five matched.
+- **Learning #99** — I built the assertion×mutant matrix *because* S224 paid for that lesson. It then
+  caught me anyway, one layer down. The learning worked; my application of it was incomplete.
+
+**What was missing:** nothing it could have known. It correctly said "the backlog is unchanged by this
+session" and deferred to S223's ordering rather than re-deriving it — honest, and the ordering was
+right. The one thing no handoff in this series has carried is **how to size a review fan-out**; S224
+recorded the panel-shape lesson but not the cap lesson, and I paid for the second. That is now #104.
+
+**What was wrong:** nothing. Every claim I checked held.
+
+**ROI: very high**, and unusually so given zero subject overlap.
+
+### Phase 3B: Self-assess — Session 225 — 8/10
+
+- **The +:** (1) **I read the seam before trusting the backlog** and found the transport hole the item
+  did not name — the largest real defect closed this session. (2) **Test-first**, and the new module's
+  tests were red for the right reason before it existed. (3) **I ran the mutants instead of trusting a
+  green suite**, which is the only reason the degenerate-fixture defect was found at all. (4) **I
+  adjudicated all 18 capped findings by hand** rather than treating the cap as a verdict, and that is
+  where three of my four false claims came from. (5) **I acted on two findings the panel killed**,
+  because their facts held and only the severity ruling went against them. (6) **Scope held under
+  pressure**: three real, adjacent, one-line defects were filed rather than fixed. (7) The existing
+  `test_shadow_run` wiring test caught my eager method binding immediately, and **I fixed the test
+  double rather than contorting the driver** to please it.
+- **The −:** (1) **I shipped three false statements in docstrings** — including one in the module
+  docstring of the file the live gate lives in — and an outsider found all three. Two of them
+  contradicted text *in the same file I was editing*. **This is the session's real error.** (2) **I
+  reproduced S224's exact failure mode one session later**: I wrote both an assertion and its mutant
+  and did not check that the second could reach the first. (3) **I set the verification cap to 6
+  before seeing a single finding**, ranked by severity labels the finders assigned on incompatible
+  scales; the capped pile was richer than the verified one. (4) **I over-claimed uniformity because
+  the refactor's motivation was uniformity** — the slogan became the docstring without being checked
+  against the siblings. (5) I did not re-read `interview_sweep.py`'s exhaustion branch before writing
+  the "all three" sentence, though I had read it 40 minutes earlier — **failure mode #11 exactly**,
+  and the fix was four lines of `grep`.
+
+**Versus the bar:** S221 closed one asymmetry and filed the wider one; S223 fixed one contract and
+filed its sibling; both shipped a fix plus a filing. This closes the wider one, files two more, and
+adds a falsification step (the mutant matrix) that neither predecessor ran on its own work. That meets
+the bar on the deliverable. It falls short of S224 on docstring discipline: S224 shipped one uncovered
+assertion, and I shipped three false claims plus one uncovered assertion.
+
+**Phase 3C:** learnings **#102-104** appended to `PROJECT_LEARNINGS.md`; `CLAUDE.md`'s count updated
+101 → 104. **No workstream document edited** — `docs/methodology/workstreams/` is third-party synced
+material (`NOTICE` §1). `PROJECT_LEARNINGS.md` **#86** was edited: its source column still said "Filed
+in `BACKLOG.md`" in the present tense about the gap this session closed, and the learning itself
+carried the same "one policy" over-reach I shipped, so both were corrected.
+
+**`CHANGELOG.md` entry written** — `PROJECT_CONVENTIONS.md` §2 gates on changes to `src/`, `packages/`,
+`scripts/` or `tests/` **logic**, and this session changed `tests/` logic. (S222's and S224's trims
+took no entry because they touched none of those; do not read this as a cadence change.)
+
+**What's next — the backlog moved.** One item closed, two filed. S223's ordering for what remains
+still stands and I am not re-deriving it:
+
+1. **The `KeyError` guard** (`BACKLOG.md`) — small, well-specified, mirrors a shipped intake
+   convention; twinnable with the `probe_information_schema` item, same root cause. **Now the cheapest
+   real item on the list.**
+2. **`probe_information_schema`** — one file, ~20-40 lines, 3-5 tests, not twinned.
+3. **The two surfaces that stay silent** (filed this session) — two one-line changes, and the first of
+   them (`test_eval_live.py:221` passing no `on_event`) is the last instance of a defect class this
+   session and S221 both closed elsewhere. **Cheapest item in the repo; do it as a warm-up or bundle
+   it with nothing.**
+4. **The silent `--db-url` failure** — (a)+(b) small; **(c) needs an operator ruling.**
+5. **Re-measure `opencode`** — **~$16.40, ~130 min, its own session.** Source `.env` first. **Read its
+   updated caveat 1 before quoting anything**: governance's non-comparable span is **S216-S220**, a
+   different span from the SQL/QC cells' S219-S220.
+
+**Key files:**
+- `tests/eval/governance_sweep.py` — the new module. Its docstring argues the scored-vs-excluded split
+  and states the two asymmetries (count-vs-rate under exclusion; per-provider exception classes). **If
+  you touch the exhaustion tiers, the mutant matrix below is how you check yourself.**
+- `tests/eval/sql_sweep.py` — the sibling this copies. `_call_with_retries` is a near-duplicate by
+  design; the two differ **only** in the module-level transient tuples. If you ever unify them, that
+  invariant is what to assert first.
+- `tests/eval/interview_sweep.py` — the sibling that **differs**. It excludes an exhausted seam error.
+  Do not "fix" that to match; read its docstring first.
+- `/private/tmp/.../scratchpad/mutants.py` — the 12-mutant matrix. **Scratch, not committed, and it
+  will be gone.** Re-derive it from the assertion list rather than hunting for it; it took ~15 minutes
+  and found a defect the whole review missed.
+- `tests/eval/PHASE_E_AGREEMENT_REPORT.md` — the Session 225 update block supersedes the S221 block's
+  caveat 6. Older blocks are **frozen**; add a new dated block, do not edit one.
+
+**Gotchas:**
+1. **Do not claim the three sweeps share one transient policy.** They share the *absence of
+   hand-written loops*. All three retry and all three exclude an exhausted **transport** error;
+   `interview_sweep` excludes an exhausted **seam** error where the other two score it, and that is
+   correct. I shipped the stronger claim and a 3/3 panel killed it.
+2. **`governance_laxer_miss` is a COUNT against a maximum of 0, not a rate.** An exclusion cannot bias
+   a rate but can only move a count toward PASS. Read it with `governance_excluded_transient`. Every
+   surface that quotes one must quote the other.
+3. **Two providers are judged by different rules and it is not fixed.** `opencode` maps transport
+   failures onto `IntakeLLMError`, so they are *scored* where an SDK provider's are *excluded*. Filed.
+   Do not compare a scored-exhaustion count across providers without naming this.
+4. **A green suite is not a falsified suite, and asserting a value is not enough** — the operands must
+   differ. My summary test asserted all six values and still could not see two of them swapped,
+   because both rendered `2/3`. Give every slot a distinct value, then run the swap mutant.
+5. **Cap the verification in a review fan-out, never the adjudication.** 18 of my 24 findings fell past
+   the cap and were richer than the 6 that did not. Read every dropped item yourself. Learning #104.
+6. **`shadow_run.measure_provider` binds `intake.classify_governance` as a bound method**, so the
+   attribute is dereferenced before the corpus is walked. A corpus-emptying test double must therefore
+   be client-shaped; a bare `object()` raises. This is a feature — it fails fast — but it will bite the
+   next person who stubs that client.
+7. **This is still zsh.** Single-quote every heredoc delimiter. Four sessions running have paid for
+   this; I did not, because S224 wrote it down.
+8. **`SESSION_NOTES.md` is at 1,148 lines after this record** — under the >1,500 trim trigger, roughly
+   two more sessions of runway at this density. Not your problem yet; `CLAUDE.md`'s trim section is
+   where the rule lives, and there are now **two** shards to grep, never `Read`.
 
 ### What Session 224 Did
 **Deliverable:** **Second lossless trim of `SESSION_NOTES.md`. COMPLETE.** Sessions 220 → 217 (5
