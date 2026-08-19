@@ -44,7 +44,6 @@ from model_project_constructor.agents.intake.fixture import (
     load_fixture,
     review_sequence_from_fixture,
 )
-from model_project_constructor.agents.intake.protocol import IntakeLLMError
 from model_project_constructor.schemas.v1.intake import IntakeReport
 from tests.eval.eval_corpus import (
     InterviewCase,
@@ -61,7 +60,8 @@ from tests.eval.eval_cutover import (
     provider_eval_model,
     render_agreement_report,
 )
-from tests.eval.eval_scoring import pass_rate, score_governance
+from tests.eval.eval_scoring import pass_rate
+from tests.eval.governance_sweep import sweep_governance_agreement
 from tests.eval.interview_sweep import N_SAMPLES, sweep_interview_convergence
 from tests.eval.sql_sweep import sweep_sql_capabilities
 from tests.eval.stakeholder_sim import stakeholder_simulator_for
@@ -71,8 +71,8 @@ def _warn(message: str) -> None:
     """Note a caught seam failure to stderr.
 
     It is recorded as a measured miss — or, for an exhausted *transport*
-    transient in the SQL/QC sweep, as an exclusion (Session 221). Retry notes
-    arrive here too, and every one carries ``str(exc)``.
+    transient in the governance, SQL or QC sweep, as an exclusion (Sessions 221,
+    225). Retry notes arrive here too, and every one carries ``str(exc)``.
     """
     print(f"# WARN {message}", file=sys.stderr)
 
@@ -96,24 +96,25 @@ def measure_provider(
     # cycle_time agreement is EXACT (the gated calibration metric); risk_tier is
     # gated by the zero-tolerance laxer-miss count, so its match-or-stricter rate
     # is tracked as a diagnostic (a stricter tier is the prompt-instructed
-    # direction, not a disagreement). A seam error (parse failure, no retry —
-    # Trap 5) is a measured non-agreement, not a crash.
-    gov_cycle_matches: list[bool] = []
-    gov_risk_acceptable: list[bool] = []
-    laxer = 0
-    for case in load_governance_cases():
-        for _ in range(n_samples):
-            try:
-                predicted = intake.classify_governance(case.draft)
-            except IntakeLLMError as exc:
-                _warn(f"governance/{case.case_id}: {type(exc).__name__} -> non-agreement")
-                gov_cycle_matches.append(False)
-                gov_risk_acceptable.append(False)
-                continue
-            score = score_governance(case.case_id, case.reference, predicted)
-            gov_cycle_matches.append(score.cycle_time_match)
-            gov_risk_acceptable.append(score.risk_tier_acceptable)
-            laxer += int(score.laxer_tier_miss)
+    # direction, not a disagreement).
+    #
+    # Since Session 225 this block shares ``sweep_governance_agreement`` with
+    # ``test_eval_live``, so the driver and the assertion gate finally apply one
+    # transient policy to one gate (learning #86, third and last block). The
+    # hand-written loop this replaces retried nothing and caught only
+    # ``IntakeLLMError`` — a transport blip propagated and aborted the whole
+    # ~2.5-hour run, and one parse blip decided a verdict (the S219 shape). The
+    # two exhaustion branches differ deliberately: an exhausted seam error is
+    # scored a non-agreement (the denominator must not shrink) and never
+    # increments the zero-tolerance laxer count; an exhausted transport error is
+    # excluded. Best-of-3 makes these numbers non-comparable with Sessions
+    # 216-220, which measured best-of-1 here.
+    gov = sweep_governance_agreement(
+        load_governance_cases(),
+        intake.classify_governance,
+        n_samples=n_samples,
+        on_event=_warn,
+    )
 
     # SQL parse/exec + QC structural over the primary cases on the seeded schema.
     # Sampled N>=5 per case and pooled (Session 218) — the same discipline the
@@ -162,11 +163,11 @@ def measure_provider(
         "json_parse": 1.0,
         "sql_parse": pass_rate("sql_parse", sql.parse_results).rate,
         "sql_exec": pass_rate("sql_exec", sql.exec_results).rate,
-        "governance_cycle_time_agreement": pass_rate("gov_cycle_time", gov_cycle_matches).rate,
-        "governance_laxer_miss": float(laxer),
+        "governance_cycle_time_agreement": pass_rate("gov_cycle_time", gov.cycle_matches).rate,
+        "governance_laxer_miss": float(gov.laxer_misses),
         # diagnostic only (not a gate key — risk_tier is gated by laxer_miss):
         # the risk_tier match-or-stricter rate, surfaced for the agreement report.
-        "governance_risk_tier_acceptable": pass_rate("gov_risk_tier", gov_risk_acceptable).rate,
+        "governance_risk_tier_acceptable": pass_rate("gov_risk_tier", gov.risk_acceptable).rate,
         "qc_structural": pass_rate("qc", sql.qc_results).rate,
         # diagnostic only (not a gate key — ``eval_cutover`` reads a fixed key
         # set and ignores the rest): how many SQL/QC samples were dropped after
@@ -174,6 +175,13 @@ def measure_provider(
         # denominator and a shrunken one look identical in the report.
         "sql_excluded_transient": float(sql.excluded_transient),
         "sql_transient_retries": float(sql.transient_retries),
+        # the governance sweep's equivalents (Session 225), same rationale:
+        # ``seam_failures`` plus ``transient_retries`` make the first-attempt
+        # rate recoverable, and ``excluded_transient`` is the only trace that the
+        # pooled denominator shrank.
+        "governance_seam_failures": float(gov.seam_failures),
+        "governance_excluded_transient": float(gov.excluded_transient),
+        "governance_transient_retries": float(gov.transient_retries),
         "interview_convergence": pass_rate("interview", sweep.convergence_results).rate,
         "interview_premature": float(sweep.premature_count),
     }

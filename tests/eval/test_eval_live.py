@@ -43,6 +43,17 @@ the script can no longer "run out" (the ``interview_convergence`` artifact in
 ``PHASE_E_AGREEMENT_REPORT.md`` / ``PROJECT_LEARNINGS`` #21). A sub-convergence
 now reflects the model's own interview behaviour, not a starved script.
 
+**One transient policy across all three blocks (Session 225).** Each of the
+three measured capabilities now runs through a sweep module shared with
+``shadow_run``, so the assertion gate and the report-number producer cannot drift
+apart about what a transient means: ``governance_sweep`` (this file's first
+test), ``sql_sweep`` and ``interview_sweep``. Every one retries a bounded number
+of times, then either scores the miss (a seam/parse error — the denominator must
+not shrink) or excludes the sample (a transport error — no model output exists to
+judge). The governance block was the last hand-written loop and the sharp one:
+it had no handler at all, so a single blip aborted the gate, while its twin in
+``shadow_run`` scored the same event. No threshold moved.
+
 **Convergence-gate robustness (gap #1c).** The interview test samples each
 converging fixture ``N_SAMPLES`` times (like governance) via
 ``interview_sweep.sweep_interview_convergence``, which also retries/excludes a
@@ -75,8 +86,9 @@ from tests.eval.eval_corpus import (
     pc_inventory_from_db,
 )
 from tests.eval.eval_cutover import SHADOW_PROVIDERS, provider_eval_model
-from tests.eval.eval_scoring import pass_rate, score_governance
-from tests.eval.interview_sweep import N_SAMPLES, sweep_interview_convergence
+from tests.eval.eval_scoring import pass_rate
+from tests.eval.governance_sweep import sweep_governance_agreement
+from tests.eval.interview_sweep import sweep_interview_convergence
 from tests.eval.sql_sweep import sweep_sql_capabilities
 from tests.eval.stakeholder_sim import stakeholder_simulator_for
 
@@ -91,22 +103,39 @@ def test_live_governance_cycle_time_agreement_and_no_laxer_miss(provider: str) -
     # direction ("pick the stricter tier if in doubt"), so it is not a miss. See
     # eval_scoring.GovernanceScore.
     client = make_intake_client(provider, model=provider_eval_model(provider))
-    cycle_matches: list[bool] = []
-    laxer_misses = 0
-    for case in load_governance_cases():
-        for _ in range(N_SAMPLES):
-            predicted = client.classify_governance(case.draft)
-            score = score_governance(case.case_id, case.reference, predicted)
-            cycle_matches.append(score.cycle_time_match)
-            laxer_misses += int(score.laxer_tier_miss)
-    rate = pass_rate("governance_cycle_time", cycle_matches)
+    # Session 225: the hand-written loop this replaces had **no** exception
+    # handler, so any seam or transport blip aborted the gate — while
+    # ``shadow_run``'s twin loop scored the same event a non-agreement. The two
+    # surfaces now share ``sweep_governance_agreement``, which retries a
+    # transient, scores an exhausted seam error (the denominator must not shrink)
+    # and excludes an exhausted transport one. ``on_event`` is not optional here
+    # (the S221 lesson from the SQL test): without a sink every retry and
+    # exclusion note — including the ``str(exc)`` that makes a failure
+    # attributable at all — is discarded inside the gate that most needs it.
+    sweep = sweep_governance_agreement(
+        load_governance_cases(),
+        client.classify_governance,
+        on_event=lambda message: print(f"# WARN {message}", file=sys.stderr),
+    )
+    rate = pass_rate("governance_cycle_time", sweep.cycle_matches)
+    # Every message carries the counters: a pooled denominator and one shrunk by
+    # exclusions are otherwise indistinguishable, and ``transient_retries`` is
+    # what makes the first-attempt rate recoverable after a best-of-3 run.
+    counters = (
+        f"seam_failures={sweep.seam_failures}, retries={sweep.transient_retries}, "
+        f"excluded_transient={sweep.excluded_transient}"
+    )
     # The zero-tolerance laxer-tier check is the load-bearing risk_tier assertion.
-    assert laxer_misses <= thresholds.GOVERNANCE_LAXER_MISSES_MAX, (
-        f"{laxer_misses} laxer-tier miss(es): a prediction was less strict than the reference"
+    # A seam failure never feeds it — no prediction means no tier, and fabricating
+    # a miss here would turn one blip into a NO-GO (see ``governance_sweep``).
+    assert sweep.laxer_misses <= thresholds.GOVERNANCE_LAXER_MISSES_MAX, (
+        f"{sweep.laxer_misses} laxer-tier miss(es): a prediction was less strict "
+        f"than the reference ({counters})"
     )
     assert rate.meets(thresholds.GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN), (
         f"governance cycle_time agreement {rate.rate:.1%} "
-        f"< {thresholds.GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN:.0%}"
+        f"< {thresholds.GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN:.0%} "
+        f"(n={rate.total}, {counters})"
     )
 
 
