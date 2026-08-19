@@ -44,7 +44,7 @@ bad" from "something hiccuped."* That is what cost `opencode` its recorded verdi
 | No circuit breaker | A run failing for a systemic reason grinds on sample after sample. The retry added in Session 221 tripled the worst case: **~7.5 hours of billed nothing** before it reports anything. | Small. Should abort after ~5 consecutive total failures. |
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
-| `SESSION_NOTES.md` shard past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
+| `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives** — the new one (804 lines) reads whole today, but is equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
 | Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. 644 references across 50 files. | **Two traps spring on the landing commit itself** — the wiki publish script greps for the literal old name and fails closed, and one reference lives in a synced file that must not be edited. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
@@ -414,9 +414,12 @@ corresponding key in the environment.
 **Filed Session 222 by the session that created it**, deliberately not fixed there — the fix lives
 upstream in a repository this project does not own.
 
-`docs/architecture-history/SESSION_NOTES-through-S216.md` is **24,564 lines**. An agent `Read` of it
-truncates at 2,000 lines with **no error and no missing-data marker** — the exact defect the trim was
-scoped to remove, relocated rather than eliminated. Verified: `READ_CAP_WATCHED`
+`docs/architecture-history/SESSION_NOTES-through-S216.md` is **24,564 record lines** (24,590 total). An
+agent `Read` of it truncates at 2,000 lines with **no error and no missing-data marker** — the exact
+defect the trim was scoped to remove, relocated rather than eliminated. **Session 224 widened this:**
+there are now **two** unwatched shards. The second, `SESSION_NOTES-S220-through-S217.md`, is 804 lines —
+under the cap today, so it reads whole — but it is unwatched for the same reason, and being under the cap
+is a property of this cut's size, not a protection. Every future trim adds another unwatched path. Verified: `READ_CAP_WATCHED`
 (`methodology_dashboard.py:287-288`, consumed at `:1481`) is an **exact-path membership test** over
 `SESSION_NOTES.md`, `CHANGELOG.md`, `HANDOFFS.md` and three `BACKLOG.md` locations. The shard is in
 none of them, is not LOC-discounted as a framework doc (`FRAMEWORK_SEED_DOCS` is root-anchored,
