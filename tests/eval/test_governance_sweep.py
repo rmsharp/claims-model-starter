@@ -419,9 +419,14 @@ def test_summary_carries_every_counter_with_its_value() -> None:
     duty: it is the tripwire proving every field added after the two lists still
     carries a default, which is what keeps this two-argument construction valid.
     """
+    # The two fractions are deliberately DIFFERENT (2/3 vs 3/4). Giving them the
+    # same value would make a swap of the two invisible — which is the exact
+    # defect this test exists to catch, and which a mutation run caught here.
+    # The unequal lengths are impossible for real sweep output and fine for a
+    # directly-constructed result: this pins the formatter, not the invariant.
     result = GovernanceSweepResult(
         cycle_matches=[True, False, True],
-        risk_acceptable=[True, True, False],
+        risk_acceptable=[True, True, True, False],
         laxer_misses=1,
         seam_failures=2,
         transient_retries=3,
@@ -431,7 +436,7 @@ def test_summary_carries_every_counter_with_its_value() -> None:
     line = governance_sweep_summary(result)
 
     assert "governance_cycle_time 2/3" in line
-    assert "risk_tier_acceptable 2/3" in line
+    assert "risk_tier_acceptable 3/4" in line
     assert "laxer_misses 1" in line
     assert "seam_failures 2" in line
     assert "transient_retries 3" in line

@@ -172,6 +172,67 @@ supplies the pinned model id (that provider pins no default of its own, spec D6)
 so the Phase 4 pre-flight "the operator names the model to pin" is discharged by
 setting one variable. **Decision stays NO-GO.**
 
+**Update — Session 225 (2026-08-19): the governance half is CLOSED too — the last hand-written measurement loop is retired. NO live call was made, NO cell was re-measured, NO threshold moved, and the recorded verdict stays NO-GO.**
+
+This supersedes caveat **6** of the Session 221 block below ("Learning #86 is only
+half-closed"), which is left frozen as the accurate record of what was true then.
+
+The two governance surfaces were separate hand-written loops applying the third
+and fourth policies: `shadow_run` caught `IntakeLLMError`, did **not** retry, and
+scored it an immediate non-agreement; `test_eval_live`'s governance test had **no
+handler at all**, so the same event aborted the gate. Both now call
+`governance_sweep.sweep_governance_agreement`, built to `sql_sweep`'s two-tier
+shape.
+
+**The transport tier is again new coverage, not just a policy change.**
+`AnthropicLLMClient._call_json` calls `messages.create` bare, so an
+`APITimeoutError` raised after the SDK exhausts its own retries propagated past
+*both* governance surfaces — the same hole S171 closed for interviews and S221
+for SQL. A ~2.5-hour sweep could die on one network blip inside the governance
+block.
+
+**A seam failure still never feeds `governance_laxer_miss`.** No prediction means
+no risk tier, and fabricating a miss on a zero-tolerance row would turn one blip
+into a NO-GO — the S219 shape this whole thread exists to remove. `shadow_run`
+already behaved this way; the behaviour is preserved and is now tested at both the
+sweep and the driver level.
+
+**⚠ What this does NOT establish, and what it costs:**
+
+1. **No verdict was re-scored.** `opencode` remains **NO-GO**, for the same
+   reason S221 gave: a harness changed after seeing a disliked number stops being
+   a gate. The re-measure is still its own session (~$16.4, ~130 min).
+2. **Post-fix governance numbers are not comparable with Sessions 216-220**,
+   which measured best-of-1 on this capability. (The SQL/QC non-comparability
+   starts at S221; the two spans differ — do not quote one rule for both.)
+3. **An exclusion moves a COUNT differently from a RATE.**
+   `governance_cycle_time_agreement` is a rate, so an exclusion leaves it
+   unbiased. `governance_laxer_miss` is a count against a maximum of 0, so an
+   exclusion removes one chance to *observe* a laxer prediction and can only move
+   that row toward PASS. `governance_excluded_transient` is now reported for
+   exactly this reason: read the count row with it, never alone.
+4. **The tiers key on exception class, so providers are not treated alike.** Only
+   the SDK providers raise the transport classes; `opencode`'s subprocess adapter
+   maps spawn failure, non-zero exit and timeout onto `IntakeLLMError`, so its
+   transport failures land in the **scored** tier. Pre-existing, applies to all
+   three sweeps, filed in `BACKLOG.md`, not fixed here.
+5. **Worst-case spend and wall clock rise again.** The governance block's 25 calls
+   become up to 75 when every sample exhausts. Still no circuit breaker; the
+   filed item's arithmetic has been updated.
+6. **"One transient policy" was never the achievable goal and is not claimed.**
+   All three sweeps retry, and all three exclude an exhausted *transport* error —
+   but `interview_sweep` excludes an exhausted *seam* error where governance and
+   SQL score it, because an interview sample is a whole multi-turn run with no
+   report to judge. What is now true is that **no hand-written measurement loop
+   remains**. An earlier draft of this session's docstrings claimed the stronger
+   property; an adversarial review caught it.
+
+**Verified deterministically, not live:** 1230 passed + 9 live-skipped @ 97.98%
+coverage; `ruff check src/ tests/ packages/ scripts/` clean; `mypy` 0 issues in 68
+files; and a 12-mutant matrix over `governance_sweep.py` catching 12/12 (one
+mutant initially survived — a summary assertion whose two fractions were both
+`2/3`, so a swap was invisible).
+
 **Update — Session 221 (2026-08-17): the retry asymmetry is CLOSED. `sweep_sql_capabilities` now retries a transient before scoring it, so the class of event that produced the S219 NO-GO can no longer decide a verdict on its own. NO live call was made, NO cell was re-measured, NO threshold moved, and the recorded verdict stays NO-GO.**
 
 The defect S219 diagnosed and S220 quantified: the two live measurement blocks
@@ -706,10 +767,12 @@ The **driver** [`tests/eval/shadow_run.py`](shadow_run.py) is the way to produce
 this report: it measures every provider whose credentials are present (the others
 skip), prints each provider's per-capability rates, and renders the agreement
 table directly. It *records* failures rather than asserting, so a sub-threshold
-result is data, not a crash. Since Session 221 that recording is two-branched: a
-transient is retried first, and only then does an exhausted `LLMParseError` count
-as a missed rate, while an exhausted **transport** error (SDK timeout / connection)
-is *excluded* from the denominator and counted in `sql_excluded_transient` — there
+result is data, not a crash. Since Sessions 221 and 225 that recording is
+two-branched in the SQL/QC **and** governance blocks: a transient is retried
+first, and only then does an exhausted seam error (`LLMParseError` for SQL/QC,
+`IntakeLLMError` for governance) count as a missed rate, while an exhausted
+**transport** error (SDK timeout / connection) is *excluded* from the denominator
+and counted in `sql_excluded_transient` / `governance_excluded_transient` — there
 is no model output to judge. Anything outside those classes still propagates:
 
 ```bash
@@ -736,19 +799,30 @@ Each capability is sampled N ≥ 5 times — governance and interview since gap 
 (Session 169), **and the SQL/QC block since Session 218** — and judged on a
 pass-*rate* + structural invariants (§3.4 non-determinism handling).
 
-**Transient-failure policy (symmetric since Session 221).** Both sweeps retry a
-transient seam error up to 3 attempts before scoring anything. They differ on
-exhaustion, deliberately: `interview_sweep.py` *excludes* the sample, while
-`sql_sweep.py` excludes only an exhausted **transport** error and *scores* an
-exhausted `LLMParseError` as a miss. The reason is that exclusion shrinks the
-denominator while every surviving sample is clean by construction, so against the
-1.00 `sql_parse` / `qc_structural` bars a provider failing 14 of 15 samples would
-score 1/1 and pass. Scoring keeps the denominator whole; transport errors are
-excluded because no model output exists to judge. **Consequence to remember when
-reading any post-S221 number: best-of-3 turns a per-sample failure rate `p` into
-`p³` against unchanged bars, so post-fix figures are not comparable with S219's
-or S220's.** `transient_retries` is reported precisely so the first-attempt rate
-stays recoverable.
+**Transient-failure policy (all three blocks since Session 225).** Every
+capability runs through a sweep module shared by the driver and the assertion
+gate — `governance_sweep.py`, `sql_sweep.py`, `interview_sweep.py` — so no
+hand-written measurement loop is left to drift. All three retry a transient up to
+3 attempts before scoring anything, and all three *exclude* an exhausted
+**transport** error, because no model output exists to judge.
+
+They differ on an exhausted **seam** error, deliberately: `governance_sweep.py`
+and `sql_sweep.py` *score* it a miss, `interview_sweep.py` *excludes* the sample.
+The reason for scoring is that exclusion shrinks the denominator while every
+surviving sample is clean by construction, so against the 1.00 `sql_parse` /
+`qc_structural` bars a provider failing 14 of 15 samples would score 1/1 and pass;
+the reason interviews differ is that a sample there is a whole multi-turn run,
+which a seam failure leaves with no report to judge at all.
+
+**Consequences to remember when reading any post-fix number.** (a) Best-of-3
+turns a per-sample failure rate `p` into `p³` against unchanged bars: SQL/QC
+figures are not comparable with S219's or S220's, and governance figures are not
+comparable with S216-S220's. (b) An exclusion leaves a *rate* unbiased but can
+only move the zero-tolerance `governance_laxer_miss` **count** toward PASS, so
+read it with `governance_excluded_transient`. (c) The tiers key on exception
+class, and `opencode` maps its transport failures onto `IntakeLLMError`, so they
+are scored where an SDK provider's are excluded. `transient_retries` is reported
+on every surface precisely so the first-attempt rate stays bounded.
 
 `model=None` is passed so each provider uses its native default id (Bedrock gets
 the `anthropic.`-prefixed default — no cross-provider 400).

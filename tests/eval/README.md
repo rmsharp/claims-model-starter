@@ -160,21 +160,45 @@ judges a pass-*rate* + structural/semantic invariants — never exact text.
 Claude-family models reject `temperature`, so we sample and rely on the
 invariants rather than pinning `temperature=0`.
 
-**Transient-failure policy (Session 221):** sampling is only half the story, and
-the missing half is what let a single blip produce a recorded NO-GO at Session
-219. Both sweeps now retry a transient seam error up to 3 attempts before scoring
-anything. On exhaustion they differ deliberately: `interview_sweep` excludes the
-sample; `sql_sweep` excludes only an exhausted **transport** error
-(`APITimeoutError` / `APIConnectionError`) and **scores** an exhausted
-`LLMParseError` as a miss, because excluding it would shrink the denominator while
-every surviving sample is clean by construction — a provider failing 14 of 15
-samples would then score 1/1 and pass a 100% bar. Anything outside those classes
-still propagates, so a real harness bug surfaces loudly rather than becoming a
-rate. **Reading any post-S221 number: best-of-3 makes the effective per-sample
-failure rate `p³` against unchanged thresholds, so these figures are not
-comparable with Sessions 219 and 220.** Every reporting surface carries
-`transient_retries` and `excluded_transient` so the first-attempt rate and the
-true denominator stay recoverable.
+**Transient-failure policy (Sessions 221, 225):** sampling is only half the
+story, and the missing half is what let a single blip produce a recorded NO-GO at
+Session 219. All **three** measured capabilities now run through a sweep module
+shared by the assertion gate (`test_eval_live`) and the report-number producer
+(`shadow_run`), so no hand-written measurement loop is left to drift:
+`governance_sweep`, `sql_sweep`, `interview_sweep`. Each retries a transient up to
+3 attempts before scoring anything.
+
+**They do not all apply one exhaustion rule, and should not.** All three exclude
+an exhausted **transport** error (`APITimeoutError` / `APIConnectionError`) —
+there is no model output to judge, and scoring one would convert a network outage
+into a model verdict. They differ on an exhausted **seam** error:
+
+| sweep | seam class | on exhaustion | why |
+| --- | --- | --- | --- |
+| `governance_sweep` (S225) | `IntakeLLMError` | **scored** a non-agreement | one call, and its failure IS the measured capability |
+| `sql_sweep` (S221) | `LLMParseError` | **scored** a miss | same, and excluding lets a provider failing 14 of 15 samples score 1/1 and pass a 100% bar |
+| `interview_sweep` (S169/S171) | `IntakeLLMError`, `StakeholderSimError` | **excluded** | a sample is a whole multi-turn interview; a seam failure leaves no report to judge |
+
+Anything outside those classes still propagates, so a real harness bug surfaces
+loudly rather than becoming a rate; `APIStatusError` (4xx/5xx) is deliberately
+among them.
+
+**Two asymmetries to know when reading a number.** (1) An exclusion shrinks a
+*rate*'s numerator and denominator together, leaving it unbiased — but
+`governance_laxer_miss` is a **count** against a maximum of 0, so an exclusion
+removes a chance to observe a miss and can only move that row toward PASS. Read
+it with `governance_excluded_transient`, never alone. (2) The tiers key on
+exception *class*, and only the SDK providers raise the transport classes: the
+`opencode` adapter maps spawn failure, non-zero exit and timeout onto
+`IntakeLLMError`, so its transport failures are **scored** where an SDK
+provider's are excluded. Filed, not fixed.
+
+**Reading any post-fix number:** best-of-3 makes the effective per-sample failure
+rate `p³` against unchanged thresholds. SQL/QC figures are not comparable with
+Sessions 219-220; governance figures are not comparable with Sessions 216-220,
+which measured best-of-1. Every reporting surface carries `transient_retries`,
+`excluded_transient` and (governance/SQL) the scored-exhaustion count, so the
+first-attempt rate is bounded and the true denominator stays visible.
 
 ## Corpus
 

@@ -34,14 +34,17 @@ complete picture; **never** ending an interview early (zero tolerance).
 ### The items, in plain terms
 
 **Five of these are one complaint** — *the measuring instrument cannot reliably tell "the model is
-bad" from "something hiccuped."* That is what cost `opencode` its recorded verdict.
+bad" from "something hiccuped."* That is what cost `opencode` its recorded verdict. The largest of
+them — four surfaces applying three different glitch policies — **closed in Session 225**; the two
+rows below it are the smaller residue that closing it exposed.
 
 | Item (heading below) | In plain terms | Cost / note |
 |---|---|---|
-| Re-measure `opencode` | `opencode` was recorded NO-GO on a single glitch in 15 samples. Session 220 re-ran 45 samples and it never recurred; Session 221 then fixed the harness to retry a glitch before scoring it — and deliberately did **not** re-run the measurement, because changing your instrument after seeing a number you dislike is how a gate stops being a gate. The verdict on the books rests on an instrument since repaired. | **~$16.40, ~130 min.** The only item that costs real money. Source `.env` first. |
-| Three different transient policies | Four places make live calls; each handles a glitch differently — retry-then-discard, retry-then-score, no retry at all, and crash the whole run. The one that does **not** retry feeds the strictest bar in the gate (never under-rate a risk, zero misses allowed). So the exact bug that cost `opencode` its verdict is still live in the highest-stakes measurement, and two of the four surfaces disagree with each other. | Harness only. No money. |
+| Re-measure `opencode` | `opencode` was recorded NO-GO on a single glitch in 15 samples. Session 220 re-ran 45 samples and it never recurred; Sessions 221 and 225 then fixed the harness to retry a glitch before scoring it — and deliberately did **not** re-run the measurement, because changing your instrument after seeing a number you dislike is how a gate stops being a gate. The verdict on the books rests on an instrument since repaired, now in both halves. | **~$16.40, ~130 min.** The only item that costs real money. Source `.env` first. |
+| Two sweeps stay silent about a dropped sample | Closing the transient-policy item (Session 225) left two smaller siblings. The live interview gate is the one measurement surface that still passes the sweep no place to log to, so every retry and exclusion note it produces — including the error text that makes a failure attributable — is discarded. And the driver reports how many samples the governance and SQL sweeps dropped, but not the interview one, so that denominator can shrink invisibly in the report. | Two one-line changes. No money. |
+| A glitch means different things per provider | The harness decides "network blip" vs "the model is bad" by looking at the *type* of error raised. Only the two direct-API providers raise the network types; `opencode` runs as a subprocess and reports a spawn failure, a crash and a timeout as the same error a garbled reply produces. So the identical real-world event is discounted for one provider and counted against another. | Pre-existing, affects all three sweeps. Fixing it means changing the adapter's error mapping, not the harness. |
 | A bare `KeyError` aborts the whole sweep | If the model returns valid JSON with the *wrong field names*, the code dies on an unhandled error that no part of the harness catches — killing a run that may be an hour in, instead of recording one failure and moving on. | Small. Mirrors a convention the intake agent already ships. |
-| No circuit breaker | A run failing for a systemic reason grinds on sample after sample. The retry added in Session 221 tripled the worst case: **~7.5 hours of billed nothing** before it reports anything. | Small. Should abort after ~5 consecutive total failures. |
+| No circuit breaker | A run failing for a systemic reason grinds on sample after sample. The retry added in Session 221 tripled the SQL/QC worst case to **~7.5 hours of billed nothing**, and Session 225 added the same tripling to the governance block — so the figure in the item below now **understates** it. | Small. Should abort after ~5 consecutive total failures. |
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
 | `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives** — the new one (804 lines) reads whole today, but is equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
@@ -225,36 +228,70 @@ not the $0.0318 global mean). **Its own session**, and read these before quoting
 
 1. **Post-fix numbers are not comparable with S219's or S220's.** Best-of-3 turns a per-sample failure
    rate `p` into `p³` against unchanged bars. Quote `transient_retries` alongside every rate — it is
-   what makes the first-attempt rate recoverable.
+   what bounds the first-attempt rate. **Session 225 widened this**: the governance block now retries
+   too, so the governance cells are non-comparable with **S216-S220**, a different span from the
+   SQL/QC cells' S219-S220. Do not quote one rule for both. The same session added
+   `governance_excluded_transient`, `governance_seam_failures` and `governance_transient_retries` to
+   the driver's output — record all three, and remember that an exclusion can only move the
+   zero-tolerance `governance_laxer_miss` **count** toward PASS.
 2. **Do not lower `SQL_PARSE_VALID_MIN` or `QUALITY_CHECKS_STRUCTURAL_MIN`** (learning #82). Four
    sessions running have refused to calibrate a bar to a number.
 3. **Source `.env`** — `set -a && . ./.env && set +a`. Without it every sample fails at $0 in ~36 s and
    the harness scores that as 45 model-quality failures (see the item below).
 
-### The three live measurement blocks still apply three different transient policies
+### Two live surfaces stay silent about a dropped or retried sample
 
-**Filed Session 221, deliberately not fixed there** — that session's deliverable was the SQL/QC half,
-and widening it mid-session is the scope creep `SAFEGUARDS.md` exists to prevent. Session 221 closed the
-SQL-vs-interview asymmetry and, in doing so, established that the problem is wider than the two blocks
-`BACKLOG` had named:
+**Filed Session 225**, found by the adversarial review of that session's own change and deliberately
+not fixed there — the deliverable was the governance transient policy, and both of these are the
+*interview* block, which the closed item pinned byte-stable. Two one-line changes, no money, no
+threshold.
 
-| block | on a transient seam error | gate keys it feeds |
-| --- | --- | --- |
-| `interview_sweep.py:82-87,152-180` | retry 3x, then **exclude** | `interview_convergence` (0.95), `interview_premature` (≤0) |
-| `sql_sweep.py` (S221) | retry 3x, then **score** a parse miss / **exclude** a transport miss | `sql_parse` (1.00), `sql_exec` (0.95), `qc_structural` (1.00) |
-| `shadow_run.py:97-111` (governance loop) | **no retry** — scored an immediate non-agreement | `governance_cycle_time_agreement` (0.90), `governance_laxer_miss` (**≤0**) |
-| `test_eval_live.py`'s governance test | **no handler at all** — the seam error aborts the gate | same two keys |
+1. **`test_eval_live.py`'s interview gate passes no `on_event`.** `sweep_interview_convergence(
+   load_interview_cases(), run_one)` at `tests/eval/test_eval_live.py:221` leaves `notify` at its
+   no-op default, so every retry and exclusion note the sweep produces is discarded inside the gate
+   that most needs them. This is the *identical* defect Session 221 fixed for the SQL test and
+   Session 225 fixed for the governance test — the same file now has two call sites with a sink and
+   one without. `shadow_run` has always passed `_warn` here (`shadow_run.py:157-159`), so only the
+   assertion gate is blind.
+2. **`shadow_run` reports no interview exclusion counter.** `measure_provider`'s returned mapping
+   carries `sql_excluded_transient` and `governance_excluded_transient` but nothing for the
+   interview sweep, even though `InterviewSweepResult.excluded_transient` exists and is populated.
+   The interview denominator can therefore shrink invisibly in the agreement report — the exact
+   condition `tests/eval/README.md` tells readers to check for. (The live *assertion* already prints
+   it in its failure message; the *report* does not.)
 
-The governance rows are the sharp end: `GOVERNANCE_LAXER_MISSES_MAX = 0` is a **zero-tolerance** bar fed
-by an un-retried transient, which is precisely the S219 shape that cost a cutover verdict. Worse, the
-driver and the assertion gate disagree with *each other* — one scores the error, the other dies on it.
+**Both are diagnosability, not correctness:** no rate or count changes, and no verdict turns on
+either. They are filed because a sink-less call site is how the Session 219 event became permanently
+unattributable.
 
-**Sketch:** give the governance loop the same treatment (`_call_with_retries` in `sql_sweep.py` is
-already generic over the call; a shared helper is the obvious home, but note S221's finding that the
-transient *tuples* cannot be shared — `interview_sweep`'s members are `RuntimeError` subclasses from the
-intake package, `sql_sweep`'s is a `ValueError` from the data-agent wheel). Add a handler to
-`test_eval_live.py`'s governance test so the two surfaces agree. **`interview_sweep.py` must stay
-byte-stable** unless the session explicitly owns re-validating the recorded interview numbers.
+### The transient tiers key on exception class, so a glitch means different things per provider
+
+**Filed Session 225** (reproduced by two independent refuters during that session's review, then
+ruled out of scope by the panel — the mechanism is real, the severity ruling was "not this session's
+defect"). **Pre-existing and wider than any one sweep: all three apply it.**
+
+Every sweep splits transients into a *scored* tier (a seam error — the model produced something
+unusable) and an *excluded* tier (a transport error — no model output exists to judge). The split is
+made on the **exception class**, and only the SDK-backed providers (`anthropic`, `bedrock`) raise the
+transport classes: `AnthropicLLMClient` lets `APITimeoutError` / `APIConnectionError` out of
+`_call_json` unwrapped, which is what the excluded tier catches.
+
+`OpenCodeLLMClient` is a subprocess adapter. Per the adapter spec's error-mapping table it converts
+**spawn failure, non-zero exit, timeout, no-assistant-text and malformed JSON** all into
+`IntakeLLMError` / `LLMParseError`. So for `opencode` a dropped connection or a killed process is
+**scored a model-quality miss**, where the same real-world event on `anthropic` is *excluded*. Two
+providers are judged by different rules on the same corpus against the same thresholds — and
+`opencode` is the provider whose recorded verdict is NO-GO.
+
+**This is not a reason to distrust the S216-S220 numbers on its own** — no measured event has been
+attributed to it, and the exhaustion path requires three consecutive failures. It is a reason not to
+compare a scored-tier count across providers without saying so.
+
+**Sketch:** the fix belongs in the adapter, not the harness — give the subprocess client a distinct
+exception for transport-shaped failures (spawn/exit/timeout) so the existing tier split can see them,
+rather than teaching each sweep about provider internals. That changes shipped package code under
+`mypy --strict`, so it is its own session. Until then, any surface quoting a scored-exhaustion count
+should name the provider.
 
 ### A bare `KeyError` from a well-formed-but-wrong-keyed model response aborts the whole sweep
 
@@ -367,10 +404,14 @@ pairwise battery does not force a matching edit — unlike most of this package'
 
 ### No circuit breaker on a systematically-failing live sweep
 
-**Filed Session 221.** The retry the same session added tripled the worst case: a sweep's 30 calls
-become up to 90 when every sample exhausts. Against `DEFAULT_TIMEOUT_S = 600.0`
-(`opencode_client.py`), a timeout-shaped systematic failure goes from ~2.5 h to ~7.5 h before the run
-reports anything. The cheap, already-diagnosed signature to break on is the one from the item below —
+**Filed Session 221. Arithmetic revised Session 225 — the original figure now understates it.**
+The S221 retry tripled the SQL/QC block: a sweep's 30 calls become up to 90 when every sample
+exhausts. Against `DEFAULT_TIMEOUT_S = 600.0` (`opencode_client.py`), a timeout-shaped systematic
+failure goes from ~2.5 h to ~7.5 h before the run reports anything. **Session 225 gave the governance
+block the same retry**, so its 25 calls (5 cases x N_SAMPLES) become up to 75 on the same failure —
+the worst case is now the sum over three blocks, not one. Note the ceiling is bounded by the timeout,
+not by the retry count alone; the point stands either way and the number in this paragraph should be
+re-derived, not quoted, when the breaker is built. The cheap, already-diagnosed signature to break on is the one from the item below —
 a run whose calls are failing at $0 is an environment fault, not a measurement. **Sketch:** abort the
 sweep with a named error after K consecutive exhausted samples (K ≈ 5), so the operator gets the
 diagnosis in one minute instead of seven hours of billed nothing.
