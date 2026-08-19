@@ -44,6 +44,19 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 225 Did
+**Deliverable:** Unify the transient policy across the eval harness's **governance** surfaces
+(`BACKLOG.md` → "The three live measurement blocks still apply three different transient policies").
+(IN PROGRESS)
+**Started:** 2026-08-19
+**Status:** Session claimed. Work beginning.
+
+**Scope, stated up front:** a new shared `tests/eval/governance_sweep.py` (sample + bounded retry +
+two-tier exhaustion, mirroring `sql_sweep`), consumed by **both** `shadow_run.measure_provider` and
+`test_eval_live.test_live_governance_cycle_time_agreement_and_no_laxer_miss`, plus unit tests.
+`interview_sweep.py` and `sql_sweep.py` stay **byte-stable** (the backlog item pins the first; the
+second is pinned by choice, to avoid a cross-module refactor `SAFEGUARDS.md` gates behind plan mode).
+
 ### What Session 224 Did
 **Deliverable:** **Second lossless trim of `SESSION_NOTES.md`. COMPLETE.** Sessions 220 → 217 (5
 record headings, 774 lines, 61,811 bytes) moved verbatim into a **new write-once shard**,
