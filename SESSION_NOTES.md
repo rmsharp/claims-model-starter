@@ -45,18 +45,248 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 224 Did
-**Deliverable:** Second lossless trim of `SESSION_NOTES.md`. The live file stands at 1,448 lines
-against `CLAUDE.md`'s 1,500-line trim trigger with ~52 lines of headroom, and this session's own
-close-out (~184 lines at observed density) crosses it. Retire the oldest records into a **new
-write-once shard** under `docs/architecture-history/` with its own cut key, beside a re-runnable
-`.verify.sh` that ships its own falsification test (`--self-test`), and cut the live file to
-≤ 1,050 lines while retaining no fewer than 4 sessions. Documentation only — no production code.
-(IN PROGRESS)
-**Started:** 2026-08-18
-**Status:** Session claimed. Work beginning.
-**Three commits, per `CLAUDE.md`:** this claim is committed alone, the trim lands alone with **no**
-record edit in it, and the close-out follows. A bundled record edit registers as an added record and
-holds the proof red forever.
+**Deliverable:** **Second lossless trim of `SESSION_NOTES.md`. COMPLETE.** Sessions 220 → 217 (5
+record headings, 774 lines, 61,811 bytes) moved verbatim into a **new write-once shard**,
+`docs/architecture-history/SESSION_NOTES-S220-through-S217.md`, beside a re-runnable proof that
+ships its own falsification test. The live file went **1,462 → 707 lines**; this record brings it to
+**937** — under the ≤1,050 target, with ~3.1 sessions of runway before the next trigger. **Documentation only — no production code, no test logic, no threshold or default changed.**
+
+**Started:** 2026-08-18 (claim). **Completed:** 2026-08-19. **Commits:** `6823b3f` (Phase 1B claim,
+its own commit), `07e1ab9` (the trim, **no record edit in it** — the proof reports `added: 0`), and
+this close-out. The three-commit shape `CLAUDE.md` mandates, intact.
+
+**⚠ This session spanned two agent contexts.** The first claimed Session 224 and stopped, producing
+only the stub — no trim, no close-out. The second (this one) found the claim commit at `HEAD` with a
+clean tree, and **continued as 224 rather than claiming 225**: the stub claimed *this exact*
+deliverable, so continuing produced the mandated three commits, where renumbering would have needed a
+fourth and left a permanent "Session 224 did nothing" record in the ledger. **The Phase 1B stub is
+why that was possible** — it is the mechanism working exactly as designed, and the strongest field
+evidence for it in this project so far. Nothing in this record is credited to the first context.
+
+#### What was built
+
+| artifact | what it is |
+| --- | --- |
+| `docs/architecture-history/SESSION_NOTES-S220-through-S217.md` | 804 lines: a 30-line banner + the 774-line archived byte span, unedited |
+| `…-S220-through-S217.md.verify.sh` | 409 lines: **five** assertions (L0–L4) + a **15**-mutant `--self-test` |
+| `SESSION_NOTES.md` | front matter gained a pointer block; **two** declared substitutions; records zone cut at the Session 220 boundary |
+| `CLAUDE.md`, `README.md`, `PROJECT_CONVENTIONS.md`, `BACKLOG.md` | four documents that described a **one-shard world**, corrected |
+
+**Cut depth was arithmetic, not feel.** Retaining 4 sessions (the floor) leaves 707 lines post-trim
+and ~890 after this record — under the ≤1,050 target with **~3.4 sessions of runway**. Retaining 5
+would have landed at ~1,081, *over* target, with ~2.3. The floor was the right choice here; it will
+not always be.
+
+#### The naming rule bent, deliberately
+
+`PROJECT_CONVENTIONS.md` §3 encoded `<STEM>-through-<CUTKEY>.md` from a single instance. **That form
+is unambiguous only for the first shard**, whose span is open at the bottom: a second shard named
+`-through-S220` reads as "everything through Session 220", which is false — 216→1 are in the earlier
+file. **Non-first shards therefore take the range form `<STEM>-<NEWEST>-through-<OLDEST>.md`.**
+Recorded in §3 so a third trim copies the rule and not the first filename. Corollary now stated
+there: shard names are load-bearing routing information and are only correct read *together* — no
+single shard is authoritative about where Session N lives.
+
+#### Two declared front-matter substitutions, not one
+
+This trim falsified **two** sentences in the S216 pointer block, and both were rewritten in place as
+substitutions the proof checks by exact equality:
+
+1. "This live file holds Sessions 222 → 217 only" — false the moment the cut landed.
+2. "Session 216's own handoff evaluation **stayed here**" — Session 217's record *carries* that
+   evaluation and is now in the new shard (`grep -c` : 0 in the live file, 1 in the S220 shard).
+
+I found #1 while designing and **#2 only while checking the authorship seam** — the same defect
+class, one instance apart. Leaving either would park a false present-tense claim in the front matter
+of the one file every session reads first. **Two independent refuters ruled #2 "not a defect"**, on
+the grounds that my new pointer block disclaims the whole S216 block below it. That reasoning is
+sound for a top-down reader; I fixed it anyway, because grep-driven agents do not read top-down and
+the fix is exactly checkable. Recorded as a disagreement, not a consensus.
+
+#### The proof gained L4 — and L4 exists because a *killed* finding was true
+
+**L0–L3 are blind by construction to WHERE the cut fell.** Moving one whole record across the
+boundary preserves concatenation, multiset membership **and** order simultaneously, so L1 and L3
+cannot see it. The S216 proof concedes this in its own closing text ("says NOTHING about whether the
+cut point was well chosen") and defers the whole question to a human.
+
+**L4** compares each side against a **hand-declared cut key** — `CUT_RETAINED`/`CUT_ARCHIVED`, never
+read back from the artifacts, which would make it a restatement rather than an assertion. Mutants
+**M14/M15** slide the boundary one record each way and are caught by **L4 alone**. That is the
+evidence L4 is not redundant with L1, and it is visible in the run output because the self-test
+prints *every* assertion that fires per mutant.
+
+#### ⚠ My first proof shipped an assertion no mutant could reach
+
+`L2/b0` — the one assertion this proof adds beyond its ancestor — checks that a declared substitution
+is uniquely anchored in `before`. I shipped it with 11 mutants, all caught, exit 0. **Not one mutant
+perturbed the `before` operand**, so b0's failure branch was unreachable in all 11. An adversarial
+reviewer demonstrated it; the fix was a mutant (**M13**), not a rewrite.
+
+This is the failure `--self-test` exists to prevent, committed by the person building the
+`--self-test`. The trap is structural: mutants get written against the artifact you just produced
+(`after`, `shard`), while new assertions often guard the *input* or the *declaration*. **Mutation
+coverage is per-ASSERTION, not per-mutant** — learning **#99**, with the assertion×mutant matrix as
+the mechanical fix.
+
+#### Verification actually run
+
+- **Both** proofs green; **both** `--self-test`ed. **The S216 proof had never been falsified in its
+  life** — its own text warns that a green run that was never self-tested proves less than it looks
+  like. It is now 9/9. Mine is 15/15.
+- **Losslessness independently reconstructed without either proof script**: `sha256` of the archived
+  span equals the pre-trim tail (`0df52822…`), of the retained span the pre-trim head (`ecca6344…`).
+  I did not take my own tool's word for its own correctness.
+- The S216 proof reads its artifacts from commit `a9510ca`, so this trim **cannot** disturb it —
+  verified by running it, not by reasoning about it.
+- **Learning #97 applied:** a `sha256` state guard over all five artifacts before launching 39 review
+  agents, re-checked after. All five matched; the tree was unmolested.
+
+#### Adversarial review: 39 agents, 5 lenses, 6 survived / 11 killed
+
+**The two best changes in this session came out of the KILLED pile** — refuters wrote verdicts of the
+form *"REPRODUCED, then refuted as a defect"*. Their facts held; only the severity ruling went
+against them. `L2/b0`'s coverage gap and the unpinned cut point were both killed, and both were
+acted on. **"Not a defect" and "not worth acting on" are different rulings, and a refute-by-default
+panel only ever issues the first** — learning **#100**. One refuter died on an API error, which under
+a `kills >= 1` rule silently reduced that finding to a single-vote decision; use an odd panel and a
+majority rule next time.
+
+The 4 survivors were all mine to fix and all are fixed: `CLAUDE.md` (major — see below),
+`README.md`, `PROJECT_CONVENTIONS.md`, and a shard banner that **typed** "nine ways" against a suite
+that shipped 11 mutants, inside a file declaring itself write-once.
+
+#### Four documents described a one-shard world
+
+A path-grep found the easy references. The damage was in prose. **`CLAUDE.md` is the one that
+mattered** — it is injected into every session before anything else is read, and it said the live
+file holds "~6 sessions" (4) and named a single "**Shard + proof**" pair. An agent resolving *where
+do retired records live* from it would have grepped one shard, got **zero hits** for Sessions
+220–217, and had no pointer to the file that holds them: the exact silent-miss the shard apparatus
+exists to remove. Learning **#101**.
+
+### Session 223 Handoff Evaluation (by Session 224)
+
+**Score: 9.5/10.** The best handoff in this series, and the first whose gotchas changed what I *did*
+rather than what I knew.
+
+**What helped, specifically:**
+- **Gotcha 6 pre-specified this entire session.** It named the line count, the headroom, the ~184
+  lines-per-record density, the three-commit rule, the ≤1,050 target, the floor of 4, *and* the
+  canonical-trimmer trap ("its stop condition is unsatisfiable and would trim to empty"). I spent
+  zero time deciding what the task was or what its rules were.
+- **Gotcha 2 / learning #97 changed my behaviour before I could repeat the mistake.** I ran 39
+  mutation-adjacent agents against a shared tree holding unverified work. Because S223 had paid for
+  that lesson, I hashed all five artifacts first and re-checked after. Clean — and *provably* clean,
+  which is the part that matters.
+- **"`PROJECT_CONVENTIONS.md` is the one project-owned file in `docs/methodology/`"** saved a real
+  error in both directions: I needed to edit it, and everything around it is third-party synced
+  material that must not be touched.
+- **The `BACKLOG.md` plain-language index** made the Phase 0 report readable and told me, by its own
+  maintenance rule, to update the row I changed. I did (13 rows against 13 open headings).
+
+**What was missing (the one gap):** nothing carried forward that **a trim also rewrites the documents
+that describe the ledger.** S222's own trim commit touched 8 files including `CLAUDE.md`,
+`README.md` and `PROJECT_CONVENTIONS.md` — that fact was in git, not in the handoff. I found the four
+stale documents by grep and by adversarial review; one row would have found them in 30 seconds. Fixed
+forward as learning #101 and in `CLAUDE.md`'s trim section.
+
+**What was wrong:** nothing. The "1,448 lines" figure read 1,462 by my Phase 0 — that is Session
+224's own 14-line stub, not an error in the handoff.
+
+**ROI: very high.** Two gotchas transferred directly into the deliverable; one prevented a repeat of a
+documented failure.
+
+### Phase 3B: Self-assess — Session 224 — 8/10
+
+- **The +:** (1) **Built in a scratchpad and proved the candidate before installing it** — nothing
+  touched the repo until the partition was verified. (2) **Verified losslessness independently of my
+  own proof script**, by sha256 reconstruction; a proof that only validates itself is a digest with
+  extra steps. (3) **Ran `--self-test` on the inherited proof too**, which had never been falsified in
+  its life. (4) **Found the second stale sentence myself**, before the review, by checking the
+  authorship seam rather than assuming one instance was the class. (5) **Applied a predecessor's
+  learning as a control, not a note** (#97's state guard) and can show the hashes. (6) **Acted on two
+  findings the refuters had killed** — against the panel's verdict but with its facts — and that is
+  where L4 and M13 came from. (7) **Stated the cut-depth arithmetic** instead of choosing by feel.
+- **The −:** (1) **I shipped a proof whose one novel assertion no mutant could reach.** I wrote both
+  the assertion and the mutant list and never checked that the second covered the first. An outsider
+  caught it. **This is the session's real error.** (2) **I missed four documents describing a
+  one-shard world** on my first pass — including `CLAUDE.md`, the highest-priority file in the repo —
+  and found them only while idling on the review. (3) **Two of the three front-matter defects were
+  the same mistake**: I checked one instance of a class and stopped. (4) **The shard banner typed
+  "nine ways" against an 11-mutant suite** — a number I could have derived and instead asserted, in a
+  file I had just declared write-once and uncorrectable. (5) **I designed a 2-agent refuter panel
+  under a `kills >= 1` rule**, so one API failure silently made a finding a single-vote decision.
+  (6) Three shell-quoting fumbles (backticks in a double-quoted heredoc, a multi-line `$(...)` fed to
+  `[ -eq ]`) cost four wasted round trips — S223's gotcha 4 warned me this is zsh and I still spent
+  them.
+
+**Versus the bar:** S222 shipped 4 assertions and 9 mutants and explicitly left the cut point to a
+human. This ships 5 and 15, mechanises the checkable half of that deferral, and self-tests both
+proofs. That exceeds the predecessor on the deliverable — but S222 did not ship an uncovered
+assertion, and I did.
+
+**Phase 3C:** learnings **#99–101** appended to `PROJECT_LEARNINGS.md`; `CLAUDE.md`'s count updated
+98 → 101 and its trim section rewritten for a two-shard world (routing table, the L4 note, and the
+per-assertion coverage rule). **No workstream document edited** — `docs/methodology/workstreams/` is
+third-party synced material (`NOTICE` §1). `PROJECT_CONVENTIONS.md` **was** edited; it is the one
+project-owned file in that directory, re-verified before touching it.
+
+**No `CHANGELOG.md` entry.** `PROJECT_CONVENTIONS.md` §2 gates an entry on changes to `src/`,
+`packages/`, `scripts/` or `tests/` logic. This session touched none of them. S222's trim took no
+entry either. **Do not backfill this.**
+
+**What's next — the backlog is unchanged by this session.** All five of S223's options are still
+open and still ungated; its recommendation ordering still stands, and I am not re-deriving it:
+
+1. **The three transient policies** (`BACKLOG.md`) — S223's recommendation *before* spending money,
+   because the governance loop's zero-tolerance bar is still fed by an un-retried transient.
+2. **The `KeyError` guard** (`BACKLOG.md`) — small, well-specified, mirrors a shipped intake
+   convention; twinnable with the `probe_information_schema` item, same root cause.
+3. **`probe_information_schema`** (`BACKLOG.md`) — one file, ~20–40 lines, 3–5 tests, not twinned.
+4. **The silent `--db-url` failure** — (a)+(b) small; **(c) needs an operator ruling.**
+5. **Re-measure `opencode`** — **~$16.40, ~130 min, its own session.** Source `.env` first.
+
+**Key files:**
+- `docs/architecture-history/SESSION_NOTES-S220-through-S217.md.verify.sh` — the new proof. **Read
+  its header comment before writing a third one**: it states the three ways it diverges from its
+  ancestor and why each was forced. `L4` at `:~250` and the `CUT_RETAINED`/`CUT_ARCHIVED` key at
+  `:~62` are the parts to copy forward.
+- `docs/architecture-history/SESSION_NOTES-through-S216.md.verify.sh` — the ancestor. **Still green,
+  still authoritative for its own cut**, pinned to `a9510ca`. It has **no L4**.
+- `CLAUDE.md` → "`SESSION_NOTES.md` is trimmed (Sessions 222, 224)" — the routing table for *which
+  shard holds Session N* is here, and it is the first place to update on a third trim.
+- `docs/methodology/PROJECT_CONVENTIONS.md` §3 — the shard naming rule, including why the second
+  instance broke the first instance's form.
+- `PROJECT_LEARNINGS.md` #99 (per-assertion mutation coverage), #100 (mine the killed pile),
+  #101 (grep the documents that *describe* a structure).
+
+**Gotchas:**
+1. **`grep` both shards; never `Read` either.** Session N is in: the **S216** shard when N ≤ 216;
+   the **S220** shard when 217 ≤ N ≤ 220; this file when N ≥ 221. **Neither shard is a prefix of the
+   other**, and a lookup that consults one silently returns zero hits rather than an error. The S220
+   shard is 804 lines — under the 2,000-line read cap *today*, which is a property of this cut's
+   size, not a protection.
+2. **A third trim writes a THIRD file.** Shards are write-once. Do not append to either existing one,
+   and name it by range (`<STEM>-<NEWEST>-through-<OLDEST>.md`), not by the first shard's form.
+3. **Copy L4 forward, and give every new assertion its own mutant.** The ancestor proof predates L4.
+   If you extend a proof, build the assertion×mutant matrix before shipping — an empty row is an
+   unfalsified assertion and a green `--self-test` will not tell you (learning #99).
+4. **The S216 pointer block in this file's front matter is FROZEN at the first trim and carries two
+   declared corrections.** Do not "tidy" it: both corrections are checked by exact equality against
+   `FRONT_SUBST` in the S220 proof, and an undeclared edit fails it (M12). A *third* trim will need
+   its own declared substitutions — and will falsify **my** pointer block's "Two shards exist now".
+5. **This file's front matter says the S216 shard "is 24,564 lines"; the file is 24,590.** That
+   figure counts the records zone, excluding the 26-line banner. Pre-existing, inside the frozen
+   block, and **not** caused by this trim — left deliberately rather than spend a third substitution
+   on it. My own banner counts the whole file, so the two numbers are measured differently. Do not
+   "fix" one to match the other without deciding which convention you want.
+6. **The trim trigger is judgment with hysteresis, not a threshold test.** This trim fired at 1,462
+   against a "exceeds 1,500" rule, because the close-out crosses it — a reviewer flagged that as a
+   rule violation and it is not one. `CLAUDE.md` says so in the same sentence that gives the number.
+7. **This is zsh.** Backticks inside a double-quoted heredoc break; a multi-line `$(...)` fed to
+   `[ -eq ]` breaks. S223 warned about the word-splitting variant; I found two more. Single-quote
+   your heredoc delimiters.
 
 ### What Session 223 Did
 **Deliverable:** **`sql_dialect_from_url` honours its own contract. COMPLETE.** A non-numeric port in
