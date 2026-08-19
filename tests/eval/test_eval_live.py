@@ -43,14 +43,20 @@ the script can no longer "run out" (the ``interview_convergence`` artifact in
 ``PHASE_E_AGREEMENT_REPORT.md`` / ``PROJECT_LEARNINGS`` #21). A sub-convergence
 now reflects the model's own interview behaviour, not a starved script.
 
-**One transient policy across all three blocks (Session 225).** Each of the
-three measured capabilities now runs through a sweep module shared with
-``shadow_run``, so the assertion gate and the report-number producer cannot drift
-apart about what a transient means: ``governance_sweep`` (this file's first
-test), ``sql_sweep`` and ``interview_sweep``. Every one retries a bounded number
-of times, then either scores the miss (a seam/parse error — the denominator must
-not shrink) or excludes the sample (a transport error — no model output exists to
-judge). The governance block was the last hand-written loop and the sharp one:
+**No hand-written measurement loops left (Session 225).** Each of the three
+measured capabilities now runs through a sweep module shared with ``shadow_run``
+— ``governance_sweep`` (this file's first test), ``sql_sweep``,
+``interview_sweep`` — so the assertion gate and the report-number producer can no
+longer drift apart about what a transient means. That is the property this file
+needs; it is **not** the same as all three applying one exhaustion rule, and they
+do not. All three retry a bounded number of times and all three exclude an
+exhausted *transport* error. They differ on an exhausted *seam* error:
+``governance_sweep`` and ``sql_sweep`` **score** it (their catch-all classes are
+the capability under measurement, and excluding would shrink the denominator
+while every surviving sample is clean by construction), ``interview_sweep``
+**excludes** it (a sample there is a whole multi-turn interview, and a seam
+failure leaves no report to judge). Each module argues its own choice in its
+docstring. The governance block was the last hand-written loop and the sharp one:
 it had no handler at all, so a single blip aborted the gate, while its twin in
 ``shadow_run`` scored the same event. No threshold moved.
 

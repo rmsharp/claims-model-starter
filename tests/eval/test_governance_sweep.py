@@ -43,9 +43,11 @@ from tests.eval.eval_corpus import GovernanceCase, load_governance_cases
 from tests.eval.eval_scoring import pass_rate
 from tests.eval.eval_thresholds import GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN
 from tests.eval.governance_sweep import (
+    GovernanceSweepResult,
     governance_sweep_summary,
     sweep_governance_agreement,
 )
+from tests.eval.interview_sweep import N_SAMPLES
 
 
 def _draft(marker: str) -> DraftReportResult:
@@ -284,6 +286,61 @@ def test_a_scored_failure_wins_over_an_exclusion_within_one_sample() -> None:
     assert result.cycle_matches == [False]
 
 
+def test_a_scored_failure_wins_in_either_order() -> None:
+    """The scored class landing *last* must win too, not just landing first.
+
+    ``scored_exc`` is kept separate from ``last_exc`` precisely so a mixed
+    sequence names the failure being scored rather than whichever error happened
+    to land last. With the scored error in the middle, reading only the last
+    attempt would excluded this sample instead of scoring it.
+    """
+    classifier = _FakeClassifier(
+        error_sequence=[_timeout(), IntakeLLMError("bad json"), _timeout()]
+    )
+    notes: list[str] = []
+
+    result = sweep_governance_agreement(
+        [_case()], classifier, n_samples=1, on_event=notes.append
+    )
+
+    assert result.seam_failures == 1
+    assert result.excluded_transient == 0
+    assert result.cycle_matches == [False]
+    # The terminal note names the scored exception, not the timeout that landed last.
+    terminal = notes[-1]
+    assert "IntakeLLMError" in terminal
+    assert "bad json" in terminal
+    assert "non-agreement" in terminal
+
+
+def test_the_exclusion_path_spends_and_reports_its_retries() -> None:
+    """``transient_retries`` was asserted on the scored and recovered paths only."""
+    classifier = _FakeClassifier(error=_timeout())
+
+    result = sweep_governance_agreement([_case()], classifier, n_samples=2)
+
+    assert result.excluded_transient == 2
+    # 2 samples x 2 retries each, and 2 x 3 attempts spent.
+    assert result.transient_retries == 4
+    assert len(classifier.calls) == 6
+
+
+def test_the_default_sample_count_is_the_shared_n_samples() -> None:
+    """The live gate passes no ``n_samples``, so this default *is* its denominator.
+
+    ``N_SAMPLES`` is single-sourced in ``interview_sweep`` and is the §3.4 N>=5
+    floor; pinning it here means a change to that constant cannot silently move
+    the governance gate's sample size.
+    """
+    classifier = _FakeClassifier()
+
+    result = sweep_governance_agreement([_case()], classifier)
+
+    assert N_SAMPLES >= 5
+    assert len(classifier.calls) == N_SAMPLES
+    assert len(result.cycle_matches) == N_SAMPLES
+
+
 def test_a_non_transient_propagates_unretried() -> None:
     """A real harness bug must surface loudly, not be laundered into a rate."""
     classifier = _FakeClassifier(error=ValueError("harness bug"))
@@ -320,13 +377,23 @@ def test_the_two_per_sample_lists_stay_the_same_length() -> None:
     """``cycle_matches`` and ``risk_acceptable`` are both per-sample.
 
     They diverge from ``laxer_misses`` on a seam failure by design (see the
-    module docstring), but never from each other.
+    module docstring), but never from each other. The sequence below **exhausts**
+    the first sample (three consecutive seam errors) so the divergence is
+    actually exercised: without a scored exhaustion in the run this test would
+    pass on the clean path alone and prove nothing.
     """
-    classifier = _FakeClassifier(error_sequence=[IntakeLLMError("x"), None, None, None])
+    classifier = _FakeClassifier(
+        error_sequence=[IntakeLLMError("x"), IntakeLLMError("x"), IntakeLLMError("x")]
+    )
 
     result = sweep_governance_agreement([_case("a"), _case("b")], classifier, n_samples=2)
 
-    assert len(result.cycle_matches) == len(result.risk_acceptable)
+    assert result.seam_failures == 1
+    assert len(result.cycle_matches) == len(result.risk_acceptable) == 4
+    # The divergence itself: one sample is False in the diagnostic list while the
+    # gated zero-tolerance count stays clean.
+    assert result.risk_acceptable.count(False) == 1
+    assert result.laxer_misses == 0
 
 
 def test_total_exclusion_scores_zero_not_one() -> None:
@@ -345,31 +412,72 @@ def test_total_exclusion_scores_zero_not_one() -> None:
     assert not rate.meets(GOVERNANCE_CYCLE_TIME_AGREEMENT_MIN)
 
 
-def test_summary_carries_every_counter() -> None:
-    classifier = _FakeClassifier(error_sequence=[IntakeLLMError("bad"), None, None])
+def test_summary_carries_every_counter_with_its_value() -> None:
+    """Labels alone are not enough — a swapped or inverted value must fail here.
 
-    result = sweep_governance_agreement([_case()], classifier, n_samples=2)
+    Constructing the result directly (rather than running a sweep) does double
+    duty: it is the tripwire proving every field added after the two lists still
+    carries a default, which is what keeps this two-argument construction valid.
+    """
+    result = GovernanceSweepResult(
+        cycle_matches=[True, False, True],
+        risk_acceptable=[True, True, False],
+        laxer_misses=1,
+        seam_failures=2,
+        transient_retries=3,
+        excluded_transient=4,
+    )
+
     line = governance_sweep_summary(result)
 
-    for token in (
-        "governance_cycle_time",
-        "risk_tier_acceptable",
-        "laxer_misses",
-        "seam_failures",
-        "transient_retries",
-        "excluded_transient",
-    ):
-        assert token in line
+    assert "governance_cycle_time 2/3" in line
+    assert "risk_tier_acceptable 2/3" in line
+    assert "laxer_misses 1" in line
+    assert "seam_failures 2" in line
+    assert "transient_retries 3" in line
+    assert "excluded_transient 4" in line
 
 
-def test_notes_carry_the_exception_text_not_just_the_type() -> None:
-    """Session 219's verdict-deciding event was unattributable without this."""
+def test_the_result_is_constructible_from_its_two_lists_alone() -> None:
+    """Every counter carries a default; adding a required field would break this."""
+    result = GovernanceSweepResult(cycle_matches=[True], risk_acceptable=[True])
+
+    assert (result.laxer_misses, result.seam_failures) == (0, 0)
+    assert (result.transient_retries, result.excluded_transient) == (0, 0)
+
+
+def test_every_note_carries_the_exception_text_not_just_the_type() -> None:
+    """Session 219's verdict-deciding event was unattributable without this.
+
+    ``all``, not ``any``: the helper emits three distinct note kinds (retry,
+    scored exhaustion, exclusion) and the docstring's rule is stated over every
+    one of them. An ``any`` here would be satisfied by the terminal note alone
+    and would not notice a retry note that dropped its message.
+    """
     classifier = _FakeClassifier(error=IntakeLLMError("missing key 'risk_tier'"))
+    notes: list[str] = []
+
+    result = sweep_governance_agreement(
+        [_case()], classifier, n_samples=1, on_event=notes.append
+    )
+
+    assert result.seam_failures == 1
+    # 2 retry notes + 1 scored-exhaustion note, and every one names the message.
+    assert len(notes) == 3
+    assert all("missing key 'risk_tier'" in note for note in notes)
+
+
+def test_the_exclusion_note_also_carries_the_exception_text() -> None:
+    """The transport tier's terminal note is the other half of the same rule."""
+    classifier = _FakeClassifier(error=_conn_error())
     notes: list[str] = []
 
     sweep_governance_agreement([_case()], classifier, n_samples=1, on_event=notes.append)
 
-    assert any("missing key 'risk_tier'" in note for note in notes)
+    excluded = [note for note in notes if "excluded" in note]
+    assert len(excluded) == 1
+    assert "dropped" in excluded[0]
+    assert "APIConnectionError" in excluded[0]
 
 
 def test_the_sweep_is_silent_without_an_event_sink() -> None:

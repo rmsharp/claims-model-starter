@@ -70,9 +70,12 @@ from tests.eval.stakeholder_sim import stakeholder_simulator_for
 def _warn(message: str) -> None:
     """Note a caught seam failure to stderr.
 
-    It is recorded as a measured miss — or, for an exhausted *transport*
-    transient in the governance, SQL or QC sweep, as an exclusion (Sessions 221,
-    225). Retry notes arrive here too, and every one carries ``str(exc)``.
+    It is recorded as a measured miss — or, for an exhausted transient the
+    reporting sweep excludes rather than scores, as an exclusion: a *transport*
+    error in the governance, SQL or QC sweep (Sessions 221, 225), or any
+    exhausted transient in the interview sweep, which excludes both classes
+    (Sessions 169/171). Retry notes arrive here too, and every one carries
+    ``str(exc)`` except the interview sweep's, which predate that rule.
     """
     print(f"# WARN {message}", file=sys.stderr)
 

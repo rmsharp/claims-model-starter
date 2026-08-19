@@ -23,6 +23,7 @@ import pytest
 from model_project_constructor_data_agent.db import ReadOnlyDB
 
 from tests.eval import shadow_run
+from tests.eval.eval_cutover import CHECK_KEYS
 
 
 @dataclass
@@ -144,11 +145,17 @@ def test_the_governance_sweep_is_given_an_event_sink(
 ) -> None:
     """Without ``on_event`` every retry and exclusion note is silently dropped.
 
-    That is the Session 221 defect this driver's SQL call site had for three
-    sessions and its governance call site had from the start: the sweep's
-    ``notify`` defaults to a no-op, so the ``str(exc)`` that makes a live failure
-    attributable at all goes nowhere. Pinned here because no deterministic test
-    can otherwise see it — the sweep is silent by design when the sink is absent.
+    The sweep's ``notify`` defaults to a no-op, so a call site that omits the
+    sink discards every retry and exclusion note — including the ``str(exc)``
+    that makes a live failure attributable at all. That defect was real and cost
+    three sessions to find, but it was ``test_eval_live``'s SQL call site, not
+    this driver's: ``shadow_run`` has passed ``_warn`` to the SQL sweep since
+    Session 218 (``4e2c8ec``), as ``test_eval_live.py`` itself records. This
+    driver's *governance* call site had no sweep at all before Session 225 — its
+    hand-written loop did call ``_warn``, just without ``str(exc)``.
+
+    Pinned here because no deterministic test can otherwise see the omission:
+    the sweep is silent by design when the sink is absent.
     """
     seen: dict[str, object] = {}
 
@@ -161,3 +168,58 @@ def test_the_governance_sweep_is_given_an_event_sink(
     shadow_run.measure_provider("anthropic", seeded_pc_db, n_samples=1)
 
     assert seen["on_event"] is shadow_run._warn
+
+
+def test_governance_results_reach_their_gate_keys_unswapped(
+    seeded_pc_db: ReadOnlyDB,
+    recorded_data_clients: list[_RecordedCall],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The six-field mapping from sweep result to measured keys, pinned.
+
+    ``measure_provider`` is reachable by no other test in the tree, so without
+    this the rewritten mapping is invisible: a stub returning all-default values
+    cannot tell ``governance_laxer_miss`` wired to ``laxer_misses`` apart from it
+    wired to ``seam_failures``. That key is the zero-tolerance gate row
+    (``GOVERNANCE_LAXER_MISSES_MAX = 0``) and "a seam failure must never feed it"
+    is this change's whole thesis — tested at the sweep level, and here at the
+    level where the number actually reaches ``evaluate_cutover``. Every value
+    below is distinct so no two fields can be swapped without failing.
+    """
+    monkeypatch.setattr(
+        shadow_run,
+        "sweep_governance_agreement",
+        lambda *a, **k: _StubGovernanceSweep(
+            cycle_matches=[True, True, True, False],  # 3/4 = 0.75
+            risk_acceptable=[True, False],  # 1/2 = 0.5
+            laxer_misses=7,
+            seam_failures=3,
+            transient_retries=11,
+            excluded_transient=2,
+        ),
+    )
+
+    measured = shadow_run.measure_provider("anthropic", seeded_pc_db, n_samples=1)
+
+    assert measured["governance_cycle_time_agreement"] == 0.75
+    assert measured["governance_risk_tier_acceptable"] == 0.5
+    assert measured["governance_laxer_miss"] == 7.0
+    assert measured["governance_seam_failures"] == 3.0
+    assert measured["governance_transient_retries"] == 11.0
+    assert measured["governance_excluded_transient"] == 2.0
+
+
+def test_the_governance_diagnostics_are_not_mistaken_for_gate_keys() -> None:
+    """Extra keys in the measured mapping must not enter the §3.4 gate.
+
+    ``eval_cutover`` reads a fixed key set and ignores the rest; this pins that
+    the three diagnostics Session 225 added stayed out of it, so a future reader
+    cannot mistake them for thresholds nobody set.
+    """
+    added = {
+        "governance_seam_failures",
+        "governance_excluded_transient",
+        "governance_transient_retries",
+    }
+
+    assert added.isdisjoint(set(CHECK_KEYS))

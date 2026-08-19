@@ -73,6 +73,27 @@ second is gated. Preserving ``shadow_run``'s existing ``False`` keeps the
 diagnostic on the conservative side and keeps the two per-sample lists the same
 length.
 
+**What an exclusion costs the zero-tolerance row — a different shape.**
+``governance_cycle_time_agreement`` is a *rate*, so an exclusion shrinks
+numerator and denominator together and the measured value is unbiased.
+``governance_laxer_miss`` is a *count* against a maximum of 0, so an exclusion
+removes one chance to **observe** a laxer prediction and can only ever move that
+row toward PASS. A provider whose transport is flaky is therefore judged on fewer
+governance samples than one whose transport is clean. This is the accepted price
+of not aborting the whole run on a network blip — the alternative both sibling
+sweeps already rejected — and it is why ``excluded_transient`` is reported on
+every surface: a shrunken denominator must be visible, not inferred. Read the
+count row together with that counter, never alone.
+
+**A cross-provider asymmetry this sweep inherits and does not fix.** The two-tier
+split keys on exception *class*, and only the SDK providers (``anthropic``,
+``bedrock``) raise the transport classes. The ``opencode`` adapter is a
+subprocess client that maps spawn failure, non-zero exit and timeout onto
+``IntakeLLMError``, so its transport failures land in the **scored** tier while
+the same real-world event on an SDK provider lands in the excluded one. That
+predates this module and applies identically to both sibling sweeps; it is filed,
+not fixed here, because correcting it means changing the adapter's error mapping.
+
 **What the retry costs, stated plainly.** Best-of-3 turns an effective
 per-sample failure rate of ``p`` into ``p**3`` against unchanged bars, exactly as
 in ``sql_sweep``. ``transient_retries`` is reported so the first-attempt rate
@@ -155,10 +176,10 @@ class GovernanceSweepResult:
 
     The three counters are diagnostics, never gate keys, and every surface that
     reports this sweep should carry them: ``seam_failures`` and
-    ``transient_retries`` together make the pre-retry first-attempt rate
-    recoverable, and ``excluded_transient`` is the only trace that the pooled
-    denominator is smaller than ``n_samples * cases``. All four trailing fields
-    carry defaults so the two-list construction stays valid.
+    ``transient_retries`` together bound the pre-retry first-attempt rate, and
+    ``excluded_transient`` is the only trace that the pooled denominator is
+    smaller than ``n_samples * cases``. All four trailing fields carry defaults
+    so the two-list construction stays valid.
     """
 
     cycle_matches: list[bool]
@@ -166,11 +187,16 @@ class GovernanceSweepResult:
     #: Predictions strictly laxer than their reference tier. **Never incremented
     #: by a seam failure** — see the module docstring.
     laxer_misses: int = 0
-    #: Samples whose ``classify_governance`` call raised ``IntakeLLMError`` on
-    #: **every** attempt and were therefore scored a non-agreement.
+    #: Samples that exhausted every attempt and raised ``IntakeLLMError`` on at
+    #: least one of them, and were therefore scored a non-agreement. **Not**
+    #: "every attempt raised it": a sample that raised ``IntakeLLMError`` once
+    #: and then timed out twice produced judgeable output, so it is scored, not
+    #: excluded (``_call_with_retries``'s mixed-evidence rule).
     seam_failures: int = 0
-    #: Retry attempts spent on a transient. Diagnostic only — it is how the
-    #: first-attempt rate stays recoverable after a best-of-3 run.
+    #: Retry attempts spent on a transient, pooled over every sample. Diagnostic
+    #: only, and a **bound** rather than an inverse: it is enough to reconstruct
+    #: how many first attempts failed in total, not which samples they fell on,
+    #: so the pre-retry rate is recoverable only as an interval.
     transient_retries: int = 0
     #: Samples dropped after exhausting retries on a *transport* transient
     #: (logged, not scored). Same name and meaning as the two sibling sweeps'.
