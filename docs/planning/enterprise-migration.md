@@ -828,9 +828,17 @@ git rev-list --count origin/master..feat/bedrock-mantle-migration   # → 0
 git log --merges --oneline | wc -l                            # → 0 (no merge commit was created)
 gh run list --workflow ci.yml --limit 1                       # → success (NOT "cancelled")
 gh run list --workflow publish-tutorial.yml --limit 1         # → success
-curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/audits/2026-06-01-technical-debt-audit/   # → 404
-curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/deployment/bedrock-enterprise/            # → 404
-curl -s https://rmsharp.github.io/claims-model-starter/sitemap.xml | grep -c audits   # → 0
+# Positive control FIRST (dragon 1, docs/planning/repository-rename.md): a renamed or retired
+# site 404s EVERY path, so the two 404 assertions below would pass while proving nothing.
+curl -sfL -o /dev/null -w '%{http_code}' https://rmsharp.github.io/model_project_constructor/tutorial/   # → 200, and -f exits 0
+curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/model_project_constructor/audits/2026-06-01-technical-debt-audit/   # → 404
+curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/model_project_constructor/deployment/bedrock-enterprise/            # → 404
+# `-f` alone does NOT rescue the piped form — measured 2026-08-20 (Session 229): both
+# `curl -sfL <live> | grep -c audits` and `curl -sfL <404> | grep -c audits` print 0 and exit 1.
+# Read curl's OWN exit status, not the pipeline's.
+sitemap=$(curl -sfL https://rmsharp.github.io/model_project_constructor/sitemap.xml) \
+  || echo "FAIL: sitemap unreachable — the count below is vacuous, not a pass"
+printf '%s\n' "$sitemap" | grep -c audits   # → 0
 git -C ~/Development/claims-model-starter.wiki log -1 --format=%s
 #   → "docs: sync wiki from model_project_constructor@<new master short sha>"
 git -C ~/Development/claims-model-starter.wiki status -sb     # → no "[ahead N]"
@@ -1253,9 +1261,12 @@ never in the current working tree, and nothing here is ever committed or pushed 
    wiki}`), so an unset environment aborts instead of silently publishing enterprise content into
    the **original's** public wiki. Also fix the hardcoded clone-URL text at
    `scripts/publish_wiki.sh:23,63` (comment + error text) — left as-is, it survives the C5
-   independence check unnoticed. **Do NOT delete or re-remote
-   `~/Development/claims-model-starter.wiki`** — it continues to serve the original's live
-   auto-publish (D6: refresh and keep) and must keep working unchanged. Point `WIKI_CLONE` at
+   independence check unnoticed. **Do NOT delete `~/Development/claims-model-starter.wiki`, and do
+   NOT aim it at the ENTERPRISE wiki** — it continues to serve the original's live auto-publish
+   (D6: refresh and keep) and must keep working. *(This is not a blanket ban on `git remote
+   set-url` in that directory. Phase 4 of `docs/planning/repository-rename.md` re-points it at the
+   **original's** wiki under the repository's new name, which is what preserves this property. The
+   on-disk directory keeps the old name — rename plan D-R5.)* Point `WIKI_CLONE` at
    `<new-wiki-clone>` (step 3) instead, and verify with `git -C "$WIKI_CLONE" remote get-url origin`
    before the first commit in the clone touches `docs/wiki/`.
 5. **Inside `<enterprise-clone>` only:** update `mkdocs.yml:3-5`, `README.md:9`, the
@@ -1308,7 +1319,8 @@ git -C <new-wiki-clone> ls-files | wc -l                 # → 23
 git -C <enterprise-clone> grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter' -- . \
   | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0 (full §2.6 pattern — do not narrow it)
 WIKI_CLONE= <enterprise-clone>/scripts/publish_wiki.sh; echo "exit=$?"   # → non-zero (fails closed)
-git -C ~/Development/claims-model-starter.wiki remote get-url origin    # → unchanged, still the public wiki
+git -C ~/Development/claims-model-starter.wiki remote get-url origin    # → still the ORIGINAL's wiki, under its
+#   current name (…/model_project_constructor.wiki.git). The local DIRECTORY keeps the old name — D-R5.
 ```
 
 **Boundary:** one session, plus operator actions outside git.
@@ -1353,9 +1365,10 @@ git -C <enterprise-clone> grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.co
 WIKI_CLONE= <enterprise-clone>/scripts/publish_wiki.sh; echo "exit=$?"        # → non-zero (fails closed)
 
 # original non-regression — none of this should differ from A4's verified state
-curl -s -o /dev/null -w '%{http_code}' https://rmsharp.github.io/claims-model-starter/tutorial/   # → 200 (still live)
+curl -sfL -o /dev/null -w '%{http_code}' https://rmsharp.github.io/model_project_constructor/tutorial/   # → 200 (still live; -f exits 0)
 git ls-remote origin gh-pages                                                # → still populated
-git -C ~/Development/claims-model-starter.wiki remote get-url origin         # → unchanged, still the public wiki
+git -C ~/Development/claims-model-starter.wiki remote get-url origin         # → still the ORIGINAL's wiki,
+#   under its current name (…/model_project_constructor.wiki.git); local dir name unchanged (D-R5)
 gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # → false, false (untouched)
 ```
 
@@ -1434,9 +1447,14 @@ gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # 
     character (A1–A4, B1-core, B2) are hard gates on C4; C1/C2's D10/D13-scoped work and C3's
     clone-only work remain schedulable, just no longer blocking or blocked by the fork itself.
 21. **`~/Development/claims-model-starter.wiki` is the ORIGINAL's live publish target, not a
-    migration scratch directory.** It is tempting to repurpose or re-remote it while provisioning
-    the enterprise wiki — doing so silently breaks the original's still-live auto-publish (D6:
-    refresh and keep, not retire). Create a separate local clone for the enterprise wiki instead.
+    migration scratch directory.** It is tempting to repurpose it while provisioning the enterprise
+    wiki — aiming it at the **enterprise** wiki silently breaks the original's still-live
+    auto-publish (D6: refresh and keep, not retire). Create a separate local clone for the
+    enterprise wiki instead. **The prohibition is on the destination, not on the command:** Phase 4
+    of `docs/planning/repository-rename.md` re-remotes this same clone to the **original's** wiki
+    under the repository's new name (`…/model_project_constructor.wiki.git`) — that is what *keeps*
+    the original publishing, and it is required, not forbidden. The on-disk directory name stays
+    `claims-model-starter.wiki` (rename plan D-R5).
 22. **§1.3 removed written answers for D3–D9 and D14–D16 from this document — it did not remove
     the need for those answers to exist before the phase that needs them runs.** C4 still needs a
     destination host (D9) and an import strategy (D5) before its first git command; C3 still needs
@@ -1517,7 +1535,12 @@ for p in $(grep -rhoE '`?docs/(audits|planning|architecture-history)/[A-Za-z0-9.
             docs/wiki/claims-model-starter/ | tr -d '`' | sort -u); do
   [ -e "$p" ] || echo "DEAD WIKI PATH REFERENCE: $p"
 done                                                                      # → no output
-curl -s https://rmsharp.github.io/claims-model-starter/sitemap.xml | grep -c audits   # → 0
+# `-f` alone does NOT rescue the piped form — measured 2026-08-20 (Session 229): both
+# `curl -sfL <live> | grep -c audits` and `curl -sfL <404> | grep -c audits` print 0 and exit 1.
+# Read curl's OWN exit status, not the pipeline's.
+sitemap=$(curl -sfL https://rmsharp.github.io/model_project_constructor/sitemap.xml) \
+  || echo "FAIL: sitemap unreachable — the count below is vacuous, not a pass"
+printf '%s\n' "$sitemap" | grep -c audits   # → 0
 uv run pytest -q && uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy
 ```
 

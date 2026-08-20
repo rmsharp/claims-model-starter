@@ -3,7 +3,7 @@
 This is a single-maintainer project (see `CODEOWNERS`). This file covers the baseline contribution
 process; the project's wiki has deeper detail on conventions, testing, and the session-based
 development methodology this repo follows — see the
-[Contributing](https://github.com/rmsharp/claims-model-starter/wiki/Contributing) wiki page.
+[Contributing](https://github.com/rmsharp/model_project_constructor/wiki/Contributing) wiki page.
 
 ## Getting started
 

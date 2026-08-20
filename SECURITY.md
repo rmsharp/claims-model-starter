@@ -6,7 +6,7 @@
 
 Instead, report privately using one of these channels:
 
-- GitHub's private vulnerability reporting: open a [security advisory](https://github.com/rmsharp/claims-model-starter/security/advisories/new) on this repository, **or**
+- GitHub's private vulnerability reporting: open a [security advisory](https://github.com/rmsharp/model_project_constructor/security/advisories/new) on this repository, **or**
 - Contact the maintainer directly: `rmsharp` on GitHub.
 
 Please include:
