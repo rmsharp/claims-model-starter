@@ -44,6 +44,21 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 226 Did
+**Deliverable:** `docs/planning/repository-rename.md` — the PLAN for renaming the GitHub repository
+`rmsharp/claims-model-starter` -> `model_project_constructor`, with a **freshly re-derived**
+grep-based inventory and per-phase completion criteria. (IN PROGRESS)
+
+**Started:** 2026-08-19.
+
+**Status:** Session claimed. Work beginning.
+
+**Scope fence:** This session renames **nothing**. No `git mv`, no `gh repo rename`, no reference
+rewrites. Per the operator ruling recorded in `2033e95` and FM #18, execution is a separate
+session (or sessions). Operator prompt this session: *"rename repository ; use planning session if
+needed."* — the "if needed" is answered by the blast radius already on file (667 hits / 52 files,
+two traps that fire on the landing commit itself).
+
 ### What Session 225 Did
 **Deliverable:** **The eval harness's governance measurement now applies one transient policy across
 both of its live surfaces. COMPLETE.** `BACKLOG.md`'s "three live measurement blocks / three
