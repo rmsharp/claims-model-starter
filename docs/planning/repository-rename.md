@@ -335,6 +335,23 @@ The prescribed seam is `CLAUDE.md` → *Project-Specific Methodology Adaptations
 
 These are not implementer's calls. Each changes what gets built.
 
+> **✅ ALL FIVE ANSWERED — operator, 2026-08-20 (Session 227).** Verbatim: *"accept the 404, go with
+> option A; accept all recommendations for D-R2, D-R3, D-R4, and D-R5."* Quoted rather than
+> paraphrased because D-R1 is the one irreversible act in this plan (§1) and this sentence is the
+> whole authorization for it.
+>
+> | # | Answer | Effect on the plan |
+> |---|---|---|
+> | **D-R1** | **Option A — accept the permanent 404.** No custom domain, so no phase ahead of Phase 1. | Phase 1 runs exactly as written. |
+> | **D-R2** | **Yes** — `docs/wiki/claims-model-starter/` is renamed too. | Phase 4 stands; the 51 wiki-path lines are in scope. |
+> | **D-R3** | **Yes** — rebrand `Home.md:1` and `_Sidebar.md:1`. | Phase 3 carries those two lines; they publish live the moment they commit. |
+> | **D-R4** | **Rename first**, ahead of the enterprise fork; repair its five assertions inside the sweep. | Phase 2 stands. |
+> | **D-R5** | **Re-point in place** — the clone keeps its directory name; `publish_wiki.sh:42` is not touched. | Phase 4 is `set-url` only, never `mv`. |
+>
+> **§4 is closed. Do not re-open D-R1.** Once the rename lands, option B is no longer reachable —
+> the old Pages URL cannot be recovered by any means, and §1.1 option C explains why the obvious
+> rescue is strictly worse.
+
 ### D-R1 — The Pages URL. **Accept the permanent 404, buy a custom domain, or don't rename?**
 
 See §1. This is the only irreversible consequence. **Recommendation: Option A (accept the 404)**,

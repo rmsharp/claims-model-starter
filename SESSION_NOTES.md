@@ -44,6 +44,15 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 227 Did
+**Deliverable:** **Phase 1 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)** —
+`gh repo rename claims-model-starter -> model_project_constructor`, **plus** the four-file site
+repair, in one session, one commit, one push. (IN PROGRESS)
+**Started:** 2026-08-20
+**Status:** Session claimed. Operator answered all five §4 decisions (D-R1 = option A, accept the
+permanent Pages 404; D-R2/D-R3 yes; D-R4 rename-first; D-R5 re-point in place). §7.2 allowlist
+re-run before touching anything: **exactly the 20 paths the plan lists** — no drift. Work beginning.
+
 ### What Session 226 Did
 **Deliverable:** **`docs/planning/repository-rename.md` — the PLAN for renaming
 `rmsharp/claims-model-starter` -> `model_project_constructor`. COMPLETE.** 1,120 lines: a freshly
