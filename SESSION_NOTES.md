@@ -214,6 +214,14 @@ to that remote under the new name. `git push --dry-run origin master` → *"Ever
 exit 0, one second, **before** the commit. The real push then printed GitHub's own
 `remote: This repository moved.` and succeeded. Learning [#130](PROJECT_LEARNINGS.md).
 
+#### The push — what fired, measured not predicted
+
+`adf5554..28c4799`, all three commits. **CI fired and passed** (run `32425252735`, 47s, lint + tests).
+**Publish Tutorial did NOT fire** — still Phase 1's run `32335373755` from 2026-08-20T05:22:48Z, which
+is correct: its path filter is `docs/*.md` (single level), and nothing in these three commits matches
+it. The **wiki clone did not move** on either the close-out commit or the push — it is still
+`733b3ca`, where Phase 3's publish left it. Same shape Session 231 recorded, one phase later.
+
 ### Session 231 Handoff Evaluation (by Session 232)
 
 **Score: 10/10.** I cannot find a claim in it that was wrong, and its gotcha 4 is the reason this
