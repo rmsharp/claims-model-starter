@@ -81,10 +81,224 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 230 Did
-**Deliverable:** Repair `docs/planning/repository-rename.md` — the six items in `BACKLOG.md`'s
-"⚠⚠ Two defects in `repository-rename.md` ITSELF" block, and ONLY that. **NOT Phase 3.** (IN PROGRESS)
-**Started:** 2026-08-20
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **Repair `docs/planning/repository-rename.md` — COMPLETE.** All six filed items,
+**plus a seventh and eighth the repair itself uncovered — one of them fail-dangerous.** **No phase
+of the rename ran.** Phase 3 is still next.
+
+**Started / completed:** 2026-08-20. **Commits: two** — `be3bc4a` (the Phase 1B claim, on its own,
+as always) and one more holding the repair **and** this close-out together — `git log --oneline -2`;
+its hash cannot be written here, because writing it changes it. Sessions 227-229 each used
+three, splitting the work commit from the close-out; those were *phase* commits, which
+`repository-rename.md` requires to stand alone for bisect. **This session executed no phase**, so the
+repair and its record are one docs commit. If you are executing a phase, go back to three.
+**Operator this session:** *"repair docs/planning/repository-rename.md, and ONLY that."*
+
+Documentation-only, so **no `CHANGELOG.md` entry** — `PROJECT_CONVENTIONS.md` §2's cadence gate.
+Sessions 227 and 229 correctly added none either.
+
+#### The six filed items, all repaired
+
+| # | Was | Now |
+| --- | --- | --- |
+| 1 | Phase 4: *"`publish_wiki.sh` — all 10 lines"* | **CHANGE 7, KEEP 3.** `:19`, `:24`, `:42` are the D-R5-pinned filesystem path. **Fail-dangerous:** obeyed literally it hard-fails the script at its `:58` guard and stops wiki publishing. |
+| 2 | Phase 4's and §7.3's `-> empty` greps | path-anchored exclusion **+ a positive 3-line assertion** |
+| 3 | §7.2's allowlist had no exemption | a fifth group, **paired with assertions** so it is not a blindfold |
+| 4 | §3's arithmetic | rebuilt — see §3.3 below |
+| 5 | Dragon 1: *"same commit as `mkdocs.yml`"* | *"in Phase 2"*. **Dragon 1's finding is untouched.** |
+| 6 | *"Status: PLAN. Nothing executed."* | the executed-phase ledger |
+
+**The plan's own §9.1 "Repair log — Session 230" is the authoritative write-up.** It is written for
+the Phase 3/4/5 executor and it is longer than this block should be. Read it there.
+
+#### The filed spec was INCOMPLETE, and that is the most important thing this session found
+
+Defect 3 was filed against `scripts/publish_wiki.sh` and its **3** permanently-pinned lines.
+**`docs/planning/enterprise-migration.md` has 14 lines of exactly the same kind** — the
+`~/Development/claims-model-starter.wiki` path D-R5 pins in place — and no allowlist group exempted
+it either. **Repairing only the named file would have left Phase 5's DONE gate exactly as unreachable
+as it was found**, which was the whole point of the item.
+
+Worse: **Phase 5's residue rule** (*"anything that is neither a §3.1 historical record nor deliberate
+self-reference is a miss — fix it here"*) **ordered an executor to rewrite all 17 pinned lines** to a
+directory that does not exist. That is a **second fail-dangerous instruction**, the same shape as
+defect 1, in a different phase.
+
+**The fix is general, not another exception.** The plan gained a third classification bucket:
+**§3.3 — "KEEP because D-R5 pins a filesystem path", 17 lines across 2 files.** §3.1 went back to its
+original 552/28, §3.2 is 97/23, and `552 + 17 + 97 = 666` across `28 + 2 + 23 = 53` file-slots for 51
+distinct files (two files sit on both sides). A future session finding a **third** such file puts it
+in §3.3 and §7.2 group 3.
+
+#### Two adversarial reviews, and the second one earned its keep too
+
+**Review 1 (132 agents, 6 lenses, 3 skeptics per finding): 42 findings, 14 survivors.** The lead
+survivor — reached independently by 4 of the 6 lenses — is the `enterprise-migration.md` gap above.
+I confirmed it by hand before acting.
+
+**Review 2 (4 agents, focused on the second pass only): 13 findings, every one reproduced with a
+command.** Three mattered:
+
+- **The exemption needed a THIRD assertion.** Group 3 exempts `enterprise-migration.md` wholesale,
+  and assertion (ii)'s first `grep -v` removes the dual-purpose `diff -r` line **by construction** —
+  so between them no §7 command could see the one line §3.3 itself calls a trap. Phase 5's new
+  "leave every §3.3 line alone" then told the executor not to fix it. **A filter written to make the
+  arithmetic reconcile silently removed the case that most needed checking.** Assertion **(iii)**
+  now pins that line.
+- **`git diff --stat -M` never prints `R100`.** I restated Phase 4's criterion as "22 R100 + 3 R0xx"
+  against a command that emits no similarity code at all. **Measured in a scratch repo:**
+  `git diff --stat -M | grep -c R100` → **0**. Now `--name-status -M` → 22 R100 + 3 R09x.
+- **And my repair of that repair was also wrong.** I wrote *"none of the 25 may appear as delete+add,
+  which is what a missing `git mv` looks like."* **Measured: a hand-rolled delete+add of identical
+  files reports 25 R100 with no `git mv` anywhere** — `-M` detects renames from content similarity.
+  The criterion can witness that the pages moved intact; it cannot witness which command moved them.
+
+#### The citation lesson I had to learn twice in one session
+
+I corrected two stale `BACKLOG.md` citations to fresh numbers measured at `HEAD` — and **this
+session's own `BACKLOG.md` edit then shifted both by 28 lines**, so the "corrected" citations were
+stale in the commit that shipped them. **A line number into a file the current session is also
+editing is stale before it is written.** Every `BACKLOG.md` citation in the plan is now a quoted
+section name that `grep` finds and no edit moves. Learning [#123](PROJECT_LEARNINGS.md).
+
+Same class, caught earlier: three of my own `:411`/`:538` self-citations went stale *twice* as the
+repair grew. All are section names now.
+
+#### Verification
+
+- **All four §7.2 commands run verbatim:** allowlist → **13** (all owned by Phases 3/4/5);
+  (i) → 10 (correct pre-Phase-4); (ii) → 20; (iii) → 1.
+- **Arithmetic re-derived from git, not copied:** `git grep -c` at `59615e2` → **666 lines / 51
+  files**, unchanged by this repair; 552+17+97 = 666; 14+12+13+34+23+1 = 97.
+- **The §7.2 ledger measured at every commit it names:** 20 / 17 / 15 with the 4-group command;
+  18 / 15 / 13 with the 5-group one. Both readings are in the table, with a "Command" column,
+  because the historical rows record what an executor at that commit would actually have seen.
+- `uv run pytest -q` → **1230 passed, 9 skipped**; `ruff` clean; `mypy` clean, 68 source files.
+- **Fired nothing, proved by before/after.** `publish-tutorial.yml`'s last run is still Phase 1's
+  (`32335373755`) and the wiki clone is still at `41c7f72`. `docs/planning/` is two levels deep and
+  the workflow triggers on `docs/*.md` (single-level); the hook needs `^docs/wiki/claims-model-starter/`.
+
+### Session 229 Handoff Evaluation (by Session 230)
+
+**Score: 9/10.** The best-targeted handoff in this chain. It did the one thing that matters most: it
+told me exactly what to build and where the spec lived, then got out of the way.
+
+**What helped.**
+- ***"The full write-up, with every line citation verified against the file, is in `BACKLOG.md` under
+  '⚠⚠ Two defects…'. Read it there — it is the deliverable's spec."*** Correct call. The six-item
+  short form in the handoff let me size the job in 30 seconds; the BACKLOG block was the spec. **Every
+  one of its six line citations (`:663-664`, `:723`, `:1173`, `:1119-1123`, `:276`/`:325`, `:789`,
+  `:3`) verified exactly** against the working tree. That is a striking improvement on the drift
+  Session 229 itself scored Session 228 for.
+- **Gotcha 1** (*"a `-f` on a piped `curl` proves nothing"*) — reusable beyond its own session; it is
+  now written into dragon 1 so the next reader meets it.
+- **Gotcha 2** (*"Do not 'fix' the three surviving lines"*) and **gotcha 3** (*"line numbers moved
+  +8/+13; re-derive with `grep -n`"*) — both load-bearing, both acted on.
+- **Gotcha 7** (*"still zsh, single-quote every heredoc delimiter"*) — eighth session running, still
+  free.
+- Ordering item 1 first and labelling it **fail-dangerous** was right; it is the one that had to be
+  correct.
+
+**What was wrong — one thing, and it is the interesting one.**
+**The spec was incomplete, not inaccurate.** Item 3 named `publish_wiki.sh` and stopped. The same
+defect in `enterprise-migration.md` is 14 lines to that file's 3 — and Session 229 had *already
+measured* enterprise-migration.md's D-R5 lines while writing the flags above the very same block
+("the nine D-R5 filesystem paths"). The two facts were in one file and never met. **A defect filed
+against the instance you found is a defect filed against one instance; ask what class it belongs to
+before you file it.** Learning [#122](PROJECT_LEARNINGS.md).
+
+Also minor: gotcha 3's *"+8 in the 800s, +13 by the 1500s"* is not right — measured, the cumulative
+offset is +8 / +11 / +12 / +13 / **+21**, non-uniform. The *instruction* (re-derive with `grep -n`)
+was correct and is what mattered.
+
+**ROI: very high.** ~5 minutes to read, and it pointed at a spec that was right about everything it
+covered.
+
+### Session 230 Self-Assessment
+
+**Score: 7.5/10.** The deliverable is right and materially better than what was asked for. It took
+three passes to get there, and two of those passes were fixing my own work.
+
+**+** **I did not stop at the filed spec.** The second file was worth more than the six items
+combined: without it the session would have shipped a "repaired" gate that still could not go green,
+with a commit message saying it was fixed.
+**+** **The fix is a bucket, not an exception.** §3.3 gives a third such file somewhere to go.
+**+** **I measured every prescription before writing it.** `--exclude` vs a path-anchored `grep -v`:
+measured, and `--exclude` is genuinely too wide — a probe at `packages/probe/publish_wiki.sh` went
+undetected. `--stat` vs `--name-status`: measured. Whether `-M` can witness `git mv`: measured, and
+it cannot.
+**+** **I ran the two reviews adversarially and acted on what survived**, including when what survived
+was "your repair has the same defect you were sent to fix."
+
+**−** **I shipped three wrong things of my own and caught them only by review.** The `--stat`/R100
+criterion; the delete+add claim that replaced it; and assertion (ii)'s filter that hid the very line
+§3.3 calls a trap. Each was written confidently and none was measured before writing. **My own rule —
+measure the prescription — I applied to the plan's advice and not to my own.**
+**−** **Line-number discipline: I lectured about it in §9.1 and then broke it twice in the same
+session**, once inside the bullet doing the lecturing.
+**−** **Review 1 cost 132 agents and ~8M tokens** against a 15-agent guideline. I capped findings per
+lens at zero and let 42 findings × 3 refuters run. Review 2 — 4 agents, `maxItems: 4` — found three
+real defects for 570k tokens. **The second design was ~14× cheaper and did not obviously find less.**
+Learning [#124](PROJECT_LEARNINGS.md).
+**−** **A python edit script that writes only at the end silently lost two applied edits** when a
+later `sub()` aborted. I caught it by re-reading §7.2, not by any check. Write after every edit.
+
+**Against the bar:** S227 executed an irreversible rename with every prediction tested; S228 shipped
+28 mutants; S229 refuted a dragon with a measurement. This session found that the *spec it was given*
+was incomplete in the same way the plan was, and fixed the class rather than the instance — but it
+needed two review rounds to stop introducing new defects, which the three sessions before it did not.
+
+**What's next: Phase 3** — `docs/planning/repository-rename.md`, "Published wiki content. **One
+commit. This one goes live to readers.**" It is the first phase readers see, and **it fires the wiki
+hook by design**. D-R3 = yes, so it carries the two title rebrands (`Home.md:1`, `_Sidebar.md:1`)
+that **no `claims-model-starter` grep will ever surface** — §2.4b says so explicitly. Read §2.4b
+before you start.
+
+**Key files:**
+- **`docs/planning/repository-rename.md`** — now **1,680 lines** (was 1,261). **New: §3.3** (the
+  D-R5 bucket) and **§9.1** (the repair log — read this first). §7.2 now has **four** commands, not
+  one. Phase 3 is the section headed *"Phase 3 — Published wiki content"*; **find it with
+  `grep -n '^### Phase 3'`, not by line number — this file moved by 419 lines this session and every
+  citation into it that predates today is wrong.**
+- **`BACKLOG.md`** — the two-defects block is closed and shrunk to a carry-forward pointer; the
+  plain-language index row at `:51` was updated in the same commit per that file's own rule. **The
+  three flags to `enterprise-migration.md`'s owner above it are all still open** and still need the
+  operator's ruling on restating the clone-independence criterion as *"no repository name other than
+  the clone's own"*.
+- `scripts/publish_wiki.sh` — `:19`, `:24`, `:42` keep the old name **forever** (§3.3). `:2`, `:11`,
+  `:23`, `:44`, `:63`, `:72`, `:75` change in Phase 4.
+- `docs/planning/enterprise-migration.md` — **14 lines keep the old name forever** (§3.3); one of
+  them, the `diff -r` line, is dual-purpose and Phase 4 must edit half of it.
+
+**Gotchas:**
+1. **§7.2 is now FOUR commands and they are one criterion.** Running only the allowlist is running a
+   blindfold — that is stated in the section and it is not rhetorical. Assertion **(iii)** exists
+   because (ii) filters out the dual-purpose line by construction.
+2. **Assertion (i) prints 10 before Phase 4 and that is CORRECT.** Do not "fix" it by applying Phase
+   4's edit early: that flips the `:72`/`:75` guard while the clone's origin still carries the old
+   name and **disables publishing** (dragon 2), breaking K2/K3.
+3. **Never `sed` `enterprise-migration.md`'s `diff -r` line.** Both halves match the old name; only
+   the left one changes. `grep -n "diff -r -x '.git'"` finds it.
+4. **A line number into a file you are also editing this session is stale before you write it.**
+   This bit me twice. Cite section names; re-derive with `grep -n` at the end.
+5. **`git diff --stat -M` prints no similarity codes.** Use `--name-status -M`. And `-M` cannot tell
+   `git mv` from delete+add — measured, both give R100.
+6. **Still zsh.** Single-quote every heredoc delimiter. Eighth session running.
+7. **Write your edit script's output after EVERY edit**, not at the end. A late `sys.exit(1)`
+   discarded two applied edits this session and nothing flagged it.
+8. **`master` is now 8 commits ahead of `origin/master`** and nothing here needs pushing. Four
+   sessions have left it that way; the push is the operator's call.
+9. **`~/Development/mpc_tests/model_project_constructor` is still on the old origin URL and no phase
+   owns it** (learning #111, unchanged since Session 228). Give it a home in Phase 4 step 1.
+10. **⚠ THE TRIM TRIGGER IS NOW LIVE.** This file crossed **1,500 lines** when this record landed —
+    `CLAUDE.md`'s retention rule fires above 1,500, cuts back to ≤1,050, and never retains fewer than
+    4 sessions. **I did not trim**, deliberately: a trim is its own deliverable and its own session
+    ("1 and done"), and `CLAUDE.md` forbids a trim commit that also contains a record edit — which is
+    exactly what bundling it into this close-out would have produced, holding the proof red forever.
+    **The next session should expect the operator to choose between Phase 3 and a fourth trim.** If
+    it is the trim: it writes a **fourth** shard (write-once — never append to the three existing
+    ones), and its proof must carry L0-L7 forward plus a mutant for every assertion it adds. Read
+    `CLAUDE.md`'s "SESSION_NOTES.md is trimmed" bullet in full first; the rate rule from the
+    canonical trimmer does **not** apply at this file's density.
 
 ### What Session 229 Did
 **Deliverable:** **Phase 2 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)

@@ -48,7 +48,7 @@ rows below it are the smaller residue that closing it exposed.
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
 | `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives and Session 228 a third** (924 lines) — both newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
-| Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. **Planned in Session 226 — see [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).** The real sweep is **114 lines / 23 files** (666/51 total at `59615e2`, of which 552/28 keep the old name). Both earlier counts — 644/50 and 667/52 — were wrong. | **UNBLOCKED — all five decisions answered by the operator 2026-08-20** (plan §4): accept the permanent 404 (option A), rename the wiki directory, rebrand its titles, rename before the enterprise fork, re-point the clone in place. **Phases 1 and 2 of 5 executed** (Sessions 227, 229). Phase 2 also raised three flags against `enterprise-migration.md` **and found two defects in the rename plan itself — one of them fail-dangerous in Phase 4** — see the two sub-blocks in the item below. **The plan repair is the next session's deliverable, before Phase 3** (operator ruling, 2026-08-20). The worst remaining hazard is `.githooks/post-commit:18`, which fails **open and silent** (plan dragon 4) — it bites in Phase 4. |
+| Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. **Planned in Session 226 — see [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).** The real sweep is **97 lines / 23 files** (666/51 total at `59615e2`; 552/28 are frozen records that keep the old name, and **17 more across 2 files keep it forever** because they name a local directory GitHub's rename does not move — the plan's new §3.3). Both earlier counts — 644/50 and 667/52 — were wrong. | **UNBLOCKED — all five decisions answered by the operator 2026-08-20** (plan §4): accept the permanent 404 (option A), rename the wiki directory, rebrand its titles, rename before the enterprise fork, re-point the clone in place. **Phases 1 and 2 of 5 executed** (Sessions 227, 229). **Session 230 repaired the plan itself** — two fail-dangerous instructions that would have broken wiki publishing, and a DONE gate that could never go green; no phase ran. **Phase 3 is next.** Three flags against `enterprise-migration.md` are still open and still need an operator ruling. The worst remaining hazard is `.githooks/post-commit:18`, which fails **open and silent** (plan dragon 4) — it bites in Phase 4. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
 | A bad `--db-url` fails silently | Filed Session 223. `connect()` builds a message naming the exact cause; the next line catches the error **without binding it** and throws the message away. The run then reports `COMPLETE` and exits 0 with **every quality check unexecuted**. A typo'd port, an unexported shell variable, and a genuine warehouse outage produce byte-identical reports. | Pre-existing and wider than the S223 fix — **not** a reason to revert it. The cheapest two-thirds is small; the third option changes when a pipeline run is allowed to "succeed" and needs an operator ruling. |
@@ -554,55 +554,27 @@ never been able to pass and the rename did not cause it. With the field correcte
 `{"isArchived":false,"isPrivate":false}` — the expected `false, false` — **even under the old
 name**, via the redirect. Fix the field name whenever that line is next touched; it is one word.
 
-#### ⚠⚠ Two defects in `repository-rename.md` ITSELF — repair in their own session, BEFORE Phase 3
+#### The two defects in `repository-rename.md` ITSELF — CLOSED, Session 230
 
-Found by Session 229's Phase 2 sweep and adversarially verified. **Operator ruled 2026-08-20 that
-these get their own session rather than widening Phase 2 past its three-file table.** Defect A is
-fail-dangerous and lands in the phase the plan calls its riskiest.
+Filed by Session 229, ruled by the operator (2026-08-20) to get its own session. **All six items
+repaired; no phase of the rename ran.** Documentation-only, so no `CHANGELOG.md` entry
+(`PROJECT_CONVENTIONS.md` §2); the session record is `SESSION_NOTES.md`, and the working detail is
+that plan's own new **§9.1 "Repair log — Session 230"** — which is where an executor should read it.
 
-**A. Phase 4's `publish_wiki.sh` line list contradicts D-R5, and an executor who obeys it breaks
-wiki publishing.**
+**Carry-forward that is NOT closed, and that the next session needs:**
 
-- `repository-rename.md:663-664` instructs Phase 4 to change *"all 10 lines (`:2`, `:11`, `:19`,
-  `:23-24`, `:42`, `:44`, `:63`, `:72`, `:75`)"*.
-- **Measured against the script as it stands:** `:19`, `:24` and `:42` hold the **filesystem path**
-  `~/Development/claims-model-starter.wiki`, not a URL — `:19` is the `WIKI_CLONE` default's doc
-  comment, `:24` the clone command's destination directory, `:42`
-  `WIKI_CLONE="${WIKI_CLONE:-$HOME/Development/claims-model-starter.wiki}"`. Only `:23` and `:63`
-  carry the URL.
-- D-R5 pins all three. `repository-rename.md:414`: *"**Recommendation: re-point in place; leave
-  `:42` and the directory name alone.**"* And `:411`: *"**Change `:42` without the `mv` and the
-  script hard-fails at its own `:58` clone-exists guard.**"*
-- So the plan's own **highest-risk phase** (`:643`) carries an instruction that disables publishing
-  if followed literally. **Correct split: CHANGE 7 (`:2`, `:11`, `:23`, `:44`, `:63`, `:72`, `:75`),
-  KEEP 3 (`:19`, `:24`, `:42`).**
-- **Three downstream assertions go red on a *correct* Phase 4:** `:723` (Phase 4's own verification)
-  and `:1173` (§7.3) both say `grep -rn "claims-model-starter" scripts/ … # -> empty`, which cannot
-  hold once the 3 lines legitimately survive; and §7.2's allowlist (`:1120-1123`) does not exempt
-  `scripts/publish_wiki.sh`, while `:1134` rules *"**If the command prints a path, that file was
-  missed.** No judgment call, no re-derivation."* **§7.2 is Phase 5's DONE gate (`:749`) and is
-  unsatisfiable as written.**
-- **Repair:** split each `-> empty` grep into `tests/ .githooks/ … -> empty` **plus**
-  `grep -n "claims-model-starter" scripts/publish_wiki.sh -> exactly 3: :19, :24, :42 (D-R5,
-  permanent)`; add `^scripts/publish_wiki\.sh$` to §7.2's third exclusion group **paired with that
-  3-line assertion** — allowlisting the file alone would blind §7.2 to a genuine future miss there,
-  which is exactly what `:1134` forbids; and re-reconcile §3's arithmetic (`:276`, `:325`), since
-  3 lines move CHANGE → KEEP and `publish_wiki.sh` then appears in both §3.1 and §3.2.
+- **The filed spec was incomplete.** Defect 3 (§7.2's allowlist) was filed against
+  `scripts/publish_wiki.sh` and its 3 permanently-pinned lines. `docs/planning/enterprise-migration.md`
+  has **14** lines of the same kind — the `~/Development/claims-model-starter.wiki` path D-R5 pins in
+  place — and no group exempted it either, so Phase 5's DONE gate would still have been unreachable.
+  **Phase 5's residue rule also ordered those 17 lines "fixed"**, which points live instructions at a
+  directory that does not exist: a second fail-dangerous instruction, same shape as defect 1. Both
+  repaired; the plan gained a third classification bucket, **§3.3**, so a *third* such file has
+  somewhere to go instead of getting another one-off exception.
+- **The three flags to `enterprise-migration.md`'s owner, above this block, are all still open.** The
+  clone-independence criterion still needs the operator's ruling on restating it as *"no repository
+  name **other than the clone's own**"*; `repository-rename.md` deliberately does not make that call.
 
-**B. Dragon 1 points the reader at a phase that already closed without doing the work.**
-`repository-rename.md:789` reads *"Fix all five in the same commit as `mkdocs.yml`."* `mkdocs.yml`
-is a Phase 1 file and only Phase 1's (`:499`); Phase 1 explicitly disclaimed these lines at `:504`
-(*"Every other file is inert and belongs to Phase 2"*); Phase 2's table at `:556` assigns the same
-five; and Session 227's Phase 1 commit `c1fe06f` touched three files, none of them
-`enterprise-migration.md`. The plan shipped self-inconsistent — the rename did not break it.
-Harmless in the event (Session 229 fixed the five in Phase 2), but dragon 1 is billed at `:315` as
-*"the second-most-serious finding in this document"*, so it is the passage a later reader is most
-likely to consult in isolation, where it sends them hunting inside a closed phase. **Restate as
-"Fix all five in Phase 2."** Do not delete dragon 1 — only the sequencing sentence is wrong.
-
-**Also for that session:** `repository-rename.md:3` still reads *"**Status:** PLAN. Nothing in this
-document has been executed."* — false since `c1fe06f`, and doubly so now. Phase 5 owns it at `:750`,
-but a plan-repair session should not leave it standing.
 
 **⚠ SUPERSEDED — the operator ruling that scheduled the planning session (2026-08-19, Session 225 close-out):**
 *"set rename of repository as the next session ; it may take a planning session because of the blast

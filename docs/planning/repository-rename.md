@@ -1,14 +1,19 @@
 # Plan: rename the GitHub repository `claims-model-starter` → `model_project_constructor`
 
-**Status:** PLAN. Nothing in this document has been executed.
-**Written:** Session 226, 2026-08-19.
-**Deliverable of this session:** this file. **Renaming is a later session.**
+**Status:** **IN EXECUTION — Phases 1 and 2 of 5 are done; Phases 3, 4 and 5 are not.**
+Phase 1 — Session 227, `c1fe06f`. Phase 2 — Session 229, `73b9418`.
+**This plan was itself repaired in Session 230 — see §9.1.** Phase 4's `publish_wiki.sh` line list
+contradicted D-R5 and would have broken wiki publishing if obeyed literally; three downstream
+completion criteria were unsatisfiable as a consequence; and dragon 1 pointed the reader into a
+phase that had already closed. Phase 5 still owns the *final* status flip and the full commit list.
+**Written:** Session 226, 2026-08-19 — that session's entire deliverable was this file, with the
+rename itself deferred to later sessions. It was, and they have begun.
 
 > **Operator ruling, 2026-08-19 (recorded in `2033e95`):** *"set rename of repository as the next
 > session ; it may take a planning session because of the blast radius of a rename."*
 > **Operator, this session:** *"rename repository ; use planning session if needed."*
 >
-> The "if needed" is answered by evidence, not preference: the sweep is 114 lines across 23 files,
+> The "if needed" is answered by evidence, not preference: the sweep is 97 lines across 23 files,
 > three automated mechanisms key on the literal old name, and **one consequence of the rename is
 > permanent and irreversible** (§1). `SESSION_RUNNER.md` FM #18 and `SAFEGUARDS.md` ("never
 > rename/move files as part of a quick fix"; "renames cascade — they are never quick") both put the
@@ -160,7 +165,7 @@ poor completion criterion. §7 uses a file allowlist instead.
 | 3 | `github.com/rmsharp/claims-model-starter` | 36 | 12 | repo and wiki-page URLs |
 | 4 | `rmsharp.github.io/claims-model-starter` | 25 | 7 | the **Pages** site URL (§1) |
 | 5 | `Claims Model Starter` (title case) | 5 | 3 | reader-visible branding |
-| 6 | `claims_model_starter` (underscored) | 1 | 1 | **`BACKLOG.md:527` only** — the row that says this form does not exist. Self-matching. Do not read it as a real occurrence. |
+| 6 | `claims_model_starter` (underscored) | 1 | 1 | **one row in `BACKLOG.md`'s own per-pattern table** — the row that says this form does not exist. Self-matching. Do not read it as a real occurrence. (Cited as `:527` at plan time; the line has moved twice since. `grep -n "claims_model_starter" BACKLOG.md`.) |
 | 7 | `claims model starter` (spaced), `Claims-Model-Starter` | 0 | 0 | do not exist |
 
 **The table is complete, not merely enumerated.** Searched and confirmed **zero** for every other
@@ -262,7 +267,13 @@ message rules it explicitly:
 Run `git show --stat bfd9f36` before executing (learning #60) — it is 26 files and the shape of its
 live/historical split is the shape this rename must reproduce.
 
-### §3.1 KEEP the old name — 552 lines across 28 files
+### §3.1 KEEP the old name because it is a frozen record — 552 lines across 28 files
+
+**There are now THREE buckets, not two.** §3.1 is the historical records. §3.2 is what changes.
+**§3.3 is new** — live files that keep the old name *forever* for a reason that has nothing to do
+with history: they name a **local filesystem path that GitHub's rename does not touch** (D-R5).
+A sweep that "completes" §3.1 falsifies the record; a sweep that "completes" §3.3 **breaks wiki
+publishing.**
 
 | Group | Files | Lines | Why |
 |-------|-------|-------|-----|
@@ -273,17 +284,25 @@ live/historical split is the shape this rename must reproduce.
 | `prs-export.json`, `releases-export.json` | 2 | 2 | Frozen GitHub API exports captured at a point in time (`enterprise-migration.md:911`). Rewriting them would falsify the snapshot. |
 | `docs/wiki/…/Changelog.md` | 1 | 1 | **Its only hit, `:124`, is a dated entry** — *"Added: 14 initial wiki pages for the `claims-model-starter` project … (Session 19)."* `PROJECT_LEARNINGS.md` #32 exists because of this exact file: it is freshness-tracked yet carries permanent historical records. Its **path** moves in Phase 4 if D-R2 is yes; its **content** does not. |
 
-**552 + 114 = 666 ✓. 28 + 23 = 51 ✓.**
+**552 + 17 + 97 = 666 ✓** (§3.1 + §3.3 + §3.2). **28 + 2 + 23 = 53 file-slots for 51 distinct
+files** — the two extra slots are `scripts/publish_wiki.sh` and `docs/planning/enterprise-migration.md`,
+each of which has lines in **both** §3.3 and §3.2. Every other file is wholly on one side.
 
-### §3.2 CHANGE (or decide) — 114 lines across 23 files
+> *Session 230 correction. This line previously read* **552 + 114 = 666 ✓. 28 + 23 = 51 ✓.** *The
+> 666 lines / 51 files is unchanged and still derives from `59615e2` — nothing was re-measured. What
+> moved is the classification of **17 lines**, from CHANGE to a new permanent-KEEP bucket (§3.3),
+> because the plan had no bucket for "live file, pinned by an operator decision, forever". Not having
+> one is what made §7.2 unsatisfiable.*
 
-**The real size of this job is 114 lines, not 666.** Ordered by what they are, not by hit count.
+### §3.2 CHANGE (or decide) — 97 lines across 23 files
 
-**(a) Executable / config — these break something if wrong (17 lines, 4 files)**
+**The real size of this job is 97 lines, not 666.** Ordered by what they are, not by hit count.
+
+**(a) Executable / config — these break something if wrong (14 lines, 4 files)**
 
 | File | Lines | What |
 |------|-------|------|
-| `scripts/publish_wiki.sh` | 10 | `:2`, `:11` header prose; `:19`, `:23-24` documented clone URL; `:42` `WIKI_CLONE` default; `:44` `SOURCE_DIR`; `:63` error-message clone URL; `:72`, `:75` **the remote-URL guard** |
+| `scripts/publish_wiki.sh` | **7 of 10** | **CHANGE 7:** `:2`, `:11` header prose (the *in-repo* source directory); `:23` the documented clone **URL**; `:44` `SOURCE_DIR`; `:63` the clone **URL** again; `:72`, `:75` **the remote-URL guard**. **KEEP 3 — `:19`, `:24`, `:42`** are the clone's **filesystem path**, pinned permanently by D-R5 (§3.3, first row). **The old `:23-24` range is split**: `:23` is a URL and changes, `:24` is the destination directory on the next line and does not. |
 | `.githooks/post-commit` | 2 | `:3` prose; `:18` the `grep -q '^docs/wiki/claims-model-starter/'` trigger |
 | `tests/test_wiki_no_line_citations.py` | 2 | `:7` docstring; `:38` `WIKI_DIR` constant — **`:60` asserts `WIKI_DIR.is_dir()`, so the suite fails if the directory moves without this line** |
 | `mkdocs.yml` | 3 | `:3` `site_url`, `:4` `repo_url`, `:5` `repo_name` |
@@ -310,9 +329,11 @@ live/historical split is the shape this rename must reproduce.
 *(`Evolution.md:266` also says "22 outward-facing wiki pages"; there are 25. Fix the count while
 you are in the line.)*
 
-**(d) Active plans (48 lines, 3 files)** — `docs/planning/enterprise-migration.md` (43),
-`opencode-adapter-spec.md` (3), `httpx-adapter-migration.md` (2). **Mid-execution, and the 43 are
-not prose — see §6 dragon 1, which is the second-most-serious finding in this document.**
+**(d) Active plans (34 lines, 3 files)** — `docs/planning/enterprise-migration.md` (**29 of its
+43**), `opencode-adapter-spec.md` (3), `httpx-adapter-migration.md` (2). **Mid-execution, and they
+are not prose — see §6 dragon 1, which is the second-most-serious finding in this document.**
+**The other 14 of `enterprise-migration.md`'s 43 are §3.3 and are permanent** — they name
+`~/Development/claims-model-starter.wiki`, the clone D-R5 pins in place.
 
 **(e) Working documents whose hits are self-referential (23 lines, 2 files)** — `BACKLOG.md` (18)
 and `SESSION_NOTES.md` (5). These hits exist *in order to* name the old name.
@@ -322,12 +343,51 @@ Phase 5, not by substitution. **Exactly one is a genuine substitution: `BACKLOG.
 `docs/wiki/claims-model-starter/` path citation inside an unrelated item, which moves with the
 directory in Phase 4. **Do not run a blind `sed` over these two files.**
 
-**Subtotals reconcile: 17 + 12 + 13 + 48 + 23 + 1 = 114 lines; 4 + 7 + 6 + 3 + 2 + 1 = 23 files.**
+**Subtotals reconcile: 14 + 12 + 13 + 34 + 23 + 1 = 97 lines; 4 + 7 + 6 + 3 + 2 + 1 = 23 files.**
+*(Session 230: group (a) was 17 and group (d) 48, before 3 lines of `publish_wiki.sh` and 14 of
+`enterprise-migration.md` moved to §3.3. Both **files** stay change-side — they have change lines
+too — so the file count is unchanged at 23.)*
 
 **(f) The file that must not be edited (1 line, 1 file)** — `SESSION_RUNNER.md:209` names
 `docs/wiki/claims-model-starter/` inside the "Wiki sync" paragraph. It is **synced from the
 canonical methodology repo**; `CLAUDE.md` forbids editing it, and a local edit blocks future syncs.
 The prescribed seam is `CLAUDE.md` → *Project-Specific Methodology Adaptations*. See §5 Phase 4.
+
+### §3.3 KEEP the old name because D-R5 pins a filesystem path — 17 lines across 2 files
+
+**Added in Session 230. The plan shipped without this bucket, and its absence is what made §7.2 —
+Phase 5's DONE gate — unsatisfiable.** These lines are neither historical records nor documents
+about the rename. They are **live** text naming
+`~/Development/claims-model-starter.wiki`, the wiki clone the operator ruled is **re-pointed in
+place** (D-R5): GitHub's rename moves a URL, it never moves a directory on your disk. **Every one of
+these lines still NAMES the pinned clone directory after the rename, and must go on doing so, unless
+a later operator decision reverses D-R5.** Sixteen of the seventeen are correct verbatim, forever.
+**The seventeenth — trap 1 below — is half-right: it names the clone *and* the in-repo directory, so
+Phase 4 must edit one half and preserve the other.**
+
+| File | Lines | Which, and why |
+|---|---|---|
+| `scripts/publish_wiki.sh` | 3 | `:19` the `WIKI_CLONE` default's doc comment, `:24` the documented clone command's destination directory, `:42` the `WIKI_CLONE` default itself. **Change `:42` and the script hard-fails at its own `:58` clone-exists guard** — D-R5 says so. Its other 7 lines are §3.2. |
+| `docs/planning/enterprise-migration.md` | 14 | every line naming `~/Development/claims-model-starter.wiki`: the C-phase clone commands, the "still the ORIGINAL's wiki" acceptance criteria, and **dragon #21's prohibition on repurposing that clone**. Its other 29 lines are §3.2. |
+
+**Two traps live in this bucket.**
+
+1. **One line is in both §3.3 and §3.2 *within itself*.**
+   `enterprise-migration.md`'s `diff -r -x '.git' docs/wiki/claims-model-starter ~/Development/claims-model-starter.wiki`
+   names the **in-repo directory** (which Phase 4 renames) *and* the **clone directory** (which never
+   moves). Phase 4 must edit the first half and leave the second. A `sed` over that line breaks it
+   whichever way it runs. Re-derive it with
+   `grep -n 'diff -r' docs/planning/enterprise-migration.md` rather than by line number.
+2. **This bucket grows.** Session 229's Phase 2 added a fifteenth D-R5 line to
+   `enterprise-migration.md` (*"The on-disk directory name stays `claims-model-starter.wiki` (rename
+   plan D-R5)"*) after the `59615e2` inventory was taken. **The 17 above is the count in §2's frame,
+   not a live count.** Do not treat it as a target — the criterion in §7.2 is written against the
+   *pattern*, not the number, for exactly this reason.
+
+**Why this is a bucket and not an exception.** §7.1 rules that a hit count is the wrong completion
+criterion and an allowlist is right. An allowlist needs every permanent survivor to sit in a named
+category, or the check prints a path and §7.2's *"no judgment call"* rule turns a correct execution
+into a failed one. §3.3 is that category, and §7.2 group 3 is its enforcement.
 
 ---
 
@@ -346,7 +406,7 @@ These are not implementer's calls. Each changes what gets built.
 > | **D-R2** | **Yes** — `docs/wiki/claims-model-starter/` is renamed too. | Phase 4 stands; the 51 wiki-path lines are in scope. |
 > | **D-R3** | **Yes** — rebrand `Home.md:1` and `_Sidebar.md:1`. | Phase 3 carries those two lines; they publish live the moment they commit. |
 > | **D-R4** | **Rename first**, ahead of the enterprise fork; repair its five assertions inside the sweep. | Phase 2 stands. |
-> | **D-R5** | **Re-point in place** — the clone keeps its directory name; `publish_wiki.sh:42` is not touched. | Phase 4 is `set-url` only, never `mv`. |
+> | **D-R5** | **Re-point in place** — the clone keeps its directory name; `publish_wiki.sh`'s three filesystem-path lines (`:19`, `:24`, `:42`) are not touched. | Phase 4 is `set-url` only, never `mv`. **It changes 7 of that file's 10 old-name lines, not all 10** — §3.3's first row. |
 >
 > **§4 is closed. Do not re-open D-R1.** Once the rename lands, option B is no longer reachable —
 > the old Pages URL cannot be recovered by any means, and §1.1 option C explains why the obvious
@@ -362,7 +422,7 @@ configured and verified BEFORE the rename**, which adds a phase ahead of everyth
 
 ### D-R2 — Does `docs/wiki/claims-model-starter/` get renamed too?
 
-**How much actually rides on this: 51 of the 114 change-side lines, plus a `git mv` of 25 files** —
+**How much actually rides on this: 51 lines of wiki-path edits, plus a `git mv` of 25 files** —
 *not* the 516 that match the path pattern. 465 of those 516 sit in frozen historical records that
 keep the old path either way (§3.1); a further 9 are the self-referential hits in `BACKLOG.md`,
 `SESSION_NOTES.md` and the un-editable `SESSION_RUNNER.md`. The honest number is ~42 real edits.
@@ -397,7 +457,7 @@ The rename does not conflict with the fork itself: §1.2/D6 keeps this repositor
 indefinitely, and Phase C4 is a one-time clone. **But the rename breaks five of that plan's
 verification commands, three of them by making a real assertion pass vacuously** — see §6 dragon 1.
 **Recommendation: rename first, and fix those five lines as part of the sweep** (they are already
-inside the 114). Renaming after the fork would leave the clone carrying the old name in the same
+inside the 97). Renaming after the fork would leave the clone carrying the old name in the same
 five places, and the fork is not obviously imminent — B2 is its last remaining pre-fork gate.
 
 ### D-R5 — Is `~/Development/claims-model-starter.wiki` re-pointed **in place**, or renamed on disk?
@@ -406,7 +466,9 @@ These are two independent knobs and `publish_wiki.sh` reads both:
 
 - `:72`/`:75` guard the clone's **origin URL** — changes with the repository name.
 - `:42` sets the `WIKI_CLONE` default **filesystem path** — changes only if you `mv` the directory.
-  GitHub's rename does not touch it.
+  GitHub's rename does not touch it. **`:19` and `:24` document that same path** — `:19` the default
+  in the usage header, `:24` the destination directory of the documented `git clone` — so all three
+  move together, or none do.
 
 **Change `:42` without the `mv` and the script hard-fails at its own `:58` clone-exists guard.** They
 are one paired decision, not two.
@@ -536,7 +598,14 @@ uv run pytest -q                           # -> 1230 passed + 9 live-skipped, un
 `gh-pages-pre-rename` bundle restores the deployed site. **But record this before you do it:** after
 a round trip, *neither* name may ever be given to another repository — GitHub Docs warns that
 reusing a renamed repository's old name destroys its redirects, and **552 lines of historical record
-in this repository depend on the old-name redirects continuing to resolve.**
+in this repository depend on the old-name redirects continuing to resolve.** *(552 is §3.1's
+subtotal — the frozen-record bucket — and it is the group this sentence means. §3.3's 17 D-R5 lines
+are live files, not records, and no redirect resolves a local directory path, so they are correctly
+outside it. **Do not "reconcile" this number** against §3.3. Separately, Session 230 measured that
+only **44** of the 552 carry an old-name URL at all — 465 are in-repo `docs/wiki/` path strings — so
+"depend on the old-name redirects" overstates the exposure. Session 226's risk claim is left as
+written: Phase 1 has run, the decision it informed is made, and re-litigating it is not a
+plan-repair session's call. Flagged, not fixed.)*
 
 **Session boundary. Close out here.**
 
@@ -660,8 +729,20 @@ Order within the session:
    git mv docs/wiki/claims-model-starter docs/wiki/model_project_constructor
    ```
    plus, in the same commit:
-   - `scripts/publish_wiki.sh` — all 10 lines (`:2`, `:11`, `:19`, `:23-24`, `:42`, `:44`, `:63`,
-     `:72`, `:75`)
+   - `scripts/publish_wiki.sh` — **7 of its 10 lines. Not all 10.**
+     - **CHANGE (7):** `:2`, `:11`, `:23`, `:44`, `:63`, `:72`, `:75`.
+     - **KEEP, permanently (3):** `:19`, `:24`, `:42`. These are the clone's **filesystem path**
+       `~/Development/claims-model-starter.wiki` — `:19` the `WIKI_CLONE` default's doc comment,
+       `:24` the documented clone command's destination directory, `:42` the `WIKI_CLONE` default
+       itself. D-R5 answered *"re-point in place"*; GitHub's rename moves a URL, never a local
+       directory. **D-R5 and step 1 above both say what happens if you ignore this: change `:42`
+       without the `mv` and the script hard-fails at its own `:58` clone-exists guard — wiki
+       publishing stops, on the very commit that lands the rename.**
+     - **Note the split inside the old `:23-24` range**, which is why this used to read "all 10":
+       `:23` is the clone **URL** and changes; `:24` is the destination **directory** on the very
+       next line and does not. A range citation hid a boundary.
+     - Verification for this bullet, after editing: `grep -n "claims-model-starter"
+       scripts/publish_wiki.sh` → **exactly 3 lines, `:19`, `:24`, `:42`.** Not 0.
    - `.githooks/post-commit` — `:3`, `:18`
    - **Do not touch `publish_wiki.sh:101`.** It already emits the new name
      (`COMMIT_MSG="docs: sync wiki from model_project_constructor@$SOURCE_SHA"`) — evidence the
@@ -674,8 +755,14 @@ Order within the session:
    - the wiki-path references inside the other plans — **all five are pure path citations**:
      `docs/planning/opencode-adapter-spec.md` (`:9` ×2, `:655`, `:656`) and
      `docs/planning/httpx-adapter-migration.md` (`:110`, `:270`), plus the 17 path lines inside
-     `docs/planning/enterprise-migration.md` (its URL and clone-path lines were already handled in
-     Phase 2 — do not re-touch those)
+     `docs/planning/enterprise-migration.md`
+     — **and one more line in that file that is NOT a path line and that nothing else owns:** its
+     §2.6 coupling-points row describing `publish_wiki.sh:72`/`:75`'s guard literal (`:345` as of
+     2026-08-20; re-derive with `grep -n 'Hard-rejects' docs/planning/enterprise-migration.md`).
+     **This commit is what falsifies it** — it rewrites that guard to grep for
+     `model_project_constructor.wiki` — so it must be repaired here, not left to Phase 5.
+     Phase 2 handled that file's five `curl` URL lines and its two wiki-comment lines and **those**
+     must not be re-touched; `:345` was never among them.
    - **`CLAUDE.md`** — a new bullet under *Project-Specific Methodology Adaptations* recording that
      `SESSION_RUNNER.md:209` still names the old directory and must not be edited (dragon 8)
 
@@ -718,10 +805,31 @@ added, or removed.
 ```bash
 uv run pytest -q                                    # -> 1230 passed + 9 live-skipped, unchanged
 uv run ruff check src/ tests/ packages/ scripts/    # -> clean
-git diff --stat HEAD~1 -M                           # -> the 25 pages show as pure renames (R100)
+git diff --name-status -M HEAD~1 | awk '{print $1}' | sort | uniq -c
+#   -> 22 R100  +  3 R09x.  The three are Evolution.md, License.md and Contributing.md, which
+#      step 2 also edits one path line in each, so they are rename+edit rather than pure renames.
+#      Use --name-status, NOT --stat: `git diff --stat -M` prints no similarity code at all
+#      (measured 2026-08-20 -- it renders a rename as `docs/wiki/{claims-model-starter =>
+#      model_project_constructor}/Foo.md | 0`, and `grep -c R100` on it returns 0).
+#      What this does NOT prove: `-M` detects renames from content similarity, so a hand-rolled
+#      delete+add of identical files also reports R100 (measured: 25 R100 without any `git mv`).
+#      The criterion asserts the 25 pages MOVED intact -- it cannot witness which command moved
+#      them.  Any `A`/`D` pair in the output means a page's content diverged, not that `git mv`
+#      was skipped.
 ls docs/wiki/model_project_constructor/ | wc -l      # -> 25
-grep -rn "claims-model-starter" scripts/ tests/ .githooks/   # -> empty
+grep -rn "claims-model-starter" scripts/ tests/ .githooks/ \
+  | grep -v '^scripts/publish_wiki\.sh:'            # -> empty
+grep -n "claims-model-starter" scripts/publish_wiki.sh
+#   -> EXACTLY 3 lines: :19, :24, :42. The D-R5 filesystem path (§3.3, first row).
+#      NOT 0 -- 0 means a sweep drove them out and `scripts/publish_wiki.sh` now dies at its :58
+#      guard. NOT 10 -- 10 means this phase's edit did not land.
 ```
+
+**The exclusion and the assertion are one check, not two.** Dropping `scripts/` from the first grep,
+or `--exclude=publish_wiki.sh`, would both be wrong: measured 2026-08-20, `--exclude` matches a
+**basename glob**, so it also swallows any other `publish_wiki.sh` anywhere in those trees — a probe
+file at `packages/probe/publish_wiki.sh` went undetected, while the path-anchored `grep -v` above
+caught it. Anchor on the path, and always pair the exclusion with the 3-line assertion.
 
 **Recovery if it goes wrong:** the repo commit is one `git revert` away, and the clone's origin goes
 back with the same `set-url` command. **This phase does push to the live wiki** (step 3, three
@@ -738,7 +846,20 @@ act in the whole plan is the Pages URL in Phase 1 (§1).
 **Gated on:** Phase 4 verified (or Phase 3 verified, if D-R2 = no).
 
 Walk the **whole** remaining `git grep` and classify **every** surviving hit against §3. Anything
-that is neither a §3.1 historical record nor deliberate self-reference is a miss — fix it here.
+that is neither a **§3.1** historical record, nor a **§3.3** D-R5-pinned line, nor a deliberate
+self-reference, is a miss — fix it here.
+
+> ⚠ **Session 230: the §3.3 clause is not optional, and its absence was fail-dangerous.** Without
+> it this rule reads as an order to "fix" the 17 lines naming
+> `~/Development/claims-model-starter.wiki` — 3 in `scripts/publish_wiki.sh`, 14 in
+> `enterprise-migration.md`. Obeying it points those instructions and acceptance criteria at a
+> directory that **does not exist**, hard-fails `publish_wiki.sh` at its `:58` clone-exists guard,
+> and contradicts both D-R5 and `enterprise-migration.md`'s own *"The on-disk directory name stays
+> `claims-model-starter.wiki` (rename plan D-R5)."* **Leave every §3.3 line alone — with one
+> exception: the dual-purpose `diff -r` line (§3.3 trap 1) must have had its *in-repo* half changed
+> by Phase 4. Verify that, do not "leave it alone" wholesale, and never `sed` it.** The four
+> independence-grep sites are out of scope here too — they are flagged to the operator in
+> `BACKLOG.md`, and §8 says they are not this plan's to rewrite.
 
 Then:
 - **`BACKLOG.md`: delete the rename item's rows; do not substitute them.** 17 of its 18 hits are the
@@ -747,7 +868,10 @@ Then:
   Phase 4 — verify, do not assume).
 - **`README.md`** — re-read `:7` end to end. It was rewritten in **Phase 1** under time pressure with
   the site down; this is the calm second look (dragon 6).
-- **This plan's own status line** — change `Status: PLAN` to executed, with the phase commit hashes.
+- **This plan's own status line** (`:3`) — it has read **`Status: IN EXECUTION`** since the Session
+  230 repair, listing Phases 1 and 2 and their commits. Phase 5 flips it to **executed** and appends
+  Phases 3, 4 and 5's hashes. *(It read `Status: PLAN` until then; that literal is gone, so grep for
+  `**Status:**`.)*
 - **File the four out-of-scope findings** in §8.1 as backlog items.
 
 **DONE looks like:** every check in §7 passes — including §7.4's three, which the allowlist cannot
@@ -786,18 +910,40 @@ docs/planning/enterprise-migration.md:1356  curl … /claims-model-starter/tutor
 This is a **Phase C4 acceptance criterion asserting the original's site is still up**. Post-rename it
 returns 404 and C4 reports a false failure. Loud, so less dangerous — but it must move too.
 
-**Fix all five in the same commit as `mkdocs.yml`.** They are executable acceptance criteria for
-un-executed phases, not prose.
+**Fix all five in Phase 2.** They are executable acceptance criteria for un-executed phases, not
+prose. **Done — Session 229, `73b9418`.**
+
+> *Session 230 correction. This line previously read* **"Fix all five in the same commit as
+> `mkdocs.yml`."** *`mkdocs.yml` is a Phase 1 file and only Phase 1's (Phase 1's table); Phase 1
+> explicitly disclaimed every other file (*"Every other file is inert and belongs to Phase 2"*) and
+> closed without these five — `c1fe06f` touched three files, none of them `enterprise-migration.md`.
+> Phase 2's table always assigned them. The plan shipped self-inconsistent here; the rename did not
+> break it. It matters because this dragon is billed as the second-most-serious finding in the
+> document, so it is the passage a later reader is most likely to consult in isolation — where it
+> sent them hunting inside a closed phase. **Only the sequencing sentence was wrong; the fail-open
+> finding above it is correct, and it is why Phase 2 existed.**
+
+**One warning about how these five were actually fixed.** Phase 2's table says *"Add `-fL` while you
+are there so a future rename fails loudly instead of vacuously."* **Measured in Session 229: that
+does not work.** A shell pipeline reports its **last** command's status, so `-f` on a piped `curl`
+is invisible — `curl -sfL <live> | grep -c audits` and `curl -sfL <404> | grep -c audits` both print
+`0` and both exit `1`. The vacuous pass this dragon exists to close survives its own prescription.
+What shipped instead: the two sitemap checks capture **curl's own exit** (`sitemap=$(curl -sfL …) ||
+echo FAIL`), the two 404-expecting checks got a **positive control** in front of them (a host that
+404s every path makes "→ 404" meaningless), and `-fL` was applied only to the tutorial check —
+quoted as `:1356` above, which is its **pre-repair** position; it is `:1368` today — because that is
+the one line expecting 200, where `-f` is genuinely load-bearing. **If you ever assert on `curl … | grep`, capture curl's exit
+separately.**
 
 **And a sixth, subtler one — the rename reopens the exact hole that check was built to close.**
-`enterprise-migration.md:363`, `:1308` and `:1351` carry the C4/C5 *clone-independence* criterion:
+`enterprise-migration.md:363`, `:1319` and `:1363` carry the C4/C5 *clone-independence* criterion:
 
 ```bash
 git grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter' -- . \
   | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # -> 0
 ```
 
-Its own comment at `:1349-1350` states the danger it exists to prevent: *"a narrower pattern can pass
+Its own comment at `:1361-1362` states the danger it exists to prevent: *"a narrower pattern can pass
 '→ 0' while a hardcoded `claims-model-starter` string survives in the clone's publish_wiki.sh."*
 After the rename, that hardcoded string **is** `model_project_constructor.wiki` — and the
 `claims-model-starter` alternative no longer matches it. The `rmsharp` alternatives still catch
@@ -813,6 +959,30 @@ that can never return 0 is not a criterion.
 over `scripts/`, `.githooks/`, `mkdocs.yml` and `tests/` only, where a hardcoded repository name is
 always a defect. **Flag this to whoever owns `enterprise-migration.md`; do not silently rewrite
 another plan's acceptance criteria beyond the five URL lines above.**
+
+> **Session 230: that recommendation was never measured, and it does not work either.** Re-derived
+> 2026-08-20 at `be3bc4a`:
+>
+> ```bash
+> git grep -c "model_project_constructor" -- scripts/ .githooks/ mkdocs.yml tests/
+> #   -> 336 lines across 74 tracked files:  tests/ 317, scripts/ 16, mkdocs.yml 3, .githooks/ 0.
+> #      286 of the 317 are `from|import model_project_constructor` — the import package's own name.
+> ```
+>
+> **A criterion that can never return 0 is not a criterion** — the exact objection this dragon raises
+> two paragraphs above against the fifth-alternative fix, and it applies to this dragon's own
+> proposal with a wider margin. (The fifth-alternative figure quoted above, *"1,916 lines across 183
+> files"*, re-derives today as **1,986 across 187** — the conclusion is unchanged and the number was
+> never load-bearing.)
+>
+> **The path set that does work is the four coupling points in `enterprise-migration.md`'s own
+> §2.6 (*"Host and identity coupling points"*), not whole directories:**
+> `scripts/publish_wiki.sh`, `.githooks/post-commit`, `mkdocs.yml`,
+> `tests/test_wiki_no_line_citations.py` — the files where a hardcoded repository name is always a
+> defect. Post-Phase-4 that set legitimately contains the **new** name, so the criterion has to be
+> restated as *"no repository name **other than the clone's own**"*, not *"no name at all"*.
+> **That restatement is an operator ruling and is NOT this plan's to make** (§8, first bullet). The
+> flag, with these measurements, is filed in `BACKLOG.md` under the rename item.
 
 ### Dragon 2 — The wiki publisher's own guards all fail CLOSED. Verified, not assumed — and narrower than it sounds (dragons 3 and 4).
 
@@ -981,7 +1151,8 @@ rename the divergence it must explain is a **different** one. Verified live:
 
 Post-rename the repository and the import package agree, and only the **PyPI distribution name**
 diverges — which is not an anomaly but PEP 503 normalization. **Rewrite the sentence to say that.**
-It is deliberate; `BACKLOG.md:508-513` records the operator correcting a hyphenated reading within
+It is deliberate; **`BACKLOG.md`'s *"The name form is underscores, and it is deliberate"* paragraph**
+records the operator correcting a hyphenated reading within
 the same session. Do not "fix" the hyphens.
 
 ### Dragon 7 — The string is overloaded: three hits mean the *generated output*, not this repository
@@ -1013,7 +1184,8 @@ same heading). **Do not edit `SESSION_RUNNER.md`.**
 
 - `~/Development/claims-model-starter.wiki` — the live publish target. Its **directory name** and its
   **origin URL** both carry the old name, and `publish_wiki.sh:42` defaults `WIKI_CLONE` to that
-  exact path. `enterprise-migration.md:1436` (dragon #21 there) warns that this clone must not be
+  exact path. `enterprise-migration.md:1449` (dragon #21 there — `:1436` is inside dragon #20; re-derive with
+  `grep -n "^21\. " docs/planning/enterprise-migration.md`) warns that this clone must not be
   repurposed for the enterprise fork; that warning survives the rename unchanged.
 - The methodology dashboard scans `~/Development` and lists that clone as a project named
   `claims-model-starter.wiki` (health 16/100). Renaming the directory changes what the dashboard
@@ -1113,30 +1285,98 @@ Use the file allowlist: it is stable under the plan's own prose.
 
 ### §7.2 The allowlist check
 
-Every surviving occurrence of `claims-model-starter` must sit in a file that is either a **frozen
-historical record** or a **document whose subject is the old name**. This command must print nothing:
+Every surviving occurrence of `claims-model-starter` must sit in a file that is a **frozen
+historical record** (§3.1), a **document whose subject is the old name**, or a **live file pinned by
+D-R5** (§3.3). This command must print nothing:
 
 ```bash
 git grep -l "claims-model-starter" -- . \
   | grep -v -E '^(docs/architecture-history/|audits/|CHANGELOG\.md$|PROJECT_LEARNINGS\.md$|prs-export\.json$|releases-export\.json$)' \
   | grep -v -E '^docs/wiki/[^/]+/Changelog\.md$' \
-  | grep -v -E '^(BACKLOG\.md|SESSION_NOTES\.md|SESSION_RUNNER\.md|CLAUDE\.md|docs/planning/repository-rename\.md)$'
+  | grep -v -E '^(BACKLOG\.md|SESSION_NOTES\.md|SESSION_RUNNER\.md|CLAUDE\.md|docs/planning/repository-rename\.md)$' \
+  | grep -v -E '^(scripts/publish_wiki\.sh|docs/planning/enterprise-migration\.md)$'
 ```
 
-- **Group 1** (lines 2-3) is §3.1 — the 28 files that keep the old name by the `bfd9f36` precedent.
-  The wiki `Changelog.md` gets its own line with `[^/]+` because **its directory name changes in
-  Phase 4 while its content does not**; pinning the old path would make the check pass for the wrong
-  reason afterwards.
-- **Group 2** (line 3) is the five files whose remaining hits exist *in order to* name the old name:
+**And these two commands are not optional — they are the other half of the same criterion.** They
+are what the exemption above is traded for; run them, or the exemption is a blindfold:
+
+```bash
+# (i) publish_wiki.sh keeps exactly its three D-R5 lines -- no more, and never zero.
+grep -n "claims-model-starter" scripts/publish_wiki.sh
+#   -> EXACTLY 3 lines: :19, :24, :42.  Not 0 (a sweep broke publishing); after Phase 4, not 10
+#      (the phase's edit did not land).
+
+# (ii) enterprise-migration.md keeps ONLY D-R5 lines and the four independence-grep sites.
+grep -n "claims-model-starter" docs/planning/enterprise-migration.md \
+  | grep -v 'Development/claims-model-starter\.wiki' \
+  | grep -v 'claims-model-starter\.wiki` (rename plan D-R5)' \
+  | grep -vE "iE 'rmsharp|narrower pattern|survives in the clone"
+#   -> empty after Phase 5.  Measured 2026-08-20 it prints 20: 16 `docs/wiki/` path lines Phase 4
+#      owns, plus the four residue lines (:345 in Phase 4's commit, :919/:1250/:1372 in Phase 5).
+#      16 and not 17, because one of the 17 also carries the D-R5 clone path and the first
+#      `grep -v` removes it -- that is the dual-purpose line §3.3 warns about.
+#      The `grep -v`s are §3.3 plus the independence sites flagged to the operator and NOT this
+#      plan's to rewrite (§8). They match on CONTENT: those line numbers move every session.
+
+# (iii) THE DUAL-PURPOSE LINE. Neither of the two commands above can see it, and that is not an
+#       oversight you may skip -- (ii)'s first `grep -v` removes it by construction, and command 1
+#       exempts the whole file. It needs its own assertion:
+grep -n "diff -r -x '.git'" docs/planning/enterprise-migration.md
+#   -> exactly ONE line. After Phase 4 it must read
+#        diff -r -x '.git' docs/wiki/model_project_constructor ~/Development/claims-model-starter.wiki
+#      NEW name on the left (the in-repo directory Phase 4 renames), OLD name on the right (the
+#      clone D-R5 pins). Both wrong ways fail silently: leave the left half stale and that plan's
+#      C-phase parity check `diff`s a directory Phase 4 deleted; `sed` both halves and the line
+#      stops naming the clone at all. §3.3 trap 1 is this line.
+```
+
+- **Group 1** (lines 2-3) is §3.1's frozen historical records — the 28 files that keep the old name
+  by the `bfd9f36` precedent. The wiki `Changelog.md` gets its own line with `[^/]+` because **its
+  directory name changes in Phase 4 while its content does not**; pinning the old path would make the
+  check pass for the wrong reason afterwards.
+- **Group 2** (line 4) is the five files whose remaining hits exist *in order to* name the old name:
   the backlog item's history, the session ledger, the synced file that cannot be edited (dragon 8),
   the `CLAUDE.md` seam note that records why it cannot be edited, and this plan.
+- **Group 3** (line 5) is **§3.3** — the two files that are different in kind from both groups
+  above. `scripts/publish_wiki.sh` is **live executable code** and
+  `docs/planning/enterprise-migration.md` is a **live plan**; neither is a record, neither is about
+  the rename, and both keep old-name lines **forever** because D-R5 pins a filesystem path they
+  name. Exempting a live file from a completion check is exactly the move that turns an allowlist
+  into a blindfold — **which is why this exemption is void without the two paired commands above.**
+  Allowlisting them alone would make §7.2 unable to see a genuine future miss inside either, which
+  is what the "no judgment call" rule below forbids. Run all three, or none.
 
-**If the command prints a path, that file was missed.** No judgment call, no re-derivation.
+**If the first command prints a path, that file was missed. If (i) prints anything other than the
+10 lines before Phase 4 or exactly `:19`, `:24`, `:42` after it, `scripts/publish_wiki.sh` is broken
+— and `0` is broken at every point in the plan's life. If (ii) prints anything after Phase 5, a
+rename line was missed inside `enterprise-migration.md`.** No judgment call, no re-derivation.
 
-**This criterion was falsified before it was written down.** Run today it prints **20 paths** —
-every change-side file that has not yet been touched. (It is 20, not 23: `BACKLOG.md`,
-`SESSION_NOTES.md` and `SESSION_RUNNER.md` are change-side but sit in allowlist group 2, and the wiki
-`Changelog.md` moved to KEEP in §3.1.)
+> ⚠ **Both verdicts are phase-relative, and (i)'s especially.** Run §7.2 at the start of Phase 3 —
+> as the ledger below tells you to — and (i) prints **10**, which is correct, because Phase 4 has not
+> run. An earlier draft of this sentence made (i)'s verdict unconditional, which would have declared
+> a healthy publisher broken at the start of every phase before Phase 4. Worse, the natural "fix" is
+> to apply Phase 4's 7-line edit early — which flips the `:72`/`:75` guard literal while the clone's
+> origin still carries the old name and **disables publishing** (dragon 2), breaking K2 and K3's
+> same-commit rule.
+
+> *Session 230 addition. Before it, §7.2 had no group 3, and both files were wholly on the change
+> side of §3. That made **§7.2 unsatisfiable**: a correct execution leaves 17 lines standing across
+> those two files, §7.2 would print both paths, and the rule immediately above rules a printed path
+> a miss — with no judgment call available to excuse it. **§7.2 is Phase 5's DONE gate**, so Phase 5
+> could never have gone green. The three paired commands are what keep the exemption from costing
+> anything.*
+>
+> *`enterprise-migration.md` was the harder half, and it was nearly missed. The filed defect named
+> only `publish_wiki.sh` (3 lines); the second file carries **14** in the same frame. A repair that
+> fixed the named instance and stopped would have left this gate exactly as unreachable as it found
+> it. If a future session finds a **third** live file pinned this way, it belongs in §3.3 and in
+> group 3 — not in an ad-hoc exception.*
+
+**This criterion was falsified before it was written down.** Run at plan time (Session 226, `HEAD` =
+`59615e2`) it printed **20 paths** — every change-side file that had not yet been touched. (It is 20,
+not 23: `BACKLOG.md`, `SESSION_NOTES.md` and `SESSION_RUNNER.md` are change-side but sit in allowlist
+group 2, and the wiki `Changelog.md` moved to KEEP in §3.1.) **That plan-time baseline is below; the
+current expected set is the ledger under it.**
 
 ```
 .githooks/post-commit           docs/tutorial.md
@@ -1153,9 +1393,36 @@ scripts/publish_wiki.sh                    tests/test_wiki_no_line_citations.py
 ```
 
 It is red now and must go green. A completion criterion that has never been observed failing proves
-nothing — the project has learned this the hard way twice (learnings #99, #102). **Re-run it at the
-start of execution and confirm it still reports exactly these 20 paths.** A different set means this
-plan has drifted, and §2 must be re-derived before anything else is touched.
+nothing — the project has learned this the hard way twice (learnings #99, #102).
+
+**Ledger — the expected set shrinks as phases land, and a shrinking set is NOT drift.** Every row
+measured 2026-08-20 by checking out that commit and running the command.
+
+**Read the "command" column before comparing a number.** The first three rows are the **four-group**
+command as it stood before this repair; the last two are the **five-group** command printed above.
+That is not sloppiness — the historical rows record what an executor standing at those commits would
+actually have seen. Re-running the five-group command over the first three commits gives 18 / 15 /
+13, because group 3 hides two files that were present all along.
+
+| At | Command | Prints | What left, and why |
+|---|---|---|---|
+| plan time, `59615e2` | 4-group | **20** | the baseline block above |
+| after Phase 1, `c1fe06f` | 4-group | **17** | `mkdocs.yml`, `README.md`, `docs/tutorial.md` — fixed |
+| after Phase 2, `73b9418` | 4-group | **15** | `SECURITY.md`, `CONTRIBUTING.md` — fixed |
+| after this repair | **5-group** | **13** | `scripts/publish_wiki.sh` **and** `docs/planning/enterprise-migration.md` — **exempted, not fixed**; their §3.3 lines are permanent |
+| after Phases 3, 4 and 5 | 5-group | **0** | the remaining 13, all owned by a phase |
+
+**Re-run it at the start of every phase and confirm it prints exactly the set this ledger predicts
+for the last landed commit.** A path *leaving* the set is a phase doing its job. **A path
+*appearing* that the ledger does not predict means the plan has drifted, and §2 must be re-derived
+before anything else is touched.** Measured 2026-08-20: nothing has appeared since plan time — all
+five departures are Phases 1 and 2, named above.
+
+> *Session 230 correction. This paragraph previously read* **"Re-run it at the start of execution and
+> confirm it still reports exactly these 20 paths. A different set means this plan has drifted."*
+> *By then the true reading was 15 and every one of the five departures was a phase succeeding. An
+> executor obeying that sentence at the start of Phase 3 would have halted the plan and re-derived §2
+> because it had been working.*
 
 ### §7.3 The rest
 
@@ -1170,11 +1437,19 @@ uv run pytest -q                                   # -> 1230 passed + 9 live-ski
 uv run ruff check src/ tests/ packages/ scripts/   # -> clean
 uv run mypy                                        # -> clean
 scripts/publish_wiki.sh                            # -> "no changes to publish"
-grep -rn "claims-model-starter" scripts/ tests/ .githooks/ src/ packages/ .github/   # -> empty
+grep -rn "claims-model-starter" scripts/ tests/ .githooks/ src/ packages/ .github/ \
+  | grep -v '^scripts/publish_wiki\.sh:'                  # -> empty
+grep -n "claims-model-starter" scripts/publish_wiki.sh    # -> exactly :19, :24, :42 — never 0
 ```
 
-`src/`, `packages/` and `.github/` are in that last grep even though they have **zero** hits today
+`src/`, `packages/` and `.github/` are in that grep even though they have **zero** hits today
 (§2.4) — so that a future session's addition is caught rather than assumed absent.
+
+**`scripts/publish_wiki.sh` is excluded from the first line and asserted on the second, and the two
+travel together** — §7.2 group 3 explains why, and §3.3's first row is the authority. Anchor the
+exclusion on the **path** (`^scripts/publish_wiki\.sh:`), never on `--exclude=publish_wiki.sh`:
+measured 2026-08-20, `--exclude` takes a **basename glob** and silently swallowed a probe planted at
+`packages/probe/publish_wiki.sh`, while the path-anchored form caught it.
 
 ### §7.4 Three checks `git grep` at `HEAD` structurally cannot perform
 
@@ -1208,7 +1483,7 @@ for d in . ~/Development/claims-model-starter.wiki ~/Development/mpc_tests/model
 done
 ```
 
-**Do not use the criterion filed in `BACKLOG.md:617`** (`grep -rIl "claims-model-starter" . | grep -v
+**Do not use the criterion filed in `BACKLOG.md`'s "Completion criteria" list** (`grep -rIl "claims-model-starter" . | grep -v
 '^\./\.git/'`). It returns **58 files against 51 tracked** — the extras are `.venv/…/METADATA` (the
 README embedded as `long_description`), the gitignored `site/` build, a generated `.html`, and this
 plan file. It can never go green.
@@ -1250,12 +1525,155 @@ scope creep `SAFEGUARDS.md` exists to prevent.
 ## §9 Provenance
 
 Every number in §2 and §3 was derived in Session 226 by running the commands shown, at `HEAD` =
-`59615e2`, and the arithmetic reconciles (114 + 552 = 666 across 23 + 28 = 51). The claim in §1 is
+`59615e2`. **Session 230 re-reconciled the §3 split without re-measuring anything**: 17 lines — 3 in
+`scripts/publish_wiki.sh`, 14 in `docs/planning/enterprise-migration.md` — moved CHANGE → a new
+permanent-KEEP bucket, **§3.3**. The arithmetic now reads **552 + 17 + 97 = 666, across 28 + 2 + 23 =
+53 file-slots for 51 distinct files**; those two files sit on both sides. The 666/51 totals are
+unchanged and still derive from `59615e2` — only the classification moved. The claim in §1 is
 sourced to two GitHub documentation pages, quoted inline. The mechanism claims in dragon 2 were
 verified against `man githooks` and against the real historical rename commit `35ccbd9` in this
 repository's own history — not reasoned about. Where something could not be verified before
 execution (whether Pages re-points to the new URL without a redeploy), the plan says so and gives the
 command that settles it, rather than guessing.
 
-**Nothing in this plan has been executed. `git status` at the end of Session 226 shows only this file
-and the session ledger.**
+**As of the end of Session 226, nothing in this plan had been executed** — `git status` then showed
+only this file and the session ledger. **That is provenance, not current status.** Phases 1 and 2
+have since landed (`c1fe06f`, `73b9418`); the status line at the top of this file is the authority,
+and §9.1 below records the one session that changed this document without executing any phase of it.
+
+---
+
+### §9.1 Repair log — Session 230, 2026-08-20
+
+**No phase ran in this session.** Session 229 executed Phase 2 and, while walking §7's completion
+criteria backwards against the phase list, found two defects in *this document*. The operator ruled
+(2026-08-20) that the repair get its own session rather than widen Phase 2 past its three-file table.
+
+**No measurement in §2 changed, and no dragon's *finding* changed** — every number here is a
+re-classification of lines already counted at `59615e2`, or a fresh measurement run against the
+working tree at `be3bc4a`. **§4 is edited in two places** (D-R5's knob list and the recorded
+operator-answer table's D-R5 row) — the *decision* is untouched; what changed is that D-R5 now names
+all three `publish_wiki.sh` filesystem-path lines instead of one, because the rest of the repair
+cites D-R5 as the authority for all three.
+
+**The largest change is one the filed defects did not ask for: §3.3 is new.** The filed defect #3
+named `scripts/publish_wiki.sh` (3 permanent lines). Repairing only that left §7.2 — Phase 5's DONE
+gate — **still unsatisfiable**, because `docs/planning/enterprise-migration.md` carries **14** more
+lines pinned by the same decision, and no allowlist group exempted it either. That was found by an
+adversarial review of this repair, not by the filing. The general fix is a classification bucket
+(§3.3) rather than a second one-file exception, so a third such file has somewhere to go.
+
+| # | Where | What it said | What it says now |
+|---|---|---|---|
+| **1** | **Phase 4 step 2** | *"`scripts/publish_wiki.sh` — all 10 lines"* | **CHANGE 7, KEEP 3.** `:19`, `:24`, `:42` are the clone's **filesystem path**, pinned by D-R5. **An executor who obeyed the old line disabled wiki publishing**, because `:42` without the `mv` hard-fails the script at its `:58` guard — **D-R5 says so itself**, and this is the phase the plan calls its riskiest. The old `:23-24` range citation is what hid the boundary. |
+| **2** | **Phase 4 verification; §7.3** | `grep -rn "claims-model-starter" scripts/ … # -> empty` | Split in two: the sweep grep now excludes `^scripts/publish_wiki\.sh:` **and** a paired `grep -n` asserts exactly 3 surviving lines. `-> empty` could not hold once the 3 lines legitimately survive. |
+| **3** | **§7.2 allowlist** | four exclusion groups, none exempting `publish_wiki.sh` | a fifth line (**group 3**) exempts it, **paired with the 3-line assertion**. §7.2 is Phase 5's DONE gate and was **unsatisfiable**: a correct Phase 4 makes it print a path, and its own rule says a printed path is a miss, "no judgment call". |
+| **4** | **§3.1, §3.2, §3.3 (new), §9** | 552 + 114 = 666, 28 + 23 = 51 | **552 + 17 + 97 = 666**, 28 + 2 + 23 = **53 slots for 51 distinct files** — `publish_wiki.sh` and `enterprise-migration.md` are on both sides. §3.1 keeps its original 552/28; the 17 D-R5-pinned lines went to the new **§3.3** rather than being forced into the historical-record bucket, whose rationale (`bfd9f36`) does not cover them. The 552 in **Phase 1's "if it has to be undone" note** is deliberately *not* reconciled, and now says why. |
+| **5** | **Dragon 1** | *"Fix all five in the same commit as `mkdocs.yml`"* | *"Fix all five in Phase 2"* — done in `73b9418`. `mkdocs.yml` is Phase 1's file; Phase 1 disclaimed those five and closed without them. **Dragon 1 itself is untouched: its fail-open finding is correct.** |
+| **6** | **Status line; §9** | *"PLAN. Nothing in this document has been executed."* | the executed-phase ledger. False since `c1fe06f`. Phase 5 still owns the final flip. |
+| **7** | **§3.3 (new); §7.2's rubric, group 3 and ledger** | defect #3's repair covered `publish_wiki.sh` only | **the same defect existed for `docs/planning/enterprise-migration.md` at ~5× the scale** and would have left Phase 5's gate unreachable. §7.2's exemption now covers both, **§7.2's** opening two-category rubric became three, and the ledger's terminal row is 0 out of **13**, not 14. |
+| **8** | **Phase 5's residue rule** | *"Anything that is neither a §3.1 historical record nor deliberate self-reference is a miss — fix it here"* | *"…nor a **§3.3** D-R5-pinned line…"*. **This was the second fail-dangerous instruction in the plan** and it is defect A's twin: obeyed literally it orders an executor to rewrite all 17 pinned lines to a directory that does not exist. Found by the same adversarial review. |
+
+**Repaired beyond the six filed.** Each is a consequence of one of the six, or a statement in a
+passage the six sent me into that had since been measured false. All are listed here so the next
+reader can reverse any of them cheaply.
+
+- **§7.2's expected-output paragraph** (a consequence of #3). It read *"Re-run it at the start of
+  execution and confirm it still reports exactly these 20 paths. A different set means this plan has
+  drifted."* The true reading was already **15**, and all five departures were Phases 1 and 2
+  **succeeding** — an executor obeying that sentence at the start of Phase 3 would have halted a
+  working plan and re-derived §2 because it had been working. Repair #3 takes it to 14 and would have
+  made the sentence wronger still. It is now a per-phase ledger, and the drift trigger is a path
+  **appearing**, not the count changing. *(Also in that block: "Group 2 (line 3)" was an off-by-one —
+  group 2 is the pipeline's **line 4**.)*
+- **Three stale statements inside dragon 1**, which repair #5 sends the reader into:
+  1. **Its citations into `enterprise-migration.md` had drifted.** The clone-independence criterion
+     is at `:363`, **`:1319`** and **`:1363`** (was cited as `:1308`, `:1351`), and its warning
+     comment at **`:1361-1362`** (was `:1349-1350`). Session 229's own Phase 2 edits moved that
+     file, and **the offset is cumulative and not uniform** — measured across `73b9418^..73b9418`:
+     **+8** through the 800s, **+11** by `:1319`, **+12** by `:1365`, **+13** by `:1447`, **+21** at
+     the sitemap check (`:1520`→`:1541`). Any single "the file moved by N" figure is wrong somewhere,
+     which is the whole reason a copied line number goes stale. Corrected, and re-derivable with
+     `grep -n "a narrower pattern can pass" docs/planning/enterprise-migration.md`. **§7.4's
+     pointer at the filed criterion had drifted the same way** (`BACKLOG.md:617`), as had §2.3's
+     pattern-6 row (`:527`). Both now name the section instead of a line, for the reason in the
+     bullet below. The four/five
+     `curl` line numbers quoted higher in the dragon are the **pre-repair** positions and are left
+     as the record of what was found. Today: `:831`→**`:834`**, `:832`→**`:835`**, `:833`→**`:839`**,
+     `:1520`→**`:1541`**, `:1356`→**`:1368`** — and `:833` is now the **positive control** Session
+     229 inserted ahead of the two 404 assertions, because a retired site 404s every path.
+  2. **Phase 2's `-fL` advice does not work**, measured in Session 229: a pipeline reports its
+     **last** command's status, so `-f` on a piped `curl` is invisible and the vacuous pass survives
+     its own prescription. Phase 2's table still carries the original wording because that phase is
+     closed and its table is now a record; the correction is attached to dragon 1, where a reader
+     consulting the fail-open finding will actually meet it.
+  3. **The dragon's own "recommended repair" is unsatisfiable**, and nobody had measured it: scoping
+     the bare-name grep to `scripts/`, `.githooks/`, `mkdocs.yml` and `tests/` returns **336 lines
+     across 74 files** (286 of them the import package's own `from model_project_constructor`
+     imports). That is the identical objection the dragon raises against the fifth-alternative fix.
+     The measurement and the path set that *does* work are now in the dragon, and the restatement it
+     implies is flagged to the operator rather than made here.
+- **This document's own line-number self-citations were removed rather than updated.** Two draft
+  sentences cited `:411` (D-R5's hard-fail line) and `:538` (Phase 1's rollback note) by number.
+  Both are now cited by **section name**, because both numbers moved **twice** inside this one
+  session as the repair grew — the second time after the replacement text had already been written,
+  which is how the first version of this very bullet shipped two wrong "now" values. Session 229's
+  handoff evaluation named the pattern: numbers carrying an *assertion* stay right; numbers that are
+  merely *navigational* drift. **Inside this file, prefer a section name or a `grep -n` to a line
+  number** — it grew by over 300 lines in this session, so every pre-existing self-citation is off
+  by at least that much.
+- **Two more drifted citations into other files**, same class as dragon 1's: dragon 9 sent the
+  reader to `enterprise-migration.md:1436` for dragon #21 there, which is inside **dragon #20**
+  (#21 is `:1449`); and dragon 6 cited `BACKLOG.md:508-513` for the operator's underscore ruling.
+  Dragon 9's is corrected with a `grep -n` beside it. **Dragon 6's and §7.4's now carry NO line
+  number at all**, and the reason is worth recording: the first fix re-pinned them to fresh
+  `BACKLOG.md` numbers measured at `HEAD` — and this same session's `BACKLOG.md` edit then shifted
+  both by 28 lines, so the "corrected" citations were stale in the commit that shipped them. **A
+  line number into a file the current session is also editing is stale before it is written.** Both
+  are now quoted section names, which `grep` finds and no edit moves.
+- **Phase 4's rename criterion was wrong three ways, and it took two passes to get right.** It read
+  `git diff --stat HEAD~1 -M   # -> the 25 pages show as pure renames (R100)`.
+  1. **Phase 4's own step 2 contradicts it** — that step edits one path line in each of
+     `Evolution.md`, `License.md` and `Contributing.md` in the same commit, so 3 of the 25 cannot be
+     pure renames.
+  2. **`git diff --stat` never prints a similarity code at all.** Measured 2026-08-20 in a scratch
+     repo reproducing Phase 4's exact shape: `git diff --stat -M | grep -c R100` → **0**; `--stat`
+     renders a rename as `docs/wiki/{claims-model-starter => model_project_constructor}/Foo.md | 0`.
+     The command is now `git diff --name-status -M`, which prints **22 R100 + 3 R09x**.
+  3. **The obvious repair was also wrong**, and the first draft of this bullet shipped it: *"none of
+     the 25 may appear as delete+add, which is what a missing `git mv` looks like."* Measured — `-M`
+     detects renames from **content similarity**, so a hand-rolled delete+add of identical files
+     reports **25 R100** with no `git mv` anywhere. The criterion can witness that the pages moved
+     intact; it cannot witness which command moved them, and it now says so.
+
+- **The §7.2 exemption needed a THIRD assertion, not two.** Group 3 exempts
+  `enterprise-migration.md` wholesale, and assertion (ii)'s first `grep -v` removes the dual-purpose
+  `diff -r` line **by construction** — so between them, no §7 command could see the one line §3.3
+  itself calls a trap. Phase 5's new "leave every §3.3 line alone" made it worse by telling the
+  executor not to touch it. Assertion **(iii)** now pins that line specifically, §3.3's "correct
+  forever" is qualified to "16 of the 17", and Phase 5's clause carries the exception. **An exemption
+  is only as good as the assertion traded for it, and a filter written to make the arithmetic work
+  can silently remove the case you most needed to check.**
+- **`enterprise-migration.md:345` was owned by no phase.** §7.2 (ii)'s comment assigned it to Phase
+  4's commit — correctly, since that commit rewrites the `publish_wiki.sh:72`/`:75` guard the line
+  describes — but Phase 4's own step 2 scoped that file to "the 17 path lines" and told the executor
+  *"do not re-touch"* its other lines as already handled in Phase 2, which was false for `:345`.
+  Phase 4's bullet now names it explicitly.
+- **Phase 5's DONE gate went green while `publish_wiki.sh` was healthy but "broken".** A draft of
+  §7.2's verdict made assertion (i) unconditional, so running the mandatory block at the start of
+  Phase 3 — as the ledger instructs — would have failed a correct file that legitimately still has
+  all 10 lines. Both verdicts are now phase-relative, and the warning names the dangerous "fix"
+  (applying Phase 4's edit early, which disables publishing).
+
+**Found and deliberately NOT fixed** — outside this repair, filed so they are not re-discovered:
+
+- **Dragon 9** says *"`master` is currently 2 commits ahead of `origin/master` (`2033e95`,
+  `59615e2`). Push before Phase 1"*. Plan-time truth; it was **7 ahead at `be3bc4a`** and Phase 1
+  has long since run, unpushed. The instruction is moot rather than dangerous, and the count moves
+  every commit — do not re-pin it without an anchor. Phase 5's reconciliation owns it.
+- **The three independence-pattern greps in `enterprise-migration.md`** (`:363`, `:1319`, `:1363`).
+  Dragon 1 forbids rewriting another plan's criteria, and the repair needs an operator ruling on
+  restating the criterion as *"no name other than the clone's own"*. The flag is in `BACKLOG.md`.
+- **`enterprise-migration.md:1372`'s `--json isPrivate,archived`** — `archived` is not a `gh repo
+  view` field (`isArchived` is), so that C5 criterion has never been able to pass. Pre-dates the
+  rename. One word, outside the five lines dragon 1 authorises.
