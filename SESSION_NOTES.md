@@ -128,6 +128,14 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 233 Did
+**Deliverable:** Phase 4 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
+— the wiki source-directory `git mv` and the mechanisms that key on it. **One commit + one
+out-of-repo change** (the wiki clone's `origin` URL). (IN PROGRESS)
+**Started:** 2026-08-20
+**Status:** Session claimed. Work beginning. Nothing technical done yet — this stub is the only
+change in this commit, per the two-commits rule.
+
 ### What Session 232 Did
 **Deliverable:** **Phase 3 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
 — COMPLETE.** The published wiki is rebranded and **live to readers**. Eight lines across five pages;
