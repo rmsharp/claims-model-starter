@@ -80,6 +80,28 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 229 Did
+**Deliverable:** **Phase 2 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)** (`:545-590`)
+— inert prose plus the other plans' broken assertions. (IN PROGRESS)
+**Started:** 2026-08-20
+**Status:** Session claimed. Work beginning.
+
+**Scope, as the plan states it:** `SECURITY.md:9` (advisory URL), `CONTRIBUTING.md:6` (Contributing
+wiki-page URL), and `docs/planning/enterprise-migration.md` — the five `curl` acceptance criteria
+that the rename turned into vacuous passes or a false failure (dragon 1: `:831`, `:832`, `:833`,
+`:1356`, `:1520`, adding `-fL`), the two `# → unchanged, still the public wiki` comments
+(`:1311`, `:1358`), the clone-independence pattern (`:363`, `:1308`, `:1351` — dragon 1's sixth
+item), and the reword — **not** deletion — of the `re-remote` prohibition at `:1256-1257` and
+dragon #21 at `:1436-1439`.
+
+**Entry state, measured not assumed:** working tree clean at `798abf1`, `master` 3 commits ahead of
+`origin/master`. §7.2's allowlist prints **17** paths, exactly as Session 228 recorded. `uv run
+pytest -q` → 1230 passed, 9 skipped.
+
+**Fires nothing.** No file in scope is on `publish-tutorial.yml`'s trigger list (`docs/*.md`,
+single-level) and none is under `docs/wiki/`, so neither the Pages deploy nor the post-commit wiki
+hook can fire.
+
 ### What Session 228 Did
 **Deliverable:** **The THIRD trim of `SESSION_NOTES.md` — COMPLETE.** Sessions 224 → 221 (891 lines,
 4 records) are archived into
