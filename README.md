@@ -122,9 +122,11 @@ docs/architecture-history/              # archived plans (concept-era + delivere
   SESSION_NOTES-S220-through-S217.md.verify.sh  # same, for the second trim; adds an L4 pinning the cut point
   SESSION_NOTES-S224-through-S221.md    # frozen SESSION_NOTES records, Sessions 224->221 (grep it; do not Read it)
   SESSION_NOTES-S224-through-S221.md.verify.sh  # same, for the third trim; adds an L5 pinning the routing tables
+  SESSION_NOTES-S227-through-S225.md    # frozen SESSION_NOTES records, Sessions 227->225 (grep it; do not Read it)
+  SESSION_NOTES-S227-through-S225.md.verify.sh  # same, for the fourth trim; adds L8 (the copies outside every earlier proof) and L9 (write-once for all four shards)
 SESSION_RUNNER.md                       # per-session operating procedure
 SAFEGUARDS.md                           # commit discipline and blast-radius rules
-SESSION_NOTES.md                        # session-by-session continuity log (newest 4 sessions; older in the three shards above)
+SESSION_NOTES.md                        # session-by-session continuity log (newest 4 sessions; older in the four shards above)
 ```
 
 ## Getting started
