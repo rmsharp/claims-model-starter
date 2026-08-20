@@ -80,6 +80,12 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 231 Did
+**Deliverable:** Fourth trim of `SESSION_NOTES.md` — archive the oldest retained records into a
+fourth write-once shard under `docs/architecture-history/` with its own proof script (IN PROGRESS)
+**Started:** 2026-08-20
+**Status:** Session claimed. Work beginning.
+
 ### What Session 230 Did
 **Deliverable:** **Repair `docs/planning/repository-rename.md` — COMPLETE.** All six filed items,
 **plus a seventh and eighth the repair itself uncovered — one of them fail-dangerous.** **No phase
