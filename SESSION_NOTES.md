@@ -234,6 +234,21 @@ showed `HEAD` and the clone both untouched.
 §7.4 wants it re-pointed. **Not touched:** Phase 4's declared out-of-repo change is exactly one clone,
 the wiki's. Re-pointing a second would be bundling. It is Phase 5's, and it is in the handoff below.
 
+#### The push — what fired, measured not predicted
+
+`8fa7901..b13d970`, all three commits. **CI fired and passed** (run `32429848248`) — all four jobs
+green: mypy, pytest, ruff, and the data-agent decoupling test. **Publish Tutorial did NOT fire** —
+still Phase 1's run `32335373755` from 2026-08-20T05:22:48Z, which is correct: its path filter is
+`docs/*.md` (**single level**), and this session's `docs/` edits are all two or more levels deep
+(`docs/wiki/**`, `docs/style/`, `docs/methodology/`, `docs/planning/`). Nothing matched.
+
+**The wiki clone did not move on the close-out commit or on the push** — still `d85cc67`, where
+Phase 4's publish left it. That is **K4 working as a live negative control**: the close-out touches
+no `docs/wiki/**`, so the trigger must not fire, and it did not. Together with the positive fire on
+`1865fc2` and the extracted-pattern test, the trigger is now proved in all three directions —
+**fires on wiki content, does not fire without it, and matches a future-shaped path** (learning
+[#133](PROJECT_LEARNINGS.md)).
+
 ### Session 232 Handoff Evaluation (by Session 233)
 
 **Score: 9/10.** Nine gotchas, every one of them load-bearing, and I hit exactly the one trap it
