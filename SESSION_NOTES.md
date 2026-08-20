@@ -129,12 +129,224 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 233 Did
-**Deliverable:** Phase 4 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
-— the wiki source-directory `git mv` and the mechanisms that key on it. **One commit + one
-out-of-repo change** (the wiki clone's `origin` URL). (IN PROGRESS)
-**Started:** 2026-08-20
-**Status:** Session claimed. Work beginning. Nothing technical done yet — this stub is the only
-change in this commit, per the two-commits rule.
+**Deliverable:** **Phase 4 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
+— COMPLETE.** The wiki source directory is renamed and every mechanism that keys on it moved with it,
+atomically. The hook fired on its own, published, and **pushed**; the live public wiki was read back
+over HTTP and shows exactly the three intended lines changed and nothing else. **No other phase ran.
+Phase 5 is next, and it is the last one.**
+
+**Started / completed:** 2026-08-20. **Commits: three** — `894c5fc` (the Phase 1B claim, alone),
+`1865fc2` (the whole phase, one atomic commit), and this close-out. **Operator this session:**
+*"phase 4"*.
+
+Documentation and path strings only, so **no `CHANGELOG.md` entry** — the plan settles this in §5 on
+`PROJECT_CONVENTIONS.md` §2's cadence gate. Every `scripts/` and `tests/` edit here is a path string.
+
+#### What changed — one commit, 36 paths
+
+| Thing | Detail |
+| --- | --- |
+| `git mv` | `docs/wiki/claims-model-starter` → `docs/wiki/model_project_constructor`, 25 pages |
+| `scripts/publish_wiki.sh` | **7 changed** (`:2 :11 :23 :44 :63 :72 :75`); **3 KEPT forever** (`:19 :24 :42`, the D-R5 clone path); `:101` untouched |
+| `.githooks/post-commit` | `:3`, `:18` — trigger prefix, **underscores** |
+| `tests/test_wiki_no_line_citations.py` | `:7`, `:38` — `:38` assembles the path from parts (dragon 11 / K6) |
+| Prose paths | `THIRD-PARTY-LICENSES:50`, `docs/style/statistical_terms.md` ×4, `PROJECT_CONVENTIONS.md` ×4, `stakeholder-readiness-dossier.qmd` ×2, `opencode-adapter-spec.md` ×4, `httpx-adapter-migration.md` ×2 |
+| `enterprise-migration.md` | **17 path lines** (incl. the dual-purpose `diff -r` line) **+ `:345`**, the coupling row this commit falsifies |
+| Wiki pages | `License.md:3`, `Contributing.md:124`, `Evolution.md:266` — the three that make this commit publish |
+| `CLAUDE.md` | new seam subsection: `SESSION_RUNNER.md:209` is now stale and **must not be edited** (dragon 8) |
+| **`BACKLOG.md:74`** | **added by pre-commit review** — see below |
+| **`Evolution.md:266` count** | **added by pre-commit review** — 22 → **24** |
+
+**Out of repo, no commit:** the clone's origin → `model_project_constructor.wiki.git`. D-R5 = re-point
+**in place**, so `~/Development/claims-model-starter.wiki` **did not move** and `:42` did not change.
+
+#### The pre-commit review earned its keep, and it caught a real miss
+
+**14 agents, 5 lenses, 1.08M tokens, 8 findings, 3 survived refutation, 2 distinct must-fixes after
+adjudication.** Both were things I had staged wrong, and both are now in `1865fc2`:
+
+1. **`BACKLOG.md:74` was missing from the commit.** The plan assigns it to Phase 4 **twice** — §3.2(e)
+   (*"Exactly one is a genuine substitution … which moves with the directory in Phase 4"*) and Phase
+   5's checklist (*"it should already have been done in Phase 4 — verify, do not assume"*) — and
+   **Phase 4's own step-2 bullet list omits it.** I drove from the checklist. Two live
+   `docs/wiki/claims-model-starter/*.md` citations inside the *unrelated* OpenCode item would have
+   become 404s, and **no automated check in the plan can see it**: §7.2 exempts `^BACKLOG\.md$`
+   wholesale, and Phase 4's residue grep covers only `scripts/ tests/ .githooks/`. Two of five lenses
+   found it independently. Learning [#132](PROJECT_LEARNINGS.md). **Phase 5's "verify, do not assume"
+   for this line is discharged** — `grep -n 'docs/wiki/claims-model-starter' BACKLOG.md` now returns
+   only the rename item's own six rows (`:507 :647 :665 :672 :699 :715`), which die by row deletion.
+2. **`Evolution.md:266`'s page count.** §3.2(c) ends *"Fix the count while you are in the line."* I
+   read Session 232's gotcha 7 (*"is 24, not the plan's 25 … filed in BACKLOG.md"*) as a **deferral**
+   when it was an **erratum** — a correction to a number I was supposed to write. Measured rather than
+   copied (`ls docs/wiki/model_project_constructor/ | grep -vc '^_'` → **24**) and shipped as 24.
+   Learning [#134](PROJECT_LEARNINGS.md). Session 232's filed defect **#2 is now half-discharged**: the
+   *page* is correct; the *plan's* §3.2(c) still prescribes 25 and that repair is still Phase 5's.
+
+**Refuted and correctly so:** the learning-#129 hole in Phase 4's verification block (already filed by
+Session 232, owned by Phase 5 — and I had already applied its two commands by hand), and three
+findings against the plan's prose rather than the staged diff. **The read-only prohibition block held
+again** — 14 agents in a repo where `git commit` publishes to a public website; the audit mid-run
+showed `HEAD` and the clone both untouched.
+
+#### Verification — every prediction the plan makes, plus three checks it does not
+
+| Check | Result |
+| --- | --- |
+| §7.2 cmd 1, pre-flight | **11** — exactly the ledger's prediction; **nothing appeared** |
+| §7.2 (i) pre-flight | **10** ✓ (correct *before* Phase 4; `0` or `3` here would be broken) |
+| §7.2 (ii) pre-flight / (iii) | **20** / exactly **1** ✓ |
+| `git mv` shape | **22 R100 + 3 R09x**, the 3 being License/Contributing/Evolution; **no `A`/`D` pairs** |
+| Hook fired | `733b3ca` → **`d85cc67`** ✓ |
+| Clone's published diff | **3 files, 3 insertions, 3 deletions.** The 25 renamed files **did not appear** — `rsync` copies *contents* of `SOURCE_DIR`, so the directory name never reaches the clone |
+| Publisher idempotent | *"no changes to publish"* ✓ |
+| Source vs clone parity | identical ✓; clone still **25** files |
+| §7.2 cmd 1 at `HEAD` | **0** ✓ |
+| §7.2 (i) at `HEAD` | exactly **3** — `:19 :24 :42` ✓ |
+| §7.2 (ii) at `HEAD` | **3**, all Phase 5's (`:919 :1250 :1372`) ✓ |
+| §7.2 (iii) at `HEAD` | NEW name left, **OLD name right** ✓ — §3.3 trap 1 |
+| Residue in `scripts/ tests/ .githooks/` | empty ✓ (path-anchored exclusion, not `--exclude`) |
+| Hook literal read back | old-name **0**, underscore trigger **1**, hyphen typo **0** ✓ |
+| `uv run pytest -q` | **1230 passed, 9 skipped** — unchanged from Sessions 230/231/232 |
+| `uv run ruff check` | clean ✓ |
+| **Added:** `push --dry-run` **before** the commit | *"Everything up-to-date"*, exit 0 — learning [#129] |
+| **Added:** `rev-list --count origin/master..master` on the clone | **0** — nothing stranded |
+| **Added:** the live wiki over HTTP | License/Evolution/Contributing all **200**, new path **1** each, **old path 0** each; the live Evolution page reads **"24 outward-facing wiki pages plus the sidebar"** |
+
+**Two checks the plan does not contain, invented here, and one of them matters.**
+
+- **Dragon 2's fail-closed state was *observed*, not assumed.** Between the `set-url` and the commit,
+  `scripts/publish_wiki.sh` was run deliberately: exit **1**, loud, naming both the actual and the
+  expected origin. One command turns the plan's central safety claim into a measurement.
+- **A forward-looking trigger test, because *"HOOK FIRED"* cannot prove the prefix is right.**
+  `git diff-tree` (no `-M`) lists a rename as **both** paths — verified here against `e1bf7c2` — so on
+  *this* commit the hook fires whether `:18` says the new name **or the stale old one**. The plan knows
+  and says *"read the literal back out of the file"*, but that is an eyeball. Instead the pattern was
+  **extracted from the file and run**:
+  `PAT=$(sed -n '18p' .githooks/post-commit | sed "s/.*grep -q '\([^']*\)'.*/\1/")` → matches
+  `docs/wiki/model_project_constructor/Home.md` ✓, does **not** match `SESSION_NOTES.md` ✓, does **not**
+  match the old path ✓. The negative controls are the half that catches a stale prefix. Learning
+  [#133](PROJECT_LEARNINGS.md).
+
+#### One fact found, not fixed
+
+**§7.4 check 3: `~/Development/mpc_tests/model_project_constructor` still has the OLD origin**
+(`https://github.com/rmsharp/claims-model-starter.git`). It works — GitHub redirects git remotes — but
+§7.4 wants it re-pointed. **Not touched:** Phase 4's declared out-of-repo change is exactly one clone,
+the wiki's. Re-pointing a second would be bundling. It is Phase 5's, and it is in the handoff below.
+
+### Session 232 Handoff Evaluation (by Session 233)
+
+**Score: 9/10.** Nine gotchas, every one of them load-bearing, and I hit exactly the one trap it
+worded ambiguously.
+
+**What helped.**
+- **Gotcha 1 was worth the whole handoff.** It told me Phase 4's verification block carries the defect
+  Session 232 had just filed, and named the three commands that close it. I ran `push --dry-run`
+  before the commit and `rev-list --count` + `curl` after — and because of that this phase's success
+  was proved against the public artifact rather than a local mirror. Without it I would have run the
+  plan's block as written and reported green off a check that cannot see a stranded push.
+- **Gotchas 2, 3, 5 and 6 are the four ways to break this phase**, and each named the *silent* failure
+  mode rather than the loud one: `mkdir` → the publisher empties the public wiki; hyphen → the hook
+  exits 0 forever; `:42` → hard-fail at `:58`; the assembled `WIKI_DIR` → the one line whose omission
+  reddens the suite. All four correct, all four avoided.
+- **Gotcha 8's *"a path appearing means drift; a path leaving means a phase working"*** turned the
+  §7.2 pre-flight from a re-derivation into one command. It predicted **11** and printed 11.
+- **The "What's next" block named the plan section by `grep` pattern, not line number**, so nothing
+  had to be re-derived after this session's own edits moved things.
+
+**What was wrong: one thing, and it cost me a defect.** Gotcha 7 — *"`Evolution.md:266` is `24`, not
+the plan's `25`. Filed in `BACKLOG.md`; do not paste the plan's number."* — is ambiguous between *"do
+not do this, it is filed"* and *"do this, with 24"*. It is the latter: §3.2(c) says **"Fix the count
+while you are in the line"** and the filed defect's own text presumes the executor acts. I read it as a
+deferral. **The handoff would have been unambiguous with four more words:** *"Do fix it in Phase 4;
+write 24."* Learning [#134].
+
+**What was missing:** nothing else I can name. Everything I needed beyond the above was in the plan.
+
+**ROI: very high.** ~6 minutes to read; it supplied the two verification commands that make this
+phase's success provable and steered me clear of four silent failure modes.
+
+### Session 233 Self-Assessment
+
+**Score: 8/10.** The phase the plan calls its riskiest landed clean, published live, and every
+prediction it makes was tested and held. But the two defects in my staged commit were both found by a
+review rather than by me, and one of them was an instruction I had read and misclassified.
+
+**+** **I converted the plan's central safety claim into a measurement.** Running the publisher in
+the fail-closed window cost one command and is the only evidence dragon 2 is true rather than believed.
+**+** **I found that the phase's headline proof is blind to the failure it exists to catch**, verified
+the mechanism against a real rename commit in this history, and replaced an eyeball with an executable
+test carrying negative controls. That is the session's one reusable artifact.
+**+** **Assert-then-replace over 49 substitutions.** Every edit asserted its target substring was
+present on the exact line before writing, and asserted no line count changed — which is what kept the
+`publish_wiki.sh:N` citations in `enterprise-migration.md`'s coupling table valid.
+**+** **I measured `24` instead of copying it** from either the plan (25) or the review (24).
+**+** **I did not bundle.** The `mpc_tests` clone's stale origin was found, verified, and left for
+Phase 5 with a note. Phase 4's out-of-repo change is one clone.
+
+**−** **I drove the sweep from Phase 4's checklist instead of from §3's classification**, and the plan
+disagrees with itself between the two. The classification is derived from measurement; the checklist is
+prose. I had read §3.2(e) — it is the same paragraph I used to justify *not* `sed`-ing `BACKLOG.md` —
+and did not reconcile it against the bullet list I was executing. Learning [#132] is a rule I violated
+before writing it, which is the second session running that has said that sentence.
+**−** **I misclassified a handoff gotcha and shipped the omission into the staged diff.** Two greps
+would have settled it.
+**−** **Both must-fixes came from the review, again.** Session 232 wrote the same minus. The review is
+now reliably finding one real defect per phase, which is good — and it means the executor's own
+pre-commit reading is reliably missing one.
+
+**Against the bar:** S229 refuted a dragon's own prescriptions by measurement; S230 fixed a class
+rather than an instance; S231 raised a proof from 8 assertions to 10; S232 proved a publish against the
+public artifact. This session did the S229 move twice — once on dragon 2 (fail-closed, observed) and
+once on Phase 4's own proof (blind to a stale prefix, and given a test that is not) — and it is the
+first phase of this rename to correct a defect **in the plan's phase checklist** rather than only in
+its prose. It did not build anything with a `--self-test`.
+
+**What's next: Phase 5 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)**
+— *"Reconcile, classify the residue, close the item. **One commit.**"* Find it with
+`grep -n '^### Phase 5'`; **do not cite it by line number.** **This is the last phase.** It is a
+reconciliation, not a mechanism change — nothing in it publishes and nothing in it is irreversible.
+
+**Key files:**
+- `docs/planning/repository-rename.md` — Phase 5, and **§7.2 and §7.3 and §7.4 are its DONE gate.**
+  Also its own `:3` status line, which Phase 5 flips from `IN EXECUTION` to executed.
+- `BACKLOG.md` — the rename item's rows are **deleted, not substituted** (§3.2(e)); the two
+  Session-232 defect entries and the three Session-229 flags live in the same block.
+- `docs/planning/enterprise-migration.md` — the **3** remaining hits (`:919`, `:1250`, `:1372`).
+- `README.md:7` — Phase 5 re-reads it end to end; it was rewritten in Phase 1 with the site down.
+- `PROJECT_LEARNINGS.md` — **134 learnings**; #132–#134 are this session's.
+
+**Gotchas:**
+1. **§7.2 command 1 is already `0`.** The ledger predicts 0 only "after Phases 3, 4 and 5", but all 11
+   remaining paths were Phase 4's, so it arrived a phase early. **That is not drift.** Commands (ii)
+   and (iii) are what still move: (ii) is **3** and must reach **0**; (iii) must keep the **NEW** name
+   on the left and the **OLD** name on the right, forever.
+2. **`scripts/publish_wiki.sh` must still print exactly 3** (`:19`, `:24`, `:42`) at the end of Phase 5.
+   **`0` is broken at every point in this plan's life** — it means a sweep drove out the D-R5 clone
+   path and the script now dies at its own `:58` guard.
+3. **`BACKLOG.md:74` is done.** Phase 5's *"verify, do not assume"* for it is discharged — verified
+   `grep -n 'docs/wiki/claims-model-starter' BACKLOG.md` returns only the rename item's own six rows.
+   Do not re-substitute; **delete those rows**. **One of those rows is now factually stale and was
+   deliberately left alone:** the plain-language index row (`BACKLOG.md:51`) still opens *"GitHub
+   still says `claims-model-starter`"*, which Phase 1 falsified. It is one of §3.2(e)'s 17
+   self-referential hits, so it dies by **deletion**, not substitution — editing it in Phase 4 would
+   have been a substitution the plan forbids. Only its status column was updated.
+4. **Session 232's filed defect #2 is only half done.** `Evolution.md:266` now says **24** on the live
+   wiki. The *plan's* §3.2(c) still says *"there are 25"* — repair it to *"there are 24 (25 files, one
+   of which is `_Sidebar.md`)"*. Defect #1 (the publish proof) is still wholly Phase 5's.
+5. **`~/Development/mpc_tests/model_project_constructor` still points at the old origin** —
+   §7.4 check 3. Re-point it, or record why not. It is out of repo; no commit re-points it.
+6. **Nothing in Phase 5 should publish.** If the post-commit hook fires during Phase 5, something under
+   `docs/wiki/model_project_constructor/` was touched that should not have been — stop and look.
+7. **The `Changelog.md` allowlist line uses `[^/]+` on purpose** and now resolves against the *new*
+   directory. Do not "tidy" it into a fixed path.
+8. **The trim threshold is close.** This file is **1,481 lines** after this record — under
+   `CLAUDE.md`'s **1,500** trigger, so **no trim fired this session**. The next record will almost
+   certainly cross it. **Do not bundle a trim into Phase 5** — `CLAUDE.md`'s *"two commits, always"*
+   rule makes a trim its own session, and a trim commit containing a record edit holds the proof red
+   forever. If the next session's task is Phase 5, close out over the threshold and let a **fifth
+   trim** be its own session; re-derive the L8 copy list with `git grep -l 'SESSION_NOTES-'` when it is.
+9. **Still zsh. Single-quote every heredoc delimiter** — eleventh session running that this has been free.
 
 ### What Session 232 Did
 **Deliverable:** **Phase 3 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
