@@ -48,7 +48,7 @@ rows below it are the smaller residue that closing it exposed.
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
 | `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives, Session 228 a third and Session 231 a fourth** (933 and 790 lines) — the three newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
-| Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. **Planned in Session 226 — see [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).** The real sweep is **97 lines / 23 files** (666/51 total at `59615e2`; 552/28 are frozen records that keep the old name, and **17 more across 2 files keep it forever** because they name a local directory GitHub's rename does not move — the plan's new §3.3). Both earlier counts — 644/50 and 667/52 — were wrong. | **UNBLOCKED — all five decisions answered by the operator 2026-08-20** (plan §4): accept the permanent 404 (option A), rename the wiki directory, rebrand its titles, rename before the enterprise fork, re-point the clone in place. **Phases 1 and 2 of 5 executed** (Sessions 227, 229). **Session 230 repaired the plan itself** — two fail-dangerous instructions that would have broken wiki publishing, and a DONE gate that could never go green; no phase ran. **Phase 3 is next.** Three flags against `enterprise-migration.md` are still open and still need an operator ruling. The worst remaining hazard is `.githooks/post-commit:18`, which fails **open and silent** (plan dragon 4) — it bites in Phase 4. |
+| Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. **Planned in Session 226 — see [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).** The real sweep is **97 lines / 23 files** (666/51 total at `59615e2`; 552/28 are frozen records that keep the old name, and **17 more across 2 files keep it forever** because they name a local directory GitHub's rename does not move — the plan's new §3.3). Both earlier counts — 644/50 and 667/52 — were wrong. | **UNBLOCKED — all five decisions answered by the operator 2026-08-20** (plan §4): accept the permanent 404 (option A), rename the wiki directory, rebrand its titles, rename before the enterprise fork, re-point the clone in place. **Phases 1, 2 and 3 of 5 executed** (Sessions 227, 229, 232). **Session 230 repaired the plan itself** — two fail-dangerous instructions that would have broken wiki publishing, and a DONE gate that could never go green; no phase ran. **Phase 3 published the rebranded wiki live to readers** (Session 232, `f58948a`); the §7.2 allowlist went **13 → 11**. **Phase 4 is next, and it is the riskiest** — it is where `.githooks/post-commit:18` bites. **Session 232 filed two defects against the plan itself, both for the Phase 4/5 executor — see the sub-section below.** Three flags against `enterprise-migration.md` are still open and still need an operator ruling. The worst remaining hazard is `.githooks/post-commit:18`, which fails **open and silent** (plan dragon 4) — it bites in Phase 4. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
 | A bad `--db-url` fails silently | Filed Session 223. `connect()` builds a message naming the exact cause; the next line catches the error **without binding it** and throws the message away. The run then reports `COMPLETE` and exits 0 with **every quality check unexecuted**. A typo'd port, an unexported shell variable, and a genuine warehouse outage produce byte-identical reports. | Pre-existing and wider than the S223 fix — **not** a reason to revert it. The cheapest two-thirds is small; the third option changes when a pipeline run is allowed to "succeed" and needs an operator ruling. |
@@ -493,12 +493,45 @@ have shards under `docs/archive/`.
 **✅ PLANNED — Session 226 (2026-08-19). The plan is [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).**
 Read it instead of this section: it supersedes every number and every dragon below.
 **Execution is UNBLOCKED — the operator answered all five decisions on 2026-08-20** (plan §4:
-option A, yes, yes, rename-first, in-place). **Phase 1 of 5 ran in Session 227.** Headline finding the section below
+option A, yes, yes, rename-first, in-place). **Phases 1, 2 and 3 of 5 have run** (Sessions 227, 229, 232). Headline finding the section below
 does not contain: **GitHub does not redirect Pages project-site URLs**, so
 `https://rmsharp.github.io/claims-model-starter/tutorial/` (advertised at `README.md:9`) **404s
 permanently** the moment the rename lands — measured against two real renames, not just documented.
 The real sweep is **114 lines across 23 files**, not 667. Both previously filed counts were wrong;
 the recount in `2033e95` is reproducible at no commit.
+
+#### ⚠ Defects filed by Phase 3 (Session 232) against `repository-rename.md` itself — for the Phase 4/5 executor
+
+Both were found by an adversarial pre-publish review of the Phase 3 diff and **reproduced against the
+source** before filing. Neither was fixed in Phase 3: both are `docs/planning/` edits, and Phase 3's
+declared blast radius is `docs/wiki/claims-model-starter/**` only. **They belong in the Phase 5
+plan-repair/residue commit** (or a dedicated repair session, as Session 230 was) — not bundled into
+Phase 4.
+
+**1. The publish proof cannot see the live wiki — Phase 3's block and Phase 4's identical one.**
+`scripts/publish_wiki.sh` commits into the clone and *then* pushes; on push failure it **exits 2 with
+the local commit left in place** (its own header documents this). Every command in both phases'
+verification blocks reads local state only — `rev-parse HEAD` on the clone, a publisher re-run, a
+local-vs-local `diff -r`, a Pages `gh run list` — so in that state all of them go **green while the
+live wiki is stale**, and the `BEFORE != AFTER` check reports *"HOOK FIRED AND PUBLISHED"*. The
+plan's stated recovery (*"re-run `publish_wiki.sh`, it is idempotent"*) is **inert** there: the re-run
+short-circuits at *"no changes to publish"*, exits 0, and never retries the push. `grep -ci 'push
+fail'` over the whole plan returns **0** — dragon 2's *"every guard exits 1 and changes nothing"*
+enumeration never models the exit-2 path. **Repair:** in both blocks, pre-flight with
+`git -C ~/Development/claims-model-starter.wiki push --dry-run origin master` and replace the
+local-HEAD assertion with `[ "$(git -C <clone> rev-list --count origin/master..master)" = 0 ]` plus a
+`curl` of the live page; add the exit-2 path to dragon 2. Learning
+[#129](PROJECT_LEARNINGS.md). *(Session 232 ran the added checks by hand and Phase 3 passed all of
+them — the defect is in the plan's proof, not in what Phase 3 published.)*
+
+**2. The Phase 4 instruction for `Evolution.md:266` prescribes the wrong count.** The plan says the
+page *"says '22 outward-facing wiki pages'; there are 25."* The page says **"22 outward-facing wiki
+pages plus the sidebar"** — the quotation stops one clause short, and that clause is the convention.
+`git ls-tree` at the commit that wrote the 22 shows **23** files including `_Sidebar.md`, so 22 was
+correct when written; two pages have been added since, making the right value **24**. The plan's
+other 25s are total files, sidebar included — a different quantity. An executor obeying the line as
+written lands off by one instead of off by two. **Repair:** *"there are 24 (25 files, one of which is
+`_Sidebar.md`)"*. Learning [#131](PROJECT_LEARNINGS.md).
 
 #### ⚠ Flags raised by Phase 2 (Session 229) — addressed to the owner of `enterprise-migration.md`
 
