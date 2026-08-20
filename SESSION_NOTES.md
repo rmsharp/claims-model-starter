@@ -198,6 +198,49 @@ carried the same "one policy" over-reach I shipped, so both were corrected.
 `scripts/` or `tests/` **logic**, and this session changed `tests/` logic. (S222's and S224's trims
 took no entry because they touched none of those; do not read this as a cadence change.)
 
+**⚠ OPERATOR RULING (2026-08-19, after this session closed out) — the next session is the
+repository rename, and it is a PLANNING session.**
+
+> *"set rename of repository as the next session ; it may take a planning session because of the
+> blast radius of a rename"*
+
+**Do not start renaming anything.** The deliverable is `docs/planning/repository-rename.md` —
+a plan document with a **freshly re-derived** evidence-based inventory and per-phase completion
+criteria. Then close out. Execution is a separate session (FM #18; `SAFEGUARDS.md`: "renames cascade,
+they are never quick"; and "never rename/move files as part of a quick fix").
+
+**The filed inventory is STALE — re-run it, do not inherit it.** `BACKLOG.md`'s table was counted
+2026-08-17 (Session 221) at **644 hits across 50 tracked files**. Today the same patterns give
+**667 across 52**. Four sessions of `CHANGELOG.md`, `SESSION_NOTES.md` and a second archive shard
+have landed since. `SESSION_RUNNER.md` is explicit that a plan listing files it did not search for is
+an assumption, not an inventory — and this one has already drifted 23 hits.
+
+**What the planning session must resolve, at minimum:**
+1. **The two traps that spring on the landing commit itself.** `scripts/publish_wiki.sh`'s remote-URL
+   guard greps for the literal `claims-model-starter.wiki` and **fails closed**, and
+   `.githooks/post-commit` triggers on the literal path `docs/wiki/claims-model-starter/`. The commit
+   that renames the wiki source directory is therefore the commit that disarms its own publisher.
+   Sequence this explicitly — which lands first, and what the recovery is if the hook fires mid-way.
+2. **`docs/wiki/claims-model-starter/` is a directory rename of 25 published pages** (509 of the
+   hits), and renaming it changes what auto-publishes. Decide whether the live GitHub Wiki is
+   republished from the new path, and what happens to the existing `claims-model-starter.wiki` clone
+   at `~/Development/`.
+3. **The historical/live split.** 418 of the 667 hits are inside `docs/architecture-history/`,
+   including **both** `SESSION_NOTES` shards — those **keep the old name** per the SR 11-7 → SR 26-2
+   precedent (`bfd9f36`). **Run `git show --stat bfd9f36` before starting** (learning #60). Note the
+   shards are write-once and one is 24,590 lines: `grep` them, never `Read` them.
+4. **One reference lives in a synced file that must not be edited** — find it, and decide the
+   customization-seam workaround rather than editing it.
+5. **The name form is underscores** and the three-convention divergence is deliberate: PyPI
+   distribution names stay hyphenated, the import package and repository are underscored. Do not
+   "fix" it.
+6. **`mkdocs.yml:3-5` moves the published Pages site URL.** Decide whether the old URL is left to
+   404, redirected, or is a GitHub-side automatic redirect — and note D6 (2026-07-27) keeps that site
+   public **indefinitely**, so a dead URL is a permanent dead URL, not a temporary one.
+
+**Everything below is the pre-existing ordering, now superseded as the next pick.** It stays because
+the rename is one session (planning) plus N (execution), and this is what follows.
+
 **What's next — the backlog moved.** One item closed, two filed. S223's ordering for what remains
 still stands and I am not re-deriving it:
 
