@@ -8,7 +8,7 @@
 
 The wiki is the outward-facing documentation; all other documentation in the repo root and `docs/` is internal to the iterative methodology.
 
-**Outward-facing:** `docs/wiki/claims-model-starter/*.md`. Audience is users and implementers of the generated project. Written in present tense, production-shape language. Freshness-tracked — pages should describe current behavior of the shipped pipeline.
+**Outward-facing:** `docs/wiki/model_project_constructor/*.md`. Audience is users and implementers of the generated project. Written in present tense, production-shape language. Freshness-tracked — pages should describe current behavior of the shipped pipeline.
 
 **Inward-facing:** everything else — repo-root `.md` files (`README.md`, `CLAUDE.md`, `CHANGELOG.md`, `BACKLOG.md`, `ROADMAP.md`, `SESSION_NOTES.md`, `SAFEGUARDS.md`, `SESSION_RUNNER.md`, `OPERATIONS.md`, `TROUBLESHOOTING.md`), the `docs/methodology/` framework, `docs/planning/` (and its archive), and any other `docs/` subdirectory except `docs/wiki/`. Audience is the maintainer and the iterative methodology's AI agents. Mixed freshness — some files are append-only historical logs (`SESSION_NOTES.md`, `CHANGELOG.md`), some are freshness-tracked state (`BACKLOG.md`, `ROADMAP.md`), some are point-in-time archives (see §3).
 
@@ -21,8 +21,8 @@ Three files answer three different questions. Each file carries a per-file opene
 | File | Audience | Cadence | Purpose |
 |---|---|---|---|
 | `CHANGELOG.md` (repo root) | Maintainer | Per behavior change | Commit-linked ledger. A session adds an entry when it changes shipped code or test logic (see "CHANGELOG cadence" below). Authoritative; when any summary disagrees, this file wins. |
-| `docs/wiki/claims-model-starter/Changelog.md` | Users and implementers | Release-shaped (episodic) | Audience-facing release summary. Grouped by implementation phase, not by session. Tone may evolve; detail level is curated. |
-| `docs/wiki/claims-model-starter/Evolution.md` | Onboarding readers, code-sharing context | User-requested only | Decision-arc narrative — "how the application grew from original concept to current state." Full rewrite each time; see §4. |
+| `docs/wiki/model_project_constructor/Changelog.md` | Users and implementers | Release-shaped (episodic) | Audience-facing release summary. Grouped by implementation phase, not by session. Tone may evolve; detail level is curated. |
+| `docs/wiki/model_project_constructor/Evolution.md` | Onboarding readers, code-sharing context | User-requested only | Decision-arc narrative — "how the application grew from original concept to current state." Full rewrite each time; see §4. |
 
 **Why three surfaces.** `CHANGELOG.md` answers *"what was committed?"*; `wiki/Changelog.md` answers *"what's new for me?"*; `wiki/Evolution.md` answers *"why is it like this?"*. A reader joining the project has no digestible narrative in the first two — the session log is too raw, the user changelog is too summary. Evolution fills that gap without polluting the other two.
 
@@ -41,7 +41,7 @@ Three files answer three different questions. Each file carries a per-file opene
 **Banner on every archived document.** Prepend at the top of each moved file:
 
 ```markdown
-> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on YYYY-MM-DD and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on YYYY-MM-DD and may not reflect current implementation. For current state, see `docs/wiki/model_project_constructor/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
 ```
 
 Replace `YYYY-MM-DD` with the date the document is moved (not the date it was written).

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Publish docs/wiki/claims-model-starter/ to the live GitHub Wiki by syncing
+# Publish docs/wiki/model_project_constructor/ to the live GitHub Wiki by syncing
 # into a local clone of the wiki repository, committing changes, and pushing
 # to origin. Idempotent: exits cleanly with "no changes to publish" when
 # source and clone are already in parity.
@@ -8,7 +8,7 @@
 #   scripts/publish_wiki.sh                  # manual invocation (always safe)
 #
 # Auto-publish (recommended): the .githooks/post-commit hook invokes this
-# script automatically when a commit touches docs/wiki/claims-model-starter/.
+# script automatically when a commit touches docs/wiki/model_project_constructor/.
 # Enable it once per clone with:
 #   git config core.hooksPath .githooks
 # Disable for a single commit with:
@@ -20,7 +20,7 @@
 #
 # Prerequisites:
 #   * The wiki clone must exist. Create it once with:
-#       git clone https://github.com/rmsharp/claims-model-starter.wiki.git \
+#       git clone https://github.com/rmsharp/model_project_constructor.wiki.git \
 #           ~/Development/claims-model-starter.wiki
 #   * git and rsync must be on PATH.
 #   * Ambient git authentication (SSH / credential helper / gh CLI) must be
@@ -41,7 +41,7 @@ fi
 
 WIKI_CLONE="${WIKI_CLONE:-$HOME/Development/claims-model-starter.wiki}"
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-SOURCE_DIR="$REPO_ROOT/docs/wiki/claims-model-starter"
+SOURCE_DIR="$REPO_ROOT/docs/wiki/model_project_constructor"
 
 for cmd in git rsync; do
     if ! command -v "$cmd" >/dev/null 2>&1; then
@@ -60,7 +60,7 @@ if [ ! -d "$WIKI_CLONE/.git" ]; then
 error: wiki clone not found at $WIKI_CLONE
 
 clone it first:
-  git clone https://github.com/rmsharp/claims-model-starter.wiki.git "$WIKI_CLONE"
+  git clone https://github.com/rmsharp/model_project_constructor.wiki.git "$WIKI_CLONE"
 
 or override the path:
   WIKI_CLONE=/path/to/your/clone $(basename "$0")
@@ -69,10 +69,10 @@ EOF
 fi
 
 WIKI_REMOTE="$(git -C "$WIKI_CLONE" remote get-url origin 2>/dev/null || echo "")"
-if ! echo "$WIKI_REMOTE" | grep -q 'claims-model-starter\.wiki'; then
+if ! echo "$WIKI_REMOTE" | grep -q 'model_project_constructor\.wiki'; then
     echo "error: wiki clone at $WIKI_CLONE does not point to the wiki repo" >&2
     echo "its origin is: ${WIKI_REMOTE:-<unset>}" >&2
-    echo "expected origin URL to contain 'claims-model-starter.wiki'" >&2
+    echo "expected origin URL to contain 'model_project_constructor.wiki'" >&2
     exit 1
 fi
 

@@ -47,7 +47,7 @@ Copyleft and weak-copyleft dependencies (read first)
 | `pathspec` | 1.0.4 | MPL-2.0 | Transitive, via `mkdocs`/`hatchling` (docs/build tooling only, not shipped in the runtime application). |
 
 No LGPL dependency remains as of Session 193. See
-`docs/wiki/claims-model-starter/Security-Considerations.md` §9 for how each repo-host adapter is
+`docs/wiki/model_project_constructor/Security-Considerations.md` §9 for how each repo-host adapter is
 used.
 
 Full dependency table

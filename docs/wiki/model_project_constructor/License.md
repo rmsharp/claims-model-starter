@@ -1,6 +1,6 @@
 # License
 
-This wiki is published from `docs/wiki/claims-model-starter/` in the **Model Project Constructor**
+This wiki is published from `docs/wiki/model_project_constructor/` in the **Model Project Constructor**
 repository, whose own code is MIT-licensed (see [Contributing](Contributing) §8). Because the
 published wiki is a separate repository with its own commit history, it does not automatically
 inherit the main repository's `LICENSE` file — this page states the same grant explicitly for the

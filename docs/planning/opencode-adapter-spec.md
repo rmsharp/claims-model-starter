@@ -6,7 +6,7 @@
 **✅ Phase 2 is COMPLETE (Session 213, 2026-08-01)** — both clients, both factory branches, the registry entry and the deterministic tier are shipped and on `master`; see `CHANGELOG.md`'s 2026-08-01 entry for the full breakdown and the two as-built deviations (§4.4/§5.1's `agent=` escape hatch removed; §5.3's helper signatures take parsed events). **Phase 3 (eval wiring + docs) is next.** Gate: 1100 passed + 8 live-skipped @ 97.79%, mypy and ruff clean.
 
 **⚠ Phase 1 is COMPLETE (Session 212, 2026-08-01) — read [Appendix A](#appendix-a--phase-1-live-verification-findings-session-212-2026-08-01) BEFORE Phase 2.** All four `[unverified]` markers are resolved and §3/§4 are annotated inline, but Phase 1 also produced **seven corrections to this spec, one of them a safety defect**: §3.5's hazard H4 claim that "the default is already safe" is **false** — a live run read a file and disclosed its contents without `--auto`. Fixtures: `tests/fixtures/opencode/`.
-**Decision being implemented:** AD-11 (`docs/wiki/claims-model-starter/Architecture-Decisions.md`) — accepted by the operator 2026-08-01. Research behind it: `docs/wiki/claims-model-starter/AI-Dependencies.md` §9.
+**Decision being implemented:** AD-11 (`docs/wiki/model_project_constructor/Architecture-Decisions.md`) — accepted by the operator 2026-08-01. Research behind it: `docs/wiki/model_project_constructor/AI-Dependencies.md` §9.
 **Governing workstream:** `docs/methodology/workstreams/ARCHITECTURE_WORKSTREAM.md` (interface-first design, failure-mode analysis, honest alternatives). *Not* `DESIGN_WORKSTREAM.md`, which is UI/UX-specific.
 
 **Headline decisions (each argued in §4):**
@@ -652,8 +652,8 @@ Full detail in `tests/eval/PHASE_E_AGREEMENT_REPORT.md` §"Update — Session 21
 
 ## 13. Provenance
 
-- **Decision being implemented:** `docs/wiki/claims-model-starter/Architecture-Decisions.md` AD-11; research in `AI-Dependencies.md` §9 (both Session 210, 2026-08-01).
-- **Seam design intent:** the factory docstrings at `agents/intake/factory.py:1-19` and `packages/data-agent/.../factory.py:1-20`; the provider recipe in `docs/wiki/claims-model-starter/Extending-the-Pipeline.md` §"Files to add or edit".
+- **Decision being implemented:** `docs/wiki/model_project_constructor/Architecture-Decisions.md` AD-11; research in `AI-Dependencies.md` §9 (both Session 210, 2026-08-01).
+- **Seam design intent:** the factory docstrings at `agents/intake/factory.py:1-19` and `packages/data-agent/.../factory.py:1-20`; the provider recipe in `docs/wiki/model_project_constructor/Extending-the-Pipeline.md` §"Files to add or edit".
 - **Structural template:** `docs/architecture-history/multi-provider-llm-plan.md` (Sessions 159-164) — its Decisions A/C/D, Traps 1-5, and §3.4 threshold table are carried forward here rather than restated.
 - **Code evidence:** every file and line number in §2 and §6 was read or searched during Session 211 at `a3f33d8`.
 - **External evidence:** `anomalyco/opencode` — `packages/opencode/src/cli/cmd/run.ts` fetched via the GitHub API (default branch `dev` @ `32f278b48f1a`, 2026-08-01; the file itself last modified in `20445ca03133`, 2026-06-30); release `v1.18.11` (2026-08-01); MIT. Docs pages `opencode.ai/docs/cli/`, `/docs/agents/`, `/docs/providers/`, `/docs/`. Issue `anomalyco/opencode#9320` for the schema-constrained-output status. **No claim in §3 comes from training-data memory** — this tooling post-dates and out-paces it.

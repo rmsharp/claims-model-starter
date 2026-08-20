@@ -224,7 +224,7 @@ git log --merges --oneline                                        → (empty —
 
 Three traps in that table:
 
-1. **`docs/*.md` is non-recursive.** None of the 20 changed `docs/wiki/claims-model-starter/*.md`
+1. **`docs/*.md` is non-recursive.** None of the 20 changed `docs/wiki/model_project_constructor/*.md`
    pages match it. Stage 2 fires *because of `pyproject.toml`*. Never phrase the reason as
    "because docs changed" — change that line and the reasoning silently inverts.
 2. **Trigger scope ≠ publication scope.** A file under `docs/<subdir>/` never *triggers* a deploy
@@ -284,7 +284,7 @@ Baseline grep (`"unmerged\|feat/bedrock-mantle-migration"`) → **29 lines / 46 
 
 ```bash
 grep -rniE "unmerged|feat/bedrock-mantle-migration|not[- ]yet[- ]merged|branch-only|branch only|in[- ]flight|on the branch|last session on|the branch lands|when it lands|has not been merged" \
-  docs/wiki/claims-model-starter/
+  docs/wiki/model_project_constructor/
 ```
 
 It returns **36 lines**: **34 real sites** plus **2 unrelated false positives** (below). The
@@ -311,7 +311,7 @@ protected only by reading before editing; the last two *do* match and must be le
 
 1. `Changelog.md:20` already reads `…is now anthropic[bedrock]>=0.94 … (was >=0.40)`. **Correct
    post-merge.** A blind `>=0.40`→`>=0.94` replace corrupts it.
-2. `grep -rn "sonnet-4-6" docs/wiki/claims-model-starter/` returns **12 lines; exactly 3 change**
+2. `grep -rn "sonnet-4-6" docs/wiki/model_project_constructor/` returns **12 lines; exactly 3 change**
    (above). The other **9** are correct — `Changelog.md:18`, `Security-Considerations.md:124`,
    `:125`, `:376`, `AI-Dependencies.md:10`, `:55`, `Data-Guide.md:110`, `:121`, `Evolution.md:89`
    — because the **first-party `anthropic` default really is `claude-sonnet-4-6`** and is
@@ -340,12 +340,12 @@ only. Nothing in the repo checks merge status.
 | File:line | Coupling | Breaks on an enterprise host? |
 |---|---|---|
 | `scripts/publish_wiki.sh:42` | `WIKI_CLONE` default path | Defaults to the **personal public** clone — see dragon #3 |
-| `scripts/publish_wiki.sh:44` | `SOURCE_DIR=…/docs/wiki/claims-model-starter` | Only if the directory is renamed |
+| `scripts/publish_wiki.sh:44` | `SOURCE_DIR=…/docs/wiki/model_project_constructor` | Only if the directory is renamed |
 | `scripts/publish_wiki.sh:23`, `:63` | Hardcoded clone URL (comment + error text) | Misleading |
-| `scripts/publish_wiki.sh:72`, `:75` | **Hard-rejects** any origin URL not containing `claims-model-starter.wiki` | **YES — hard blocker on rename** |
+| `scripts/publish_wiki.sh:72`, `:75` | **Hard-rejects** any origin URL not containing `model_project_constructor.wiki` | **YES — hard blocker on rename** |
 | `scripts/publish_wiki.sh:80` | **Hard-requires** the wiki branch be named `master` | **YES — most enterprise hosts default to `main`** |
 | `scripts/publish_wiki.sh:104` | `git push origin master` — hardcoded refspec | **YES** |
-| `.githooks/post-commit:18` | Path prefix `^docs/wiki/claims-model-starter/` | Only if renamed |
+| `.githooks/post-commit:18` | Path prefix `^docs/wiki/model_project_constructor/` | Only if renamed |
 | `mkdocs.yml:3-5` | `site_url` / `repo_url` / `repo_name` — all personal | **YES** |
 | `tests/test_wiki_no_line_citations.py:38` | Hardcoded wiki dir | Only if renamed |
 | **`orchestrator/config.py:198,354,355,365,366`** | Personal GitLab namespace embedded in a **user-facing `ConfigError` message** | **YES — code change** |
@@ -575,7 +575,7 @@ Phases are gated on these. **Owners are named because most are not engineering c
 
 > ### ⚠ STANDING RULE for Phases A1, A2, A3 and B1 — disarm the wiki auto-publish hook
 >
-> All four phases touch files under `docs/wiki/claims-model-starter/` (A1 updates audit-path
+> All four phases touch files under `docs/wiki/model_project_constructor/` (A1 updates audit-path
 > references in `Evolution.md:200,244,268,335,438`; A3 updates planning-doc references in
 > `Evolution.md` and `Changelog.md`). `.githooks/post-commit:18` fires on **any** commit touching
 > that prefix and pushes to the **public** wiki with no confirmation.
@@ -633,7 +633,7 @@ blocker on C1's own (non-AWS-connected) scope.
    gitignore-negation form — exclude everything under `docs/`, re-include `index.md` and
    `tutorial.md`. Fix the misleading comment at `mkdocs.yml:10-11`.
 2. **Move `docs/audits/` out of `docs_dir`** (per D7) to a top-level `audits/`. **Update
-   references in LIVE documents only** — `docs/wiki/claims-model-starter/Evolution.md` (5 sites)
+   references in LIVE documents only** — `docs/wiki/model_project_constructor/Evolution.md` (5 sites)
    and `docs/planning/httpx-adapter-migration.md`. Per §6, `SESSION_NOTES.md`, `CHANGELOG.md` and
    `docs/architecture-history/` keep the old path as historical record; add one line to the new
    `audits/README` noting the former location.
@@ -698,16 +698,16 @@ and `Schema-Reference.md:632`, both unrelated uses of "in-flight" — and nothin
 
 ```bash
 grep -rniE "unmerged|feat/bedrock-mantle-migration|not[- ]yet[- ]merged|branch-only|branch only|in[- ]flight|on the branch|last session on|the branch lands|when it lands|has not been merged" \
-  docs/wiki/claims-model-starter/ | cut -d: -f1,2 | sort -u
+  docs/wiki/model_project_constructor/ | cut -d: -f1,2 | sort -u
 #   → exactly: AI-Dependencies.md:151 and Schema-Reference.md:632
-grep -rn -- ">=0.40" docs/wiki/claims-model-starter/    # → only Changelog.md:20 (historical, correct)
-grep -rc "sonnet-4-6" docs/wiki/claims-model-starter/ | awk -F: '{s+=$2} END {print s}'   # → 9 (was 12; exactly 3 changed)
+grep -rn -- ">=0.40" docs/wiki/model_project_constructor/    # → only Changelog.md:20 (historical, correct)
+grep -rc "sonnet-4-6" docs/wiki/model_project_constructor/ | awk -F: '{s+=$2} END {print s}'   # → 9 (was 12; exactly 3 changed)
 uv run pytest tests/test_wiki_no_line_citations.py -q --no-cov
 # dead-path check (also in §7) — Changelog.md is excluded: its entries are dated historical
 # records that correctly name where a file lived AT THE TIME (two such refs exist today,
 # Changelog.md:107 and :220, both now under docs/architecture-history/). Do not "fix" them.
 for p in $(grep -rhoE '`?docs/(audits|planning|architecture-history)/[A-Za-z0-9._/-]+\.md' \
-            --exclude=Changelog.md docs/wiki/claims-model-starter/ | tr -d '`' | sort -u); do
+            --exclude=Changelog.md docs/wiki/model_project_constructor/ | tr -d '`' | sort -u); do
   [ -e "$p" ] || echo "DEAD WIKI PATH REFERENCE: $p"
 done                                                    # → no output
 git -C ~/Development/claims-model-starter.wiki log --oneline -1   # → UNCHANGED (hook disarmed)
@@ -886,7 +886,7 @@ expected attribution inside the synced `SESSION_RUNNER.md`/`SAFEGUARDS.md` files
 
 ```bash
 grep -rn "the one LGPL-3.0 direct dependency" docs/wiki/         # → 0
-grep -rn -i "lgpl" docs/wiki/claims-model-starter/               # every hit names BOTH packages
+grep -rn -i "lgpl" docs/wiki/model_project_constructor/               # every hit names BOTH packages
 ls SECURITY.md CONTRIBUTING.md CODEOWNERS THIRD-PARTY-LICENSES
 grep -c 'Terrell Deppe' NOTICE                                   # → non-zero
 grep -c 'Terrell Deppe' CLAUDE.md                                # → non-zero (Adaptations section)
@@ -1279,7 +1279,7 @@ never in the current working tree, and nothing here is ever committed or pushed 
    `SESSION_RUNNER.md:209` and `Contributing.md:122`.
 7. **If D8's destination is not a GitHub-family wiki:** convert `_Sidebar.md` to the host's sidebar
    convention, rename `Home.md` to the host's landing page, and rewrite the **157** extensionless
-   intra-wiki links (`grep -rhoE '\]\([A-Za-z0-9][A-Za-z0-9-]*\)' docs/wiki/claims-model-starter/ | wc -l`).
+   intra-wiki links (`grep -rhoE '\]\([A-Za-z0-9][A-Za-z0-9-]*\)' docs/wiki/model_project_constructor/ | wc -l`).
 8. **Recreate both GitHub Releases on the target host from `releases-export.json`, OR leave them as
    a pointer to the public originals — whichever the operator confirmed live for D16 before step 1
    (see the preamble above and dragon #24). Do not default to "recreate" from the §3 Recommendation
@@ -1387,7 +1387,7 @@ gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # 
    workflow's `paths:` list; determine it from `docs_dir` + `exclude_docs`, and **verify by
    building from a clean `git archive` with `--extra docs`**.
 3. **The wiki auto-publish hook is armed right now and pushes to a *personal public* repo.** Any
-   commit touching `docs/wiki/claims-model-starter/` rsyncs and pushes with no confirmation.
+   commit touching `docs/wiki/model_project_constructor/` rsyncs and pushes with no confirmation.
    **`export MPC_SKIP_WIKI_PUBLISH=1` does not work** — each Bash call is a fresh shell. Use the
    standing rule in §4. This bites in **A1 and A3 too**, not just A2.
 4. **`rsync -a --delete` silently destroys web-UI wiki edits.** Editing the wiki through the web
@@ -1526,13 +1526,13 @@ git rev-list --count origin/master..feat/bedrock-mantle-migration          # →
 git ls-remote origin master                                               # → branch tip SHA
 git log --merges --oneline | wc -l                                        # → 0
 gh run list --workflow ci.yml --limit 1                                   # → success, not cancelled
-diff -r -x '.git' docs/wiki/claims-model-starter ~/Development/claims-model-starter.wiki   # → identical
+diff -r -x '.git' docs/wiki/model_project_constructor ~/Development/claims-model-starter.wiki   # → identical
 git -C ~/Development/claims-model-starter.wiki status -sb                 # → no "[ahead N]"
 grep -rniE "unmerged|feat/bedrock-mantle-migration|not[- ]yet[- ]merged|branch-only|branch only|in[- ]flight|on the branch|last session on|the branch lands|when it lands|has not been merged" \
-  docs/wiki/claims-model-starter/ | cut -d: -f1,2 | sort -u
+  docs/wiki/model_project_constructor/ | cut -d: -f1,2 | sort -u
 #   → exactly AI-Dependencies.md:151 and Schema-Reference.md:632
 for p in $(grep -rhoE '`?docs/(audits|planning|architecture-history)/[A-Za-z0-9._/-]+\.md' \
-            docs/wiki/claims-model-starter/ | tr -d '`' | sort -u); do
+            docs/wiki/model_project_constructor/ | tr -d '`' | sort -u); do
   [ -e "$p" ] || echo "DEAD WIKI PATH REFERENCE: $p"
 done                                                                      # → no output
 # `-f` alone does NOT rescue the piped form — measured 2026-08-20 (Session 229): both

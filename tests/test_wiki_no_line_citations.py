@@ -4,7 +4,7 @@ fragile line-number citations in the wiki.
 Sessions 138-141 migrated every ``file:line`` citation on the wiki pages to
 grep-locatable symbol/anchor references (plan §3). This guard keeps the
 fragile forms from silently reappearing: it scans every page under
-``docs/wiki/claims-model-starter/`` and fails with ``page:line: match`` for
+``docs/wiki/model_project_constructor/`` and fails with ``page:line: match`` for
 any hit outside the allowlist.
 
 Guarded forms (each one recurred during the migration sweeps):
@@ -35,7 +35,7 @@ import pathlib
 import re
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
-WIKI_DIR = REPO_ROOT / "docs" / "wiki" / "claims-model-starter"
+WIKI_DIR = REPO_ROOT / "docs" / "wiki" / "model_project_constructor"
 
 ALLOWLIST: frozenset[str] = frozenset()
 

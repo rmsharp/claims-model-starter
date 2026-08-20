@@ -107,7 +107,7 @@ Split by "describes current architecture" (update) vs "historical record" (leave
   ("creates … via python-gitlab/PyGithub" comments).
 - `src/model_project_constructor/agents/website/protocol.py:6‑7` (docstring: "thin
   wrapper around `python-gitlab` or `PyGithub`").
-- Wiki (auto‑published — see §6 dragon): `docs/wiki/claims-model-starter/`
+- Wiki (auto‑published — see §6 dragon): `docs/wiki/model_project_constructor/`
   - `Software-Bill-of-Materials.md:34‑35, 85, 89‑91, 187, 202‑203` (drops
     `python-gitlab`, `PyGithub`, `requests`, `pynacl`, `pyjwt`; add `httpx`).
   - `Security-Considerations.md:124‑128, 314‑315` (GitHub adapter now `httpx`;
@@ -267,7 +267,7 @@ into Phase 2 and skip Phase 3.
    per call" and raise only `RepoClientError`/`RepoNameConflictError` — never let a
    raw `httpx` exception escape, or the LangGraph retry loop sees different behavior
    per host.
-5. **Wiki auto‑publish.** Editing any `docs/wiki/claims-model-starter/*` file fires
+5. **Wiki auto‑publish.** Editing any `docs/wiki/model_project_constructor/*` file fires
    the tracked `.githooks/post-commit` hook → `scripts/publish_wiki.sh` syncs the
    **live GitHub Wiki** on commit. Expect the push; it's idempotent. (Suppress for a
    single commit with `MPC_SKIP_WIKI_PUBLISH=1` only if deliberately staging.)

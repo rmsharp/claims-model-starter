@@ -71,7 +71,7 @@ underlying vendors through OpenCode's own config — the actual goal being prepa
 that may standardize on a different AI CLI than Anthropic's. Full research (four candidates compared: OpenCode,
 Codex CLI, Gemini CLI, GitHub Copilot CLI — headless-mode syntax, structured-output support, auth mechanics,
 portability verdicts, citations) and the decision record live in
-`docs/wiki/claims-model-starter/AI-Dependencies.md` §9 and `docs/wiki/claims-model-starter/Architecture-Decisions.md`
+`docs/wiki/model_project_constructor/AI-Dependencies.md` §9 and `docs/wiki/model_project_constructor/Architecture-Decisions.md`
 AD-11 — read both before starting, so the next session doesn't re-derive the comparison.
 
 **The spec is DONE (Session 211, 2026-08-01): `docs/planning/opencode-adapter-spec.md`.** It specifies

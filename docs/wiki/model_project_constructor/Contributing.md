@@ -121,7 +121,7 @@ This test AST-walks the standalone `packages/data-agent/` package and asserts ze
 
 ## 3. Pre-commit hooks
 
-There is **no** `.pre-commit-config.yaml` in the repository and no pre-commit gate on code. There *is* one checked-in project-wide hook: `.githooks/post-commit`, which republishes the GitHub Wiki whenever a commit touches `docs/wiki/claims-model-starter/` (it delegates to `scripts/publish_wiki.sh`; set `MPC_SKIP_WIKI_PUBLISH=1` for a deliberate skip). It is opt-in per clone — enable it once with `git config core.hooksPath .githooks`. **If you edit any wiki page, install it.** Otherwise contributors are expected to run `ruff` and `pytest` locally before pushing. The CI pipeline is the enforcement boundary; hooks are a convenience, not a requirement.
+There is **no** `.pre-commit-config.yaml` in the repository and no pre-commit gate on code. There *is* one checked-in project-wide hook: `.githooks/post-commit`, which republishes the GitHub Wiki whenever a commit touches `docs/wiki/model_project_constructor/` (it delegates to `scripts/publish_wiki.sh`; set `MPC_SKIP_WIKI_PUBLISH=1` for a deliberate skip). It is opt-in per clone — enable it once with `git config core.hooksPath .githooks`. **If you edit any wiki page, install it.** Otherwise contributors are expected to run `ruff` and `pytest` locally before pushing. The CI pipeline is the enforcement boundary; hooks are a convenience, not a requirement.
 
 If you want local hooks, the recommended pattern is a personal `.git/hooks/pre-push` script that runs `uv run ruff check src/ tests/ packages/ scripts/ && uv run mypy && uv run pytest -q`. Do not commit another project-wide hook configuration without first proposing it as a separate design change.
 

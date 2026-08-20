@@ -4,7 +4,7 @@
 
 **Why this exists.** Large language models commonly conflate technical statistical terms with their colloquial cousins (probability vs likelihood, accuracy vs precision, statistical bias vs algorithmic bias, statistical risk vs insured peril). When the project's pipeline produces an intake report, data report, or wiki page, the prose should use the precise term. This file is the single source of truth for what "precise" means here. Contributors and downstream consumers (including future agent-prompt injection) read from this file.
 
-**What this file is NOT.** This is not a domain dictionary for property-and-casualty (P&C) insurance — for those terms see `docs/wiki/claims-model-starter/Glossary.md` "Domain terms" section. This is not an exhaustive statistics textbook. It is a curated list of terms whose precise meaning the project actively cares about because they are commonly conflated, and a process for adding more.
+**What this file is NOT.** This is not a domain dictionary for property-and-casualty (P&C) insurance — for those terms see `docs/wiki/model_project_constructor/Glossary.md` "Domain terms" section. This is not an exhaustive statistics textbook. It is a curated list of terms whose precise meaning the project actively cares about because they are commonly conflated, and a process for adding more.
 
 ---
 
@@ -100,7 +100,7 @@ These terms have a specific meaning in property-and-casualty (P&C) claims modeli
 | **Pure premium** | Expected loss per exposure unit. Decomposed as `frequency × severity`. The actuarial estimate before loadings (expenses, profit, contingency). | Not the same as the **gross** or **office** premium charged to the policyholder. |
 | **Loss ratio** | `incurred losses / earned premium`. A core profitability metric. | Not the same as a model's loss function. Context disambiguates. |
 | **Hazard ratio** | In survival / duration models (Cox proportional hazards), the ratio of hazard rates between two groups. Relevant for time-to-event modeling such as subrogation recovery time, claim closure duration, or fraud-investigation latency. | Not a probability and not an odds ratio. A hazard ratio of 2 means the instantaneous event rate is twice as high — it does not directly translate to "twice as likely." |
-| **Subrogation** | The process of recovering costs from an at-fault third party after paying a claim. The recovery success rate is a frequent modeling target. | See `docs/wiki/claims-model-starter/Glossary.md` "Domain terms" for the broader definition. |
+| **Subrogation** | The process of recovering costs from an at-fault third party after paying a claim. The recovery success rate is a frequent modeling target. | See `docs/wiki/model_project_constructor/Glossary.md` "Domain terms" for the broader definition. |
 
 ---
 
@@ -134,7 +134,7 @@ Removal is rare — terms here have been added because a real conflation surface
 
 ## Wiki integration
 
-The wiki at `docs/wiki/claims-model-starter/Glossary.md` has a `## Statistical terms` section that serves as a **curated subset** of this file — the terms most likely to appear in user-facing wiki content (Pipeline-Overview, Data-Guide, Worked-Examples, Schema-Reference). The wiki section opens with a one-line cross-link pointing here.
+The wiki at `docs/wiki/model_project_constructor/Glossary.md` has a `## Statistical terms` section that serves as a **curated subset** of this file — the terms most likely to appear in user-facing wiki content (Pipeline-Overview, Data-Guide, Worked-Examples, Schema-Reference). The wiki section opens with a one-line cross-link pointing here.
 
 ### When to update the wiki Glossary alongside this file
 
@@ -162,7 +162,7 @@ When a wiki term diverges in wording from this file (typically because the wiki 
 Sessions that touch either file should grep the other for the affected term to confirm they agree:
 
 ```bash
-grep -in "<term>" docs/style/statistical_terms.md docs/wiki/claims-model-starter/Glossary.md
+grep -in "<term>" docs/style/statistical_terms.md docs/wiki/model_project_constructor/Glossary.md
 ```
 
 If the two files disagree on a definition, this file (`docs/style/statistical_terms.md`) wins. The wiki gets updated to match.

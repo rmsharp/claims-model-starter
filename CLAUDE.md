@@ -70,6 +70,10 @@ Each agent in the pipeline follows these principles (derived from `docs/architec
 
 `SESSION_RUNNER.md`, `SAFEGUARDS.md`, `docs/methodology/` (12 files), the `PROJECT_LEARNINGS.md` seed rows, and `docs/architecture-history/methodology-pr2527-remediation-mpc.md` are the "Iterative Session Methodology," copyright © 2025-2026 Terrell Deppe (KJ5HST). Per the operator (2026-07-27), Terrell Deppe granted permission for this material to be used and redistributed under MIT terms. See `NOTICE` at the repository root for the full attribution and provenance record — this is the customization-seam location for that grant precisely because the synced files themselves must not be edited (rule above).
 
+### `SESSION_RUNNER.md:209` names the OLD wiki directory. Do not fix it. (rename plan dragon 8)
+
+Session 233 renamed `docs/wiki/claims-model-starter/` → **`docs/wiki/model_project_constructor/`** (repository-rename plan Phase 4, decision D-R2 = yes). `SESSION_RUNNER.md:209`'s "Wiki sync" paragraph still names the old path and is now **stale**. It is synced from canonical and the rule above forbids editing it — a local edit blocks future syncs — so **this bullet is the correction**, exactly as the Third-party attribution above is the correction for its own synced-file problem. The live path is `docs/wiki/model_project_constructor/`; everything else that paragraph says (hook, idempotence, `MPC_SKIP_WIKI_PUBLISH=1`, `core.hooksPath`) is still true. **Two things stay on the OLD name on purpose** and are not stale: the wiki *clone* at `~/Development/claims-model-starter.wiki` (D-R5 — GitHub's rename moves a URL, never a directory on your disk), which pins `scripts/publish_wiki.sh:19`, `:24` and `:42` **permanently**; and the 28 frozen historical records of §3.1. See `docs/planning/repository-rename.md` §3.3 and §7.2.
+
 ### `SESSION_NOTES.md` is trimmed (Sessions 222, 224, 228, 231)
 
 The live ledger holds only the newest sessions; retired records live in frozen shards, each with its own proof.
