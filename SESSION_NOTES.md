@@ -129,10 +129,212 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 231 Did
-**Deliverable:** Fourth trim of `SESSION_NOTES.md` — archive the oldest retained records into a
-fourth write-once shard under `docs/architecture-history/` with its own proof script (IN PROGRESS)
-**Started:** 2026-08-20
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **Fourth lossless trim of `SESSION_NOTES.md` — COMPLETE.** Sessions 227 → 225
+archived into a new write-once shard; the live file went **1,530 → 840 lines**, four records, the
+floor `CLAUDE.md` sets. **No phase of the repository rename ran. Phase 3 is still next.**
+
+**Started / completed:** 2026-08-20. **Commits: three**, as `CLAUDE.md`'s "Two commits, always"
+bullet requires — `b1e795e` (the Phase 1B claim, alone), `f3fea4e` (the trim, containing **no**
+record edit — machine-verified, `added=0`), and this close-out. **Operator this session:** *"fourth
+trim"*, chosen over Phase 3 of the rename.
+
+Documentation-only, so **no `CHANGELOG.md` entry** — `PROJECT_CONVENTIONS.md` §2's cadence gate.
+Sessions 227, 229 and 230 correctly added none either.
+
+#### What moved
+
+| | |
+| --- | --- |
+| Archived | Sessions **227, 226, 225** — 3 record headings, **738 lines**, byte-for-byte unedited |
+| Into | `docs/architecture-history/SESSION_NOTES-S227-through-S225.md` (790 lines with banner) |
+| Live file | 1,530 → **840 lines**, Sessions **231 → 228** |
+| Routing | now **five** clauses; `225 ≤ N ≤ 227` → the new shard, `N ≥ 228` → this file |
+| Also updated | `CLAUDE.md`, `README.md`, `BACKLOG.md`, `docs/methodology/PROJECT_CONVENTIONS.md` |
+
+**The proof is [`SESSION_NOTES-S227-through-S225.md.verify.sh`](docs/architecture-history/SESSION_NOTES-S227-through-S225.md.verify.sh)**
+— L0–L7 carried forward from the third trim, **plus L8 and L9**, and **50 mutants, all caught**.
+
+#### The two new assertions, and why each existed as a hole first
+
+**L8 (REACH)** — the copies of the shard set no assertion could see. The third trim's own pointer
+block *named* two of them (`README.md`'s repo map, `PROJECT_CONVENTIONS.md`'s shard-naming rule),
+said a trim that left either alone "ships a lie", and checked neither. **That list was also
+incomplete.** One `git grep -l 'SESSION_NOTES-'` found a third nobody had named — **`BACKLOG.md`'s
+read-cap item**, whose entire subject is the shard set and which said *"there are now **three**
+unwatched shards"* — and the adversarial review found a fourth hiding in plain sight: **`CLAUDE.md`'s
+own prose**, whose routing *table* L5 has always parsed while the *"there are THREE … grep all
+three"* count words around it were read by nothing. A half-updated `CLAUDE.md` shipped green.
+Learning [#126](PROJECT_LEARNINGS.md).
+
+**L9 (LINEAGE)** — write-once enforced for **every** shard on disk. L7, introduced by the third trim
+as *"the only enforcement `write-once` has ever had"*, guards exactly one file: the shard it shipped
+with. S216 and S220 had none at all; S224's lives only inside its own proof, which nothing obliges a
+session to run. And because every other assertion reads git history at the trim commit, **an ancestor
+shard truncated or deleted on disk left the whole suite green.**
+
+#### Four things measurement caught that reasoning did not
+
+1. **`L2/b3` NO-LEAK fired on the very first run.** The banner's routing table shared a byte-identical
+   line with the pre-trim front matter — nothing had leaked, but the assertion cannot tell that
+   coincidence from a real leak. **Fixed the artifact (one clause per line), not the assertion.**
+2. **A fourth declared substitution.** The third trim's parenthetical calling L7 *"the only
+   enforcement write-once has ever had"* is false the moment L9 exists. Rewriting it kept the
+   pointer block's "exactly four passages" claim true rather than softening the claim.
+3. **The ancestor's `L5/2` was reachable by none of its 28 mutants** — the gap/overlap check, live
+   code, never once exercised. Same defect the third trim caught in the second trim's `L2/b0`, one
+   level down. Confirmed by measurement, not inference.
+4. **And then I shipped it myself, in six arms of my own two new assertions** — one day after
+   writing that exact rule into `CLAUDE.md`. The adversarial review measured it. Learning
+   [#125](PROJECT_LEARNINGS.md).
+
+#### The adversarial review earned its keep
+
+**11 agents, 5 lenses, ~1.14M tokens, 13 findings survived verification** — deliberately built to
+Session 230's learning [#124](PROJECT_LEARNINGS.md) (`maxItems` per lens, one adjudicator per lens)
+rather than its 132-agent Review 1. **Two of its top findings I had already found and fixed
+independently while it ran** (BACKLOG.md; the false "three of the four" count) and the synthesis
+correctly dropped both as non-reproducing. The rest were real and all were fixed: `CLAUDE.md`'s
+unchecked prose, the six untested arms, `SHARD_NAME` matching inside `.verify.sh` filenames, and a
+typed count ("the first three clauses" — measured: **two**) inside a **write-once** file, which would
+have been unrepairable one commit later.
+
+#### Verification
+
+- Proof **green**; `--self-test` **50/50**; **every assertion and every `if` inside it** reached by a
+  mutant that only it catches (`L5/2 shape` M47, `L8/required` M50, `L8/forbidden` M44, `L8/set`
+  M45+M46, `L8/unreadable` M49, `L9/no-add-commit` M48).
+- **All three ancestor proofs re-run green** at this cut.
+- Record zone vs `HEAD` is **pure removal**: concatenation identity `True`, **added = 0**.
+- `SESSION_RUNNER.md` step 14 intact: `## ACTIVE TASK` → `### What Session 231 Did` adjacent.
+- `uv run pytest -q` → **1230 passed, 9 skipped**, unchanged from Session 230's baseline.
+- **Fired nothing.** No path touched is under `docs/wiki/claims-model-starter/` (the hook's guard)
+  or matches `docs/*.md` (the workflow's single-level path list); nothing was pushed.
+
+### Session 230 Handoff Evaluation (by Session 231)
+
+**Score: 9/10.** It made the choice I had to make legible before I had to make it, and it was right
+about the one thing that would have cost the most.
+
+**What helped.**
+- **Gotcha 10 is the reason this session was possible at all.** *"⚠ THE TRIM TRIGGER IS NOW LIVE …
+  the next session should expect the operator to choose between Phase 3 and a fourth trim."* It then
+  said exactly what a trim owes — a fourth shard, write-once, L0–L7 carried forward, **a mutant for
+  every assertion added** — and pointed at `CLAUDE.md`'s bullet. Every one of those instructions was
+  correct and load-bearing. **Session 230 declined to trim and said why** (a trim is its own
+  deliverable; a bundled record edit holds the proof red forever). That restraint is what let this
+  session's trim commit come out clean.
+- **Gotcha 6** (*"Still zsh. Single-quote every heredoc delimiter"*) — ninth session running, still
+  free, and I used heredocs constantly today.
+- **Gotcha 4** (*"a line number into a file you are also editing is stale before you write it"*) —
+  I cited section names and re-derived counts at the end. It is why the stale `788` line counts got
+  caught before the commit rather than after.
+- The Phase 3 pointer (*"find it with `grep -n '^### Phase 3'`, not by line number"*) is untouched
+  and still correct — I confirmed the plan is unaffected by this trim (below).
+
+**What was missing — one thing, and it is the same shape Session 230 itself found.**
+`CLAUDE.md`'s trim bullet, which gotcha 10 correctly forwards to, names **two** prose copies outside
+every proof and neither Session 230 nor its handoff questioned that list. There were **four**.
+Session 230's own learning [#122](PROJECT_LEARNINGS.md) — *"a defect filed against the instance you
+found is a defect filed against one instance; ask what class it belongs to"* — is precisely the tool
+that finds them, and it applies to a list of instances just as much as to one. Learning
+[#126](PROJECT_LEARNINGS.md).
+
+Also minor: gotcha 10 says a trim "never retains fewer than 4 sessions" without noting that **the
+Phase 1B stub counts as one of the four** — which is what all three previous trims did, and which
+decides whether you archive two records or three. I inferred it from the third trim's banner.
+
+**ROI: very high.** ~4 minutes to read; it set the whole session's shape.
+
+### Session 231 Self-Assessment
+
+**Score: 8/10.** The deliverable is right, is more thoroughly falsifiable than any of its three
+ancestors, and closed two holes the project had written down and left open. It also shipped the
+exact defect it had just finished documenting, and needed a review to find that.
+
+**+** **I did not stop at the list I was handed.** Sweeping for the class turned `README.md` +
+`PROJECT_CONVENTIONS.md` into four checked copies, and `BACKLOG.md` — the one a reader is routed to
+for priorities — was silently describing a three-shard world.
+**+** **L9 exists because I asked what L7 does *not* cover**, not because anything asked for it.
+Deleting the 24,590-line S216 shard used to leave every proof green.
+**+** **I fixed artifacts, not assertions, every time an assertion objected.** `L2/b3` fired on the
+first run and the honest fix was to reflow my banner. Weakening it would have been the easy move and
+the wrong one.
+**+** **I measured before writing.** The coverage line, the "exactly four passages" count, the
+enforcement count, every line number — each re-derived. Where I did type instead of measure, it was
+wrong, and the file now says so in its own header.
+
+**−** **I shipped six untested `if`s inside my own new assertions** the same day I wrote the rule
+against that into `CLAUDE.md`. The review found them; my own neuter loop was at function level and
+structurally could not.
+**−** **I typed three counts that were wrong**: "three of the four had no enforcement" (two),
+"the first three clauses" (two), and `788` lines in two files after the shard grew to 790. Two of
+the three were in text that would have been **frozen forever** one commit later.
+**−** **The builder/proof pair drifted three times** and `--self-test` stayed green through all
+three, because L6 fired on every mutant and each was therefore "caught". Only the plain run showed
+it. Learning [#127](PROJECT_LEARNINGS.md).
+**−** **One near-miss worth recording:** a line-wise `grep` returned 0 for an inherited quotation and
+I nearly "corrected" an accurate sentence in a frozen file. The phrase wrapped a line. Learning
+[#128](PROJECT_LEARNINGS.md).
+
+**Against the bar:** S227 executed an irreversible rename with every prediction tested; S228 shipped
+28 mutants; S229 refuted a dragon with a measurement; S230 fixed a class rather than an instance.
+This session did S230's move to a list rather than a defect, and raised the proof from 8 assertions
+and 28 mutants to 10 and 50 — but needed an external review to hold it to a rule it had authored
+hours earlier, which is the one thing the three sessions before it did not.
+
+**What's next: Phase 3 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)**
+— *"Published wiki content. **One commit. This one goes live to readers.**"* Unchanged by this
+session. Find it with `grep -n '^### Phase 3'`; **do not cite it by line number.** Read **§2.4b**
+first: D-R3 = yes, so Phase 3 carries the two title rebrands (`Home.md:1`, `_Sidebar.md:1`) that
+**no `claims-model-starter` grep will ever surface**, and it **fires the wiki hook by design**.
+
+**Key files:**
+- `docs/architecture-history/SESSION_NOTES-S227-through-S225.md` — the new shard. **Write-once.**
+  `grep` it; never `Read` it. **L9 in this and every future proof now enforces that on disk.**
+- `docs/architecture-history/SESSION_NOTES-S227-through-S225.md.verify.sh` — the proof. Its header
+  carries the neuter loops, the measured coverage, and the two footnotes about arms that cannot have
+  a uniquely-catching mutant. **A fifth trim copies L0–L9 forward and adds a mutant per new
+  assertion *and per new `if` inside it*.**
+- `CLAUDE.md` — the trim bullet now says FOUR shards, lists six load-bearing copies, and tells the
+  fifth trim to **re-derive that list rather than trust it**.
+- `BACKLOG.md` — the read-cap item now says four unwatched shards and names all four. Its `924`
+  figure for the S224 shard was wrong; corrected to the measured `933`.
+- `PROJECT_LEARNINGS.md` — **128 learnings** now; #125–#128 are this session's.
+
+**Gotchas:**
+1. **The trim commit is `f3fea4e` and every assertion reads the artifacts AT THAT COMMIT.** Later
+   edits to `SESSION_NOTES.md`, `CLAUDE.md`, `README.md`, `BACKLOG.md` or `PROJECT_CONVENTIONS.md`
+   cannot make this proof red — including this close-out. **Except L9 and L7, which read the shards
+   on disk today.** That asymmetry is deliberate; do not "fix" it.
+2. **Run the plain proof, not just `--self-test`.** A green self-test with a red plain run happened
+   three times today: L6 fires on every mutant when the banner has drifted, so all 50 are "caught"
+   while the artifact is broken. Learning [#127](PROJECT_LEARNINGS.md).
+3. **`--self-test` is not enough on its own either.** Neuter individual `if`s, not just whole
+   assertions. Neutering `L5/2`'s shape arm **crashes** the run rather than surviving — read a
+   traceback as *caught*.
+4. **This trim does NOT falsify `repository-rename.md`.** Checked: its §3 arithmetic is pinned to
+   commit `59615e2`, and every §7 exclusion is directory-prefixed (`^docs/architecture-history/`),
+   so the new shard is absorbed automatically. **But** the 35 `claims-model-starter` hit-lines that
+   were in `SESSION_NOTES.md` are now 13 there and 22 in the new shard, and
+   `docs/architecture-history/**` is one file wider. **Phase 5 re-derives at `HEAD`; expect 52 file
+   slots, not 51.** Nothing is fail-dangerous — the counts move, the classification does not.
+5. **The S224 shard's banner is now stale** (it routes Sessions 225-and-up to the live file) and
+   **may not be repaired** — write-once. That makes **two** frozen stale banners, with S220's. Ours
+   joins them at the fifth trim. The live pointer block is the authority; a banner is a snapshot.
+6. **Still zsh.** Single-quote every heredoc delimiter. Ninth session running.
+7. **Rebuild derived artifacts from a clean checkout after editing their generator.** A constant
+   declared in two places by construction drifts silently; `git checkout -- SESSION_NOTES.md &&
+   rm <shard> && python3 <builder>` was the loop that kept it honest.
+8. **`master` is now 10 commits ahead of `origin/master`** and nothing here needs pushing. Five
+   sessions have left it that way; the push is the operator's call.
+9. **`~/Development/mpc_tests/model_project_constructor` is still on the old origin URL and no phase
+   owns it** (learning #111, unchanged since Session 228). Give it a home in Phase 4 step 1.
+10. **The trim trigger is quiet.** The trim left the file at **840 lines**; this close-out record
+    brings it to **1,042** — still inside the rule's ≤1,050 cut-back target, and **458 lines below
+    the 1,500 trigger**, so roughly **two or three sessions of runway** at this file's ~184-lines-
+    per-record density. Note the shape: a trim's own record consumes a fifth of the headroom it
+    just created. The next trim writes a **fifth** shard (never append to one of the four) and its
+    proof carries **L0–L9** forward.
 
 ### What Session 230 Did
 **Deliverable:** **Repair `docs/planning/repository-rename.md` — COMPLETE.** All six filed items,

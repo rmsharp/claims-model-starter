@@ -1102,8 +1102,10 @@ print("cut key: retained %s | archived %s   (hand-declared, checked by L4 and L5
 print("routing: %d clauses, checked in 3 copies (live pointer, shard banner, CLAUDE.md) and"
       % len(ROUTING))
 print("         anchored against the record ids actually in each file it names")
-print("reach  : %d further copies no earlier proof could see (%s)"
-      % (len(REACH), ", ".join(p for p, _r, _f in REACH)))
+print("reach  : %d copies L5 does not check — three no proof could see at all, plus CLAUDE.md's"
+      % len(REACH))
+print("         prose around the table L5 has always read (%s)"
+      % ", ".join(p for p, _r, _f in REACH))
 print("lineage: %d ancestor shard(s) held against their own add-commits" % len(lineage))
 print("front  : pointer insertion + %d declared substitutions, all checked by exact equality"
       % len(FRONT_SUBST))
