@@ -45,19 +45,274 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 226 Did
-**Deliverable:** `docs/planning/repository-rename.md` — the PLAN for renaming the GitHub repository
-`rmsharp/claims-model-starter` -> `model_project_constructor`, with a **freshly re-derived**
-grep-based inventory and per-phase completion criteria. (IN PROGRESS)
+**Deliverable:** **`docs/planning/repository-rename.md` — the PLAN for renaming
+`rmsharp/claims-model-starter` -> `model_project_constructor`. COMPLETE.** 1,120 lines: a freshly
+re-derived inventory pinned to a commit, a per-file change/keep classification, **five** operator
+decisions, five one-session phases with falsifiable per-phase criteria, and **twelve dragons**.
 
-**Started:** 2026-08-19.
+**Nothing was renamed.** No `gh repo rename`, no `git mv`, no reference rewritten, no remote
+re-pointed. `git status` at close-out shows only this file, `PROJECT_LEARNINGS.md`, and the plan.
 
-**Status:** Session claimed. Work beginning.
+**Started / completed:** 2026-08-19. **Commits:** `59615e2` (Phase 1B claim, its own commit),
+`ef9c8e9` (plan checkpoint), and this close-out.
 
-**Scope fence:** This session renames **nothing**. No `git mv`, no `gh repo rename`, no reference
-rewrites. Per the operator ruling recorded in `2033e95` and FM #18, execution is a separate
-session (or sessions). Operator prompt this session: *"rename repository ; use planning session if
-needed."* — the "if needed" is answered by the blast radius already on file (667 hits / 52 files,
-two traps that fire on the landing commit itself).
+**Operator this session:** *"rename repository ; use planning session if needed."* The "if needed"
+was answered by evidence, and the evidence went the other way from the filed estimate: the sweep is
+**smaller** than filed (114 lines, not 667) and the **consequences are larger** (one is permanent).
+
+#### The headline: renaming this repository permanently kills its published tutorial URL
+
+**GitHub does not redirect GitHub Pages project-site URLs after a repository rename.** It redirects
+the repo URL, `git clone`/`fetch`/`push`, issues, **the wiki**, stars and followers — Pages is the
+single documented exception. Two GitHub docs pages say so, quoted verbatim in §1 of the plan.
+`gh api repos/.../pages` confirms `cname: null`, so the one mitigation GitHub recommends (a custom
+domain) is absent here.
+
+So `https://rmsharp.github.io/claims-model-starter/tutorial/` — the URL advertised at `README.md:9`,
+this project's only public tutorial link — **404s forever the moment the rename lands.** That
+collides with `enterprise-migration.md:549`'s **decision D6**, answered by the operator 2026-07-27:
+*"refresh and keep public, indefinitely."*
+
+**This was not in the filed backlog item**, whose dragon 5 said the redirect "softens but does not
+remove the break." For the Pages URL there is no redirect to soften anything. It is now **operator
+decision D-R1** with three costed options; §1.1 also evaluates and **rejects** the obvious rescue
+(park a stub repo at the old name) because GitHub's docs say reusing the old name destroys **every
+other** redirect — and 552 lines of this repository's historical record depend on those.
+
+#### The inventory: both filed counts were wrong, and mine is pinned to a commit
+
+| Source | Claimed | Actual | Verdict |
+| --- | --- | --- | --- |
+| `BACKLOG.md` table (S221, `5d906e9`) | 644 / 50 | 659 / 50 | already known stale |
+| **Ruling commit `2033e95` (S225)** | **667 / 52** | **665 / 51** | **not reproducible at ANY commit by ANY method** |
+| This session, pinned at `59615e2` | **666 / 51** | 666 / 51 | reproducible: `git grep -c "claims-model-starter" 59615e2 -- .` |
+
+I tried matching lines, raw occurrences, working-tree grep, untracked-inclusive grep, and all
+fourteen commits from `5d906e9` to `HEAD`. **667/52 exists nowhere.** The paragraph that produced it
+was itself a warning not to inherit stale numbers — see learning **#105**.
+
+**The useful number is neither 666 nor 667. It is 114.** Split, with arithmetic that reconciles both
+ways: **114 lines / 23 files change; 552 lines / 28 files keep** (114+552 = 666; 23+28 = 51). Of the
+114, only **51** depend on the wiki-directory decision, and **~42** of those are real edits.
+
+#### Four things nobody had found, each verified first-hand
+
+1. **`.githooks/post-commit:18` is the one FAIL-OPEN mechanism in the whole system** (dragon 4). Every
+   other guard exits 1 loudly; this one `exit 0`s in silence. Rename the wiki directory and leave its
+   `grep '^docs/wiki/claims-model-starter/'` prefix stale, and every future wiki edit silently never
+   publishes. The rename commit itself still fires (a rename shows as both paths in `diff-tree` —
+   verified against `35ccbd9`), so you get **one reassuring success** and the failure starts on the
+   *next* wiki edit, in a different session. **And it has already happened here:** merge `ff04c02`
+   changed five wiki pages and `git diff-tree --no-commit-id --name-only -r` returned **0 lines**
+   (with `-m`: 5) — the hook published nothing and said nothing.
+2. **`publish_wiki.sh` can wipe and push the live public wiki** (dragon 3). Its five guards are
+   *existence* checks; nothing inspects `SOURCE_DIR`'s contents, and `:92` is
+   `rsync -a --delete`. An empty-but-existing source directory passes every guard, deletes all 25
+   pages, commits, and pushes. `git mv` never produces that state — but `man git-mv`'s single-source
+   form refuses an existing destination, so an executor who hits that error reaches for
+   `mkdir` + multi-source, which does. The plan makes "never `mkdir` the destination" an absolute rule.
+3. **The string is overloaded** (dragon 7). Three live wiki lines say *"generated claims-model-starter
+   projects"*, meaning the pipeline's **output**, not this repository. A blind replace renames a
+   different concept. The label is already false: `src/` and `packages/` contain **zero** occurrences,
+   and generated names come from `derive_project_name`/`derive_project_slug` at runtime.
+4. **The published tutorial site is already broken** (dragon 10). `origin/gh-pages` holds 7 files and
+   **no `assets/` tree**, while `tutorial/index.html` links `../assets/stylesheets/main.*.css`.
+   Measured live: page **200**, stylesheet **404**. Pre-dates the rename — so `curl -> 200` cannot
+   detect a broken deploy, and the executor must not read the 404 as rename damage. Filed as
+   out-of-scope (§8.1), not fixed.
+
+#### The cross-plan collision is worse than "five URLs need updating"
+
+`docs/planning/enterprise-migration.md` is mid-execution and the rename **inverts three of its
+assertions into vacuous passes** (dragon 1). Phase A1's containment proof is three `curl`s expecting
+**404** from `rmsharp.github.io/claims-model-starter/...`; after the rename the whole host path 404s,
+so all three pass **while proving nothing**. A fourth (`:1356`) expects **200** and flips to a loud
+false failure.
+
+Two more, both found by the fan-out and verified by me:
+- **`:1311` and `:1358`** assert the wiki clone's origin is *"unchanged"* — which Phase 4 changes.
+- **Dragon #21 at `:1436-1439` says verbatim "Do NOT delete or re-remote
+  `~/Development/claims-model-starter.wiki`"** — the exact action the rename requires. The conflict
+  is textual, not substantive (its stated reason is "keep the original's auto-publish working," which
+  re-pointing *preserves*), but a C4 executor reading it mid-fork will correctly refuse. Phase 2
+  rewords it.
+- **The C4/C5 clone-independence grep loses its repo-name alternative and cannot get it back.** Its
+  own comment warns that a narrowed pattern "can pass -> 0 while a hardcoded `claims-model-starter`
+  string survives in the clone's publish_wiki.sh" — and the rename renames exactly that string. The
+  naive repair is unusable: `model_project_constructor` matches **1,916 lines across 183 files**. The
+  plan recommends scoping by path instead, and says to flag it rather than silently rewrite another
+  plan's criteria.
+
+#### Method: 9 agents — 5 discovery lenses, 3 refuters, 1 completeness critic — all verified by hand
+
+The sequencing refuter **killed my first phase order** and it was right: I had the rename as a
+commit-free phase with `mkdocs.yml` deferred to the next session, which leaves the public site dead
+across a session boundary. The order cannot be inverted either (pushing `mkdocs.yml` first publishes
+a canonical URL that does not exist). **Phase 1 is now rename + site fix in one session, one push.**
+
+A discovery lens caught a real bug in **my own** inventory: I counted pattern 2 as
+`claims-model-starter.wiki` **as a regex**, so the unescaped `.` also matched
+`claims-model-starter/wiki` page URLs — 104/11 instead of the literal **95/7**, with the 9 extras
+needing a *different* fix. Learning **#106**.
+
+**The completeness critic earned its slot after the refuters had already run**, which is the
+argument for keeping it: it found that `origin/gh-pages` ships a **gzipped** `sitemap.xml.gz` that no
+`grep` can read, that it is served live, that it carries the two dead URLs, and that **my own**
+completion criterion therefore passed while the live site still advertised the old path. The gh-pages
+census is 28 occurrences across 5 files, not the 25/4 every earlier lens reported. Learning **#108**.
+
+Per learning #104 I adjudicated every finding rather than trusting rankings, and I re-derived every
+number the agents reported — including the analogue renames, the gz blob, the annotated tag messages,
+and the merge-commit precedent. Several agent claims did not survive that check and are not in the
+plan; one I could not confirm (git **push** continuity over a stale remote — `git-receive-pack`
+returns 401 unauthenticated) is marked documented-not-measured in §1 rather than asserted.
+
+### Session 225 Handoff Evaluation (by Session 226)
+
+**Score: 7/10.** It scheduled the right work, pointed at the right precedent, and its gotchas changed
+my behaviour four times. It also shipped a fabricated number inside the paragraph warning against
+fabricated numbers.
+
+**What helped, concretely:**
+- **Gotcha 7 ("this is still zsh; single-quote your heredoc delimiters").** Every heredoc this
+  session used `<<'PYEOF'` / `<<'PLANEOF'`. **Zero** quoting round-trips across ~15 heredocs. Third
+  session running that this pays; keep writing it down.
+- **Gotcha 5 / learning #104 ("cap the verification, never the adjudication").** This is why I read
+  all ~100 discovery findings rather than the top-ranked ones — and the pattern-2 regex bug, the
+  fail-open hook, and the `rsync` wipe were **not** the top-ranked findings.
+- **The ruling's six-item checklist.** Five of six were real and it named the right precedent
+  (`bfd9f36`) and the right learning (#60). A genuinely good scaffold; I resolved all six and added
+  six more.
+- **Learning #32's pointer** decided the wiki `Changelog.md:124` ruling in one read instead of a
+  debate.
+
+**What was wrong — three claims, all falsified:**
+1. **"667 references across 52 files."** Reproducible at no commit, by no method. Filed as fresh
+   truth in `BACKLOG.md:51` and `SESSION_NOTES.md:239`, replacing a number correctly flagged as stale.
+2. **"418 of the 667 hits are in `docs/architecture-history/`, including *both* `SESSION_NOTES`
+   shards."** The S220 shard contains **zero** occurrences. Verified:
+   `git grep -c claims-model-starter -- 'docs/architecture-history/SESSION_NOTES-S220*'` -> nothing.
+3. **"The commit that renames the wiki source directory is the commit that disarms its own
+   publisher."** Not as stated. `gh repo rename` does not alter the local clone's stored origin
+   string, so `publish_wiki.sh:72` still matches; the guard only trips if you re-point the clone. And
+   the guard fails **closed and loud** — while the mechanism that actually fails **open and silent**
+   (the hook trigger) went unmentioned. The handoff warned about the safe half and missed the
+   dangerous half.
+
+**What was missing:** the Pages non-redirect (the single most important fact about this task); the
+fail-open trigger; the `rsync` wipe path; the overloaded name; the already-broken stylesheet; the
+third clone at `~/Development/mpc_tests/model_project_constructor`; and that `WIKI_DIR` is assembled
+from path *parts* and is therefore invisible to the path-pattern grep the item told me to use.
+
+**ROI: strongly positive.** The scaffold saved more time than the three false claims cost, because
+all three were cheap to falsify — one `git grep` each. The lesson is not "trust less," it is
+**"a handoff number without its command is a rumour"** (#105).
+
+### Session 226 Self-Assessment
+
+**Score: 8.5/10.**
+
+**+** Found the one fact that changes the decision (Pages does not redirect) and sourced it to
+GitHub's own documentation rather than to recollection — then confirmed it twice, on two pages.
+**+** Pinned the inventory to a commit and showed the reproducing command, so the next session can
+falsify me in one line instead of re-deriving. Caught that both prior counts were wrong, including
+the "corrected" one.
+**+** **Falsified my own completion criterion before shipping it.** §7.2 prints 20 paths today; it is
+red and must go green, and the 20 are listed. A criterion never observed failing proves nothing
+(#99/#102 applied at the plan level rather than the test level).
+**+** Verified every load-bearing mechanism against the artifact instead of reasoning about it:
+`man githooks` for the exit-code semantics, `35ccbd9` for `diff-tree`'s rename shape, `ff04c02` for
+the merge-commit blindness, live `curl` for the stylesheet, `git check-ignore` for the dossier
+artifacts.
+**+** Accepted an adversarial refutation that cost me a restructure rather than defending the draft.
+**+** Upgraded the central claim from documented to **measured** when a lens produced a better method
+than mine: `apache/incubator-superset` → `apache/superset` gives the contrast live — the old **repo**
+URL 301s to the new one while the old **Pages** URL 404s with no `Location` header, same host, same
+instant. `facebook/jest` → `jestjs/jest` corroborates. I re-ran both myself rather than citing the
+agent.
+**+** Held scope: found four real defects and **filed all four instead of fixing any** (§8.1).
+
+**−** My first phase order had the defect the refuter found, and I should have caught it myself: I
+wrote both "Pages does not redirect" and "rename in one phase, fix `site_url` in the next" and did
+not connect them. **The fact was in my own §1 two hours before the refuter used it against my §5.**
+**−** I shipped a regex where I needed a literal (pattern 2) — in an inventory whose entire value is
+exactness, and after the project has already learned this class of lesson.
+**−** Three arithmetic errors in my own subtotal tables, caught only because I re-added them. The
+totals were right; the group subtotals were not.
+**−** **The completeness critic found a fail-open in my own completion criteria, after three
+refuters missed it.** My §7.4 check was `curl …/sitemap.xml | grep -c` → 0 — and `sitemap.xml.gz` is
+served alongside it, carries the same two dead URLs, is preferred by crawlers, and **no `grep` can
+read it**. I wrote learning #108 ("observe the criterion red before shipping it") and then shipped a
+criterion I had not run against the artifact's full blob list. Corrected, but I did not find it.
+
+**Against the bar:** S225 shipped 3 learnings and a 12-mutant matrix; S224 shipped a proof with a
+new assertion class. This session shipped a plan whose central finding **reverses the premise of the
+task** and whose completion criterion is falsifiable and observed-red. Comparable, and honest about
+the gap.
+
+**What's next — EXECUTION IS BLOCKED ON FIVE OPERATOR DECISIONS.** Do not open a Phase 1 session
+until D-R1 is answered; the other four can be answered at that session's start.
+
+| # | Question | Recommendation |
+| --- | --- | --- |
+| **D-R1** | The Pages URL dies permanently (§1). Accept the 404, buy a custom domain, or don't rename? | **Accept** — pre-UAT, no active tracker, no established external audience. **The only irreversible decision in the plan.** |
+| **D-R2** | Rename `docs/wiki/claims-model-starter/` too? | **Yes.** 51 of the 114 change-side lines plus a `git mv` of 25 pages. Changes **nothing** about the published wiki — `publish_wiki.sh:92` rsyncs *contents*. |
+| **D-R3** | Rebrand the wiki titles (`Home.md:1`, `_Sidebar.md:1`)? | **Yes** — the wiki is *already* self-inconsistent (sidebar says "Claims Model Starter", `License.md:3` says "Model Project Constructor"). **These two files carry zero hyphenated hits and are outside the 51.** |
+| **D-R4** | Sequence against the enterprise fork? | **Rename first.** Fork is gated on B2; the collision is five falsified assertions the plan already fixes. |
+| **D-R5** | Wiki clone: re-point in place, or `mv` the directory? | **In place.** The `mv` costs 26 dashboard snapshots, a Claude Code state dir, and two docstrings in another project's repo — for cosmetics. |
+
+**Then Phase 1 of `docs/planning/repository-rename.md`, and ONLY Phase 1.** Five phases, five
+sessions. Phase 1 is `gh repo rename` **plus** the four-file site commit **in one session, one push**
+— they cannot be split (K1), and an earlier draft that split them was killed by adversarial review.
+
+**Key files:**
+- **`docs/planning/repository-rename.md`** — the deliverable. 1,245 lines. Read §1 first: it may
+  change the operator's answer to "should we rename at all." §5's K-table (K1-K8) is the compressed
+  form of every ordering constraint; if you read nothing else, read that.
+- `scripts/publish_wiki.sh` — 10 old-name lines. **`:101` already emits the NEW name — do not
+  "fix" it.** Guards at `:53`/`:58`/`:72`/`:80`/`:86` all fail closed; `:92`'s `rsync -a --delete` has
+  no contents check (plan dragon 3).
+- `.githooks/post-commit:18` — **the single fail-open line in the system** (plan dragon 4). Zero test
+  coverage; `git grep -ln "post-commit\|publish_wiki" -- tests/` returns nothing.
+- `tests/test_wiki_no_line_citations.py:38` — `WIKI_DIR` is built from path **parts**, so
+  `grep "docs/wiki/claims-model-starter"` **does not match it** while `:60` asserts `is_dir()`.
+- `docs/planning/enterprise-migration.md` — `:831`,`:832`,`:833`,`:1520` become **vacuous passes**;
+  `:1356` becomes a false failure; `:1311`/`:1358` and dragon #21 at `:1436-1439` **forbid the action
+  Phase 4 requires**.
+- `mkdocs.yml:3-5` and `.github/workflows/publish-tutorial.yml:6-10` — the deploy trigger that pins
+  the whole sequence.
+
+**Gotchas:**
+1. **Re-run the §7.2 allowlist before touching anything. It must print exactly the 20 paths listed in
+   the plan.** A different set means the plan drifted and §2 must be re-derived first.
+2. **All counts are pinned to `59615e2`, deliberately the commit before the plan existed.** The plan
+   itself adds ~98 hits and a 52nd file, in `docs/planning/` — the *live* bucket. It is exempt
+   (allowlist group 2); do not "classify" it in Phase 5.
+3. **Use `grep -F` for `claims-model-starter.wiki`.** As a regex the `.` also matches
+   `claims-model-starter/wiki` page URLs: 104/11 vs the literal 95/7, and the 9 extras need a
+   *different* fix. Learning #106.
+4. **`git grep` cannot read `sitemap.xml.gz`**, which is served live and carries the dead URL. Any
+   sitemap check that omits the `.gz` is fail-open. §7.4 checks both. Learning #108.
+5. **The published tutorial is already unstyled** — page 200, stylesheet 404, measured 2026-08-19,
+   pre-dating any rename. Record the baseline before Phase 1 or you will blame the rename for it.
+6. **Do not `mkdir` the wiki destination directory.** `git mv` only. An empty-but-existing
+   `SOURCE_DIR` passes all five guards and `rsync -a --delete` then wipes and **pushes** the live
+   public wiki (plan dragon 3).
+7. **Every phase stays on a direct commit to `master`.** The hook is blind to merge commits — proven
+   here, not theorised: `ff04c02` changed five wiki pages and published nothing.
+8. **This is still zsh.** Single-quote every heredoc delimiter. Five sessions running; it has cost
+   zero round-trips for the two that wrote it down.
+9. **No phase earns a `CHANGELOG.md` entry.** `PROJECT_CONVENTIONS.md` §2 exempts "docstring or
+   **path strings**", which is every `scripts/`/`tests/` edit here. `CHANGELOG.md` is append-only —
+   a wrong entry is permanent. Settled in the plan so nobody re-litigates it.
+10. **`SESSION_NOTES.md` is 1,461 lines after this record** — under the >1,500 trim trigger but close.
+    The next session will likely cross it. `CLAUDE.md`'s trim section has the rule; there are **two**
+    shards to grep, never `Read`.
+
+**Four defects found while planning and deliberately NOT fixed** (plan §8.1, file as backlog items):
+the unstyled Pages site; `publish_wiki.sh`'s missing contents check; the fail-open hook; and
+`docs/planning/httpx-adapter-migration.md` sitting un-archived against `PROJECT_CONVENTIONS.md` §3
+(archiving it would shrink this rename's scope by one file).
 
 ### What Session 225 Did
 **Deliverable:** **The eval harness's governance measurement now applies one transient policy across

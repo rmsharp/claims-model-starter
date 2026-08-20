@@ -48,7 +48,7 @@ rows below it are the smaller residue that closing it exposed.
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
 | `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives** — the new one (804 lines) reads whole today, but is equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
-| Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. **667** references across **52** files (recounted 2026-08-19; the filed 644/50 inventory is stale). **Scheduled as the next session, and that session writes a PLAN, not the rename.** | **Two traps spring on the landing commit itself** — the wiki publish script greps for the literal old name and fails closed, and one reference lives in a synced file that must not be edited. |
+| Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. **Planned in Session 226 — see [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).** The real sweep is **114 lines / 23 files** (666/51 total at `59615e2`, of which 552/28 keep the old name). Both earlier counts — 644/50 and 667/52 — were wrong. | **Blocked on five operator decisions (plan §4).** The worst hazard is not the two filed traps: it is that **the published Pages URL dies permanently and irreversibly** (plan §1), and that `.githooks/post-commit:18` fails **open and silent** (plan dragon 4). |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
 | A bad `--db-url` fails silently | Filed Session 223. `connect()` builds a message naming the exact cause; the next line catches the error **without binding it** and throws the message away. The run then reports `COMPLETE` and exits 0 with **every quality check unexecuted**. A typo'd port, an unexported shell variable, and a genuine warehouse outage produce byte-identical reports. | Pre-existing and wider than the S223 fix — **not** a reason to revert it. The cheapest two-thirds is small; the third option changes when a pipeline run is allowed to "succeed" and needs an operator ruling. |
@@ -486,7 +486,16 @@ have shards under `docs/archive/`.
 
 ### Rename the repository `claims-model-starter` → `model_project_constructor`
 
-**⚠ SCHEDULED AS THE NEXT SESSION — operator ruling 2026-08-19 (Session 225 close-out):**
+**✅ PLANNED — Session 226 (2026-08-19). The plan is [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).**
+Read it instead of this section: it supersedes every number and every dragon below.
+**Execution is blocked on five operator decisions (plan §4).** Headline finding the section below
+does not contain: **GitHub does not redirect Pages project-site URLs**, so
+`https://rmsharp.github.io/claims-model-starter/tutorial/` (advertised at `README.md:9`) **404s
+permanently** the moment the rename lands — measured against two real renames, not just documented.
+The real sweep is **114 lines across 23 files**, not 667. Both previously filed counts were wrong;
+the recount in `2033e95` is reproducible at no commit.
+
+**⚠ SUPERSEDED — the operator ruling that scheduled the planning session (2026-08-19, Session 225 close-out):**
 *"set rename of repository as the next session ; it may take a planning session because of the blast
 radius of a rename."* **The next session's deliverable is a PLAN** — `docs/planning/repository-rename.md`
 — not the rename. Execution follows in its own session(s), per FM #18 and `SAFEGUARDS.md`'s

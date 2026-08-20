@@ -16,7 +16,7 @@
 
 **How to read this.** §1 is the finding that should change the operator's mind about *whether* to
 rename at all, or at least about what is being traded away. §2 is the inventory. §3 classifies every
-file. §4 is the gate: three questions only the operator can answer. §5 is the phase sequence. §6 is
+file. §4 is the gate: five questions only the operator can answer. §5 is the phase sequence. §6 is
 the dragons. §7 is how you know it is finished.
 
 ---
@@ -27,7 +27,14 @@ the dragons. §7 is how you know it is finished.
 
 GitHub redirects almost everything after a repository rename — the repo web URL, `git clone` /
 `fetch` / `push` against the old remote, issues, **the wiki**, stars, and followers. It does **not**
-redirect GitHub Pages **project site** URLs. That is stated as the explicit exception in GitHub's
+redirect GitHub Pages **project site** URLs.
+
+*(One caveat on that list, stated because the plan leans on it: repo-URL redirection and Pages
+non-redirection are both **measured** below. Git **push** continuity over the stale remote is
+**documented but not measured** — the `git-receive-pack` advertisement returns 401 without
+credentials, so it cannot be probed read-only. Fetch, however, is measured: GitHub serves the
+`git-upload-pack` advertisement at the old path with **200 and no redirect at all**. Treat push
+continuity as very likely, not proven, and confirm it during Phase 1.)* That is stated as the explicit exception in GitHub's
 own documentation:
 
 > "When you rename a repository, all existing information, with the exception of project site URLs,
@@ -44,6 +51,21 @@ own documentation:
 > github.io domain…"
 > — *Troubleshooting 404 errors for GitHub Pages sites*, GitHub Docs
 > <https://docs.github.com/en/pages/getting-started-with-github-pages/troubleshooting-404-errors-for-github-pages-sites>
+
+**And it is not only documented — it is measured.** Two real same-owner renames, one with a Pages
+config identical to this repository's (`build_type: legacy`, source `gh-pages`, `cname: null`):
+
+```
+apache/incubator-superset  ->  apache/superset          (gh api …/incubator-superset --jq .full_name)
+  https://github.com/apache/incubator-superset          -> 301  Location: …/apache/superset   REDIRECTS
+  https://apache.github.io/incubator-superset/          -> 404  no Location header            DOES NOT
+  https://apache.github.io/superset/                    -> 200
+facebook/jest -> jestjs/jest
+  https://facebook.github.io/jest/                      -> 404  no Location header            DOES NOT
+```
+
+**The same rename that 301s the repository URL 404s the Pages URL, on the same host, at the same
+instant.** That contrast is the whole finding.
 
 **Verified live state of this repository's site** (`gh api repos/rmsharp/claims-model-starter/pages`):
 
@@ -93,8 +115,13 @@ git grep -l "claims-model-starter" -- . | wc -l                              # f
 ```
 
 **At `HEAD` = `59615e2`: 666 matching lines across 51 files** (795 raw occurrences —
-`git grep -o … | wc -l` — because some lines carry the string twice). The working-tree count is
-identical, and **no untracked file contains the string**.
+`git grep -o … | wc -l` — because some lines carry the string twice). The working-tree count was
+identical, and **no untracked file contained the string**.
+
+**`59615e2` is the pin, and it is deliberately the commit BEFORE this file existed.** Committing this
+plan adds ~91 more matching lines and a 52nd file — *this* file. Every number in §2 and §3 is stated
+against `59615e2` so that the plan's own prose does not contaminate the inventory it reports. To
+reproduce any of them: `git grep -c "claims-model-starter" 59615e2 -- .`
 
 ### §2.2 Both previously filed counts were wrong, in different ways
 
@@ -136,6 +163,13 @@ poor completion criterion. §7 uses a file allowlist instead.
 | 6 | `claims_model_starter` (underscored) | 1 | 1 | **`BACKLOG.md:527` only** — the row that says this form does not exist. Self-matching. Do not read it as a real occurrence. |
 | 7 | `claims model starter` (spaced), `Claims-Model-Starter` | 0 | 0 | do not exist |
 
+**The table is complete, not merely enumerated.** Searched and confirmed **zero** for every other
+form the name could take: case-insensitive `claims.model.starter` outside the three known spellings;
+URL-encoded `claims%2Dmodel` / `claims%20model`; camel-case `ClaimsModelStarter`; any abbreviation
+like `cms-starter`; the name split across a line break (`claims-model-$`); and — the widest net —
+any line matching `claims.*starter` case-insensitively that is not one of the three known forms.
+All returned nothing. **The three spellings in rows 1-6 are the whole surface.**
+
 Patterns overlap; the column does not sum to 666.
 
 **⚠ Pattern 2 must be matched literally.** As a *regex*, `claims-model-starter.wiki` reports
@@ -154,6 +188,22 @@ same measurement made the same loose way; this plan's 95/7 is the literal count,
 - Git tags: `v0.1.0`, `v0.2.0` — neither names the repo.
 - Non-text tracked files: none (`git grep -I -l` and `git grep -l` return identical lists).
 - `docs/index.md`: **0**.
+- **Both tracked binaries** — `docs/architecture-history/architecture-approaches.pdf` and
+  `docs/explainers/interview-convergence-explainer.pdf` — `pdftotext | grep -i` → **0** each.
+- `.gitleaksignore`: **0** references to `docs/wiki/` paths, so the directory move cannot silently
+  un-suppress a secret-scanning finding. `CODEOWNERS` is `* @rmsharp` with no paths. `.git/hooks/`
+  holds only `.sample` files (the live hook is `core.hooksPath = .githooks`).
+- Ignored-but-present operational state — `.env`, `intake_sessions.db`,
+  `.orchestrator/checkpoints/` (22 run dirs), and all three `.claude/settings.local.json` files:
+  **0**. A permission-allowlist entry naming a wiki path would have broken silently; there is none.
+- Shell startup files, `~/.config/gh/`, LaunchAgents, `crontab -l`, and
+  `git config --global url.*.insteadOf`: **0**. No scheduled job or alias depends on either name.
+- **Both annotated tags already carry the NEW name** — `v0.1.0`: *"First release tag on the
+  model_project_constructor project"*; `v0.2.0`: *"Second release tag on model_project_constructor."*
+  Nothing needs re-tagging, and this is a second independent sign the rename is the consistent
+  direction (the first is `publish_wiki.sh:101`).
+- **No tracked symlinks** (`git ls-files -s | awk '$1=="120000"'` → none), so nothing dangles when the
+  directory moves.
 
 ### §2.4b Two affected files carry **zero** hyphenated hits and are therefore outside the 51
 
@@ -163,14 +213,41 @@ same measurement made the same loose way; this plan's 95/7 is the literal count,
 `claims-model-starter` grep will ever surface. **A completion criterion built on the hyphenated
 pattern cannot see this decision at all.**
 
-### §2.5 One surface outside the sweep's reach: `origin/gh-pages`
+### §2.5 One surface outside the sweep's reach: `origin/gh-pages` — and one blob inside it that **no grep can read**
 
-`git grep -c "claims-model-starter" origin/gh-pages` → **25 lines across 4 files**
-(`404.html`, `index.html`, `sitemap.xml`, `tutorial/index.html`). This is **generated output**, not
-source: `mkdocs gh-deploy --force --clean` rewrites the branch wholesale from `mkdocs.yml` +
-`docs/*.md`. It needs no edit and must not be edited by hand — it is fixed by the redeploy that
-Phase 3 triggers anyway. Listed only so a completion-criteria grep across `--all` does not alarm a
-future session.
+`git grep -c "claims-model-starter" origin/gh-pages` reports 25 lines across 4 files. **That census
+is incomplete, and the missing file is the dangerous one.** Decompressing every blob gives the true
+picture (occurrences, not lines):
+
+| blob | occurrences | reachable by `git grep`? |
+|---|---|---|
+| `404.html` | 13 | yes |
+| `tutorial/index.html` | 6 | yes |
+| `index.html` | 5 | yes |
+| `sitemap.xml` | 2 | yes |
+| **`sitemap.xml.gz`** | **2** | **NO — gzipped** |
+| `search/search_index.json` | 0 | yes |
+| `.nojekyll` | 0 | — |
+| **total** | **28 across 5 files** | |
+
+**`sitemap.xml.gz` is served live and advertises the dead path**, verified:
+
+```bash
+curl -s https://rmsharp.github.io/claims-model-starter/sitemap.xml.gz | gzip -dc
+#   <loc>https://rmsharp.github.io/claims-model-starter/</loc>
+#   <loc>https://rmsharp.github.io/claims-model-starter/tutorial/</loc>
+```
+
+**Why this matters more than the count.** The obvious criterion —
+`curl …/sitemap.xml | grep -c claims-model-starter` → 0 — **passes while the `.gz` still says the old
+name, and crawlers prefer the `.gz`.** That is a fail-open in the completion criteria themselves;
+§7.4 now checks both. `search_index.json` is clean today because its `location` values are
+**relative** (`""`, `"tutorial/"`, …) *and* neither published page's body contains the string — both
+conditions must hold, and on the `gh-pages-preA4` rollback branch the same file carries **10**
+occurrences.
+
+None of this needs an edit: it is generated output, rewritten wholesale by
+`mkdocs gh-deploy --force --clean`, which **Phase 1 triggers**. It needs *checking*, not fixing.
 
 ---
 
@@ -419,6 +496,9 @@ canonical, and the old URL's death has been *measured* rather than assumed.
 ```bash
 gh repo view --json nameWithOwner          # -> rmsharp/model_project_constructor
 gh run list --workflow=publish-tutorial.yml --limit 1     # -> one run, from this commit, success
+gh api repos/rmsharp/model_project_constructor/pages/builds/latest --jq '.status, .commit'
+#   -> "built", and a commit newer than 1b9ce68. The legacy `dynamic/pages/pages-build-deployment`
+#      builder is a SECOND stage (dragon 5) — a green publish-tutorial run does not prove it ran.
 curl -s -o /dev/null -w '%{http_code}\n' https://rmsharp.github.io/model_project_constructor/tutorial/
 #   -> 200. If 404, the deploy has not landed: `gh workflow run publish-tutorial.yml` and re-check.
 curl -s -o /dev/null -w '%{http_code}\n' https://rmsharp.github.io/claims-model-starter/tutorial/
@@ -500,7 +580,7 @@ still agree (K2) and the publish succeeds.
 
 | File | Lines | Change |
 |------|-------|--------|
-| `docs/wiki/…/Contributing.md` | `:19`,`:20` | clone command → new URL and new directory |
+| `docs/wiki/…/Contributing.md` | `:19`,`:20` | clone command → new URL and new directory. **Note the two published surfaces already contradict each other today:** `docs/tutorial.md:30` (on the Pages site) says `git clone <repo-url> model_project_constructor`, while this page (on the wiki) says `git clone …/claims-model-starter.git` then `cd claims-model-starter`. The clone URL will keep *working* via the redirect, so nothing 404s — it just leaves the reader in a directory named after a repository that no longer exists. |
 | `docs/wiki/…/Contributing.md` | `:238` | issues URL |
 | `docs/wiki/…/Home.md` | `:1` | title — **only if D-R3 = yes** |
 | `docs/wiki/…/_Sidebar.md` | `:1` | sidebar heading — **only if D-R3 = yes** |
@@ -515,15 +595,19 @@ references, so they move with the directory, not with the branding.
 
 **DONE looks like:** the live GitHub Wiki shows the new content, and the local clone is in parity.
 
-**Verification:**
+**Verification** — capture the clone's HEAD **before** committing; a silent no-publish is the whole
+risk here too (dragon 4):
 ```bash
-git log -1 --format=%s -C ~/Development/claims-model-starter.wiki   # -> a fresh "docs: sync wiki from ..." commit
-scripts/publish_wiki.sh                                             # -> "no changes to publish" (idempotent re-run)
+BEFORE=$(git -C ~/Development/claims-model-starter.wiki rev-parse HEAD)
+#   ... commit ...
+AFTER=$(git -C ~/Development/claims-model-starter.wiki rev-parse HEAD)
+[ "$BEFORE" != "$AFTER" ] && echo "HOOK FIRED AND PUBLISHED" || echo "FAIL: hook did not fire"
+scripts/publish_wiki.sh                                              # -> "no changes to publish"
 diff -r -x '.git' docs/wiki/claims-model-starter ~/Development/claims-model-starter.wiki   # -> identical
-gh api repos/rmsharp/model_project_constructor/pages >/dev/null && echo pages-ok
+gh run list --workflow=publish-tutorial.yml --limit 1                # -> UNCHANGED. No wiki file is a Pages trigger.
 ```
-**If the hook did not fire or the publish failed, do not hand-edit the clone** — fix the cause and
-re-run `scripts/publish_wiki.sh`. It is idempotent (dragon 2).
+**If the hook did not fire, do not hand-edit the clone** — fix the cause and re-run
+`scripts/publish_wiki.sh`. It is idempotent (dragon 2).
 
 **Session boundary. Close out here.**
 
@@ -634,11 +718,23 @@ act in the whole plan is the Pages URL in Phase 1 (§1).
 
 ### Phase 5 — Reconcile, classify the residue, close the item. **One commit.**
 
-Walk the **whole** remaining `git grep`, classify **every** surviving hit against §3, and fix
-anything that turns out to be neither historical nor deliberate. Then update `BACKLOG.md` (close the
-item), `README.md` if Phase 2's rewrite now reads oddly, and this plan's status line.
+**Gated on:** Phase 4 verified (or Phase 3 verified, if D-R2 = no).
 
-**DONE looks like:** §7's completion criteria all pass and the backlog item is closed.
+Walk the **whole** remaining `git grep` and classify **every** surviving hit against §3. Anything
+that is neither a §3.1 historical record nor deliberate self-reference is a miss — fix it here.
+
+Then:
+- **`BACKLOG.md`: delete the rename item's rows; do not substitute them.** 17 of its 18 hits are the
+  item itself and vanish with it. **The 18th, `BACKLOG.md:74`, is a genuine wiki-path substitution**
+  inside an unrelated item and moves with the directory (it should already have been done in
+  Phase 4 — verify, do not assume).
+- **`README.md`** — re-read `:7` end to end. It was rewritten in **Phase 1** under time pressure with
+  the site down; this is the calm second look (dragon 6).
+- **This plan's own status line** — change `Status: PLAN` to executed, with the phase commit hashes.
+- **File the four out-of-scope findings** in §8.1 as backlog items.
+
+**DONE looks like:** every check in §7 passes — including §7.4's three, which the allowlist cannot
+reach — and the backlog item is gone rather than edited.
 
 
 ---
@@ -711,7 +807,9 @@ Mechanics, each verified this session:
    lists a rename as *both* the old and the new path — verified empirically against `35ccbd9`, which
    shows `docs/planning/bedrock-testing-enablement.md` **and**
    `docs/architecture-history/bedrock-testing-enablement.md`. So the old pattern matches the deleted
-   path and the new pattern matches the added path. There is no "the hook silently skips" case.
+   path and the new pattern matches the added path. **On the rename commit specifically** there is
+   therefore no "the hook silently skips" case — but do not generalise that reassurance one commit
+   further: dragon 4 is exactly the case where it does silently skip.
 2. **The version that runs is the post-commit working tree** — i.e. the *updated* hook and the
    *updated* script, if they were changed in that same commit.
 3. **A failing hook cannot hurt the commit.** `man githooks`: post-commit *"is meant primarily for
@@ -722,8 +820,10 @@ Mechanics, each verified this session:
 5. **The one genuinely coupled pair:** `publish_wiki.sh:72`'s literal `claims-model-starter\.wiki`
    and the *out-of-repo* origin URL of `~/Development/claims-model-starter.wiki`. Change either
    alone and publishing stops with a clear message. **The clone's old origin URL keeps working
-   after the rename** — GitHub redirects wikis — so the honest fix is `git remote set-url` on the
-   clone *and* the guard literal, done together, before the guard is touched.
+   after the rename** — GitHub redirects wikis — so there is no urgency at all. The honest fix is
+   `git remote set-url` on the clone **and** the guard literal, in the same session, minutes apart
+   (Phase 4 steps 1 and 2). Splitting them across a session boundary is what turns a fail-closed
+   guard into a multi-day publishing outage nobody notices.
 
 **Conclusion for the `publish_wiki.sh` guard specifically: loud, safe, and recoverable.** Plan for
 it; do not fear it. **The hook's own trigger is a different story — dragon 4 — and that one is
@@ -782,6 +882,12 @@ because `diff-tree` lists a rename as both the deleted old path and the added ne
 against `35ccbd9`). So the executor gets one reassuring successful publish, and the failure begins on
 the *next* wiki edit — a different session, with no obvious cause.
 
+**And no test will ever catch it.** `git grep -ln "post-commit\|publish_wiki\|hooksPath" -- tests/`
+returns **nothing**: the hook and the publisher have **zero** test coverage, and neither is exercised
+by `ci.yml`. Every other mechanism in this rename has a guard that shouts or a test that reddens.
+This one has neither, which is exactly why Phase 4's proof has to be an end-to-end observation rather
+than an assertion.
+
 **Two consequences for Phase 4:**
 - The trigger prefix and the `git mv` **must** be in the same commit (already required by K3 for a
   different reason — this is a second, independent reason).
@@ -826,6 +932,13 @@ This squeezes the sequence from both sides:
   site advertising a URL that does not exist.
 - **Not long after it.** Pages does not redirect (§1), so between the rename and the deploy the
   advertised URL is simply dead — and under "1 and done" a phase boundary is days, not minutes.
+
+**There is also a third workflow nobody has named.** `gh api …/actions/workflows` lists **three**
+active workflows, not the two in `.github/workflows/`: `ci.yml`, `publish-tutorial.yml`, and
+**`dynamic/pages/pages-build-deployment`** — GitHub's legacy Pages builder. `publish-tutorial.yml`
+pushes `gh-pages`; the dynamic builder then publishes it. A post-rename "did the site rebuild?" check
+that looks only at `publish-tutorial.yml` sees half the pipeline; `gh api …/pages/builds/latest` sees
+the other half. Check both.
 
 **Hence Phase 1 is one session containing both.** Keep the commit to the four files that actually
 need to move together: `mkdocs gh-deploy --force --clean` writes a **parentless** commit to
@@ -967,9 +1080,19 @@ wiki redirects to buy it. See §1.1 option C.
 ### §7.1 Why this is an allowlist and not a number
 
 A hit count is the wrong criterion here. **Every document that discusses the rename adds hits** —
-the ruling commit added 4, this session's Phase 1B stub added 1, and this plan file adds several
-dozen more. A criterion of the form "`grep -c` returns N" was already unsatisfiable before execution
-started (§2.2). Use the file allowlist below: it is stable under the plan's own prose.
+the ruling commit added 4, this session's Phase 1B stub added 1, and **this plan file adds ~98 more.**
+A criterion of the form "`grep -c` returns N" was already unsatisfiable before execution started
+(§2.2).
+
+**And note where those ~98 live: `docs/planning/`, which every classification rule in §3 treats as
+the LIVE bucket.** By the plan's own rule this document is the single largest block of MUST_CHANGE
+lines in the repository. It is not one. Its hits are self-referential literals of exactly the
+`BACKLOG.md` class — *"`publish_wiki.sh:72` greps for the literal `claims-model-starter.wiki`"* —
+that must survive **verbatim** or the plan stops describing the thing it is planning. Phase 5's
+"classify every surviving hit" walks straight into this, so it is settled here: **the planning
+artifact is exempt, permanently, and it is in allowlist group 2 below.**
+
+Use the file allowlist: it is stable under the plan's own prose.
 
 ### §7.2 The allowlist check
 
@@ -993,8 +1116,10 @@ git grep -l "claims-model-starter" -- . \
 
 **If the command prints a path, that file was missed.** No judgment call, no re-derivation.
 
-**This criterion was falsified before it was written down.** Run against `HEAD` = `59615e2` today it
-prints **21 paths** — every change-side file that has not yet been touched:
+**This criterion was falsified before it was written down.** Run today it prints **20 paths** —
+every change-side file that has not yet been touched. (It is 20, not 23: `BACKLOG.md`,
+`SESSION_NOTES.md` and `SESSION_RUNNER.md` are change-side but sit in allowlist group 2, and the wiki
+`Changelog.md` moved to KEEP in §3.1.)
 
 ```
 .githooks/post-commit           docs/tutorial.md
@@ -1012,8 +1137,8 @@ scripts/publish_wiki.sh                    tests/test_wiki_no_line_citations.py
 
 It is red now and must go green. A completion criterion that has never been observed failing proves
 nothing — the project has learned this the hard way twice (learnings #99, #102). **Re-run it at the
-start of execution to confirm it still reports 21**; if it reports a different set, this plan has
-drifted and §2 must be re-derived before anything else.
+start of execution and confirm it still reports exactly these 20 paths.** A different set means this
+plan has drifted, and §2 must be re-derived before anything else is touched.
 
 ### §7.3 The rest
 
@@ -1040,9 +1165,19 @@ The allowlist covers tracked files at `HEAD`. These three surfaces are real, rea
 invisible to it — a plan that stops at §7.2 reports green while two of them still say the old name.
 
 ```bash
-# 1. The DEPLOYED site (generated; fixed by Phase 1's redeploy, not by any edit)
-git fetch origin gh-pages && git grep -c "claims-model-starter" origin/gh-pages -- .   # -> empty
-curl -sL https://rmsharp.github.io/model_project_constructor/sitemap.xml | grep -c claims-model-starter   # -> 0
+# 1. The DEPLOYED site (generated; fixed by Phase 1's redeploy, not by any edit).
+#    git grep CANNOT read the gzipped blob -- decompress every blob or this check is fail-open (§2.5).
+git fetch origin gh-pages
+git ls-tree -r --name-only origin/gh-pages | while read f; do
+  case "$f" in
+    *.gz) n=$(git show "origin/gh-pages:$f" | gzip -dc | grep -c claims-model-starter);;
+    *)    n=$(git show "origin/gh-pages:$f" | grep -c claims-model-starter);;
+  esac
+  [ "$n" != "0" ] && echo "STILL OLD: $f ($n)"
+done                                                    # -> prints nothing
+# And against the LIVE site, both sitemap forms -- the .gz is the one crawlers prefer:
+curl -sL https://rmsharp.github.io/model_project_constructor/sitemap.xml    | grep -c claims-model-starter   # -> 0
+curl -sL https://rmsharp.github.io/model_project_constructor/sitemap.xml.gz | gzip -dc | grep -c claims-model-starter   # -> 0
 
 # 2. The LIVE WIKI, a separate git repository this repo's grep cannot see
 git -C ~/Development/claims-model-starter.wiki fetch origin && \
