@@ -81,10 +81,227 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 228 Did
-**Deliverable:** Third trim of `SESSION_NOTES.md` — archive the oldest records into a new
-write-once shard under `docs/architecture-history/` with its own proof script (IN PROGRESS)
-**Started:** 2026-08-20
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **The THIRD trim of `SESSION_NOTES.md` — COMPLETE.** Sessions 224 → 221 (891 lines,
+4 records) are archived into
+[`docs/architecture-history/SESSION_NOTES-S224-through-S221.md`](docs/architecture-history/SESSION_NOTES-S224-through-S221.md),
+frozen and byte-for-byte unedited, beside a proof that ships **eight assertions and twenty-eight
+mutants**. The live ledger went **1,681 → 826 lines** at the trim commit, and **1,039** once this close-out
+record landed in it — that second number is the one the next session actually opens, and both are
+under the 1,050 target.
+
+**Started / completed:** 2026-08-20. **Commits:** `ff7f064` (Phase 1B claim — **its own commit, no
+trim in it**), `e4ca944` (the trim — **no record edit in it; the proof reports `added: 0`**), and
+this close-out. Three commits, exactly as `CLAUDE.md` requires.
+
+**Operator this session:** *"2"* — the trim, chosen over Phase 2 of the repository-rename plan when
+Phase 0 offered both. **Phase 2 of the rename is untouched and is still the next thing.**
+
+#### The cut, and why this depth
+
+| Retain | Live file would be | Verdict |
+| --- | --- | --- |
+| 3 (228→226) | 536 lines | **illegal** — below the 4-session floor |
+| **4 (228→225)** | **826 lines** | **CHOSEN** — under the 1,050 target, exactly at the floor |
+| 5 (228→224) | ~1,058 lines | rejected — **8 lines over** the target |
+
+Computed for all three depths before choosing, not eyeballed. Retaining four also buys real
+hysteresis: at ~200 lines/record the 1,500-line trigger will not fire again for roughly three more
+sessions. Session 228's own Phase 1B stub counts toward the four, which is the precedent Session
+224 set.
+
+**Losslessness was checked twice, by two toolchains.** The proof's L1 does it in Python; separately,
+`sed`/`cat`/`cmp` reconstructed the pre-trim file from the two artifacts — **sha256
+`106e8eee…`, byte-identical** to `git show ff7f064:SESSION_NOTES.md`.
+
+#### The proof gained three assertions, and every one came from a review that refuted it
+
+I ran a four-lens adversarial review before committing. It returned **`confirmed: []` — all four
+findings refuted.** Every refuter also wrote *"mechanically reproduced"* / *"the mechanics are
+accurate"* and then refuted on **severity**: breaks no stated rule, falsifies no written claim,
+loses no data. That is the exact split [learning #100](PROJECT_LEARNINGS.md) was filed for, and it
+is how the ancestor's L4 came to exist. **All four were acted on. All four improved the deliverable.**
+
+| New | What it pins | Why it exists |
+| --- | --- | --- |
+| **L5** | the routing table — **bounds AND filenames** — in all three copies (live pointer, shard banner, `CLAUDE.md`), then **anchored against the record ids the named files actually contain** | my first draft parsed only the integers; a probe that swapped two filenames and touched no digit passed silently — the whole failure L5 exists to remove, alive inside L5 |
+| **L6** | the shard's banner, byte-for-byte | it was the one part of the shard that was neither frozen nor checked, while asserting in its own text *"Provenance is proved here, not asserted."* A probe rewrote its headline to claim a different session range and everything stayed green |
+| **L7** | the shard **on disk today** is still the bytes the proof was written about | **write-once had no enforcement anywhere.** Everything else reads git history at the trim commit |
+
+**L7 was verified against the committed ancestor, not in simulation.** Move `SESSION_NOTES-S220-through-S217.md`
+aside and its proof prints *"still present, in the right file"* and **exits 0**. Do the same to the
+new shard and the new proof exits **1**. A one-character edit that preserves length and record ids
+also exits 1.
+
+**L7 is asymmetric on purpose, and the asymmetry was written by a refutation.** The verifier that
+killed the finding ran the decisive counter-experiment: force the ancestor down a worktree-reading
+branch and it goes **red today**, because the live file has legitimately changed since its cut —
+*"the proof red forever with zero data loss"*, the precise shape `CLAUDE.md` names as the thing to
+avoid. That objection is correct and it kills the naive fix. It also specifies the one that works:
+compare **only** the write-once artifact, never the ledger that is supposed to change. Learning #116.
+
+#### One defect I shipped and caught myself
+
+**The self-test reported `all 28 mutants caught` while catching most of them for the wrong reason.**
+To make L7 reachable before the trim was committed, the harness passed a synthetic 40-zero commit
+id; that id made every `git show <sha>:<path>` in L5's reality anchor fail, so **the same two
+`L5/4` codes appeared on all 28 rows**, including mutants that touch nothing near those files. The
+summary line was green and meaningless. It is visible only in the per-mutant attribution column.
+Fixed structurally — L7's applicability now comes from the artifact it compares, so no caller ever
+has to invent a value. Learning #113.
+
+#### Measured coverage, not asserted
+
+    L0 (none)  L1 (none)  L2 M10-M13  L3 (none)  L4 (none)  L5 M16-M24  L6 M25,M26  L7 M27,M28
+
+Leave-one-out, re-derived as the last step before commit; the command is in the proof's header.
+**All three assertions this cut adds are load-bearing alone.** Four are not, and the header says so
+— including that **L4 lost its unique coverage to L5's reality anchor during this very session**
+(L5/4 sees a whole-record boundary shift too). L4 is kept deliberately: it states the cut key
+directly rather than inferring it. Learning #114.
+
+#### Four describing documents were falsified by this cut, and one cannot be repaired
+
+`CLAUDE.md` (three sites), `README.md`'s repo map, `docs/methodology/PROJECT_CONVENTIONS.md`
+(*"Two instances so far"*) and `BACKLOG.md`'s read-cap item were all corrected here — the
+[#101](PROJECT_LEARNINGS.md) sweep. **`CLAUDE.md`'s copy is now in the canonical clause form and is
+read by L5**, so it can no longer go stale silently — and, as a consequence worth knowing before it
+surprises you, **`CLAUDE.md` must be part of any future trim commit or that trim's proof is red from
+its first run.**
+
+**The fifth cannot be fixed. The S220 shard's banner says *"the live ledger when N ≥ 221"*, which
+this trim falsified.** That file is write-once, its proof predates any assertion that could notice,
+and nobody may edit it. A copy of a mutable fact inside a frozen artifact is a landmine armed by the
+*next* change — learning #115. The new shard's banner therefore labels its own table a snapshot,
+names the live pointer block as the authority, and cites the S220 banner as the observed instance.
+
+#### Verification — everything, with the two that could have lied
+
+- **All three proofs green, all three self-tests green**: S216 9/9, S220 15/15, S224 **28/28**.
+  Neither ancestor shard was modified (`git diff` over `docs/architecture-history/` is empty).
+- **The rename plan's §7.2 allowlist is unmoved: 17 → 17**, verified by **sorted set difference in
+  both directions** (#109), not by count. Nothing appeared; nothing disappeared. The new shard
+  contains **0** `claims-model-starter` hits and the live file keeps all **22**, so Phase 2 inherits
+  no drift.
+- `uv run pytest -q` → **1230 passed, 9 skipped** — identical to Session 227's baseline.
+- **Fires nothing.** `publish-tutorial.yml`'s filter is `docs/*.md`, single-level; the shard is two
+  levels down. The wiki hook needs `^docs/wiki/claims-model-starter/`; zero such paths touched.
+- **`SESSION_RUNNER.md` step 14 intact**: `## ACTIVE TASK` → `### What Session 228 Did` are adjacent.
+  Step 18's ghost check is a frontier comparison and cannot false-positive on a trim.
+
+### Session 227 Handoff Evaluation (by Session 228)
+
+**Score: 8/10.**
+
+**What helped, concretely.** The paragraph headed *"⚠ But read this first: the trim trigger has
+fired"* is the whole reason this session went cleanly. In five lines it established that the
+threshold was crossed, that the decision is **a judgment call with hysteresis and the operator's to
+make**, that a trim is **its own deliverable and its own session**, that it needs **three separate
+commits**, and that **the trim commit must contain no record edit** — and it said *do not bundle it
+with Phase 2*. I did not have to derive any of that, and the operator had a real choice to make in
+Phase 0 because Session 227 had framed one.
+
+**What was missing — the deduction.** It pointed at `CLAUDE.md`'s rules rather than walking them,
+and two consequences of a trim were nowhere: that the cut falsifies prose in `README.md`,
+`PROJECT_CONVENTIONS.md` and `CLAUDE.md` (the project already has **learning #101** about exactly
+this, from the previous trim, and the handoff does not cross-reference it), and that a **frozen**
+shard's banner would be falsified too — which nobody had noticed and which is now #115. Both are
+fair omissions for a session whose deliverable was a rename phase, but a one-line pointer to #101
+would have saved a rediscovery.
+
+**What was wrong:** nothing. Every claim I depended on held. Its rename-specific gotchas (the
+permanent 404, the unstyled tutorial, the orphaned third clone) were not mine to use but were
+precise, and I have carried all of them forward untouched.
+
+**ROI:** clearly positive. One paragraph of a handoff written for a different task correctly framed
+this one.
+
+### Session 228 Self-Assessment
+
+**Score: 8.5/10.**
+
+**+** Computed the live-file size at **all three** legal retention depths before choosing, and
+rejected the 5-session cut on an 8-line margin rather than eyeballing it.
+**+** Proved losslessness **twice with different toolchains**, and reported the sha256 rather than
+the word "identical".
+**+** **Acted on all four review findings despite `confirmed: []`.** The panel's own reasoning —
+not just its facts — supplied L7's asymmetry (#116).
+**+** **Found my own harness lying while green.** The fake-sha false attribution was invisible in
+the verdict and obvious in the attribution column, and I read the column (#113).
+**+** **Re-measured** the coverage matrix instead of restating it, discovered L4 had lost its unique
+coverage *to my own new assertion*, and wrote that down rather than leaving a flattering claim (#114).
+**+** Verified L7 end-to-end against the **committed ancestor** — the strongest available evidence
+that the gap was real and that the fix closes it.
+**+** Held the write-once rule under pressure: the S220 banner is wrong, the fix is one `sed`, and I
+did not touch it.
+
+**−** **I shipped L5 blind to the destinations.** I wrote the assertion, wrote four mutants for it,
+ran a leave-one-out sweep, declared it load-bearing — and every one of those steps was consistent
+with an assertion that checks half its claim. The project already had **#102** ("an assertion is
+only as falsifiable as its operands are distinguishable") and I did not apply it to the operands of
+the *claim* rather than the *fixture*. A review found it; I did not.
+**−** **I wrote a false exhaustiveness claim into `CLAUDE.md`** — *"the only one no proof checks"* —
+in the same session in which I hand-corrected two other unchecked copies. The counter-evidence was
+my own diff.
+**−** I ran the #101 sweep for *describing documents* and it covered only mutable files. Frozen
+artifacts describe the system too; the S220 banner sat outside a sweep I believed was complete.
+**−** The proof was rebuilt from scratch mid-session because I designed L5 before enumerating what a
+routing table actually asserts. Ten minutes of enumeration first would have cost less than the rebuild.
+
+**Against the bar:** S224 shipped the 15-mutant ancestor; S225 a 12-mutant matrix; S227 an
+irreversible rename with every prediction tested. This session shipped 28 mutants, three new
+assertions, a measured rather than asserted coverage matrix, the **first enforcement the write-once
+rule has ever had**, and an experiment on the committed ancestor showing the gap was real. It also
+shipped a half-blind assertion and a false claim, both caught before commit, one of them not by me.
+
+**What's next: Phase 2 of `docs/planning/repository-rename.md`, and ONLY Phase 2** — unchanged from
+Session 227's handoff, which I did not consume. It is the cheapest phase: it touches no file on
+`publish-tutorial.yml`'s trigger list and none under `docs/wiki/`, so it fires neither the deploy
+nor the wiki hook. Scope: `SECURITY.md:9`, `CONTRIBUTING.md:6`, and eleven lines of
+`docs/planning/enterprise-migration.md` — the five `curl` criteria the rename turned into **vacuous
+passes** (add `-fL` while there), the two "unchanged" assertions at `:1311`/`:1358`, the independence
+pattern at `:363`/`:1308`/`:1351`, and the reword of dragon #21 at `:1436-1439`, whose verbatim *"Do
+NOT … re-remote `~/Development/claims-model-starter.wiki`"* forbids the exact action Phase 4
+requires. **Reword it; do not delete it** — it is still a live warning about the *enterprise* wiki.
+**And before starting, walk §7 backwards against the phases** (Session 227's gotcha 8; it is what
+found the orphaned clone, too late).
+
+**The trim trigger will not fire again for roughly two sessions** — 1,039 lines with this record in
+it, ~200 lines per record, 1,500 threshold. Do not trim again until it does. And note which number
+the rule reads: the cut is sized at the *trim commit* (826 here), but the *trigger* is read at
+Phase 0 against the file as it stands, close-out records included.
+
+**Key files:**
+- **`docs/architecture-history/SESSION_NOTES-S224-through-S221.md`** (933 lines) + its
+  `.verify.sh` (8 assertions, 28 mutants). **Frozen. Do not edit — L7 now catches it.**
+- **`docs/planning/repository-rename.md`** — §4 carries the operator's ruling and is closed. Phase 2
+  is at `:528-600`; §7.2's allowlist is at `:1097` and still prints **17**.
+- `CLAUDE.md` §"`SESSION_NOTES.md` is trimmed" — the retention rule, the three-commit rule, and the
+  **canonical routing table that L5 now reads out of this file**.
+- `~/gh-pages-pre-rename.bundle` + branch `gh-pages-pre-rename` — still the only copy of the
+  pre-rename deployed site; `gh-pages` is parentless.
+- `.githooks/post-commit:18` — untouched, still the one **fail-open** line in the system. Bites in
+  Phase 4.
+- `tests/test_wiki_no_line_citations.py:38` — `WIKI_DIR` built from path **parts**, invisible to a
+  path-pattern grep. Phase 4 territory.
+
+**Gotchas:**
+1. **`CLAUDE.md` is now load-bearing for the proof.** The fourth trim must put its canonical routing
+   table into `CLAUDE.md` **in the trim commit**, or its L5 is red from the first run. This is
+   deliberate.
+2. **The S220 shard's banner is wrong and must stay wrong.** *"the live ledger when N ≥ 221"* is
+   false; the file is write-once. Do not fix it. The live pointer block is the authority.
+3. **Two copies of the routing table are still unchecked by anything:** `README.md`'s repo map and
+   the shard-naming rule in `docs/methodology/PROJECT_CONVENTIONS.md`. A trim that leaves either
+   alone ships a lie.
+4. **A record's own text is frozen history.** Session 225's record ends *"there are now **two**
+   shards"* — stale, and correct to leave. Editing it registers as an added record and holds the
+   proof red forever with zero data loss.
+5. **This is still zsh.** Single-quote every heredoc delimiter. Sixth session running, still free.
+6. **Every phase stays on a direct commit to `master`.** The hook is blind to merge commits.
+7. **The old Pages URL 404s forever, and the tutorial is still unstyled.** Neither is rename damage
+   and neither is yours to fix (S227 gotchas 1-2).
+8. **`~/Development/mpc_tests/model_project_constructor` is still on the old origin URL and no phase
+   owns it** (learning #111). Give it a home in Phase 4 step 1.
 
 ### What Session 227 Did
 **Deliverable:** **Phase 1 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
