@@ -45,13 +45,218 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 227 Did
-**Deliverable:** **Phase 1 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)** —
-`gh repo rename claims-model-starter -> model_project_constructor`, **plus** the four-file site
-repair, in one session, one commit, one push. (IN PROGRESS)
-**Started:** 2026-08-20
-**Status:** Session claimed. Operator answered all five §4 decisions (D-R1 = option A, accept the
-permanent Pages 404; D-R2/D-R3 yes; D-R4 rename-first; D-R5 re-point in place). §7.2 allowlist
-re-run before touching anything: **exactly the 20 paths the plan lists** — no drift. Work beginning.
+**Deliverable:** **Phase 1 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
+— COMPLETE.** The GitHub repository is now **`rmsharp/model_project_constructor`**, and the published
+tutorial site was repaired in the same session and the immediately following push, exactly as K1
+requires. Every verification command in the plan's Phase 1 block was run and every one is green.
+
+**Commits:** `6d2a617` (operator ruling on D-R1..D-R5 + Phase 1B claim — **its own commit, fires
+nothing**), `c1fe06f` (the four-file site repair — the commit that deploys), and this close-out.
+Pushed `2070547..6d2a617` then `6d2a617..c1fe06f`; `origin/master` is at parity.
+
+**Operator this session:** *"accept the 404, go with option A; accept all recommendations for D-R2,
+D-R3, D-R4, and D-R5."* Recorded verbatim in the plan's §4 because D-R1 is the only irreversible act
+in the plan and that sentence is the whole authorization for it.
+
+#### The irreversible act, and the measurement that makes it interpretable
+
+**The old Pages URL is dead, permanently, and it was measured at the moment it died.** The plan's
+central finding is now confirmed **on this repository**, not merely on the two analogue renames
+S226 measured:
+
+| Surface | Before | After | Header |
+| --- | --- | --- | --- |
+| `github.com/rmsharp/claims-model-starter` | 200 | **301** | `Location: …/rmsharp/model_project_constructor` |
+| `rmsharp.github.io/claims-model-starter/tutorial/` | 200 | **404** | **no `Location` header at all** |
+| `rmsharp.github.io/model_project_constructor/tutorial/` | 404 | **200** | — |
+
+Same host, same rename, same instant: the repo URL forwards and the Pages URL does not. That is §1
+happening as designed. **Do not "fix" the 404** — a second rename has the same consequence and also
+breaks the redirect chain that 552 lines of historical record depend on.
+
+**`gh repo rename` rewrote `origin` by itself.** The plan hedged (*"gh may rewrite origin; CONFIRM,
+do not assume"*). It does: `git remote -v` reported the new URL with no `set-url` needed. Hedge
+resolved to a measured fact; the next executor can skip that branch.
+
+#### What actually shipped
+
+`c1fe06f` — **three files, four changes**, not the "exactly four files" the plan says (see defects
+below):
+
+| File | Lines | What |
+| --- | --- | --- |
+| `mkdocs.yml` | `:3`,`:4`,`:5` | `site_url` / `repo_url` / `repo_name` — deploy trigger |
+| `README.md` | `:9` | the advertised tutorial URL |
+| `README.md` | `:7` | **rewritten, not substituted** (dragon 6) |
+| `docs/tutorial.md` | `:218` | wiki page URL — also a deploy trigger |
+
+`README.md:7` existed to explain a naming divergence, and the rename changed *which* divergence
+there is. I verified all three naming facts first-hand before writing the replacement rather than
+copying the plan's table: `pyproject.toml:2` = `model-project-constructor`, `src/model_project_constructor/`,
+`packages/data-agent/pyproject.toml:2` = `model-project-constructor-data-agent`. The sentence now
+says the repository, source tree and import package agree, and only the PyPI distribution names keep
+hyphens — which is PEP 503 normalization, not an anomaly. **Do not "fix" those hyphens.**
+
+#### Verification — all green, with the two that could have lied
+
+- **Both deploy stages ran** (dragon 5: a green `publish-tutorial` run proves only half).
+  `publish-tutorial.yml` run `32335373755`, success, 15s. Legacy `pages/builds/latest` →
+  `status: "built"`, commit `cc66dea`, `2026-08-20T05:23:20Z` — newer than the pre-rename `1b9ce68`.
+- **`gh-pages` was force-replaced**, `1b9ce68...cc66dea (forced update)`, deployed from `c1fe06f`.
+  It is parentless (`rev-list --count` = 1), so **there is no ordinary revert**. The pre-deploy state
+  is bundled at **`~/gh-pages-pre-rename.bundle`** (29 KB, `git bundle verify` → "records a complete
+  history") and also at local branch `gh-pages-pre-rename`.
+- **Sitemap clean in BOTH forms** (gotcha 4 — `git grep` cannot read the `.gz`): `sitemap.xml` → 0
+  old-name hits, `sitemap.xml.gz` → 0. It now advertises exactly two URLs, both new.
+- **All 7 deployed blobs clean**, `.gz` decompressed per §7.4 check 1.
+- **The §7.2 allowlist went 20 → 17, verified by set difference, not by count.** Exactly
+  `README.md`, `mkdocs.yml`, `docs/tutorial.md` left; **nothing appeared**. (Pre-execution it printed
+  exactly the 20 paths the plan lists — no drift, so §2 did not need re-deriving.)
+- **The stylesheet is still 404, and that is NOT rename damage.** Baseline recorded before the rename:
+  `page=200 css=404`. After: identical. The deployed tree has no `assets/` directory at all — dragon
+  10, pre-existing, filed in §8.1, deliberately not fixed here.
+- `uv run pytest -q` → **1230 passed, 9 skipped**, coverage 97.98% — exactly the plan's prediction.
+  `ruff` clean; `mypy` clean across 68 source files.
+- Both clones still fetch: this repo on the new remote, the wiki clone **over its stale remote via
+  redirect** — which is correct, K2 keeps it stale until Phase 4.
+- **The ruling commit fired nothing**, confirming dragon 5's claim that `docs/*.md` is a *single-level*
+  trigger: `docs/planning/repository-rename.md` changed and no run appeared.
+
+#### Three defects found in the plan while executing it — none fixed, all filed here
+
+1. **"Exactly four files" is three files, four changes.** `mkdocs.yml`, `README.md` (twice),
+   `docs/tutorial.md`. Cosmetic, but an executor who counts files will hunt for a fourth.
+2. **§7.4 check 3 has no owning phase for the third clone.** It requires all three clones' origins to
+   carry the new name, and dragon 9 names `~/Development/mpc_tests/model_project_constructor`
+   *specifically so it would not be forgotten*. Phase 4 step 1 re-points **only** the wiki clone;
+   nothing re-points that one. **It is still on the old URL today** (works via redirect). This is
+   learning **#111** and it needs a home in Phase 4 or 5.
+3. Step 0's *"master is 2 commits ahead"* was 4 by execution time — expected drift, the plan pins
+   everything to `59615e2` and says so. Noted only so nobody reads it as an error.
+
+### Session 226 Handoff Evaluation (by Session 227)
+
+**Score: 9/10.** The highest this project has scored a handoff, and it earned it on the hardest kind
+of session to hand off: one whose central act cannot be undone. Execution was close to mechanical —
+**zero surprises, zero stakeholder corrections, and not one load-bearing claim failed under test.**
+
+**What helped, concretely — every one of these changed what I did:**
+- **Gotcha 5 ("record the baseline before Phase 1").** This is the single highest-value line in the
+  handoff. The stylesheet is 404 *after* the rename, and without the pre-measurement I had exactly
+  two honest readings available — "the irreversible act broke it" and "assume it was already
+  broken" — on the one commit where the first is unrecoverable. The baseline turned that into
+  arithmetic. Now learning #110.
+- **Gotcha 1 ("re-run the allowlist before touching anything; it must print exactly 20").** It did.
+  That one command licensed everything downstream, because it proved the plan had not drifted.
+- **Dragon 5's third workflow.** I would have checked `publish-tutorial.yml`, seen green, and stopped
+  at half the pipeline. The `pages/builds/latest` call is the other half and it is not discoverable
+  from `.github/workflows/`.
+- **Gotcha 4 (`git grep` cannot read `sitemap.xml.gz`).** Both forms checked; both 0.
+- **The parentless-`gh-pages` warning + the bundle recipe.** `rev-list --count` = 1 confirmed it, and
+  the forced update landed exactly as described. The backup existed *before* the deploy, not after.
+- **Gotcha 8 ("this is still zsh; single-quote your heredoc delimiters").** Every heredoc this session
+  used `<<'PYEOF'` / `<<'MSGEOF'`. **Zero** quoting round-trips, fourth session running.
+- **Gotcha 9 ("no phase earns a CHANGELOG entry")** — settled in advance, so a decision that could
+  have written a permanent wrong entry into an append-only ledger never had to be made under time
+  pressure with the site down.
+- **Dragon 6.** A `sed` here would have shipped a sentence whose only remaining content was an
+  unexplained hyphen/underscore difference. The handoff named it *and* named the replacement's shape.
+
+**What was wrong or missing — two things, one real:**
+1. **§7.4 check 3 is orphaned** (defect 2 above). The plan states a criterion, names the surface in a
+   dragon so it "would not be forgotten", and then assigns it to no phase. Naming a hazard is not
+   scheduling its fix. This is the one deduction that matters.
+2. **"Exactly four files"** is three. Cosmetic.
+
+**ROI:** overwhelmingly positive. The plan cost one session to write; it made an irreversible,
+multi-surface change take one session with no rework, no false alarms, and a defensible record of
+what was destroyed on purpose.
+
+### Session 227 Self-Assessment
+
+**Score: 8.5/10.**
+
+**+** Ran the drift check **before touching anything**, and verified the criterion's movement by
+**set difference in both directions** rather than by count — 20 → 17 is also consistent with four
+repaired and one newly broken. Learning #109.
+**+** Measured the irreversible consequence at the instant it happened, and captured the fact that
+makes it interpretable: the old repo URL 301s **with** a `Location` header while the old Pages URL
+404s **without** one. A bare pair of status codes would have proved much less.
+**+** Verified the three naming facts first-hand (`pyproject.toml`, `src/`, `packages/`) before
+rewriting `README.md:7`, instead of transcribing the plan's table — FM #11 applied to a plan's own
+evidence, not just to my memory.
+**+** Resolved a hedge into a fact rather than leaving it hedged: `gh repo rename` **does** rewrite
+`origin`.
+**+** **Held scope.** Found the orphaned third clone and did **not** re-point it — one
+`git remote set-url` away, entirely safe, and out of Phase 1's scope. Filed it instead.
+**+** Kept the ruling/claim commit and the deploying commit separate, so the parentless deploy is
+bisectable to a three-file change.
+
+**−** **I did not run `mkdocs build --strict` locally before pushing the commit that triggers a
+forced, parentless, non-revertible deploy.** I validated that `mkdocs.yml` *parses* and that its three
+values were right — which is strictly weaker than proving the site builds. It worked; that is luck
+standing in for a check, on the one commit in the whole plan where being wrong is expensive.
+**−** My first `comm` ran on **unsorted input**. It printed the right three files and warned. On
+differently-ordered input it would have been silently wrong, and I would have shipped an unverified
+delta as a verified one. I re-ran it sorted, both directions — but I should not have needed the
+warning to notice.
+**−** I read the plan's Phase 1 block, its dragons and its §7 — but I did not walk §7 *backwards
+against the phases* until after the work was done, which is how the orphaned clone surfaced late.
+Ten minutes at the start would have found it before the first command, not after the last.
+
+**Against the bar:** S226 shipped a plan whose finding reversed the task's premise; S225 shipped a
+12-mutant matrix. This session shipped the execution that plan called for, with every prediction
+tested rather than assumed, three defects found *in the plan* while following it, and the one
+irreversible act in the project's history documented with before/after measurements on both sides.
+Comparable in rigour, smaller in invention — which is what an execution phase should be.
+
+**What's next: Phase 2 of `docs/planning/repository-rename.md`, and ONLY Phase 2.** It is the
+cheapest phase in the plan and deliberately so: it touches **no** file on `publish-tutorial.yml`'s
+trigger list and **no** file under `docs/wiki/`, so it fires neither the deploy nor the wiki hook.
+Scope: `SECURITY.md:9`, `CONTRIBUTING.md:6`, and eleven lines of
+`docs/planning/enterprise-migration.md` — the five `curl` criteria that the rename has turned into
+**vacuous passes** (add `-fL` while there), the two "unchanged" assertions at `:1311`/`:1358`, the
+independence pattern at `:363`/`:1308`/`:1351`, and the reword of dragon #21 at `:1436-1439`, whose
+verbatim *"Do NOT ... re-remote `~/Development/claims-model-starter.wiki`"* forbids the exact action
+Phase 4 requires. Reword it; do not delete it — it is still a live warning about the **enterprise**
+wiki.
+
+**⚠ But read this first: the trim trigger has fired.** `SESSION_NOTES.md` now exceeds the 1,500-line
+threshold in `CLAUDE.md`. That is a **judgment call with hysteresis**, and it is the operator's to
+make: a trim is its own deliverable and its own session (three separate commits — claim, trim,
+close-out — and the trim commit must contain **no** record edit). Do **not** bundle it with Phase 2.
+
+**Key files:**
+- **`docs/planning/repository-rename.md`** — §4 now carries the operator's ruling verbatim and is
+  **closed**. Phase 2 is at `:528-600`. §7.2's allowlist is at `:1097` and currently prints **17**.
+- `~/gh-pages-pre-rename.bundle` + local branch `gh-pages-pre-rename` — the only copy of the
+  pre-rename deployed site. `gh-pages` is parentless; this bundle *is* the undo.
+- `docs/planning/enterprise-migration.md` — Phase 2's real work; eleven lines across six sites.
+- `.githooks/post-commit:18` — untouched, still the one **fail-open** line in the system. It does not
+  bite until Phase 4, but it is the hazard that ends the plan badly if it is forgotten.
+- `scripts/publish_wiki.sh` — untouched. `:101` already emits the NEW name; **do not "fix" it.**
+- `tests/test_wiki_no_line_citations.py:38` — `WIKI_DIR` is built from path **parts**, so a
+  path-pattern grep cannot see it. Phase 4 territory, and the single line whose omission reddens the
+  suite.
+
+**Gotchas:**
+1. **The old Pages URL 404s forever. That is the plan working, not a defect.** Anyone who "fixes" it
+   by renaming back destroys the redirect chain 552 lines of history depend on, and does **not** get
+   the URL back.
+2. **The published tutorial is still unstyled** — page 200, stylesheet 404, identical before and
+   after the rename. Pre-existing (no `assets/` tree on `gh-pages` at all). Filed in §8.1. Do not
+   attribute it to the rename, and do not fix it inside a rename phase.
+3. **`~/Development/mpc_tests/model_project_constructor` is still on the old origin URL** and **no
+   phase owns it.** Give it a home in Phase 4 step 1 alongside the wiki clone's `set-url`.
+4. **The wiki clone's stale origin is deliberate** (K2) — it must stay stale until Phase 4 changes it
+   in the same breath as `publish_wiki.sh:72`'s guard literal. It fetches fine via redirect.
+5. **Every phase stays on a direct commit to `master`.** The hook is blind to merge commits.
+6. **This is still zsh.** Single-quote every heredoc delimiter. Fifth session running, still free.
+7. **Do not `mkdir` the wiki destination in Phase 4.** `git mv` only — an empty-but-existing
+   `SOURCE_DIR` passes all five guards and `rsync -a --delete` then wipes and **pushes** the live
+   public wiki.
+8. **Before Phase 2, walk §7 backwards against the phases** and name the phase+step that makes each
+   criterion green. That walk is what found defect 2 here, and it found it too late.
 
 ### What Session 226 Did
 **Deliverable:** **`docs/planning/repository-rename.md` — the PLAN for renaming
