@@ -81,26 +81,265 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 229 Did
-**Deliverable:** **Phase 2 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)** (`:545-590`)
-— inert prose plus the other plans' broken assertions. (IN PROGRESS)
-**Started:** 2026-08-20
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **Phase 2 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
+(`:545-589`) — COMPLETE.** Inert prose plus the other plans' broken assertions. Three files edited,
+plus the flags dragon 1 mandates, in **one commit** as the plan requires.
 
-**Scope, as the plan states it:** `SECURITY.md:9` (advisory URL), `CONTRIBUTING.md:6` (Contributing
-wiki-page URL), and `docs/planning/enterprise-migration.md` — the five `curl` acceptance criteria
-that the rename turned into vacuous passes or a false failure (dragon 1: `:831`, `:832`, `:833`,
-`:1356`, `:1520`, adding `-fL`), the two `# → unchanged, still the public wiki` comments
-(`:1311`, `:1358`), the clone-independence pattern (`:363`, `:1308`, `:1351` — dragon 1's sixth
-item), and the reword — **not** deletion — of the `re-remote` prohibition at `:1256-1257` and
-dragon #21 at `:1436-1439`.
+**Started / completed:** 2026-08-20. **Commits:** `b39122c` (Phase 1B claim, its own commit),
+`73b9418` (Phase 2), and this close-out.
 
-**Entry state, measured not assumed:** working tree clean at `798abf1`, `master` 3 commits ahead of
-`origin/master`. §7.2's allowlist prints **17** paths, exactly as Session 228 recorded. `uv run
-pytest -q` → 1230 passed, 9 skipped.
+**Operator this session:** *"rename Phase 2"*, then a second ruling mid-session — see "The decision
+I put to the operator" below.
 
-**Fires nothing.** No file in scope is on `publish-tutorial.yml`'s trigger list (`docs/*.md`,
-single-level) and none is under `docs/wiki/`, so neither the Pages deploy nor the post-commit wiki
-hook can fire.
+#### What changed
+
+| File | Change |
+| --- | --- |
+| `SECURITY.md:9` | advisory URL → new name. **1 old-name hit → 0.** |
+| `CONTRIBUTING.md:6` | Contributing wiki-page URL → new name. **1 → 0.** |
+| `docs/planning/enterprise-migration.md` | the five `curl` criteria (`:831`,`:832`,`:833`,`:1356`,`:1520`), the two `# → unchanged, still the public wiki` comments (`:1311`,`:1358`), and the re-remote prohibition at C4 step 4 + dragon #21 — **reworded, not deleted** |
+| `BACKLOG.md` | the dragon-1 flag, the Phase 5 residue, and the two plan defects below |
+
+**§7.2's allowlist went 17 → 15** — exactly the two files that reached zero. Re-derived, not assumed.
+
+#### Dragon 1's prescribed repair does not work, and I measured that before applying it
+
+The plan says of the five `curl` criteria: *"Add `-fL` while you are there so a future rename fails
+loudly instead of vacuously."* **Measured, and it is cosmetic:**
+
+    curl -sfL <LIVE sitemap> | grep -c audits   →  prints 0, exits 1
+    curl -sfL <404  sitemap> | grep -c audits   →  prints 0, exits 1     ← identical
+
+A pipeline reports **its last** command's status, so `-f` on the *first* command is invisible, and
+`grep -c` prints `0` on empty input either way. The vacuous pass dragon 1 exists to close survives
+its own prescription. What I shipped instead: the two sitemap checks capture **curl's own exit**
+(`sitemap=$(curl -sfL …) || echo FAIL`), and the two 404-expecting checks get a **positive control**
+ahead of them, because a host that 404s every path makes "→ 404" meaningless. `-fL` is applied where
+it is genuinely load-bearing — `:1356`, which expects 200 (measured: prints the code, exits 0 on
+200, non-zero on 404). Learnings [#117](PROJECT_LEARNINGS.md), [#118](PROJECT_LEARNINGS.md).
+
+#### The instruction conflict, resolved as the plan directed
+
+`enterprise-migration.md`'s C4 step 4 and dragon #21 both forbade *"re-remote
+`~/Development/claims-model-starter.wiki`"* — the exact act Phase 4 of the rename requires. Both
+sites now say the ban is on the **destination** (the enterprise wiki), not on the command, and both
+name Phase 4's re-point at the **original's** wiki under the new name as the thing that *preserves*
+the property. **Dragon #21 is still present and still a live warning** — the plan said reword, not
+delete. `grep -n "re-remote"` now returns one line, the reworded one.
+
+#### I did NOT touch the clone-independence pattern, and that was the work item
+
+The Phase 2 table lists `:363`, `:1308`, `:1351` — yet dragon 1 ends *"Flag this to whoever owns
+`enterprise-migration.md`; **do not silently rewrite another plan's acceptance criteria beyond the
+five URL lines above**."* The two are reconciled by reading the table row as **"file the flag"**, not
+"edit the greps". Twelve independent adversarial verifiers reached the same reading from the plan's
+§8 (`:1220-1222`, *"This plan only repairs the five verification lines"*). The greps are untouched;
+`BACKLOG.md` carries the flag. Learning [#119](PROJECT_LEARNINGS.md).
+
+**And the flag carries a measurement that refutes dragon 1's own recommendation.** It proposes
+path-scoping the check over *"`scripts/`, `.githooks/`, `mkdocs.yml` and `tests/` only."* **Measured:
+350 hits, 284 of them legitimate `from model_project_constructor…` imports in `tests/`, plus 15 in
+`scripts/run_pipeline.py`.** Unsatisfiable — the identical objection dragon 1 raises against the
+fifth-alternative fix. The workable set is the four §2.6 coupling files, and it needs the criterion
+restated as "no name **other than the clone's own**". That is an operator ruling, not the rename
+plan's to make.
+
+#### The decision I put to the operator, and why
+
+**Walking §7 backwards against the phases** (Session 227's gotcha 8, inherited from Session 228's
+handoff — the single highest-value line in it) found **two defects in `repository-rename.md`
+itself**, one fail-dangerous. Both are written up in full in `BACKLOG.md` under
+*"Two defects in `repository-rename.md` ITSELF"*; the short form:
+
+- **A.** Phase 4 is told to change `publish_wiki.sh` *"all 10 lines"*, but `:19`, `:24`, `:42` hold
+  the **filesystem path** D-R5 pins, and the plan's own `:411` says changing `:42` **hard-fails the
+  script at its `:58` guard**. Correct split: change 7, keep 3. Then `:723`, `:1173` and **§7.2's
+  allowlist — Phase 5's DONE gate — all go red on a *correct* Phase 4**, because none of them
+  exempts `scripts/publish_wiki.sh` while `:1134` rules *"If the command prints a path, that file
+  was missed. No judgment call."*
+- **B.** Dragon 1's `:789` says *"Fix all five in the same commit as `mkdocs.yml`"* — a Phase 1 file,
+  from a phase that explicitly disclaimed those lines at `:504` and closed without them (`c1fe06f`,
+  three files, none of them `enterprise-migration.md`).
+
+Fixing them would have widened Phase 2 from a three-file table to four and edited the governing
+plan. **I asked rather than decided; the operator ruled `Separate session`.** It is the next
+session's deliverable, before Phase 3.
+
+#### Verification — everything, and the two baselines that could only be read as a pair
+
+- **Fired nothing, proved by before/after, not by reasoning.** `publish-tutorial.yml`'s last run is
+  still Phase 1's (`32335373755`, 2026-08-20T05:22:48Z) and the wiki clone is still at `41c7f72`,
+  identical before and after the commit. The trigger list is `docs/*.md` (single-level), `mkdocs.yml`,
+  the workflow file, `pyproject.toml`; `enterprise-migration.md` is two levels deep and the other
+  three files are at the repo root. The hook needs `^docs/wiki/claims-model-starter/`; zero such paths.
+- **The plan's own Phase 2 verification block, run verbatim:** the `rmsharp.github.io/claims-model-starter`
+  grep prints **nothing**; `grep -n "re-remote"` returns **one** line, the reworded one, with dragon
+  #21 intact.
+- **§7.2 allowlist 17 → 15**, re-derived by running the command, and the two that left are exactly
+  `SECURITY.md` and `CONTRIBUTING.md`.
+- `uv run pytest -q` → **1230 passed, 9 skipped**; `ruff` clean; `mypy` clean, 68 source files.
+- **GitHub's rename redirects, measured rather than assumed:** the repo and wiki web URLs 301 to the
+  new name; `git ls-remote` on **both** wiki URL spellings returns `41c7f72`; `gh api
+  repos/rmsharp/claims-model-starter/releases` returns 2, exit 0. That is why the four residual
+  command lines are cosmetic and were left for Phase 5.
+
+#### One defect I found by running a line I was only reading
+
+`enterprise-migration.md:1372`'s C5 criterion is `gh repo view rmsharp/claims-model-starter --json
+isPrivate,archived`. **`archived` is not a `gh repo view` field — it is `isArchived`.** It exits 1
+with *"Unknown JSON field"* under **both** names, so this criterion has never been able to pass, and
+the rename did not cause it. With the field corrected it returns `{"isArchived":false,"isPrivate":false}`
+— the expected `false, false` — **even under the old name**, via the redirect. Filed, not fixed:
+it is outside the five lines dragon 1 authorises. Learning [#117](PROJECT_LEARNINGS.md).
+
+### Session 228 Handoff Evaluation (by Session 229)
+
+**Score: 9/10.** The highest-value handoff I have been handed in this chain, and its value came from
+one sentence.
+
+**What helped, and it is not close.** *"**And before starting, walk §7 backwards against the
+phases** (Session 227's gotcha 8; it is what found the orphaned clone, too late)."* That instruction
+— inherited, not invented, and passed on with its provenance intact — is the entire reason this
+session found the two defects in `repository-rename.md`. Nothing in Phase 2's own scope would have
+surfaced them: they live in Phase 4's step list and §7's criteria, neither of which a Phase 2
+executor has any reason to open. **A handoff that transmits a *method* outperforms one that
+transmits facts.**
+
+**Also load-bearing:**
+- *"It is the cheapest phase: it touches no file on `publish-tutorial.yml`'s trigger list and none
+  under `docs/wiki/`, so it fires neither the deploy nor the wiki hook."* **Verified true** against
+  the workflow's `paths:` list and `.githooks/post-commit:18`. I measured before/after anyway — but
+  knowing the expected answer is what made the measurement cheap.
+- *"**Reword it; do not delete it** — it is still a live warning about the *enterprise* wiki."* on
+  dragon #21. Exactly right, and it named the obvious wrong move before I could make it.
+- Gotcha 5 (*"still zsh, single-quote every heredoc delimiter"*) — seventh session running, still
+  free, and I used heredocs throughout.
+- Gotcha 6 (*"every phase stays on a direct commit to `master`"*) — followed.
+- *"§7.2's allowlist … still prints **17**"* — **the number was right**, and re-deriving it cost one
+  command precisely because I knew what it should say.
+
+**What was wrong — three navigational citations, all minor, all the same class.**
+- *"Phase 2 is at `:528-600`"* — `:528` sits inside **Phase 1's** bash block (a stylesheet grep).
+  The Phase 2 heading is `:545`; the section ends at `:589`.
+- *"§7.2's allowlist is at `:1097`"* — `:1097` is **§7.1's heading**. §7.2 is `:1114`, its command
+  `:1119-1123`.
+- *"eleven lines of `docs/planning/enterprise-migration.md`"* — the plan's table carries **twelve**
+  citations across four rows, and two of those are ranges, so the true line count is higher still.
+
+**The pattern is worth naming, because it is not laziness.** Every number that *carried an
+assertion* was correct: 17 allowlist paths, the trigger-safety claim, the three-commit rule, the
+1,039-line trim reading. Every number that was merely *navigational* had drifted. Citations into a
+1,250-line plan go stale between sessions; assertions do not. Cost me perhaps a minute each —
+headings are greppable.
+
+**What was missing.** Nothing I can fairly charge to it. It repeated the plan's *"add `-fL` while
+there"* without flagging that the advice does not work — but that is the plan's error, not the
+handoff's, and nobody had measured it before this session.
+
+**ROI: very high.** ~4 minutes to read; it produced the method that found two defects the plan had
+carried unnoticed since Session 226.
+
+### Session 229 Self-Assessment
+
+**Score: 8.5/10.**
+
+**+** **I measured the prescription, not just the diagnosis.** The plan told me to add `-fL`; I ran
+it first, found it changes nothing inside a pipeline, and shipped a repair that closes the hole.
+Applying it literally would have produced a green-looking commit that left dragon 1's fail-open
+exactly where it was — with a commit message saying "fixed".
+**+** **I held the line on "flag, don't rewrite"** even though the Phase 2 table lists those three
+greps as work items, and reconciled the two readings from the plan's own §8 rather than picking one.
+**+** **I refuted a dragon with a measurement.** Dragon 1's recommended path-scoping is unsatisfiable
+at 284 import lines, and the flag says so with the number rather than deferring politely.
+**+** **I ran a line I was only supposed to be reading**, and found a C5 criterion that has never
+been able to pass, for a reason that predates the rename.
+**+** **I asked instead of deciding** on the one thing that would have widened the deliverable — and
+kept every independent piece of work moving while I asked, so nothing was blocked on the answer.
+**+** **Before/after baselines on both publish mechanisms**, rather than reasoning from the trigger
+list to "it cannot have fired".
+
+**−** **I nearly shipped `-f` on the two 404-expecting `curl`s.** My first draft applied it
+uniformly to all five lines. On a line whose *expected* result is 404, `-f` makes the expected
+outcome exit non-zero — wrong in the opposite direction. I caught it only because I ran the matrix
+instead of reasoning about the flag.
+**−** **My first BACKLOG flag carried two wrong line numbers** (`:911` for `:919`; `:1362` filed as
+residue when it belongs to the independence group). The cause is precisely the failure I scored
+Session 228 for above: I wrote citations from a `grep` taken **before** my own edits shifted the
+file, then presented them as working-tree lines. I caught it by re-deriving. I should not have
+needed to.
+**−** **I spent 42 agents and ~2.5M tokens to surface 2 survivors.** The 40 refutations were not
+waste — they produced the phase-ownership map that told me what *not* to touch, which is most of
+what Phase 2 actually needed. But I designed the fan-out for the survivors and got the map as a
+by-product. [#120](PROJECT_LEARNINGS.md) is me writing down what I should have planned for.
+**−** I did not re-run `git status` between drafting the flag and citing line numbers in it — the
+one mechanical habit that would have prevented the minus above.
+
+**Against the bar:** S227 executed an irreversible rename with every prediction tested; S228 shipped
+28 mutants and the first enforcement the write-once rule ever had. This session shipped a smaller,
+cheaper deliverable — and found that the document governing the remaining three phases carries a
+fail-dangerous instruction and an unsatisfiable completion gate. It also declined the tempting fix
+and put the call to the operator.
+
+**What's next: repair `docs/planning/repository-rename.md`, and ONLY that.** Not Phase 3. The
+operator ruled this on 2026-08-20 when I put the choice to them: the plan's own defects get their
+own session rather than widening Phase 2. **The full write-up, with every line citation verified
+against the file, is in `BACKLOG.md` under *"⚠⚠ Two defects in `repository-rename.md` ITSELF"*.**
+Read it there — it is the deliverable's spec, and it is longer than this block should be.
+
+The short form, so you can judge the size before you open it:
+
+1. **`:663-664`** — change *"all 10 lines"* to **7 change / 3 keep**. `:19`, `:24`, `:42` are the
+   D-R5-pinned filesystem path; the plan's own `:411` says touching `:42` hard-fails the script at
+   its `:58` guard. **This is the fail-dangerous one and it lands in Phase 4, the plan's riskiest.**
+2. **`:723` and `:1173`** — split each `-> empty` grep in two, so the 3 surviving lines are asserted
+   rather than forbidden.
+3. **§7.2's allowlist (`:1119-1123`)** — add `^scripts/publish_wiki\.sh$`, **paired with the 3-line
+   assertion**. Allowlisting the file alone would blind §7.2 to a real future miss there, which
+   `:1134` explicitly forbids. Without this, **Phase 5's DONE gate can never go green.**
+4. **§3's arithmetic (`:276`, `:325`)** — 3 lines move CHANGE → KEEP, so `publish_wiki.sh` lands in
+   both §3.1 and §3.2 and the 28+23=51 file counts need a footnote, not a silent bump.
+5. **`:789`** — *"Fix all five in the same commit as `mkdocs.yml`"* → *"Fix all five in Phase 2."*
+   Reword only; **do not delete dragon 1**, whose fail-open finding is correct and is why Phase 2
+   existed.
+6. **`:3`** — *"**Status:** PLAN. Nothing in this document has been executed."* False since
+   `c1fe06f`. Phase 5 owns it at `:750`; do not leave it standing through a plan-repair session.
+
+**After that session: Phase 3** (`:591-631`) — published wiki content, and **the first phase that
+goes live to readers**. It fires the wiki hook by design.
+
+**Key files:**
+- **`BACKLOG.md`**, the rename item — now carries two new sub-blocks: the three flags to
+  `enterprise-migration.md`'s owner, and the two plan defects. The plain-language index row at
+  `:51` was updated in the same commit, per that file's own maintenance rule.
+- **`docs/planning/repository-rename.md`** — Phase 2 `:545-589` (done), Phase 3 `:591-631`,
+  Phase 4 `:633-734`, Phase 5 `:736-757`. §7 is `:1095-1217`. **§7.2's allowlist prints 15 now**
+  (was 17; `SECURITY.md` and `CONTRIBUTING.md` left).
+- `docs/planning/enterprise-migration.md` — Phase 4 owns **exactly 17** `docs/wiki/claims-model-starter/`
+  path lines in it, a mechanically exact count (`grep -c`), and `:678` says so. Four residual
+  old-name lines (`:345`, `:919`, `:1250`, `:1372`) belong to Phase 5, classified in `BACKLOG.md`.
+- `scripts/publish_wiki.sh` — `:19`, `:24`, `:42` keep the old name **forever** under D-R5;
+  `:2`, `:11`, `:23`, `:44`, `:63`, `:72`, `:75` change in Phase 4.
+
+**Gotchas:**
+1. **A `-f` on a piped `curl` proves nothing.** The pipeline reports its *last* command's status.
+   If you ever assert on `curl … | grep -c`, capture curl's exit separately. Measured this session;
+   it is why dragon 1's own prescription failed.
+2. **Do not "fix" the three surviving `claims-model-starter` lines in `publish_wiki.sh`.** They are
+   D-R5's answer, not a miss. Any sweep that drives that file to zero breaks publishing.
+3. **`enterprise-migration.md`'s line numbers moved this session** (+8 in the 800s, +13 by the
+   1500s). Re-derive with `grep -n` before citing; do not copy numbers out of Session 228's or this
+   session's prose without checking. This is the mistake I made and caught.
+4. **The independence-pattern greps at `:363`, `:1319`, `:1363` are deliberately untouched.**
+   Dragon 1 forbids rewriting them; the flag in `BACKLOG.md` is the discharge. A future session that
+   "completes" them is undoing this session's work.
+5. **GitHub redirects the repo, git remotes and the wiki — but not Pages.** Measured again this
+   session. That is why four residual old-name command lines still work and are not urgent.
+6. **`master` is 5 commits ahead of `origin/master`** and nothing here needs pushing. Sessions 228
+   and 229 both left it that way; the push is the operator's call.
+7. **Still zsh.** Single-quote every heredoc delimiter. Seventh session running, still free.
+8. **`~/Development/mpc_tests/model_project_constructor` is still on the old origin URL and no phase
+   owns it** (learning #111, unchanged from Session 228 — I did not touch it). Give it a home in
+   Phase 4 step 1.
 
 ### What Session 228 Did
 **Deliverable:** **The THIRD trim of `SESSION_NOTES.md` — COMPLETE.** Sessions 224 → 221 (891 lines,
