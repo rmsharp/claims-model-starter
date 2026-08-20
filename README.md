@@ -4,9 +4,9 @@
 
 Multi-agent pipeline that turns a business model idea into a governance-scaffolded GitLab or GitHub project. Given a stakeholder interview, it produces (1) a structured intake report, (2) a data collection plan with validated SQL and a datasheet, and (3) a draft model-build repository with proportional governance artifacts for the claims domain of a property-and-casualty insurer.
 
-The repository is published as `claims-model-starter` on GitHub; the internal package name remains `model-project-constructor`.
+The repository, the source tree (`src/model_project_constructor/`) and the import package all use `model_project_constructor`. Only the PyPI distribution names keep hyphens (`model-project-constructor`, `model-project-constructor-data-agent`) — under PEP 503 normalization that is the same name, not a different one.
 
-**Tutorial (published):** https://rmsharp.github.io/claims-model-starter/tutorial/
+**Tutorial (published):** https://rmsharp.github.io/model_project_constructor/tutorial/
 
 ## Status
 

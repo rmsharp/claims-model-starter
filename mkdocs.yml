@@ -1,8 +1,8 @@
 site_name: Model Project Constructor — Tutorial
 site_description: Walkthrough of the multi-agent pipeline from intake interview to initial model website
-site_url: https://rmsharp.github.io/claims-model-starter/
-repo_url: https://github.com/rmsharp/claims-model-starter
-repo_name: rmsharp/claims-model-starter
+site_url: https://rmsharp.github.io/model_project_constructor/
+repo_url: https://github.com/rmsharp/model_project_constructor
+repo_name: rmsharp/model_project_constructor
 
 docs_dir: docs
 site_dir: site
