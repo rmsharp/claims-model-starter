@@ -325,8 +325,14 @@ first: D-R3 = yes, so Phase 3 carries the two title rebrands (`Home.md:1`, `_Sid
 7. **Rebuild derived artifacts from a clean checkout after editing their generator.** A constant
    declared in two places by construction drifts silently; `git checkout -- SESSION_NOTES.md &&
    rm <shard> && python3 <builder>` was the loop that kept it honest.
-8. **`master` is now 10 commits ahead of `origin/master`** and nothing here needs pushing. Five
-   sessions have left it that way; the push is the operator's call.
+8. **`master` is IN SYNC with `origin/master`.** The operator directed the push at the end of this
+   session and all eleven queued commits (Sessions 228–231) went up at `e314449`, clearing a
+   five-session backlog. Two notes for whoever pushes next, because I got the second one wrong
+   before checking: **Publish Tutorial did NOT fire** — correct, nothing matches its single-level
+   `docs/*.md` path list — but **CI DID**, because `.github/workflows/ci.yml` triggers on *any*
+   push to `master` with **no path filter at all**. It went green (ruff, mypy, pytest, the
+   data-agent decoupling test — run `32417699067`). **A path-trigger audit that only reads the
+   workflow you expect to fire is not an audit.**
 9. **`~/Development/mpc_tests/model_project_constructor` is still on the old origin URL and no phase
    owns it** (learning #111, unchanged since Session 228). Give it a home in Phase 4 step 1.
 10. **The trim trigger is quiet.** The trim left the file at **840 lines**; this close-out record
