@@ -44,6 +44,12 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 228 Did
+**Deliverable:** Third trim of `SESSION_NOTES.md` — archive the oldest records into a new
+write-once shard under `docs/architecture-history/` with its own proof script (IN PROGRESS)
+**Started:** 2026-08-20
+**Status:** Session claimed. Work beginning.
+
 ### What Session 227 Did
 **Deliverable:** **Phase 1 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
 — COMPLETE.** The GitHub repository is now **`rmsharp/model_project_constructor`**, and the published
