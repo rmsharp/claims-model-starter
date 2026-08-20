@@ -128,6 +128,13 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 232 Did
+**Deliverable:** **Phase 3 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)** —
+published wiki content (IN PROGRESS). One commit, and **this one goes live to readers** via the
+tracked `post-commit` hook.
+**Started:** 2026-08-20
+**Status:** Session claimed. Work beginning.
+
 ### What Session 231 Did
 **Deliverable:** **Fourth lossless trim of `SESSION_NOTES.md` — COMPLETE.** Sessions 227 → 225
 archived into a new write-once shard; the live file went **1,530 → 840 lines**, four records, the
