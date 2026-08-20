@@ -80,6 +80,12 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 230 Did
+**Deliverable:** Repair `docs/planning/repository-rename.md` — the six items in `BACKLOG.md`'s
+"⚠⚠ Two defects in `repository-rename.md` ITSELF" block, and ONLY that. **NOT Phase 3.** (IN PROGRESS)
+**Started:** 2026-08-20
+**Status:** Session claimed. Work beginning.
+
 ### What Session 229 Did
 **Deliverable:** **Phase 2 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
 (`:545-589`) — COMPLETE.** Inert prose plus the other plans' broken assertions. Three files edited,
