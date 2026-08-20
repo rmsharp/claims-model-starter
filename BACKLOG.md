@@ -47,7 +47,7 @@ rows below it are the smaller residue that closing it exposed.
 | No circuit breaker | A run failing for a systemic reason grinds on sample after sample. The retry added in Session 221 tripled the SQL/QC worst case to **~7.5 hours of billed nothing**, and Session 225 added the same tripling to the governance block — so the figure in the item below now **understates** it. | Small. Should abort after ~5 consecutive total failures. |
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
-| `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives** — the new one (804 lines) reads whole today, but is equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
+| `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives and Session 228 a third** (924 lines) — both newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
 | Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. **Planned in Session 226 — see [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).** The real sweep is **114 lines / 23 files** (666/51 total at `59615e2`, of which 552/28 keep the old name). Both earlier counts — 644/50 and 667/52 — were wrong. | **UNBLOCKED — all five decisions answered by the operator 2026-08-20** (plan §4): accept the permanent 404 (option A), rename the wiki directory, rebrand its titles, rename before the enterprise fork, re-point the clone in place. **Phase 1 of 5 executed in Session 227.** The worst remaining hazard is `.githooks/post-commit:18`, which fails **open and silent** (plan dragon 4) — it bites in Phase 4, not Phase 1. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
@@ -457,10 +457,11 @@ upstream in a repository this project does not own.
 
 `docs/architecture-history/SESSION_NOTES-through-S216.md` is **24,564 record lines** (24,590 total). An
 agent `Read` of it truncates at 2,000 lines with **no error and no missing-data marker** — the exact
-defect the trim was scoped to remove, relocated rather than eliminated. **Session 224 widened this:**
-there are now **two** unwatched shards. The second, `SESSION_NOTES-S220-through-S217.md`, is 804 lines —
-under the cap today, so it reads whole — but it is unwatched for the same reason, and being under the cap
-is a property of this cut's size, not a protection. Every future trim adds another unwatched path. Verified: `READ_CAP_WATCHED`
+defect the trim was scoped to remove, relocated rather than eliminated. **Sessions 224 and 228 widened this:**
+there are now **three** unwatched shards. The second, `SESSION_NOTES-S220-through-S217.md` (804 lines), and
+the third, `SESSION_NOTES-S224-through-S221.md` (924 lines), are both under the cap today, so they read
+whole — but they are unwatched for the same reason, and being under the cap is a property of a cut's size,
+not a protection. Every future trim adds another unwatched path. Verified: `READ_CAP_WATCHED`
 (`methodology_dashboard.py:287-288`, consumed at `:1481`) is an **exact-path membership test** over
 `SESSION_NOTES.md`, `CHANGELOG.md`, `HANDOFFS.md` and three `BACKLOG.md` locations. The shard is in
 none of them, is not LOC-discounted as a framework doc (`FRAMEWORK_SEED_DOCS` is root-anchored,
@@ -468,8 +469,9 @@ none of them, is not LOC-discounted as a framework doc (`FRAMEWORK_SEED_DOCS` is
 `:2929-2936`). **So no tooling will ever warn about it.**
 
 **What ships today is prose, and prose only:** the pointer block's second paragraph in
-`SESSION_NOTES.md`, the fifth paragraph of the shard's own banner, and the `CLAUDE.md` adaptations
-subsection. Three warnings in three files is weaker than one entry in a watched set.
+`SESSION_NOTES.md`, the corresponding paragraph of each shard's own banner, and the `CLAUDE.md`
+adaptations subsection. Warnings in prose are weaker than one entry in a watched set — and the count
+of files carrying them grows by one at every trim, which is the wrong direction.
 
 **Why it was not fixed in Session 222.** The remedy is a `READ_CAP_WATCHED` entry (or a glob) in
 `methodology_dashboard.py`, which lives at `~/Development/methodology` and is synced to 13 projects.
