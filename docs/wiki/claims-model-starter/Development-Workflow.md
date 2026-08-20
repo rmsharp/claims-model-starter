@@ -1,6 +1,6 @@
 # Development Workflow
 
-This page describes how a data science team works in a generated claims-model-starter repository.
+This page describes how a data science team works in a generated model project repository.
 
 ## What you receive
 

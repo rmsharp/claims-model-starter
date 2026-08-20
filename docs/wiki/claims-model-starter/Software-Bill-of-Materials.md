@@ -1,6 +1,6 @@
 # Software Bill of Materials
 
-This SBOM covers both the **Model Project Constructor** (the tool) and the **generated claims-model-starter projects** (the output).
+This SBOM covers both the **Model Project Constructor** (the tool) and the **generated model projects** (the output).
 
 ## System requirements
 
@@ -110,7 +110,7 @@ These are pulled in by direct dependencies and pinned in `uv.lock`:
 
 ## Part 2: Generated project dependencies
 
-The generated claims-model-starter repository has its own, much smaller dependency set:
+The generated model project repository has its own, much smaller dependency set:
 
 ### Core dependencies
 

@@ -1,4 +1,4 @@
-**Claims Model Starter**
+**Model Project Constructor**
 
 - [Home](Home)
 

@@ -16,8 +16,8 @@ The project is MIT-licensed (see `LICENSE` at the repository root). External con
 ### First-time setup
 
 ```bash
-git clone https://github.com/rmsharp/claims-model-starter.git
-cd claims-model-starter
+git clone https://github.com/rmsharp/model_project_constructor.git
+cd model_project_constructor
 uv sync --extra agents --extra ui --extra dev
 ```
 
@@ -235,7 +235,7 @@ These aren't style preferences — they are documented responses to specific pas
 
 ## 9. Reporting issues
 
-There is no public issue tracker actively in use for pre-UAT development — `gh issue list` is expected to return empty. Open work items are tracked in `BACKLOG.md` at the repository root. Once UAT begins, the tracker at `https://github.com/rmsharp/claims-model-starter/issues` will be the submission target.
+There is no public issue tracker actively in use for pre-UAT development — `gh issue list` is expected to return empty. Open work items are tracked in `BACKLOG.md` at the repository root. Once UAT begins, the tracker at `https://github.com/rmsharp/model_project_constructor/issues` will be the submission target.
 
 For security-sensitive reports, please do not open a public issue. See `SECURITY.md` at the repository root for the disclosure process.
 

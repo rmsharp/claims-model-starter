@@ -1,4 +1,4 @@
-# Claims Model Starter Wiki
+# Model Project Constructor Wiki
 
 The **Model Project Constructor** is a multi-agent pipeline that turns a business stakeholder's model idea into a governance-ready repository project, scaffolded for a data science team to refine.
 
