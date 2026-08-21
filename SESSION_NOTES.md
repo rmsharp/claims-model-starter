@@ -129,12 +129,261 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 234 Did
-**Deliverable:** **Phase 5 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)**
-— *"Reconcile, classify the residue, close the item. **One commit.**"* (IN PROGRESS)
-**Started:** 2026-08-20
-**Status:** Session claimed. Work beginning. **This is the plan's LAST phase.** Operator this
-session: *"phase 5"*. **No trim this session** — Session 233's gotcha 8 rules a fifth trim its own
-session, and `CLAUDE.md`'s *"two commits, always"* forbids bundling one with a record edit.
+**Deliverable:** **Phase 5 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
+— COMPLETE. The plan is CLOSED and its backlog item is gone.** Every check in §7 passes, including
+§7.4's three surfaces no `git grep` at `HEAD` can reach. **This was the last phase; there is no
+Phase 6.** No other work was started.
+
+**Started / completed:** 2026-08-20. **Commits: three** — `a707a9e` (the Phase 1B claim, alone),
+`efc24a6` (the whole phase, one commit), and this close-out. **Operator this session:** *"phase 5"*.
+
+Documentation and path strings only, so **no `CHANGELOG.md` entry** — §5 of the plan settles this on
+`PROJECT_CONVENTIONS.md` §2's cadence gate. **Nothing published**: the phase touches no
+`docs/wiki/model_project_constructor/` file, so `.githooks/post-commit` correctly did not fire, and
+the wiki clone is still at `d85cc67` where Phase 4 left it — a live negative control, second session
+running.
+
+#### What changed — one commit, three files
+
+| Thing | Detail |
+| --- | --- |
+| `enterprise-migration.md` | the **3** residue lines `:919`, `:1250`, `:1372` → new name. **§7.2 (ii) is now EMPTY**, which is the criterion Phase 5 exists to satisfy. `:1372` also took `archived` → **`isArchived`** — §9.1 filed that as "one word, fix it whenever the line is next touched", and this phase touched it |
+| `BACKLOG.md` | the rename item **deleted, not substituted** — 262 lines + its plain-language index row. **Six new items filed**: §8.1's four (each re-verified at `HEAD`, not copied forward), the re-filed operator-decision flag, and one new finding |
+| `repository-rename.md` | status line → **EXECUTED**; §3.2(c)'s count 25 → **24**; Session 232's defect #1 discharged in dragon 2 + §7.3 (blocks left byte-identical); dragon 9's stale push line struck; **six** dangling `BACKLOG.md` pointers repaired; new **§9.2** reconciliation log |
+| out of repo, no commit | `~/Development/mpc_tests/model_project_constructor` origin re-pointed — **§7.4 check 3 is now green on all three clones**, and the new URL was proved with `git ls-remote`, not just written |
+
+#### The finding worth carrying forward — filed, not fixed, on purpose
+
+**Phase 4 updated the archive banner's canonical template and none of its copies.**
+`docs/methodology/PROJECT_CONVENTIONS.md:44` now reads `docs/wiki/model_project_constructor/…`;
+**21 lines across 20 files** under `docs/architecture-history/` still read the old path and **zero**
+read the new one. `CHANGELOG.md`'s preamble (`:3` and `:10`, twice each) is the same class. All of it
+points at a directory Phase 4 deleted.
+
+**§7.2 could never have printed one of them.** Group 1 exempts `^docs/architecture-history/` and
+`^CHANGELOG\.md$` **wholesale**, on §3.1's rationale that they are frozen records — true of their
+*entries*, false of a banner and a preamble, which record nothing and navigate. The blindfold
+reappears **one level below** where the plan looked for it. §7.2 paired group 3's exemption with
+three line-level assertions; group 1 got none. Learning [#135](PROJECT_LEARNINGS.md).
+
+**Filed rather than swept, and this is a judgement the operator can cheaply overrule.** Classified
+against §3 — which is what Phase 5 is told to do — these hits land in **§3.1**, so by the letter they
+are not misses; the real claim is that §3.1's classification is wrong for that one sentence. That is
+a *plan defect*, and this project's settled answer to one found mid-execution is to file it (Session
+229 filed → Session 230 got a dedicated repair session), not to widen the closing commit into a
+22-file sweep of frozen archives against `SAFEGUARDS.md`'s blast-radius rule. **The class was swept
+before filing** (learning #122): `git grep -c "docs/wiki/claims-model-starter"` is **507 lines across
+32 files**, and 484 of those are genuine dated records. The 23 in the item are the whole live
+subset. Learning [#138](PROJECT_LEARNINGS.md).
+
+#### A completion criterion that reads differently on different machines
+
+**§7.3's residue grep is fail-open here and nobody could have seen it.** In this session `grep` is a
+shell function wrapping **`ugrep --ignore-files`**, which honours `.gitignore`. Run verbatim, §7.3's
+residue line prints **empty**; run as `command grep`, it prints **two** `tests/__pycache__/*.pyc`
+blobs. Same tree, same command, opposite verdicts — and §7.2's rule is that a printed path *is* a
+miss, "no judgment call". The `.pyc` content is harmless; the criterion is not. It greps
+*directories*, so it reaches untracked files and its answer depends on the grep binary and on build
+state. **Recorded, not silently repaired** — changing an instrument at the moment you declare it
+passed is the move this project refuses elsewhere. §7.3 now carries the warning. Learning
+[#136](PROJECT_LEARNINGS.md).
+
+#### Verification — every §7 command, run
+
+| Check | Result |
+| --- | --- |
+| §7.2 cmd 1 | **0** ✓ (pre-flight and at commit) |
+| §7.2 (i) | exactly `:19 :24 :42` ✓ — never 0, which would mean publishing is broken |
+| §7.2 (ii) | **EMPTY** ✓ — was 3 at pre-flight; this is the phase's headline criterion |
+| §7.2 (iii) | exactly **1** line, NEW name left / OLD name right ✓ (§3.3 trap 1) |
+| §7.3 repo/remotes | `rmsharp/model_project_constructor`; origin and wiki-clone remote both new ✓ |
+| §7.3 tutorial | new **200**, old **404** ✓ — 404 is §1 by design, recorded not treated as a defect |
+| §7.3 residue grep | empty ✓ **with the caveat above** |
+| §7.3 publisher | *"no changes to publish"*, exit 0 ✓ |
+| §7.3 push reachability (**new this session**) | `rev-list --count origin/master..master` = **0** ✓ |
+| §7.3 suite | **1230 passed, 9 skipped**; ruff clean; mypy clean — unchanged since S230 |
+| §7.4 (1) deployed site | **zero** old-name hits across all 7 `gh-pages` blobs, `.gz` decompressed — run with a **positive control** that proved the `gzip` branch executes; both live sitemaps 0 |
+| §7.4 (2) live wiki | **one** hit across 25 pages — `Changelog.md:124`, the dated Session-19 entry §3.1 predicts. **No title survives**; a case-insensitive variant sweep found nothing more |
+| §7.4 (3) clones | all **three** on the new name ✓ — the third re-pointed by this phase |
+| Surfaces nobody had checked | git tags (2, clean), GitHub releases (live API rewritten), open PRs (none), repo metadata, `.github/` (zero hits of any name) — all clean |
+
+#### The two workflows, and what they were worth
+
+**Reconciliation sweep: 13 agents, 959K tokens, 0 errors.** It classified all 782 surviving hits
+across 36 files, found the banner class, ran §7.3/§7.4 with positive controls, and its completeness
+critic caught the `ugrep` fail-open **and** the one file no agent had classified.
+
+**Pre-commit review: 84 agents, 5 lenses, 39 findings, 2 independent refuters each.** It found a
+`PHASE5_COMMIT` placeholder I intended to back-fill in the close-out (4 lenses independently called
+it a defect — nothing in the repo would have gone red if I forgot), **two citations I had
+fabricated or misattributed**, a **sixth** dangling `BACKLOG.md` pointer my five-item list had
+missed, and three wrong counts. All fixed before the commit.
+
+**The read-only prohibition held again** — 97 agents total in a repo where `git commit` publishes to
+a public website; `HEAD` and the wiki clone were both audited mid-run and after, and neither moved.
+
+### Session 233 Handoff Evaluation (by Session 234)
+
+**Score: 10/10.** Nine gotchas. Eight were load-bearing and correct, the ninth was correct and I
+still tripped on the thing it could not have known. I cannot name a way it could have prepared me
+better.
+
+**What helped.**
+- **Gotcha 1 was the whole pre-flight.** It said §7.2 command 1 is *already* `0` and that this is
+  **not drift** — it reached the gate a phase early because all 11 remaining paths were Phase 4's.
+  Without that sentence I would have opened this session looking at a green DONE gate for a phase
+  that had not run, and the plan's own rule (*"a path appearing means drift; §2 must be re-derived
+  before anything else is touched"*) has no clause for the opposite surprise. It also told me
+  exactly what **does** still move — (ii) from 3 to 0, and (iii)'s left/right orientation forever.
+- **Gotcha 2 is the one that would have cost the most.** *"`publish_wiki.sh` must still print
+  exactly 3; `0` is broken at every point in this plan's life."* Phase 5's charter is *"classify
+  every surviving hit; anything that is not §3.1/§3.3/self-reference is a miss — fix it here"*, and
+  a `0` there is precisely what an executor reading that sentence too eagerly produces. Naming the
+  failure mode (*"it means a sweep drove out the D-R5 clone path and the script now dies at its own
+  `:58` guard"*) is what makes it stick.
+- **Gotcha 3 pre-discharged a charter item and told me what to do instead.** Phase 5's bullet says
+  `BACKLOG.md:74` *"should already have been done in Phase 4 — verify, do not assume"*. Gotcha 3 had
+  verified it, showed the command, and — the valuable half — said the remaining rows **die by
+  deletion, not substitution**, and that `BACKLOG.md:51` is *deliberately* left factually stale
+  because editing it would be a substitution the plan forbids. I would have "fixed" that line.
+- **Gotcha 4 turned defect #2 from a decision into an instruction.** *"Repair it to 'there are 24
+  (25 files, one of which is `_Sidebar.md`)'"* — exact replacement text, so §3.2(c) took one edit.
+  This is Session 233's own learning #134 applied to its successor, one session after it was written.
+- **Gotcha 6 gave me a live negative control.** *"Nothing in Phase 5 should publish. If the hook
+  fires, something under `docs/wiki/model_project_constructor/` was touched that should not have
+  been — stop and look."* I checked the clone before and after: still `d85cc67`. That is a
+  verification I would not have thought to *frame as a control*.
+- **Gotcha 8 kept me from bundling a trim.** This file crossed 1,500 lines with this record, exactly
+  as predicted.
+- **"What's next" named Phase 5 by `grep` pattern, not line number** — and my own edits moved that
+  section by ~90 lines during the session, so a line-number citation would have been stale before I
+  used it.
+
+**What was wrong: one number, and it had already been falsified by the handoff's own commit.**
+Gotcha 3 and the record body both state that `grep -n 'docs/wiki/claims-model-starter' BACKLOG.md`
+*"now returns only the rename item's own six rows (`:507 :647 :665 :672 :699 :715`)"*. That was true
+at `1865fc2` — but Session 233's **own close-out**, `b13d970`, shifted five of them by +3 and added
+a **seventh** at `:51` by writing the Phase 4 result into the index row. At `HEAD` the grep returned
+seven. The classification was unaffected and no edit was owed, so this cost me nothing; but a
+Phase 5 executor comparing against "six" would have gone looking for the extra. **The general
+shape is the one this project keeps re-learning (#105): a count measured mid-session and quoted in
+the close-out is measured against a tree the close-out then changes.** The fix is one word —
+*"six rows as of `1865fc2`"* — or re-running the grep after writing the record.
+
+**What was missing: nothing I can name.** Two Phase-5 items were not in the handoff but were in the
+plan where they belonged — §9.1's assignment of dragon 9's stale push line to *"Phase 5's
+reconciliation"*, and §9.1's `:1372` field-name note. Both are found by reading §9.1, which the
+handoff's key-files list points at.
+
+**ROI: very high.** ~7 minutes to read. It supplied the pre-flight interpretation, four failure
+modes I did not have to discover, and one exact replacement string.
+
+### Session 234 Self-Assessment
+
+**Score: 7/10.** The phase is complete and provably so, the plan is closed, and the session's real
+contribution is a defect class the rename's own DONE gate is structurally blind to. But **three of
+my own citations were wrong and a review caught all three**, one of them in the very fix I had just
+written to remove an unverifiable claim.
+
+**+** **I found the thing the gate cannot see, and generalised it.** §7.2 exempts
+`docs/architecture-history/` and `CHANGELOG.md` by *file*; a banner and a preamble are live lines
+inside frozen files, so 23 dead pointers ride in free. §7.2 had already reasoned about this hazard
+for group 3 and paired that exemption with three line-level assertions — group 1 got none. That is
+the shape, not the instance (learning #135).
+**+** **I filed it rather than sweeping it, and the reasoning survived a deliberate attack.** I asked
+the review to break the decision; the adjudicator tried the strongest angle (split out
+`CHANGELOG.md`'s three obvious lines and sweep those) and refuted it on a ground I had not seen:
+§3.1 buckets `CHANGELOG.md` *whole*, so the preamble is inside the **same** misclassification, and a
+partial sweep's selection principle would be "which ones the executor felt sure about".
+**+** **I swept the class before filing it.** 507 dead in-repo wiki paths across 32 files; 484 are
+genuine dated records. The 23 in the item are the whole live subset — learning #122 applied, rather
+than filing one instance of an unswept class.
+**+** **I refused to change an instrument at the moment I declared it passed.** The `ugrep` wrapper
+makes §7.3's residue grep read empty here and non-empty elsewhere. I recorded both readings and
+warned, instead of quietly switching the criterion to `git grep` and reporting green (learning #136).
+**+** **I did not rewrite two closed phases' verification blocks**, following §9.1's own precedent
+for Phase 2's `-fL` advice, and attached the correction where a reader meets it. The review verified
+both blocks are byte-identical.
+**+** **I checked an agent's finding and refuted it.** A reviewer wanted a wiki `Changelog.md` line
+filed as a public-correctness bug; it sits under a `(Sessions 179-180)` heading, so it is a dated
+record like `:124`. Not filed.
+
+**−** **Three bad citations, all mine, all caught by the review, none by me.** I attributed a real
+sentence (*"an exemption is only as good as the assertion traded for it"*) to **§7.2** when it is
+§9.1's; I attributed *"fix the field name whenever that line is next touched"* to §9.1 when it was
+`BACKLOG.md`'s flag 3, which the same commit deletes; and dragon 6's replacement citation sent the
+reader to `CHANGELOG.md` for the operator's underscore ruling, which `CHANGELOG.md` does not
+contain. In a document whose entire ethos is *measure, do not assume*, a quotation I did not grep
+for is the worst class of error I could ship — and I shipped three while writing a §9.2 that
+criticises exactly this.
+**−** **My fix for the placeholder was worse than the placeholder.** I replaced `PHASE5_COMMIT` with
+`git log --grep 'rename Phase 5'` — which matches commit **subjects**, and every close-out in this
+rename carries that phrase while three of four phase commits did not carry their own. It would have
+resolved confidently to the wrong commit. The placeholder at least announced itself. Only the
+adjudicator caught it; five review lenses did not.
+**−** **I wrote "all five pointers" from a list instead of a `git grep`** — and there were six. I
+committed learning #137's failure mode in the paragraph that introduces learning #137.
+**−** **The must-fixes came from review again**, third session running. The difference this time is
+that the review found errors in my *prose* rather than my *staging*, which is a harder class to
+self-catch and an argument for keeping the review rather than for trusting myself more.
+
+**Against the bar:** S229 refuted a dragon by measurement; S230 fixed a class not an instance; S231
+raised a proof to 10 assertions; S232 proved a publish against the public artifact; S233 turned a
+safety claim into a measurement and gave a blind proof an executable test. This session's equivalent
+is finding that the DONE gate's *exemption granularity* is the defect — and then declining to act on
+it unilaterally. It built no `--self-test`, and it needed a review to keep its own prose honest.
+
+**What's next: the rename is DONE. There is no Phase 6, and no rename item to pick up.** Choose from
+`BACKLOG.md`, which now has **19** items. Three are new and cheap-and-valuable; two need you, the
+operator, before an agent can move:
+
+1. **A fifth trim of this file — likely the right next session.** It is **1,753 lines**, over
+   `CLAUDE.md`'s **1,500** trigger. `CLAUDE.md`'s *"two commits, always"* makes a trim its own
+   session, and **re-derive the L8 copy list with `git grep -l 'SESSION_NOTES-'` rather than
+   trusting the list** — Session 231's own bullet says the list is not to be trusted at the fifth
+   trim. Copy L0-L9 forward and run `--self-test`; **a green self-test whose mutants never exercise
+   your new assertion is the same lie as a green run.**
+2. **The two operator decisions**, both filed as their own `BACKLOG.md` items with the measurements:
+   the **archive-banner ruling** (is a banner part of the frozen record, or boilerplate that tracks
+   its template? — one ruling disposes of all 23 lines) and the **clone-independence criterion**
+   restatement for the enterprise fork.
+3. **The unstyled tutorial site** is the highest-value bug: it has been serving CSS-less HTML to the
+   public since late July, the deploy that does it reports success in 11 seconds, and this session
+   bracketed the regression to 2026-06-19..2026-08-02 with one config line as the suspect.
+
+**Key files:**
+- [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md) — **CLOSED.** §9.2 is
+  this session's reconciliation log and the place to start if you doubt anything above. Its status
+  line cites its own commit with `git log -S`, not a hash.
+- `BACKLOG.md` — 19 items, 19 index rows. The six new ones are the last six before
+  *Enterprise migration*.
+- `PROJECT_LEARNINGS.md` — **138 learnings**; #135-#138 are this session's.
+- `docs/methodology/PROJECT_CONVENTIONS.md:44` — the banner template that now disagrees with all 21
+  of its copies.
+
+**Gotchas:**
+1. **Do not "finish" `scripts/publish_wiki.sh`'s three remaining old-name lines** (`:19`, `:24`,
+   `:42`) or `enterprise-migration.md`'s nineteen. They name a directory **on disk** that GitHub's
+   rename never moved (D-R5). `0` in `publish_wiki.sh` means the script now dies at its own `:58`
+   guard. This survives the plan's closure and has no expiry.
+2. **`enterprise-migration.md`'s `diff -r -x '.git'` line must keep the NEW name on the left and the
+   OLD name on the right, forever.** `sed` breaks it whichever way it runs. Re-derive with
+   `grep -n "diff -r" docs/planning/enterprise-migration.md`.
+3. **§7.3's residue grep reads differently on different machines.** `grep` here is a
+   `ugrep --ignore-files` wrapper honouring `.gitignore`; `command grep` prints two
+   `tests/__pycache__/*.pyc` blobs. Before trusting any "empty" from a search, run `type grep`.
+4. **The plan is closed but still lives in `docs/planning/`** — the same convention violation it
+   files against `httpx-adapter-migration.md`, now filed as one item covering both. Moving it would
+   change a path its own §7.2 allowlist matches on, so do not do it casually.
+5. **`SESSION_RUNNER.md:209` still names the old wiki directory and still must not be edited**
+   (dragon 8). `CLAUDE.md`'s seam bullet is the correction. Unchanged by this session.
+6. **This file is over the trim trigger** — see "What's next" item 1. Do not bundle a trim with a
+   record edit; the proof goes red forever.
+7. **Still zsh. Single-quote every heredoc delimiter** — twelfth session running that this has been
+   free.
+8. **The wiki clone did not move this session** (`d85cc67`, where Phase 4 left it) and must not have:
+   Phase 5 touches no `docs/wiki/` path. If a future non-wiki session sees it move, the trigger
+   prefix has drifted.
 
 ### What Session 233 Did
 **Deliverable:** **Phase 4 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
