@@ -48,7 +48,12 @@ rows below it are the smaller residue that closing it exposed.
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
 | `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives, Session 228 a third and Session 231 a fourth** (933 and 790 lines) — the three newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
-| Rename the repository | GitHub still says `claims-model-starter`; everything local says `model_project_constructor`. **Planned in Session 226 — see [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).** The real sweep is **97 lines / 23 files** (666/51 total at `59615e2`; 552/28 are frozen records that keep the old name, and **17 more across 2 files keep it forever** because they name a local directory GitHub's rename does not move — the plan's new §3.3). Both earlier counts — 644/50 and 667/52 — were wrong. | **UNBLOCKED — all five decisions answered by the operator 2026-08-20** (plan §4): accept the permanent 404 (option A), rename the wiki directory, rebrand its titles, rename before the enterprise fork, re-point the clone in place. **Phases 1, 2 and 3 of 5 executed** (Sessions 227, 229, 232). **Session 230 repaired the plan itself** — two fail-dangerous instructions that would have broken wiki publishing, and a DONE gate that could never go green; no phase ran. **Phase 3 published the rebranded wiki live to readers** (Session 232, `f58948a`); the §7.2 allowlist went **13 → 11**. **Phase 4 — the riskiest — is DONE** (Session 233, `1865fc2`): `docs/wiki/claims-model-starter/` → `docs/wiki/model_project_constructor/` plus every mechanism keyed on it, in one atomic commit; the hook fired, published and pushed, and the live wiki was read back over HTTP. **§7.2 command 1 is now `0`** — it reached the gate a phase early because all 11 remaining paths were Phase 4's; that is not drift. `.githooks/post-commit:18` did not bite. **Only Phase 5 remains** — reconcile, delete this item's rows (do **not** substitute them), and close. **Session 232's two filed defects: #2 is half-discharged** (the wiki page now reads 24; the plan's §3.2(c) still says 25), **#1 is wholly Phase 5's**. Three flags against `enterprise-migration.md` are still open and still need an operator ruling. |
+| Published tutorial site is unstyled | The published tutorial has served style-less HTML since late July — no CSS, no search, no navigation. The deploy that does it reports **success** in 11 seconds, which is why four rename phases landed on top of it unnoticed. Session 234 bracketed the regression to a six-week window (2026-06-19 to 2026-08-02) and named one config line as the likely cause. | **One session.** Needs a push to `master` to exercise the workflow. |
+| The wiki publisher can erase the public wiki | The script that publishes the wiki mirrors a source directory with delete-what-is-missing semantics, and checks only that the directory **exists** — not that anything is in it. An empty source publishes an empty wiki, unattended, from a commit hook. | Small. Bundle with the row below. |
+| The publish hook stays silent when it declines to publish | The hook decides whether to publish by matching a path prefix. A stale prefix, or any merge commit, makes it exit successfully having done nothing — and say nothing. | Small. Bundle with the row above. |
+| Two finished plans still sit in the active-plans folder | `httpx-adapter-migration.md` was fully executed but never archived — and `repository-rename.md` went EXECUTED in the very commit that filed this item, which is the identical case and the heavier one. | Small, but moving either re-points every citation of its path — sweep first, and rule on both together. |
+| ⚠ The enterprise fork's "is the clone independent?" check needs an operator ruling | The check that proves an enterprise copy carries no trace of this account greps for four name forms. The rename made one of them stop matching the case the check was built for. Both repairs anyone has proposed can never return zero, so the check has to be **restated**, and that is a call only the operator can make. | **Operator ruling.** The edit is minutes; the decision is the work. |
+| Archived docs point at a wiki folder the rename deleted | Every archived document carries a banner saying "for current state, see …". The rename updated the template that banner is copied from and none of the 21 copies, so all 21 now point at a folder that no longer exists — plus two more lines at the top of `CHANGELOG.md`. No completion check could see them, because the rename's own allowlist exempts those files whole. | Small and mechanical, after one ruling on whether a banner is part of the frozen record. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
 | A bad `--db-url` fails silently | Filed Session 223. `connect()` builds a message naming the exact cause; the next line catches the error **without binding it** and throws the message away. The run then reports `COMPLETE` and exits 0 with **every quality check unexecuted**. A typo'd port, an unexported shell variable, and a genuine warehouse outage produce byte-identical reports. | Pre-existing and wider than the S223 fix — **not** a reason to revert it. The cheapest two-thirds is small; the third option changes when a pipeline run is allowed to "succeed" and needs an operator ruling. |
@@ -488,267 +493,180 @@ adopter that ever shards a ledger, and is the shape the dashboard's own comment 
 the methodology repo. Note (b) also fixes the same blind spot for the 5 fleet projects that already
 have shards under `docs/archive/`.
 
-### Rename the repository `claims-model-starter` → `model_project_constructor`
+### The published tutorial site has shipped unstyled since late July — and the deploy that does it reports success
 
-**✅ PLANNED — Session 226 (2026-08-19). The plan is [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md).**
-Read it instead of this section: it supersedes every number and every dragon below.
-**Execution is UNBLOCKED — the operator answered all five decisions on 2026-08-20** (plan §4:
-option A, yes, yes, rename-first, in-place). **Phases 1, 2 and 3 of 5 have run** (Sessions 227, 229, 232). Headline finding the section below
-does not contain: **GitHub does not redirect Pages project-site URLs**, so
-`https://rmsharp.github.io/claims-model-starter/tutorial/` (advertised at `README.md:9`) **404s
-permanently** the moment the rename lands — measured against two real renames, not just documented.
-The real sweep is **114 lines across 23 files**, not 667. Both previously filed counts were wrong;
-the recount in `2033e95` is reproducible at no commit.
+**Filed Session 234 (Phase 5 of the repository rename), from [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
+§8.1 finding 1 (dragon 10). Re-verified at `HEAD`, not copied forward.**
 
-#### ⚠ Defects filed by Phase 3 (Session 232) against `repository-rename.md` itself — for the Phase 4/5 executor
+`origin/gh-pages` (`cc66dea`, *"Deployed c1fe06f with MkDocs version: 1.6.1"*, 2026-08-20) contains
+**7 files and no `assets/` tree**: `.nojekyll`, `404.html`, `index.html`, `search/search_index.json`,
+`sitemap.xml`, `sitemap.xml.gz`, `tutorial/index.html`. The pages still *link* the Material theme's
+assets — `index.html` references `assets/stylesheets/main.484c7ddc.min.css`,
+`assets/javascripts/bundle.79ae519e.min.js` and `assets/images/favicon.png` — and all three **404
+live** while the page itself returns 200. The site serves unstyled HTML with no search and no
+navigation JS, and has done through all four rename phases, because **the failure is green**:
+`.github/workflows/publish-tutorial.yml:30`'s `uv run mkdocs gh-deploy --force --clean` completed
+*success* in 11s (run `32335373755`).
 
-Both were found by an adversarial pre-publish review of the Phase 3 diff and **reproduced against the
-source** before filing. Neither was fixed in Phase 3: both are `docs/planning/` edits, and Phase 3's
-declared blast radius is `docs/wiki/claims-model-starter/**` only. **They belong in the Phase 5
-plan-repair/residue commit** (or a dedicated repair session, as Session 230 was) — not bundled into
-Phase 4.
+**A bisect, new in Session 234 — §8.1 did not have one.** Local branch `gh-pages-preA4` (`e8fcba1`,
+2026-06-19) holds **53 files, 43 of them under `assets/`** — styled. Local branch
+`gh-pages-pre-rename` (`1b9ce68`, 2026-08-02) holds **7 files, 0 assets** — already broken. The only
+`mkdocs.yml` change in that window is **`b27cc98`** (2026-07-27, Phase A1 of
+`enterprise-migration.md`), which inverted `exclude_docs` from a five-line denylist into the
+fail-closed allowlist now at `mkdocs.yml:13-16` (`/*`, `!/index.md`, `!/tutorial.md`).
+**Hypothesis, not proof:** `/*` also matches the theme's `assets/` tree. Confirming it needs a real
+`mkdocs build`, which the read-only pass that found this could not run. The competing explanation is
+ruled out — `.gitignore` carries no `assets` pattern.
 
-**1. The publish proof cannot see the live wiki — Phase 3's block and Phase 4's identical one.**
-`scripts/publish_wiki.sh` commits into the clone and *then* pushes; on push failure it **exits 2 with
-the local commit left in place** (its own header documents this). Every command in both phases'
-verification blocks reads local state only — `rev-parse HEAD` on the clone, a publisher re-run, a
-local-vs-local `diff -r`, a Pages `gh run list` — so in that state all of them go **green while the
-live wiki is stale**, and the `BEFORE != AFTER` check reports *"HOOK FIRED AND PUBLISHED"*. The
-plan's stated recovery (*"re-run `publish_wiki.sh`, it is idempotent"*) is **inert** there: the re-run
-short-circuits at *"no changes to publish"*, exits 0, and never retries the push. `grep -ci 'push
-fail'` over the whole plan returns **0** — dragon 2's *"every guard exits 1 and changes nothing"*
-enumeration never models the exit-2 path. **Repair:** in both blocks, pre-flight with
-`git -C ~/Development/claims-model-starter.wiki push --dry-run origin master` and replace the
-local-HEAD assertion with `[ "$(git -C <clone> rev-list --count origin/master..master)" = 0 ]` plus a
-`curl` of the live page; add the exit-2 path to dragon 2. Learning
-[#129](PROJECT_LEARNINGS.md). *(Session 232 ran the added checks by hand and Phase 3 passed all of
-them — the defect is in the plan's proof, not in what Phase 3 published.)*
+**The defect is that a deploy dropped 43 files and exited 0**; the missing CSS is the symptom. The
+fix should include a post-deploy assertion in the workflow that the stylesheet the built
+`index.html` links returns 200.
 
-**2. The Phase 4 instruction for `Evolution.md:266` prescribes the wrong count.** The plan says the
-page *"says '22 outward-facing wiki pages'; there are 25."* The page says **"22 outward-facing wiki
-pages plus the sidebar"** — the quotation stops one clause short, and that clause is the convention.
-`git ls-tree` at the commit that wrote the 22 shows **23** files including `_Sidebar.md`, so 22 was
-correct when written; two pages have been added since, making the right value **24**. The plan's
-other 25s are total files, sidebar included — a different quantity. An executor obeying the line as
-written lands off by one instead of off by two. **Repair:** *"there are 24 (25 files, one of which is
-`_Sidebar.md`)"*. Learning [#131](PROJECT_LEARNINGS.md). **HALF-DISCHARGED by Session 233:** the
-*page* is fixed — `Evolution.md:266` now reads **24** and is live on the public wiki. The *plan*
-still prescribes 25, so the repair above is still owed. See learning
-[#134](PROJECT_LEARNINGS.md) — the entry was read as a deferral when it was an erratum.
+**Cost: one session (~1.5-2h).** Needs a push to `master` to exercise the workflow.
 
-#### ⚠ Flags raised by Phase 2 (Session 229) — addressed to the owner of `enterprise-migration.md`
+### `publish_wiki.sh` will wipe and push the live wiki from an empty source directory — unattended, from a git hook
 
-`repository-rename.md`'s dragon 1 (`:812-816`) ends *"Flag this to whoever owns
-`enterprise-migration.md`; do not silently rewrite another plan's acceptance criteria beyond the
-five URL lines above."* Phase 2 discharged that instruction by flagging, not editing. Here is the
-flag.
+**Filed Session 234 (Phase 5), from `repository-rename.md` §8.1 finding 2 (dragon 3). Re-verified at `HEAD`.**
 
-**1. The C4/C5 clone-independence check has a blind spot the rename opened, and dragon 1's
-recommended repair does not work either.** The criterion at `docs/planning/enterprise-migration.md`
-`:363`, `:1319`, `:1363` greps
-`'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter'` and expects 0. Its own
-comment (`:1362`) says why it must stay wide: *"a narrower pattern can pass '→ 0' while a hardcoded
-`claims-model-starter` string survives in the clone's publish_wiki.sh."* After the rename that
-hardcoded string is `model_project_constructor.wiki`, which no alternative matches — so the check
-stops catching a **bare, un-URL'd repository name**, exactly the case the comment names. The URL
-alternatives still fire, so it degrades rather than collapses.
+`scripts/publish_wiki.sh:92` is `rsync -a --delete --exclude='.git/' "$SOURCE_DIR/" "$WIKI_CLONE/"`,
+followed by `git add -A` (`:94`), a commit (`:102`) and `git push origin master` (`:104`). Its guards
+check tools on PATH (`:46-51`), source directory **exists** (`:53-56`), clone exists (`:58-69`),
+clone remote URL (`:71-77`), clone on `master` (`:79-84`) and clone clean (`:86-90`). `:53` tests
+`[ ! -d "$SOURCE_DIR" ]` — **existence, not non-emptiness**. An existing-but-empty or
+half-populated `docs/wiki/model_project_constructor/` passes every guard, `rsync --delete` empties
+the clone, and the push publishes the deletion. It runs **unattended from `.githooks/post-commit`**.
 
-- Adding `model_project_constructor` as a fifth alternative is unsatisfiable: **measured 2026-08-20
-  — 1,980 lines across 187 files** (it is the import package, the `src/` tree and the distribution
-  stem). Dragon 1 says 1,916/183; either number kills the idea.
-- **Dragon 1's own recommended repair is also unsatisfiable as written.** It proposes scoping by
-  path over *"`scripts/`, `.githooks/`, `mkdocs.yml` and `tests/` only."* **Measured: 350 hits, of
-  which 284 are legitimate `from model_project_constructor…` imports in `tests/`, plus 15 more in
-  `scripts/run_pipeline.py`.** A criterion that can never return 0 is not a criterion — the same
-  objection dragon 1 raises against the fifth-alternative fix applies to its own proposal.
-- **The path set that does work** is the §2.6 coupling points, not whole directories:
-  `scripts/publish_wiki.sh`, `.githooks/post-commit`, `mkdocs.yml`,
-  `tests/test_wiki_no_line_citations.py` — the four files where a hardcoded repository name is
-  always a defect. Post-Phase-4 that set has 16 legitimate hits of the new name, so the criterion
-  must be "no name **other than the clone's own**", not "no name at all". **This needs the
-  operator's ruling; it is not the rename plan's to make** (`repository-rename.md:1220-1222`).
+**Fix:** one assertion before `:92` — count `*.md` under `SOURCE_DIR` and abort below a floor.
+**Cost: small.** Bundle with the item below — same subsystem, same session.
 
-**2. Rename residue for Phase 5, already classified so it need not be re-derived.** Exactly **four**
-`claims-model-starter` hits in `enterprise-migration.md` sit outside Phase 2's twelve citations,
-Phase 4's seventeen `docs/wiki/…` path lines, the nine D-R5 filesystem paths, and the four
-independence-pattern sites in flag 1 above:
+### `.githooks/post-commit` fails open — a stale prefix or a merge commit silently publishes nothing
 
-| Line | What it is | Post-rename status (measured 2026-08-20) |
-|---|---|---|
-| `:345` | prose describing `publish_wiki.sh:72`/`:75`'s guard literal | **TRUE today; falsified by Phase 4's own commit**, which rewrites those two script lines. Repair it in that commit. |
-| `:919` | `gh api repos/rmsharp/claims-model-starter/releases` | works — returns `2`, exit 0, via GitHub's rename redirect |
-| `:1250` | `git clone --mirror https://github.com/rmsharp/claims-model-starter.wiki.git` | works — `git ls-remote` on **both** wiki URL spellings returns `41c7f72`, same repository |
-| `:1372` | `gh repo view rmsharp/claims-model-starter --json isPrivate,archived` | **fails, but not from the rename** — see flag 3 |
+**Filed Session 234 (Phase 5), from `repository-rename.md` §8.1 finding 3 (dragon 4). Re-verified at `HEAD`.**
 
-Only `:345` is load-bearing, and it belongs to Phase 4's commit rather than Phase 5's sweep. The
-other three are cosmetic: `repository-rename.md:444` (K5) already records that GitHub redirects the
-repo, git remotes and the wiki — only Pages is not redirected.
+`.githooks/post-commit:18` decides whether to publish with
+`git diff-tree --no-commit-id --name-only -r HEAD | grep -q '^docs/wiki/model_project_constructor/'`.
+Two ways it exits 0 having done nothing, and says nothing either time: the prefix goes **stale**
+(exactly the hazard Phase 4 had to move it through), and **any merge commit** — `diff-tree` on a
+merge prints nothing without `-m`/`-c`, which is why every phase of the rename was pinned to a
+direct commit on `master` (plan constraint K7). Either way wiki publishing stops quietly.
 
-**3. A pre-existing defect, not rename damage.** `enterprise-migration.md:1372` reads
-`gh repo view rmsharp/claims-model-starter --json isPrivate,archived`. **`archived` is not a valid
-`gh repo view` field — it is `isArchived`.** Measured: the command exits 1 with *"Unknown JSON
-field"* under **both** the old and the new repository name, so this C5 acceptance criterion has
-never been able to pass and the rename did not cause it. With the field corrected it returns
-`{"isArchived":false,"isPrivate":false}` — the expected `false, false` — **even under the old
-name**, via the redirect. Fix the field name whenever that line is next touched; it is one word.
+**Fix:** announce the decision not to publish instead of exiting 0 in silence. **Cost: small.**
+Bundle with the item above.
 
-#### The two defects in `repository-rename.md` ITSELF — CLOSED, Session 230
+### Two delivered plans are still filed under `docs/planning/` — `httpx-adapter-migration.md` and `repository-rename.md`
 
-Filed by Session 229, ruled by the operator (2026-08-20) to get its own session. **All six items
-repaired; no phase of the rename ran.** Documentation-only, so no `CHANGELOG.md` entry
-(`PROJECT_CONVENTIONS.md` §2); the session record is `SESSION_NOTES.md`, and the working detail is
-that plan's own new **§9.1 "Repair log — Session 230"** — which is where an executor should read it.
+**Filed Session 234 (Phase 5), from `repository-rename.md` §8.1 finding 4.**
+`docs/methodology/PROJECT_CONVENTIONS.md` §3: active plans live at `docs/planning/`, and when a
+plan's primary scope is delivered it moves to `docs/architecture-history/`. This one's scope is
+delivered and it has not moved.
 
-**Carry-forward that is NOT closed, and that the next session needs:**
+**§8.1's framing is spent — do not carry it forward.** It said the file's *"2 old-name hits would
+become historical the moment it is archived — which would shrink this rename's scope by one file.
+Worth doing before execution if it is cheap."* Session 233's `1865fc2` rewrote both in place, so the
+count is **0** and there is no rename saving left to collect. What remains is filing hygiene, plus
+the question the move actually raises: archiving it re-points every citation of its path.
+**Cost: small, but do the referrer sweep first** (`git grep -l 'httpx-adapter-migration'`), and it
+needs an operator call on whether it moves at all.
 
-- **The filed spec was incomplete.** Defect 3 (§7.2's allowlist) was filed against
-  `scripts/publish_wiki.sh` and its 3 permanently-pinned lines. `docs/planning/enterprise-migration.md`
-  has **14** lines of the same kind — the `~/Development/claims-model-starter.wiki` path D-R5 pins in
-  place — and no group exempted it either, so Phase 5's DONE gate would still have been unreachable.
-  **Phase 5's residue rule also ordered those 17 lines "fixed"**, which points live instructions at a
-  directory that does not exist: a second fail-dangerous instruction, same shape as defect 1. Both
-  repaired; the plan gained a third classification bucket, **§3.3**, so a *third* such file has
-  somewhere to go instead of getting another one-off exception.
-- **The three flags to `enterprise-migration.md`'s owner, above this block, are all still open.** The
-  clone-independence criterion still needs the operator's ruling on restating it as *"no repository
-  name **other than the clone's own**"*; `repository-rename.md` deliberately does not make that call.
+**And it is now two files, not one.** `docs/planning/repository-rename.md` went **EXECUTED** in the
+same commit that filed this item, so it is the identical case — a delivered plan still sitting in the
+active-plans folder. It is the heavier of the two: it is cited from `CLAUDE.md`, `SESSION_NOTES.md`,
+`enterprise-migration.md` and its own §7.2 allowlist, and **moving it would change a path that its own
+completion criterion matches on**. Rule on both together, or on neither.
 
+### ⚠ OPERATOR DECISION — the C4/C5 clone-independence criterion needs restating, and both proposed repairs are unsatisfiable
 
-**⚠ SUPERSEDED — the operator ruling that scheduled the planning session (2026-08-19, Session 225 close-out):**
-*"set rename of repository as the next session ; it may take a planning session because of the blast
-radius of a rename."* **The next session's deliverable is a PLAN** — `docs/planning/repository-rename.md`
-— not the rename. Execution follows in its own session(s), per FM #18 and `SAFEGUARDS.md`'s
-"never rename/move files as part of a quick fix."
+**Re-filed Session 234 (Phase 5). Raised by Session 229 as flag 1 against
+[`docs/planning/enterprise-migration.md`](docs/planning/enterprise-migration.md); it was filed
+inside the rename item, which Phase 5 deleted. It is still open, and it is not the rename plan's
+call to make** (`repository-rename.md` §8 and dragon 1).
 
-**⚠ THE INVENTORY BELOW IS STALE. Re-derive it; do not inherit it.** It was counted 2026-08-17 at
-**644 hits across 50 tracked files**; the same patterns give **667 across 52** as of 2026-08-19
-(Session 225). Four sessions have landed since, including a second `SESSION_NOTES` archive shard.
-`SESSION_RUNNER.md`: a plan that lists files without having searched for them is an assumption, not
-an inventory. The per-pattern table is kept below because its *shape* — one fix per pattern, the
-exposed/historical split, the two landing-commit traps — is what a re-run should reproduce and
-extend, not because its numbers are current.
+The criterion sits at `enterprise-migration.md:363`, `:1319` and `:1363` — **anchor on content, not
+on those numbers, which drift every session**: `grep -n "a narrower pattern can pass"
+docs/planning/enterprise-migration.md`. It greps
+`'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter'` over the enterprise clone
+and expects **0**. Its own comment says why it must stay wide: *"a narrower pattern can pass '→ 0'
+while a hardcoded `claims-model-starter` string survives in the clone's publish_wiki.sh."*
 
-**Operator ask, 2026-08-17 (Session 221), filed not executed.** Rename the GitHub repository
-`rmsharp/claims-model-starter` to **`model_project_constructor`** and update every reference to the
-old name **in currently exposed documentation**. The local working directory and the import package
-are already `model_project_constructor`; only the *published* repository still carries the old name.
+**After the rename that hardcoded string is `model_project_constructor.wiki`, which no alternative
+matches.** The URL alternatives still fire, so the check degrades rather than collapses — what it
+stops catching is a bare, un-URL'd repository name, which is precisely the case its own comment
+names.
 
-**The name form is underscores, and it is deliberate.** The operator corrected an initial
-hyphenated reading (`model-project-constructor`) to `model_project_constructor` within the same
-session. Note the divergence this creates and do **not** "fix" it: the PyPI-style distribution names
-stay hyphenated (`pyproject.toml:2` `model-project-constructor`,
-`packages/data-agent/pyproject.toml:2` `model-project-constructor-data-agent`), the import package
-and the repository are underscored. Three naming conventions, one project, on purpose.
+- Adding `model_project_constructor` as a fifth alternative is **unsatisfiable: 1,980 lines across
+  187 files** — it is the import package, the `src/` tree and the distribution stem.
+- Dragon 1's own recommended repair — scope by path to `scripts/`, `.githooks/`, `mkdocs.yml` and
+  `tests/` — is **also unsatisfiable: 350 hits, 284 of them legitimate
+  `from model_project_constructor…` imports in `tests/`.**
+- **Both figures were measured by Session 229 on 2026-08-20 and are quoted as of then, not as of
+  now** — four commits and two rename phases have landed since, and dragon 1 records a third reading
+  (1,916/183) from Session 226. **Re-derive before ruling; do not inherit** (learning #105). The
+  numbers are quoted because their *order of magnitude* is the argument — every candidate pattern
+  matches thousands of legitimate lines — and no ruling turns on the third digit. A criterion that can never return 0 is
+  not a criterion, which is the objection dragon 1 raises against the fifth-alternative fix and
+  which applies to its own proposal with a wider margin.
+- **The path set that does work** is four of the files in `enterprise-migration.md` §2.6's
+  host-and-identity coupling table — `scripts/publish_wiki.sh`, `.githooks/post-commit`,
+  `mkdocs.yml`, `tests/test_wiki_no_line_citations.py` — the four where a hardcoded repository name
+  is always a defect. (§2.6's table is longer than four; the rest couple on other literals.) Post-Phase-4 that set legitimately contains ~16 hits of the **new** name, so the criterion
+  has to be restated as **"no repository name other than the clone's own"**, not "no name at all".
 
-#### Evidence-based inventory (run 2026-08-17, Session 221; live at filing time)
+**The ask:** rule on that restatement. **Cost: the ruling is the work; the edit is minutes.**
 
-**644 hits across 50 tracked files.** Counted per grep pattern, not as one total (learning #8) —
-each form has a different fix:
+### Every archived doc's banner points at a wiki directory the rename deleted — and no completion check can see it
 
-| # | Pattern | Hits | What it is |
-| --- | --- | --- | --- |
-| 1 | `docs/wiki/claims-model-starter` | 509 | the wiki **source directory** path (25 pages) |
-| 2 | `claims-model-starter.wiki` | 89 | the wiki **clone** name/URL (`<repo>.wiki.git`) |
-| 3 | `github.com/rmsharp/claims-model-starter` | 35 | repository and wiki-page URLs |
-| 4 | `rmsharp.github.io/claims-model-starter` | 25 | the **GitHub Pages** site URL |
-| 5 | `Claims Model Starter` (title case) | 2 | published wiki titles — `_Sidebar.md:1`, `Home.md:1` |
-| 6 | `claims_model_starter` (underscore) | 0 | this form does not exist; do not grep for it |
+**Found and measured by Phase 5's residue sweep (Session 234). Deliberately NOT fixed in that
+commit; the reason is below and it is the part worth reading.**
 
-**Exposed surfaces — these change.** Everything below is either live config, an executable path, or
-documentation a reader can reach today:
+`docs/methodology/PROJECT_CONVENTIONS.md:44` holds the canonical archive banner that every moved
+document is prepended with. Phase 4 (`1865fc2`) updated it to
+`docs/wiki/model_project_constructor/Evolution.md`. **It updated none of the copies: 21 lines
+across 20 files under `docs/architecture-history/` still read
+`docs/wiki/claims-model-starter/Evolution.md`, and 0 read the new path.** That directory no longer
+exists, so all 21 are dead in-repo pointers. **20 are deployed banners. The 21st is
+`evolution-page-plan.md:161` — the banner's original *specification*, inside a fenced block, which
+`PROJECT_CONVENTIONS.md:44` is the live copy of.** A sweep driven from a file list will miss it,
+and Session 147's precedent requires every banner to be byte-identical to that template — an
+invariant that is false today. The same class appears on two more lines — **`CHANGELOG.md`'s
+preamble at `:3` and `:10`, each naming it twice** — above the first version heading at `:16`, so
+present-tense navigation prose rather than a dated entry. (`:10`'s second is `claims-model-starter/wiki`,
+the GitHub wiki path, alive only on the rename redirect.)
 
-| File | Lines | What |
-| --- | --- | --- |
-| `mkdocs.yml` | `:3`, `:4`, `:5` | `site_url`, `repo_url`, `repo_name` — the Pages site moves |
-| `README.md` | `:7`, `:9` | the repo-naming sentence itself, and the published-tutorial URL |
-| `SECURITY.md` | `:9` | security-advisory URL |
-| `CONTRIBUTING.md` | `:6` | Contributing wiki-page URL |
-| `docs/tutorial.md` | `:218` | Intake-Interview-Design wiki URL |
-| `scripts/publish_wiki.sh` | `:2`, `:11`, `:19`, `:23-24`, `:42`, `:44`, `:63`, `:72`, `:75` | `WIKI_CLONE` default, clone URL, `SOURCE_DIR`, **and the remote-URL guard** that greps for the literal `claims-model-starter.wiki` |
-| `.githooks/post-commit` | `:3`, `:18` | the `git diff-tree \| grep '^docs/wiki/claims-model-starter/'` trigger |
-| `tests/test_wiki_no_line_citations.py` | `:7`, `:38` | `WIKI_DIR` constant |
-| `THIRD-PARTY-LICENSES` | `:50` | wiki path reference |
-| `docs/style/statistical_terms.md` | `:7`, `:103`, `:137`, `:165` | wiki path references |
-| `docs/methodology/PROJECT_CONVENTIONS.md` | `:11`, `:24`, `:25`, `:42` | wiki path references (project-owned, editable) |
-| `executive-summaries/stakeholder-readiness-dossier.qmd` | `:57`, `:95` | wiki path references |
-| `BACKLOG.md` | `:17` | wiki path reference (this file) |
-| `docs/wiki/claims-model-starter/*.md` | 8 files, 12 hits | **published wiki content**: `_Sidebar.md`, `Home.md`, `Changelog.md`, `Contributing.md`, `Development-Workflow.md`, `Evolution.md`, `License.md`, `Software-Bill-of-Materials.md` |
-| `docs/planning/enterprise-migration.md` | 43 hits | **an active plan, not history** — see dragon 3 |
-| `docs/planning/opencode-adapter-spec.md`, `docs/planning/httpx-adapter-migration.md` | 5 hits | active plans |
+**Why nothing caught it, which is the interesting part.** `repository-rename.md` §7.2's allowlist
+exempts `^docs/architecture-history/` and `^CHANGELOG\.md$` **wholesale**, on §3.1's rationale that
+they are frozen historical records. That is true of their *entries* and false of a banner and a
+preamble, which record nothing and navigate. The exemption became a blindfold **one level below**
+where §7.2 anticipated it: the file is exempt, so a live line inside it rides in free. §9.1's rubric
+for this hazard — *"An exemption is only as good as the assertion traded for it, and a filter written
+to make the arithmetic work can silently remove the case you most needed to check"* — is right, and
+the assertion traded for group 1 was a file-level one.
 
-**Historical records — these keep the old name.** Precedent: the SR 11-7 → SR 26-2 rename
-(Session 144, `bfd9f36`) whose commit message states it outright — *"Historical records (root
-CHANGELOG, SESSION_NOTES, architecture-history, audits, wiki Changelog Phase 4B entry,
-banner-anchored Evolution) deliberately retain the old name."* Learning #32 is the general rule and
-learning #60 says to derive this scope from the precedent diff, so **run
-`git show --stat bfd9f36` before starting**:
+**Why this was filed and not swept.** These hits sit in files §3.1 classifies KEEP, so by the letter
+of Phase 5's residue rule they are not misses; the claim is that §3.1's *classification* is wrong
+for this one sentence. That is a plan defect, and this project's settled response to a plan defect
+found mid-execution is to file it (Session 229 → Session 230's dedicated repair session), not to
+widen a closing commit into a 22-file sweep of frozen archives against `SAFEGUARDS.md`'s
+blast-radius rule.
 
-`CHANGELOG.md` (117) · `SESSION_NOTES.md` (**0** since the Session 222 trim — its 293 hits moved
-into `docs/architecture-history/SESSION_NOTES-through-S216.md` and are counted in the next entry) ·
-`docs/architecture-history/*` (**418 across 21 files**, of which the shard is 293; was 125 across 20
-before the trim) · `audits/*` (12) · `PROJECT_LEARNINGS.md` (2) · `prs-export.json`,
-`releases-export.json` (1 each — frozen GitHub API exports, not prose).
+**The class was swept, and this is the whole of it.** `git grep -c "docs/wiki/claims-model-starter"`
+returns **507 lines across 32 files** — but 484 of those are genuine dated records: session-ledger
+entries, `CHANGELOG.md`'s 107 dated release lines, and archived plans' already-satisfied acceptance
+criteria, all of which named a path that was correct when written. §3.1's rationale covers those
+properly. Only the banner and the `CHANGELOG.md` preamble are **present-tense navigation**, and those
+are the 23 lines below. The scope is a cut through the class, not one instance of it.
 
-**Session 222 note.** The trim moved hits between files; it changed no per-pattern total, so the
-pattern table above stands unedited. It also does not change the rename's *scope* — the shard is a
-historical record and keeps the old name, per the same S144 precedent. Two corrections while
-re-deriving: **the headline "644 hits across 50 tracked files" was already low at filing time** —
-`git grep -c` at the filing commit `5d906e9` gives **659 across 50**, and the same 659/50 holds at
-`8bc3ef3`, at `f91f8e0` and post-trim. Re-derive rather than copy at execution time:
-`git grep -c "claims-model-starter" -- . | awk -F: '{s+=$NF} END {print s}'`.
-
-#### Sub-decisions the executing session must settle first
-
-1. **Does the wiki source directory rename too?** `docs/wiki/claims-model-starter/` →
-   `docs/wiki/model_project_constructor/`. It drives pattern #1 (509 hits) and is the difference
-   between a ~60-hit change and a ~570-hit change. **Recommended: yes** — the directory is named
-   after the repository, and the publish script pairs it with a clone whose name is derived from the
-   repository (`<repo>.wiki.git`), so leaving it stale splits one name across two conventions.
-   It is a `git mv` of 25 files plus four executable references (`publish_wiki.sh:44`,
-   `post-commit:3,18`, `test_wiki_no_line_citations.py:38`); the remaining path hits are prose.
-2. **Do the published wiki titles change?** `_Sidebar.md:1` "**Claims Model Starter**" and
-   `Home.md:1` "# Claims Model Starter Wiki" are reader-visible branding, not paths. Renaming the
-   repository does not automatically mean rebranding the wiki — **ask the operator.**
-3. **Is this one session or two?** The exposed-documentation sweep and the wiki-directory `git mv`
-   are separable. If sub-decision 1 is "yes", strongly prefer **two sessions**: sweep first, `git mv`
-   second, so a bisect can separate a prose change from a path change.
-
-#### ⚠ Dragons
-
-1. **`SESSION_RUNNER.md:209` names `docs/wiki/claims-model-starter/` — and that file must not be
-   edited.** It is synced from the canonical methodology repo and local edits block future syncs
-   (`CLAUDE.md` → Project-Specific Methodology Adaptations). If sub-decision 1 is "yes", that line
-   goes stale and **the correction belongs in `CLAUDE.md`'s adaptations section**, which exists as
-   the customization seam for exactly this. Do not edit the synced file to "fix" it.
-2. **`scripts/publish_wiki.sh:72-75` is a guard, not a comment.** It refuses to publish unless the
-   clone's `origin` URL contains the literal string `claims-model-starter.wiki`. Rename the repo
-   without updating it and **wiki publishing fails closed** — which is the safe direction, but it
-   will fail on the very commit that lands the rename, via the `post-commit` hook.
-3. **`docs/planning/enterprise-migration.md` is mid-execution and holds 43 hits**, including live
-   `curl` verification commands against `rmsharp.github.io/claims-model-starter/…` (`:831-833`,
-   `:1356`, `:1520`). Those are executable acceptance criteria for Phases C2/C4, not prose. Either
-   update them in the same commit or the enterprise-migration executor runs stale checks. Also note
-   that plan's **whole purpose is to fork this repository into an enterprise clone** — sequencing a
-   rename against it is an operator call, not an implementer's.
-4. **Out-of-repo surfaces the sweep cannot reach.** The wiki clone at
-   `~/Development/claims-model-starter.wiki` (also tracked as its own project by the methodology
-   dashboard, currently 16/100) must be re-cloned or have its remote re-pointed; the dashboard's
-   project list will show the old name until it is. Any local clone needs
-   `git remote set-url origin`.
-5. **GitHub's redirect softens but does not remove the break.** Renaming leaves a permanent redirect
-   from the old URL, so existing links and clones keep working — which means a half-done sweep will
-   *look* fine indefinitely. Do not treat "the links still work" as evidence the sweep is complete.
-   The Pages URL and the wiki clone URL are the parts that genuinely move.
-
-#### Completion criteria
-
-- `grep -rIl "claims-model-starter" . | grep -v '^\./\.git/'` returns **only** the historical-record
-  files enumerated above — every remaining hit classified, none unclassified.
-- `gh repo view --json nameWithOwner` → `rmsharp/model_project_constructor`.
-- `curl -sf https://rmsharp.github.io/model_project_constructor/tutorial/` → HTTP 200.
-- `scripts/publish_wiki.sh` runs clean against the re-pointed clone (it is idempotent; a no-op run is
-  a pass).
-- `uv run pytest tests/test_wiki_no_line_citations.py` passes (its `WIKI_DIR` still resolves).
+**Cost: small and mechanical** — 21 one-line substitutions plus 2 in `CHANGELOG.md`, no
+executable impact, no test touches. **One ruling is needed first, and it covers all 23 lines:** is the archive banner part of the
+frozen record, or project-added boilerplate that tracks its template? **`CHANGELOG.md`'s two lines
+need no ruling of their own** — a preamble above the first version heading is plainly not an entry.
+They are bundled here only because `repository-rename.md` §3.1 buckets that file *whole*, which is
+the same file-level judgement that stranded the banners. Dispose of all 23 in one pass. If the latter,
+`PROJECT_CONVENTIONS.md` §3 should also say banners are re-pointed when their target moves — Session
+147's precedent already requires them byte-identical to the template, and that invariant is false
+today. Two cautions for whoever executes it: `docs/architecture-history/methodology-pr2527-remediation-mpc.md`
+is third-party-attributed material (`CLAUDE.md`, `NOTICE`) — its banner is project-added, but confirm
+before touching it; and `initial_purpose.txt` is the only `.txt` in the directory, so a `*.md` sweep
+silently skips it.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 

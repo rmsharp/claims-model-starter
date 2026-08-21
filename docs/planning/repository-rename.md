@@ -1,11 +1,30 @@
 # Plan: rename the GitHub repository `claims-model-starter` → `model_project_constructor`
 
-**Status:** **IN EXECUTION — Phases 1 and 2 of 5 are done; Phases 3, 4 and 5 are not.**
-Phase 1 — Session 227, `c1fe06f`. Phase 2 — Session 229, `73b9418`.
-**This plan was itself repaired in Session 230 — see §9.1.** Phase 4's `publish_wiki.sh` line list
+**Status:** **EXECUTED — all 5 phases are done. This plan is closed.**
+Phase 1 — Session 227, `c1fe06f`. Phase 2 — Session 229, `73b9418`. Phase 3 — Session 232,
+`f58948a`. Phase 4 — Session 233, `1865fc2`. Phase 5 — Session 234, **the commit carrying this
+line** — find it with
+`git log --oneline -S'EXECUTED — all 5 phases are done' -- docs/planning/repository-rename.md`,
+which returns **exactly one** commit: the one that flipped this line. *A hash cannot be written into
+the commit that creates it, and a placeholder nothing checks is a promise nothing keeps — so this
+cites what `git` can find instead. **Do not "simplify" it to `--grep 'rename Phase 5'`:** that
+matches commit **subjects**, and every session close-out in this rename carries the phrase
+*"rename Phase N"* while three of the four phase commits did not carry their own — so it resolves
+to the close-out, confidently and wrongly. Found by the pre-commit review, against a first fix that
+had already replaced a placeholder for being unverifiable.*
+**Every check in §7 passes**, including §7.4's three out-of-repo surfaces, which no `git grep` at
+`HEAD` can reach — with one stated qualification: §7.3's residue line greps *directories*, so its
+verdict is "no **tracked** residue" and depends on the `grep` implementation. See the warning under
+§7.3 and §9.2. **`BACKLOG.md`'s rename item is deleted, not edited** — that was the closing
+criterion. Two things survive the rename **on purpose and forever**: §3.1's 552 frozen-record lines,
+and §3.3's D-R5-pinned lines naming `~/Development/claims-model-starter.wiki`, a directory on disk
+that GitHub's rename never moved. A future sweep that "completes" either one is a regression, not a
+finish.
+**This plan was itself repaired in Session 230 — see §9.1**, and reconciled by Phase 5 — see §9.2.
+Session 230: Phase 4's `publish_wiki.sh` line list
 contradicted D-R5 and would have broken wiki publishing if obeyed literally; three downstream
 completion criteria were unsatisfiable as a consequence; and dragon 1 pointed the reader into a
-phase that had already closed. Phase 5 still owns the *final* status flip and the full commit list.
+phase that had already closed.
 **Written:** Session 226, 2026-08-19 — that session's entire deliverable was this file, with the
 rename itself deferred to later sessions. It was, and they have begun.
 
@@ -165,7 +184,7 @@ poor completion criterion. §7 uses a file allowlist instead.
 | 3 | `github.com/rmsharp/claims-model-starter` | 36 | 12 | repo and wiki-page URLs |
 | 4 | `rmsharp.github.io/claims-model-starter` | 25 | 7 | the **Pages** site URL (§1) |
 | 5 | `Claims Model Starter` (title case) | 5 | 3 | reader-visible branding |
-| 6 | `claims_model_starter` (underscored) | 1 | 1 | **one row in `BACKLOG.md`'s own per-pattern table** — the row that says this form does not exist. Self-matching. Do not read it as a real occurrence. (Cited as `:527` at plan time; the line has moved twice since. `grep -n "claims_model_starter" BACKLOG.md`.) |
+| 6 | `claims_model_starter` (underscored) | 1 | 1 | **one row in `BACKLOG.md`'s own per-pattern table** — the row that says this form does not exist. Self-matching. Do not read it as a real occurrence. (Cited as `:527` at plan time; the line has moved twice since. `grep -n "claims_model_starter" BACKLOG.md`.) **Session 234: that grep now returns nothing — the row it matched was inside the rename item Phase 5 deleted, so this measurement is now 0/0 in the working tree while staying 1/1 at `59615e2`, which is the frame §2 is pinned to.** |
 | 7 | `claims model starter` (spaced), `Claims-Model-Starter` | 0 | 0 | do not exist |
 
 **The table is complete, not merely enumerated.** Searched and confirmed **zero** for every other
@@ -326,8 +345,17 @@ each of which has lines in **both** §3.3 and §3.2. Every other file is wholly 
 (`:50`), `docs/wiki/…/License.md` (`:3`), `docs/wiki/…/Evolution.md` (`:266`). All change **iff**
 §4's D-R2 is "yes"; if it is "no", this whole group is untouched. **None of them ship to Pages** —
 `mkdocs.yml:13-16` is a fail-closed allowlist admitting only `index.md` and `tutorial.md`.
-*(`Evolution.md:266` also says "22 outward-facing wiki pages"; there are 25. Fix the count while
-you are in the line.)*
+*(`Evolution.md:266` also said "22 outward-facing wiki pages plus the sidebar"; there are **24**
+(25 files, one of which is `_Sidebar.md`). Fix the count while you are in the line.)*
+
+> *Session 234 correction (Phase 5) — the second half of Session 232's filed defect #2. This
+> parenthetical previously read* **"also says “22 outward-facing wiki pages”; there are 25."**
+> *Two errors in one sentence. The quotation stopped one clause short of the page's own convention
+> — the page says "plus the sidebar" — and **25 is the total FILE count**, a different quantity from
+> the outward-facing page count the sentence is correcting. An executor obeying it as written landed
+> off by one instead of off by two. Session 233 measured rather than copied
+> (`ls docs/wiki/model_project_constructor/ | grep -vc '^_'` -> **24**) and shipped 24 to the live
+> wiki, so the page has been right since `1865fc2`; this is the plan catching up to the page.*
 
 **(d) Active plans (34 lines, 3 files)** — `docs/planning/enterprise-migration.md` (**29 of its
 43**), `opencode-adapter-spec.md` (3), `httpx-adapter-migration.md` (2). **Mid-execution, and they
@@ -695,6 +723,29 @@ gh run list --workflow=publish-tutorial.yml --limit 1                # -> UNCHAN
 **If the hook did not fire, do not hand-edit the clone** — fix the cause and re-run
 `scripts/publish_wiki.sh`. It is idempotent (dragon 2).
 
+> *Session 234 correction (Phase 5), discharging Session 232's filed defect #1. **Every command in
+> the block above reads LOCAL state**, so all of them go green — and `HOOK FIRED AND PUBLISHED`
+> prints — in the one state that matters: `publish_wiki.sh` commits into the clone at `:102` and
+> pushes at `:104`, so a failed push exits **2 with the local commit left in place**. `BEFORE !=
+> AFTER` is then TRUE, the re-run short-circuits at `:96` on an empty index and exits 0, and the
+> local-vs-local `diff -r` is identical by construction — while the live wiki is **stale**. The
+> recovery sentence directly above is **inert** in exactly that state: the re-run never reaches the
+> push. See dragon 2 item 6. **The block is left byte-identical because Phase 3 has run and it is
+> now a record of what its executor was told** — the same disposition §9.1 gave Phase 2's `-fL`
+> advice. What the phase actually needed is appended below; Session 232 ran it by hand and Phase 3
+> passed.*
+
+**Push-reachability — appended after the fact (Session 234). Run these too:**
+```bash
+CLONE=~/Development/claims-model-starter.wiki          # D-R5: the on-disk name never moves
+git -C "$CLONE" push --dry-run origin master           # BEFORE committing -> "Everything up-to-date"
+[ "$(git -C "$CLONE" rev-list --count origin/master..master)" = 0 ] && echo PUSHED || echo "STALE: exit-2"
+curl -sf https://raw.githubusercontent.com/wiki/rmsharp/model_project_constructor/Home.md >/dev/null \
+  && echo "LIVE WIKI READS BACK"                       # the public artifact, not a local mirror
+```
+**If the count is non-zero, the push failed and `publish_wiki.sh` cannot retry it** — push the clone
+directly (`git -C "$CLONE" push origin master`), then re-check. Do not re-run the publisher first.
+
 **Session boundary. Close out here.**
 
 ---
@@ -797,6 +848,26 @@ Order within the session:
    **If `HOOK FIRED` did not print, stop.** Do not hand-edit the clone. The trigger prefix is stale —
    fix `.githooks/post-commit:18`, amend, and re-run.
 
+   > *Session 234 correction (Phase 5) — the same defect as Phase 3's, filed by Session 232 as
+   > defect #1 and carried here because this phase's block is identical in kind. `BEFORE != AFTER`,
+   > `show --stat HEAD`, the publisher re-run and the two greps all read **local** state, so an
+   > `exit 2` push failure (`publish_wiki.sh:104-108`, local commit left in place) prints
+   > `HOOK FIRED AND PUBLISHED` while the live wiki is stale. **Left byte-identical: Phase 4 has
+   > run and this is now a record.** Session 233 ran the appended checks by hand and Phase 4 passed
+   > them — the live pages were read back over HTTP. See dragon 2 item 6.*
+
+   **Push-reachability — appended after the fact (Session 234). Run these too:**
+   ```bash
+   CLONE=~/Development/claims-model-starter.wiki
+   # Order matters IN THIS PHASE: run the dry-run AFTER step 1's `remote set-url`, BEFORE step 2's
+   # commit. It talks to the remote directly, so it is unaffected by the `:72` guard being
+   # momentarily out of step with the clone's origin (dragon 2 item 5).
+   git -C "$CLONE" push --dry-run origin master        # -> "Everything up-to-date"
+   [ "$(git -C "$CLONE" rev-list --count origin/master..master)" = 0 ] && echo PUSHED || echo "STALE: exit-2"
+   curl -sf https://raw.githubusercontent.com/wiki/rmsharp/model_project_constructor/Evolution.md \
+     | grep -c 'outward-facing wiki pages'             # -> 1, read off the PUBLIC artifact
+   ```
+
 **DONE looks like:** the suite is green, the hook fired and published on its own, the live wiki
 differs from its pre-phase state by exactly the three intended lines, and no page was renamed,
 added, or removed.
@@ -859,7 +930,10 @@ self-reference, is a miss — fix it here.
 > exception: the dual-purpose `diff -r` line (§3.3 trap 1) must have had its *in-repo* half changed
 > by Phase 4. Verify that, do not "leave it alone" wholesale, and never `sed` it.** The four
 > independence-grep sites are out of scope here too — they are flagged to the operator in
-> `BACKLOG.md`, and §8 says they are not this plan's to rewrite.
+> `BACKLOG.md`, and §8 says they are not this plan's to rewrite. *(Session 234: that flag lived
+> inside the rename item this phase deletes, so Phase 5 **re-filed it as its own `BACKLOG.md`
+> item** — `grep -n 'clone-independence' BACKLOG.md` — rather than letting an open operator
+> decision die with the item it happened to be filed under. See §9.2.)*
 
 Then:
 - **`BACKLOG.md`: delete the rename item's rows; do not substitute them.** 17 of its 18 hits are the
@@ -982,7 +1056,9 @@ another plan's acceptance criteria beyond the five URL lines above.**
 > defect. Post-Phase-4 that set legitimately contains the **new** name, so the criterion has to be
 > restated as *"no repository name **other than the clone's own**"*, not *"no name at all"*.
 > **That restatement is an operator ruling and is NOT this plan's to make** (§8, first bullet). The
-> flag, with these measurements, is filed in `BACKLOG.md` under the rename item.
+> flag, with these measurements, is filed in `BACKLOG.md`. *(Session 234: re-filed as a
+> standalone item when Phase 5 deleted the rename item — `grep -n 'clone-independence' BACKLOG.md`.
+> It is still open and still needs the operator's ruling.)*
 
 ### Dragon 2 — The wiki publisher's own guards all fail CLOSED. Verified, not assumed — and narrower than it sounds (dragons 3 and 4).
 
@@ -1011,10 +1087,31 @@ Mechanics, each verified this session:
    `git remote set-url` on the clone **and** the guard literal, in the same session, minutes apart
    (Phase 4 steps 1 and 2). Splitting them across a session boundary is what turns a fail-closed
    guard into a multi-day publishing outage nobody notices.
+6. **One exit path is neither a guard nor fail-closed — `exit 2`, the failed push. Added Session
+   234 (Phase 5), discharging Session 232's filed defect #1.** Every guard in item 4 runs *before*
+   anything changes. The push does not: `:92` rsyncs, `:102` commits **into the clone**, and only
+   then `:104` pushes — so a push failure exits **2 with the local commit left in place**
+   (`:104-108`; the script's own header `:32` says so). **Three prescribed checks then report
+   success while the live wiki is stale:** the clone's `HEAD` *has* moved, so `BEFORE != AFTER`
+   prints `HOOK FIRED AND PUBLISHED`; a re-run short-circuits at `:96` on an empty index and exits
+   **0**; and a local-vs-local `diff -r` is identical by construction. **"It is idempotent, re-run
+   it" is inert here** — the re-run never reaches `:104`. It is not silent (the hook `exec`s the
+   script, so `:105-106`'s stderr reaches the terminal) but it is **unchecked**, and `man githooks`
+   guarantees git discards the status. **Only two things can see it:**
+   `git -C <clone> rev-list --count origin/master..master` (must be `0`) and a `curl` of the live
+   page. Both are now appended to Phases 3 and 4 and to §7.3. Recovery is a **direct**
+   `git -C <clone> push origin master`, never another publisher run.
 
 **Conclusion for the `publish_wiki.sh` guard specifically: loud, safe, and recoverable.** Plan for
 it; do not fear it. **The hook's own trigger is a different story — dragon 4 — and that one is
 silent.**
+
+> *Session 234 qualification. That conclusion is true of the **guards** and was never meant to
+> cover the push, but it is the sentence a reader carries away, and item 6 above is the exception
+> to all three words: the exit-2 state is loud-but-unchecked, leaves a commit behind, and is **not**
+> recoverable by the mechanism the plan offers for it. The enumeration was complete for `exit 1`
+> and silently partial for the script as a whole — `grep -cin 'push fail'` over this document
+> returned **0** before this repair.*
 
 ### Dragon 3 — `publish_wiki.sh` has no emptiness check, and one plausible execution order **deletes the entire public wiki and pushes it**
 
@@ -1151,9 +1248,15 @@ rename the divergence it must explain is a **different** one. Verified live:
 
 Post-rename the repository and the import package agree, and only the **PyPI distribution name**
 diverges — which is not an anomaly but PEP 503 normalization. **Rewrite the sentence to say that.**
-It is deliberate; **`BACKLOG.md`'s *"The name form is underscores, and it is deliberate"* paragraph**
-records the operator correcting a hyphenated reading within
-the same session. Do not "fix" the hyphens.
+It is deliberate. **The operator corrected an initial hyphenated reading
+(`model-project-constructor`) to `model_project_constructor` within the same session (Session 221,
+2026-08-17).** Do not "fix" the hyphens. *(Session 234: that ruling was recorded in `BACKLOG.md`'s
+*"The name form is underscores, and it is deliberate"* paragraph, inside the rename item Phase 5
+deletes. It is quoted here so the ruling outlives its filing location. The only other surviving copy
+is in a frozen shard — `grep -n "name form is underscores" docs/architecture-history/SESSION_NOTES-*.md`
+finds it in `SESSION_NOTES-S227-through-S225.md`. A first draft of this note cited `CHANGELOG.md`
+too; `CHANGELOG.md` does not contain it, and the pre-commit review caught the fabrication — which is
+the same defect this note exists to repair, committed while repairing it.)*
 
 ### Dragon 7 — The string is overloaded: three hits mean the *generated output*, not this repository
 
@@ -1192,13 +1295,23 @@ same heading). **Do not edit `SESSION_RUNNER.md`.**
   reports and orphans its history rows in `~/Development/dashboard_history.jsonl`.
 - This repository's own `origin` (`https://github.com/rmsharp/claims-model-starter.git`) — GitHub
   redirects it, so nothing breaks, but leaving it stale means `git remote -v` lies to every future
-  session. **Note `master` is currently 2 commits ahead of `origin/master`** (`2033e95`, `59615e2`).
-  Push before Phase 1 or know that the first post-rename push travels the redirect.
+  session. ~~**Note `master` is currently 2 commits ahead of `origin/master`** (`2033e95`,
+  `59615e2`). Push before Phase 1 or know that the first post-rename push travels the redirect.~~
+  **Struck by Phase 5 (Session 234), which §9.1 assigned this line to.** Plan-time truth, moot since
+  Phase 1 landed; the origin was re-pointed and every phase has pushed cleanly under the new name.
+  **Do not re-pin the number** — an ahead-count is stale one commit after it is written, which is
+  the whole reason this line needed striking rather than updating.
 - **A third clone exists and nobody has mentioned it:**
   `~/Development/mpc_tests/model_project_constructor`, `origin` =
   `https://github.com/rmsharp/claims-model-starter.git`. It keeps working via the redirect; it is
   listed here so the rename does not "complete" with a stale clone nobody remembered.
-- **`.git/config` in all three clones** carries the old URL, and is invisible to the sweep — both
+  **DISCHARGED by Phase 5 (Session 234)** — `git remote set-url` on that clone, out of repo and in no
+  commit; the new URL was proved to resolve with `git ls-remote`, not merely written. This bullet is
+  why it was found: Session 233 checked §7.4 and left it deliberately rather than bundling it into
+  Phase 4. **All three clones are now on the new name.**
+- ~~**`.git/config` in all three clones** carries the old URL~~ — **false since Phase 5; all three
+  now carry the new URL** (the bullet above records the last one). The *mechanism* claim below stands
+  and is why they had to be checked by hand: `.git/config` is invisible to the sweep — both
   `git grep` (tracked files only) and the filed criterion's `grep -rIl … --exclude-dir=.git`
   structurally exclude it. Only `git remote -v` finds it.
 - **The local-only branch `gh-pages-preA4`** holds an older copy of generated site output carrying
@@ -1437,6 +1550,12 @@ uv run pytest -q                                   # -> 1230 passed + 9 live-ski
 uv run ruff check src/ tests/ packages/ scripts/   # -> clean
 uv run mypy                                        # -> clean
 scripts/publish_wiki.sh                            # -> "no changes to publish"
+git -C ~/Development/claims-model-starter.wiki rev-list --count origin/master..master   # -> 0
+#   NOT implied by the line above, and not optional (Session 234, from Session 232's defect #1).
+#   `publish_wiki.sh` commits into the clone at :102 and pushes at :104, so a failed push exits 2
+#   with the local commit LEFT IN PLACE. In that state the re-run above short-circuits at :96 and
+#   prints "no changes to publish" with exit 0 -- a green line that is fully consistent with a
+#   STALE live wiki. Only a count against origin/master separates the two. Dragon 2 item 6.
 grep -rn "claims-model-starter" scripts/ tests/ .githooks/ src/ packages/ .github/ \
   | grep -v '^scripts/publish_wiki\.sh:'                  # -> empty
 grep -n "claims-model-starter" scripts/publish_wiki.sh    # -> exactly :19, :24, :42 — never 0
@@ -1444,6 +1563,17 @@ grep -n "claims-model-starter" scripts/publish_wiki.sh    # -> exactly :19, :24,
 
 `src/`, `packages/` and `.github/` are in that grep even though they have **zero** hits today
 (§2.4) — so that a future session's addition is caught rather than assumed absent.
+
+> ⚠ **That residue line greps *directories*, not the index, so it reaches untracked and ignored
+> files and its verdict depends on which `grep` you have.** Measured in Session 234: on a shell
+> where `grep` is a `ugrep --ignore-files` wrapper (which honours `.gitignore`) it prints **empty**;
+> the same command as `command grep` prints **two** `tests/__pycache__/*.pyc` blobs — stale bytecode
+> of the pre-Phase-4 test file, untracked and harmless. §7.2's *"no judgment call, a printed path is
+> a miss"* rule would therefore fail a correct tree on a different machine. **Read it as: no
+> *tracked* residue.** A criterion of this shape should be `git grep` (index-scoped, deterministic),
+> which still catches the future addition §2.4 is defending against, since an addition would be
+> tracked. Left as-is here rather than rewritten, because changing an instrument in the act of
+> declaring it passed is exactly the move this project refuses elsewhere.
 
 **`scripts/publish_wiki.sh` is excluded from the first line and asserted on the second, and the two
 travel together** — §7.2 group 3 explains why, and §3.3's first row is the authority. Anchor the
@@ -1483,7 +1613,8 @@ for d in . ~/Development/claims-model-starter.wiki ~/Development/mpc_tests/model
 done
 ```
 
-**Do not use the criterion filed in `BACKLOG.md`'s "Completion criteria" list** (`grep -rIl "claims-model-starter" . | grep -v
+**Do not use the criterion that was filed in `BACKLOG.md`'s "Completion criteria" list** — deleted
+with the rename item in Phase 5, and reproduced here because the warning outlives it (`grep -rIl "claims-model-starter" . | grep -v
 '^\./\.git/'`). It returns **58 files against 51 tracked** — the extras are `.venv/…/METADATA` (the
 README embedded as `long_description`), the gitignored `site/` build, a generated `.html`, and this
 plan file. It can never go green.
@@ -1671,9 +1802,138 @@ reader can reverse any of them cheaply.
   `59615e2`). Push before Phase 1"*. Plan-time truth; it was **7 ahead at `be3bc4a`** and Phase 1
   has long since run, unpushed. The instruction is moot rather than dangerous, and the count moves
   every commit — do not re-pin it without an anchor. Phase 5's reconciliation owns it.
+  **DISCHARGED, Session 234 (Phase 5):** the sentence is struck in dragon 9 with the reason, and
+  deliberately not re-pinned. See §9.2 row 5.
 - **The three independence-pattern greps in `enterprise-migration.md`** (`:363`, `:1319`, `:1363`).
   Dragon 1 forbids rewriting another plan's criteria, and the repair needs an operator ruling on
   restating the criterion as *"no name other than the clone's own"*. The flag is in `BACKLOG.md`.
+  *(Session 234: re-filed there as a standalone item when Phase 5 deleted the rename item. Still
+  open — see §9.2.)*
 - **`enterprise-migration.md:1372`'s `--json isPrivate,archived`** — `archived` is not a `gh repo
   view` field (`isArchived` is), so that C5 criterion has never been able to pass. Pre-dates the
   rename. One word, outside the five lines dragon 1 authorises.
+  **DISCHARGED, Session 234 (Phase 5):** Phase 5 had to rewrite that line for the rename anyway, so
+  the one word went with it. See §9.2 row 2.
+
+---
+
+### §9.2 Reconciliation log — Session 234, Phase 5, 2026-08-20
+
+**The last phase. One commit.** Phase 5's charter is to walk the whole surviving `git grep`, classify
+every hit against §3, fix what is a miss, close the backlog item, and flip the status line above.
+All of that happened; what follows is what it *found*, because a reconciliation that only reports
+"green" is not worth reading.
+
+**Pre-flight matched the ledger exactly.** §7.2 command 1 printed **0** (already there a phase early
+— all 11 remaining paths were Phase 4's, which §7.2's ledger predicts as "after Phases 3, 4 and 5";
+arriving early is a phase working, not drift). (i) printed exactly `:19 :24 :42`; (ii) printed the
+three residue lines this phase owns; (iii) printed one line, new name left, old name right.
+
+| # | Where | What it said | What it says now |
+|---|---|---|---|
+| **1** | `enterprise-migration.md:919`, `:1250`, `:1372` | three surviving `claims-model-starter` lines — §7.2 (ii)'s whole remaining content | rewritten to the new name. **(ii) is now empty**, which is what Phase 5's DONE gate asks for. `:919` and `:1250` are re-runnable commands (`:919`'s own phase text ships them *"so the reviewer can re-run them"*; `:1250` is an unexecuted C4 instruction and **two lines below it that mirror is pushed** with `--mirror`). `:1372` is an unexecuted C5 acceptance criterion. None is a record. |
+| **2** | `enterprise-migration.md:1372` (same line) | `--json isPrivate,archived` | `--json isPrivate,isArchived`. **§9.1 filed it as *"one word, outside the five lines dragon 1 authorises"*; the instruction to *"fix the field name whenever that line is next touched"* was `BACKLOG.md`'s Session-229 flag 3 — which this commit deletes.** Phase 5 touched the line, so the fix is discharged rather than lost with the rows that carried the instruction. |
+| **3** | §3.2(c)'s `Evolution.md:266` parenthetical | *"also says '22 outward-facing wiki pages'; there are 25"* | *"also said '22 outward-facing wiki pages **plus the sidebar**'; there are **24** (25 files, one of which is `_Sidebar.md`)"*. Session 232's filed defect #2, **now fully discharged** — Session 233 fixed the live page; this fixes the plan. |
+| **4** | Phase 3's and Phase 4's verification blocks; dragon 2 | every command reads **local** state, and `BEFORE != AFTER` positively prints `HOOK FIRED AND PUBLISHED` in the one state that matters | Session 232's filed defect #1, **discharged**. `publish_wiki.sh` commits into the clone (`:102`) *then* pushes (`:104`), so a failed push exits **2 with the local commit left in place** — after which the clone's `HEAD` has moved, a re-run short-circuits at `:96` and exits 0, and a local-vs-local `diff -r` is identical, all while the live wiki is stale. **Both blocks are left byte-identical** (those phases have run; the blocks are records now — the disposition §9.1 gave Phase 2's `-fL` advice) and a correction plus a runnable *push-reachability* block is **appended** to each. Dragon 2 gains **item 6** and a qualification of its *"loud, safe, and recoverable"* conclusion, and **§7.3** — which is live, not a record — gains the `rev-list --count origin/master..master` assertion. `grep -cin 'push fail'` over this document returned **0** before this repair. |
+| **5** | dragon 9's *"`master` is currently 2 commits ahead… push before Phase 1"* | plan-time truth, moot since `c1fe06f` | struck through with the reason. §9.1 assigned this line to *"Phase 5's reconciliation"*. **Not re-pinned**: an ahead-count is stale one commit after it is written. |
+| **6** | six pointers into `BACKLOG.md` | *"flagged to the operator in `BACKLOG.md`"* (Phase 5's §3.3 box), dragon 1's *"filed… under the rename item"*, §9.1's *"The flag is in `BACKLOG.md`"*, dragon 6's citation of the *"name form is underscores"* paragraph, §7.4's *"the criterion filed in `BACKLOG.md`'s 'Completion criteria' list"* | all six re-pointed, inlined or annotated. **Deleting the backlog item silently dangles every pointer into it**, and three of these route the reader to an *open operator decision*. Dragon 6's case is the sharpest: the operator's underscore ruling existed nowhere else in this plan, so it is now **quoted inline** rather than cited. **The sixth — §2.3's pattern-6 row, whose `grep` now returns nothing — was missed by the first pass and found by the pre-commit review, because that pass worked from a list of known pointers instead of `git grep`-ing for them. That is learning #137's own failure mode, committed while writing learning #137.** |
+| **7** | `README.md:7` | Phase 5 owes it a "calm second look" (dragon 6) — it was rewritten in Phase 1 with the site down | **verified, not re-read.** Every claim checked against the live repository: repo name (`gh repo view`), `src/` tree, import package, **both** `[project]` names (`pyproject.toml:2`, `packages/data-agent/pyproject.toml:2` — exactly two distributions exist, no third), and `README.md:9`'s URL (**200, zero redirects**). **No edit.** The sentence is in fact more complete than dragon 6's own table, which names one distribution. |
+
+**Found, measured, and deliberately NOT fixed here — filed in `BACKLOG.md` instead.** This is the
+finding worth carrying forward, and it is a defect in **this plan's classification**, not residue.
+
+**Every archived document's banner points at a directory Phase 4 deleted.**
+`docs/methodology/PROJECT_CONVENTIONS.md:44` holds the canonical archive banner. Phase 4 updated it
+to `docs/wiki/model_project_constructor/Evolution.md` — and updated **none of the 21 lines across
+20 files** under `docs/architecture-history/` that carry the banner text; **zero** name the new one.
+**20 of the 21 are deployed banners; the 21st is `evolution-page-plan.md:161`, the banner's
+*original specification*** inside a fenced block, which `PROJECT_CONVENTIONS.md:44` is the live copy
+of — so the spec and its copy now disagree verbatim, and Session 147's archive precedent requires
+banners to be byte-identical to the template. `CHANGELOG.md`'s **preamble** (`:3` twice, `:10`)
+carries the same class, above the first version heading at `:16` — **twice on each of those two
+lines**, and `:10`'s second is `claims-model-starter/wiki`, the GitHub wiki path, alive only on the
+rename redirect.
+
+**§7.2 could never have seen it, and the reason generalises.** Group 1 exempts
+`^docs/architecture-history/` and `^CHANGELOG\.md$` **wholesale**, on §3.1's rationale that they are
+frozen records. That is true of their *entries* and false of a banner and a preamble, which record
+nothing and navigate. §9.1's rubric for exactly this hazard — *"An exemption is only as good as the
+assertion traded for it, and a filter written to make the arithmetic work can silently remove the
+case you most needed to check"* — is right, and §7.2 says the same in its own words (*"run them, or
+the exemption is a blindfold"*). The assertion traded for group 1 was a **file-level** one, so the
+blindfold reappears **one level down**, inside an exempt file. §7.2's group 3 anticipated exactly this shape for live
+files and paired the exemption with three line-level assertions. Group 1 got none.
+
+**Why it was filed rather than swept.** Classified against §3 — which is what Phase 5 is told to do —
+these hits land in **§3.1**, so by the letter of the residue rule they are not misses. The claim is
+that §3.1's *classification* is wrong for this one sentence. That is a plan defect, and this
+project's settled answer to a plan defect found mid-execution is to file it (Session 229 → Session
+230's dedicated repair session), not to widen the closing commit into a 22-file sweep of frozen
+archives against `SAFEGUARDS.md`'s blast-radius rule. The fix is 23 one-line substitutions and needs
+one ruling first: **is the archive banner part of the frozen record, or project-added boilerplate
+that tracks its template?**
+
+**§7.3's eleven, recorded rather than asserted.** `gh repo view` → `rmsharp/model_project_constructor`;
+`git remote -v` and the wiki clone's origin both on the new name; the new tutorial **200** and the old
+one **404** (§1 by design — recorded, not treated as a defect); the residue grep empty *with the
+caveat below*; `publish_wiki.sh` → *"no changes to publish"*, exit 0; the new push-reachability line
+→ **0**; `grep -n … publish_wiki.sh` → exactly `:19 :24 :42`. And the four that are not greps:
+**`uv run pytest -q` → 1230 passed, 9 skipped; `uv run ruff check src/ tests/ packages/ scripts/` →
+clean; `uv run mypy` → clean** — all three unchanged since Session 230, as this phase touches no code.
+
+**§7.4's three out-of-repo checks, which the allowlist cannot reach — all green, all measured.**
+
+- **The deployed site.** Every blob on `origin/gh-pages` scanned, decompressing the one `.gz`;
+  **zero** old-name hits. Run with a **positive control** — the same loop against the *new* name
+  reported `sitemap.xml.gz (2)`, proving the `gzip -dc` branch executed and can return non-zero, so
+  the zero is a real absence and not §2.5's fail-open. Both live sitemap forms return 0.
+- **The live wiki.** One hit across 25 pages: `Changelog.md:124`, the dated Session-19 entry §3.1
+  predicts. **No title survives** — `Home.md:1` and `_Sidebar.md:1` both read *Model Project
+  Constructor* (D-R3 = yes). A case-insensitive sweep including `claims model starter` and
+  `claims_model_starter` found nothing further, so the check is not fail-open on casing.
+- **Every clone's remote.** All three now on the new name. The third —
+  `~/Development/mpc_tests/model_project_constructor`, which dragon 9 lists and Session 233 found
+  still stale — was **re-pointed by this phase** (`git remote set-url`, out of repo, no commit) and
+  the new URL was proved to resolve with `git ls-remote`, not merely written.
+
+**Untracked and non-`HEAD` surfaces, recorded so nobody re-discovers them.** None is a defect in
+this repository's tracked content; all are invisible to every check in §7.
+
+- **The dossier's renders — and dragon 9's open question is now closed.** Dragon 9 says the rendered
+  `.html` carries the old path on 2 lines and that it *"could not confirm one way or the other for
+  the `.pdf`"* because a naive search of its font-subset glyph runs finds nothing. **Measured:
+  `pdftotext … | grep -c` returns 2 — the PDF carries it too.** The `.qmd` source is clean (Phase 4
+  swept `:57` and `:95`), so both are stale renders of correct source, and editing the `.qmd` does
+  not re-render either. Both are gitignored. **Re-render before the dossier is handed to anyone
+  again.**
+- **The installed distribution's own metadata.**
+  `.venv/…/model_project_constructor-0.3.0.dist-info/METADATA:43,:45` still carries the
+  **pre-Phase-1 README sentence** dragon 6 rewrote and the **dead Pages URL**, because `long_description`
+  is a snapshot taken at install. Anyone running `uv pip show` sees it. Cleared by a reinstall.
+- **`origin/feat/bedrock-mantle-migration`** — a remote branch, already merged into `master`, holding
+  **40 files / 607 lines** of the old name. Frozen history, so its content is right; but non-`HEAD`
+  refs sit outside §7.4 as well as §7.2, and deleting a merged branch is ordinary hygiene.
+- **The gitignored `site/` build** — 4 files, 24 occurrences, built 2026-04-20 and long stale. Local
+  only and overwritten by the next `mkdocs build`; listed because §7.4 names it and nobody looked.
+- **`~/Development/methodology`**, third-party and not this project's to edit, names the wiki clone
+  in two test docstrings. D-R5 kept that directory's name, so those two are **not** stale after all.
+- **Clean, and checked because nobody had:** git tags (2, no old name in either message), GitHub
+  releases (live API rewritten by the rename; the frozen `releases-export.json` correctly disagrees,
+  being a snapshot), open PRs (none), repo metadata, and `.github/` (zero hits of any repository
+  name — vacuous today, correctly defensive).
+
+**A tooling fail-open worth more than any of the above: §7.3's residue grep is
+implementation-dependent, and this machine's `grep` hides the difference.** In the session that ran
+it, `grep` is a shell function wrapping **`ugrep --ignore-files`**, which **honours `.gitignore`**.
+Run verbatim, §7.3's residue line prints **empty**. Run with `command grep`, it prints **two**
+`tests/__pycache__/*.pyc` blobs — stale Python-3.10 bytecode of the pre-Phase-4 test file. The
+content is harmless and untracked; **the criterion is not.** It reaches untracked files because it
+greps *directories* rather than the index, so its verdict depends on the grep implementation and on
+build state — and §7.2's rule for a printed path is *"no judgment call"*, which would make a correct
+tree read as a miss on another machine. Recorded, not silently "fixed": changing an instrument at
+the moment you declare it passed is the move this project refuses elsewhere (see the `opencode`
+re-measure item). §7.3 now carries the warning; a future criterion of this shape should use
+`git grep` and say so.
+
+**No `CHANGELOG.md` entry, by §5's ruling** — every touch in this phase is documentation or a path
+string, and `PROJECT_CONVENTIONS.md` §2 exempts exactly that.

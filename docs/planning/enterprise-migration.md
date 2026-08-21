@@ -916,7 +916,7 @@ and Phase C4 step 9 for what actually replaces it.
 false positives from §2.8 **with the classification table**, so the import request arrives with
 the answer rather than the alarm. Package the two negative proofs as the secrets attestation —
 including the exact commands, so the reviewer can re-run them. Export the API-only assets:
-`gh api repos/rmsharp/claims-model-starter/releases > releases-export.json` and
+`gh api repos/rmsharp/model_project_constructor/releases > releases-export.json` and
 `gh pr list --state all --json number,title,body,mergedAt > prs-export.json` (release bodies are
 **not** carried by `git push --tags`). Build the **external-asset register**, split into two kinds
 — **the wiki repo and the gh-pages site have a fixed disposition (keep, unconditionally; §1.2/D6)
@@ -1247,7 +1247,7 @@ never in the current working tree, and nothing here is ever committed or pushed 
    and in this phase's Verify block, means this working checkout — never the bare mirror.**
 3. **Fork the wiki repo — it is a second, independent repository with 33 commits:**
    ```bash
-   git clone --mirror https://github.com/rmsharp/claims-model-starter.wiki.git /tmp/wiki-mirror
+   git clone --mirror https://github.com/rmsharp/model_project_constructor.wiki.git /tmp/wiki-mirror
    # ⚠ On GitHub/GHES the target wiki repo does not exist until one page is created via the web UI.
    git -C /tmp/wiki-mirror push --mirror <enterprise-wiki-url>
    # /tmp/wiki-mirror is a scratch clone for this push only — it is NOT
@@ -1369,7 +1369,7 @@ curl -sfL -o /dev/null -w '%{http_code}' https://rmsharp.github.io/model_project
 git ls-remote origin gh-pages                                                # → still populated
 git -C ~/Development/claims-model-starter.wiki remote get-url origin         # → still the ORIGINAL's wiki,
 #   under its current name (…/model_project_constructor.wiki.git); local dir name unchanged (D-R5)
-gh repo view rmsharp/claims-model-starter --json isPrivate,archived           # → false, false (untouched)
+gh repo view rmsharp/model_project_constructor --json isPrivate,isArchived   # → false, false (untouched)
 ```
 
 **Boundary:** one session. Close out. **This is the last phase — after it, goal 3 is complete.**
