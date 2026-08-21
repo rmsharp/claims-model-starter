@@ -128,6 +128,14 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 235 Did
+**Deliverable:** The **fifth trim** of this file (IN PROGRESS) — archive the oldest records into a
+new write-once shard under `docs/architecture-history/`, carry assertions **L0-L9** forward into a
+new proof with a passing `--self-test`, and update every prose copy of the routing table.
+**Started:** 2026-08-20
+**Status:** Session claimed. Work beginning. **This claim is its own commit** — `CLAUDE.md`'s
+*"two commits, always"* rule forbids any record edit riding in the trim commit.
+
 ### What Session 234 Did
 **Deliverable:** **Phase 5 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
 — COMPLETE. The plan is CLOSED and its backlog item is gone.** Every check in §7 passes, including
