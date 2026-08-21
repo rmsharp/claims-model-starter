@@ -128,6 +128,14 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 234 Did
+**Deliverable:** **Phase 5 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)**
+— *"Reconcile, classify the residue, close the item. **One commit.**"* (IN PROGRESS)
+**Started:** 2026-08-20
+**Status:** Session claimed. Work beginning. **This is the plan's LAST phase.** Operator this
+session: *"phase 5"*. **No trim this session** — Session 233's gotcha 8 rules a fifth trim its own
+session, and `CLAUDE.md`'s *"two commits, always"* forbids bundling one with a record edit.
+
 ### What Session 233 Did
 **Deliverable:** **Phase 4 of [`docs/planning/repository-rename.md`](docs/planning/repository-rename.md)
 — COMPLETE.** The wiki source directory is renamed and every mechanism that keys on it moved with it,
