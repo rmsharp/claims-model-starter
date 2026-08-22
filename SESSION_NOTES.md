@@ -187,11 +187,274 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 236 Did
-**Deliverable:** Push `master` to `origin/master` and verify what the push does — CI outcome, which
-workflows fire (and whether *Publish Tutorial* is among them), and the resulting remote state. (IN PROGRESS)
-**Started:** 2026-08-21
-**Status:** Session claimed. Work beginning. `master` is 6 commits ahead at claim time
-(`a707a9e`..`fabc8e6`, all documentation); this claim makes it 7.
+**Deliverable:** **`master` is pushed — `98abb83..222df52`, 8 commits — and the push is VERIFIED, not
+asserted.** Four falsifiable predictions were written down *before* the push and all four confirmed by
+measurement after it. A read-only pre-push audit found one defect in the payload and it was fixed
+before the blob became unamendable. No other work was started.
+
+**Started / completed:** 2026-08-21 → 2026-08-22 (UTC). **Commits: three** — `9e89d6e` (the Phase 1B
+claim, alone), `222df52` (the line-count correction), and this close-out. **Operator this session:**
+*"go"*, then *"1"* — item 1 of Session 235's what's-next.
+
+Documentation only, so **no `CHANGELOG.md` entry** (`PROJECT_CONVENTIONS.md` §2's cadence gate).
+**`BACKLOG.md` is still 19 items** — one item's *cost note* was corrected; none opened or closed.
+
+#### The push
+
+| | |
+| --- | --- |
+| range | `98abb83..222df52` — 8 commits (S234's 3, S235's 3, this session's 2) |
+| result | `98abb83..222df52  master -> master`; ahead **8 → 0** |
+| CI | run `32551746562`, **success**, 4/4 jobs: Lint (ruff), Type check (mypy), Tests (pytest), Data Agent decoupling |
+| Publish Tutorial | **did not fire** — exactly **1** run exists for `222df52`, and it is CI |
+| pushed once | deliberately: `ci.yml` sets `cancel-in-progress: true`, so a quick second push greys the first run out and a cancelled run reads like a pass at a glance |
+
+#### Four predictions, written before the push, all confirmed after
+
+| # | Prediction | Measured after |
+| --- | --- | --- |
+| 1 | CI fires; all 4 jobs pass | ✓ `completed / success`, 4/4 |
+| 2 | Publish Tutorial does **not** fire | ✓ 1 run for `222df52` (CI); Publish Tutorial's newest is still `c1fe06f`, 2026-08-20 |
+| 3 | `gh-pages` stays `cc66dea`; live page sha256 stays `b97eddcd…`; both assets stay 404 | ✓ all three byte-identical to the pre-push baseline |
+| 4 | wiki clone stays `d85cc67` | ✓ unmoved |
+
+Prediction 3 is the one worth keeping: it proves the push published **nothing** to the public site,
+which is the property `enterprise-migration.md` §1 warns is easy to get wrong ("pushing to `master`
+is publishing"). It is true *here* only because the path filter did not match — not in general.
+
+#### The audit found one thing, and it was in the PAYLOAD, not the action
+
+**27 agents, 1.39M tokens, 5 lenses, 0 errors, `blocking: []`.** Four lenses — secrets, public
+exposure, CI, side effects — came back clean, each by measurement (`gitleaks` with a *positive
+control*; `.protected` → `false`; `hooks` → `[]`; ruff/mypy/pytest run with CI's exact commands).
+
+**The single surviving finding was a number in a document, not a property of the push.** An audit
+scoped to *"is it safe to push"* would have returned five green lenses and missed it. `SESSION_NOTES.md:229`
+said the fifth trim's proof is **"1,378 lines"**. It is **1,441**, and always has been — one blob,
+`a7512cb`, `wc -l` 1441 both on disk and at that commit. No derivation yields 1378 (non-blank 1319,
+non-comment 1147, both 1025, body-after-header 1283). Every sibling number in the same seven-row
+table re-measured **exact** — shard 976, banner 58, 1,761 → 901, 7 files — so it was a lone outlier,
+not a house convention. And `git diff --stat` for that very commit prints **1441**: the correct value
+was already in the commit, three lines away. Fixed in `222df52` **before** the push, because the
+blob in `fabc8e6` becomes unamendable the moment it lands. Learnings [#146](PROJECT_LEARNINGS.md),
+[#147](PROJECT_LEARNINGS.md).
+
+#### The finding that outlives this session: item 2 was never blocked on a push
+
+**Read the correction below before crediting this session with a discovery — my first draft of this
+section claimed one, and it was false.** Every fact here was already written down. `publish-tutorial.yml:6-10`
+filters on `docs/*.md`, `mkdocs.yml`, the workflow file and `pyproject.toml`; **GitHub Actions path
+globs are non-recursive — `*` does not cross `/`** — so every change under `docs/architecture-history/`,
+`docs/methodology/` and `docs/planning/` is *structurally incapable* of firing it. All 10 changed
+paths were checked one at a time: **zero match.** Line 11 of the same block declares
+`workflow_dispatch`, so **`gh workflow run publish-tutorial.yml` exercises the deploy with no commit
+at all.**
+
+**None of that is new, and the measurements say so.** `docs/planning/enterprise-migration.md:227`
+has read *"**`docs/*.md` is non-recursive.**"* since `808b49b` (Session 182, 2026-07-27) — a file
+this very record cites elsewhere. `git grep -c 'single-level\|single level' 98abb83 -- SESSION_NOTES.md`
+→ **7**, across Sessions 228 through 233. And `workflow_dispatch`'s *purpose* was documented at birth:
+`CHANGELOG.md:910`, Session 67 — *"plus manual `workflow_dispatch` so the operator can re-deploy
+without a code change."*
+
+**So the finding is not "nobody read the filter." It is that the mechanism was on record in at least
+three places and the consequence never reached the item that depended on it.** Session 235's handoff
+called the unstyled tutorial site *"the one item that **needs** a push to exercise"* while six of its
+own predecessors' records said the filter is single-level. The facts and the conclusion lived in
+different files and never met. `BACKLOG.md`'s cost notes — **both** of them — are corrected
+accordingly. Learning [#144](PROJECT_LEARNINGS.md).
+
+#### What I did NOT discover — credit where it belongs
+
+While taking a pre-push baseline of the live site I measured that its two referenced assets 404 and
+that `origin/gh-pages` carries no `assets/` tree at all. **That is Session 234's finding, already
+written up in `BACKLOG.md` with a bisect I did not do.** I re-confirmed it at a later `HEAD`
+(`222df52`, 2026-08-22) and added the how-to-exercise correction. I did not touch the bug itself —
+that is item 2 and a separate session.
+
+#### The wiki negative control is genuine, and now proved rather than assumed
+
+S235's gotcha 9 says the hook must stay silent. Silence is also what a *disabled* hook produces, so
+arming was proved separately: `core.hooksPath` → `.githooks` (local + worktree), `.githooks/post-commit`
+present and `+x`, and its trigger literal read out of the file — `^docs/wiki/model_project_constructor/`,
+the **post-rename** path. Armed, correctly aimed, and silent because no commit touches that prefix.
+Learning [#145](PROJECT_LEARNINGS.md). *(A first reading appeared to show `hooksPath` unset; that
+command had run inside a compound chain whose earlier `cd` into the wiki clone was still in effect.)*
+
+#### Verification — everything run, nothing reasoned about
+
+| Check | Result |
+| --- | --- |
+| push | `98abb83..222df52`, ahead 8 → **0**, `## master...origin/master` |
+| CI | run `32551746562` **success**; 4/4 jobs green |
+| workflow runs for `222df52` | **1** — CI only |
+| Publish Tutorial newest run | still `c1fe06f`, 2026-08-20 — unchanged by this push |
+| `gh-pages` tip | `cc66dea`, unmoved |
+| live page sha256 | `b97eddcd…`, byte-identical to the pre-push baseline |
+| the two assets | **404** before and after |
+| wiki clone | `d85cc67`, unmoved |
+| pre-push audit | 27 agents, 0 errors, `blocking: []`; 1 advisory, fixed |
+| the fix | `1,378` → `1,441`, re-measured independently, 6 sibling numbers re-measured exact |
+| close-out review | 6 agents, 5 lenses; **4 must-fix + 3 notes**, all reproduced and all applied before commit — including a false headline claim of my own |
+| local suite | `1230 passed, 9 skipped`, 97.98% coverage |
+
+### Session 235 Handoff Evaluation (by Session 236)
+
+**Score: 8/10.** It named my deliverable, sized it correctly, and every gotcha it wrote about its own
+workstream held. It lost two points on the two things it asserted without measuring — one of which
+sat in the artifact I was pushing.
+
+**What helped.**
+- **Item 1 *was* the session.** "master is 5 commits ahead … six once this close-out lands" — I found
+  exactly 6. Sized, counted, and correct. I did not have to decide what to do.
+- **Gotcha 8 paid off immediately and repeatedly.** *"Still zsh, and `grep` is still a
+  `ugrep --ignore-files` wrapper. `command grep` or `git grep` for anything load-bearing."* I used
+  `command grep` throughout; #136 is the same trap and one this project has already been bitten by.
+- **Gotcha 9 gave me an assertable constant**, not an instruction. *"The wiki clone must not move
+  … (`d85cc67`)"* is a value I could diff against, which is what made prediction 4 checkable.
+  (Its elided clause is "for a session like this one" — the scoping that makes it assertable here.)
+- **Its self-assessment taught the successor a discipline, not just facts.** *"Measure last, and check
+  that measuring did not change the thing measured"* (#105) is why the line count in this record was
+  set after the prose, at fixed width.
+
+**What was missing.**
+- **It dropped a mechanism its own predecessors had recorded.** Six sessions (228-233) wrote down
+  that the path filter is single-level, and `enterprise-migration.md:227` has said so since Session
+  182 — yet the handoff still stated the consequence backwards. The cost was not to me; it was to
+  item 2, which sat mischaracterized as push-blocked. **This is the failure the methodology exists to
+  prevent, and it is not a reading failure — it is a carrying-forward failure.**
+- **Nothing about the properties of pushing itself**, which is what it asked the next session to do:
+  that secret-scanning push protection is **armed** (it *rejects* server-side, it does not warn), and
+  that `ci.yml` sets `cancel-in-progress: true`. Both change how you push; both were one API call away.
+
+**What was wrong.**
+- **"The one item that *needs* a push to exercise"** — false twice over (non-recursive filter;
+  `workflow_dispatch` exists). This is the expensive kind of wrong: it makes a cheap item look blocked.
+- **Its own record's "1,378 lines"** (line 229) — off by 63, against a project learning (#105) that
+  the same self-assessment cites twice. Fixed here in `222df52`.
+
+**ROI: strongly positive.** Reading it cost minutes and set the entire session. The two defects were
+both *claims about things outside its own deliverable* — its account of the trim it actually
+performed was, on re-measurement, exact in six of seven numbers.
+
+### Session 236 Self-Assessment
+
+**Score: 7/10.** The push is done and proved rather than announced, and the pre-push audit caught a
+number that would have become permanent. But **the most consequential claim in my own close-out was
+false, and a review caught it, not me** — I wrote that the path-filter mechanism was "a mechanism
+nobody had read" when six prior records and a plan section say otherwise. That is the same sentence
+Session 235 had to write about itself, one session later, about a different artefact.
+
+**+** **I wrote the predictions down before the irreversible act and checked all four after.** "CI
+passed" is an announcement; "gh-pages is still `cc66dea` and the live page's sha256 is unchanged" is
+a proof that the push published nothing. The second is what §1 of the migration plan actually cares
+about.
+**+** **I audited the payload, not just the action** — and that is the only reason the finding exists.
+Four lenses aimed at *"is pushing safe"* were all clean; the one aimed at *"are the claims true"*
+found the defect. I would not have thought to look at a line count in a table.
+**+** **I re-measured the agent's finding myself before acting on it**, including all six sibling
+numbers, and only then concluded it was an outlier rather than a convention. The adversarial verifier
+had also corrected two of the finding's supporting arguments, so taking it at face value would have
+put two wrong claims into the commit message.
+**+** **I checked whether my "discovery" was already known before claiming it.** The `assets/` root
+cause is Session 234's, already in `BACKLOG.md` with a bisect. Saying so cost nothing and FM #16
+costs trust.
+**+** **I read the mechanism instead of inheriting the frequency claim**, which converted the
+backlog's highest-value item from push-blocked to dispatchable — without touching it.
+
+**−** **I nearly built a finding on a misread.** `git config core.hooksPath` printed nothing and I
+briefly had "the hook was never enabled, so three sessions' negative controls are vacuous" half-drafted.
+The command had run in the wiki clone: an earlier `cd` in the same `;`-chain was still in effect. One
+step later I caught it. The lesson is not "be careful with `cd`" — it is that a *surprising* negative
+from a repository-scoped command should trigger "where did this run?" before "what does this mean?"
+**−** **My audit brief said `a707a9e..HEAD` for a 7-commit range.** `A..B` excludes `A`. Two lenses
+caught it independently and re-derived the set from `origin/master..HEAD`, so nothing went unreviewed
+— but that was their discipline covering my error, and a brief that states both a range and a count
+can check itself with one command (#147).
+**−** **The audit's ratio is heavy against [#124](PROJECT_LEARNINGS.md).** 27 agents and 1.39M tokens
+for one five-character fix. I set no `maxItems` per lens and left the per-finding verify fan-out
+uncapped, which is precisely the expensive ingredient #124 names. Defensible for an irreversible
+public push; not a template.
+**−** **I claimed a discovery that six prior records already contained, and it took a review to stop
+it reaching `PROJECT_LEARNINGS.md`.** My draft said the non-recursive filter was *"a mechanism nobody
+had read."* `enterprise-migration.md:227` has said it since Session 182; seven "single-level" mentions
+sit in `SESSION_NOTES.md` at the very commit I pushed from; `workflow_dispatch`'s purpose is in
+`CHANGELOG.md:910` from Session 67. **I checked whether the fact was actionable and never checked
+whether it was known** — and I had already, in the same session, congratulated myself for doing
+exactly that check on the `assets/` finding. The real finding survived and is better: the mechanism
+was recorded six times and the consequence never reached the item. But the framing was self-serving
+and it is FM #16's shape. Learning [#144](PROJECT_LEARNINGS.md) is rewritten around the correction.
+**−** **Four must-fixes and three notes in one close-out.** Beyond the above: `10 lines` for a 30-line
+file, repeated in five places and into a learning; `BACKLOG.md` left contradicting itself in adjacent
+paragraphs because I corrected the index row and not the item's own cost line; `CLAUDE.md:99` left
+stale at 143 learnings; a §2.2/§1 misattribution; and two of my quotations of Session 235 were
+non-verbatim **inside a bullet praising its precision**. Prose accuracy is now this project's failure
+surface for the fourth consecutive session.
+**−** **The deliverable was "push" and it now takes two pushes**, because this close-out is itself a
+commit. Unavoidable given the protocol, but it means CI runs twice and the second run is the one a
+reader will see first.
+
+**Against the bar:** S233 turned a safety claim into a measurement; S234 found that a DONE gate's
+*exemption granularity* was the defect; S235 proved an inherited assertion structurally incapable of a
+true positive. This session's equivalent is smaller and of a different kind: **a fact recorded six
+times across six sessions still failed to reach the one item whose cost depended on it.** That is a
+defect in the compounding mechanism itself, not in any one session's diligence — and it is worth more
+than the push, which was never the hard part. I reached it only after a review demolished the more
+flattering version, which is the honest way to record it.
+
+**What's next.**
+
+1. **The unstyled tutorial site — now the obvious pick, and cheaper than it was filed as.** It does
+   **not** need a push. `gh workflow run publish-tutorial.yml` runs the real deploy on demand.
+   **Capture `gh-pages` first** — `mkdocs gh-deploy --force --clean` writes a *parentless* commit
+   (`enterprise-migration.md` §2.3: no git revert path). S234's hypothesis is in `BACKLOG.md`:
+   `mkdocs.yml:13-16`'s fail-closed `exclude_docs` allowlist (`/*`, `!/index.md`, `!/tutorial.md`)
+   probably also excludes the theme's `assets/` tree. Confirming it needs a local `mkdocs build`,
+   which is now cheap: `uv sync --extra docs && uv run mkdocs build` and look for `site/assets/`.
+   The fix should add a post-deploy assertion that the stylesheet `index.html` links returns 200.
+2. **The two operator decisions**, both filed with measurements and both blocking nothing else: the
+   archive-banner ruling (one ruling disposes of 23 dead pointers) and the C4/C5 clone-independence
+   restatement.
+3. **The sixth trim** is roughly two sessions out — see gotcha 6.
+
+**Key files:**
+- `.github/workflows/publish-tutorial.yml` — **lines 3-11** decide item 2's cost (the file is 30
+  lines). Read the `paths:` list and the `workflow_dispatch:` line before planning anything about the
+  tutorial site.
+- `BACKLOG.md` §"The published tutorial site has shipped unstyled…" — S234's measurement and bisect,
+  plus this session's corrected how-to-exercise note.
+- `PROJECT_LEARNINGS.md` — **147 learnings**; #144–#147 are this session's.
+- `mkdocs.yml:13-16` — the `exclude_docs` allowlist that is the leading suspect.
+
+**Gotchas:**
+1. **Publish Tutorial's path filter is non-recursive.** `docs/*.md` matches `docs/index.md` and
+   `docs/tutorial.md` and **nothing nested**. Do not conclude from a quiet push that the workflow is
+   broken, and do not plan a push in order to fire it — use `workflow_dispatch`.
+2. **Secret-scanning push protection is ARMED on this repo.** If it ever trips, the push is
+   **rejected server-side** — nothing lands — and to a caller not reading stderr it looks like a
+   network or auth failure. Measured clean for this push; do not assume for one that adds new files.
+3. **`ci.yml` sets `cancel-in-progress: true`.** Push once and let it settle. Two quick pushes leave
+   the first run grey-`cancelled`, which at a glance in `gh run list` is easy to read as a pass.
+   **This close-out is a second push and will start a second CI run** — check that one, not the first.
+4. **A `cd` inside a `;`-chain relocates every later command in that chain.** A repository-scoped
+   command that returns a surprising negative may simply have run somewhere else. Ask "where did this
+   run?" before "what does this mean?"
+5. **Still zsh, and `grep` is still a `ugrep --ignore-files` wrapper.** `command grep` or `git grep`
+   for anything load-bearing. Single-quote every heredoc delimiter.
+6. **The trim trigger fires in two sessions, not one — do not trim next session.** This file is
+   **1,462** lines with this record (measured after writing it, at fixed width — #105), against
+   `CLAUDE.md`'s 1,500-line trigger. This record cost **270** lines, above the ~204 S235 projected,
+   so the arithmetic is: S237 arrives under the trigger and adds ~270 → ~1,730; **S238 arrives over
+   it and is the sixth trim.** Re-measure rather than trusting this projection.
+7. **The wiki hook is armed and correctly aimed** — `core.hooksPath=.githooks`, prefix
+   `^docs/wiki/model_project_constructor/` (post-rename). Clone at `d85cc67`. Its silence on a session
+   like this one is a real negative control, not an accident; if it ever fires without a `docs/wiki/`
+   change, the prefix has drifted.
+8. **`gh issue list` is empty and that is expected** — the issue tracker is not in use. `BACKLOG.md`
+   governs priorities, and its plain-language index at the top is written for the operator.
+9. **The live site is the only thing that tells you the tutorial deploy worked.** The workflow reports
+   **success in 11-15s** while dropping 43 files. Assert the asset returns 200; do not read the green
+   check.
 
 ### What Session 235 Did
 **Deliverable:** **The fifth trim of this file — COMPLETE and proved.** Sessions 231 → 228 (4 record

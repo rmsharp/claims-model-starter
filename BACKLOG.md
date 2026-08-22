@@ -48,7 +48,7 @@ rows below it are the smaller residue that closing it exposed.
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
 | `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives, Session 228 a third, Session 231 a fourth and Session 235 a fifth** (933, 790 and 976 lines) — the four newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
-| Published tutorial site is unstyled | The published tutorial has served style-less HTML since late July — no CSS, no search, no navigation. The deploy that does it reports **success** in 11 seconds, which is why four rename phases landed on top of it unnoticed. Session 234 bracketed the regression to a six-week window (2026-06-19 to 2026-08-02) and named one config line as the likely cause. | **One session.** Needs a push to `master` to exercise the workflow. |
+| Published tutorial site is unstyled | The published tutorial has served style-less HTML since late July — no CSS, no search, no navigation. The deploy that does it reports **success** in 11 seconds, which is why four rename phases landed on top of it unnoticed. Session 234 bracketed the regression to a six-week window (2026-06-19 to 2026-08-02) and named one config line as the likely cause. | **One session, and NOT blocked on a push** (measured Session 236): `docs/*.md` is non-recursive, so ordinary documentation pushes never fire this workflow — and it declares `workflow_dispatch`, so `gh workflow run publish-tutorial.yml` exercises it directly. |
 | The wiki publisher can erase the public wiki | The script that publishes the wiki mirrors a source directory with delete-what-is-missing semantics, and checks only that the directory **exists** — not that anything is in it. An empty source publishes an empty wiki, unattended, from a commit hook. | Small. Bundle with the row below. |
 | The publish hook stays silent when it declines to publish | The hook decides whether to publish by matching a path prefix. A stale prefix, or any merge commit, makes it exit successfully having done nothing — and say nothing. | Small. Bundle with the row above. |
 | Two finished plans still sit in the active-plans folder | `httpx-adapter-migration.md` was fully executed but never archived — and `repository-rename.md` went EXECUTED in the very commit that filed this item, which is the identical case and the heavier one. | Small, but moving either re-points every citation of its path — sweep first, and rule on both together. |
@@ -523,7 +523,30 @@ ruled out — `.gitignore` carries no `assets` pattern.
 fix should include a post-deploy assertion in the workflow that the stylesheet the built
 `index.html` links returns 200.
 
-**Cost: one session (~1.5-2h).** Needs a push to `master` to exercise the workflow.
+**How to exercise it — corrected in Session 236, which measured the trigger instead of inferring it.**
+Sessions 228-233 each recorded that the path filter is single-level, and
+`docs/planning/enterprise-migration.md:227` has said *"**`docs/*.md` is non-recursive**"* since
+Session 182 — but the consequence never reached this item, and Session 235's handoff called it
+*"the one item that needs a push to exercise."* **That is wrong twice over.**
+`publish-tutorial.yml:6-10` filters on `docs/*.md`, `mkdocs.yml`,
+`.github/workflows/publish-tutorial.yml` and `pyproject.toml`; GitHub Actions path globs are
+**non-recursive** (`*` does not cross `/`), so every change under `docs/architecture-history/`,
+`docs/methodology/` and `docs/planning/` is structurally incapable of firing it. Session 236's
+8-commit push of `98abb83..222df52` confirmed it live: **exactly one workflow ran (CI), and Publish
+Tutorial's newest run is still `c1fe06f` from 2026-08-20.** The workflow also declares
+`workflow_dispatch`, so **`gh workflow run publish-tutorial.yml` exercises the deploy on demand with
+no commit at all** — this item was never blocked on a push, and a session working it can iterate
+without writing to `master`.
+
+Still broken at `222df52` (re-measured 2026-08-22): live page 200 at 12,533 bytes,
+sha256 `b97eddcd…`; `assets/stylesheets/main.484c7ddc.min.css` and
+`assets/javascripts/bundle.79ae519e.min.js` both **404**; `origin/gh-pages` unmoved at `cc66dea`.
+**Note the deploy is destructive** — `mkdocs gh-deploy --force --clean` writes a parentless commit
+to `gh-pages` (`enterprise-migration.md` §2.3: no git revert path), so capture `gh-pages` before
+dispatching.
+
+**Cost: one session (~1.5-2h).** **Not blocked on a push** — dispatch it directly with
+`gh workflow run publish-tutorial.yml` (measured Session 236).
 
 ### `publish_wiki.sh` will wipe and push the live wiki from an empty source directory — unattended, from a git hook
 
