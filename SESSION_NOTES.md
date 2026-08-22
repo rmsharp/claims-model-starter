@@ -226,7 +226,7 @@ prior trim retained its own (S228 left 228→225, S231 left 231→228); this one
 | Thing | Detail |
 | --- | --- |
 | new shard | `SESSION_NOTES-S231-through-S228.md`, **976 lines** = 58-line banner + the 918 archived |
-| new proof | `…md.verify.sh`, **1,378 lines**, L0–L11, 59 mutants, `--self-test` green |
+| new proof | `…md.verify.sh`, **1,441 lines**, L0–L11, 59 mutants, `--self-test` green |
 | `SESSION_NOTES.md` | pointer block inserted; **3** declared substitutions to the fourth trim's block; 1,761 → **901** lines *at `a7512cb`* (this record grows it again) |
 | `CLAUDE.md` | routing table 5→6 clauses; count words; **the section heading**, the "three newer shards" parenthetical and the L8-scope sentence — three copies no assertion had ever read |
 | `README.md` | two repo-map lines added; "older in the **five** shards above" |
