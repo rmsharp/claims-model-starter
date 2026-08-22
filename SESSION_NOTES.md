@@ -187,12 +187,298 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 237 Did
-**Deliverable:** Fix the published tutorial site shipping unstyled — confirm Session 234's
-`mkdocs.yml:13-16` `exclude_docs` hypothesis with a real local `mkdocs build`, fix it, and add the
-post-deploy assertion the item asks for so a deploy that drops the theme's assets can no longer
-exit 0 green. (IN PROGRESS)
-**Started:** 2026-08-22 (UTC)
-**Status:** Session claimed. Work beginning. Operator selected item 1 of Session 236's what's-next.
+**Deliverable:** **The published tutorial site is styled again — proved in a browser, not announced.**
+Session 234's `exclude_docs` hypothesis is **confirmed**, root-caused in MkDocs' own source, fixed,
+and the hole that let a 43-file loss ship green through four release phases is closed by two guards
+that were each run **red against the real historical defect** before being wired in. No other work
+was started.
+
+**Started / completed:** 2026-08-22 (UTC). **Commits: three** — `47a4c02` (the Phase 1B claim,
+alone), `70e968b` (the whole fix, one commit, six files), and this close-out. **Operator this
+session:** *"go"*, then *"1"* — item 1 of Session 236's what's-next.
+
+Changes shipped code (`scripts/`) and test logic, so this **does** get a `CHANGELOG.md` entry
+(`PROJECT_CONVENTIONS.md` §2's cadence gate) — dated 2026-08-22, inserted at the head of the
+descending run under `[0.3.0]`, matching where Session 225 put itself. **`BACKLOG.md` goes 19 → 18
+items**: the tutorial item and its plain-language index row are removed together, per §2's
+"remove the line on completion and record the work in `CHANGELOG.md`".
+
+#### The root cause, read out of MkDocs rather than inferred
+
+`mkdocs/commands/build.py` calls `add_files_from_theme()` at **`:289`** and then **re-runs
+`set_exclusions()` at `:294`**. Theme files arrive with `InclusionLevel.UNDEFINED`, so that second
+pass applies **`exclude_docs` to the theme's files as well as to `docs_dir`** — which the option's
+name and its documentation do not suggest. `b27cc98` (Session 182, Phase A1 of
+`enterprise-migration.md`) had inverted `exclude_docs` from a denylist into a fail-closed allowlist
+beginning `/*`; gitignore-anchored at the root, that pattern matches the Material theme's entire
+`assets/` tree.
+
+**Measured three independent ways, none of them a re-reading of the docs:**
+
+| Measurement | Result |
+| --- | --- |
+| call `add_files_from_theme()` directly and diff the file set | **43 files, all under `assets/`** — matching the 43 S234's bisect found missing |
+| `pathspec.GitIgnoreSpec` per-path, current vs candidate patterns | `/*` matches `assets/stylesheets/…`; `!/assets/` un-matches it and leaves `planning/`, `wiki/`, `architecture-history/` excluded |
+| local `mkdocs build` before / after | **6 files → 49**, of which 43 are `assets/` |
+
+#### What changed — one commit, six files
+
+| Thing | Detail |
+| --- | --- |
+| `mkdocs.yml` | `!/assets/` added to the allowlist; A1's fail-closed property preserved. The comment records the `:289`/`:294` ordering so the line is not "simplified" away by a reader who checks only the option's docs. |
+| `scripts/check_site_assets.py` | **new.** Every local `href`/`src` in the built HTML must resolve to a file in the artifact; `--require-css` covers the one hole integrity cannot see. Self-calibrating — no file count to rot on a theme upgrade. `--base-path` handles the root-relative refs MkDocs emits in `404.html`, derived in the workflow from `site_url` rather than duplicated. |
+| `scripts/check_published_site.py` | **new.** The **live** site must serve what it links; polls, because a `gh-pages` push starts an asynchronous Pages build. |
+| `.github/workflows/publish-tutorial.yml` | build → assert artifact → deploy → assert live. Plus the two scripts in `paths:` and a comment recording why the filter cannot fire on nested `docs/` changes. |
+| `tests/scripts/test_check_site_assets.py` | **new, 30 tests.** |
+| `tests/scripts/test_check_published_site.py` | **new, 15 tests.** Polling driven by an injected clock — deterministic and instant. |
+
+Both scripts are **stdlib-only on purpose**: CI's test job installs `--extra agents --extra ui
+--extra dev` and never `docs`, so a guard that imported `mkdocs` would be untestable exactly where
+it needs testing.
+
+#### The guards were falsified before they were trusted
+
+A guard that has only ever been green proves nothing. Both were run against the **real** defect, not
+a synthetic one:
+
+- `check_site_assets.py` against `mkdocs.yml` **as it was before the fix**: **9 dangling references,
+  exit 1**. Against the fixed config: **0, exit 0**.
+- `check_published_site.py` against the **still-broken live site**, before deploying: page 200, both
+  assets **404**, exit 1.
+
+#### The placement of the assertion mattered more than the assertion
+
+`BACKLOG.md` asked for *"a post-deploy assertion that the stylesheet the built `index.html` links
+returns 200."* Right about the symptom, **wrong about the placement**: `mkdocs gh-deploy --force
+--clean` writes a **parentless** commit — measured, `git rev-list --parents -n1 origin/gh-pages`
+prints one field, **zero parents** — so there is no git revert path and an assertion after the
+deploy can only announce the wreck. The artifact check now runs **between `mkdocs build` and
+`gh-deploy`**, where a bad build is still only a failed job. **Both are kept**, because they prove
+different things: the first that the artifact is complete, the second that the *deployment* worked —
+which fails differently (`ghp-import` dropping files, a missing `.nojekyll`, Pages wired to the
+wrong branch, a stale CDN). Learning [#149](PROJECT_LEARNINGS.md).
+
+#### Six predictions, written before the push, all confirmed after
+
+| # | Prediction | Measured after |
+| --- | --- | --- |
+| 1 | Exactly two workflow runs fire for `70e968b` | ✓ CI + Publish Tutorial. (GitHub's own *pages build and deployment* then ran for the new `gh-pages` commit — a third row in `gh run list`, not a third repo workflow.) |
+| 2 | Publish Tutorial `success`, both new guards green | ✓ 7/7 steps, 37s; guard output read from the log, not the check mark |
+| 3 | `origin/gh-pages` 7 files → **50**, 43 of them `assets/` | ✓ `cc66dea` → `e0311a0`, 50 files, 43 assets, **0 parents** |
+| 4 | The live root page does **not** change — sha256 stays `b97eddcd…` | ✓ byte-identical, 12,533 bytes |
+| 5 | The two assets flip **404 → 200** | ✓ 139,849 and 114,308 bytes; favicon 200 too |
+| 6 | The wiki clone stays `d85cc67` | ✓ unmoved |
+
+**Prediction 4 is the one worth keeping, and it was only right because it was measured first.** The
+natural guess is *"the published page will change."* Diffing the candidate build against production
+**before** deploying showed `site/index.html` was already **byte-identical** to the live page — so
+the correct prediction was its opposite, and a stronger claim: an index that *had* changed would
+have meant the fix touched something it had no business touching. Learning
+[#152](PROJECT_LEARNINGS.md).
+
+#### The polling earned its keep on its first live run
+
+Attempts 1 and 2 both reported `2 of 3 URL(s) not yet 200` while Pages was still building; the third
+succeeded, all inside 21 seconds. **A single-shot `curl` — the obvious reading of the backlog's
+wording — would have failed the workflow on a completely correct deploy**, and the cheapest repair
+for a check that cries wolf is to delete it. Learning [#150](PROJECT_LEARNINGS.md).
+
+#### Two defects in my own new code, found by my own tests, fixed rather than papered over
+
+1. **`--require-css` reported a falsehood in the commonest failure case.** When the stylesheet was
+   *referenced but missing* it said *"no stylesheet is referenced by any page"* — false, and a
+   duplicate of a problem already reported as a dangling reference. Now `css_referenced` and
+   `css_present` are tracked separately and that branch fires only for a site that links no
+   stylesheet at all.
+2. **`check(fetch=probe)` bound the collaborator at definition time**, so
+   `monkeypatch.setattr(mod, "probe", …)` never reached it and the call fell through to the real
+   network with the production 300s/10s defaults. **The symptom was a two-minute suite hang, not a
+   failure.** Fixed by resolving at call time; the regression guard passes `--timeout 0` so a
+   reintroduction fails in milliseconds rather than reproducing the hang. Learning
+   [#151](PROJECT_LEARNINGS.md).
+
+#### Verification — everything run, nothing reasoned about
+
+| Check | Result |
+| --- | --- |
+| local suite | **1275 passed, 9 skipped** (was 1230 + 9) |
+| `ruff check src/ tests/ packages/ scripts/` | clean (CI's exact command) |
+| `mypy` | `Success: no issues found in 68 source files` |
+| push | `5055b55..70e968b`, ahead 1 → 0 |
+| CI run `32554400688` | **success**, 4/4 |
+| Publish Tutorial run `32554400687` | **success**, 7/7 steps, 37s (was 11-15s — the guards do real work) |
+| pre-deploy guard, from the run log | `site base path: /model_project_constructor/` · `3 HTML page(s), 19 local reference(s) checked` · `1 stylesheet(s) referenced and present` · `OK` |
+| post-deploy guard, from the run log | 2 retries, then `200` on all three URLs |
+| `origin/gh-pages` | `cc66dea` → `e0311a0`; 7 → **50** files; 43 `assets/`; **0 parents** |
+| live root page | 200, 12,533 bytes, sha256 `b97eddcd…` — **unchanged** |
+| the two assets | **404 → 200**, 139,849 and 114,308 bytes |
+| **rendered in a browser** | Material header, **working search box**, left nav, right-hand table of contents — all three reported symptoms gone. `DEVELOPMENT_WORKSTREAM.md`'s runtime-verification hard gate, not a status code. |
+| console on the live page | no page errors; the only two entries are Chrome-extension messaging artifacts |
+| wiki clone | `d85cc67`, unmoved — hook armed and correctly silent |
+| recovery point | local branch **`gh-pages-pre-s237`** at `cc66dea`, captured before the deploy |
+
+### Session 236 Handoff Evaluation (by Session 237)
+
+**Score: 9/10.** The best handoff I have had to work from in this project's recent history, measured
+the only way that matters: **how little discovery I had to do.** It named the deliverable, named the
+suspect line correctly, named the exact command to confirm it, and named the destructive-deploy
+hazard with its mitigation. It loses a point on the one instruction that was wrong in a way I had to
+notice for myself.
+
+**What helped.**
+- **It named the right line, and it was right.** *"`mkdocs.yml:13-16` — the `exclude_docs` allowlist
+  that is the leading suspect."* Confirmed. Inherited from S234, carried forward intact — which is
+  precisely what [#144](PROJECT_LEARNINGS.md) says usually fails to happen.
+- **It handed me the confirming command.** *"`uv sync --extra docs && uv run mkdocs build` and look
+  for `site/assets/`."* That is the whole diagnosis in one line, and it worked verbatim.
+- **Gotcha 9 was the design brief for the deliverable.** *"The workflow reports success in 11-15s
+  while dropping 43 files. Assert the asset returns 200; do not read the green check."* Both guards
+  exist because of that sentence.
+- **It named the destructive property and the mitigation in the same breath** — *"`mkdocs gh-deploy
+  --force --clean` writes a parentless commit … capture `gh-pages` first"* — so the recovery branch
+  was taken before the first deploy rather than after the first scare. Independently re-measured
+  here (`--parents -n1` → 0 parents), and true.
+- **Gotcha 5 paid off silently and continuously.** `grep` is still a `ugrep --ignore-files` wrapper;
+  I used `command grep`/`git grep` throughout and never had to wonder about an empty result.
+- **Gotcha 6's arithmetic held.** It predicted S237 arrives under the 1,500-line trigger. This file
+  was **1,462** lines at session start. Correct, and it stopped me from trimming.
+
+**What was missing.**
+- **Nothing about publish latency**, which decides whether the assertion it prescribed is even
+  implementable. Written literally as a single `curl`, that check goes red on a correct deploy —
+  measured here: two retries were needed. An instruction to assert against an asynchronously
+  published artifact has to say "poll", or it prescribes a flake.
+- **It said `workflow_dispatch` was the way to exercise this.** True, and unnecessary in the event:
+  any fix must touch `mkdocs.yml`, which is *in* the path filter, so the ordinary push fired the
+  deploy. Not wrong — but it presented as the method something that turned out to be a fallback.
+
+**What was wrong.**
+- **The assertion's placement.** *"The fix should add a post-deploy assertion"* — carried forward
+  verbatim from `BACKLOG.md`. On a publish with **no revert path**, an after-the-fact assertion can
+  only report the damage. The check that matters runs before `gh-deploy`. Both handoff and backlog
+  said "post-deploy" and neither noticed the contradiction with the parentless-commit warning
+  sitting three lines away in the same item.
+
+**ROI: strongly positive, and the highest of any handoff I can measure here.** Its two defects were
+both about the *shape of the fix*, not the diagnosis — and the diagnosis is the expensive half.
+
+### Session 237 Self-Assessment
+
+**Score: 8/10.** The site is fixed and the fix is proved at every level the project asks for —
+mechanism read from source, guards falsified against the real defect, predictions written before the
+irreversible act, and the page loaded in a browser. What keeps it off 9 is that **two of the three
+defects fixed this session were in code I had just written**, and one of them was a number I typed
+instead of derived — the exact class of error this project has now shipped for five consecutive
+sessions.
+
+**+** **I read the mechanism instead of confirming the hypothesis.** A `mkdocs build` showing no
+`assets/` would have been enough to act on. It would not have told me *why*, and "why" is what makes
+`!/assets/` a defensible one-line fix rather than a lucky one. `build.py:289`/`:294` is the whole
+finding, and it is three lines of someone else's source.
+**+** **I ran both guards red against the real historical defect before wiring them in.** Not a
+synthetic fixture — the actual pre-fix `mkdocs.yml`, and the actual still-broken live site. A guard
+that has only ever been green is a decoration.
+**+** **I diffed the candidate against production before predicting.** That inverted prediction 4
+from "the page changes" to "the page must not change," which is both correct and a stronger claim.
+**+** **I fixed the assertion's placement instead of implementing the instruction I was given.** The
+backlog's own text contained the contradiction (parentless commit, post-deploy check); noticing it
+cost nothing and is the difference between preventing and announcing.
+**+** **I let my own tests correct me twice**, including once where the code was wrong and the test
+was right about a message being false. Neither defect would have been visible from the outside.
+
+**−** **I wrote `assert len(problems) == 5` with a comment justifying the 5, and the answer was 4.**
+I counted references in my head instead of deriving them. That is [#146](PROJECT_LEARNINGS.md)
+exactly, in a session that cites #146 — and it is the fifth consecutive session whose self-reported
+defect is a numeral in prose or a comment. The test caught it, which is the only reason it is a
+footnote instead of a shipped lie.
+**−** **I shipped a function meant to be injectable with its collaborator bound as a default
+argument.** The cost was not the bug, it was the *failure mode*: a two-minute hang with nothing to
+read. I diagnosed it correctly on the first attempt, but I should not have written it.
+**−** **I nearly shipped a guard whose message was false in its commonest failure case.** The
+"no stylesheet is referenced" branch fired when one *was* referenced and missing. A guard that
+misdescribes what it found teaches the next reader the wrong thing.
+**−** **The deliverable grew from one config line to six files.** Defensible — the backlog asked for
+the assertion, and the assertion is worthless in the wrong place — but I should name it rather than
+let "one session" quietly cover a 3× larger change set than the item implied.
+**−** **I left one real coverage gap and did not close it.** `uv.lock` pins `mkdocs-material` at
+**9.7.6** and is **not** in the workflow's `paths:` filter, so a theme bump deploys nothing and is
+first exercised by the *next* unrelated `docs/*.md` change. The guards make that a loud failure
+rather than a silent one, which is why I left it — but adding `uv.lock` to the filter would fire a
+public deploy on every dependency bump, and that is an outward-facing frequency decision, not a
+close-out cleanup. Filed as gotcha 4 and item 3 below rather than decided unilaterally.
+
+**Against the bar:** S234 found a DONE gate whose *exemption granularity* was the defect; S235 proved
+an inherited assertion structurally incapable of a true positive; S236 found that a fact recorded six
+times never reached the item that depended on it. This session's equivalent is smaller but the same
+species: **the prescribed fix was in the wrong place, and the contradiction was already written down
+three lines away in the same backlog item** — a parentless-commit warning next to a post-deploy
+assertion. Nobody had to discover anything to see it; the two sentences simply never met. That is
+S236's finding recurring inside a single paragraph rather than across six sessions.
+
+**What's next.**
+
+1. **The two operator decisions**, both filed with measurements and both blocking nothing else: the
+   archive-banner ruling (one ruling disposes of 23 dead pointers) and the C4/C5 clone-independence
+   restatement. These are now the oldest unblocked items on the list.
+2. **The `publish_wiki.sh` / `post-commit` pair** — two small items in one subsystem, explicitly
+   filed to be bundled into one session. `publish_wiki.sh:53` tests that the source directory
+   *exists*, not that it is non-empty, and `rsync --delete` then publishes the emptying; the hook
+   exits 0 in silence whenever it declines. Both run **unattended from a commit hook**, which is
+   what makes them worth more than their size.
+3. **Decide whether `uv.lock` belongs in Publish Tutorial's `paths:` filter** (see gotcha 4). A
+   one-line change gated on one judgement: is a public deploy on every dependency bump acceptable?
+4. **The sixth trim is next session or the one after — measure, do not project.** See gotcha 6.
+
+**Key files:**
+- `scripts/check_site_assets.py` — the pre-deploy guard. Its module docstring carries the root cause
+  and the reason it is stdlib-only; read that before changing it.
+- `scripts/check_published_site.py` — the live guard. `check()` takes injectable
+  `fetch`/`sleep`/`now`; **keep `fetch` resolved at call time**, not as a default argument.
+- `mkdocs.yml:10-26` — the allowlist and the comment explaining why `!/assets/` is load-bearing.
+- `.github/workflows/publish-tutorial.yml` — 65 lines now (was 30). Step order is the design:
+  build → assert artifact → deploy → assert live.
+- `PROJECT_LEARNINGS.md` — **152 learnings**; #148–#152 are this session's. `CLAUDE.md:99` updated
+  to match.
+
+**Gotchas:**
+1. **The published site is styled as of `e0311a0` — verify it, do not assume it.**
+   `curl -sI https://rmsharp.github.io/model_project_constructor/assets/stylesheets/main.484c7ddc.min.css`
+   must be 200. That filename carries a **content hash** and changes on any theme upgrade; a stale
+   hash in a future note is expected, so re-derive it from the live `index.html` rather than pasting
+   this one.
+2. **`mkdocs gh-deploy` writes a PARENTLESS commit to `gh-pages`** — confirmed here, 0 parents.
+   There is no `git revert`. Capture the branch before any deploy; this session's capture is
+   `gh-pages-pre-s237` (`cc66dea`), alongside `gh-pages-preA4` and `gh-pages-pre-rename`.
+3. **Do not run `mkdocs build` into the repo's own `.venv`.** `uv sync --extra docs` would prune the
+   `agents`/`ui`/`dev` extras the test suite needs. Use
+   `UV_PROJECT_ENVIRONMENT=<scratch>/docs-venv uv sync --extra docs` and keep `.venv` alone.
+4. **`uv.lock` is NOT in Publish Tutorial's `paths:` filter**, and it pins `mkdocs-material` at
+   9.7.6. A theme bump therefore deploys nothing at bump time; it is first exercised by the next
+   `docs/*.md` or `mkdocs.yml` change. The new guards make that a **loud** failure, which is why it
+   was left — but it is a real gap and it is item 3 above.
+5. **`--strict` is not available to this build.** `docs/index.md` is a meta-refresh redirect and
+   emits `unrecognized relative link 'tutorial/'` by design (`mkdocs.yml` sets
+   `validation.links.unrecognized_links: warn` deliberately). `mkdocs build --strict` would fail the
+   workflow on that warning. The asset guard is the substitute, and it checks something `--strict`
+   does not.
+6. **The sixth trim is NEXT SESSION.** This file is **1,756** lines with this record — measured
+   after writing it, at fixed width (#105) — against `CLAUDE.md`'s **1,500**-line trigger, so
+   **S238 arrives over the trigger and is the sixth trim.** S236 projected ~1,730 and S238; both
+   correct. This record cost **294** lines (S236's cost 270). Cut back to ≤1,050, never below a
+   4-record floor, two commits always, and re-derive the copy list with
+   `git grep -l 'SESSION_NOTES-'` rather than trusting the inherited one — `CLAUDE.md` says so and
+   the fifth trim found five unread copies by obeying it. **Re-measure at Phase 0 anyway; do not
+   trim on this sentence alone.**
+7. **Still zsh, and `grep` is still a `ugrep --ignore-files` wrapper.** `command grep` or `git grep`
+   for anything load-bearing. Single-quote every heredoc delimiter.
+8. **`gh issue list` is empty and that is expected** — the tracker is not in use. `BACKLOG.md`
+   governs, and its plain-language index at the top is written for the operator. It is **18 items**
+   now, and the index has exactly 18 rows — they were reconciled by count this session; keep them
+   in step in the same commit.
+9. **The wiki hook stayed silent and that is a real negative control** — armed (`core.hooksPath` →
+   `.githooks`), aimed at `^docs/wiki/model_project_constructor/`, clone unmoved at `d85cc67`. No
+   path in this session's commits touches that prefix.
+
 
 ### What Session 236 Did
 **Deliverable:** **`master` is pushed — `98abb83..222df52`, 8 commits — and the push is VERIFIED, not
