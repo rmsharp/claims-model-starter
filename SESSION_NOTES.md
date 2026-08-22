@@ -186,6 +186,15 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 238 Did
+**Deliverable:** Dispose of the two blocked operator decisions (Session 237's what's-next item 1)
+— the archive-banner ruling covering 23 dead in-repo pointers, and the C4/C5 clone-independence
+criterion restatement. (IN PROGRESS)
+**Started:** 2026-08-22 20:17 UTC
+**Status:** Session claimed. Work beginning. Both items are `BACKLOG.md` `⚠ OPERATOR DECISION`
+entries where the ruling is the work and the edit is minutes; every filed figure is re-derived
+before the rulings are put, per learning #105 and both items' own "do not inherit" instruction.
+
 ### What Session 237 Did
 **Deliverable:** **The published tutorial site is styled again — proved in a browser, not announced.**
 Session 234's `exclude_docs` hypothesis is **confirmed**, root-caused in MkDocs' own source, fixed,
