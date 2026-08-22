@@ -186,6 +186,14 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 237 Did
+**Deliverable:** Fix the published tutorial site shipping unstyled — confirm Session 234's
+`mkdocs.yml:13-16` `exclude_docs` hypothesis with a real local `mkdocs build`, fix it, and add the
+post-deploy assertion the item asks for so a deploy that drops the theme's assets can no longer
+exit 0 green. (IN PROGRESS)
+**Started:** 2026-08-22 (UTC)
+**Status:** Session claimed. Work beginning. Operator selected item 1 of Session 236's what's-next.
+
 ### What Session 236 Did
 **Deliverable:** **`master` is pushed — `98abb83..222df52`, 8 commits — and the push is VERIFIED, not
 asserted.** Four falsifiable predictions were written down *before* the push and all four confirmed by
