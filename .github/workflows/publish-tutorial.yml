@@ -4,10 +4,17 @@ on:
   push:
     branches: [master]
     paths:
+      # NOTE: GitHub Actions path globs are NOT recursive — `docs/*.md` matches
+      # docs/index.md and docs/tutorial.md and nothing nested. Changes under
+      # docs/architecture-history/, docs/methodology/ and docs/planning/ are
+      # structurally incapable of firing this workflow (measured, Session 236).
+      # Use the workflow_dispatch below to exercise a deploy without a commit.
       - docs/*.md
       - mkdocs.yml
       - .github/workflows/publish-tutorial.yml
       - pyproject.toml
+      - scripts/check_site_assets.py
+      - scripts/check_published_site.py
   workflow_dispatch:
 
 concurrency:
@@ -27,4 +34,32 @@ jobs:
         with:
           version: "latest"
       - run: uv sync --extra docs
-      - run: uv run mkdocs gh-deploy --force --clean
+
+      # Build and verify BEFORE deploying. `mkdocs gh-deploy --force --clean`
+      # writes a PARENTLESS commit to gh-pages (no git revert path), so a bad
+      # artifact has to be caught while it is still only a failed job.
+      - name: Build the site
+        run: uv run mkdocs build
+
+      - name: Assert the build contains every asset it links
+        run: |
+          set -euo pipefail
+          BASE=$(uv run python -c "from urllib.parse import urlparse; \
+            from mkdocs.config import load_config; \
+            print(urlparse(load_config('mkdocs.yml').get('site_url') or '/').path or '/')")
+          echo "site base path: $BASE"
+          uv run python scripts/check_site_assets.py site --base-path "$BASE" --require-css
+
+      - name: Deploy to gh-pages
+        run: uv run mkdocs gh-deploy --force --clean
+
+      # A green deploy is not evidence: Session 234 found this workflow reporting
+      # success in 11s while publishing a site with all 43 theme assets missing.
+      # The live site is the only thing that can tell us the deploy worked.
+      - name: Assert the published site serves what it links
+        run: |
+          set -euo pipefail
+          SITE_URL=$(uv run python -c "from mkdocs.config import load_config; \
+            print(load_config('mkdocs.yml')['site_url'])")
+          uv run python scripts/check_published_site.py \
+            --site-url "$SITE_URL" --site-dir site --timeout 300 --interval 10

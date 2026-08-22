@@ -10,10 +10,20 @@ site_dir: site
 # docs/ contains non-site subdirs. Fail-closed allowlist (gitignore-negation
 # form): exclude everything, then re-include only index.md and tutorial.md.
 # Pattern: .gitignore format (MkDocs >= 1.5).
+#
+# `!/assets/` is LOAD-BEARING — do not "simplify" it away. MkDocs re-runs
+# set_exclusions() AFTER add_files_from_theme() (mkdocs/commands/build.py:289
+# then :294), so these patterns are applied to the theme's static files too,
+# not just to docs_dir. Without the negation `/*` matches the Material theme's
+# entire assets/ tree — 43 files: stylesheets, javascripts, favicon — and the
+# site publishes as unstyled HTML with no search and no nav while gh-deploy
+# still exits 0. That regression shipped 2026-07-27 (b27cc98) → 2026-08-22
+# (Session 237). scripts/check_site_assets.py now makes it fail loudly instead.
 exclude_docs: |
   /*
   !/index.md
   !/tutorial.md
+  !/assets/
 
 validation:
   links:
