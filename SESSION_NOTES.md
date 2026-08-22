@@ -186,6 +186,13 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 236 Did
+**Deliverable:** Push `master` to `origin/master` and verify what the push does — CI outcome, which
+workflows fire (and whether *Publish Tutorial* is among them), and the resulting remote state. (IN PROGRESS)
+**Started:** 2026-08-21
+**Status:** Session claimed. Work beginning. `master` is 6 commits ahead at claim time
+(`a707a9e`..`fabc8e6`, all documentation); this claim makes it 7.
+
 ### What Session 235 Did
 **Deliverable:** **The fifth trim of this file — COMPLETE and proved.** Sessions 231 → 228 (4 record
 headings, 918 lines, 65,844 bytes) are archived byte-for-byte into
