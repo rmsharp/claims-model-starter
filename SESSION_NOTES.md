@@ -247,6 +247,14 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 242 Did
+**Deliverable:** The **seventh lossless trim** of this file — archive the oldest records into a
+new write-once shard under `docs/architecture-history/`, with its own verification proof carrying
+L0-L12 forward. This is Session 241's what's-next #1; its trigger fired at Phase 0. (IN PROGRESS)
+**Started:** 2026-08-24 (UTC)
+**Status:** Session claimed in its own commit, before any technical work, so the trim commit that
+follows contains no record edit. Work beginning.
+
 ### What Session 241 Did
 **Deliverable:** **Both wiki-publishing items closed, as one fix campaign pass**, plus the gap their
 diagnosis did not reach, filed. This is Session 240's what's-next #1, the oldest unblocked item. No
