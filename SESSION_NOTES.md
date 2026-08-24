@@ -248,13 +248,229 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 241 Did
-**Deliverable:** Close the two paired wiki-publishing items as ONE fix campaign pass —
-`scripts/publish_wiki.sh` wiping and pushing the live wiki from an empty source directory, and
-`.githooks/post-commit` failing open (silent no-op on a stale prefix or any merge commit). Both run
-unattended from a git hook. Filed Session 234 from `repository-rename.md` §8.1 findings 2 and 3
-(dragons 3 and 4); explicitly filed to be bundled into one session. No operator ruling needed.
-**Started:** 2026-08-24 (UTC).
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **Both wiki-publishing items closed, as one fix campaign pass**, plus the gap their
+diagnosis did not reach, filed. This is Session 240's what's-next #1, the oldest unblocked item. No
+other work was started.
+
+**Started / completed:** 2026-08-24 (UTC). **Commits: five** — `4c2b18e` (Phase 1B claim, alone),
+`72b5718` (the fix + 38 tests), `e2a8ba5` (the citations the fix falsified), `06aa430`
+(`BACKLOG.md`/`CHANGELOG.md`/`README.md`), and this close-out. **Operator this session:** *"go"*,
+then *"1"*.
+
+**`BACKLOG.md` 16 → 15 items**, reconciled by counting both sides: **15 item headings, 15 index
+rows.** **`CHANGELOG.md` entry written** — earned under `PROJECT_CONVENTIONS.md` §2 (this session
+changed `scripts/` and added `tests/` logic; Session 240 correctly did not).
+
+#### The filed fix could not have worked as written, and the filed diagnosis was incomplete
+
+Two findings that only measurement produced. Neither is a criticism of Session 234 — both needed the
+code in front of you.
+
+1. **"Count `*.md` under `SOURCE_DIR` and abort below a floor" is unimplementable.** A floor of 1
+   catches only a totally empty source; a floor of 25 goes stale the next time a page is added; and
+   the item's own body names the **half-populated** case, which no static floor can see. The guard
+   that works measures the damage: an `rsync --dry-run --itemize-changes` pass counts what `--delete`
+   would remove and compares it against `git ls-files` in the clone. Learning
+   [#163](PROJECT_LEARNINGS.md).
+2. **Most merges never reach `post-commit` at all.** git runs **`post-merge`** when it creates a
+   merge commit itself; `post-commit` sees a merge only when *you* finish a conflicted one with
+   `git commit`. Verified with both hooks installed as echo stubs. The `--diff-merges=first-parent`
+   fix is right and necessary — for that one path. The rest is **a new backlog item**, not a silent
+   scope expansion: adding a hook that can push to a public wiki is not something to do as a side
+   effect of closing two others. Learning [#165](PROJECT_LEARNINGS.md).
+
+#### The bug, caught in the act
+
+Run against the **pre-fix** script in a throwaway worktree, an empty source directory exited **0**
+and printed `94d9d62..4aefc7c  master -> master` — it wiped the wiki and pushed the deletion. The
+same worktree run put the whole new suite at **11 failed, 12 passed**; the 12 pin pre-existing
+guards. A green test proves nothing until it has been shown to go red.
+
+#### What shipped
+
+| | |
+| --- | --- |
+| `scripts/publish_wiki.sh` | refuse a source with zero `*.md` (`find -L`); refuse a disproportionate deletion, measured not assumed; `MPC_WIKI_ALLOW_MASS_DELETE=1` overrides **and says so** |
+| `.githooks/post-commit` | `--diff-merges=first-parent --root -z`; git's exit status tested; stale prefix reported loudly but only when `docs/wiki/` exists; every skip announced |
+| `tests/scripts/test_wiki_publishing.py` | **38 tests** — the first either file has ever had |
+| new backlog item | clean `git merge`/`git pull` still publishes nothing |
+
+#### I wrote three new fail-opens into a fix for fail-opens. A review caught them, not me.
+
+The first draft went to an adversarial review before commit. **Four real code defects came back**,
+all reproduced by hand before being believed:
+
+| defect in **my** first draft | why it is the same bug one layer down |
+| --- | --- |
+| `rsync … \| grep -c … \|\| true` | `set -o pipefail` was already on, so `\|\| true` masked an **rsync failure** as "0 deletions" |
+| an empty `PENDING_DELETIONS` | `[ "" -gt 2 ]` fails as a *malformed test*; inside an `if` condition `set -e` does not fire, so the guard is **skipped** and the script exits 0 |
+| `core.quotePath` | `Café-Notes.md` arrives as `"docs/wiki/…/Caf\303\251-Notes.md"`; the `^` anchor misses it and the hook announces a **confidently false** reason |
+| directory deletions counted | `rsync` itemises `*deleting assets/`; `git ls-files` counts files only — mixing the units refuses the small retirement the guard promises to wave through |
+
+Also fixed: `find` without `-L` reports 0 pages in a symlinked-but-full source. Learnings
+[#164](PROJECT_LEARNINGS.md), [#166](PROJECT_LEARNINGS.md).
+
+**The review nearly did not deliver any of that.** A network outage killed the synthesiser and
+**26 of its 27 verifiers**; the run reported `confirmed: 5, candidates: 27, report: null`, and every
+unadjudicated finding had been filtered out as unconfirmed. The four defects above were all in the
+dropped set. Reading `journal.jsonl` and testing the load-bearing claims by hand is the only reason
+they did not ship. **A dead verifier looks exactly like a refuted finding.** Learning
+[#167](PROJECT_LEARNINGS.md).
+
+#### The tests were not honest until they were mutated
+
+The first 23 tests looked exhaustive. The review showed the deletion guard's two arms were
+**algebraically identical at the fixture's 8 pages**, so either could be deleted with the suite fully
+green. Separating them took two fixture sizes (4 pages and 20), not another assertion.
+
+**15 mutants, one per guard arm, 15 killed**, each by a named test — and **the first `M13` was
+vacuous**: it added a no-op flag instead of removing the check it named, "survived", and had to be
+rewritten before it bit. A mutant that passes is a bug in the mutant until proven otherwise.
+Learning [#168](PROJECT_LEARNINGS.md).
+
+#### The gotcha that protected me was the citation I broke
+
+Session 240's gotcha 5 — *"`publish_wiki.sh:19`, `:24`, `:42` name `claims-model-starter` and that is
+CORRECT and PERMANENT"* — is why I did not "fix" those lines. My change then grew that file by 66
+lines and moved two of them to `:29` and `:48`. So:
+
+- `CLAUDE.md`'s D-R5 rule was pinning **unrelated text**. Restated by content.
+- `repository-rename.md` §7.2's **re-runnable** criterion said *"exactly `:19`, `:24`, `:42` — never
+  0"* and now printed `:19, :29, :48` — which the plan's own *"a printed path is a miss, no judgment
+  call"* rule reads as a **rename regression**. Restated as `grep -c … # -> exactly 3`, which D-R5
+  makes true permanently. Both arms re-run and pass.
+- Dragon 4's *"**And no test will ever catch it** … zero test coverage"* was true when written and is
+  now false. Annotated **SUPERSEDED**, advice preserved.
+- `enterprise-migration.md` §2.6's seven coupling rows and C4 step 4 re-pointed, the new test file
+  added as an eighth coupling, and a **re-derive warning** added under the table.
+
+Learning [#169](PROJECT_LEARNINGS.md): a permanent pin expressed as a digit is not permanent, and the
+session that breaks it is the one editing the file the pin protects.
+
+#### Verification — everything run, nothing reasoned about
+
+| Check | Result |
+| --- | --- |
+| suite, **before** any edit | **1275 passed, 9 skipped**, 97.98%, exit 0 (matches S240) |
+| suite, final | **1313 passed, 9 skipped**, 97.98% — +38, no regressions |
+| new tests vs **pre-fix** scripts | **11 failed, 12 passed** in a throwaway worktree |
+| mutation sweep | **15 applied, 15 killed**; `M13` rewritten after shipping vacuous |
+| `ruff check` | clean |
+| **all six shard proofs** | **green**, re-run after every commit touching `CLAUDE.md`, `BACKLOG.md`, `README.md` |
+| C4/C5 arm 2 over this repo | still returns `claims-model-starter` — still fires |
+| §7.2 both arms | `grep -c` → 3; residue arm empty |
+| **live wiki clone** | 25 tracked files, **0** pending deletions, clean, HEAD unmoved after a real `publish_wiki.sh` run |
+| the hook, in production | every commit this session printed `post-commit: wiki publish skipped — no docs/wiki/… paths in <sha>` |
+
+### Session 240 Handoff Evaluation (by Session 241)
+
+**Score: 9/10.** Two of its gotchas were directly load-bearing; one prediction was arithmetically off.
+
+- **Gotcha 5 was the most valuable line in the handoff.** It stopped me "fixing" the three D-R5
+  lines, and arm 2 firing on them *on purpose* is stated there explicitly. Without it I would have
+  broken the wiki clone.
+- **Gotcha 2 was load-bearing three separate times.** *"All six shard proofs must be re-run by any
+  session that edits `BACKLOG.md`, `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`."* I edited
+  three of those four. Ran all six after each commit; all green.
+- **Gotchas 7 and 8 were both right** — `command grep`/`git grep` throughout, and `gh issue list`
+  empty as expected with `BACKLOG.md` governing at exactly 16 items.
+- **What's-next #1 was correctly scoped and correctly characterised.** *"Explicitly filed to be
+  bundled into one session… No operator ruling needed"* was exactly true, and the pointer to
+  `publish_wiki.sh:53` landed me on the defect in one read.
+- **−1, gotcha 1's prediction was wrong, and the error is instructive.** It said *"Session 241 very
+  likely **arrives** over the trigger and is the seventh trim."* Phase 0 measured **1,328** — under
+  the 1,500 trigger by 172 lines. The arithmetic conflated *arrives over* with *leaves over*: S240's
+  own record was already inside the 1,328 it measured. **A file only exceeds the trigger after the
+  next record is written, so the trim always falls to the session after the one that predicts it.**
+  Its *"re-measure at Phase 0 anyway"* is what made this harmless.
+- **Two things I had to discover myself**, both now gotchas below: the project venv, and that
+  `core.hooksPath` is live in this clone — I was editing a hook that fires on my own commits.
+
+### Session 241 Self-Assessment
+
+**Score: 8/10.** The deliverable is complete, verified from both directions, and the two findings
+that matter came from measurement rather than from implementing what was written. What keeps it well
+off 9 is that **my own first draft shipped three new fail-opens into a fix whose entire subject is
+fail-opens**, and an external review caught them.
+
+**+** **I falsified before I trusted.** 11 red / 12 green against pre-fix code, and the empty-source
+bug reproduced with the push receipt in the output.
+**+** **I mutation-tested every guard arm** — 15/15 — and rejected my own vacuous mutant rather than
+banking a 15th kill.
+**+** **I did not accept the review's summary.** It said 5 confirmed; the journal held 27 candidates
+and 26 dead verifiers, and four real defects were in the dropped set.
+**+** **I checked the filed fix for satisfiability instead of implementing its sentence**, and said
+plainly in the notes that a static floor cannot work.
+**+** **I filed the `post-merge` gap rather than fixing it.** It is the same failure one hook over,
+and it was tempting. Adding a hook that can push to a public wiki is a separate deliverable.
+**+** **I repaired the citations my own change falsified**, including the one that protected me, and
+restated them by content so the next editor cannot break them the same way.
+**+** **Runtime-verified against the live wiki**, and each commit demonstrated the hook working.
+
+**−** **Three new fail-opens in the first draft** (`|| true` over a pipeline, an empty numeric
+guard variable, `core.quotePath`). I caught the first myself; the review caught the others.
+**−** **My first test suite had arms no mutant could reach** — the exact defect class `CLAUDE.md` is
+most emphatic about, and I did not check until the review said so.
+**−** **I ran `python3 -m pytest` without the venv** and read 35 collection errors before noticing.
+**−** **Nine files across four commits** — every commit within `SAFEGUARDS.md`, but a wide session.
+
+**Against the bar:** S240 found a criterion that had gone silent on the one case its own comment
+named. S241's equivalent is two of them at once — **a filed fix that could not work as specified**,
+and **a filed diagnosis that named the wrong hook**. Both were only visible by measuring the thing
+rather than reading about it.
+
+**What's next.**
+
+1. **The seventh trim — and this time the arithmetic is checked.** This file is **1,553** lines with
+   this record, measured with `wc -l` after writing it, against `CLAUDE.md`'s **1,500** trigger.
+   Session 242 therefore **arrives over the trigger and is the seventh trim.** Two commits always
+   (claim, trim, close out — the trim commit contains **no** record edit), cut to **≤1,050**, never
+   below the **4**-record floor, and **re-derive the copy list** rather than trusting any inherited
+   one. Carry L0–L12 forward; every new assertion needs its own mutant.
+2. **`uv.lock` in Publish Tutorial's `paths:` filter** (S237 gotcha 4) — one line, one judgement:
+   is a public deploy on every dependency bump acceptable? **The last operator decision in the
+   queue.** Present it the way S240 presented Decisions A and B and it takes one exchange.
+3. **The `post-merge` hook** — newly filed this session, self-contained, no ruling needed. Diff
+   **`ORIG_HEAD..HEAD`**, not `HEAD`: a fast-forward `git pull` moves many commits and `diff-tree
+   HEAD` sees only the tip. Guard the squash case (`$1 = 1`).
+4. **The two delivered plans still under `docs/planning/`** — needs a ruling on both together.
+   `repository-rename.md` gained two more annotations this session.
+5. **`master` is 9 commits ahead of `origin/master`.** Measured with `git fetch` + `git rev-list
+   --count`, not off a tracking ref — S240's own −1 was a push claim overtaken by reality.
+
+**Key files:**
+- `scripts/publish_wiki.sh` — guards at the `SOURCE_MD_COUNT` check and the `PENDING_DELETIONS`
+  block. Find them by content, not line number (that is learning #169's whole point).
+- `.githooks/post-commit` — `WIKI_SUBDIR` is the single literal; the comment block above the
+  `diff-tree` call records why each of `--diff-merges=first-parent`, `--root` and `-z` is there.
+- `tests/scripts/test_wiki_publishing.py` — 38 tests. The "Gap closures" section at the bottom exists
+  because each of those behaviours was deletable with the suite green.
+- `PROJECT_LEARNINGS.md` — **169 learnings**; #163–#169 are this session's. `CLAUDE.md:99` updated.
+
+**Gotchas:**
+1. **Use `.venv/bin/python -m pytest`.** A bare `python3 -m pytest` fails collection with **35
+   errors** (`ModuleNotFoundError: fastapi`). No previous handoff says this.
+2. **`core.hooksPath=.githooks` is LIVE in this clone.** Every commit you make runs
+   `.githooks/post-commit` — including commits that edit the hook itself. It is harmless now (it
+   announces its skip), but be aware you are editing live machinery, and that a commit touching
+   `docs/wiki/model_project_constructor/` will really publish to the public wiki.
+3. **`scripts/publish_wiki.sh`'s three `claims-model-starter` lines are CORRECT and PERMANENT**
+   (D-R5). They are **no longer at `:19`, `:24`, `:42`** — this session moved two of them. Find them
+   with `git grep -n claims-model-starter scripts/publish_wiki.sh` → 3 hits. Do not "fix" them; arm 2
+   of the C4/C5 criterion fires on them here **on purpose**.
+4. **All six shard proofs must be re-run by any session editing `BACKLOG.md`,
+   `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`** — the newest proof's `L8` reads all four
+   live. This session edited three; all six green.
+   `for f in docs/architecture-history/*.verify.sh; do bash "$f"; done`.
+5. **A clean `git merge` does NOT run `post-commit`** — it runs `post-merge`, which this repo does
+   not install. Do not assume a hook fires; install echo stubs and look.
+6. **`mkdocs build --strict` fails at `HEAD`, by design — do NOT file it.** (S237 gotcha 5.)
+7. **Still zsh, and `grep` is still a `ugrep --ignore-files` wrapper.** `command grep` or `git grep`
+   for anything load-bearing. Single-quote every heredoc delimiter. Note that non-interactive `bash`
+   scripts get `/usr/bin/grep`, so the scripts themselves are unaffected.
+8. **`gh issue list` is empty and that is expected** — the tracker is not in use. `BACKLOG.md`
+   governs, now **15 items**, index reconciled 15/15.
+9. **Session 238's record is an abandoned claim, annotated, and must stay that way.**
 
 ### What Session 240 Did
 **Deliverable:** **Both operator rulings, executed.** **Decision A** — the archive banner is
