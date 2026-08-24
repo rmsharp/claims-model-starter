@@ -247,6 +247,15 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 241 Did
+**Deliverable:** Close the two paired wiki-publishing items as ONE fix campaign pass —
+`scripts/publish_wiki.sh` wiping and pushing the live wiki from an empty source directory, and
+`.githooks/post-commit` failing open (silent no-op on a stale prefix or any merge commit). Both run
+unattended from a git hook. Filed Session 234 from `repository-rename.md` §8.1 findings 2 and 3
+(dragons 3 and 4); explicitly filed to be bundled into one session. No operator ruling needed.
+**Started:** 2026-08-24 (UTC).
+**Status:** Session claimed. Work beginning.
+
 ### What Session 240 Did
 **Deliverable:** **Both operator rulings, executed.** **Decision A** — the archive banner is
 project-added boilerplate that tracks its template: all **23** dead in-repo pointers re-pointed, and
