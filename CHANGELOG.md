@@ -1,13 +1,13 @@
 # Changelog
 
-> *Maintainer-facing commit-linked ledger. For the user-facing release summary, see `docs/wiki/claims-model-starter/Changelog.md`. For the design-decision arc, see `docs/wiki/claims-model-starter/Evolution.md`.*
+> *Maintainer-facing commit-linked ledger. For the user-facing release summary, see `docs/wiki/model_project_constructor/Changelog.md`. For the design-decision arc, see `docs/wiki/model_project_constructor/Evolution.md`.*
 
 All notable changes to this project are documented here.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 When completing work, remove the item from `BACKLOG.md` and add an entry here.
 
-This file is the **authoritative, maintainer-facing record** of completed work. The wiki page `Changelog` (under `claims-model-starter/wiki`, mirrored at `docs/wiki/claims-model-starter/Changelog.md`) is an audience-facing summary whose tone and level of detail may evolve over time; this file stays stable and complete. When the two disagree, this file is canonical.
+This file is the **authoritative, maintainer-facing record** of completed work. The wiki page `Changelog` (under `model_project_constructor/wiki`, mirrored at `docs/wiki/model_project_constructor/Changelog.md`) is an audience-facing summary whose tone and level of detail may evolve over time; this file stays stable and complete. When the two disagree, this file is canonical.
 
 Dates are commit dates on `master`. Commit hashes are short-form as produced by `git log --oneline`. Session numbers refer to entries in `SESSION_NOTES.md`.
 

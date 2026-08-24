@@ -52,7 +52,6 @@ rows below it are the smaller residue that closing it exposed.
 | The publish hook stays silent when it declines to publish | The hook decides whether to publish by matching a path prefix. A stale prefix, or any merge commit, makes it exit successfully having done nothing — and say nothing. | Small. Bundle with the row above. |
 | Two finished plans still sit in the active-plans folder | `httpx-adapter-migration.md` was fully executed but never archived — and `repository-rename.md` went EXECUTED in the very commit that filed this item, which is the identical case and the heavier one. | Small, but moving either re-points every citation of its path — sweep first, and rule on both together. |
 | ⚠ The enterprise fork's "is the clone independent?" check needs an operator ruling | The check that proves an enterprise copy carries no trace of this account greps for four name forms. The rename made one of them stop matching the case the check was built for. Both repairs anyone has proposed can never return zero, so the check has to be **restated**, and that is a call only the operator can make. | **Operator ruling.** The edit is minutes; the decision is the work. |
-| Archived docs point at a wiki folder the rename deleted | Every archived document carries a banner saying "for current state, see …". The rename updated the template that banner is copied from and none of the 21 copies, so all 21 now point at a folder that no longer exists — plus two more lines at the top of `CHANGELOG.md`. No completion check could see them, because the rename's own allowlist exempts those files whole. | Small and mechanical, after one ruling on whether a banner is part of the frozen record. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
 | A bad `--db-url` fails silently | Filed Session 223. `connect()` builds a message naming the exact cause; the next line catches the error **without binding it** and throws the message away. The run then reports `COMPLETE` and exits 0 with **every quality check unexecuted**. A typo'd port, an unexported shell variable, and a genuine warehouse outage produce byte-identical reports. | Pre-existing and wider than the S223 fix — **not** a reason to revert it. The cheapest two-thirds is small; the third option changes when a pipeline run is allowed to "succeed" and needs an operator ruling. |
@@ -582,61 +581,6 @@ names.
   has to be restated as **"no repository name other than the clone's own"**, not "no name at all".
 
 **The ask:** rule on that restatement. **Cost: the ruling is the work; the edit is minutes.**
-
-### Every archived doc's banner points at a wiki directory the rename deleted — and no completion check can see it
-
-**Found and measured by Phase 5's residue sweep (Session 234). Deliberately NOT fixed in that
-commit; the reason is below and it is the part worth reading.**
-
-`docs/methodology/PROJECT_CONVENTIONS.md:44` holds the canonical archive banner that every moved
-document is prepended with. Phase 4 (`1865fc2`) updated it to
-`docs/wiki/model_project_constructor/Evolution.md`. **It updated none of the copies: 21 lines
-across 20 files under `docs/architecture-history/` still read
-`docs/wiki/claims-model-starter/Evolution.md`, and 0 read the new path.** That directory no longer
-exists, so all 21 are dead in-repo pointers. **20 are deployed banners. The 21st is
-`evolution-page-plan.md:161` — the banner's original *specification*, inside a fenced block, which
-`PROJECT_CONVENTIONS.md:44` is the live copy of.** A sweep driven from a file list will miss it,
-and Session 147's precedent requires every banner to be byte-identical to that template — an
-invariant that is false today. The same class appears on two more lines — **`CHANGELOG.md`'s
-preamble at `:3` and `:10`, each naming it twice** — above the first version heading at `:16`, so
-present-tense navigation prose rather than a dated entry. (`:10`'s second is `claims-model-starter/wiki`,
-the GitHub wiki path, alive only on the rename redirect.)
-
-**Why nothing caught it, which is the interesting part.** `repository-rename.md` §7.2's allowlist
-exempts `^docs/architecture-history/` and `^CHANGELOG\.md$` **wholesale**, on §3.1's rationale that
-they are frozen historical records. That is true of their *entries* and false of a banner and a
-preamble, which record nothing and navigate. The exemption became a blindfold **one level below**
-where §7.2 anticipated it: the file is exempt, so a live line inside it rides in free. §9.1's rubric
-for this hazard — *"An exemption is only as good as the assertion traded for it, and a filter written
-to make the arithmetic work can silently remove the case you most needed to check"* — is right, and
-the assertion traded for group 1 was a file-level one.
-
-**Why this was filed and not swept.** These hits sit in files §3.1 classifies KEEP, so by the letter
-of Phase 5's residue rule they are not misses; the claim is that §3.1's *classification* is wrong
-for this one sentence. That is a plan defect, and this project's settled response to a plan defect
-found mid-execution is to file it (Session 229 → Session 230's dedicated repair session), not to
-widen a closing commit into a 22-file sweep of frozen archives against `SAFEGUARDS.md`'s
-blast-radius rule.
-
-**The class was swept, and this is the whole of it.** `git grep -c "docs/wiki/claims-model-starter"`
-returns **507 lines across 32 files** — but 484 of those are genuine dated records: session-ledger
-entries, `CHANGELOG.md`'s 107 dated release lines, and archived plans' already-satisfied acceptance
-criteria, all of which named a path that was correct when written. §3.1's rationale covers those
-properly. Only the banner and the `CHANGELOG.md` preamble are **present-tense navigation**, and those
-are the 23 lines below. The scope is a cut through the class, not one instance of it.
-
-**Cost: small and mechanical** — 21 one-line substitutions plus 2 in `CHANGELOG.md`, no
-executable impact, no test touches. **One ruling is needed first, and it covers all 23 lines:** is the archive banner part of the
-frozen record, or project-added boilerplate that tracks its template? **`CHANGELOG.md`'s two lines
-need no ruling of their own** — a preamble above the first version heading is plainly not an entry.
-They are bundled here only because `repository-rename.md` §3.1 buckets that file *whole*, which is
-the same file-level judgement that stranded the banners. Dispose of all 23 in one pass. If the latter,
-`PROJECT_CONVENTIONS.md` §3 should also say banners are re-pointed when their target moves — Session
-147's precedent already requires them byte-identical to the template, and that invariant is false
-today. Two cautions for whoever executes it: `docs/architecture-history/methodology-pr2527-remediation-mpc.md`
-is third-party-attributed material (`CLAUDE.md`, `NOTICE`) — its banner is project-added, but confirm
-before touching it; and `initial_purpose.txt` is the only `.txt` in the directory, so a `*.md` sweep
-silently skips it.
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 

@@ -1,6 +1,6 @@
 # Multi-Provider LLM Support — Planning Document
 
-> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-07-27 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-07-27 and may not reflect current implementation. For current state, see `docs/wiki/model_project_constructor/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
 
 **Author:** Session 159 (planning session) — 2026-06-17.
 **Baseline commit:** `517d35b` — Session 159 claim stub; tree clean, `origin/master` synced. Test baseline (last fresh confirm S155): 797 passed @ 97.28%, mypy 0/64, ruff clean, decoupling 2/2.

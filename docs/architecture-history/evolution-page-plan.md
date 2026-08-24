@@ -1,4 +1,4 @@
-> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-11 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-06-11 and may not reflect current implementation. For current state, see `docs/wiki/model_project_constructor/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
 
 # Evolution Page + Documentation Convention Plan
 
@@ -158,7 +158,7 @@ Recommendation: **Option B** (`docs/methodology/PROJECT_CONVENTIONS.md`). Short,
 
 **Archive-doc banner** (top of each moved doc):
 ```markdown
-> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on YYYY-MM-DD and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on YYYY-MM-DD and may not reflect current implementation. For current state, see `docs/wiki/model_project_constructor/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope.*
 ```
 
 Confirm both. Short-sha form preferred (7-char).

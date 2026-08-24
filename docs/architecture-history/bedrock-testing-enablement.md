@@ -1,6 +1,6 @@
 # Bedrock Testing Enablement — Operator Runbook & Cost Estimate
 
-> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-07-27 and may not reflect current implementation. For current state, see `docs/wiki/claims-model-starter/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope. The still-useful reference tables (how the project reaches Bedrock; Bedrock TPM quota codes) were carved forward into `docs/deployment/bedrock-enterprise.md` (Appendices A/B) — start there for live guidance.*
+> *This document is a concept-era artifact preserved for design archaeology. It describes the system as designed on 2026-07-27 and may not reflect current implementation. For current state, see `docs/wiki/model_project_constructor/Evolution.md` (design-decision arc) and the code itself (authoritative). See `PROJECT_CONVENTIONS.md` for archive scope. The still-useful reference tables (how the project reaches Bedrock; Bedrock TPM quota codes) were carved forward into `docs/deployment/bedrock-enterprise.md` (Appendices A/B) — start there for live guidance.*
 
 **Originally Session 178 (2026-06-19). Substantially revised Session 180 (2026-07-18):**
 the mantle migration **landed** and live enablement was **attempted end-to-end**. The
