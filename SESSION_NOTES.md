@@ -247,6 +247,19 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 240 Did
+**Deliverable:** Execute the two operator rulings received this session — **Decision A:** the
+archive banner is project-added boilerplate that tracks its template (re-point all 23 dead
+in-repo pointers + add the tracking rule to `PROJECT_CONVENTIONS.md` §3); **Decision B:** restate
+the C4/C5 clone-independence criterion as *"no repository name other than the clone's own"*,
+scoped to the four §2.6 files. (IN PROGRESS)
+**Started:** 2026-08-24 UTC
+**Status:** Session claimed. Work beginning. This is the item Session 238 claimed and abandoned and
+Session 239 listed as what's-next #1. Both rulings were put to the operator in Phase 0/1 of this
+session against **re-derived** figures (not the filed ones — the C4/C5 counts had moved by ~880
+lines since Session 229 measured them, because trims 4-6 relocated session history into the
+criterion's own excluded directory). Operator answered: A = boilerplate, B = restate as scoped.
+
 ### What Session 239 Did
 **Deliverable:** **The sixth lossless trim.** Sessions 235 → 232 are in a new write-once shard;
 this file went **1,786 → 843** lines. The proof carries L0–L11 forward with nothing narrowed and
