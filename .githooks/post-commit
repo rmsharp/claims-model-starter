@@ -8,16 +8,86 @@
 #
 # Escape hatch (rare — intentional amend without re-publishing):
 #   MPC_SKIP_WIKI_PUBLISH=1 git commit ...
+#
+# The publisher has a second one. It refuses to publish a disproportionate
+# deletion of the live wiki, which from here surfaces as a failed publish:
+#   MPC_WIKI_ALLOW_MASS_DELETE=1 git commit ...
+# Never export either variable from a shell profile — both are per-invocation
+# overrides, and a persistent one silently disables the guard for every commit.
+#
+# This hook FAILS LOUD. Every path that declines to publish says so on stderr,
+# and the two that mean something is wrong exit non-zero. Silence used to be
+# indistinguishable between "nothing to publish" and "publishing has been
+# broken for weeks", which is how wiki syncing can stop without anyone noticing.
+# Git ignores a post-commit hook's exit status, so a non-zero exit here reports
+# a problem without ever failing the commit that triggered it.
 
-set -eu
+set -euo pipefail
+
+# Must stay byte-identical to the tail of SOURCE_DIR in scripts/publish_wiki.sh.
+# tests/scripts/test_wiki_publishing.py pins the two together: the path is
+# duplicated across two files, and a rename that updates only one of them is
+# precisely the "stale prefix" failure the check below reports.
+WIKI_SUBDIR='docs/wiki/model_project_constructor'
+
+note() { echo "post-commit: $*" >&2; }
 
 if [ "${MPC_SKIP_WIKI_PUBLISH:-0}" = "1" ]; then
-    exit 0
-fi
-
-if ! git diff-tree --no-commit-id --name-only -r HEAD | grep -q '^docs/wiki/model_project_constructor/'; then
+    note "wiki publish skipped — MPC_SKIP_WIKI_PUBLISH=1"
     exit 0
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Stale prefix. If the wiki source moves and this hook is not updated with it,
+# the match below can never fire again and publishing stops for good — quietly,
+# because "no wiki paths in this commit" is also the normal case. Distinguish
+# them: the prefix has to name a real directory before a non-match means
+# anything at all.
+if [ ! -d "$REPO_ROOT/$WIKI_SUBDIR" ]; then
+    if [ -d "$REPO_ROOT/${WIKI_SUBDIR%/*}" ]; then
+        # docs/wiki/ is here but the page directory under it is not: the wiki
+        # moved and this prefix did not move with it.
+        note "ERROR: wiki source directory not found: $REPO_ROOT/$WIKI_SUBDIR"
+        note "this hook's path prefix is STALE — wiki publishing is disabled until"
+        note "it is realigned with SOURCE_DIR in scripts/publish_wiki.sh."
+        exit 1
+    fi
+    # No docs/wiki/ at all: an old checkout, or a worktree that predates the
+    # wiki. Nothing to publish and nothing wrong — say so and stop, rather than
+    # crying STALE on every commit and training the reader to ignore this hook.
+    note "wiki publish skipped — this checkout has no ${WIKI_SUBDIR%/*}/ directory"
+    exit 0
+fi
+
+# Three flags here are load-bearing:
+#   * --diff-merges=first-parent: 'diff-tree -r HEAD' prints NOTHING for a merge
+#     commit, so a conflict-resolving 'git commit' that carried a wiki change
+#     used to read as "no wiki paths changed". ('-m --first-parent' is NOT the
+#     fix: diff-tree ignores --first-parent when -m is given and emits the union
+#     of the diffs against every parent.) NOTE that a CLEAN 'git merge' or
+#     'git pull' never reaches this hook at all — git runs post-merge for those,
+#     and this repository installs no post-merge hook. See BACKLOG.md.
+#   * --root: without it, diff-tree prints nothing for the root commit.
+#   * -z: --name-only honours core.quotePath, which C-quotes and double-quotes
+#     any path holding a non-ASCII byte — 'Café-Claims.md' arrives as
+#     "docs/wiki/.../Caf\303\251-Claims.md" and the anchored match below cannot
+#     see it. -z emits raw NUL-separated paths instead; tr makes them lines.
+# The pipeline runs under 'set -o pipefail' and its status is tested, rather
+# than piping into grep: a git failure writes nothing to stdout, and grep
+# reading nothing is indistinguishable from a commit that touched no wiki page.
+if ! CHANGED="$(git diff-tree --no-commit-id --name-only -r -z --root \
+        --diff-merges=first-parent HEAD | tr '\0' '\n')"; then
+    note "ERROR: could not list the files changed by HEAD; wiki publish skipped."
+    exit 1
+fi
+
+# A here-string, not a pipe: 'grep -q' closes the pipe on its first match, and
+# under 'set -o pipefail' the resulting SIGPIPE upstream would turn a match into
+# a failed pipeline and skip the publish.
+if ! grep -q "^$WIKI_SUBDIR/" <<<"$CHANGED"; then
+    note "wiki publish skipped — no $WIKI_SUBDIR/ paths in $(git rev-parse --short HEAD)"
+    exit 0
+fi
+
 exec "$REPO_ROOT/scripts/publish_wiki.sh"
