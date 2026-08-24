@@ -248,15 +248,251 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 239 Did
-**Deliverable:** The **sixth lossless trim** of this file — archive the oldest records into a new
-write-once shard under `docs/architecture-history/`, with its own `.verify.sh` proof carrying
-L0–L11 forward from the fifth trim, and re-derive the copy list with `git grep -l 'SESSION_NOTES-'`
-rather than inheriting the fifth trim's. (IN PROGRESS)
-**Started:** 2026-08-24 02:49 UTC
-**Status:** Session claimed. Work beginning. **The trigger is measured, not projected:** this file
-is **1,765** lines at Phase 0 against `CLAUDE.md`'s **1,500**-line trigger — S237's gotcha 6
-predicted exactly this and Phase 0 confirmed it by measurement. Two commits always: this claim
-first, the trim second (no record edit in it), close-out third.
+**Deliverable:** **The sixth lossless trim.** Sessions 235 → 232 are in a new write-once shard;
+this file went **1,786 → 843** lines. The proof carries L0–L11 forward with nothing narrowed and
+adds **L12**, which closes a hole that had been open for five trims: *every size figure a trim
+states about its own artifacts was checked by nothing.* No other work was started.
+
+**Started / completed:** 2026-08-24 (UTC). **Commits: three** — `c2a2f6c` (the Phase 1B claim,
+alone), `28879a0` (the whole trim, one commit, seven files), and this close-out. **Operator this
+session:** *"go"*, then *"natural candidates are the sixth trim (now trigger-confirmed,
+self-contained, no operator input needed)"*.
+
+**No `CHANGELOG.md` entry, and that is the convention rather than an omission.** `PROJECT_CONVENTIONS.md`
+§2 gates on shipped code; this trim touches no `src/` or `scripts/` path. Checked against precedent
+rather than asserted: `grep -i 'trim\|shard' CHANGELOG.md` finds **none of the five earlier trims**
+there. `BACKLOG.md` stays at 18 items — the trim opened and closed nothing.
+
+#### The cut, measured
+
+| | |
+| --- | --- |
+| fired at | **1,786** lines, against `CLAUDE.md`'s **1,500** trigger |
+| archived | Sessions **235 → 232** — 4 record headings, **1,004** lines |
+| into | `docs/architecture-history/SESSION_NOTES-S235-through-S232.md` — **1,057** lines (53 banner + 1,004) |
+| retained | Sessions **239 → 236** — 4 records, **594** lines |
+| landed at | **843** lines, against the **≤1,050** target and the **4**-record floor |
+| routing now | 7 clauses; `232 ≤ N ≤ 235` → the new shard, `N ≥ 236` → this file |
+
+#### Why the cut fell there, and why one record more would have been wrong
+
+The retain-4 / retain-5 choice was **simulated before anything was written**, not chosen by feel:
+
+| retain | live after | verdict |
+| --- | --- | --- |
+| 4 (239, 238, 237, 236) | **843** | under target; **~2 sessions** of headroom before the next trigger |
+| 5 (+ Session 235) | **1,136** | **misses the 1,050 target**, and buys only ~1 session |
+
+Retaining a fifth record would have failed `L11/target` — the assertion the fifth trim added
+precisely so a too-shallow cut cannot pass. **But the floor is worth reading twice:** the four
+retained records include Session 238's 19-line abandoned claim and this session's own 11-line stub,
+so *the letter said four sessions and the working context was two.* That is legal — the declared
+grammar says a record is a byte span, never a session — and it is the first cut where the two
+readings diverged. Learning [#156](PROJECT_LEARNINGS.md).
+
+#### L12, and the hole it closes
+
+The fifth trim's pointer says *"4 record headings, 918 lines"*; its banner says *"At 976 lines it
+sits under the 2,000-line agent read cap"*; `BACKLOG.md` says *"(976 lines)"*. **All three are
+correct** — re-measured here: 976 lines, 918 of them records. **And nothing had ever compared any
+of them to the artifact.** Every occurrence lives inside a string literal that `L2/b1` and `L6` pin
+against a declaration *the same author wrote*. A trim that typed 918 where the truth was 981 would
+have shipped that in three files at once, green.
+
+L12 measures the archived heading count, the archived line count and the shard's total; holds all
+three (plus the retained-record count) against hand-declared integers; asserts the shard is under
+the read cap its banner claims; and holds those integers against the **ten formatted figures** that
+actually appear in the pointer, the banner, `README.md`, `BACKLOG.md` and `CLAUDE.md` — in two
+formats, because this project writes small counts as words (*"four record headings"*) and large
+ones as digits (*"1,057 lines"*). **Six arms, nine mutants.**
+
+**It caught its own author twice before it shipped**, which is the only reason to trust it:
+1. The first green run printed **`10 prose claims`** three lines under a header that said **nine**.
+   A typed count, wrong, caught by the assertion written to catch typed counts. Sixth consecutive
+   session with that defect ([#105](PROJECT_LEARNINGS.md), #146, #148, #152,
+   [#154](PROJECT_LEARNINGS.md)).
+2. The arm sweep found `retained_records` shipped with **no mutant of its own** — M66 moves
+   `README.md`'s prose, which is the *prose* arm. M68 was added.
+
+#### Two arms failed the arm-level sweep, and both fixes were mutants — never a weakened assertion
+
+`CLAUDE.md` warns that a green `--self-test` whose mutants never exercise an assertion is the same
+lie as a green run. Neutering all **42** arms one at a time found two:
+
+- **`L2/b3` lost its only mutant to L12.** The inherited M51 *appends* a front-matter line to the
+  banner — which under this proof also changes the shard's line count, so `L12/shard_total` caught
+  it and b3, an assertion the fifth trim had deliberately narrowed and defended at length, was
+  reachable by nothing. Still green, still listed in the coverage block, proving nothing. M51 now
+  **replaces** a banner line, keeping the count identical. **A new assertion's reach is exactly
+  what makes an old one redundant** — learning [#153](PROJECT_LEARNINGS.md), and the single most
+  transferable finding of this session.
+- **`L12/cap` had no mutant at all.** Moving the declared cap alone also falsifies the banner's
+  prose figure, so `L12/prose` fired first. M63 now mis-states the cap **consistently** —
+  declaration, banner and declared literal together — which is both the isolating mutation and the
+  realistic one.
+
+An **L13** was drafted (no shard name may be a prefix or substring of another — stated in bold in
+three places and checked nowhere) and **dropped**: every violating mutation is caught by `L5/4`
+first, so it would have shipped an assertion no mutant can reach. That is recorded in the proof's
+header so the seventh trim does not rediscover the idea and ship it.
+
+#### The copy sweep was re-run, found four new files, and declared none of them
+
+`git grep -l 'SESSION_NOTES-'` returns nine files: the four `L8` already reads, this one, and
+**four the fifth trim never named** — `CHANGELOG.md`, `PROJECT_LEARNINGS.md`,
+`docs/architecture-history/evolution-page-plan.md`, `docs/planning/repository-rename.md`.
+**Declaring any of them would have shipped a falsehood.** The first two match only the phrase
+`SESSION_NOTES-as-rationale`, which is not a filename — the sweep *string* over-matches. The other
+two cite shard names inside frozen historical statements that state no census, and `L8/set`
+requires a declared file to name the **whole** set, so declaring either would have turned a
+*correct* record red. Learning [#155](PROJECT_LEARNINGS.md).
+
+#### Verification — everything run, nothing reasoned about
+
+| Check | Result |
+| --- | --- |
+| reconstruction **independent of the proof** | retained + archived records byte-identical to `HEAD`'s; 120,264 B each; sha256 `e041fb17789bd853` |
+| the new proof, pre-commit | green, L0–L6 + L8–L12 (L7 inapplicable until committed) |
+| the new proof, **post-commit** | green, **L0–L12**, and the shard on disk is the blob committed at `28879a0` |
+| `--self-test` | **68/68 mutants caught** |
+| assertion-level neuter loop (13) | every assertion has uniquely-caught mutants except L0/L1/L3/L4, documented as overlapped |
+| arm-level neuter sweep (42) | 30 arms uniquely reachable; **12 documented as having no unique mutant, with the reason for each** |
+| all five ancestor proofs | green before the trim and green after |
+| suite | **1275 passed, 9 skipped** — unchanged from S237 |
+| `L3 added` count | **0** — no record edit bundled into the trim commit |
+| docs site | unaffected: `mkdocs.yml`'s `exclude_docs` allows only `/index.md`, `/tutorial.md`, `/assets/` |
+| wiki hook | correctly silent — no path under `docs/wiki/model_project_constructor/` |
+
+### Session 238 Handoff Evaluation (by Session 239)
+
+**Score: 3/10 — and 3 rather than 1 is the whole point.** Session 238 wrote a Phase 1B stub and then
+vanished: one commit, never pushed, no deliverable, no close-out. There is no handoff to evaluate.
+
+**What it nevertheless did right, and it is not nothing.** The stub told me, in eight lines, exactly
+what had been attempted, when, and on whose authority — so Phase 0 spent about a minute establishing
+that nothing was in flight and nothing needed recovering (`git log --oneline 61aee5b..HEAD` printed
+one line; `git rev-parse HEAD` was still `e52e88e`; `git status` was clean). **That is precisely the
+return FM #14 promises**, and it is why the protocol makes the stub mandatory before any technical
+work. A crash with no stub costs the next session a reconstruction from `git log`; this cost a minute.
+
+**What was missing:** everything after the stub. **What was wrong:** nothing — the stub's claims
+were all true. It is scored as a floor, not a failure of judgement.
+
+### Session 237 Handoff Evaluation (by Session 239)
+
+Session 238 left no handoff, so **the handoff I actually worked from was Session 237's**, two
+records up. Scoring it is not bookkeeping: it is the one that did the work.
+
+**Score: 9/10.**
+
+- **Gotcha 6 was right, and it was right because it was measured.** *"This file is **1,756** lines
+  with this record — measured after writing it, at fixed width."* Phase 0 measured **1,765** (the
+  9-line difference is Session 238's stub, added after S237 closed). The prediction *"S238 arrives
+  over the trigger and is the sixth trim"* was correct, and it told me to **re-measure anyway** —
+  which is what turned a projection into a trigger.
+- **It handed over the whole procedure**: cut to ≤1,050, never below a 4-record floor, two commits
+  always, and *re-derive the copy list rather than trusting the inherited one*. That last
+  instruction is the reason the sweep ran, and the sweep is the reason four unfamiliar files were
+  correctly **left alone** instead of half-declared.
+- **Gotcha 7 paid off silently.** `grep` is still a `ugrep --ignore-files` wrapper; `command grep`
+  and `git grep` throughout, no empty-result mysteries.
+- **Gotcha 8's `BACKLOG.md` arithmetic held** — 18 items, index reconciled, nothing to fix.
+- **−1: it could not tell me the cut would be decided by two stub records.** No handoff could —
+  Session 238 had not happened yet. Noted so the next reader sees why the floor needed re-deriving
+  rather than re-applying.
+
+### Session 239 Self-Assessment
+
+**Score: 9/10.** The trim is lossless by a check that does not depend on the proof, the proof is
+falsifiable and was falsified 68 ways, and the two defects found in my own new assertion were found
+by measurement I chose to run rather than by luck. What keeps it off 10 is that **both of those
+defects were mine**, and one of them — a typed count — is the sixth consecutive session to report
+that same class.
+
+**+** **I measured the cut instead of choosing it.** The retain-4/retain-5 simulation ran before a
+byte was written, and it inverted my first instinct: I had assumed retaining Session 235 (the fifth
+trim's own record, the most obviously relevant predecessor) would be right, and the arithmetic says
+it fails `L11/target` and buys half the headroom.
+**+** **I found the L12 hole by grepping the ancestor for its own numbers**, not by inspection —
+`grep '918\|976'` over the fifth proof returns five hits, every one inside a string literal. That
+is a two-second check that five trims had not run.
+**+** **I ran the arm-level sweep even though the assertion-level loop was already green**, because
+`CLAUDE.md` says the loop is not enough. It found two unreachable arms, one of them *created by my
+own new assertion retiring an inherited one*. Skipping it would have shipped a proof whose
+most-defended assertion proved nothing.
+**+** **I let the run's own printout correct me.** `10 prose claims` versus a header saying nine —
+I read the output instead of trusting what I had written.
+**+** **I declared none of the four new sweep hits**, and checked *why* each was excluded rather
+than pattern-matching on the filename. Two were a phrase, not a filename; two were frozen records
+that `L8/set` would have failed.
+
+**−** **I typed a count in the very file whose purpose is to stop typed counts.** The header said
+nine prose claims; there were ten. Caught, but I wrote it.
+**−** **I shipped an arm with no mutant** (`retained_records`) in an assertion whose header lectures
+about exactly that, and only the sweep found it.
+**−** **My first M51 fix attempt was aborted mid-script by a failed assertion**, leaving two intended
+edits unapplied; I noticed only because the next run's output disagreed with what I expected. The
+script's write-at-the-end structure meant nothing was corrupted, but I should have re-read before
+re-running.
+**−** **I did not re-verify the operator-facing `BACKLOG.md` index count by re-counting**; I checked
+that the trim opened and closed no items, which is a weaker claim than S237's reconciliation.
+
+**Against the bar:** S235 proved an inherited assertion structurally incapable of a true positive;
+S237 found a prescribed fix in the wrong place. This session's equivalent is **a new assertion
+silently retiring an old one** — the same species one level up, and the first time in this lineage
+that *adding* a check made an existing check worthless while leaving every signal green.
+
+**What's next.**
+
+1. **The two operator decisions** — the archive-banner ruling (one ruling disposes of 23 dead
+   in-repo pointers) and the C4/C5 clone-independence restatement. **Session 238 claimed exactly
+   this and produced nothing**, so it is now the oldest unblocked item and has been skipped twice.
+   Both are `⚠ OPERATOR DECISION` rows where *the ruling is the work* — expect to present
+   measurements and stop, not to edit.
+2. **The `publish_wiki.sh` / `post-commit` pair** — filed to be bundled into one session.
+   `publish_wiki.sh:53` tests that the source directory *exists*, not that it is non-empty, and
+   `rsync --delete` then publishes the emptying; the hook exits 0 in silence when it declines. Both
+   run **unattended from a commit hook**.
+3. **Decide whether `uv.lock` belongs in Publish Tutorial's `paths:` filter** (S237 gotcha 4). One
+   line, gated on one judgement: is a public deploy on every dependency bump acceptable?
+4. **`master` is 3 commits ahead of `origin/master`** — `e52e88e` (S238's orphan claim), `c2a2f6c`
+   and `28879a0`, plus this close-out. Push is a one-liner; it is listed because S236 existed
+   entirely to fix a push that had not happened.
+
+**Key files:**
+- `docs/architecture-history/SESSION_NOTES-S235-through-S232.md` — the shard. **Frozen.** `grep` it.
+- `docs/architecture-history/SESSION_NOTES-S235-through-S232.md.verify.sh` — the proof, 1,592 lines.
+  **Read its header before touching anything**: it carries the measured coverage, the twelve arms
+  with no unique mutant *and the reason for each*, and the rejected-L13 note.
+- `SESSION_NOTES.md:5-69` — the new pointer block. **It is the routing authority**; the six shard
+  banners are snapshots of their own cuts and four of them are now falsified.
+- `CLAUDE.md:77-90` — the trim bullet: retention rule, routing table, assertion lineage L4→L12.
+- `PROJECT_LEARNINGS.md` — **157 learnings**; #153–#157 are this session's. `CLAUDE.md:99` updated.
+
+**Gotchas:**
+1. **The seventh trim is NOT next session.** This file is **1,079** lines with this record — measured after writing it, against
+   the **1,500** trigger — roughly **two** sessions of headroom, not one. That is the whole reason
+   the cut retained four records rather than five. **Re-measure at Phase 0 anyway**; do not trim on
+   this sentence.
+2. **Adding an assertion to that proof obliges you to re-sweep every arm, not just yours.** L12 stole
+   `L2/b3`'s only mutant. The loops are in the proof's header; both take under a minute.
+   `for A in L0 … L12` for assertions, and neuter one `out.append(` at a time for arms.
+3. **The size figures are now load-bearing in five files.** Changing the shard, the pointer block,
+   `README.md`'s *"newest 4 sessions"*, `BACKLOG.md`'s *"(1,057 lines)"* or `CLAUDE.md`'s
+   *"(235→232, 1,057 lines)"* fails `L12/prose`. That is the point — but it means a careless
+   reflow of any of those sentences goes red.
+4. **`git grep -l 'SESSION_NOTES-'` over-matches.** It hits the phrase `SESSION_NOTES-as-rationale`
+   in `CHANGELOG.md` and `evolution-page-plan.md`, which are not filenames. Use
+   `git grep -l 'SESSION_NOTES-[A-Za-z0-9-]*\.md'`. Both forms are recorded in the proof's header.
+5. **Four shard banners are now stale and none may be repaired** — S220, S224, S227 and S231. Each
+   was true at its own cut. **The live pointer block is the authority.** Ours joins them at the
+   seventh trim; its banner says so.
+6. **Still zsh, and `grep` is still a `ugrep --ignore-files` wrapper.** `command grep` or `git grep`
+   for anything load-bearing. Single-quote every heredoc delimiter.
+7. **`gh issue list` is empty and that is expected** — the tracker is not in use. `BACKLOG.md`
+   governs, **18 items**, and its plain-language index at the top is written for the operator.
+8. **Session 238's record is an abandoned claim, annotated, and must stay that way.** It is the
+   evidence a ghost session happened. Do not tidy it away.
 
 ### What Session 238 Did
 **Deliverable:** Dispose of the two blocked operator decisions (Session 237's what's-next item 1)
