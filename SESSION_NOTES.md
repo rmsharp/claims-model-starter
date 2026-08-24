@@ -320,12 +320,203 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 242 Did
-**Deliverable:** The **seventh lossless trim** of this file — archive the oldest records into a
-new write-once shard under `docs/architecture-history/`, with its own verification proof carrying
-L0-L12 forward. This is Session 241's what's-next #1; its trigger fired at Phase 0. (IN PROGRESS)
-**Started:** 2026-08-24 (UTC)
-**Status:** Session claimed in its own commit, before any technical work, so the trim commit that
-follows contains no record edit. Work beginning.
+**Deliverable:** The **seventh lossless trim** of this file — Sessions 238 → 236 archived into
+`docs/architecture-history/SESSION_NOTES-S238-through-S236.md` with a new proof carrying L0–L12
+forward and adding **L13**. This is Session 241's what's-next #1; its trigger had fired. No other
+work was started.
+
+**Started / completed:** 2026-08-24 (UTC). **Commits: three** — `f26233a` (Phase 1B claim, alone),
+`e7d5b03` (the trim, containing **no** record edit), and this close-out. **Operator this session:**
+*"go"*, then *"1"*.
+
+| measurement | value |
+| --- | --- |
+| live file before / trigger | **1,561** lines / 1,500 — fired |
+| live file after / target | **1,050** lines / ≤1,050 — landed exactly on it |
+| records retained / floor | **4** (242 → 239) / 4 — the floor exactly |
+| archived | **3** headings, **583** lines (238, 237, 236) |
+| new shard | **644** lines, under the 2,000-line read cap |
+| proof | **84** mutants, all caught; **55** arms swept, **26** uniquely reachable |
+| suite | **1313 passed, 9 skipped, 97.98%** — unchanged from S241 |
+
+#### L13 (NAME AND SPAN) — the filename was routing information no assertion read
+
+`PROJECT_CONVENTIONS.md` states the rule that produces a shard's name and seven trims obeyed it by
+hand; nothing ever parsed one. A shard misnamed `SESSION_NOTES-S238-through-S235.md` while holding
+Sessions 238 → 236 satisfies **L5/3** (the clause says 236-238, which is what the cut archived),
+**L5/4** (the file that clause names really does hold 236-238) and **L8/set** (every file names the
+same wrong shard) **at once**. L13 derives both spans from the record ids and holds the filename plus
+eight declared sentences against them. Learning [#175](PROJECT_LEARNINGS.md).
+
+#### An adversarial review found 15 defects in a green, self-tested trim. Five shipped a WRONG trim.
+
+This is the finding of the session. Before the review the trim was green: plain run, `--self-test`
+84/84, the per-assertion neuter loop, the per-arm sweep, all seven ancestor proofs, and an
+independent SHA-256 losslessness check that does not go through the proof at all. Six review lenses
+then reproduced **five states in which a false artifact passed every proof**:
+
+| what shipped green | how |
+| --- | --- |
+| `CLAUDE.md` claiming the live file holds **9** sessions | L12's literal was satisfied by this trim's own **quotation** of it three lines below ([#170](PROJECT_LEARNINGS.md)) |
+| `PROJECT_CONVENTIONS.md` reverted to *"the third, fourth, fifth and sixth trims"* | a census string this trim had to hand-edit, declared by nothing |
+| `BACKLOG.md` reverted on two more census strings | same class, second file |
+| a **wrong archived span** in a declared substitution | prose said L13 held *"every sentence"*; it held a seven-entry tuple ([#175](PROJECT_LEARNINGS.md)) |
+| a retention **target of 1,400** with `CLAUDE.md` still saying ≤1,050 | L11 checked the rule sentences were PRESENT and never parsed their numerals ([#174](PROJECT_LEARNINGS.md)) |
+
+The last is inherited byte-identical from the sixth trim, and the **fifth trim's header claims that
+check exists**: *"IT CHECKS THE NUMBERS AGAINST THE SENTENCE THAT DECLARES THEM."* It did not. Every
+existing mutant TIGHTENED a bound, so relaxation was undetectable by construction.
+
+**All five are closed and each was re-probed in a throwaway clone using the reviewer's own
+mutation** — the fix is not believed until the probe that was green goes red. Also fixed: three
+inherited literals were SPLIT (disclosed, not denied — [#176](PROJECT_LEARNINGS.md)); L12 and L13
+gained a `/unique` arm each; `L11/figure` was added with a **relaxing** mutant; and the header's
+inherited *"TWELVE ARMS"* was re-measured as 29 ([#173](PROJECT_LEARNINGS.md)).
+
+#### Three defects I found myself, two of them in the act
+
+- **L13 caught its own author on its first run.** The pointer block said *"eight sentences"* while
+  the declaration read seven. `L13/census` exists for exactly that and fired before commit.
+- **A vacuous mutant.** `M75` moved the word *"seven"*; rewording the census sentence to say
+  *"eight"* turned the `replace` into a no-op and the mutant SURVIVED. [#172](PROJECT_LEARNINGS.md).
+- **An inherited prefix bug.** `any(f.startswith("L1") …)` also matches `L10`–`L13`, so any of those
+  failing printed *"L1 IS RED ON THIS RUN"* while L1 was green. Present in the fifth and sixth
+  trims' proofs, which are **frozen and must not be repaired** — L10 holds them to their freeze
+  commits, so editing them turns this proof red. Fixed forward, reported.
+  [#177](PROJECT_LEARNINGS.md).
+
+#### The sweep, re-derived a third time
+
+`git grep -l 'SESSION_NOTES-[A-Za-z0-9-]*\.md'` returns nineteen files. The refined form **drops**
+`CHANGELOG.md` and the evolution plan, exactly as the sixth trim predicted — tested, held.
+`PROJECT_LEARNINGS.md` and `docs/planning/repository-rename.md` stay undeclared: each names ONE shard
+inside a frozen statement and states no census, so `L8/set` would turn a correct record red. **Four**
+unread count-carrying strings were found inside the four declared files; **three of the four only
+because the review reverted them and watched all seven proofs stay green.**
+
+#### Verification — everything run, nothing reasoned about
+
+| check | result |
+| --- | --- |
+| records-zone SHA-256, before vs retained+archived | **identical** (`38d0f588e66cb62e`, 96,117 B) — computed independently of the proof |
+| the new proof, plain | **GREEN** at `e7d5b03`, `added by the trim commit: 0` |
+| the new proof, `--self-test` | **84 mutants, 84 caught** |
+| per-assertion neuter loop | every one of L2, L5–L13 has uniquely-catching mutants |
+| per-arm sweep (55 arms) | **26** uniquely reachable; the 29 without are enumerated and explained |
+| all seven shard proofs | **GREEN**, before and after the trim commit |
+| the five review probes | **all now caught** — re-run in a clone |
+| suite | 1313 passed, 9 skipped, 97.98% — identical to S241 |
+| `BACKLOG.md` | 15 items, 15 index rows — unchanged, index row updated in the same commit |
+
+### Session 241 Handoff Evaluation (by Session 242)
+
+**Score: 10/10.** The best handoff this ledger has carried. Every one of its five what's-next items
+was accurate, and its gotchas were load-bearing four separate times.
+
+- **What's-next #1 was arithmetically correct and it corrected its own predecessor's error.** It
+  said *"This file is **1,553** lines … Session 242 therefore arrives over the trigger and is the
+  seventh trim."* Phase 0 measured 1,553; after the Phase 1B stub, 1,561. Session 240 had made the
+  opposite error and S241 diagnosed it precisely: *"a file only exceeds the trigger after the next
+  record is written."* That is a fixed bug in the lineage's reasoning, not just a corrected number.
+- **Gotcha 1 (`.venv/bin/python -m pytest`) saved the 35-collection-error detour it describes.**
+  Used from the first suite run; never saw the failure.
+- **Gotcha 4 was load-bearing all session.** *"All six shard proofs must be re-run by any session
+  editing `BACKLOG.md`, `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`."* I edited all four,
+  repeatedly, and ran all six (now seven) after every change.
+- **Gotcha 7 (`grep` is a `ugrep` wrapper) was load-bearing.** `command grep`/`git grep` throughout;
+  the sweeps that decide L8's declared set are exactly the load-bearing case it warns about.
+- **Gotcha 2 (`core.hooksPath` is live) was confirmed at every commit** — each printed its skip line.
+- **Its instruction to carry L0–L12 forward "every new assertion needs its own mutant" is what made
+  the arm sweep non-optional**, and the arm sweep is what found `L13/census-absent` unreachable.
+- **Nothing in it was wrong.** The only thing I had to discover myself is that an adversarial review
+  belongs *before* the commit of a proof, not after — and S241's own record says so implicitly by
+  describing how its review caught four defects. I have made it explicit as [#178].
+
+### Session 242 Self-Assessment
+
+**Score: 8/10.** The trim is lossless, the numbers all measured, the new assertion is real and
+mutant-tested, and five green-but-wrong states were closed before commit. What holds it at 8 is that
+**I did not find those five myself.** My own neuter loop and arm sweep both passed clean on a proof
+that would have let a false retained-session count, two reverted census strings, a wrong archived
+span and a relaxed retention target all ship green.
+
+**+** **I measured instead of inheriting, and it paid three times** — the sweep (four unread strings,
+not the inherited one), the staleness census (four vs the true five, which is why L14 was rejected),
+and the S235 proof's freeze commit (`git log` prints exactly one commit; verified byte-identical).
+**+** **I rejected an assertion for a measured reason and recorded the measurement**, so the eighth
+trim does not re-derive it.
+**+** **I fixed a defect in an inherited assertion (`L11/figure`) rather than carrying the ancestor's
+false claim about it forward** — and added the only mutant shape that can reach it.
+**+** **I re-probed every fix with the reviewer's own mutation** rather than trusting the fix.
+**+** **I disclosed the narrowing** instead of repeating the lineage's stock "narrowed nothing".
+**+** **I caught my own vacuous mutant and my own typed count** — the self-test and L13 both bit.
+
+**−** **The review found 15 defects in work I had already declared green.** Five were green-but-wrong
+states, not cosmetics.
+**−** **I wrote a guard and then disarmed it with my own prose in the same commit** (the L12
+quotation). That is a new failure mode, and it is embarrassing precisely because the paragraph was
+boasting about closing the hole.
+**−** **I shipped "every sentence" over a seven-entry tuple** — a quantifier where a derived number
+belonged, in the very trim whose new assertion exists to derive numbers.
+**−** **Line budget was self-inflicted.** Cutting to exactly 1,050 left zero headroom, so every prose
+fix the review forced had to be paid for by compressing another paragraph. Cut to ~1,035 next time.
+
+**Against the bar:** S241 found a filed fix that could not work as specified. S242's equivalent is an
+ancestor proof whose header claims a check it never implemented — and five demonstrations that a
+green proof is not a correct one.
+
+**What's next.**
+
+1. **`uv.lock` in Publish Tutorial's `paths:` filter** (S237 gotcha 4, S241 what's-next #2) — one
+   line, one judgement: is a public deploy on every dependency bump acceptable? **The last operator
+   decision in the queue.** Present it the way S240 presented Decisions A and B; one exchange.
+2. **The `post-merge` hook** — filed by S241, self-contained, no ruling needed. Diff
+   **`ORIG_HEAD..HEAD`**, not `HEAD`; guard the squash case (`$1 = 1`).
+3. **The two delivered plans still under `docs/planning/`** — needs one ruling covering both.
+4. **`master` is 11 commits ahead of `origin/master`** — measured with `git fetch` + `git rev-list
+   --count`, not off a tracking ref.
+5. **The eighth trim is NOT due.** This file is ~1,230 lines with this record, against a 1,500-line
+   trigger. Expect it at Session 244 or 245 — **re-measure at Phase 0 anyway.**
+
+**Key files:**
+- `docs/architecture-history/SESSION_NOTES-S238-through-S236.md` — the new shard. **`grep` it,
+  never `Read` it.** Write-once from `e7d5b03` onward; L7 and the next trim's L9 both hold it.
+- `docs/architecture-history/SESSION_NOTES-S238-through-S236.md.verify.sh` — the proof. Its header
+  carries the measured coverage, the four arms that failed the sweep before commit, and the 29 arms
+  with no uniquely-catching mutant with the reason for each. **Read the header before the eighth
+  trim; it is written for that reader.**
+- `PROJECT_LEARNINGS.md` — **178 learnings**; #170–#178 are this session's. `CLAUDE.md:99` updated.
+- `CLAUDE.md` → "`SESSION_NOTES.md` is trimmed" — the routing table, the retention rule, and the
+  eighth trim's instructions. Now names L13 and the L14 candidate.
+
+**Gotchas:**
+1. **An adversarial review belongs BEFORE the commit of any hand-built proof, and it must include a
+   lens on PROSE-VERSUS-ENFORCEMENT.** The byte-level lens found nothing here; the prose lens found
+   six defects and the census lens six more. Learning [#178].
+2. **Every count-carrying string your change hand-edits is a suspect.** Three of the four unread
+   strings found this session were ones this trim had itself edited. Grep your own diff for numerals
+   and ordinals, then ask which assertion reads each.
+3. **The fifth and sixth trims' proofs carry a live defect that must NOT be repaired** — the
+   `startswith("L1")` prefix bug (learning #177). They are frozen; `L10` in the newest proof holds
+   them to their freeze commits, so editing one turns the newest proof RED. Fix forward only.
+4. **All seven shard proofs must be re-run by any session editing `BACKLOG.md`,
+   `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`** — the newest proof's `L8`, `L12` and `L13`
+   read all four live. `for f in docs/architecture-history/*.verify.sh; do bash "$f"; done`.
+5. **The eighth trim's L14 is already measured and named:** every ANCESTOR shard's span and size
+   figure in those four files — `(220→217, 804 lines)` and fifteen siblings — is true today and read
+   by nothing. `L12`/`L13` are scoped to their own cut's artifacts by construction. Do **not** re-run
+   the rejected staleness census: it measures four where the truth is five, and the reason is in the
+   pointer block.
+6. **Use `.venv/bin/python -m pytest`.** A bare `python3 -m pytest` fails collection with 35 errors.
+7. **`core.hooksPath=.githooks` is LIVE in this clone** — every commit runs `.githooks/post-commit`.
+8. **`scripts/publish_wiki.sh`'s three `claims-model-starter` lines are CORRECT and PERMANENT**
+   (D-R5). Find them with `git grep -n claims-model-starter scripts/publish_wiki.sh` → 3 hits.
+9. **Still zsh, and `grep` is a `ugrep --ignore-files` wrapper.** `command grep` or `git grep` for
+   anything load-bearing. Single-quote every heredoc delimiter.
+10. **`gh issue list` is empty and that is expected** — `BACKLOG.md` governs, at **15 items**.
+11. **Session 238's record is an abandoned claim, annotated** — it is now in the S238 shard, and it
+    must stay exactly as it is there. Session 239's retained record still refers to it; that
+    reference is correct, not stale.
 
 ### What Session 241 Did
 **Deliverable:** **Both wiki-publishing items closed, as one fix campaign pass**, plus the gap their
