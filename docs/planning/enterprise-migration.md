@@ -339,15 +339,18 @@ only. Nothing in the repo checks merge status.
 
 | File:line | Coupling | Breaks on an enterprise host? |
 |---|---|---|
-| `scripts/publish_wiki.sh:42` | `WIKI_CLONE` default path | Defaults to the **personal public** clone — see dragon #3 |
-| `scripts/publish_wiki.sh:44` | `SOURCE_DIR=…/docs/wiki/model_project_constructor` | Only if the directory is renamed |
-| `scripts/publish_wiki.sh:23`, `:63` | Hardcoded clone URL (comment + error text) | Misleading |
-| `scripts/publish_wiki.sh:72`, `:75` | **Hard-rejects** any origin URL not containing `model_project_constructor.wiki` | **YES — hard blocker on rename** |
-| `scripts/publish_wiki.sh:80` | **Hard-requires** the wiki branch be named `master` | **YES — most enterprise hosts default to `main`** |
-| `scripts/publish_wiki.sh:104` | `git push origin master` — hardcoded refspec | **YES** |
-| `.githooks/post-commit:18` | Path prefix `^docs/wiki/model_project_constructor/` | Only if renamed |
+| `scripts/publish_wiki.sh:48` | `WIKI_CLONE` default path | Defaults to the **personal public** clone — see dragon #3 |
+| `scripts/publish_wiki.sh:50` | `SOURCE_DIR=…/docs/wiki/model_project_constructor` | Only if the directory is renamed |
+| `scripts/publish_wiki.sh:28`, `:80` | Hardcoded clone URL (comment + error text) | Misleading |
+| `scripts/publish_wiki.sh:90`, `:93` | **Hard-rejects** any origin URL not containing `model_project_constructor.wiki` | **YES — hard blocker on rename** |
+| `scripts/publish_wiki.sh:98` | **Hard-requires** the wiki branch be named `master` | **YES — most enterprise hosts default to `main`** |
+| `scripts/publish_wiki.sh:170` | `git push origin master` — hardcoded refspec | **YES** |
+| `.githooks/post-commit:31` | Path prefix `docs/wiki/model_project_constructor/` (`WIKI_SUBDIR`) | Only if renamed |
 | `mkdocs.yml:3-5` | `site_url` / `repo_url` / `repo_name` — all personal | **YES** |
 | `tests/test_wiki_no_line_citations.py:38` | Hardcoded wiki dir | Only if renamed |
+| `tests/scripts/test_wiki_publishing.py:42` | `WIKI_SUBDIR` — pins the hook's prefix to the script's `SOURCE_DIR` | Only if renamed |
+
+> ⚠ **Re-derive these line numbers before executing; do not trust them.** They were re-measured at Session 241's `72b5718`, which edited both files and moved every row. Anchor by content — `git grep -n 'WIKI_CLONE=\|SOURCE_DIR=\|push origin master' scripts/publish_wiki.sh` — and treat the *couplings*, not the digits, as the record.
 | **`orchestrator/config.py:198,354,355,365,366`** | Personal GitLab namespace embedded in a **user-facing `ConfigError` message** | **YES — code change** |
 | **`tests/orchestrator/test_config.py:38,39,121,222,234`** | Assert on those literals | **YES — paired test edit** |
 | `.env.example:25,26,30`; `OPERATIONS.md:25` | Personal namespace examples | Cosmetic but user-facing |
@@ -403,7 +406,8 @@ git -C <enterprise-clone> grep -h -o -I -iE 'claims-model-starter|model[-_]proje
 Arm 2 prints the **set of foreign repository names present**, so a failure names the offender instead
 of a line number. **It was validated against the live defect before being written into this plan.**
 Run over *this* repository with `CLONE_NAME=model_project_constructor` it returns
-`claims-model-starter`, from `scripts/publish_wiki.sh:19`, `:24` and `:42` — exactly the case the old
+`claims-model-starter`, from the three lines of `scripts/publish_wiki.sh` that name the clone
+directory (`git grep -n claims-model-starter scripts/publish_wiki.sh`) — exactly the case the old
 criterion's comment names, and exactly the case the old criterion had stopped catching. In *this*
 repository those three lines are correct and **permanent** (rename plan D-R5: GitHub's rename moves a
 URL, never a directory on your disk); in the **clone** they are the defect. That asymmetry is the
@@ -418,8 +422,10 @@ introduces a further name, or it will not see one.
 
 Two behaviours the plan must build on:
 
-- **`rsync -a --delete` (`publish_wiki.sh:92`) is a destructive one-way sync.** Any page edited
-  through the web UI during the migration is **silently deleted** by the next publish.
+- **`rsync -a --delete` (`publish_wiki.sh:158`) is a destructive one-way sync.** Any page edited
+  through the web UI during the migration is **silently deleted** by the next publish. Since
+  Session 241 it refuses a *disproportionate* deletion (and an empty source) unless
+  `MPC_WIKI_ALLOW_MASS_DELETE=1` is set — a guard the enterprise fork must keep, not defeat.
 - **`core.hooksPath=.githooks` is per-clone local config, not tracked.** A fresh enterprise clone
   publishes nothing, silently. And `post-commit` runs *after* the commit object exists, so a
   publish failure cannot fail the commit — the only signal is console output.
@@ -1312,7 +1318,7 @@ never in the current working tree, and nothing here is ever committed or pushed 
    `WIKI_BRANCH`, `WIKI_PUSH_REFSPEC` must be required (`${WIKI_CLONE:?set WIKI_CLONE for the target
    wiki}`), so an unset environment aborts instead of silently publishing enterprise content into
    the **original's** public wiki. Also fix the hardcoded clone-URL text at
-   `scripts/publish_wiki.sh:23,63` (comment + error text) — left as-is, it survives the C5
+   `scripts/publish_wiki.sh:28,80` (comment + error text) — left as-is, it survives the C5
    independence check unnoticed. **Do NOT delete `~/Development/claims-model-starter.wiki`, and do
    NOT aim it at the ENTERPRISE wiki** — it continues to serve the original's live auto-publish
    (D6: refresh and keep) and must keep working. *(This is not a blanket ban on `git remote

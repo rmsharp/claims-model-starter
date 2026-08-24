@@ -1186,6 +1186,15 @@ by `ci.yml`. Every other mechanism in this rename has a guard that shouts or a t
 This one has neither, which is exactly why Phase 4's proof has to be an end-to-end observation rather
 than an assertion.
 
+> **SUPERSEDED, 2026-08-24 (Session 241).** That paragraph was true when written and is now false.
+> `tests/scripts/test_wiki_publishing.py` gives the pair **38** tests, collected by `ci.yml`'s
+> `uv run pytest -q` job, and one of them (`test_hook_prefix_matches_publish_script_source_dir`)
+> pins the hook's trigger prefix to the publisher's `SOURCE_DIR` — so the *specific* divergence
+> this dragon describes now reddens a test instead of going unnoticed. **The dragon's advice still
+> stands** for any future move of the wiki directory: keep the prefix and the `git mv` in one
+> commit, and prove Phase 4 by exercising the hook end-to-end. What has changed is only that the
+> "no test will ever catch it" premise no longer holds.
+
 **Two consequences for Phase 4:**
 - The trigger prefix and the `git mv` **must** be in the same commit (already required by K3 for a
   different reason — this is a second, independent reason).
@@ -1566,13 +1575,14 @@ uv run mypy                                        # -> clean
 scripts/publish_wiki.sh                            # -> "no changes to publish"
 git -C ~/Development/claims-model-starter.wiki rev-list --count origin/master..master   # -> 0
 #   NOT implied by the line above, and not optional (Session 234, from Session 232's defect #1).
-#   `publish_wiki.sh` commits into the clone at :102 and pushes at :104, so a failed push exits 2
-#   with the local commit LEFT IN PLACE. In that state the re-run above short-circuits at :96 and
+#   `publish_wiki.sh` commits into the clone and then pushes, so a failed push exits 2
+#   with the local commit LEFT IN PLACE. In that state the re-run above short-circuits at the
+#   "no changes to publish" early return and
 #   prints "no changes to publish" with exit 0 -- a green line that is fully consistent with a
 #   STALE live wiki. Only a count against origin/master separates the two. Dragon 2 item 6.
 grep -rn "claims-model-starter" scripts/ tests/ .githooks/ src/ packages/ .github/ \
   | grep -v '^scripts/publish_wiki\.sh:'                  # -> empty
-grep -n "claims-model-starter" scripts/publish_wiki.sh    # -> exactly :19, :24, :42 — never 0
+grep -c "claims-model-starter" scripts/publish_wiki.sh    # -> exactly 3 — never 0, never more
 ```
 
 `src/`, `packages/` and `.github/` are in that grep even though they have **zero** hits today
