@@ -248,17 +248,253 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 240 Did
-**Deliverable:** Execute the two operator rulings received this session — **Decision A:** the
-archive banner is project-added boilerplate that tracks its template (re-point all 23 dead
-in-repo pointers + add the tracking rule to `PROJECT_CONVENTIONS.md` §3); **Decision B:** restate
-the C4/C5 clone-independence criterion as *"no repository name other than the clone's own"*,
-scoped to the four §2.6 files. (IN PROGRESS)
-**Started:** 2026-08-24 UTC
-**Status:** Session claimed. Work beginning. This is the item Session 238 claimed and abandoned and
-Session 239 listed as what's-next #1. Both rulings were put to the operator in Phase 0/1 of this
-session against **re-derived** figures (not the filed ones — the C4/C5 counts had moved by ~880
-lines since Session 229 measured them, because trims 4-6 relocated session history into the
-criterion's own excluded directory). Operator answered: A = boilerplate, B = restate as scoped.
+**Deliverable:** **Both operator rulings, executed.** **Decision A** — the archive banner is
+project-added boilerplate that tracks its template: all **23** dead in-repo pointers re-pointed, and
+§3 of `PROJECT_CONVENTIONS.md` now states the tracking rule so the next move of the target cannot
+strand them again. **Decision B** — the C4/C5 clone-independence criterion restated as *"no
+repository name other than the clone's own"*, scoped to the four §2.6 coupling files, and rebuilt as
+**two arms**. This is the item Session 238 claimed and abandoned and Session 239 listed as
+what's-next #1. No other work was started.
+
+**Started / completed:** 2026-08-24 (UTC). **Commits: four** — `bad12e9` (the Phase 1B claim,
+alone), `ab7d7f0` (Decision A, 23 files), `7075f7b` (Decision B, 4 files), and this close-out.
+**Operator this session:** *"go"*, then *"explain 1"*, then both rulings in one message.
+
+**`BACKLOG.md` 18 → 16 items**, index reconciled by counting both sides: **16 item headings, 16
+index rows.** **No `CHANGELOG.md` entry** — `PROJECT_CONVENTIONS.md` §2's cadence gate; this session
+touched no `src/`, `scripts/` or `tests/` logic. (`CHANGELOG.md` itself was edited, but only its
+*preamble*, above the first version heading — navigation prose, not an entry.)
+
+#### How two items that had been skipped three times got ruled in one exchange
+
+Session 237 deferred them, Session 238 claimed and abandoned them, Session 239 listed them again.
+**The blocker was never the operator's availability.** It was that nobody had put a decidable
+question in front of them. The operator asked *"explain 1"*; the answer re-derived every filed
+figure, stated what each candidate answer costs, and named the question in one sentence. Both
+rulings came back in the next message. Learning [#161](PROJECT_LEARNINGS.md).
+
+**Re-deriving mattered — the filed figures had moved.** Both items say *"do not inherit"*:
+
+| | filed (S229, 2026-08-20) | re-derived (2026-08-24) |
+| --- | --- | --- |
+| fifth-alternative repair | 1,980 lines / 187 files | **1,103 / 176** |
+| scope-by-directory repair | 350 lines, 284 imports | **357 / 269** |
+| new name in the four coupling files | "~16" | **15** |
+
+**The ~880-line drop is benign and worth knowing:** trims 4-6 relocated session history into
+`docs/architecture-history/`, which the criterion's own exclusion filter drops. No conclusion ever
+depended on the digits — the *order of magnitude* is the argument.
+
+#### Decision A — measured, not assumed
+
+| | |
+| --- | --- |
+| archive banners re-pointed | **21** lines across **20** files under `docs/architecture-history/` |
+| `CHANGELOG.md` preamble | **2** lines (`:3`, `:10`), **4** occurrences |
+| **total** | **23**, every one a pure `+1/-1` path substitution |
+| genuine dated records **left alone** | **488** lines / 21 files (511 − 23 — the item's own arithmetic) |
+| banners on the live path afterwards | **22** lines / 21 files (21 deployed + the template) |
+| banner strings still naming the dead path | **1** — `PROJECT_LEARNINGS.md:141`, learning #135 *quoting* the defect |
+
+**I checked byte-identity against the template before substituting, and it paid.** 20 of the 21
+banner lines were byte-identical (modulo date). The 21st, `bedrock-testing-enablement.md:3`, appends
+a document-specific sentence *inside* the banner naming where its still-useful reference tables were
+carved forward. A "normalise every copy to the template" fix would have destroyed real information.
+It is preserved, and now recorded in `PROJECT_CONVENTIONS.md` §3 as **the one documented exception**
+to Session 147's byte-identity invariant, so the next reader does not mistake it for drift.
+
+Two traps the item warned about, both live: `evolution-page-plan.md` carries **two** hits — its own
+banner at `:1` and the banner's original *specification* at `:161`, inside a fenced block — and
+`initial_purpose.txt` is the only `.txt` in the directory, which a `*.md` sweep skips. Both handled.
+`methodology-pr2527-remediation-mpc.md` is third-party-attributed (`NOTICE`); confirmed before
+touching that its banner is at `:1` and the attributed brief starts at `:3`.
+
+#### Decision B — the criterion now has two arms, and arm 2 was proven to fire before it was written down
+
+The three sites are **not the same kind of thing**, and conflating them is how this broke. `:363` is
+§2.6's **rediscovery command** — a discovery aid over *this* repository, with no threshold. The C4
+and C5 sites are the **pass/fail criterion on the clone**. §2.6 now says so explicitly and carries
+the criterion as the definition of record; both arms are inlined at C4 and C5.
+
+- **Arm 1 — unchanged.** Personal-account identity, repository-wide, and it still carries the legacy
+  repository name: a sanitised clone holds no trace of it anywhere, so this arm stays satisfiable.
+- **Arm 2 — new.** No repository name but the clone's own, over the four §2.6 coupling files.
+  `git grep -h -o` matches per **occurrence**, not per line, so a line carrying both the clone's own
+  name and a foreign one cannot hide behind the exclusion. It prints the *set of foreign repository
+  names present*, so a failure names the offender rather than a line number.
+
+**Arm 2 was run against the live defect before being written into the plan.** Over this repository
+with `CLONE_NAME=model_project_constructor` it returns `claims-model-starter`, from
+`scripts/publish_wiki.sh:19`, `:24` and `:42` — **exactly the case the old criterion's own comment
+names, and exactly the case the old criterion had stopped catching.** In *this* repository those
+three lines are correct and **permanent** (D-R5); in the **clone** they are the defect. That
+asymmetry is why the criterion belongs on the clone and never on the original. Learning
+[#159](PROJECT_LEARNINGS.md).
+
+**A vacuous-pass hazard was found while validating, and is recorded in the plan.** `git grep … --
+$FOUR` printed nothing and read as a clean result. The cause was **zsh not word-splitting unquoted
+parameter expansions** — the whole list went through as one pathspec matching no file. In a
+criterion whose PASS condition is *"no output"*, a vacuous pass and a real pass are byte-identical.
+Learning [#160](PROJECT_LEARNINGS.md); this is dragon 1's own theme, met in the wild.
+
+**Dangling references closed rather than left.** `repository-rename.md` dragon 1 still *recommended*
+the unsatisfiable path-scoped repair and still said the ruling was outstanding; it now carries a
+**RULED** note saying the recommendation must not be executed and pointing at the restatement by
+content, not by line number. §9.2's pointer told the reader to `grep -n 'clone-independence'
+BACKLOG.md`, which now returns nothing — annotated. And `.gitleaksignore:1` cited
+`enterprise-migration.md:847-887`; Phase B2 is at `:952`, so it was **already stale before this
+session** and my insert widened it — de-line-numbered rather than re-numbered.
+
+#### Verification — everything run, nothing reasoned about
+
+| Check | Result |
+| --- | --- |
+| suite, **before** any edit | **1275 passed, 9 skipped**, coverage 97.98%, exit 0 |
+| suite, after Decision A | 1275 passed, 9 skipped |
+| suite, after Decision B | **1275 passed, 9 skipped** — unchanged throughout |
+| **all six shard proofs** | **green** — required, not optional: the newest proof's `L8` reads `BACKLOG.md` and `PROJECT_CONVENTIONS.md` **live**, and both were edited this session |
+| Decision A diff shape | 23 lines, every one `+1/-1`; no line added or removed anywhere |
+| `BACKLOG.md` reconciliation | **16 headings / 16 index rows**, counted on both sides |
+| arm 2 against the live defect | returns `claims-model-starter` — fires, as designed |
+| `mkdocs build` | clean (0.17 s); `exclude_docs` publishes only `/index.md`, `/tutorial.md`, `/assets/`, so no edited path reaches the site |
+| `mkdocs build --strict` | fails — **pre-existing and by design**, reproduced identically at `ab0de46` in a throwaway worktree. See gotcha 3. |
+| wiki hook | correctly silent — no path under `docs/wiki/model_project_constructor/` in any commit |
+
+### Session 239 Handoff Evaluation (by Session 240)
+
+**Score: 9/10.** It cost me a few minutes to read and saved me from at least two wrong turns.
+
+- **Gotcha 1 was right and was measured.** *"This file is **1,079** lines with this record — measured
+  after writing it, against the **1,500** trigger — roughly **two** sessions of headroom."* Phase 0
+  measured **1,079** exactly. It also said *"re-measure at Phase 0 anyway; do not trim on this
+  sentence"* — which is the correct instruction even when the sentence turns out to be perfect.
+- **Gotcha 6 paid off silently, again.** `grep` here is a `ugrep --ignore-files` wrapper;
+  `command grep` and `git grep` throughout, no empty-result mysteries.
+- **Gotcha 7 was right.** `gh issue list` is empty and expected; `BACKLOG.md` governs at 18 items.
+- **What's-next #1 was correctly identified and correctly characterised** — *"expect to present
+  measurements and stop, not to edit"* is exactly what unblocked three sessions of drift.
+- **It told me the truth about what it could not know.** Its −1 was *"it could not tell me the cut
+  would be decided by two stub records."* That kind of honesty is what makes the rest credible.
+- **−1, and it is not really S239's fault: what's-next #4 was already done.** *"`master` is 3 commits
+  ahead of `origin/master`"* — Phase 0 found `origin/master` == `master` == `ab0de46`, verified
+  against the live remote with `git ls-remote`, not just the local tracking ref. Someone pushed after
+  S239 closed. A handoff cannot know what happens after it is written; the transferable lesson is
+  that **a push claim must be re-verified against the remote, never against `origin/master`**, which
+  is a local ref that only moves on fetch or push.
+
+**The handoff I did NOT need but read anyway** was Session 237's, two records up — its gotcha 5 is
+what stopped me filing `mkdocs build --strict` as a defect. **Two-records-back is not archaeology; it
+is still live context.** Learning [#162](PROJECT_LEARNINGS.md).
+
+### Session 240 Self-Assessment
+
+**Score: 9/10.** Both rulings executed completely, every figure re-derived rather than inherited, the
+new criterion proven to fire before it was written down, and the two dangling references the work
+created or exposed were closed rather than filed. What keeps it off 10 is that I ran a check the
+project had deliberately opted out of and was one keystroke from filing its output as a defect — the
+predecessor's handoff caught that, not me.
+
+**+** **I put a decidable question in front of the operator instead of asking whether to proceed.**
+Three sessions had listed these items; none had tabulated what each candidate answer costs. Both
+rulings came back in one message.
+**+** **I re-derived every filed figure and the numbers had moved** — 1,980→1,103 and 350→357/269.
+I also worked out *why* (the trims moved history into the criterion's own excluded directory), which
+is the part that stops the next reader thinking the record was wrong.
+**+** **I validated arm 2 against the live defect before writing it into the plan.** It returns
+`claims-model-starter` from `publish_wiki.sh:19,:24,:42`. A criterion never shown to fire is an
+assertion nobody has falsified.
+**+** **I checked banner byte-identity before a 21-line bulk substitution**, which turned an unknown
+into a documented exception instead of silently destroying `bedrock-testing-enablement.md`'s rider.
+**+** **I ran all six shard proofs** because `L8` reads two files I edited — not because anything
+told me to this session.
+**+** **I reproduced the `--strict` failure at the pre-session commit in a throwaway worktree**
+rather than asserting "pre-existing".
+
+**−** **I ran `mkdocs build --strict`, which this project deliberately does not run**, and treated
+its failure as a finding worth filing until S237's gotcha 5 corrected me. The right instinct is to
+check what the project's own CI runs *before* choosing a command.
+**−** **I lost a round to zsh word-splitting** — `-- $FOUR` returned nothing and my first reading was
+"empty result", not "the command never reached its inputs". I caught it because the same query had
+worked moments earlier with a literal list. Had it not, I would have written a vacuously-passing
+criterion into a plan whose central theme is vacuous passes.
+**−** **I did not re-run `--self-test` on any shard proof**, only the proofs themselves. Nothing this
+session changed a proof, so it was not required — but `CLAUDE.md` is emphatic that a green run
+proves less than it appears to, and I accepted six green runs without falsifying any of them.
+**−** **Decision A touched 23 files in one commit.** Within `SAFEGUARDS.md` (clean tree before,
+single mechanical class, verified diff shape) but it is the largest blast radius in several sessions.
+
+**Against the bar:** S239 found a new assertion silently retiring an old one; S235 found an inherited
+assertion structurally incapable of a true positive. This session's equivalent is smaller and of a
+different kind — **a criterion that had gone silent on the one case its own comment was written to
+name**, repaired by splitting rather than narrowing. The transferable finding is
+[#158](PROJECT_LEARNINGS.md): when a `→ 0` check becomes unsatisfiable, ask which matched strings are
+legitimate *somewhere* — those need a scoped arm, not deletion from the pattern.
+
+**What's next.**
+
+1. **The `publish_wiki.sh` / `post-commit` pair** — now the oldest unblocked item, and explicitly
+   filed to be bundled into **one** session. `publish_wiki.sh:53` tests that the source directory
+   *exists*, not that it is non-empty, and `rsync --delete` then publishes the emptying; the hook
+   exits 0 in silence when it declines. **Both run unattended from a commit hook.** No operator
+   ruling needed. This session touched `publish_wiki.sh` in no way — its three `claims-model-starter`
+   lines are D-R5-permanent and must stay.
+2. **Decide whether `uv.lock` belongs in Publish Tutorial's `paths:` filter** (S237 gotcha 4). One
+   line, gated on one judgement: is a public deploy on every dependency bump acceptable? **This is
+   the last operator decision left in the queue** — present it the way Decision A and B were
+   presented and it will take one exchange.
+3. **The two delivered plans still filed under `docs/planning/`** — `httpx-adapter-migration.md` and
+   `repository-rename.md`. Still open, still needs a ruling on both together, and note that
+   `repository-rename.md` just gained two annotations from this session.
+4. **`master` is 4 commits ahead of `origin/master`** — `bad12e9`, `ab7d7f0`, `7075f7b` and this
+   close-out. Measured with `git fetch` + `git rev-list --count origin/master..master`, not read off
+   a stale tracking ref. **Verify the same way** — `git status`'s ahead-count and a bare
+   `origin/master` are local refs that move only on fetch or push; see the −1 in the evaluation
+   above, where S239's push claim had been overtaken by an actual push it could not know about.
+
+**Key files:**
+- `docs/planning/enterprise-migration.md` §2.6 — **the restated criterion is the definition of
+  record.** Find it by content: `grep -n 'clone-independence criterion (restated'`. Both arms are
+  inlined at the C4 and C5 verify blocks; §2.6 also now separates the *rediscovery command* from the
+  *criterion*, which is the distinction whose absence caused the defect.
+- `docs/methodology/PROJECT_CONVENTIONS.md` §3 — the banner-tracking rule, plus the one documented
+  exception to byte-identity.
+- `docs/planning/repository-rename.md` — dragon 1 (`grep -n 'RULED, 2026-08-24'`) and §9.2 both
+  annotated. **Dragon 1's recommended repair must not be executed.**
+- `PROJECT_LEARNINGS.md` — **162 learnings**; #158–#162 are this session's. `CLAUDE.md:99` updated.
+
+**Gotchas:**
+1. **The seventh trim is probably NEXT SESSION — but do not trim on this sentence.** This file is
+   **1,328** lines with this record, measured after writing it (re-measured once after I typed 1,269
+   from projection instead of from `wc -l` — the defect this project reports more than any other,
+   #105/#154). Against `CLAUDE.md`'s **1,500** trigger that is **172** lines of headroom, and the
+   last four records cost 230-294 lines each, so **Session 241 very likely arrives over the trigger
+   and is the seventh trim.** **Re-measure at Phase 0 anyway.** Two commits always, cut to ≤1,050, never below the 4-record floor, and re-derive
+   the copy list rather than trusting any inherited one.
+2. **All six shard proofs must be re-run by any session that edits `BACKLOG.md`,
+   `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`.** The newest proof's `L8` reads all four
+   **live**, so an ordinary docs edit can turn it red. This session edited two of them; all six were
+   run and are green. `for f in docs/architecture-history/*.verify.sh; do bash "$f"; done`.
+3. **`mkdocs build --strict` fails at `HEAD`, by design — do NOT file it.** `docs/index.md` is a
+   meta-refresh redirect and `mkdocs.yml` sets `validation.links.unrecognized_links: warn`
+   deliberately; the asset guard is the substitute (S237 gotcha 5). Reproduced identically at
+   `ab0de46`. Use plain `mkdocs build`.
+4. **`zsh` does not word-split unquoted expansions.** `git grep … -- $FILES` matches nothing, prints
+   nothing, and looks like a pass. Pass paths literally or `set --` them into `"$@"`. This bit me
+   this session while validating a criterion whose PASS condition is "no output".
+5. **`scripts/publish_wiki.sh:19`, `:24`, `:42` name `claims-model-starter` and that is CORRECT and
+   PERMANENT** (D-R5: GitHub's rename moves a URL, never a directory on your disk). Arm 2 of the new
+   criterion fires on them **on purpose** when run here — it is a criterion for the *clone*. Do not
+   "fix" them.
+6. **488 lines across 21 files still name `docs/wiki/claims-model-starter` and must stay.** They are
+   genuine dated records that named a path which was correct when written. Only banners and the
+   `CHANGELOG.md` preamble were present-tense navigation. Do not widen this into a sweep.
+7. **Still zsh, and `grep` is still a `ugrep --ignore-files` wrapper.** `command grep` or `git grep`
+   for anything load-bearing. Single-quote every heredoc delimiter.
+8. **`gh issue list` is empty and that is expected** — the tracker is not in use. `BACKLOG.md`
+   governs, now **16 items**, and its plain-language index at the top is written for the operator.
+   Both sides were counted this session: 16 headings, 16 rows.
+9. **Session 238's record is an abandoned claim, annotated, and must stay that way.** It is the
+   evidence a ghost session happened. Do not tidy it away.
 
 ### What Session 239 Did
 **Deliverable:** **The sixth lossless trim.** Sessions 235 → 232 are in a new write-once shard;
