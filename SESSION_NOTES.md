@@ -186,14 +186,35 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 239 Did
+**Deliverable:** The **sixth lossless trim** of this file — archive the oldest records into a new
+write-once shard under `docs/architecture-history/`, with its own `.verify.sh` proof carrying
+L0–L11 forward from the fifth trim, and re-derive the copy list with `git grep -l 'SESSION_NOTES-'`
+rather than inheriting the fifth trim's. (IN PROGRESS)
+**Started:** 2026-08-24 02:49 UTC
+**Status:** Session claimed. Work beginning. **The trigger is measured, not projected:** this file
+is **1,765** lines at Phase 0 against `CLAUDE.md`'s **1,500**-line trigger — S237's gotcha 6
+predicted exactly this and Phase 0 confirmed it by measurement. Two commits always: this claim
+first, the trim second (no record edit in it), close-out third.
+
 ### What Session 238 Did
 **Deliverable:** Dispose of the two blocked operator decisions (Session 237's what's-next item 1)
 — the archive-banner ruling covering 23 dead in-repo pointers, and the C4/C5 clone-independence
-criterion restatement. (IN PROGRESS)
+criterion restatement. (ABANDONED — no deliverable produced.)
 **Started:** 2026-08-22 20:17 UTC
 **Status:** Session claimed. Work beginning. Both items are `BACKLOG.md` `⚠ OPERATOR DECISION`
 entries where the ruling is the work and the edit is minutes; every filed figure is re-derived
 before the rulings are put, per learning #105 and both items' own "do not inherit" instruction.
+
+**Outcome: ABANDONED, annotated by Session 239 on 2026-08-24.** `e52e88e` — this stub — is the
+only commit Session 238 ever made, and it was never pushed. Measured at Session 239's Phase 0:
+`git log --oneline 61aee5b..HEAD` printed exactly one line — this stub — and `git rev-parse HEAD`
+was still `e52e88e`, so no work commit and no close-out ever followed it; `git status` was clean,
+so no partial edit was left in the tree either. **Nothing was lost and nothing needs recovering**; the two `⚠ OPERATOR
+DECISION` items it claimed are untouched and still stand in `BACKLOG.md`. This stub is left in
+place rather than overwritten, because it is precisely the trace Phase 1B exists to leave
+(FM #14) — the record of a session that claimed and then vanished. Session 239 claimed a new
+number instead of reusing this one for the same reason.
 
 ### What Session 237 Did
 **Deliverable:** **The published tutorial site is styled again — proved in a browser, not announced.**
