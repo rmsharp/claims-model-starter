@@ -47,7 +47,7 @@ rows below it are the smaller residue that closing it exposed.
 | No circuit breaker | A run failing for a systemic reason grinds on sample after sample. The retry added in Session 221 tripled the SQL/QC worst case to **~7.5 hours of billed nothing**, and Session 225 added the same tripling to the governance block — so the figure in the item below now **understates** it. | Small. Should abort after ~5 consecutive total failures. |
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
-| `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives, Session 228 a third, Session 231 a fourth and Session 235 a fifth** (933, 790 and 976 lines) — the four newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
+| `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives, Session 228 a third, Session 231 a fourth, Session 235 a fifth and Session 239 a sixth** (933, 790, 976 and 1,057 lines) — the five newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
 | The wiki publisher can erase the public wiki | The script that publishes the wiki mirrors a source directory with delete-what-is-missing semantics, and checks only that the directory **exists** — not that anything is in it. An empty source publishes an empty wiki, unattended, from a commit hook. | Small. Bundle with the row below. |
 | The publish hook stays silent when it declines to publish | The hook decides whether to publish by matching a path prefix. A stale prefix, or any merge commit, makes it exit successfully having done nothing — and say nothing. | Small. Bundle with the row above. |
 | Two finished plans still sit in the active-plans folder | `httpx-adapter-migration.md` was fully executed but never archived — and `repository-rename.md` went EXECUTED in the very commit that filed this item, which is the identical case and the heavier one. | Small, but moving either re-points every citation of its path — sweep first, and rule on both together. |
@@ -461,11 +461,12 @@ upstream in a repository this project does not own.
 
 `docs/architecture-history/SESSION_NOTES-through-S216.md` is **24,564 record lines** (24,590 total). An
 agent `Read` of it truncates at 2,000 lines with **no error and no missing-data marker** — the exact
-defect the trim was scoped to remove, relocated rather than eliminated. **Sessions 224, 228, 231 and 235 widened this:**
-there are now **five** unwatched shards. The second, `SESSION_NOTES-S220-through-S217.md` (804 lines), the
+defect the trim was scoped to remove, relocated rather than eliminated. **Sessions 224, 228, 231, 235 and 239 widened this:**
+there are now **six** unwatched shards. The second, `SESSION_NOTES-S220-through-S217.md` (804 lines), the
 third, `SESSION_NOTES-S224-through-S221.md` (933 lines), the fourth,
-`SESSION_NOTES-S227-through-S225.md` (790 lines), and the fifth,
-`SESSION_NOTES-S231-through-S228.md` (976 lines), are all under the cap today, so they read
+`SESSION_NOTES-S227-through-S225.md` (790 lines), the fifth,
+`SESSION_NOTES-S231-through-S228.md` (976 lines), and the sixth,
+`SESSION_NOTES-S235-through-S232.md` (1,057 lines), are all under the cap today, so they read
 whole — but they are unwatched for the same reason, and being under the cap is a property of a cut's size,
 not a protection. Every future trim adds another unwatched path. (The 924 figure this item carried for the
 third shard was wrong; 933 is the measured `wc -l`.) Verified: `READ_CAP_WATCHED`

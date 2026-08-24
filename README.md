@@ -126,9 +126,11 @@ docs/architecture-history/              # archived plans (concept-era + delivere
   SESSION_NOTES-S227-through-S225.md.verify.sh  # same, for the fourth trim; adds L8 (the copies outside every earlier proof) and L9 (write-once for all four shards)
   SESSION_NOTES-S231-through-S228.md    # frozen SESSION_NOTES records, Sessions 231->228 (grep it; do not Read it)
   SESSION_NOTES-S231-through-S228.md.verify.sh  # same, for the fifth trim; adds L10 (write-once for the ancestor PROOFS) and L11 (the retention rule itself)
+  SESSION_NOTES-S235-through-S232.md    # frozen SESSION_NOTES records, Sessions 235->232 (grep it; do not Read it)
+  SESSION_NOTES-S235-through-S232.md.verify.sh  # same, for the sixth trim; adds L12 (every size figure the trim states, held against a measurement)
 SESSION_RUNNER.md                       # per-session operating procedure
 SAFEGUARDS.md                           # commit discipline and blast-radius rules
-SESSION_NOTES.md                        # session-by-session continuity log (newest 4 sessions; older in the five shards above)
+SESSION_NOTES.md                        # session-by-session continuity log (newest 4 sessions; older in the six shards above)
 ```
 
 ## Getting started
