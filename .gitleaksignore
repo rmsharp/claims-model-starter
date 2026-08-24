@@ -1,4 +1,6 @@
-# gitleaks allowlist — Phase B2 (Import readiness), docs/planning/enterprise-migration.md:847-887
+# gitleaks allowlist — Phase B2 (Import readiness), docs/planning/enterprise-migration.md
+#   (find it with: grep -n '^### Phase B2' docs/planning/enterprise-migration.md — the line
+#    range this comment used to cite had already drifted, as line numbers in that plan always do)
 #
 # This file suppresses fingerprints that gitleaks' *default* ruleset actually
 # flags on a full-history scan of this repository as of 2026-07-28

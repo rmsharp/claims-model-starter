@@ -932,8 +932,10 @@ self-reference, is a miss — fix it here.
 > independence-grep sites are out of scope here too — they are flagged to the operator in
 > `BACKLOG.md`, and §8 says they are not this plan's to rewrite. *(Session 234: that flag lived
 > inside the rename item this phase deletes, so Phase 5 **re-filed it as its own `BACKLOG.md`
-> item** — `grep -n 'clone-independence' BACKLOG.md` — rather than letting an open operator
-> decision die with the item it happened to be filed under. See §9.2.)*
+> item** rather than letting an open operator decision die with the item it happened to be filed
+> under. See §9.2. **Session 240: ruled and executed** — the criterion is restated in
+> `enterprise-migration.md` §2.6 and the backlog item is closed, so that grep now returns nothing;
+> see dragon 1's RULED note.)*
 
 Then:
 - **`BACKLOG.md`: delete the rename item's rows; do not substitute them.** 17 of its 18 hits are the
@@ -1057,8 +1059,20 @@ another plan's acceptance criteria beyond the five URL lines above.**
 > restated as *"no repository name **other than the clone's own**"*, not *"no name at all"*.
 > **That restatement is an operator ruling and is NOT this plan's to make** (§8, first bullet). The
 > flag, with these measurements, is filed in `BACKLOG.md`. *(Session 234: re-filed as a
-> standalone item when Phase 5 deleted the rename item — `grep -n 'clone-independence' BACKLOG.md`.
-> It is still open and still needs the operator's ruling.)*
+> standalone item when Phase 5 deleted the rename item — rather than letting an open operator
+> decision die with the item it happened to be filed under.)*
+>
+> **RULED, 2026-08-24 (Session 240) — this dragon is closed, and the recommendation two paragraphs
+> above must NOT be executed.** The operator ruled exactly the restatement this note proposes: *"no
+> repository name other than the clone's own"*, scoped to the four §2.6 coupling files. It is
+> written into `enterprise-migration.md` §2.6 as a **two-arm** criterion — arm 1 the unchanged
+> repository-wide personal-account check, arm 2 the scoped foreign-repository-name check — and both
+> arms are now inlined at the C4 and C5 verify blocks. Anchor on content, not on the line numbers
+> quoted above: `grep -n 'clone-independence criterion (restated' docs/planning/enterprise-migration.md`.
+> The backlog item is closed and the grep for it now returns nothing. **The re-derived figures at
+> that cut were 1,103/176 and 357/269**, not the 1,986/187 and 336/74 recorded above — the drop is
+> benign and worth knowing: trims 4-6 relocated session history into `docs/architecture-history/`,
+> which the criterion's own exclusion filter drops. The conclusion never depended on the digits.)*
 
 ### Dragon 2 — The wiki publisher's own guards all fail CLOSED. Verified, not assumed — and narrower than it sounds (dragons 3 and 4).
 

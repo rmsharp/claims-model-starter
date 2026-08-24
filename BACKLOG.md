@@ -51,7 +51,6 @@ rows below it are the smaller residue that closing it exposed.
 | The wiki publisher can erase the public wiki | The script that publishes the wiki mirrors a source directory with delete-what-is-missing semantics, and checks only that the directory **exists** — not that anything is in it. An empty source publishes an empty wiki, unattended, from a commit hook. | Small. Bundle with the row below. |
 | The publish hook stays silent when it declines to publish | The hook decides whether to publish by matching a path prefix. A stale prefix, or any merge commit, makes it exit successfully having done nothing — and say nothing. | Small. Bundle with the row above. |
 | Two finished plans still sit in the active-plans folder | `httpx-adapter-migration.md` was fully executed but never archived — and `repository-rename.md` went EXECUTED in the very commit that filed this item, which is the identical case and the heavier one. | Small, but moving either re-points every citation of its path — sweep first, and rule on both together. |
-| ⚠ The enterprise fork's "is the clone independent?" check needs an operator ruling | The check that proves an enterprise copy carries no trace of this account greps for four name forms. The rename made one of them stop matching the case the check was built for. Both repairs anyone has proposed can never return zero, so the check has to be **restated**, and that is a call only the operator can make. | **Operator ruling.** The edit is minutes; the decision is the work. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
 | A bad `--db-url` fails silently | Filed Session 223. `connect()` builds a message naming the exact cause; the next line catches the error **without binding it** and throws the message away. The run then reports `COMPLETE` and exits 0 with **every quality check unexecuted**. A typo'd port, an unexported shell variable, and a genuine warehouse outage produce byte-identical reports. | Pre-existing and wider than the S223 fix — **not** a reason to revert it. The cheapest two-thirds is small; the third option changes when a pipeline run is allowed to "succeed" and needs an operator ruling. |
@@ -542,45 +541,6 @@ same commit that filed this item, so it is the identical case — a delivered pl
 active-plans folder. It is the heavier of the two: it is cited from `CLAUDE.md`, `SESSION_NOTES.md`,
 `enterprise-migration.md` and its own §7.2 allowlist, and **moving it would change a path that its own
 completion criterion matches on**. Rule on both together, or on neither.
-
-### ⚠ OPERATOR DECISION — the C4/C5 clone-independence criterion needs restating, and both proposed repairs are unsatisfiable
-
-**Re-filed Session 234 (Phase 5). Raised by Session 229 as flag 1 against
-[`docs/planning/enterprise-migration.md`](docs/planning/enterprise-migration.md); it was filed
-inside the rename item, which Phase 5 deleted. It is still open, and it is not the rename plan's
-call to make** (`repository-rename.md` §8 and dragon 1).
-
-The criterion sits at `enterprise-migration.md:363`, `:1319` and `:1363` — **anchor on content, not
-on those numbers, which drift every session**: `grep -n "a narrower pattern can pass"
-docs/planning/enterprise-migration.md`. It greps
-`'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter'` over the enterprise clone
-and expects **0**. Its own comment says why it must stay wide: *"a narrower pattern can pass '→ 0'
-while a hardcoded `claims-model-starter` string survives in the clone's publish_wiki.sh."*
-
-**After the rename that hardcoded string is `model_project_constructor.wiki`, which no alternative
-matches.** The URL alternatives still fire, so the check degrades rather than collapses — what it
-stops catching is a bare, un-URL'd repository name, which is precisely the case its own comment
-names.
-
-- Adding `model_project_constructor` as a fifth alternative is **unsatisfiable: 1,980 lines across
-  187 files** — it is the import package, the `src/` tree and the distribution stem.
-- Dragon 1's own recommended repair — scope by path to `scripts/`, `.githooks/`, `mkdocs.yml` and
-  `tests/` — is **also unsatisfiable: 350 hits, 284 of them legitimate
-  `from model_project_constructor…` imports in `tests/`.**
-- **Both figures were measured by Session 229 on 2026-08-20 and are quoted as of then, not as of
-  now** — four commits and two rename phases have landed since, and dragon 1 records a third reading
-  (1,916/183) from Session 226. **Re-derive before ruling; do not inherit** (learning #105). The
-  numbers are quoted because their *order of magnitude* is the argument — every candidate pattern
-  matches thousands of legitimate lines — and no ruling turns on the third digit. A criterion that can never return 0 is
-  not a criterion, which is the objection dragon 1 raises against the fifth-alternative fix and
-  which applies to its own proposal with a wider margin.
-- **The path set that does work** is four of the files in `enterprise-migration.md` §2.6's
-  host-and-identity coupling table — `scripts/publish_wiki.sh`, `.githooks/post-commit`,
-  `mkdocs.yml`, `tests/test_wiki_no_line_citations.py` — the four where a hardcoded repository name
-  is always a defect. (§2.6's table is longer than four; the rest couple on other literals.) Post-Phase-4 that set legitimately contains ~16 hits of the **new** name, so the criterion
-  has to be restated as **"no repository name other than the clone's own"**, not "no name at all".
-
-**The ask:** rule on that restatement. **Cost: the ruling is the work; the edit is minutes.**
 
 ### Enterprise migration (`docs/planning/enterprise-migration.md`)
 

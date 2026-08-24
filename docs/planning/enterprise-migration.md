@@ -364,6 +364,58 @@ git grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model
   | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'
 ```
 
+**The clone-independence criterion (restated — operator ruling, 2026-08-24, Session 240).** The
+rediscovery command above and the C4/C5 *criterion* are two different things, and conflating them is
+how the criterion broke at the rename. The command above is a **discovery aid over this repository**:
+it finds coupling points to fix, and has no pass/fail threshold. The criterion below is the
+**pass/fail check on the enterprise clone**, and it is what C4 and C5 assert `→ 0` against.
+
+*Why it had to be restated.* The old single-pattern criterion's own comment states the danger it
+exists to prevent: *"a narrower pattern can pass '→ 0' while a hardcoded `claims-model-starter`
+string survives in the clone's `publish_wiki.sh`."* After Phase 4 of the rename that hardcoded string
+is `model_project_constructor.wiki`, which **no alternative in the pattern matches** — so the
+criterion went silent on precisely the case its own comment names. Neither proposed repair is
+satisfiable: adding `model_project_constructor` as a fifth alternative matches **1,103 lines across
+176 files** (re-derived 2026-08-24 — it is the import package, the `src/` tree and the distribution
+stem), and scoping by whole directories matches **357 lines**, **269** of them legitimate
+`from model_project_constructor…` imports in `tests/`. *A criterion that can never return 0 is not a
+criterion.* The ruling: **"no repository name other than the clone's own"**, scoped to the four files
+in the table above where a hardcoded repository name is always a defect. **Two arms; both must hold.**
+
+```bash
+# The clone's own repository name — unchanged from the source unless the fork renames.
+CLONE_NAME=model_project_constructor
+
+# Arm 1 — no PERSONAL-ACCOUNT identity, repository-wide. Unchanged from the original criterion,
+# and it still carries the LEGACY repository name: a sanitised clone holds no trace of it
+# anywhere, so this arm stays satisfiable and stays wide.
+git -C <enterprise-clone> grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter' -- . \
+  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0
+
+# Arm 2 — no REPOSITORY NAME but the clone's own, in the four coupling files above, where a
+# hardcoded repository name is always a defect. `-o` matches per OCCURRENCE, not per line, so a
+# line carrying both the clone's own name and a foreign one cannot hide behind the exclusion.
+git -C <enterprise-clone> grep -h -o -I -iE 'claims-model-starter|model[-_]project[-_]constructor' -- \
+      scripts/publish_wiki.sh .githooks/post-commit mkdocs.yml tests/test_wiki_no_line_citations.py \
+  | sort -u | grep -ivxF "$CLONE_NAME"                                                          # → 0
+```
+
+Arm 2 prints the **set of foreign repository names present**, so a failure names the offender instead
+of a line number. **It was validated against the live defect before being written into this plan.**
+Run over *this* repository with `CLONE_NAME=model_project_constructor` it returns
+`claims-model-starter`, from `scripts/publish_wiki.sh:19`, `:24` and `:42` — exactly the case the old
+criterion's comment names, and exactly the case the old criterion had stopped catching. In *this*
+repository those three lines are correct and **permanent** (rename plan D-R5: GitHub's rename moves a
+URL, never a directory on your disk); in the **clone** they are the defect. That asymmetry is the
+whole reason this criterion belongs on the clone and never on the original.
+
+**Two execution notes, both about passing vacuously.** Pass the four paths **literally**, never
+through an unquoted shell variable — the operator's shell is `zsh`, which does not word-split
+unquoted parameter expansions, so `-- $FOUR` matches nothing, prints nothing, and the arm reports a
+clean pass having checked no file. (Observed while validating this criterion.) And arm 2's
+alternation is a **closed list of repository names**, not a wildcard: extend it if the fork
+introduces a further name, or it will not see one.
+
 Two behaviours the plan must build on:
 
 - **`rsync -a --delete` (`publish_wiki.sh:92`) is a destructive one-way sync.** Any page edited
@@ -1316,8 +1368,13 @@ git -C <enterprise-clone> rev-parse --is-bare-repository # → false (a working 
 git ls-remote --tags <enterprise-remote>                 # → both tags
 git -C <new-wiki-clone> log --oneline | wc -l            # → 33
 git -C <new-wiki-clone> ls-files | wc -l                 # → 23
+# clone independence — BOTH arms of the §2.6 restated criterion; neither replaces the other
 git -C <enterprise-clone> grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter' -- . \
-  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0 (full §2.6 pattern — do not narrow it)
+  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0  (arm 1)
+CLONE_NAME=model_project_constructor            # the clone's OWN name; unchanged unless the fork renames
+git -C <enterprise-clone> grep -h -o -I -iE 'claims-model-starter|model[-_]project[-_]constructor' -- \
+      scripts/publish_wiki.sh .githooks/post-commit mkdocs.yml tests/test_wiki_no_line_citations.py \
+  | sort -u | grep -ivxF "$CLONE_NAME"                                                          # → 0  (arm 2)
 WIKI_CLONE= <enterprise-clone>/scripts/publish_wiki.sh; echo "exit=$?"   # → non-zero (fails closed)
 git -C ~/Development/claims-model-starter.wiki remote get-url origin    # → still the ORIGINAL's wiki, under its
 #   current name (…/model_project_constructor.wiki.git). The local DIRECTORY keeps the old name — D-R5.
@@ -1358,10 +1415,16 @@ and recorded for the clone.
 **Verify:**
 
 ```bash
-# clone independence — full §2.6 pattern; do not narrow it (a narrower pattern can pass "→ 0"
-# while a hardcoded `claims-model-starter` string survives in the clone's publish_wiki.sh)
+# clone independence — BOTH arms of the §2.6 restated criterion (operator ruling, Session 240).
+# Arm 1 alone can pass "→ 0" while a hardcoded FOREIGN repository name survives in the clone's
+# publish_wiki.sh; that is what the single-pattern form stopped catching after the rename.
+# Pass the four paths LITERALLY — zsh does not word-split "-- $VAR", and the arm then passes vacuously.
 git -C <enterprise-clone> grep -n -I -iE 'rmsharp|rmsharp\.github\.io|github\.com/rmsharp|claims-model-starter' -- . \
-  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0
+  | grep -vE '^(SESSION_NOTES|CHANGELOG|PROJECT_LEARNINGS)\.md|^docs/architecture-history/'   # → 0  (arm 1)
+CLONE_NAME=model_project_constructor            # the clone's OWN name; unchanged unless the fork renames
+git -C <enterprise-clone> grep -h -o -I -iE 'claims-model-starter|model[-_]project[-_]constructor' -- \
+      scripts/publish_wiki.sh .githooks/post-commit mkdocs.yml tests/test_wiki_no_line_citations.py \
+  | sort -u | grep -ivxF "$CLONE_NAME"                                                          # → 0  (arm 2)
 WIKI_CLONE= <enterprise-clone>/scripts/publish_wiki.sh; echo "exit=$?"        # → non-zero (fails closed)
 
 # original non-regression — none of this should differ from A4's verified state
