@@ -48,8 +48,7 @@ rows below it are the smaller residue that closing it exposed.
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
 | `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives, Session 228 a third, Session 231 a fourth, Session 235 a fifth and Session 239 a sixth** (933, 790, 976 and 1,057 lines) — the five newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
-| The wiki publisher can erase the public wiki | The script that publishes the wiki mirrors a source directory with delete-what-is-missing semantics, and checks only that the directory **exists** — not that anything is in it. An empty source publishes an empty wiki, unattended, from a commit hook. | Small. Bundle with the row below. |
-| The publish hook stays silent when it declines to publish | The hook decides whether to publish by matching a path prefix. A stale prefix, or any merge commit, makes it exit successfully having done nothing — and say nothing. | Small. Bundle with the row above. |
+| A clean `git merge` still publishes nothing | Closing the two items above (Session 241) showed the filed diagnosis was incomplete. `post-commit` now reads merge commits correctly, but git only runs `post-commit` for a merge **you** finish with `git commit` after a conflict. For a clean `git merge` or `git pull` git runs **`post-merge`**, and this repository installs no such hook — so a merge or pull that carries a wiki change still publishes nothing, silently. | Small: a `post-merge` hook using `ORIG_HEAD..HEAD` (a fast-forward pull moves many commits, so inspecting `HEAD` alone is not enough). Verified, and pinned red-if-git-changes by `test_a_clean_merge_never_reaches_this_hook`. |
 | Two finished plans still sit in the active-plans folder | `httpx-adapter-migration.md` was fully executed but never archived — and `repository-rename.md` went EXECUTED in the very commit that filed this item, which is the identical case and the heavier one. | Small, but moving either re-points every citation of its path — sweep first, and rule on both together. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
 | `probe_information_schema` says it "never raises" | Filed Session 223. A docstring promises graceful degradation; a third of the function body sits outside the `try` that would deliver it. Same defect class as the one fixed in Session 223. | Small, one file. Half of it is provable by inspection; half is defence-in-depth. |
@@ -492,34 +491,28 @@ adopter that ever shards a ledger, and is the shape the dashboard's own comment 
 the methodology repo. Note (b) also fixes the same blind spot for the 5 fleet projects that already
 have shards under `docs/archive/`.
 
-### `publish_wiki.sh` will wipe and push the live wiki from an empty source directory — unattended, from a git hook
+### A clean `git merge` or `git pull` carrying a wiki change still publishes nothing
 
-**Filed Session 234 (Phase 5), from `repository-rename.md` §8.1 finding 2 (dragon 3). Re-verified at `HEAD`.**
+**Filed Session 241, from executing the two items this replaces.** Not a regression — a gap their
+diagnosis did not reach, found while proving the fix.
 
-`scripts/publish_wiki.sh:92` is `rsync -a --delete --exclude='.git/' "$SOURCE_DIR/" "$WIKI_CLONE/"`,
-followed by `git add -A` (`:94`), a commit (`:102`) and `git push origin master` (`:104`). Its guards
-check tools on PATH (`:46-51`), source directory **exists** (`:53-56`), clone exists (`:58-69`),
-clone remote URL (`:71-77`), clone on `master` (`:79-84`) and clone clean (`:86-90`). `:53` tests
-`[ ! -d "$SOURCE_DIR" ]` — **existence, not non-emptiness**. An existing-but-empty or
-half-populated `docs/wiki/model_project_constructor/` passes every guard, `rsync --delete` empties
-the clone, and the push publishes the deletion. It runs **unattended from `.githooks/post-commit`**.
+Session 234 filed `.githooks/post-commit` as blind to merge commits, and it was: `git diff-tree
+--no-commit-id --name-only -r HEAD` prints nothing for a merge. `72b5718` fixed that with
+`--diff-merges=first-parent` (`-m --first-parent` is **not** the fix — `diff-tree` ignores
+`--first-parent` when `-m` is given and emits the union over all parents).
 
-**Fix:** one assertion before `:92` — count `*.md` under `SOURCE_DIR` and abort below a floor.
-**Cost: small.** Bundle with the item below — same subsystem, same session.
+**But most merges never reach `post-commit` at all.** Verified in a synthetic repo with both hooks
+installed as echo stubs: a clean `git merge --no-ff` fires **`post-merge`** only; `post-commit` fires
+for a merge just when the user finishes a *conflicted* merge with `git commit`. This repository
+installs no `post-merge` hook, so a clean merge or `git pull` that carries a wiki change publishes
+nothing, silently — the same fail-open the two closed items were about, one hook over.
 
-### `.githooks/post-commit` fails open — a stale prefix or a merge commit silently publishes nothing
+**Fix:** add `.githooks/post-merge`. It must diff **`ORIG_HEAD..HEAD`**, not `HEAD` — a fast-forward
+`git pull` advances many commits at once and `diff-tree HEAD` sees only the tip. Guard the squash
+case (`$1 = 1`), where no commit was created. **Cost: small.**
 
-**Filed Session 234 (Phase 5), from `repository-rename.md` §8.1 finding 3 (dragon 4). Re-verified at `HEAD`.**
-
-`.githooks/post-commit:18` decides whether to publish with
-`git diff-tree --no-commit-id --name-only -r HEAD | grep -q '^docs/wiki/model_project_constructor/'`.
-Two ways it exits 0 having done nothing, and says nothing either time: the prefix goes **stale**
-(exactly the hazard Phase 4 had to move it through), and **any merge commit** — `diff-tree` on a
-merge prints nothing without `-m`/`-c`, which is why every phase of the rename was pinned to a
-direct commit on `master` (plan constraint K7). Either way wiki publishing stops quietly.
-
-**Fix:** announce the decision not to publish instead of exiting 0 in silence. **Cost: small.**
-Bundle with the item above.
+**Already pinned:** `tests/scripts/test_wiki_publishing.py::test_a_clean_merge_never_reaches_this_hook`
+asserts the publisher does *not* run, so the gap is visible and the test reddens if git ever changes.
 
 ### Two delivered plans are still filed under `docs/planning/` — `httpx-adapter-migration.md` and `repository-rename.md`
 
