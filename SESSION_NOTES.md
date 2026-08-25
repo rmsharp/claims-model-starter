@@ -319,6 +319,12 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 245 Did
+**Deliverable:** The **eighth lossless trim** of `SESSION_NOTES.md` (IN PROGRESS) — the live file is
+1,642 lines, over `CLAUDE.md`'s 1,500-line trigger, which Session 244 measured and predicted.
+**Started:** 2026-08-25 (UTC).
+**Status:** Session claimed. Work beginning. Nothing trimmed yet; this commit contains only this stub.
+
 ### What Session 244 Did
 **Deliverable:** **Operator ruling (B), executed.** `docs/methodology/PROJECT_CONVENTIONS.md` §2's
 CHANGELOG cadence gate now includes `.github/workflows/`, and the `CHANGELOG.md` entry Session 243
