@@ -319,6 +319,14 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 244 Did
+**Deliverable:** Execute **operator ruling (B)**, given at the close of Session 243: amend
+`docs/methodology/PROJECT_CONVENTIONS.md` §2's CHANGELOG cadence gate to bring `.github/workflows/`
+inside it, and add the `CHANGELOG.md` entry Session 243 then owes under the amended gate (dated by
+its landing commit `9522bbd`, append-only per §1). (IN PROGRESS)
+**Started:** 2026-08-25 (UTC)
+**Status:** Session claimed. Work beginning.
+
 ### What Session 243 Did
 **Deliverable:** The **`uv.lock` / Publish Tutorial `paths:` filter** decision — presented as a
 decidable question with re-derived measurements, ruled by the operator, and **executed**. This is
