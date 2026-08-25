@@ -320,12 +320,229 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 243 Did
-**Deliverable:** The **`uv.lock` / Publish Tutorial `paths:` filter** decision (Session 242's
-what's-next #1; filed as Session 237 gotcha 4 and item 3, re-listed by Sessions 239, 240 and 241).
-Present the judgement as a decidable question with re-derived measurements — the way Session 240
-presented Decisions A and B — then execute the operator's ruling. (IN PROGRESS)
-**Started:** 2026-08-24 (UTC)
-**Status:** Session claimed. Work beginning.
+**Deliverable:** The **`uv.lock` / Publish Tutorial `paths:` filter** decision — presented as a
+decidable question with re-derived measurements, ruled by the operator, and **executed**. This is
+Session 242's what's-next #1, filed as Session 237 gotcha 4 and re-listed by Sessions 239, 240, 241
+and 242. No other work was started.
+
+**Started / completed:** 2026-08-24 (UTC). **Commits: three** — `fc49ec5` (Phase 1B claim, alone),
+`9522bbd` (the two-line ruling), and this close-out. **Operator this session:** *"go"*, then *"1"*,
+then the ruling **(a) + (h)** in one exchange — the S240 pattern held, sixth time of asking.
+
+**`BACKLOG.md` 15 → 16 items**, reconciled by counting both sides: **16 item headings, 16 index
+rows.** **No `CHANGELOG.md` entry** — `PROJECT_CONVENTIONS.md` §2's cadence gate enumerates `src/`,
+`packages/`, `scripts/` and `tests/`, and this session touched only `.github/workflows/`. See the
+open question at the end of the self-assessment; I followed the written gate rather than re-litigate
+it, which is what the S223 ruling instructs.
+
+#### The finding: the premise that deferred this five times was false, and one command shows it
+
+Filed (S237, carried by four sessions after it): *"adding `uv.lock` to the filter would fire a public
+deploy on every dependency bump, and that is an outward-facing frequency decision."*
+
+**Root `pyproject.toml` is already in the filter**, and **13 of 13** `uv.lock` commits in this
+repository's 496 also touched it. Every dependency bump already fired a public deploy. The frequency
+cost the item was deferred over was **zero**, and had been the whole time.
+
+| measurement | value | how |
+| --- | --- | --- |
+| commits touching `uv.lock` / of which lock-only | **13** / **0** | `git log --full-history -- uv.lock`, root-anchored `diff-tree -m -r` |
+| filter simulation over full history, before → after | **45 → 45**, **0 newly firing** | GitHub glob semantics (`*` does not cross `/`), per-commit, 496 commits |
+| real deploys (not a commit proxy) | **13** in 123 days = **3.22/mo**, all `push`, all `success`, **max gap 38.9 d** | `gh run list --workflow publish-tutorial.yml` |
+| theme version at every lock revision | **9.7.6**, unchanged since 2026-04-20 | `git show "${c}:uv.lock"` per revision |
+| a lock-only bump available today | **yes** — PyPI has **9.7.7**, lock pins 9.7.6 | `curl pypi.org/pypi/mkdocs-material/json` |
+| automation that could produce one unattended | **none** — no dependabot, no renovate, no `uv lock` in CI | `find .github -type f`; `git grep 'uv lock' -- .github scripts` |
+| suite | **1313 passed, 9 skipped, 97.98%** — unchanged from S241/S242 | `.venv/bin/python -m pytest -q` |
+
+**Two honest qualifications I put in front of the operator rather than burying.** The zero is partly
+**circular** — it holds because this repo has never done a lock-only re-lock, and that absence *is*
+the gap S237 filed. And it is **empirical, not structural**: GitHub filters a push on the net
+`before..after` diff, and `f94e211..5c73ed0` in this repo changed `uv.lock` with `pyproject.toml`
+byte-identical at both ends (blob `2070373c`). A lock-only *push* is constructible here.
+
+#### What shipped — (a) + (h), two changes, `9522bbd`
+
+- **(a)** `uv.lock` joins `paths:` (7 entries now), with the measurement in a comment beside it so the
+  next reader does not re-derive it.
+- **(h)** `uv sync --extra docs` → `uv sync --extra docs --locked`. **Without this the trigger is a
+  half-truth:** a bare `uv sync` may **re-resolve** at deploy time, so `uv.lock` governed the
+  published theme only while it and `pyproject.toml` happened to agree. `uv lock --check` exits 0
+  today, so it costs nothing now and turns a future drift into a red job instead of a silent
+  re-resolve. Learning [#183](PROJECT_LEARNINGS.md).
+
+#### A sibling gap that measurement CLOSED instead of filing
+
+`packages/data-agent/pyproject.toml` is invisible to the filter — GitHub patterns are root-anchored,
+so `pyproject.toml` does not match it. The verification fan-out flagged this as *"worst case it
+doubles the deploy rate"*. **Measured, it is not an item:** 7 commits touch it, **6 already fire**,
+the 1 that does not is `aca858a` (2026-04-14) which **predates the workflow** (created 2026-04-20),
+and the file declares **no docs dependencies at all**. Any resolution-affecting change to it moves
+`uv.lock` — which now fires. **Adding `uv.lock` closed this gap as a side effect.** Filing it would
+have been a false backlog item, which learning #162 says costs more than the check saved.
+
+#### One item filed, and it is the half of the option the operator did not take
+
+**The docs toolchain has no version ceiling** — `mkdocs-material>=9.0`, `mkdocs>=1.5`, neither
+bounded above. This is a **deliberate deferral**, not drift:
+`tutorial-renderer-migration-plan.md:291` risk #1 left the `<10` ceiling to a future session and
+`CHANGELOG.md:960` records the choice. It matters here specifically because `mkdocs.yml`'s
+`!/assets/` negation is load-bearing over the **theme's** static files, and that interaction already
+shipped an unstyled public site for four weeks (2026-07-27 → 2026-08-22). **This session de-risked
+it:** a major bump now fires a build and meets `check_site_assets.py` *before* `gh-deploy`, so it
+fails as a red job rather than as a silent unstyled publish. The ceiling is defence in depth.
+
+#### Verification — everything run, nothing reasoned about
+
+| check | result |
+| --- | --- |
+| YAML parses; `uv.lock` under `push.paths` | **7 entries**, `uv.lock` present; sync step is the `--locked` form |
+| `uv sync --extra docs --locked` | **exit 0**, `Checked 71 packages` — run in a scratch venv |
+| `mkdocs build` + `check_site_assets.py --require-css` | **both clean** — 3 pages, 19 refs, 1 stylesheet present |
+| repo `.venv` and `uv.lock` after all of it | **untouched** — `.venv` still carries the agents/dev extras, `uv.lock` unmodified |
+| filter simulator sanity probes | lock-only push `False`→`True`; `docs/planning/foo.md` and `packages/*/pyproject.toml` both `False` |
+| suite | **1313 passed, 9 skipped, 97.98%** — identical to S241/S242 |
+| **all seven shard proofs** | **GREEN**, before any edit and again after `BACKLOG.md` + `CLAUDE.md` |
+| `BACKLOG.md` reconciliation | **16 headings / 16 index rows**, counted on both sides |
+| no test reads the workflow | `git grep -ln 'publish-tutorial' -- tests/` → nothing |
+
+### Session 242 Handoff Evaluation (by Session 243)
+
+**Score: 10/10.** Second consecutive 10, and it earned it differently from S241's: S241 was accurate,
+S242 was accurate **and told me which of its own claims not to trust**.
+
+- **What's-next #1 named the task, the format AND the exchange count** — *"present it the way S240
+  presented Decisions A and B; one exchange."* I followed the S240 record literally and the ruling
+  came back in one message, as predicted. A handoff that names the *method* is worth more than one
+  that names the task.
+- **Gotcha 5 pre-empted wasted work.** *"Do not re-run the rejected staleness census: it measures
+  four where the truth is five."* I did not, and the reason was already written down.
+- **Gotcha 6 (`.venv/bin/python -m pytest`) was load-bearing on the first suite run.**
+- **Gotcha 4 was load-bearing.** I edited `BACKLOG.md` and `CLAUDE.md`, so all seven proofs had to
+  run; I ran them before *and* after. Its exact command worked verbatim.
+- **Gotcha 9 (`grep` is a `ugrep` wrapper) was load-bearing all session** — every path-matching
+  measurement here is exactly the load-bearing case, and `command grep` throughout.
+- **Its `#178` is what shaped the session's method.** *"An adversarial review belongs BEFORE the
+  commit."* I ran the verification fan-out **before** presenting to the operator, not after — and it
+  corrected three of my own numbers before the operator ever saw them. That is the learning working
+  one session after it was written.
+- **What's-next #4 was already overtaken, and S242 could not have known.** It said *"`master` is 11
+  commits ahead of `origin/master`"*; Phase 0 measured **0/0** after `git fetch`. Someone pushed
+  after S242 closed. This is the *third* consecutive session to record this exact pattern (S240's −1
+  on S239's push claim), which suggests the transferable fix is to stop putting a push count in a
+  handoff at all — it is the one number guaranteed to rot.
+- **Nothing in it was wrong.** The only thing I had to find myself is that the item it was handing me
+  had never been in `BACKLOG.md` — and that is a gap in the *project's* filing, not in the handoff.
+
+### Session 243 Self-Assessment
+
+**Score: 9/10.** The deferred decision is closed, the ruling is executed and verified end to end, the
+premise that blocked it for five sessions was falsified by measurement rather than argued away, and
+one candidate item was **measured out of existence** instead of filed. What holds it off 10 is that
+**three of my own numbers were wrong** when the verification fan-out re-ran them.
+
+**+** **I re-derived the premise instead of the scope.** Five sessions re-listed the objection; none
+tested it. One command shows root `pyproject.toml` was already in the filter. Learning [#179].
+**+** **I proved the "costs nothing" claim could have been non-zero.** The simulator's sanity probes
+show a lock-only push flips `False`→`True`, so 45→45 is a measurement rather than a stuck number.
+Learning [#181] — this is #159's discipline applied to a measurement rather than a check.
+**+** **I found the trigger/authority split and put it in the ruling** rather than shipping a
+one-line change whose comment would have been conditionally false. Learning [#183].
+**+** **I measured a flagged sibling gap out of existence** rather than filing it on a fan-out's
+estimate — 6 of 7 already fire, the 7th predates the workflow, the file declares no docs deps.
+**+** **I tested `--locked` and the whole pre-deploy path in a scratch venv**, per S237 gotcha 3, and
+verified afterwards that `.venv` and `uv.lock` were untouched rather than assuming it.
+**+** **I put the option space in front of the operator, not a yes/no** — including the two options
+(`(d)` alone, `(e)` cron) that are *worse* than doing nothing, with the reason each is worse.
+
+**−** **Three of my own measurements were wrong and a verifier caught them.** The commit count was
+**12, not 13** — `git log`'s default history simplification hid merge `ff04c02`, exactly where a
+lockfile lands (learning [#182]). I also asserted `uv.lock` "determines the deployed theme" before
+noticing the sync was bare, and I read `paths:` frequency as a per-commit property when GitHub
+evaluates the push. The headline survived all three; the supporting numbers did not.
+**−** **I nearly filed a non-item.** The `packages/*/pyproject.toml` gap went into my draft as a
+backlog entry on a fan-out's word before I measured it. #162 is a year old in this project and I
+still reached for the file-it reflex first.
+**−** **I typed a projected line count into the handoff and `wc -l` disagreed** — 1,352 against a
+real 1,457. Caught before commit, corrected in place, and disclosed rather than silently fixed; but
+this is the sixth consecutive session whose self-reported defect is a numeral typed instead of
+derived, and I had read that exact warning in `CLAUDE.md` earlier the same session.
+**−** **I did not question the filed premise until I was already measuring.** My first instinct on
+reading what's-next #1 was to price the frequency, not to ask whether the frequency existed. The
+finding came out of the fan-out's history lens, not out of my reading of the item.
+
+**Against the bar:** S240 found a criterion gone silent on the case its own comment named; S242 found
+an ancestor proof claiming a check it never implemented. This session's equivalent is the same
+species one level up — **an objection that had never been true, preserved for five sessions because
+a filed sentence reads as a completed analysis.** The transferable finding is [#179]: re-derive a
+deferral's *premise*, not its scope, before carrying it a third time.
+
+**An open question I am NOT deciding unilaterally.** `PROJECT_CONVENTIONS.md` §2's CHANGELOG cadence
+gate enumerates `src/`, `packages/`, `scripts/`, `tests/`. `.github/workflows/` is in none of them,
+so this session gets no entry — yet it changed when the **public site** publishes, which is
+outward-facing behaviour. The written gate governs and I followed it (the S223 ruling is explicit
+that the written rule wins over precedent). **If the operator wants CI/CD workflows inside the gate,
+that is a one-sentence amendment to §2** — and it should be ruled once rather than re-argued, which
+is exactly what the S223 ruling exists to prevent.
+
+**What's next.**
+
+1. **The `post-merge` hook** — now the oldest unblocked item, self-contained, no ruling needed. Diff
+   **`ORIG_HEAD..HEAD`**, not `HEAD` (a fast-forward pull moves many commits); guard the squash case
+   (`$1 = 1`). Already pinned red-if-git-changes by
+   `tests/scripts/test_wiki_publishing.py::test_a_clean_merge_never_reaches_this_hook`.
+2. **The two delivered plans under `docs/planning/`** — one ruling covers both; sweep referrers
+   first (`git grep -l 'httpx-adapter-migration'`), and note that archiving `repository-rename.md`
+   changes a path its own completion criterion matches on.
+3. **The docs version ceiling** (filed this session, `BACKLOG.md`) — 2 lines + `uv lock`, and the
+   lock refresh will now fire a deploy, which is correct and is the point. **Non-binding today.**
+4. **The CHANGELOG-gate question above** — one sentence from the operator, or leave it settled as-is.
+5. **The eighth trim is NOT due at Session 244 — it is due at 245.** This file is **1,466** lines
+   with this record, against `CLAUDE.md`'s **1,500** trigger: **34 lines of headroom**. I first wrote
+   **1,352** here from projection and `wc -l` said otherwise — the defect this project self-reports
+   more than any other (#105, #146, #148, #152, #154), caught before commit and recorded rather than
+   quietly corrected. **Do the arithmetic the way S241 fixed it:** a file exceeds the trigger only
+   *after* the next record is written, so **Session 244's Phase 0 will measure 1,466 — under the
+   trigger.** S244 writes its record (the last four cost 230-294 lines each) landing near 1,690-1,750,
+   and **Session 245's Phase 0 is the one that reads over 1,500 and fires the eighth trim.**
+   **Re-measure at Phase 0 anyway; do not trim on this sentence.** Its **L14 is already named** by
+   S242: every ANCESTOR shard's span and size figure in the four declared files.
+
+**Key files:**
+- `.github/workflows/publish-tutorial.yml` — **73 lines now** (was 65). `paths:` has 7 entries; the
+  `uv.lock` comment carries the 13-of-13 measurement, and the `--locked` comment carries why the
+  trigger alone would be a half-truth. **Step order is still the design:** build → assert artifact →
+  deploy → assert live.
+- `BACKLOG.md` — **16 items, 16 index rows.** The new item is "The docs toolchain has no version
+  ceiling"; its index row is the last in the table.
+- `PROJECT_LEARNINGS.md` — **183 learnings**; #179–#183 are this session's. `CLAUDE.md:99` updated.
+- `docs/architecture-history/tutorial-renderer-migration-plan.md:291` — risk #1, the record that the
+  missing version ceiling was a **choice**. Read it before "fixing" the unbounded specifier.
+
+**Gotchas:**
+1. **`uv sync --extra docs --locked` will now HARD-FAIL the deploy if `uv.lock` and `pyproject.toml`
+   drift.** That is intended. If you edit `pyproject.toml`'s dependencies, run `uv lock` in the same
+   commit — `uv lock --check` exits 0 today and must keep doing so.
+2. **Never run `uv sync --extra docs` against the repo's own `.venv`** (S237 gotcha 3, still live and
+   now more tempting because the workflow line changed). It prunes the `agents`/`ui`/`dev` extras the
+   suite needs. Use `UV_PROJECT_ENVIRONMENT=<scratch>/docs-venv`, then verify `.venv` survived.
+3. **`git log -- <path>` under-counts by hiding merges.** Use `--full-history`, and `git diff-tree
+   -m -r` so merges report files at all. This bit me this session; learning #182.
+4. **A GitHub `paths:` filter is evaluated on the PUSH, not per commit** — the net `before..after`
+   diff. Per-commit reasoning is an approximation, and this repo contains a range
+   (`f94e211..5c73ed0`) where the two disagree.
+5. **All seven shard proofs must be re-run by any session editing `BACKLOG.md`,
+   `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`.** Unchanged from S242 and used twice here.
+   `for f in docs/architecture-history/*.verify.sh; do bash "$f"; done`.
+6. **Use `.venv/bin/python -m pytest`.** A bare `python3 -m pytest` fails collection with 35 errors.
+7. **`core.hooksPath=.githooks` is LIVE** — every commit this session printed its skip line.
+8. **`scripts/publish_wiki.sh`'s three `claims-model-starter` lines are CORRECT and PERMANENT**
+   (D-R5). `git grep -n claims-model-starter scripts/publish_wiki.sh` → 3 hits.
+9. **Still zsh, and `grep` is a `ugrep --ignore-files` wrapper.** `command grep` or `git grep` for
+   anything load-bearing — every path-matching measurement here was exactly that case.
+10. **`gh issue list` is empty and that is expected** — `BACKLOG.md` governs, at **16 items**.
+11. **Do not put a push count (`master is N ahead`) in a handoff.** Three consecutive sessions have
+    now recorded it and had it be stale by the next Phase 0. Say "verify with `git fetch` + `git
+    rev-list --count origin/master..master`" instead of naming a number.
 
 ### What Session 242 Did
 **Deliverable:** The **seventh lossless trim** of this file — Sessions 238 → 236 archived into

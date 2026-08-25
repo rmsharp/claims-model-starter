@@ -55,6 +55,7 @@ rows below it are the smaller residue that closing it exposed.
 | A bad `--db-url` fails silently | Filed Session 223. `connect()` builds a message naming the exact cause; the next line catches the error **without binding it** and throws the message away. The run then reports `COMPLETE` and exits 0 with **every quality check unexecuted**. A typo'd port, an unexported shell variable, and a genuine warehouse outage produce byte-identical reports. | Pre-existing and wider than the S223 fix — **not** a reason to revert it. The cheapest two-thirds is small; the third option changes when a pipeline run is allowed to "succeed" and needs an operator ruling. |
 | CLI-adapter portability (`opencode` spec) | Not a bug — the umbrella record of the four-phase `opencode` adapter build. **All four phases are DONE.** It stays here as the provenance trail for the measurement items above. | Nothing to execute. |
 | `sql_exec` — CLOSED | Historical marker, kept deliberately. Nothing to do. | Nothing to execute. |
+| The docs toolchain has no version ceiling | `pyproject.toml` bounds the tutorial site's theme from below only (`>=9.0`), so a major Material release could be resolved into the public site. Deliberately deferred when the renderer landed. Session 243 made such a bump fail as a red job instead of a silent unstyled publish; the ceiling would stop it being resolved at all. | Small — 2 lines + `uv lock`. Non-binding today: Material 10.x does not exist. |
 
 **Also standing, not an item below:** `tests/eval/README.md` has three stale statements (`:49`, `:51-52`, `:86`), unfixed for a seventh session. $0, no risk.
 
@@ -514,6 +515,35 @@ case (`$1 = 1`), where no commit was created. **Cost: small.**
 
 **Already pinned:** `tests/scripts/test_wiki_publishing.py::test_a_clean_merge_never_reaches_this_hook`
 asserts the publisher does *not* run, so the gap is visible and the test reddens if git ever changes.
+
+### The docs toolchain has no version ceiling — `mkdocs-material>=9.0` admits a major bump
+
+**Filed Session 243, from executing the `uv.lock` / `paths:` ruling.** Not a regression — the other
+half of the option the operator did not take, and a deferral that has been outstanding since the
+tutorial renderer landed.
+
+`pyproject.toml:41-42` declares `mkdocs>=1.5` and `mkdocs-material>=9.0` — **neither has an upper
+bound**, so `uv lock --upgrade` may resolve a major version. This was deliberate:
+`docs/architecture-history/tutorial-renderer-migration-plan.md:291` risk #1 says *"A future Material
+10 would be a separate review pass. Implementer may choose a tighter ceiling (`<10`) for safety"*,
+and `CHANGELOG.md:960` records that the implementer chose not to.
+
+**Why it matters here specifically.** `mkdocs.yml:22-26`'s `exclude_docs` allowlist is a fail-closed
+`/*` plus negations, and `!/assets/` is load-bearing because MkDocs applies those patterns to the
+**theme's** static files, not just `docs_dir`. That interaction already shipped an unstyled public
+site for four weeks (2026-07-27 `b27cc98` → 2026-08-22, Session 237). A theme reorganisation is
+exactly the kind of change a major bump makes.
+
+**Session 243 substantially de-risked this, which is why it is small and not urgent.** With `uv.lock`
+now in the `paths:` filter and `uv sync --extra docs --locked` asserting the lock governs, a major
+bump now *fires a build* and meets `scripts/check_site_assets.py` **before** `gh-deploy` — so it
+fails as a red job rather than as a silent unstyled publish. The ceiling is defence in depth: it
+stops the resolution instead of catching its result.
+
+**Fix:** `mkdocs>=1.5,<2` and `mkdocs-material>=9.0,<10`, then `uv lock` and commit the lock.
+**Non-binding today** — PyPI's latest is `mkdocs-material 9.7.7` / `mkdocs 1.6.1`; 10.x does not
+exist (measured 2026-08-24). **Cost: small**, 2 lines + a lock refresh. Note that the lock refresh
+itself now fires a deploy, which is correct and is the point.
 
 ### Two delivered plans are still filed under `docs/planning/` — `httpx-adapter-migration.md` and `repository-rename.md`
 
