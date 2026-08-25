@@ -319,6 +319,14 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 243 Did
+**Deliverable:** The **`uv.lock` / Publish Tutorial `paths:` filter** decision (Session 242's
+what's-next #1; filed as Session 237 gotcha 4 and item 3, re-listed by Sessions 239, 240 and 241).
+Present the judgement as a decidable question with re-derived measurements — the way Session 240
+presented Decisions A and B — then execute the operator's ruling. (IN PROGRESS)
+**Started:** 2026-08-24 (UTC)
+**Status:** Session claimed. Work beginning.
+
 ### What Session 242 Did
 **Deliverable:** The **seventh lossless trim** of this file — Sessions 238 → 236 archived into
 `docs/architecture-history/SESSION_NOTES-S238-through-S236.md` with a new proof carrying L0–L12
