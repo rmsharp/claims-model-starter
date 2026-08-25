@@ -320,12 +320,174 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 244 Did
-**Deliverable:** Execute **operator ruling (B)**, given at the close of Session 243: amend
-`docs/methodology/PROJECT_CONVENTIONS.md` §2's CHANGELOG cadence gate to bring `.github/workflows/`
-inside it, and add the `CHANGELOG.md` entry Session 243 then owes under the amended gate (dated by
-its landing commit `9522bbd`, append-only per §1). (IN PROGRESS)
-**Started:** 2026-08-25 (UTC)
-**Status:** Session claimed. Work beginning.
+**Deliverable:** **Operator ruling (B), executed.** `docs/methodology/PROJECT_CONVENTIONS.md` §2's
+CHANGELOG cadence gate now includes `.github/workflows/`, and the `CHANGELOG.md` entry Session 243
+owes under the amended gate was added — dated by its landing commit `9522bbd`, appended rather than
+backfilled per §1. This is Session 243's what's-next #4. No other work was started.
+
+**Started / completed:** 2026-08-25 (UTC). **Commits: two** — `bb63cc4` (Phase 1B claim, alone) and
+this close-out. **Operator this session:** *"you did not say what the question was. What was the
+question?"*, then *"B"*.
+
+#### The session exists because Session 243 described a question instead of asking one
+
+S243's close-out carried a paragraph headed *"An open question I am NOT deciding unilaterally"* that
+named the ambiguity, the rule, the precedent conflict and the cost of an amendment — and **never
+wrote the interrogative**. The operator had to ask what the question was. That is learning
+[#161](PROJECT_LEARNINGS.md) failing one turn later than it was written to prevent: #161 stops you
+asking *"shall I proceed?"*; **[#184](PROJECT_LEARNINGS.md)** stops you describing the *territory* of
+a decision and calling it a question. The tell is a paragraph that reads identically as a status
+report and as a request.
+
+#### Measuring the precedent is what made the question decidable
+
+The rule and the only precedent pointed opposite ways, and until that was measured the call read as
+merely underdetermined:
+
+| measurement | value |
+| --- | --- |
+| commits touching `.github/` without touching a gated dir | **4** (incl. S243's `9522bbd`) |
+| of the three pre-S243 ones, how many took a `CHANGELOG.md` entry | **2 of 3** — `a7508cb`, `4f85a3e`, both editing `CHANGELOG.md` in the same commit |
+| when the current directory list was written | **Session 149** — *after* both precedents (2026-04-20) |
+
+**So the list had never met a workflow-only session until Session 243.** That reframes the conflict:
+not a drift to correct but a case the rule had never covered — which is why the disposal is an
+*amendment* rather than an enforcement. Learning [#185](PROJECT_LEARNINGS.md).
+
+#### What shipped
+
+- **`PROJECT_CONVENTIONS.md` §2 — the gate.** `.github/workflows/` added to the enumerated set, plus
+  a `SETTLED, do not re-ask` ruling block in the S223 house style carrying the measurement above.
+  It states explicitly that this is a **directory test, not a judgement test** — `ci.yml` earns an
+  entry as surely as `publish-tutorial.yml` — and says why that uniformity was preferred over the
+  narrower "only when it changes what or when something publishes" form, which would have
+  reintroduced a per-change adjudication. That narrower form was the third option offered; the
+  operator did not take it, and the reason is now on the record so it is not re-argued.
+- **`PROJECT_CONVENTIONS.md` §2 — the second copy.** The three-surface table at `:23` summarises the
+  same rule as *"changes shipped code or test logic"*; it now reads *"shipped code, CI/CD workflows,
+  or test logic"*. **Two copies of one rule is exactly what this project loses to**, and the sweep
+  (`git grep -n "changes shipped code"`) confirms there are only these two and both moved together.
+- **`CHANGELOG.md`** — Session 243's entry, at the head of the reverse-chronological ledger
+  (verified: 08-24 mine → 08-24 S241 → 08-22 → 08-19). Its *Unchanged intentionally* bullet records
+  that S243 correctly took no entry under the rule as it stood, so the retroactive add does not read
+  as a session having missed one. **The httpx phase block at the top of `[0.3.0]` is deliberately
+  ascending and is not the insertion point** — the general ledger starts below it.
+- **Three annotations on Session 243's own record**, not rewrites: its `CHANGELOG.md` sentence now
+  carries `[RULED at Session 244 …]`, its what's-next #4 is struck through and marked DONE, and the
+  open-question paragraph is marked ANSWERED. S240's precedent — annotate a superseded record,
+  never edit it — and the paragraphs stay true as statements of what was known then.
+
+#### Verification
+
+| check | result |
+| --- | --- |
+| **all seven shard proofs** | **GREEN** — required: the newest proof's `L8` reads `PROJECT_CONVENTIONS.md` **live**, and §2 was edited |
+| copies of the cadence rule in the repo | **2**, both in `PROJECT_CONVENTIONS.md`, both amended (`git grep -n "changes shipped code"`) |
+| other citations falsified | **none** — `multi-provider-llm-plan.md:381` and S240's record at `:993` are both still true; checked, not assumed |
+| `CHANGELOG.md` head ordering | correct — 2026-08-24 (S243), 2026-08-24 (S241), 2026-08-22, 2026-08-19 |
+| suite | not re-run — **no `src/`, `packages/`, `scripts/` or `tests/` file was touched**; last run this conversation: 1313 passed, 9 skipped, 97.98% |
+
+### Session 243 Handoff Evaluation (by Session 244)
+
+**Score: 7/10 — and this evaluation has a conflict of interest I am not going to disguise: I wrote
+that handoff, in this same conversation.** An arm's-length score is not available, so what follows is
+the part that is still checkable — whether the handoff's claims held up when acted on.
+
+- **What's-next #4 pointed at real, ready work and was actionable in one exchange.** The item, the
+  candidate answers and the cost of each were all there.
+- **Its measurements held.** The trim arithmetic was exactly right: it predicted *"Session 244's
+  Phase 0 will measure 1,466 — under the trigger"*, and Phase 0 measured **1,466**.
+- **Gotcha 5 was load-bearing immediately.** Editing `PROJECT_CONVENTIONS.md` obliged all seven
+  proofs; its verbatim command worked.
+- **−3, and it is the whole reason this session exists: the handoff's central open item was not
+  phrased as a question.** Everything needed to answer it was present *except the question*. A
+  handoff that requires the reader to reconstruct the ask has failed at the one thing a handoff is
+  for, however complete its supporting material.
+- **A second, smaller miss it could not see:** it said the CHANGELOG question was *"one sentence from
+  the operator, or leave it settled as-is"*, which understated the work. Ruling (B) also required
+  amending the table cell at `:23`, adding the retroactive entry, and annotating three passages of
+  S243's own record. **"One sentence" was the rule change, not the deliverable.**
+
+### Session 244 Self-Assessment
+
+**Score: 8/10.** The ruling is executed completely — both copies of the rule, the retroactive entry,
+and the three dangling references closed rather than left — and the precedent was measured rather
+than characterised. What holds it at 8 is that the session is **remedial**: it exists because the
+previous one, which I also wrote, did not ask its question.
+
+**+** **I measured the precedent instead of asserting it.** I had written *"precedent is mixed"*
+earlier in the conversation from memory; measured, it is 2 of 3 took entries and **both predate the
+rule's current wording** — which changed the disposal from enforcement to amendment. Learning #185.
+**+** **I updated the second copy of the rule in the same commit.** The `:23` table cell paraphrases
+the gate; leaving it would have re-created the exact defect this project reports most.
+**+** **I swept for other copies rather than trusting that there were two** — `git grep -n "changes
+shipped code"` returns exactly the two, and the three files that cite the *cadence* by name were each
+checked and are each still true.
+**+** **I annotated S243's record instead of rewriting it**, so it still says what was known then.
+**+** **I recorded why the narrower option (C) was rejected**, inside the ruling block, so the
+judgement-vs-directory question is not re-argued in six sessions.
+
+**−** **This session should not have been necessary.** #184 is a learning purchased at the cost of an
+operator round-trip.
+**−** **I did not re-run the suite.** Defensible — nothing under `src/`, `packages/`, `scripts/` or
+`tests/` was touched, and the seven proofs (which *do* read the edited file) were run — but S240 took
+a −1 for accepting green runs without falsifying them, and this is the same shape one notch down.
+**−** **I typed a projected line count into the handoff again** — 1,589 against a real 1,638, the
+same defect S243 recorded one record below, in the same conversation, having just written the
+warning. Caught by `wc -l` before commit both times. The transferable part is that *knowing* about
+#105/#154 demonstrably does not prevent it; only running the command does.
+**−** **The record you are reading is long for a two-file change.** Proportionate to the ruling's
+half-life, not to its diff, but I am naming it rather than letting "one session" cover it.
+
+**Against the bar:** S243 found an objection that had never been true. S244's equivalent is smaller
+and adjacent — **a rule that had never been tested against the case in front of it**, where the
+tell was that the written rule and the only precedent disagreed and both had dates.
+
+**What's next.**
+
+1. **The `post-merge` hook** — the oldest unblocked item, self-contained, no ruling needed. Diff
+   **`ORIG_HEAD..HEAD`**, not `HEAD`; guard the squash case (`$1 = 1`). Pinned red-if-git-changes by
+   `tests/scripts/test_wiki_publishing.py::test_a_clean_merge_never_reaches_this_hook`. **Note it
+   now earns a `CHANGELOG.md` entry** under the amended gate — it touches `.githooks/`, not
+   `.github/workflows/`, so **that is a genuine question the amendment did not settle**: ask it as a
+   question if it blocks you (#184), or record the call you made and why.
+2. **The two delivered plans under `docs/planning/`** — one ruling covers both; sweep referrers first.
+3. **The docs toolchain version ceiling** — `BACKLOG.md`, 2 lines + `uv lock`; non-binding today.
+4. **The eighth trim fires at Session 245.** This file is **1,642** lines with this record, measured
+   with `wc -l` after writing it — **over** `CLAUDE.md`'s **1,500** trigger already, so unlike the
+   last two sessions there is no arithmetic to get wrong: **Session 245's Phase 0 reads over the
+   trigger and is the eighth trim.** Cut to **≤1,050** (aim ~1,035 — S242's line-budget lesson),
+   never below the **4-record floor**, **two commits always**, and re-derive the copy list rather
+   than inheriting it. Its **L14 is already named**: every ANCESTOR shard's span and size figure in
+   the four declared files — sixteen true statements nothing derives.
+
+**Key files:**
+- `docs/methodology/PROJECT_CONVENTIONS.md` §2 — **the authority on the cadence gate.** The ruling
+  block is in the `SETTLED, do not re-ask` house style; find it with
+  `grep -n 'INSIDE the gate'`. Both copies of the rule live in this file — `:23` and `:29`.
+- `CHANGELOG.md:63` — Session 243's retroactive entry, and the worked example of how a retroactive
+  add is phrased so it does not read as a missed entry.
+- `PROJECT_LEARNINGS.md` — **185 learnings**; #184–#185 are this session's. `CLAUDE.md:99` updated.
+
+**Gotchas:**
+1. **`.githooks/` is NOT `.github/workflows/`.** The amendment covers workflows only. The
+   `post-merge` item lands in `.githooks/`, which the gate still does not name — see what's-next #1.
+2. **All seven shard proofs must be re-run by any session editing `BACKLOG.md`,
+   `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`.** Used twice this conversation, both green.
+   `for f in docs/architecture-history/*.verify.sh; do bash "$f"; done`.
+3. **`CHANGELOG.md`'s head is not uniformly reverse-chronological.** The httpx phase series under
+   `## [0.3.0]` is a deliberate ascending group; the general ledger starts **below** it, at the first
+   `### 2026-08-24`. Insert new entries there, not at the top of the file.
+4. **A superseded record gets ANNOTATED, never rewritten** (S240's precedent, applied three times
+   here). The paragraph stays true as a statement of what was known then.
+5. **Use `.venv/bin/python -m pytest`**; a bare `python3 -m pytest` fails collection with 35 errors.
+6. **`core.hooksPath=.githooks` is LIVE** — every commit prints its skip line.
+7. **Still zsh, and `grep` is a `ugrep --ignore-files` wrapper.** `command grep` or `git grep` for
+   anything load-bearing.
+8. **`gh issue list` is empty and that is expected** — `BACKLOG.md` governs, at **16 items**
+   (unchanged this session).
+9. **Do not put a push count in a handoff** — three sessions running have had it go stale. Verify
+   with `git fetch` + `git rev-list --count origin/master..master`.
 
 ### What Session 243 Did
 **Deliverable:** The **`uv.lock` / Publish Tutorial `paths:` filter** decision — presented as a
@@ -341,7 +503,10 @@ then the ruling **(a) + (h)** in one exchange — the S240 pattern held, sixth t
 rows.** **No `CHANGELOG.md` entry** — `PROJECT_CONVENTIONS.md` §2's cadence gate enumerates `src/`,
 `packages/`, `scripts/` and `tests/`, and this session touched only `.github/workflows/`. See the
 open question at the end of the self-assessment; I followed the written gate rather than re-litigate
-it, which is what the S223 ruling instructs.
+it, which is what the S223 ruling instructs. **[RULED at Session 244 — the operator chose (B).
+`.github/workflows/` is now INSIDE the gate and Session 243's entry was added retroactively, dated
+by `9522bbd`. The paragraph above records the rule as it stood when this session ran, and stays as
+written; `PROJECT_CONVENTIONS.md` §2 is the authority.]**
 
 #### The finding: the premise that deferred this five times was false, and one command shows it
 
@@ -484,7 +649,9 @@ species one level up — **an objection that had never been true, preserved for 
 a filed sentence reads as a completed analysis.** The transferable finding is [#179]: re-derive a
 deferral's *premise*, not its scope, before carrying it a third time.
 
-**An open question I am NOT deciding unilaterally.** `PROJECT_CONVENTIONS.md` §2's CHANGELOG cadence
+**An open question I am NOT deciding unilaterally.** **[ANSWERED — see Session 244's record above.
+The operator ruled (B) after asking me to state the question properly, which I had not: I described
+the ambiguity without ever posing it. Learning [#184](PROJECT_LEARNINGS.md).]** `PROJECT_CONVENTIONS.md` §2's CHANGELOG cadence
 gate enumerates `src/`, `packages/`, `scripts/`, `tests/`. `.github/workflows/` is in none of them,
 so this session gets no entry — yet it changed when the **public site** publishes, which is
 outward-facing behaviour. The written gate governs and I followed it (the S223 ruling is explicit
@@ -503,7 +670,8 @@ is exactly what the S223 ruling exists to prevent.
    changes a path its own completion criterion matches on.
 3. **The docs version ceiling** (filed this session, `BACKLOG.md`) — 2 lines + `uv lock`, and the
    lock refresh will now fire a deploy, which is correct and is the point. **Non-binding today.**
-4. **The CHANGELOG-gate question above** — one sentence from the operator, or leave it settled as-is.
+4. ~~**The CHANGELOG-gate question above**~~ — **DONE at Session 244.** The operator ruled **(B)**:
+   `.github/workflows/` is inside the gate. §2 amended, Session 243's entry added retroactively.
 5. **The eighth trim is NOT due at Session 244 — it is due at 245.** This file is **1,466** lines
    with this record, against `CLAUDE.md`'s **1,500** trigger: **34 lines of headroom**. I first wrote
    **1,352** here from projection and `wc -l` said otherwise — the defect this project self-reports

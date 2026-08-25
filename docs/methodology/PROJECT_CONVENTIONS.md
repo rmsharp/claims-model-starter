@@ -20,13 +20,31 @@ Three files answer three different questions. Each file carries a per-file opene
 
 | File | Audience | Cadence | Purpose |
 |---|---|---|---|
-| `CHANGELOG.md` (repo root) | Maintainer | Per behavior change | Commit-linked ledger. A session adds an entry when it changes shipped code or test logic (see "CHANGELOG cadence" below). Authoritative; when any summary disagrees, this file wins. |
+| `CHANGELOG.md` (repo root) | Maintainer | Per behavior change | Commit-linked ledger. A session adds an entry when it changes shipped code, CI/CD workflows, or test logic (see "CHANGELOG cadence" below). Authoritative; when any summary disagrees, this file wins. |
 | `docs/wiki/model_project_constructor/Changelog.md` | Users and implementers | Release-shaped (episodic) | Audience-facing release summary. Grouped by implementation phase, not by session. Tone may evolve; detail level is curated. |
 | `docs/wiki/model_project_constructor/Evolution.md` | Onboarding readers, code-sharing context | User-requested only | Decision-arc narrative — "how the application grew from original concept to current state." Full rewrite each time; see §4. |
 
 **Why three surfaces.** `CHANGELOG.md` answers *"what was committed?"*; `wiki/Changelog.md` answers *"what's new for me?"*; `wiki/Evolution.md` answers *"why is it like this?"*. A reader joining the project has no digestible narrative in the first two — the session log is too raw, the user changelog is too summary. Evolution fills that gap without polluting the other two.
 
-**CHANGELOG cadence.** A session earns a `CHANGELOG.md` entry when it changes shipped code — `src/`, `packages/`, `scripts/` — or adds/changes `tests/` test logic. Documentation-only sessions (the wiki, the rest of `docs/`, the methodology framework, and project-state files such as `SESSION_NOTES.md`, `BACKLOG.md`, `ROADMAP.md`), and sessions whose only code-tree touch is non-behavioral (fixture data, docstring or path strings), are recorded in `SESSION_NOTES.md` and — where user-relevant — surfaced through the wiki `Changelog`/`Evolution`; they do not get a `CHANGELOG.md` entry. A multi-session feature or overhaul may be recorded as a single entry spanning its sessions, dated by its completion/landing commit. *(This refined the earlier "every completed session adds an entry" rule in Session 149: Sessions 114–148 had drifted under the per-session rule — the shipped-code work in that span was backfilled to `CHANGELOG.md` and the documentation-only sessions were left in `SESSION_NOTES.md` per this gate.)*
+**CHANGELOG cadence.** A session earns a `CHANGELOG.md` entry when it changes shipped code — `src/`, `packages/`, `scripts/`, `.github/workflows/` — or adds/changes `tests/` test logic. Documentation-only sessions (the wiki, the rest of `docs/`, the methodology framework, and project-state files such as `SESSION_NOTES.md`, `BACKLOG.md`, `ROADMAP.md`), and sessions whose only code-tree touch is non-behavioral (fixture data, docstring or path strings), are recorded in `SESSION_NOTES.md` and — where user-relevant — surfaced through the wiki `Changelog`/`Evolution`; they do not get a `CHANGELOG.md` entry. A multi-session feature or overhaul may be recorded as a single entry spanning its sessions, dated by its completion/landing commit. *(This refined the earlier "every completed session adds an entry" rule in Session 149: Sessions 114–148 had drifted under the per-session rule — the shipped-code work in that span was backfilled to `CHANGELOG.md` and the documentation-only sessions were left in `SESSION_NOTES.md` per this gate.)*
+
+**`.github/workflows/` is INSIDE the gate: SETTLED, do not re-ask (operator ruling, 2026-08-25,
+Session 244).** A workflow change alters what this project publishes and when — Session 243 changed
+the conditions under which the **public** tutorial site deploys — and that is an outward-facing
+behaviour change of exactly the kind this ledger exists to record. **This is a directory test, not a
+judgement test:** a change to `ci.yml` earns an entry as surely as one to `publish-tutorial.yml`,
+and that uniformity is the whole reason this ruling was preferred over the narrower "only when it
+changes what or when something publishes" form, which would reintroduce a per-change adjudication.
+
+**The written rule and the precedent had been pointing opposite ways since Session 149.** Measured
+at Session 244: **4** commits in this repository's history touch `.github/` without touching any
+gated directory. The two clean pre-amendment cases, `a7508cb` and `4f85a3e` (both 2026-04-20), each
+**took** a `CHANGELOG.md` entry in their own commit — but both predate the Session 149 refinement
+that produced the directory list above, so the list had never actually been tested against a
+workflow-only session until Session 243. Session 243 was given **no** entry, which was correct under
+the rule as written then (§1 and the Session 223 ruling both make the written rule beat precedent);
+its entry was added **retroactively** under this amendment, dated by its landing commit `9522bbd`,
+as an append rather than an edit per §1.
 
 **Measurement-only sessions: SETTLED, do not re-ask (operator ruling, 2026-08-17, Session 223).** A session that only *runs* the live eval harness — measuring providers, probing variance, reproducing a defect — and changes no `src/`, `packages/`, `scripts/`, or `tests/` logic **does not get a `CHANGELOG.md` entry**. The written gate above is correct as it stands; **Session 216's entry was the deviation, not the precedent.** Do not backfill S216, and do not amend it — `CHANGELOG.md` is an append-only historical ledger (§1), so an entry that should not have been written stays written. Sessions 219, 220, 221 and 222 each flagged this as an unresolved convention-vs-precedent conflict and each correctly followed the written rule; the ruling exists so a fifth session does not spend the same paragraph re-litigating it. The measurement itself is recorded in `SESSION_NOTES.md` and, where it changes what a user should believe about the pipeline, in the wiki `Changelog`/`Evolution`.
 
