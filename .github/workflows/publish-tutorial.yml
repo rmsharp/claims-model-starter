@@ -13,6 +13,14 @@ on:
       - mkdocs.yml
       - .github/workflows/publish-tutorial.yml
       - pyproject.toml
+      # uv.lock pins the theme `uv sync --extra docs` actually installs
+      # (mkdocs-material 9.7.6, mkdocs 1.6.1) — pyproject.toml only bounds
+      # it (`>=9.0`, no ceiling). Measured Session 243: 13 of 13 uv.lock
+      # commits in 496 also touched pyproject.toml, already listed above,
+      # so this line added ZERO deploys to the whole history. It fires only
+      # on a lock-only bump (`uv lock --upgrade`), which is the case that
+      # used to deploy nothing and surface weeks later on an unrelated commit.
+      - uv.lock
       - scripts/check_site_assets.py
       - scripts/check_published_site.py
   workflow_dispatch:
@@ -33,7 +41,11 @@ jobs:
       - uses: astral-sh/setup-uv@v4
         with:
           version: "latest"
-      - run: uv sync --extra docs
+      # --locked asserts uv.lock is already in sync with pyproject.toml.
+      # Without it a bare `uv sync` may RE-RESOLVE at deploy time, so the
+      # lockfile would only be authoritative while the two happen to agree
+      # — which would make the uv.lock trigger above a half-truth.
+      - run: uv sync --extra docs --locked
 
       # Build and verify BEFORE deploying. `mkdocs gh-deploy --force --clean`
       # writes a PARENTLESS commit to gh-pages (no git revert path), so a bad
