@@ -283,10 +283,203 @@ sentence claimed a silent stop at 2,000 lines until Session 249; measured, that 
 ## ACTIVE TASK
 
 ### What Session 249 Did
-**Deliverable:** **Option A of [`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md) §8** — correct the false read-cap premise at its live sites, state the method rather than the number (§1.5), and record in the live copies that the frozen occurrences can never be repaired. (IN PROGRESS)
-**Started:** 2026-08-26 (UTC)
-**Status:** Session claimed. Work beginning.
-**Operator ruling:** *"A"* — Option A only. D, E and F are separate sessions. **No trim this session** (§9 sequencing: A lands BEFORE the ninth trim, never during it; `SESSION_RUNNER.md` FM #18).
+**Deliverable:** **Option A of [`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md) §8 — COMPLETE.**
+The false read-cap premise is corrected at every live site; every frozen copy is left alone and
+marked unrepairable in the live copies. **No trim, no re-tuning, nothing ruled** (§9 sequencing:
+A lands BEFORE the ninth trim; `SESSION_RUNNER.md` FM #18). No other work started.
+
+**Started / completed:** 2026-08-26 (UTC). **Commits: five** — `b1d761f` (Phase 1B claim, alone),
+`5243242` (the corrections), `5bf79a6` (the site the first pass missed), `7df555b` (acting on the
+adversarial review), and this close-out. **Operator this session:** *"go"*, then a question about
+where §8/§9 live, then *"A"*.
+
+**`CHANGELOG.md` entry written** — `PROJECT_CONVENTIONS.md` §2 gates on `src/`, `packages/`,
+`scripts/`, `.github/workflows/` or **`tests/` logic**, and this session changed `tests/` logic. The
+prose corrections alone would have earned none; checked against the written rule, not recalled.
+
+#### What a `Read` past the cap actually does — measured, three regimes, not one
+
+All eight archives probed with a default `Read`. **I ran three of these first-hand** (marked ✎); the
+other five were delegated and every line/byte count was re-derived by me before publishing.
+
+| archive | lines | bytes | default `Read` |
+| --- | ---: | ---: | --- |
+| `…through-S216` | 24,590 | 4,074,951 | **REFUSED** ✎ — `File content (3.9MB) exceeds maximum allowed size (256KB)`, **zero content** |
+| `…S224-through-S221` | 933 | 69,814 | PARTIAL, lines 1–752 of 934, 26,374 tokens |
+| `…S231-through-S228` | 976 | 69,921 | PARTIAL ✎, lines 1–766 of 977, 27,077 tokens, cap 25,000 |
+| `…S235-through-S232` | 1,057 | 79,707 | PARTIAL, lines 1–732 of 1,058, 30,683 tokens |
+| `…S220/S227/S238/S241` | 804/790/644/792 | 63,757/58,000/47,692/57,269 | whole (S227 ✎) |
+
+**Three regimes, and the middle one is the only one anybody had described.** Under the token cap a
+`Read` returns an announced `PARTIAL view` naming the overage and the next page; past a separate
+**byte** ceiling it is refused outright and returns nothing. Nothing is ever silent, and
+`offset`/`limit` reach every line in both cases. **So "the seven newer ones read whole today" was
+false — and the census guard COMPOSED and REQUIRED that sentence.**
+
+#### The premise was executable, not just prose — and that is the finding
+
+- **`tests/test_session_notes_census.py` required two of the false sentences** (`:261`, `:267`).
+  The guard derives line counts from disk and cannot derive tokens, so it would have held
+  `BACKLOG.md` **red against the true sentence and green against the false one.**
+- **`"read_cap": 2000` is a hand-declared constant in three write-once proofs.** `L12/cap` fails a
+  cut whose shard's LINE count reaches it, with the message *"truncates in silence"*. The S235
+  proof's arm **passes** — 1,057 < 2,000 — certifying a file that a default `Read` cannot deliver.
+  Pinned by `L10`; unrepairable.
+- **The ninth trim is mechanically forced to mint a NEW frozen falsehood** unless five things change.
+  `BACKLOG.md`'s read-cap item now names all five (below, gotcha 2).
+
+#### Verification
+
+| check | result |
+| --- | --- |
+| nine `*.verify.sh` | **GREEN** before, after each of the three passes, and at commit |
+| census guard | **25/25**, and it went **RED twice on me** during the work — both times correctly |
+| full suite | **1,338 passed, 9 skipped** — unchanged; no test added or removed |
+| §11 completion criterion | met; **and shown to be too narrow** — it missed a live site (learning #216) |
+| wide re-sweep, both claim families, whole tree | no live file asserts the premise |
+| `L11`'s three `POLICY` literals | all still match `CLAUDE.md` verbatim — **S248's dragon 2 does not bind** |
+
+#### Where I was wrong, and what caught it
+
+1. **I missed `docs/planning/repository-rename.md:299`** — a live table cell telling the reader the
+   S216 archive *"truncates at 2,000 with no marker"*. My own sweep listed the file and I did not
+   drill into it. Found by an independent inventory; **the plan's own VERIFY grep cannot match that
+   phrasing either.**
+2. **I restated a measured count in three live files** — in the session whose subject is figures
+   that were true once. Fixed: one authority, two definite negations that carry no number.
+3. **I wrote "nothing in this repository can measure the agent harness"** and then measured a byte
+   proxy accurate to within 3.4% at three cuts. The fleet tool had re-denominated onto exactly that
+   proxy **38 minutes before my first commit** (`methodology@9e71f83`).
+4. **A first draft wrote around the guard's trigger word** — "archived file" where "shard" was
+   natural — and passed clean. Rewritten honestly, the scan went red and named three numbers.
+5. **`5243242`'s message cites `:264`; the composer is at `:267`.** A hand-typed coordinate in the
+   anti-hand-typed-figure commit. Corrected in `7df555b`'s message, not by rewriting history.
+
+#### One filed defect refuted, with evidence
+
+**Session 248's defect #9 does not hold.** `CLAUDE.md:82`'s *"`READ_CAP_WATCHED` is an exact-path set
+containing none"* — "none" takes **the shards** as antecedent, and the set contains none of them, so
+the sentence was TRUE. An independent adjudication reached the same verdict after arguing the
+strongest case against it. The real defect was **elision**: it was the only copy in the project that
+dropped the complement, which is what induced the false filing. It now carries it. **The live-defect
+count S248 published is nine, not ten.**
+
+### Session 248 Handoff Evaluation (by Session 249)
+
+**Score: 9/10.** It set this session up completely: the deliverable, the sequencing, the method, and
+the two traps. I did not have to decide anything about *shape*, only about *content*.
+
+- **"Option A must be sequenced BEFORE the ninth trim, never during it."** Correct as a rule, and it
+  is why this session ran clean. **Its stated reason was wrong** — see below — but the instruction
+  was right for a different reason it did not give: a trim would have had to declare the new banner
+  text and the `read_cap` constant in the same commit.
+- **"Do not inherit a single number without re-deriving it."** Load-bearing. Re-deriving the
+  inventory is what found `CLAUDE.md:82` and the census guard's `:261`, neither of which is in §1.4's
+  six sites — and §1.4's own table says **five** live files while enumerating four, which is the tell.
+- **Gotcha 6 (`command grep`)** — used in every count published, fourth session running.
+- **Gotcha 2 (the guard scans four files; `SESSION_NOTES.md` is not one)** — exactly right and it
+  shaped where I put things.
+- **The §11 per-option completion criteria** made "done" decidable in advance. That is the single
+  most reusable thing in the document.
+- **−1, and it is the same class the handoff warns about.** **Dragon 2 is false as stated:**
+  *"`L11/declared` and `L11/figure` read `CLAUDE.md:81`'s exact sentence, so correcting the premise
+  obliges the next trim's proof to declare the new text."* Measured — `POLICY`'s three literals stop
+  before the parenthetical Option A removes, and all three still match verbatim. The real obligation
+  is `L12`'s, one assertion over, and no handoff mentioned it. **A dragon that names the wrong
+  assertion sends the next session to guard the wrong thing.**
+- **ROI: very high.** ~4 minutes to read; it defined the whole session.
+
+### Session 249 Self-Assessment
+
+**Score: 8/10.** The deliverable is complete and verified, the premise is gone from every live site,
+and the two findings that outlast it — the guard enforcing a falsehood, and the machinery that would
+have minted a ninth one — are worth more than the text repair. What holds it at 8: **the first pass
+was incomplete and I did not catch that myself**, and three of my own errors were the exact defect
+classes this session exists to remove.
+
+**+** **I measured instead of inheriting.** Eight probes, three regimes, every line and byte count
+re-derived by hand; three probes run first-hand including the one that overturns live prose.
+**+** **I found the executable copies.** Option A was scoped as prose; the two things that mattered
+were a test that *required* the false sentence and a constant inside three write-once proofs.
+**+** **I let the guard adjudicate rather than routing around it** — and published the fact that my
+first draft had routed around it.
+**+** **The guard is stricter than I found it**: one composed expectation added (derivable, so
+composed rather than exempted), the obsolete exemption retired, two honest classifications added.
+**+** **I refuted a filed defect with evidence and argued the case against myself first**, rather
+than inheriting a count of ten.
+**+** **I annotated rather than rewrote** another session's arithmetic (`§8`'s `7.3` records).
+**+** **I checked `L11` instead of trusting the dragon**, which is why the ninth trim's real
+obligation is now written down.
+
+**−** **My inventory missed a live site my own sweep had listed.** I drilled into five files and not
+the sixth. An independent pass found it; so did a second one, independently.
+**−** **I restated a measured count in three live files** — the defect class this project reports
+more than any other, committed inside the correction of an instance of it.
+**−** **I published "nothing in this repository can measure the agent harness"** without spending the
+ten minutes that falsify it, in a session whose thesis is that unmeasured claims rot.
+**−** **I typed a line number into a commit message and it was wrong** (`:264` for `:267`).
+**−** **`CLAUDE.md` grew 25,997 → 27,600 bytes**, further past the ~25 KB budget its own line 101
+cites. Option A's text is load-bearing, but I did not try to pay for it elsewhere.
+**−** **Two adversarial workflows cost ~2.8M tokens** to produce six acted-on findings. Worth it, but
+the inventory sweep largely re-derived what I had already done by hand.
+
+**Against the bar:** S247 built the first always-on guard over the live files; S248 falsified the
+premise the whole apparatus rests on. S249's equivalent is showing that the premise was **executable**
+— that the guard written to keep prose true was requiring a falsehood, and that the trim template
+would have manufactured another one — and closing both without touching a frozen byte.
+
+**What's next.**
+
+1. **The operator still owes a ruling on D, E and F.** A is done; B–H are open. §9 recommends
+   **D, then E, and *consider* F**. Two new inputs since S248 wrote that: **the 1,050 target is
+   INSUFFICIENT, not merely unjustified** (a compliant trim yields 80,349 B against a ~56,750 B
+   one-`Read` budget), and **a byte budget is now derivable in-repo**, which is exactly what D needs
+   and what S248 assumed impossible. **Present it and stop** ([#184](PROJECT_LEARNINGS.md)).
+2. **The ninth trim is due** (`SESSION_NOTES.md` is over the >1,500 trigger — re-measure at Phase 0)
+   and still **cannot be run compliantly**. Do not run it before the ruling.
+3. **The census guard's `SPELLED`/`ORDINAL` maps stop at sixteen** (`tests/test_session_notes_census.py`)
+   — a seventeenth shard raises `KeyError`. Carried from S248 #3, still unfiled, one line.
+4. **`README.md`'s three stale per-directory test counts** — S247's #2, numerals already measured.
+5. **The `post-merge` hook**, then the two delivered plans, then the docs toolchain ceiling. The
+   oldest unblocked item is the dialect-gate one, not the hook.
+
+**Key files:**
+- `docs/planning/ledger-budgets-review.md` — §8 options, §9 recommendation, §11 per-option DONE
+  criteria. **§1.4's site list is incomplete** (it enumerates four live files and its own table says
+  five; it omits `CLAUDE.md:82`, the census guard and `repository-rename.md:299`).
+- `BACKLOG.md`, the read-cap item — now the **single authority** for which archives read whole, the
+  five machinery changes the ninth trim owes, the stale glob recommendation, and the upstream
+  re-denomination.
+- `tests/test_session_notes_census.py` — composers for the two re-cut sentences; `FROZEN` for the
+  two classifications; `SPELLED`/`ORDINAL` for the latent `KeyError`.
+- `docs/architecture-history/SESSION_NOTES-S241-through-S239.md.verify.sh` — `POLICY` (L11's three
+  literals, **unaffected**), `SIZES["read_cap"]`, the `SIZE_PROSE` banner row, `L12/cap`, `M63`.
+- `~/Development/methodology/tools/methodology_dashboard.py` — **outside this repo**, already
+  re-denominated (`9e71f83`). The local `~/Development/methodology_dashboard.py` is stale v2.15.2.
+
+**Gotchas:**
+1. **`CLAUDE.md:81` no longer justifies its own numbers, deliberately.** They stand unchanged and
+   unjustified pending the ruling. Do not "restore" a rationale; do not re-tune them outside a
+   session ruled for B–E.
+2. **A ninth trim must change FIVE things or it mints a permanent falsehood** — the `SIZE_PROSE` row
+   keyed to `read_cap`, the `SIZES` key, the `L12/cap` arm, the `M63` mutant (built on the banner
+   string in **four** places), the `--self-test` print — **and the banner itself**. Copying the
+   template forward is the failure mode.
+3. **The census guard triggers on proximity to the word "shard".** Rewording around it leaves text
+   unchecked and the suite cannot tell. Write the natural word. If a flagged number is derivable,
+   **compose it**; an exemption is the last resort.
+4. **Run the guard AND the nine proofs.** The proofs read prose from their own trim commits and
+   cannot see live edits — a green loop after a commit proves nothing about prose (S248 gotcha 3,
+   confirmed again here).
+5. **`PROJECT_LEARNINGS.md` and `CHANGELOG.md` are REFUSED by a default `Read`** — zero content, not
+   truncation. `grep` them or use `offset`/`limit`. `CLAUDE.md`'s pointer now says so.
+6. **`command grep` or `git grep` for every count** — bare `grep` is a `ugrep --ignore-files` wrapper.
+   Load-bearing again this session.
+7. **`gh issue list` is empty by design** — the product is feature-complete; the tracker opens at UAT.
+8. **`master` is 17 commits ahead of `origin/master`** — measured with `git fetch` + `git rev-list
+   --count origin/master..master`. The push is the operator's call.
+9. **Do not re-discover the frozen falsehoods.** Seven of eight shard banners assert the old cap and
+   three are provably wrong today. They are write-once. Leave them.
 
 ### What Session 248 Did
 **Deliverable:** [`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md) —
