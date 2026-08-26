@@ -258,13 +258,13 @@ def expectations(found: list[Shard]) -> list[Expectation]:
         "the instruction to grep every shard")
     add(CLAUDE, f"there are {word.upper()}, and a lookup must consult all of them",
         "the shard-census sentence the routing table hangs off")
-    add(CLAUDE, f"(The {prior_word} newer shards are under the 2,000-line cap today;",
+    add(CLAUDE, f"of the {prior_word} newer shards truncate under a default",
         "the count of shards newer than the first (N-1), not N")
     add(README, f"older in the {word} shards above",
         "the repo map's pointer from the live ledger to the shards")
     add(BACKLOG, f"there are now **{word}** unwatched shards",
         "the read-cap item's shard count")
-    add(BACKLOG, f"the {prior_word} newer ones read whole today",
+    add(BACKLOG, f"of the {prior_word} newer ones truncate under a default",
         "the read-cap item's N-1 count")
     add(CONVENTIONS, f"**{word.capitalize()} instances so far**",
         "the shard-naming rule's instance count")
@@ -333,7 +333,7 @@ NUMBER = re.compile(
 # "shard" is the head noun of every census claim. WINDOW was chosen by
 # measurement, not taste: at +-60 characters the scan returns 127 candidates in
 # these four files, most of them numbers that merely sit in a paragraph about
-# trims (section references, the 2,000-line read cap, "shape 5 of the 20
+# trims (section references, read-cap figures, "shape 5 of the 20
 # proofs") -- allowlisting those as "frozen census prose" would empty the word
 # allowlist of meaning (learning #135). At +-30 it returns 22, and every one is
 # a real statement about the shard set or a nearby historical record.
@@ -357,9 +357,11 @@ HEAD_NOUN = re.compile(
 # be present by test_frozen_entries_are_still_present, so the list cannot rot --
 # reword the sentence and the companion test sends you back here.
 FROZEN: tuple[tuple[str, str, str], ...] = (
-    (CLAUDE, "(The seven newer shards are under the 2,000-line cap today; that is luck",
-     "the 2,000-line read cap is a constant, not a shard count; the 'seven' in "
-     "this same sentence IS composed above"),
+    (CLAUDE, "(Three of the ",
+     "a MEASURED count of shards that truncate under a default Read (Session 249), "
+     "not a census of the shard set: the guard derives line counts from disk and "
+     "cannot derive tokens without a tokenizer. Re-measure by probing, per "
+     "BACKLOG.md's read-cap item; the 'seven' in this same sentence IS composed above"),
     (CLAUDE, "never appends to an existing one — which is why every shard after the first",
      "'one' is a pronoun for a shard file, not a count of shards"),
     (CLAUDE, "drops both), and two cite shard filenames inside frozen historical",
@@ -387,6 +389,10 @@ FROZEN: tuple[tuple[str, str, str], ...] = (
     (README, "L9 (write-once for all four shards)",
      "frozen: describes what the FOURTH trim's proof does, and that proof guards "
      "four shards. Not stale -- a count word is stale only if it claims the present"),
+    (BACKLOG, "Measured Session 249: that shard's line count is nowhere near 2,000",
+     "a session number and the read_cap constant declared inside three write-once "
+     "proofs -- a date and a harness figure, neither a shard count. The shard's own "
+     "line count is composed above and is deliberately NOT restated in this sentence"),
     (BACKLOG, "(The 924 figure this item carried for the\nthird shard was wrong; "
      "933 is the measured `wc -l`.)",
      "frozen: records that Session 228 typed 924 where the measured value is 933. "

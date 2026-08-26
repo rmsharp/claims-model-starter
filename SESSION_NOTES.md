@@ -274,8 +274,9 @@ its author, so Session N's evaluation of N−1 sits inside N's record and every 
 one from its subject. Expect that seam at every boundary. What these five trims found, argued and
 rejected stays in their own blocks at the commits above; what they left BINDING is in `CLAUDE.md`'s
 two `SESSION_NOTES.md`-is-trimmed bullets, which no collapse touches. **`grep` the shards; `Read`
-none** — the first is 24,590 lines, an agent `Read` stops at 2,000 with no error and no marker, and
-nothing watches any of them.
+none** — the first is 24,590 lines and a default `Read` of it is refused outright, three of the
+seven newer shards truncate with an announced notice, and nothing watches any of them. (This
+sentence claimed a silent stop at 2,000 lines until Session 249; measured, that is false.)
 
 ---
 

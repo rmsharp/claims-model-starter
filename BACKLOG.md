@@ -47,7 +47,7 @@ rows below it are the smaller residue that closing it exposed.
 | No circuit breaker | A run failing for a systemic reason grinds on sample after sample. The retry added in Session 221 tripled the SQL/QC worst case to **~7.5 hours of billed nothing**, and Session 225 added the same tripling to the governance block — so the figure in the item below now **understates** it. | Small. Should abort after ~5 consecutive total failures. |
 | Unset `ANTHROPIC_API_KEY` scores as 45 failures | Without the key, every call fails with a generic "Unexpected server error" naming neither authentication nor the variable — and the harness faithfully scores that as *"this model cannot write SQL, 0%."* A misconfiguration is indistinguishable from a bad model. Actually happened; voided a run. | Half-fixed in Session 221 (the cause is now in the log). The message still names nothing. |
 | The gate measures only ONE of three dialect prompts | Session 217 told the model which SQL dialect to write for in three places. The gate checks the effect of exactly one of them. | Closing it needs a **new scorer and a new gate key** — a design change, not a wiring fix. |
-| `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file it **silently stops at 2,000 lines** — no error, no marker. A future session reading that archive gets 8% of it and cannot tell. The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives, Session 228 a third, Session 231 a fourth, Session 235 a fifth, Session 239 a sixth, Session 242 a seventh and Session 245 an eighth** (804, 933, 790, 976, 1,057 and 644 lines for the second through seventh, 792 for the eighth) — the seven newer ones read whole today, but are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
+| `SESSION_NOTES.md` shards past the read cap | Session 222 moved 24,564 lines of history into an archive. When an agent reads a file past the cap it gets an **announced partial view** — the notice names the overage and the next page — and past a separate byte ceiling the read is refused outright. Nothing is dropped in silence. (This item said *“silently stops at 2,000 lines — no error, no marker”* until Session 249; that was measured and is false.) The dashboard has a watch-list for exactly this, but it is a list of exact filenames and the archive is not on it. **Session 224 made it two archives, Session 228 a third, Session 231 a fourth, Session 235 a fifth, Session 239 a sixth, Session 242 a seventh and Session 245 an eighth** (804, 933, 790, 976, 1,057 and 644 lines for the second through seventh, 792 for the eighth) — three of the seven newer ones truncate under a default `Read` too and four return whole (measured Session 249 by probing each, not by line count); all are equally unwatched, and every future trim adds one more. | **Operator call.** The fix is one line in shared fleet tooling at `~/Development/methodology`, synced to 13 projects — not this repo's to edit. |
 | A clean `git merge` still publishes nothing | Closing the two items above (Session 241) showed the filed diagnosis was incomplete. `post-commit` now reads merge commits correctly, but git only runs `post-commit` for a merge **you** finish with `git commit` after a conflict. For a clean `git merge` or `git pull` git runs **`post-merge`**, and this repository installs no such hook — so a merge or pull that carries a wiki change still publishes nothing, silently. | Small: a `post-merge` hook using `ORIG_HEAD..HEAD` (a fast-forward pull moves many commits, so inspecting `HEAD` alone is not enough). Verified, and pinned red-if-git-changes by `test_a_clean_merge_never_reaches_this_hook`. |
 | Two finished plans still sit in the active-plans folder | `httpx-adapter-migration.md` was fully executed but never archived — and `repository-rename.md` went EXECUTED in the very commit that filed this item, which is the identical case and the heavier one. | Small, but moving either re-points every citation of its path — sweep first, and rule on both together. |
 | Enterprise migration | Handing the project to an enterprise. Landing the branch, closing public exposure, removing LGPL dependencies, and the legal packet are **done**. What remains is the fork into an enterprise host. | Blocked on five decisions only the operator can make: destination host, import strategy, contributor agreement, wiki destination, and what happens to existing releases. |
@@ -59,7 +59,7 @@ rows below it are the smaller residue that closing it exposed.
 
 | `README.md`'s per-directory test counts have drifted | The repo map in `README.md` gives a test count per directory. Three of them are stale by a combined **131 tests**, measured against `pytest --collect-only` at Session 247: `data_agent_package/` says 207 and collects **257**; `eval/` says 94 and collects **157**; `test_llm_json_parity.py` says 16 and collects **34**. Every other row is exact, and the headline total was corrected to 1,338 in the same session. Filed, not fixed — the Session 247 deliverable was a live census guard over the ledger archives, and these are a different class (test counts, which that guard does not cover). | **Small**: three numerals. The measurement is done and is in the item below, so this is a paste. Worth asking whether it earns a derived check of its own rather than a fourth hand-typed number. |
 
-| Are the ledger budgets worth what they cost? | **Operator question, 2026-08-26.** The trim trigger (>1,500 lines), target (≤1,050) and floor (4 records) are each a fraction of the 2,000-line agent read cap, and nothing has re-derived that cap since Session 222. Measured at Session 247: **3 of the last 10 sessions were lossless trims, 5 of 10 were ledger-apparatus work, and the last 3 consecutively were.** Filed here rather than left in a handoff, because an item that lives only in a what's-next list gets carried ([#180](PROJECT_LEARNINGS.md)). | **ANSWERED — Session 248.** The analysis is [`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md): the read-cap premise was measured and is false, the retention rule is unsatisfiable as declared, and the options are laid out with mechanisms and costs. **What remains is an operator ruling**, then one session per option ruled. Re-tuning anything is still a SEPARATE session. |
+| Are the ledger budgets worth what they cost? | **Operator question, 2026-08-26.** The trim trigger (>1,500 lines), target (≤1,050) and floor (4 records) were each derived as a fraction of an agent read cap nobody had re-derived since Session 222. Measured at Session 247: **3 of the last 10 sessions were lossless trims, 5 of 10 were ledger-apparatus work, and the last 3 consecutively were.** Filed here rather than left in a handoff, because an item that lives only in a what's-next list gets carried ([#180](PROJECT_LEARNINGS.md)). | **ANSWERED — Session 248.** The analysis is [`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md): the read-cap premise was measured and is false, the retention rule is unsatisfiable as declared, and the options are laid out with mechanisms and costs. **What remains is an operator ruling**, then one session per option ruled. Re-tuning anything is still a SEPARATE session. **Option A landed in Session 249** — the premise is corrected at every live site and the frozen copies are marked unrepairable; B–H remain unruled. |
 
 **Also standing, not an item below:** `tests/eval/README.md` has three stale statements (`:49`, `:51-52`, `:86`), unfixed for a seventh session. $0, no risk.
 
@@ -461,24 +461,49 @@ corresponding key in the environment.
 **Filed Session 222 by the session that created it**, deliberately not fixed there — the fix lives
 upstream in a repository this project does not own.
 
-`docs/architecture-history/SESSION_NOTES-through-S216.md` is **24,564 record lines** (24,590 total). An
-agent `Read` of it truncates at 2,000 lines with **no error and no missing-data marker** — the exact
-defect the trim was scoped to remove, relocated rather than eliminated. **Sessions 224, 228, 231, 235, 239, 242 and 245 widened this:**
+`docs/architecture-history/SESSION_NOTES-through-S216.md` is **24,564 record lines** (24,590 total). A default
+agent `Read` of it is **refused outright** — `File content (3.9MB) exceeds maximum allowed size
+(256KB)`, zero content returned, measured Session 249 — so it cannot be read in one pass at all.
+The refusal is loud and `offset`/`limit` still reach every line, which is the part the original
+filing got wrong: the defect the trim was scoped to remove was relocated, not eliminated, but it was
+never the *silent* loss this item claimed until Session 249. **Sessions 224, 228, 231, 235, 239, 242 and 245 widened this:**
 there are now **eight** unwatched shards. The second, `SESSION_NOTES-S220-through-S217.md` (804 lines), the
 third, `SESSION_NOTES-S224-through-S221.md` (933 lines), the fourth,
 `SESSION_NOTES-S227-through-S225.md` (790 lines), the fifth,
 `SESSION_NOTES-S231-through-S228.md` (976 lines), the sixth,
 `SESSION_NOTES-S235-through-S232.md` (1,057 lines), the seventh,
 `SESSION_NOTES-S238-through-S236.md` (644 lines), and the eighth,
-`SESSION_NOTES-S241-through-S239.md` (792 lines), are all under the cap today, so they read
-whole — but they are unwatched for the same reason, and being under the cap is a property of a cut's size,
-not a protection. Every future trim adds another unwatched path. (The 924 figure this item carried for the
+`SESSION_NOTES-S241-through-S239.md` (792 lines), were each probed with a default `Read` in
+Session 249: the S224, S231 and S235 files **truncate** (26,374 / 27,077 / 30,683 tokens against a
+25,000-token cap, announced in full), and the S220, S227, S238 and S241 files return whole. Line
+counts do not predict that and never did — the cap is token-denominated — so the claim this item
+carried until Session 249, that all seven newer files read whole, was false. Every future trim adds another unwatched path. (The 924 figure this item carried for the
 third shard was wrong; 933 is the measured `wc -l`.) Verified: `READ_CAP_WATCHED`
 (`methodology_dashboard.py:287-288`, consumed at `:1481`) is an **exact-path membership test** over
 `SESSION_NOTES.md`, `CHANGELOG.md`, `HANDOFFS.md` and three `BACKLOG.md` locations. The shard is in
 none of them, is not LOC-discounted as a framework doc (`FRAMEWORK_SEED_DOCS` is root-anchored,
 `:684-690`), and raises no "large files" row either (that check gates on `ext in SOURCE_EXTS`,
 `:2929-2936`). **So no tooling will ever warn about it.**
+
+**The premise is not only prose — it is a CONSTANT in three write-once proofs, and one of them is
+green while certifying a falsehood.** `"read_cap": 2000` is declared in the S235, S238 and S241
+proofs, and `L12` fails a cut whose shard's LINE count reaches it, with the message
+*"truncates in silence"*. Measured Session 249: that shard's line count is nowhere near 2,000
+— it is composed above and deliberately not restated here — so the arm passes and the proof
+certifies the file as readable in one pass, while a default `Read` of it returns an announced
+PARTIAL view at 30,683 tokens against a 25,000-token cap.
+**A green, self-tested assertion certifies as readable a file that cannot be read in one pass.** All
+three proofs are pinned byte-for-byte by `L10` and can never be corrected. A future proof must
+declare the cap in tokens or bytes, or not declare it at all — nothing in this repository can
+measure the agent harness, which is why the constant was hand-declared in the first place.
+
+**The same false claim is repeated inside the write-once shards and their proofs, where it can
+never be repaired.** Those copies join the stale banners this project already documents as
+permanently-false-but-frozen. Enumerate them with
+`git grep -nE '2,?000|no error and no missing-data marker' -- 'docs/architecture-history/*'` rather
+than trusting a count typed here; the classified breakdown (cap-value vs silence, live vs frozen) is
+[`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md) §1.4. **Session 249
+corrected every live site and left every frozen one alone.**
 
 **What ships today is prose, and prose only:** the pointer block's second paragraph in
 `SESSION_NOTES.md`, the corresponding paragraph of each shard's own banner, and the `CLAUDE.md`
