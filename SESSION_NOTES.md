@@ -282,13 +282,236 @@ nothing watches any of them.
 ## ACTIVE TASK
 
 ### What Session 248 Did
-**Deliverable:** An analysis document — **defend AND challenge the current ledger budgets** (agent
-read cap, trim trigger, trim target, retention floor, record density, write-once shards, one new
-proof assertion per trim) — written to `docs/planning/`, ending in a recommendation plus options for
-the operator to rule on. Per the OPERATOR ASSIGNMENT recorded at `c6aa37b`. (IN PROGRESS)
-**Started:** 2026-08-26 (UTC)
-**Status:** Session claimed. Work beginning. **This is a PLANNING session** — the document is the
-deliverable. No budget is re-tuned and no trim is run this session (`SESSION_RUNNER.md` FM #18).
+**Deliverable:** [`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md) —
+an analysis that **defends AND challenges the current ledger budgets**, derives the load-bearing
+premise rather than quoting it, and ends in eight options with a recommendation. The operator
+assignment recorded at `c6aa37b` and filed as `BACKLOG.md:62`. **Planning session:** nothing ruled,
+nothing re-tuned, no prose corrected, no trim run (`SESSION_RUNNER.md` FM #18). No other work started.
+
+**Started / completed:** 2026-08-26 (UTC). **Commits: three** — `b95c39e` (Phase 1B claim, alone),
+`0b88727` (the document, alone), and this close-out. **Operator this session:** *"go"*, then *"1"*.
+
+**No `CHANGELOG.md` entry, and that is the gate rather than an omission.** `PROJECT_CONVENTIONS.md` §2
+earns one for `src/`, `packages/`, `scripts/`, `.github/workflows/` or `tests/` logic. This session
+touched `docs/planning/`, `SESSION_NOTES.md`, `BACKLOG.md` and `PROJECT_LEARNINGS.md` only — checked
+against the written rule, not assumed. `BACKLOG.md` item count unchanged; item 62 is now answered.
+
+#### The premise is false, and five probes say so
+
+The assignment's one binding instruction was *"Measure it; do not quote Session 222."*
+
+| # | probe | result |
+| --- | --- | --- |
+| A | 3,000 lines / 21,000 B | **returned whole** — the documented "up to 2000 lines by default" **did not bind** |
+| B | 101 lines / 199,700 B | **cut at line 10**: `PARTIAL view … (199405 tokens, cap 25000)` |
+| C | `SESSION_NOTES.md`, 1,702 lines | **cut at line 744**: `(48549 tokens, cap 25000)` |
+| D | `…S241-through-S239.md`, 792 lines | returned whole, no marker |
+| E | largest shard, `offset=24586 limit=4` | lines 24,586–24,589 returned exactly |
+
+**The cap is 25,000 TOKENS, not 2,000 lines; truncation is announced in full; the rest stays
+addressable.** Probes C and E deliberately broke `grep`-never-`Read` — that violation *is* the
+measurement, and it is the only way to test the rule's own justification.
+
+#### The consequence, which no session in this lineage had stated
+
+**Truncation is ORDERED — top-down — and this ledger is newest-on-top.** So what a `Read` delivers is
+set by the front matter plus the newest few records, **not by the file's length**. Probe C's 744 lines
+are the whole front matter, Session 247's complete record and half of Session 246's: everything Step 14
+asks for, plus the handoff Phase 3A requires. **Trimming the tail cannot change that. Only the front
+matter can — and the front matter is what the apparatus itself manufactures**, at +19, +19, +36, +48,
++58, +61, +72, **+87** lines per trim.
+
+#### The retention rule is already unsatisfiable
+
+`{target ≤ 1,050} ∧ {floor ≥ 4} ∧ {density ≈ 235}` is an **empty constraint set**. `1,050 − 283 = 767`
+of record headroom; `767 / 234.8 = 3.27` — **the target admits three records; the floor is four.**
+
+| ninth-trim landing, floor-4 (818 record lines) | over the 1,050 target by |
+| --- | --- |
+| fm 283 — no front-matter growth (counterfactual lower bound) | 51 |
+| fm 356 — last three trims' average, +73 | 124 |
+| fm 377 — fitted `Δk ≈ 9.83k + 5.75` | **145** |
+
+**Front matter cannot be collapsed far enough:** floor-5 under the target needs `fm ≤ −124`. And the
+target has **never** been met by four *complete* records — every cut counts the trimming session's own
+9-line claim stub as one of the four. `L11/target` is evaluated at exactly the moment that makes it pass.
+
+#### What the apparatus is worth, measured in both directions
+
+**For the defence, two points nobody had made:**
+
+- **The founding data-loss event is real and I read it.**
+  `~/Development/methodology/starter-kit/methodology_trim.py:19-21` — *"that proof passed while a
+  paragraph was silently lost (`020ba3f`)"*. Moving a paragraph into a shard is exactly byte-preserving
+  under concatenation, so the whole-file check **had** to pass. That passage names `L1`/`L2`/`L3`. **The
+  record-scoped core is what that loss bought**, and it is a complete answer to "you have never lost
+  anything."
+- **The ledger is not starving the product, because the product is finished.** All six pipeline steps
+  wired, 53 modules, 1,338 tests at 97.98%; `gh issue list` empty **by design until UAT**. "Zero product
+  sessions in 22" is true and is **not** evidence of crowding out. Session 247's report did not say this.
+
+**For the challenge:** the apparatus is **inert between trims and live during them** — an untouched
+ancestor proof re-run after its trim has caught a real defect zero times, structurally (prose operands
+resolve from its own trim commit). And **eight defects sit live at HEAD with all nine proofs green and
+25/25 census tests passing** — including `SESSION_NOTES.md:256` and the collapse proof's own pinned
+`NEW_TABLE` literal **agreeing with each other and both wrong** ("C0–C6"; it defines C0–C7). That is
+learning #140, *"two copies agreeing is not verification"*, reproduced inside the proof written to
+prevent it.
+
+#### Where my first draft was wrong — four times, all caught by adversarial verification
+
+Recorded rather than smoothed, because it is this session's own subject matter:
+
+1. **I published "zero plain-run catches."** That silently narrowed the operator's question to
+   *already-shipped* proofs. Under the question actually asked the answer is **not zero**: `L6`/S231
+   (learning #127 — *"Only the plain run showed the failure"*) and `L12`/S245 (785 → 792 stale in four
+   files) are inherited assertions going red on real defects at trim time. **The error favoured the
+   challenge — the exact bias the assignment told me to correct for.**
+2. **I published "the cheap neuter loop matched the expensive review"** in support of Option F. Session
+   239's loop also *missed* the `startswith("L1")` prefix bug in its own proof — live and unrepairable
+   today. Option F is now the one item listed as *consider*, not *rule for*.
+3. **I computed the ninth-trim landing as 1,101** using pre-trim front matter, when every trim grows the
+   front matter inside its own commit. Corrected to a 1,101–1,195 range with the method shown.
+4. **I attributed `020ba3f` to `L0`–`L3`** where the passage names `L1`–`L3`.
+
+**And a fifth, not mine but instructive:** a delegated sweep read the `Read` tool's documentation
+("up to 2000 lines by default") and concluded the premise "still holds" — after probe A had already
+falsified it. **A quoted document beat a measurement until the measurement was run.**
+
+#### Verification
+
+| check | result |
+| --- | --- |
+| all **nine** `*.verify.sh` | **GREEN** before the work, after the document, and at commit |
+| census guard | **25/25 pass**, 2.1 s, before and after |
+| every figure in the document | tagged **[M]** measured by me / **[W]** delegated + spot-checked / **[C]** claimed and not re-derived |
+| key claims put to adversarial refutation | **4 of 4 returned REFUTED in part**; every correction re-verified by hand before being accepted |
+| the four live prose errors | re-derived personally, not taken from a sweep |
+| `020ba3f` precedent | read at source in the sibling repo, quoted verbatim |
+| cross-references | swept; three dangling `§N.M` fixed |
+| `CHANGELOG.md` | **none owed** — §2 directory gate, checked against the written rule |
+
+### Session 247 Handoff Evaluation (by Session 248)
+
+**Score: 9/10.** The best-targeted assignment this lineage has produced. It named the load-bearing
+premise, named the evidence that would settle the question, named the bias to correct for, and listed
+the in-between options so the analysis could not collapse into keep-vs-abandon. The session's entire
+shape came from it.
+
+- **"Derive the load-bearing premise FIRST … Measure it; do not quote Session 222."** This is the whole
+  session. Following it falsified a premise stated 19 times across 14 files and reframed the question.
+  **A handoff that tells you which sentence to distrust is worth more than one that tells you facts.**
+- **"Bias to correct for: Session 247's closing report leaned toward the challenge side."** Correct, and
+  I still leaned that way in my first draft (defect 1 above). The warning is why I ran adversarial
+  verification against my own thesis, which is what caught it.
+- **Naming the exclusions on the plain-run question** (`--self-test` mutants, adversarial review) made
+  the question answerable. It also invited the over-narrowing I then committed — but the exclusions were
+  explicit and the mistake was mine.
+- **Gotchas 1, 5, 6, 7 were all load-bearing.** Gotcha 7 (`command grep`) was used in every count
+  published. Gotcha 5's "never add a git-derived fact — CI checks out at depth 1" is the design rule that
+  makes the guard trustworthy and I cite it in the options.
+- **The `1639` line count was measured, flagged as its own defect class, and explicitly disowned**
+  (*"Do not inherit that number either: re-measure at your Phase 0"*). I measured 1,692 at `c6aa37b`.
+  That is exactly how a size figure should be handed over.
+- **−1, two claims passed forward without derivation in a handoff that elsewhere insists on it.**
+  *"The `post-merge` hook — the oldest unblocked backlog item"*: measured, it is **not** — the oldest is
+  *"The gate measures only ONE of the three dialect-injected prompts"*, `BACKLOG.md:204`, filed Session
+  217/218. And *"S242 found 15 in a green, self-tested trim"* is **not re-derivable** from the ledger,
+  the proof, `CHANGELOG.md` or `PROJECT_LEARNINGS.md` — reconstruction reaches 11–15, and the record's
+  own two summary figures contradict each other. It was offered as the defence's headline statistic.
+- **ROI: the highest of any handoff I can measure.** Two minutes to read; it set the deliverable, the
+  method, the evidence standard and the failure mode to guard against.
+
+### Session 248 Self-Assessment
+
+**Score: 8/10.** The deliverable is complete, every figure is labelled by provenance, both sides are
+argued at full strength, and the central finding is structural rather than numerical. What holds it at 8
+is that **four numbers in my first draft were wrong and all four were caught by verification I
+delegated, not by care at authoring time** — in a session whose entire subject is numbers that were true
+once.
+
+**+** **I measured the premise instead of quoting it**, with five probes, including two that
+deliberately broke a standing project rule because breaking it *was* the experiment.
+**+** **I found the structural consequence, not just the corrected number.** "The cap is 25,000 tokens"
+is a fact; "truncation is ordered, so file length is the wrong invariant and the front matter is the
+binding quantity" is what changes the recommendation.
+**+** **I argued the defence harder than the challenge, as instructed**, and it produced the two
+strongest items in the document — `020ba3f` and the product-state correction — both of which cut
+against the conclusion I was drifting toward.
+**+** **I ran adversarial refutation on my own key claims and let it win four times**, including once
+against my own thesis, and re-verified every correction by hand before accepting it.
+**+** **I refused to publish a derived-by-ratio figure as a measurement** — the largest shard's ~62
+`Read` pages is labelled as derived from the measured bytes/token ratio, not measured.
+**+** **I checked that adding the document broke nothing** — nine proofs and the guard, before and after.
+
+**−** **I published "zero plain-run catches", which was a scope substitution and favoured the
+challenge.** The assignment explicitly warned me about that bias. Caught by a refuter, not by me.
+**−** **I supported Option F with a claim I had not tested** ("the cheap loop matched the expensive
+review"). It missed a live, unrepairable code bug. I downgraded F from *rule for* to *consider*.
+**−** **I typed a landing figure from pre-trim front matter** when every trim grows the front matter in
+its own commit — arithmetic that ignored a mechanism I had measured myself two steps earlier.
+**−** **I mis-attributed the founding precedent** to `L0`–`L3` when the source names `L1`–`L3`. I had the
+file open.
+**−** **Eight live defects are documented and none is fixed.** Correct for a planning session, and it
+still means this session's output is a longer list of known-wrong things.
+
+**Against the bar:** S246 discovered the apparatus guards a snapshot; S247 built the first always-on
+guard over the live files. S248's equivalent is **falsifying the premise all of it rests on**, and
+showing that the quantity the budgets govern is not the quantity that binds.
+
+**What's next.**
+
+1. **The ruling — and it is on the critical path.** The ninth trim is due (**1,701 lines** against a
+   >1,500 trigger, re-measure at your Phase 0) and **cannot be run compliantly**: its only moves are to
+   violate `L11/target`, violate `L11/floor`, or re-tune `CLAUDE.md`'s declared numbers. §8 of the
+   document is eight options with mechanisms and costs; §9 recommends **A, then D, then E, and *consider*
+   F**. **Present it as a decidable question and stop** ([#184](PROJECT_LEARNINGS.md)) — the pattern that
+   has converted directly into a deliverable in each of the last three sessions.
+2. **Option A must be sequenced BEFORE the ninth trim, never during it.** `L11/declared` and
+   `L11/figure` read `CLAUDE.md:81`'s exact sentence, so correcting the premise obliges the next trim's
+   proof to declare the new text. Doing both at once bundles two deliverables and breaks FM #18.
+3. **A latent hard failure nobody has filed:** the census guard's `SPELLED`/`ORDINAL` maps stop at
+   **sixteen** (`tests/test_session_notes_census.py:113-124`). **A seventeenth shard raises `KeyError`.**
+   One line to fix, roughly 27 sessions away at the current cadence. File it or fix it — do not
+   rediscover it at the trim that trips it.
+4. **`README.md`'s per-directory test counts** — Session 247's #2, still open, with the numerals and the
+   verification command already filed in `BACKLOG.md`. Its open question is the interesting half: fix
+   three numerals, or compose them from a collection pass. **Decide it; do not re-measure it.**
+5. **The `post-merge` hook**, then the two delivered plans under `docs/planning/`, then the docs
+   toolchain version ceiling. Note that the post-merge hook is **not** the oldest unblocked item; the
+   dialect-gate item at `BACKLOG.md:204` is.
+
+**Key files:**
+- `docs/planning/ledger-budgets-review.md` — **the deliverable.** §0 is the verdict; §1.3 is the finding
+  that reframes everything; §3.2 is the arithmetic; §8 is the options table; §10 is nine dragons;
+  Appendix A reproduces every measurement.
+- `CLAUDE.md:81` — the retention rule and the false premise, in one sentence, read by `L11`.
+- `tests/test_session_notes_census.py:104` (`PROSE_FILES`), `:113-124` (the number-word cap).
+- `~/Development/methodology/starter-kit/methodology_trim.py:19-21` — **outside this repo**, and the
+  only place the founding data-loss event is recorded.
+- `PROJECT_LEARNINGS.md` — **213 learnings**; #207–#213 are this session's.
+
+**Gotchas:**
+1. **Do not inherit a single number from the document without re-deriving it** — including the ones I
+   measured. That is the document's own argument and §10 dragon 9 says so explicitly.
+2. **The census guard scans only `CLAUDE.md`, `README.md`, `BACKLOG.md` and `PROJECT_CONVENTIONS.md`**
+   (`PROSE_FILES`, `:104`). **`SESSION_NOTES.md` is NOT scanned** — this record could say anything about
+   shards and nothing would object. Editing `BACKLOG.md` near shard vocabulary *will* trip it.
+3. **A green proof loop after a commit proves nothing about live prose.** Every shard proof resolves its
+   prose operands from its own trim commit. Run the guard too — the `*.verify.sh` loop does not.
+4. **Eight defects are live at HEAD and documented but NOT fixed** (§6 point 3). Four sit in frozen files
+   and can never be fixed. Do not "discover" them again; do not fix them as a side quest either.
+5. **Probes C and E in Appendix A deliberately break `grep`-never-`Read`.** Re-running them is read-only
+   and safe. Do not let the technique leak into ordinary work.
+6. **`grep` is still a `ugrep --ignore-files` wrapper** — `command grep` or `git grep` for every count.
+   Load-bearing again this session, in every figure published.
+7. **`gh issue list` is empty and that is expected** — and it now has a *reason* worth carrying: the
+   product is feature-complete and the tracker opens at UAT.
+8. **Delegated sweeps quoted documentation as evidence at least once** and had to be corrected by a
+   probe. Treat a sub-agent's number the way this project treats its own prose: re-derive before
+   publishing.
+9. **`master` is 11 commits ahead of `origin/master`** — measured with `git fetch` + `git rev-list
+   --count origin/master..master`, not off a tracking ref.
 
 ### What Session 247 Did
 **Deliverable:** A **fail-closed census guard** — `tests/test_session_notes_census.py`, run by CI on
