@@ -282,16 +282,257 @@ nothing watches any of them.
 ## ACTIVE TASK
 
 ### What Session 246 Did
-**Deliverable:** Collapse the **five oldest pointer blocks** in this file's front matter (the fifth,
-fourth, third, second and first trims — ~176 lines) into one short table of cut keys and proof
-paths. Operator ruling, 2026-08-25: option **(a)** of Session 245's what's-next #1. **Not a trim** —
-no record moves, no shard is written, no record is edited in the collapse commit.
-**Started:** 2026-08-25 (UTC).
-**Status:** Session claimed. Work beginning.
+**Deliverable:** The **collapse** of the five oldest pointer blocks in this file's front matter —
+the fifth trim's down to the first's, 176 lines — into one table of cut keys and proof paths, with
+a new proof. **Operator ruling (a)**, 2026-08-25, of Session 245's what's-next #1. **Not a trim:**
+0 records moved, 0 shards written, 0 sessions archived. No other work was started.
 
-**Load-bearing premise to be DERIVED, not inherited:** Session 245 asserted that "each earlier proof
-reads its artifacts at its own commit, so compressing them disturbs nothing." That sentence is the
-whole justification for (a) and no assertion reads it. It is verified before any byte is cut.
+**Started / completed:** 2026-08-25 (UTC). **Commits: three** — `ddd5660` (Phase 1B claim, alone),
+`2b8c9c9` → amended to the collapse (alone, no record edit — C2 proves it), and this close-out.
+**Operator this session:** *"(a) — collapse the five oldest pointer blocks"*.
+
+| measurement | value |
+| --- | --- |
+| front matter before / after | **408** → **283** lines |
+| this file before / after the collapse commit | **1,272** → **1,147** lines |
+| removed | **176** lines of pointer prose, 5 blocks |
+| added | a **51**-line block: intro, a 5-row table, a caption, and the finding below |
+| records touched | **0** — byte-identical across the collapse (C2) |
+| proofs green | **9 / 9**; the new one `--self-test`s **46/46** |
+
+#### The premise was derived, and it was much bigger than the premise
+
+Ruling (a) rested entirely on one sentence of Session 245's: *"each earlier proof reads its
+artifacts at its own commit, so compressing them disturbs nothing."* **Nothing reads that
+sentence**, and it is the whole justification for the deliverable. So it was tested before a byte
+was cut — and the true statement is far wider:
+
+> **Every shard proof resolves its PROSE operands from its OWN trim commit.** Not just
+> `SESSION_NOTES.md` — `CLAUDE.md`, `README.md`, `BACKLOG.md` and `PROJECT_CONVENTIONS.md` too, via
+> `reach[p] = blob("%s:%s" % (sha, p))`. Only `L7`, `L9` and `L10` read the working tree, and only
+> shards and proof scripts. **From the moment a trim commit lands, no prose copy this apparatus
+> exists to keep in step is checked by anything.**
+
+Measured, with a control: corrupting the live pointer block's routing clause, span and size
+figures, or `CLAUDE.md`'s shard census, or `BACKLOG.md`'s, or `PROJECT_CONVENTIONS.md`'s, leaves
+**all eight proofs GREEN**; editing an ancestor shard on disk turns them **RED**, which is what
+proves the probe works rather than the proofs being asleep. **This falsifies Session 245's gotcha 2
+as stated** (*"L8, L12, L13 and now L14 all read those four live"*) — they do, but only while a
+trim is uncommitted. Re-running the loop after the trim commit proves nothing about those four.
+Learnings [#192](PROJECT_LEARNINGS.md), [#193](PROJECT_LEARNINGS.md).
+
+#### The proof: C0–C7, lettered on purpose
+
+`docs/architecture-history/SESSION_NOTES-pointer-collapse.verify.sh`. Lettered, not numbered,
+because it is **not** a shard proof and Session 245 had to write a paragraph recording that its
+`L14` was not the `L14` an earlier trim drafted and rejected; a second namespace removes that
+failure mode for one line's cost. `L9`/`L10` enumerate hand-declared sets rather than globbing, so
+adding the file disturbed none of the eight — measured with a probe, not assumed.
+
+| | |
+| --- | --- |
+| **C0** | the 176 removed lines, embedded verbatim and pinned to `ddd5660`; plus the table's own `176` and `` `ddd5660` `` held against the derived values |
+| **C1** | confinement: one `OLD_BLOCKS`→`NEW_TABLE` replacement + **3** declared substitutions, nothing else, each anchor unique in `before` |
+| **C2** | the records zone byte-identical across the collapse — the two-commits rule enforced, not promised |
+| **C3** | every row's span, heading count, archived lines and shard total **measured** from that shard at its own add-commit; the row's markdown line **composed** from the measurements; the trim session re-derived as the newest record this file held at that commit; and **no row in the table that no declared trim composes** |
+| **C4** | provenance: each declared trim sha IS that shard's add-commit; declared spans; shard and proof present on disk |
+| **C5** | each trim's contributed assertions, parsed as `^def L<N>(` from its own proof at its own add-commit, minus its predecessor's |
+| **C6** | every composed row, and the block's opening line, held against the **WORKING TREE** |
+| **C7** | **completeness** — every present-tense `**The N blocks below are frozen**` claim in the surviving front matter, with N **derived** from the trim blocks that actually follow it |
+
+**`C6` is the first assertion in this repository to read the working-tree front matter.** It closes
+the hole above for this table and nothing else, deliberately: the general fix is a deliverable, and
+it is written out as a question in what's-next #1 rather than described ([#184](PROJECT_LEARNINGS.md)).
+
+#### An adversarial review found six defects in a green, self-tested, twice-swept proof
+
+The third time this lineage has measured that ([#178](PROJECT_LEARNINGS.md)). All six are fixed:
+
+1. **A fabricated sixth table row survived green.** `C3` iterated `ROWS` and never the table, so a
+   row naming a shard that does not exist passed. `C3/SET` now requires set equality. `M38`.
+2. **Four figures inside the new block were read by nothing** — `176 lines`, `24,590`, *"The first
+   five trims"*, `` `ddd5660` `` — the `L12` class, reintroduced inside the block that replaces the
+   collapsed prose. `C0/FIGURE` and `C3/FIGURE` now compose them. `M39`–`M41`.
+3. **`C1` and `C6` read the same literal from two epochs.** `C1` compares it against `after`, pinned
+   at `addcommit(SELF)` **forever**; `C6` against the working tree. Once a commit lands on top and
+   amending is gone, **any** correction to the table's prose is red in one direction or the other —
+   there was no green state containing a corrected table. `C6` now holds the composed **rows**, so
+   prose stays repairable the way this lineage repairs prose.
+4. **No completeness class** — see `C7` and the miss it was built from, below.
+5. **Two stale count words in my own header**: *"17 mutants"* (it ships 46) and *"42-line table"*
+   (51). Both read by nothing. This file's own subject matter.
+6. **`README.md`'s census went off by one.** 38 files; headline claims 21 and the sub-list names
+   16. The new proof was in neither. Fixed by listing it — my earlier arithmetic checked 37−16=21
+   and missed that the sub-list is an explicit enumeration.
+
+#### Three defects I found myself, before the review
+
+- **A false superlative.** The header claimed *"the first proof in it to have run the loop at both
+  levels and published the result."* The **seventh** trim published a 55-arm table naming 29
+  uncovered arms; the **sixth** found two of its own. The **eighth** is the one that dropped the
+  discipline. One `git grep` settles it. [#199](PROJECT_LEARNINGS.md).
+- **A self-contradiction.** I wrote *"no `L` holds anything against [the working tree]"* three
+  sentences before *"only the shards and the proof scripts are read from disk, by `L7`, `L9` and
+  `L10`."* Both cannot be true. The claim is about **prose**.
+- **Fragment substitutions, and the sentence they missed.** The first draft used five fragment-level
+  anchors. They left **132- and 153-character** lines in a file hand-wrapped at 100, and left the
+  eighth block's *"The seven blocks below are frozen at the SEVENTH through FIRST trims"* standing
+  and false with C0–C6 green. Re-cut as **three paragraph** substitutions, and `C7` now derives
+  that whole family so the next one cannot hide. [#195](PROJECT_LEARNINGS.md).
+
+#### Verification
+
+| check | result |
+| --- | --- |
+| all **nine** proofs | **GREEN**, re-run after every amend and after each of the four L8-file edits |
+| `--self-test` | **46/46 mutants caught** |
+| neuter loop, whole assertion | **all eight load-bearing**, re-measured on the shipped revision; table in the header |
+| neuter loop, **per arm** | **DONE** — 35 `out.append` arms, **17** uniquely catch a mutant, the other **18** named and grouped by cause in the header. This is Session 245's what's-next #2 discharged for this proof |
+| the sweep tool itself | audited — its AST walk matched **any** `.append`, counting `composed.append` as a failure arm; fixed to `out.append`, 36 → 35. [#198](PROJECT_LEARNINGS.md) |
+| premise probe + control | corrupt live prose → 8/8 GREEN; edit an ancestor shard on disk → RED |
+| adding a non-shard `.verify.sh` to `docs/architecture-history/` | probed: invisible to all eight (`L9`/`L10` iterate hand-declared sets) |
+| records added by the collapse commit | **0** — `C2` |
+| `CHANGELOG.md` entry | **none owed** — `PROJECT_CONVENTIONS.md` §2 directory test: no `src/`, `packages/`, `scripts/`, `.github/workflows/` or `tests/` touched |
+| suite | not re-run — no code-tree file touched |
+
+### Session 245 Handoff Evaluation (by Session 246)
+
+**Score: 9/10.** The best handoff this lineage has produced, and the deduction is for one sentence
+that cost real work rather than for anything missing.
+
+- **What's-next #1 was a QUESTION, written out, with three named options, a recommendation and the
+  arithmetic behind it.** That is [#184](PROJECT_LEARNINGS.md) applied, and it worked exactly as
+  intended: the operator answered *"(a)"* in three words and the session had a deliverable inside a
+  minute. Compare S243, whose question was described but never asked.
+- **Its projection was the reason (a) was rulable at all.** *"The ninth trim projects to
+  ~1,101–1,248 lines while holding the four-record floor, over by 51 to 198."* Nothing in this
+  session contradicted it, and the collapse moves the front matter from 408 to 283, which buys the
+  ninth trim about 125 of those lines back.
+- **Gotcha 2 was used constantly and gotcha 6 (`command grep`) was load-bearing in every sweep.**
+  Gotcha 4 — *"do not put a load-bearing harness in the session scratchpad, subagents share it"* —
+  was read, believed, and **still not sufficient**: a review subagent this session went past the
+  scratchpad and destroyed four tracked files in the repo. The gotcha named the symptom; the rule
+  it should have named is *commit before delegating* ([#194](PROJECT_LEARNINGS.md)).
+- **−1, and it is the sentence the whole deliverable rested on.** *"Each earlier proof reads its
+  artifacts at its own commit, so compressing them disturbs nothing."* It is TRUE, and it is the
+  smallest true version of a much larger fact its author did not check: the same is true of
+  `CLAUDE.md`, `README.md`, `BACKLOG.md` and `PROJECT_CONVENTIONS.md`, which makes S245's **own
+  gotcha 2** wrong as written and means the ~thirty loop runs it describes after its trim commit
+  measured nothing. A premise that licenses a deliverable deserves the treatment #186 demands of a
+  bequest's size. [#192](PROJECT_LEARNINGS.md), [#193](PROJECT_LEARNINGS.md).
+- **A smaller one, in a file it also owns:** `PROJECT_LEARNINGS.md` #186 states *"31 literals
+  carrying 44 figures"*. Session 245 shipped **32 and 45** — its own pointer block and `L14/census`
+  say so — after a review found the 45th. The learning about typed numbers carried a typed number
+  that was wrong. Corrected in place this session, with the correction marked rather than the record
+  erased.
+- **ROI: strongly positive.** Reading it cost two minutes and produced the session's deliverable,
+  its scope, and — by being slightly wrong in one sentence — its most valuable finding.
+
+### Session 246 Self-Assessment
+
+**Score: 7/10.** The deliverable is complete, proved by an eight-assertion proof with 46 mutants and
+both neuter loops published, and it discharges Session 245's outstanding per-arm sweep. What holds
+it at 7 is that **an adversarial review found six defects in it after I had declared it green,
+self-tested and twice-swept** — including a fabricated table row that passed every assertion — and
+that I did not read `PROJECT_LEARNINGS.md` before starting a task that resembles earlier work more
+closely than any task in this repository's history.
+
+**+** **I derived the premise instead of inheriting it, and it paid the largest dividend of the
+session.** Testing one sentence nobody had read produced the finding that the whole apparatus
+guards a snapshot — bigger than the deliverable it was licensing.
+**+** **I ran a control.** "All eight proofs stay green when I corrupt the file" is worthless
+without "and they go red when I corrupt something they do read." Both were run.
+**+** **`C7` is a class-fix, not an instance-fix.** I found the missed sentence by hand; the
+response was not to add a fourth substitution but to derive that whole family of positional claims.
+**+** **`C3` composes rather than compares**, which removes the second copy of every table figure
+instead of keeping two copies in step.
+**+** **I fixed six review findings and three of my own without defending any**, and re-derived
+every one before touching it.
+**+** **I audited my own measuring tool before publishing its number** and found it over-matching
+`.append`, which had inflated the arm denominator.
+
+**−** **A green, self-tested, twice-swept proof still had six defects**, and the two that sting are
+mine in kind: two stale count words in the header of the very file whose subject is stale count
+words, and four unread figures inside the block that replaces the collapsed prose. I reproduced the
+exact defect I was removing, in the removal.
+**−** **I did not read `PROJECT_LEARNINGS.md` at Phase 0**, despite `CLAUDE.md` saying to when a task
+resembles earlier work. #191 describes precisely the trap my arm sweep fell into (`pass` vs
+`return []` on a guard). I rediscovered it instead of inheriting it — one iteration, but avoidable.
+**−** **A subagent I instructed in capitals to be read-only destroyed four tracked files.** Cost was
+zero because the work was committed, but that was luck of sequencing, not design, and I had read the
+gotcha warning about subagents an hour earlier.
+**−** **I published two stale sweep tables** (`C5 -> M19, M32`; *"Ten of the 36"*) and caught them
+only by re-running — the exact thing Session 245 was criticised for not doing.
+**−** **The block contains a superlative no assertion can reach** — *"the largest hole this lineage
+has"*. It is my judgement, not a measurement, and it is flagged here because it is unreachable.
+
+**Against the bar:** S245's contribution was an assertion class that goes blind when its subject
+ages. S246's is one level further out — **the discovery that the class was never watching the live
+file at all**, plus the first assertion here that does. The proof is also the first in this
+repository to publish both neuter loops for its own assertions since the seventh trim.
+
+**What's next.**
+
+1. **A QUESTION, and it is the largest open hole in this apparatus.** After a trim commit lands,
+   **no prose copy is checked by anything** — not this front matter, not `CLAUDE.md`, `README.md`,
+   `BACKLOG.md` or `PROJECT_CONVENTIONS.md`. Fourteen `L`-assertions guard eight historical
+   snapshots; `C6` guards one table. **The question: do you want (a) the ninth trim to add an
+   `L15` that re-reads `L8`'s four files and the live pointer block from the WORKING TREE, in
+   addition to the trim commit — so the census strings stay enforced between trims; (b) a
+   standalone always-on guard like `SESSION_NOTES-pointer-collapse.verify.sh` that covers the four
+   files and is run by a hook or CI rather than by a trim; or (c) nothing, on the grounds that the
+   trim-commit check is the only moment those files are edited?** (b) is my recommendation — it
+   decouples the guarantee from the trim cadence, which is what made the hole possible — but it is
+   a deliverable of its own and (a) and (c) are yours to rule on.
+2. **The ninth trim's arithmetic has changed and should be re-derived, not inherited.** The front
+   matter is **283** lines, not the 408 S245 projected from. Its ninth-trim estimate of
+   1,101–1,248 lines is now stale in your favour by roughly 125. **Re-measure; do not quote it**
+   ([#192](PROJECT_LEARNINGS.md)).
+3. **`README.md` carries one `.verify.sh` comment line per proof and only one is read by anything**
+   — Session 245's what's-next #5, measured there and unchanged here. This session added a tenth
+   such line. Still priced and still declined: closing it means hand-declared `L8` strings rather
+   than a derivation. **Decide it rather than rediscover it.**
+4. **The `post-merge` hook** — the oldest unblocked backlog item, unchanged for three sessions.
+   Diff `ORIG_HEAD..HEAD`, guard the squash case (`$1 = 1`). Its open question is unchanged:
+   `.githooks/` is not `.github/workflows/`, so whether it earns a `CHANGELOG.md` entry is not
+   settled by the S244 amendment.
+5. **The two delivered plans under `docs/planning/`**, then **the docs toolchain version ceiling**.
+
+**Key files:**
+- `docs/architecture-history/SESSION_NOTES-pointer-collapse.verify.sh` — **the proof, and the place
+  to start.** Its header carries why the assertions are lettered, why `C6` is per-row rather than
+  per-block, both published neuter tables, and the 18 arms with no unique mutant grouped by cause.
+- `SESSION_NOTES.md` front matter — the collapsed table is at the **end** of the front matter,
+  below the sixth trim's block. The eighth trim's pointer block above it is still the routing
+  authority.
+- `CLAUDE.md` — the trimmed-file section gained one bullet: the `C`-series, and the corrected form
+  of S245's gotcha 2.
+- `PROJECT_LEARNINGS.md` — **199 learnings**; #192–#199 are this session's, and #186 carries an
+  in-place correction of its own count.
+
+**Gotchas:**
+1. **`L8`'s four files are NOT read live.** They are read at each proof's trim commit. Editing
+   `CLAUDE.md`, `README.md`, `BACKLOG.md` or `PROJECT_CONVENTIONS.md` outside a trim session is
+   checked by **nothing**. Re-run the loop anyway — it is cheap and it catches shard/proof damage —
+   but do not read a green loop as validating a census string you just edited.
+2. **Run all NINE proofs now, not eight:** `for f in docs/architecture-history/*.verify.sh; do bash
+   "$f"; done`. The glob already picks up the new one.
+3. **The collapse proof must be run from inside the repo** (`git rev-parse --show-toplevel`), like
+   all the others.
+4. **`C1` is pinned at the collapse commit forever; `C6` reads the working tree.** If you need to
+   change the collapsed table's PROSE, change it and declare the substitution in your own proof —
+   `C6` holds only the composed rows and the opening line, precisely so prose stays repairable.
+   Changing a table ROW requires re-deriving it; `C3` composes it from the shards.
+5. **Commit before spawning any review or verification subagent.** One ignored an explicit
+   read-only instruction this session and truncated four tracked files. Tell agents to *specify*
+   mutation experiments; run them yourself.
+6. **`grep` is a `ugrep --ignore-files` wrapper.** `command grep` or `git grep` for any count.
+   Inherited from S244/S245 and load-bearing in every sweep here.
+7. **A superlative is unreachable by every assertion.** This block ships one, flagged above.
+8. **`gh issue list` is empty and that is expected** — `BACKLOG.md` governs, at **16 items**
+   (unchanged this session).
+9. **Verify the push count rather than quoting one:** `git fetch && git rev-list --count
+   origin/master..master`.
 
 ### What Session 245 Did
 **Deliverable:** The **eighth lossless trim** of `SESSION_NOTES.md`. Sessions 241 → 239 — 3 record
