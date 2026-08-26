@@ -282,14 +282,255 @@ nothing watches any of them.
 ## ACTIVE TASK
 
 ### What Session 247 Did
-**Deliverable:** A **fail-closed census guard** — a pytest test, run in CI, that derives the shard
-facts from the files on disk and holds the four `L8` files (`CLAUDE.md`, `README.md`, `BACKLOG.md`,
-`docs/methodology/PROJECT_CONVENTIONS.md`) against them BETWEEN trims. Closes Session 246's
-what's-next #1 under **operator rulings**: (1) pytest-in-CI, not a standalone `.verify.sh`;
-(2) fail-closed allowlist, not region markers; (a) `.qmd`/computed fields ruled non-viable.
-(IN PROGRESS)
-**Started:** 2026-08-25 (UTC)
-**Status:** Session claimed. Work beginning.
+**Deliverable:** A **fail-closed census guard** — `tests/test_session_notes_census.py`, run by CI on
+every push and pull request — that derives the shard facts from the files on disk and holds the four
+`L8` files against them **between trims**. Closes Session 246's what's-next #1 under three operator
+rulings: **(1) pytest-in-CI**, not another standalone `.verify.sh`; **(2) fail-closed allowlist**,
+not region markers; and **`.qmd`/computed fields ruled non-viable**. No other work was started.
+
+**Started / completed:** 2026-08-25 → 2026-08-26 (UTC). **Commits: four** — `b1a0be2` (Phase 1B
+claim, alone), `8216431` (the guard, alone), `0283971` (the wiring), and this close-out.
+**Operator this session:** *"1. pytest-in-CI ; 2. explain this problem"*, then *"yes"*.
+
+#### The hole, measured before anything was built
+
+| measurement | value |
+| --- | --- |
+| commits touching ≥1 of the four files since the first trim | **42** |
+| of those, checked at that tree by some proof | **9** (the 8 trims + the collapse) |
+| **unguarded** | **33** — 79% |
+| literals the SEVENTH trim's proof requires in those files | **19** |
+| still present in the working tree today | **3** |
+| control: census corrupted 8→5 + a routing clause widened | **9/9 proofs GREEN**, guard **RED** |
+| which checks the control trips | `check_composed`, `check_scan` |
+
+The eighth trim legitimately rewrote the other 16; that proof is green only because it reads them
+at its own commit. **This is Session 246's finding, re-derived here rather than quoted**
+([#192](PROJECT_LEARNINGS.md)) — and the control was run in both directions, because "the proofs
+stay green when I corrupt this" is worthless without "and they go red when I corrupt something they
+do read."
+
+#### Why option (a) was declined on mechanism, not taste
+
+S246 offered **(a)** an `L15` inside the ninth trim's proof re-reading `L8`'s four files from the
+working tree. **As worded it is unbuildable.** Had the *seventh* trim shipped it, that proof would
+be RED today — 16 of its 19 literals no longer exist — and **unrepairable**, because `L10` pins
+every ancestor proof byte-for-byte to a declared freeze commit. The general rule is
+[#200](PROJECT_LEARNINGS.md): **a working-tree assertion is safe iff its subject is immutable.**
+`C6` works because trims 1–5 are frozen forever; the census changes at every trim, so it belongs in
+a mutable artifact. That argument is the reason (b) was right, and S246 recommended (b) without it.
+
+#### The guard
+
+Seven checks over one `Census` snapshot: span **tiling**, **proof** presence, banner
+**derivability**, **composed** claims, filename **set equality**, the fail-closed **scan**, and
+allowlist **staleness**. Design points that are load-bearing rather than stylistic:
+
+- **Files on disk, never git.** `ci.yml` uses `actions/checkout@v4` with no `fetch-depth`, i.e. a
+  **depth-1 shallow clone**. A git-derived fact would behave differently in CI than locally. The one
+  fact that is not on an artifact — the first shard's trim session, whose banner predates the
+  `(Session N, date)` convention — is a single declared constant, and `check_banners` fails if any
+  *other* banner ever omits one, so the exception cannot widen.
+- **Composed, not compared** ([#196](PROJECT_LEARNINGS.md)). Each expected sentence is built from
+  the measurement, so a failure prints the exact text the file must carry. **55 expectations.**
+- **Fail-closed.** A number within `WINDOW` of "shard", or quantifying a shard-set head noun, must
+  fall inside a composed sentence or a per-occurrence `FROZEN` entry, or the suite is red.
+- **`WINDOW` was measured, not chosen.** At ±60 chars of *shard|trim|proof|instance|banner|archiv*
+  the scan returns **127** candidates — `§3.3`, `75%`, `2,000-line`, *"shape 5 of the 20 proofs"*.
+  At ±30 of "shard" plus the head-noun arm it returns **22**, all real. Allowlisting the difference
+  would have meant filing `§3.3` as frozen census prose ([#202](PROJECT_LEARNINGS.md)).
+- **`FROZEN` is per-occurrence, never per-file** ([#135](PROJECT_LEARNINGS.md)), and holds three
+  kinds — frozen historical records, numbers about another subject that sit near "shard", and counts
+  about something other than the shard set. Each entry states which. A companion test fails when an
+  entry stops matching, so the list cannot rot.
+
+#### Mutants, and the neuter loop
+
+**17 mutants ship as tests**, so CI proves the guard can fail rather than only that it passes —
+the pytest equivalent of the `--self-test` every shard proof carries, except it runs unasked.
+
+| result | value |
+| --- | --- |
+| mutants / checks | **17 / 7** |
+| survivors with all checks present | **none** |
+| checks that are **load-bearing** (removing it lets a mutant survive) | **7 of 7** |
+| module runtime | **2.15 s** |
+
+**Two mutants exist only to isolate a check.** `check_tiling` and `check_banners` were both *reached*
+by existing mutants and both still **deletable with the suite green** — whatever broke the tree also
+made the prose disagree, so `check_composed` caught it first. `M16` and `M17` therefore make the
+**mistake consistent**: they break the tree *and* rewrite all four prose files to agree with the
+break. That is not a contrivance — it is the realistic failure, a trim that mis-cuts and then
+documents its own mistake faithfully ([#204](PROJECT_LEARNINGS.md)).
+
+#### The guard flagged its own documentation, twice
+
+Adding its `README.md` row tripped the scan on *"the four prose files … (25 tests)"*; filing its
+`BACKLOG.md` item tripped it again on *"Session 247"* beside the word "shard". The first is
+classified in `FROZEN` with its reason, the second reworded. **A guard that does not catch its own
+introduction is not scanning what it claims** ([#206](PROJECT_LEARNINGS.md)).
+
+#### Two defects I introduced and caught
+
+- **A typed number, three times, in the session about typed numbers.** I wrote *"only **4** of the
+  19 literals survive"* into the module docstring, the `CHANGELOG.md` entry **and** a commit message,
+  reading it off a four-row table whose values are 1+1+0+1. The true figure is **3**. Caught at final
+  verification by re-deriving it with a script instead of re-reading the table; fixed in both files
+  and the commit amended before any push. Four writes preceded one derivation — [#186](PROJECT_LEARNINGS.md)
+  exactly.
+- **A quadratic scan that hung the suite twice.** `_in_scope` re-scanned the whole file for head
+  nouns once per *candidate*. I killed the run and re-ran it before looking for the cause. Hoisting
+  it to once per file, plus building the shard set once per pass instead of ten times, took the
+  module from minutes to 2.15 s ([#203](PROJECT_LEARNINGS.md)).
+
+#### Verification
+
+| check | result |
+| --- | --- |
+| the guard | **25 tests, all pass**, 2.15 s |
+| neuter loop | **7/7 checks load-bearing**, no mutant survives — published in the module header |
+| full suite | **1338 passed + 9 live-skipped @ 97.98% coverage** (was 1313 at the S243 baseline) |
+| arithmetic | 1,347 collected − 9 skipped = 1,338; 1,322 before + 25 new = 1,347 ✓ |
+| `ruff check src/ tests/ packages/ scripts/` | **clean** |
+| `uv run mypy` | **Success, 68 source files** — it scopes to `packages`, so `tests/` is not covered |
+| all **nine** shard proofs | **GREEN** before and after every edit |
+| guard run from an unrelated working directory | **passes** — it resolves its root from `__file__` |
+| `ci.yml` | **unchanged** — `uv run pytest -q` already collects `tests/` |
+| `CHANGELOG.md` entry | **owed and written** — `tests/` is inside the §2 directory gate (S244 ruling) |
+
+### Session 246 Handoff Evaluation (by Session 247)
+
+**Score: 9/10.** The handoff produced this session's deliverable, its scope and its two operator
+rulings inside the first three exchanges, and its central factual claim was correct and load-bearing.
+
+- **What's-next #1 was a QUESTION with three named options, a recommendation and the reasoning** —
+  [#184](PROJECT_LEARNINGS.md) applied. The operator ruled twice in a handful of words. This is the
+  second consecutive session where that format converted directly into a deliverable.
+- **Gotcha 1 was the entire premise and it was true.** *"`L8`'s four files are NOT read live … do
+  not read a green loop as validating a census string you just edited."* Re-derived here with a
+  control; it held exactly.
+- **Gotcha 2 (run all NINE), gotcha 6 (`command grep`), gotcha 8 (`gh issue list` is empty and that
+  is expected)** were all used and all correct. Gotcha 6 was load-bearing in every count I published.
+- **`C3`/`C6`/`C7` were directly reusable as designs**, not just as history: `check_composed` is
+  `C3`'s compose-don't-compare, and `check_scan` is `L14/complete`'s "every occurrence must fall
+  inside a declared literal" one class over.
+- **−1: option (a) was priced as the cheap option when it is structurally unbuildable**, and the
+  handoff contained everything needed to notice — the same document states `L10`'s write-once rule.
+  It recommended (b) for the right reason (decoupling from the trim cadence) but never said that (a)
+  would go red one trim later and could not be repaired. An operator could reasonably have picked
+  (a). Naming the *mechanism* that kills an option is worth more than ranking the options.
+- **Not a defect, but budget a minute for it:** its *"front matter 408 → 283"* uses "everything above
+  the first record heading"; measuring to `## ACTIVE TASK` gives **281**. Both are defensible and
+  the total (**1,147**) is exact. State the boundary next time.
+- **ROI: strongly positive.** Two minutes to read, and it set the whole session.
+
+### Session 247 Self-Assessment
+
+**Score: 8/10.** The deliverable is complete, wired in, controlled in both directions,
+mutation-tested with every check proven load-bearing, and the neuter loop is published rather than
+merely run. What holds it at 8 is that I committed a typed number in the session whose entire
+subject is typed numbers, and shipped a quadratic scan that hung the suite twice before I looked.
+
+**+** **I derived the premise and ran the control both ways** before building — corrupt the census
+and the nine proofs stay green; edit an ancestor shard and they go red.
+**+** **I measured the scan width instead of choosing it**, and published both figures. The ±60
+version would have shipped a 100-entry exemption list containing `§3.3`.
+**+** **I refused to publish "reached by a mutant" as coverage.** The neuter loop showed two checks
+were deletable with the suite green; I built the isolating mutants rather than writing a paragraph
+naming them as uncovered.
+**+** **I wrote the `CLAUDE.md` bullet with no numerals at all** — naming `WINDOW` and `FROZEN`
+instead of quoting them — because nothing in this repository derives a numeral in that bullet.
+**+** **I swept the class rather than filing the instances.** The `README.md` drift was re-measured
+across every row, and the arithmetic closes exactly (50+63+18 = 131 = 1,347 − 1,216), so the
+BACKLOG item is complete rather than a sample.
+**+** **I let the guard judge my own prose and did not exempt my way out of it** — one classified
+with a reason, one reworded.
+
+**−** **I typed "4 of 19" three times before deriving it once.** It reached a commit message, the
+module docstring and `CHANGELOG.md`. This is the exact failure the session exists to prevent, and it
+was caught by a script at final verification rather than by care at authoring time.
+**−** **I shipped a quadratic scanner and killed the run twice before profiling it.** The symptom
+was a hang, which I treated as slowness rather than as a defect.
+**−** **I misread the pass/fail split twice** ("7 passed" → assumed the live tests were all green,
+when `check_scan` was among the failures), and burned two round-trips on the contradiction before
+running `grep '^FAILED'`, which settles it in one.
+**−** **`M17` is the weakest mutant in the set.** It requires an author to write prose agreeing with
+a wrong derivation. I believe that is realistic and said so, but it is the one mutant whose scenario
+I argued for rather than measured.
+**−** **I wrote a line count into my own what's-next from a measurement predating my own record**
+(*"1,398, not due"* — it is 1639, and the trim IS due). Caught by re-measuring before commit rather
+than by not doing it. Twice in one session, in the session about exactly this.
+**−** **The hole is not closed, only its census slice is.** Non-census prose in those four files is
+still checked by nothing between trims, and I have said so in three places rather than fixing it.
+
+**Against the bar:** S246's contribution was the *discovery* that the apparatus guards a snapshot,
+plus the first assertion here that reads the working tree. S247's is the first **always-on** guard
+over the live files — running unasked, on every push, with its own falsification suite — and the
+first in this repository to ship its mutants as tests rather than behind a flag.
+
+**What's next.**
+
+1. **The rest of Session 246's hole, which is still open and is still the largest one.** This guard
+   covers the shard **census** only. Every other claim in those four files — the retention rule's
+   three numbers, the assertion inventory (`L0–L14`), the file-sweep census, `README.md`'s repo map
+   — is checked by nothing between trims. **The question is whether to widen this module or leave
+   it**: widening means more claim classes and a larger `FROZEN`; leaving it means the census is
+   guarded and the rest is not, which is at least an honest, documented boundary. **My
+   recommendation is to leave it and let the next real drift name the class**, because #202 says
+   scan width should be chosen from measured residue and there is no residue to measure yet.
+2. **`README.md`'s per-directory test counts** — now a filed `BACKLOG.md` item with the exact
+   numerals (207→**257**, 94→**157**, 16→**34**) and the verification command. Its open question is
+   the interesting half: fix three numerals, or compose them from a collection pass the way this
+   session composed the census. **Decide it; do not re-measure it.**
+3. **The ninth trim IS due, and this close-out is what fired it.** `SESSION_NOTES.md` is at
+   **1639** lines against the **1,500** trigger — I wrote "1,398, not due" into this list from a
+   measurement taken *before* my own record existed, and caught it by re-measuring after the write.
+   Same defect class as everything else here, one file over. **Do not inherit that number either:
+   re-measure at your Phase 0.** The target is ≤1,050 with a floor of 4 records, and S246's collapse
+   bought back roughly 125 lines of front matter, so a 5-record retention may now be reachable where
+   S245 measured it arithmetically impossible — **derive it, do not assume it either way.** When the
+   trim runs it must update the prose *and* re-run this guard; the guard's failure output prints the
+   exact replacement sentence for every claim it holds, which makes the ninth trim's prose edits
+   mechanical for the first time.
+4. **The `post-merge` hook** — the oldest unblocked backlog item, unchanged for four sessions now.
+   Diff `ORIG_HEAD..HEAD`, guard the squash case (`$1 = 1`). Its `CHANGELOG.md` question is now
+   **settled by precedent**: this session took an entry for a `tests/`-only change under the S244
+   amendment, and `.githooks/` is neither `tests/` nor `.github/workflows/` — so it still needs a
+   ruling, but the amendment's directory-test *form* is the template.
+5. **The two delivered plans under `docs/planning/`**, then **the docs toolchain version ceiling**.
+
+**Key files:**
+- `tests/test_session_notes_census.py` — **the deliverable, and the place to start.** Its module
+  header carries why each ruling was taken, the measured scan widths, the published neuter loop, and
+  the control experiment in both directions.
+- `CLAUDE.md` — one new bullet in the trimmed-file section, deliberately numeral-free.
+- `BACKLOG.md` — one new item (`README.md`'s drifted test counts) with a closing arithmetic proof.
+- `PROJECT_LEARNINGS.md` — **206 learnings**; #200–#206 are this session's.
+
+**Gotchas:**
+1. **The `for f in docs/architecture-history/*.verify.sh` loop does NOT run this guard**, and the
+   guard does not run those proofs. Run `uv run pytest tests/test_session_notes_census.py` as well.
+   It is not a shard proof: it reads no git and enforces no write-once.
+2. **At the ninth trim this guard goes RED until the prose is updated — that is the design, not a
+   break.** Read the failure: it prints the exact sentence each file must carry, composed from the
+   new shard set. Update prose first, then re-run.
+3. **`FROZEN` does not mean "historical".** It means *in scope by proximity, but not a claim about
+   the current census*, and it holds three different kinds. Read the reason string before assuming
+   an entry is a dead record.
+4. **One `FROZEN` entry contains `(25 tests)` on purpose.** Add a mutant and that literal goes stale,
+   the companion test fires, and you are sent to update `README.md`'s count. That is the README
+   policing itself, not a bug.
+5. **Never add a git-derived fact to this guard.** CI checks out at depth 1; it would pass locally
+   and behave differently there.
+6. **Do not run the control on the real tree without `git checkout --` staged to undo it.** I
+   corrupted `CLAUDE.md` deliberately for the control; the same experiment now runs safely against a
+   `tmp_path` mirror via `_mirror()`, which is how the mutants do it.
+7. **`grep` is a `ugrep --ignore-files` wrapper** — `command grep` or `git grep` for any count.
+   Inherited from S244/S245/S246 and load-bearing again here.
+8. **`mypy` does not cover `tests/`** (it scopes to `packages`), so a type error in this module is
+   caught by nothing. `ruff` does cover it.
+9. **`git status` and `git log` for the push count, not memory:** `git fetch && git rev-list --count
+   origin/master..master`.
 
 ### What Session 246 Did
 **Deliverable:** The **collapse** of the five oldest pointer blocks in this file's front matter —
