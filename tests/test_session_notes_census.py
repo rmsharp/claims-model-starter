@@ -258,16 +258,19 @@ def expectations(found: list[Shard]) -> list[Expectation]:
         "the instruction to grep every shard")
     add(CLAUDE, f"there are {word.upper()}, and a lookup must consult all of them",
         "the shard-census sentence the routing table hangs off")
-    add(CLAUDE, f"of the {prior_word} newer shards truncate under a default",
+    add(CLAUDE, f"of the {prior_word} newer shards read whole under a default",
         "the count of shards newer than the first (N-1), not N")
     add(README, f"older in the {word} shards above",
         "the repo map's pointer from the live ledger to the shards")
     add(BACKLOG, f"there are now **{word}** unwatched shards",
         "the read-cap item's shard count")
-    add(BACKLOG, f"of the {prior_word} newer ones truncate under a default",
+    add(BACKLOG, f"of the {prior_word} newer ones read whole either",
         "the read-cap item's N-1 count")
     add(CONVENTIONS, f"**{word.capitalize()} instances so far**",
         "the shard-naming rule's instance count")
+    add(BACKLOG, f"for every non-first shard and {prior_word} trims have obeyed it",
+        "the read-cap item's count of trims that followed the range-form naming rule "
+        "(every shard after the first)")
 
     # ---- which sessions performed a trim ------------------------------------
     add(BACKLOG, f"**Sessions {_join_and([str(s) for s in trims[1:]])} widened this:**",
@@ -357,11 +360,6 @@ HEAD_NOUN = re.compile(
 # be present by test_frozen_entries_are_still_present, so the list cannot rot --
 # reword the sentence and the companion test sends you back here.
 FROZEN: tuple[tuple[str, str, str], ...] = (
-    (CLAUDE, "(Three of the ",
-     "a MEASURED count of shards that truncate under a default Read (Session 249), "
-     "not a census of the shard set: the guard derives line counts from disk and "
-     "cannot derive tokens without a tokenizer. Re-measure by probing, per "
-     "BACKLOG.md's read-cap item; the 'seven' in this same sentence IS composed above"),
     (CLAUDE, "never appends to an existing one — which is why every shard after the first",
      "'one' is a pronoun for a shard file, not a count of shards"),
     (CLAUDE, "drops both), and two cite shard filenames inside frozen historical",
@@ -393,6 +391,9 @@ FROZEN: tuple[tuple[str, str, str], ...] = (
      "a session number and the read_cap constant declared inside three write-once "
      "proofs -- a date and a harness figure, neither a shard count. The shard's own "
      "line count is composed above and is deliberately NOT restated in this sentence"),
+    (BACKLOG, "written in Session 222 for a one-shard world",
+     "frozen: a session number, and the shard count as it stood at the FIRST trim -- "
+     "not a claim about the current census"),
     (BACKLOG, "(The 924 figure this item carried for the\nthird shard was wrong; "
      "933 is the measured `wc -l`.)",
      "frozen: records that Session 228 typed 924 where the measured value is 933. "
