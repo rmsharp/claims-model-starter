@@ -391,6 +391,38 @@ falsified it. **A quoted document beat a measurement until the measurement was r
 | cross-references | swept; three dangling `§N.M` fixed |
 | `CHANGELOG.md` | **none owed** — §2 directory gate, checked against the written rule |
 
+#### A completeness critic found four errors in the committed document, and one is exquisite
+
+Run after `97fc164`. **All four verified by hand before acceptance; the document now carries §12.**
+
+1. **My own close-out record falsified the document's central measurement.** §1.3 said *"K = 2 is
+   satisfied and K = 3 is not"* — measured when this record was a 9-line stub. Writing it took the
+   ledger to **1,924 lines / ~54,688 tokens, 2.19× the cap**, and a default `Read` now stops at line
+   **748 — inside Session 247's record, mid-way through the OPERATOR ASSIGNMENT table.** **K = 1.**
+   Everything past it is beyond the horizon: the paragraph naming the evidence I was told to gather,
+   the "argue both sides" block, the "bias to correct for" warning, and all nine of S247's gotchas.
+   **The instruction that shaped this session is now outside the one-`Read` window of the file that
+   carries it, and I am what put it there.**
+2. **I priced Option E in lines when the document's own thesis is that tokens bind.** Measured: a prose
+   pointer block is **2,289 tokens**, a collapsed table row **331** — a factor of **6.9**, not the ~2
+   the line counts imply. E is the highest-leverage option, not the third.
+3. **I probed one file and generalised.** `PROJECT_LEARNINGS.md` is **4.19×** the cap with no budget, no
+   trim rule, no watch — and `CLAUDE.md:101` directs every session to read it. `CHANGELOG.md` is
+   **9.66×**, *is* in the dashboard's `READ_CAP_WATCHED`, and reports "fine" because the watch counts
+   lines. `BACKLOG.md` already truncates.
+4. **Three of my own arguments were too strong, all against my conclusions.** §6 point 4 ("most defects
+   the apparatus finds are defects it created") is false for a substantial subset — four counter-cases
+   in files no trim wrote. §6.1's "crowds out the product is *refuted*" should be "weakened": nine
+   code/harness defects filed S218–S225 are untouched, two of them severe. And §5 point 5 omitted that
+   **the proofs are not in CI at all** — one line fixes it.
+
+**Two further live defects found, taking the count from eight to ten:** `CLAUDE.md:82`'s
+*"`READ_CAP_WATCHED` is an exact-path set containing none"* — it contains `SESSION_NOTES.md`; and
+`CLAUDE.md` is **25,997 B against the ~25 KB budget its own line 101 cites** as the reason
+`PROJECT_LEARNINGS.md` was extracted. Measured across the apparatus era, `CLAUDE.md` grew +165% in bytes
+while its non-apparatus content *shrank* — **essentially 100% of its growth since Session 222 is this
+apparatus**, injected into every session before any file is opened.
+
 ### Session 247 Handoff Evaluation (by Session 248)
 
 **Score: 9/10.** The best-targeted assignment this lineage has produced. It named the load-bearing
@@ -424,11 +456,13 @@ shape came from it.
 
 ### Session 248 Self-Assessment
 
-**Score: 8/10.** The deliverable is complete, every figure is labelled by provenance, both sides are
-argued at full strength, and the central finding is structural rather than numerical. What holds it at 8
-is that **four numbers in my first draft were wrong and all four were caught by verification I
-delegated, not by care at authoring time** — in a session whose entire subject is numbers that were true
-once.
+**Score: 7/10** — revised down from 8 after the completeness pass. The deliverable is complete,
+every figure is labelled by provenance, both sides are argued at full strength, the central finding is
+structural rather than numerical, and the addendum is arguably the strongest part of it. What holds it
+at 7 is that **eight of its figures or claims were wrong across two drafts, and every one was caught by
+verification I delegated rather than by care at authoring time** — and that **I committed a document
+whose central measurement my own close-out had already falsified, without re-running the two-minute
+probe that would have shown it.** In a session whose entire subject is figures that were true once.
 
 **+** **I measured the premise instead of quoting it**, with five probes, including two that
 deliberately broke a standing project rule because breaking it *was* the experiment.
@@ -452,8 +486,14 @@ review"). It missed a live, unrepairable code bug. I downgraded F from *rule for
 its own commit — arithmetic that ignored a mechanism I had measured myself two steps earlier.
 **−** **I mis-attributed the founding precedent** to `L0`–`L3` when the source names `L1`–`L3`. I had the
 file open.
-**−** **Eight live defects are documented and none is fixed.** Correct for a planning session, and it
+**−** **Ten live defects are documented and none is fixed.** Correct for a planning session, and it
 still means this session's output is a longer list of known-wrong things.
+**−** **I shipped a false central claim and my own record is what made it false.** §1.3's `K = 2` was
+true when probed and stale by the time I committed it. **Re-running probe C after writing the record
+takes two minutes and I did not do it** — the single clearest instance of this document's own thesis,
+committed by its author. Caught by a delegated critic.
+**−** **I priced the option I recommend in the wrong unit**, in the document that establishes which unit
+binds. Option E is worth ~6.9×, not ~2×.
 
 **Against the bar:** S246 discovered the apparatus guards a snapshot; S247 built the first always-on
 guard over the live files. S248's equivalent is **falsifying the premise all of it rests on**, and
@@ -489,7 +529,7 @@ showing that the quantity the budgets govern is not the quantity that binds.
 - `tests/test_session_notes_census.py:104` (`PROSE_FILES`), `:113-124` (the number-word cap).
 - `~/Development/methodology/starter-kit/methodology_trim.py:19-21` — **outside this repo**, and the
   only place the founding data-loss event is recorded.
-- `PROJECT_LEARNINGS.md` — **213 learnings**; #207–#213 are this session's.
+- `PROJECT_LEARNINGS.md` — **214 learnings**; #207–#214 are this session's. **It is 4.19× the read cap and nothing watches it** (§12.3).
 
 **Gotchas:**
 1. **Do not inherit a single number from the document without re-deriving it** — including the ones I

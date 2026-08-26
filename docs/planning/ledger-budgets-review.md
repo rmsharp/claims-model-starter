@@ -29,8 +29,9 @@ problem the budgets were invented to solve, and replaces it with a smaller, shar
 **The structural consequence, which no session in this lineage has stated.** Truncation is *ordered*:
 it delivers the file from the top down. The ledger is newest-on-top. So **what a `Read` delivers is
 determined by the size of the front matter plus the newest few records — not by the length of the
-file.** Measured: one default `Read` today returns the entire front matter plus the two newest complete
-records [M]. Appending a thousand more lines at the bottom would not change that by one byte.
+file.** Appending a thousand more lines at the bottom would not change that by one byte.
+**How many records that is has since been re-measured downward — see §12, which was written after this
+document was first committed and corrects it to ONE.**
 
 **Trimming the tail therefore does nothing for the problem the trimming exists to solve.** The
 quantity that actually binds is the front matter — which is the one thing the apparatus itself
@@ -120,10 +121,14 @@ the K newest records fit in one `Read`", and K is the working context a session 
 Step 14 and Phase 3A, 3 if you honour [#162](../../PROJECT_LEARNINGS.md) ("two-records-back is not
 archaeology; it is still live context").
 
-Today, with front matter at 283 lines, **K = 2 is satisfied and K = 3 is not** [M]. Total file length
-does not appear in that sentence. **Trimming the tail cannot change it; only shrinking the front matter
-can.** The precise front-matter budget should be *measured by probe*, not computed from a line count —
-per-section token density differs, and "derive, don't declare" is this project's own rule.
+**At the moment probe C ran, K = 2 was satisfied and K = 3 was not.** ~~That is the operative figure.~~
+**SUPERSEDED within the hour, by this session's own close-out — see §12.1. The measured value is now
+K = 1.** The original reading is left visible because *how* it went stale is the finding.
+
+Total file length does not appear in that sentence. **Trimming the tail cannot change it; only shrinking
+the front matter can.** The precise budget should be *measured by probe*, not computed from a line
+count — per-section token density differs, and "derive, don't declare" is this project's own rule. §12.1
+does exactly that and prices every region in tokens.
 
 ### 1.4 Evidence-based inventory of the false premise
 
@@ -258,8 +263,9 @@ other than it appears to for at least two trims.
 
 ### 3.4 Consequence
 
-`SESSION_NOTES.md` is **1,701 lines against a >1,500 trigger** [M]: the ninth trim is due and **cannot
-be compliant.** Its only moves are to violate `L11/target`, violate `L11/floor`, or edit `CLAUDE.md`'s
+`SESSION_NOTES.md` was **1,701 lines against a >1,500 trigger** when this section was written and is
+**1,924** now [M] — this document's own close-out record added 223 of them, which is §12.1's point. The
+ninth trim is due and **cannot be compliant.** Its only moves are to violate `L11/target`, violate `L11/floor`, or edit `CLAUDE.md`'s
 numbers so `L11` follows the new declaration — which `L11/figure` permits by design and which is
 precisely the re-tune this session is forbidden to make. **A ruling is on the critical path.**
 
@@ -649,3 +655,121 @@ uv run pytest tests/test_session_notes_census.py -q
 - **Session 247's handoff calls the `post-merge` hook "the oldest unblocked backlog item"** [C]. Measured
   [W]: the oldest unblocked item is *"The gate measures only ONE of the three dialect-injected prompts"*,
   `BACKLOG.md:204`, filed Session 217/218. Minor, and orthogonal to this analysis.
+
+
+---
+
+## 12. Addendum — what a completeness critic found after this document was committed
+
+This section was added at `97fc164`+1, after an adversarial completeness pass over the committed
+document. **It corrects four claims and adds four findings.** It is appended rather than folded in
+because *when* each figure went stale is the document's own subject.
+
+### 12.1 The headline measurement was stale before the ink dried — because of this document
+
+`SESSION_NOTES.md` was 1,701 lines when §1.3's probe ran. Writing this session's close-out record took
+it to **1,924 lines / 145,307 B ≈ 54,688 tokens — 2.19× the cap** [M]. A default `Read` now returns
+**lines 1–748 of 1,925**, and line 748 sits **inside Session 247's record**, in the middle of the
+OPERATOR ASSIGNMENT's budget table [M].
+
+> **K = 1, not 2.** One `Read` of the live ledger delivers the front matter, this session's record, and
+> ~233 of Session 247's 304 lines. **Everything after is beyond the horizon — including the paragraph
+> naming the evidence this session was told to gather, the "argue both sides" block, the "bias to
+> correct for" warning, and all nine of Session 247's gotchas** (among them `command grep`, which this
+> document calls load-bearing in every count it published).
+
+**The instruction that shaped this session is now outside the one-`Read` window of the file that carries
+it, and the session that put it there is this one.** That is the strongest available demonstration of
+§1.3's thesis and the sharpest possible instance of the defect this document diagnoses.
+
+### 12.2 Region costs, measured in tokens — and Option E is worth ~7×, not ~2×
+
+§2 converted budgets using one whole-file average and never measured a region. Measured by reading an
+N-fold-duplicated copy and dividing the reported total [M]:
+
+| region | lines | tokens | % of the 25,000 cap |
+|---|---:|---:|---:|
+| **front matter** | 283 | **8,578** [M] | **34.3%** |
+| — 8th-trim pointer block | 96 | 2,915 | 11.7% |
+| — 7th-trim block | 72 | 2,192 | 8.8% |
+| — 6th-trim block | 56 | 1,761 | 7.0% |
+| — collapsed 1st–5th table | 51 | 1,654 | 6.6% |
+| Session 248 record | 232 | **6,360** [M] | 25.4% |
+
+**A prose pointer block costs 2,289 tokens per trim; a collapsed table row costs 331 — a factor of
+6.9.** §8 prices Option E in *lines* (96/72/56 vs 51, ~2×) and therefore **understates it by more than
+three-fold.** E is the highest-leverage item in the table, not the third.
+
+### 12.3 Three more files are over the cap, and the fleet watch is aimed correctly but measures lines
+
+The document probed only `SESSION_NOTES.md`. The protocol mandates others [M]:
+
+| file | lines | ~tokens | vs cap | line-based watch says |
+|---|---:|---:|---:|---|
+| `SESSION_NOTES.md` | 1,924 | 54,688 | **2.19×** | fine (< 2,000) |
+| `BACKLOG.md` | 768 | 25,212 | **1.01×** — already truncating | fine |
+| `PROJECT_LEARNINGS.md` | 219 | **104,629** | **4.19×** | fine |
+| `CHANGELOG.md` | 1,607 | **241,418** | **9.66×** | fine |
+
+`~/Development/methodology/tools/methodology_dashboard.py:287-289` sets
+`READ_CAP_WATCHED = frozenset(("SESSION_NOTES.md", "CHANGELOG.md", "HANDOFFS.md") + _BACKLOG_LOCATIONS)`
+and fires on `w["lines"] > READ_CAP_LINES` with `READ_CAP_LINES = 2000`. **`CHANGELOG.md` is watched, is
+9.66× the real cap, and reports fine.** The instrument is pointed at the right files and measuring the
+wrong quantity — this document's thesis, one directory over, unstated until now.
+
+**`PROJECT_LEARNINGS.md` is the sharpest case:** `CLAUDE.md:101` directs every session to read it; it is
+4.19× the cap, mean line length 1,264 B, and has **no budget, no trim rule, no shard, no proof and no
+watch.** A default `Read` delivers roughly a quarter of it. **A ruling on the ledger budgets that ignores
+this file has fixed the smaller problem.**
+
+### 12.4 `CLAUDE.md` is over the budget it cites, and the overage is entirely this apparatus
+
+`CLAUDE.md` is **25,997 B** against the *"~200 lines / ~25 KB"* budget its own line 101 cites as the
+reason `PROJECT_LEARNINGS.md` was extracted [M]. Lines 77–89 — the trimmed-file section — are
+**17,060 B, 65.6% of the file**, injected into **every** session before any file is opened. Measured at
+each trim commit, `CLAUDE.md` grew 9,822 → 25,997 B (**+165%**) while non-apparatus content went from
+9,822 to 8,937 — **essentially 100% of its growth since Session 222 is the ledger apparatus.** §4 counts
+storage the apparatus barely pays and omits the only cost paid *every session*.
+
+### 12.5 Two more live defects — the count is ten, not eight
+
+| # | site | says | measured |
+|---|---|---|---|
+| 9 | `CLAUDE.md:82` | the dashboard's `READ_CAP_WATCHED` *"is an exact-path set containing none"* | it contains **`SESSION_NOTES.md`**. True of the *shards* only; false as written |
+| 10 | `CLAUDE.md:101` | `CLAUDE.md` is kept *"within its size budget (~25 KB)"* | **25,997 B** — over the budget in the sentence that cites it |
+
+### 12.6 Corrections to my own arguments — three, all against my conclusions
+
+- **§6 point 4 ("most defects the apparatus finds are defects the apparatus created") is measurably
+  false for a substantial subset.** Four counter-instances, none trim-generated: Session 231 found
+  `BACKLOG.md`'s `924` where the shard measures 933; Session 245 found `README.md`'s *"+17 others"*
+  where `git ls-files` measures 19; Session 246 found `README.md`'s census off by one; Session 247 found
+  `README.md`'s per-directory test counts stale by 131. **The trim is the only scheduled
+  whole-repository consistency audit this project has, and it repeatedly finds defects in files it did
+  not write.** That is a defence point and I under-argued it.
+- **§6.1's "crowds out the product is refuted" is too strong — "weakened" is right.** Feature-complete is
+  not the same as no work: **nine code/harness defects filed between Sessions 218 and 225 are untouched**,
+  and the last commit to `src/` or `packages/` is Session 223's `2733df0`. Two are severe on their face —
+  a bad `--db-url` yields `Status: COMPLETE`, exit 0, all project files generated **with every quality
+  check silently unexecuted**; and a systematically-failing sweep can burn *"~7.5 hours of billed
+  nothing"*.
+- **§5 point 5 omits its one real caveat: the proofs are not automated.** `.github/workflows/ci.yml` runs
+  `ruff`, `mypy` and `pytest` — **no `.verify.sh`**. `L9`/`L10`'s working-tree guarantee holds only when a
+  session remembers a 2.8-second loop. **The fix is one CI line**, and it belongs in whatever is ruled.
+- **And "the apparatus is inert between trims" is true of the `L`-series but false of the apparatus as of
+  Session 247** — `tests/test_session_notes_census.py` runs on every push, reads the working tree, and is
+  a direct descendant of the trim discipline. §5.1 under-credits this repository's newest artifact.
+
+### 12.7 Where §1.3 proves too much, stated plainly
+
+If truncation is ordered and what a `Read` delivers is fixed by the front matter plus the newest
+records, then **no trim ever fixed a `Read` problem** — Session 222's 25,578-line ledger delivered the
+same top-of-file content a 1,033-line one does. Taken seriously, §1.3 retroactively voids the stated
+justification for all eight cuts, and therefore for the 30,586 shard lines and 10,936 proof lines §5
+point 3 defends. **That cuts against Option H's dismissal as much as it cuts for Option D**, and the
+document asserted the reframing without following it there. It is followed here.
+
+**Net effect on §9's recommendation:** unchanged in order (**A, then D, then E, consider F**) but **E
+rises sharply** on §12.2's re-pricing, **D must be widened** to cover `PROJECT_LEARNINGS.md`,
+`BACKLOG.md` and `CHANGELOG.md` (§12.3), and **one CI line adding the proof loop** should be bundled
+into whichever option is ruled first (§12.6).
