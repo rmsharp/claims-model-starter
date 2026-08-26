@@ -281,6 +281,15 @@ nothing watches any of them.
 
 ## ACTIVE TASK
 
+### What Session 248 Did
+**Deliverable:** An analysis document — **defend AND challenge the current ledger budgets** (agent
+read cap, trim trigger, trim target, retention floor, record density, write-once shards, one new
+proof assertion per trim) — written to `docs/planning/`, ending in a recommendation plus options for
+the operator to rule on. Per the OPERATOR ASSIGNMENT recorded at `c6aa37b`. (IN PROGRESS)
+**Started:** 2026-08-26 (UTC)
+**Status:** Session claimed. Work beginning. **This is a PLANNING session** — the document is the
+deliverable. No budget is re-tuned and no trim is run this session (`SESSION_RUNNER.md` FM #18).
+
 ### What Session 247 Did
 **Deliverable:** A **fail-closed census guard** — `tests/test_session_notes_census.py`, run by CI on
 every push and pull request — that derives the shard facts from the files on disk and holds the four
