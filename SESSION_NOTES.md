@@ -281,6 +281,16 @@ nothing watches any of them.
 
 ## ACTIVE TASK
 
+### What Session 247 Did
+**Deliverable:** A **fail-closed census guard** — a pytest test, run in CI, that derives the shard
+facts from the files on disk and holds the four `L8` files (`CLAUDE.md`, `README.md`, `BACKLOG.md`,
+`docs/methodology/PROJECT_CONVENTIONS.md`) against them BETWEEN trims. Closes Session 246's
+what's-next #1 under **operator rulings**: (1) pytest-in-CI, not a standalone `.verify.sh`;
+(2) fail-closed allowlist, not region markers; (a) `.qmd`/computed fields ruled non-viable.
+(IN PROGRESS)
+**Started:** 2026-08-25 (UTC)
+**Status:** Session claimed. Work beginning.
+
 ### What Session 246 Did
 **Deliverable:** The **collapse** of the five oldest pointer blocks in this file's front matter —
 the fifth trim's down to the first's, 176 lines — into one table of cut keys and proof paths, with
