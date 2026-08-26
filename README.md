@@ -132,6 +132,7 @@ docs/architecture-history/              # archived plans (concept-era + delivere
   SESSION_NOTES-S238-through-S236.md.verify.sh  # same, for the seventh trim; adds L13 (the shard's own filename and every declared span sentence, held against the record ids)
   SESSION_NOTES-S241-through-S239.md    # frozen SESSION_NOTES records, Sessions 241->239 (grep it; do not Read it)
   SESSION_NOTES-S241-through-S239.md.verify.sh  # same, for the eighth trim; adds L14 (every ANCESTOR shard's span and size figure, in the four files no earlier proof reached)
+  SESSION_NOTES-pointer-collapse.verify.sh  # NOT a shard proof: C0-C7 for Session 246's collapse of the five oldest pointer blocks into one table; C6 is the only assertion here that reads the WORKING TREE
 SESSION_RUNNER.md                       # per-session operating procedure
 SAFEGUARDS.md                           # commit discipline and blast-radius rules
 SESSION_NOTES.md                        # session-by-session continuity log (newest 4 sessions; older in the eight shards above)

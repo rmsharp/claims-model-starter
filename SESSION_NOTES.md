@@ -90,13 +90,13 @@ notice: the S220 proof predates L5, and the rest read their artifacts at their o
 Ours joins them at the ninth trim. **A shard banner is a snapshot of its own cut; this block is the
 authority.**
 
-**The seven blocks below are frozen at the SEVENTH through FIRST trims and describe THOSE cuts.**
-This trim falsified exactly four passages of the seventh trim's block — which sessions this live
-file holds, its routing paragraph, its count of stale shard banners, and its claim that the
-ancestor figures are still unread — and rewrote all four as declared substitutions the proof checks
-by exact equality. Every other byte of that block is original and the older six are untouched. Each
-earlier proof reads its artifacts at its own shard's commit, so none is disturbed; all seven were
-re-run green at this cut.
+**The two blocks below are frozen at the SEVENTH and SIXTH trims and describe THOSE cuts; the five
+older ones are the table beneath them (Session 246).** This trim falsified exactly four passages of
+the seventh trim's block — which sessions this live file holds, its routing paragraph, its count of
+stale shard banners, and its claim that the ancestor figures are still unread — and rewrote all
+four as declared substitutions the proof checks by exact equality. Every other byte of that block
+is original and the older six were untouched at that cut. Each earlier proof reads its artifacts at
+its own shard's commit, so none is disturbed; all seven were re-run green at this cut.
 
 **Seventh trim (Session 242). Archived Sessions 238 → 236 — 3 record headings, 583 lines** into
 [`docs/architecture-history/SESSION_NOTES-S238-through-S236.md`](docs/architecture-history/SESSION_NOTES-S238-through-S236.md)
@@ -162,12 +162,13 @@ three only because an adversarial review reverted each one and watched all seven
 figure in those same four files. The eighth trim's `L14` holds all of them, and the count this
 sentence gave for them was itself underived — the block above measures it.
 
-**The six blocks below are frozen at the SIXTH, FIFTH, FOURTH, THIRD, SECOND and FIRST trims and
-describe THOSE cuts.** This trim falsified exactly three passages of the sixth trim's block — which
-sessions this live file holds, its routing paragraph, and its count of stale shard banners — and
-rewrote all three as declared substitutions the proof checks by exact equality. Every other byte of
-that block is original and the older five are untouched. Each earlier proof reads its artifacts at
-its own shard's commit, so none is disturbed; all six were re-run green at this cut.
+**The block below is frozen at the SIXTH trim and describes THAT cut; the five older ones are the
+table beneath it (Session 246).** This trim falsified exactly three passages of the sixth trim's
+block — which sessions this live file holds, its routing paragraph, and its count of stale shard
+banners — and rewrote all three as declared substitutions the proof checks by exact equality. Every
+other byte of that block is original and the older five were untouched at that cut. Each earlier
+proof reads its artifacts at its own shard's commit, so none is disturbed; all six were re-run
+green at this cut.
 
 **Sixth trim (Session 239). Archived Sessions 235 → 232 — 4 record headings, 1,004 lines** into
 [`docs/architecture-history/SESSION_NOTES-S235-through-S232.md`](docs/architecture-history/SESSION_NOTES-S235-through-S232.md)
@@ -217,190 +218,64 @@ either would have turned a correct record red. That is the fifth trim's own rule
 class, never trust the list — applied and, this time, returning nothing. **Sweep again at the
 seventh trim rather than trusting this paragraph either.**
 
-**The five blocks below are frozen at the FIFTH, FOURTH, THIRD, SECOND and FIRST trims and describe
-THOSE cuts.** This trim falsified exactly three passages of the fifth trim's block — its claim about
-which sessions this live file holds, its whole routing paragraph, and its count of how many shard
-banners are stale — and rewrote all three as declared substitutions the proof checks by exact
-equality. Every other byte of that block is original, and the fourth, third, second and first
-trims' blocks are untouched. Each earlier proof reads its artifacts from the commit that added its
-own shard, so this trim cannot disturb any of them; all five were re-run green at this cut, and a
-session that doubts that should run them rather than reason about it.
+**The five blocks that stood below this one — the FIFTH trim's down to the FIRST's — are the table
+beneath it now (Session 246); each is still readable at its own commit.** This trim falsified
+exactly three passages of the fifth trim's block — its claim about which sessions this live file
+holds, its whole routing paragraph, and its count of how many shard banners are stale — and rewrote
+all three as declared substitutions the proof checks by exact equality. Every other byte of that
+block is original, and the fourth, third, second and first trims' blocks were untouched at that
+cut. Each earlier proof reads its artifacts from the commit that added its own shard, so this trim
 
-**Fifth trim (Session 235). Archived Sessions 231 → 228 — 4 record headings, 918 lines** into
-[`docs/architecture-history/SESSION_NOTES-S231-through-S228.md`](docs/architecture-history/SESSION_NOTES-S231-through-S228.md)
-— same shape, same newest-on-top order, frozen and byte-for-byte unedited. At that fifth cut
-this live file was left holding Sessions 235 → 232 — four sessions, the floor `CLAUDE.md`
-sets; the sixth trim above has since cut it again. Its proof is
-[`SESSION_NOTES-S231-through-S228.md.verify.sh`](docs/architecture-history/SESSION_NOTES-S231-through-S228.md.verify.sh):
-the ten assertions inherited from the fourth trim, one of them NARROWED, plus **L10** (every
-ancestor shard's *proof script* held against a hand-declared freeze commit — L9 froze the shards and
-left unguarded the four files that give those shards their provenance, so a weakened ancestor proof
-leaves this whole suite green while five banners keep telling readers to run it) and **L11** (the
-retention rule itself — that this cut fired above `CLAUDE.md`'s 1,500-line trigger, landed under its
-1,050-line target and kept its 4-record floor, with those three numbers held against the sentence in
-`CLAUDE.md` that declares them rather than carried as magic constants).
+**The first five trims are one table now (Session 246).** Their pointer blocks stood here — 176
+lines, the fifth trim's down to the first's — until the front matter became the half of this file
+that grows: Session 245 measured the retention rule's 1,050-line target converging on its four-record
+floor, put three remedies to the operator, and this is the one chosen. **Nothing was archived and no
+record moved.** Each collapsed block is still readable byte-for-byte in two places — at commit
+`ddd5660`, and embedded verbatim in the proof named below, which asserts those two are equal. Every
+measurement in the table — every span, count, line total, trim commit and assertion credit — is
+DERIVED from the artifacts at their own add-commits, and the proof COMPOSES each row's line from
+those measurements rather than comparing against it. Two fields are declarations the proof checks
+rather than measurements it takes: the ordinal, which is definitional, and the trim's session
+number, which it re-derives as the newest record this file held at that commit.
 
-**The narrowed assertion is L2/b3, and it is the finding worth carrying forward.** Inherited, it
-scanned the shard's *records* as well as its banner for leaked front-matter lines — and on this cut
-it fires on a correct trim: front-matter line 54's link to the S224 shard is a substring of a line
-inside Session 228's record, which this trim archives. Same text, two legitimate homes. The records
-half of that scan can never produce a true positive, because **L1 pins those bytes**: anything
-inserted into a record moves them and trips L1 first. A leak can only hide in the banner, which is
-exactly where the fourth trim's b3 caught one. `body` is now the banner alone, the run still PRINTS
-what the old predicate would have flagged, and b3 keeps a mutant nothing else catches.
+| # | trim | archived | rec | lines | shard, under `docs/architecture-history/` | shard | left live | added |
+|--:|------|----------|----:|------:|------------------------------------------|------:|-----------|-------|
+| 1 | S222 `a9510ca` | 216 → 1 | 206 | 24,564 | `SESSION_NOTES-through-S216.md` | 24,590 | 222 → 217 | L0, L1, L2, L3 |
+| 2 | S224 `07e1ab9` | 220 → 217 | 5 | 774 | `SESSION_NOTES-S220-through-S217.md` | 804 | 224 → 221 | L4 |
+| 3 | S228 `e4ca944` | 224 → 221 | 4 | 891 | `SESSION_NOTES-S224-through-S221.md` | 933 | 228 → 225 | L5, L6, L7 |
+| 4 | S231 `f3fea4e` | 227 → 225 | 3 | 738 | `SESSION_NOTES-S227-through-S225.md` | 790 | 231 → 228 | L8, L9 |
+| 5 | S235 `a7512cb` | 231 → 228 | 4 | 918 | `SESSION_NOTES-S231-through-S228.md` | 976 | 235 → 232 | L10, L11 |
 
-**Five shards existed at that cut, and none was a prefix of any other.** The routing table that
-stood here named those five and sent every session from 232 up to this live file; the sixth trim
-falsified that last clause — Sessions 235 → 232 are in a shard now — and the table above replaces
-it. `grep` the shards; `Read` none. **Shards stay write-once** — a sixth trim wrote a sixth file;
-it did not append to one of those five.
+*`archived` is the session span that left this file and `rec` how many record headings went with it;
+`lines`, the lines they took; `shard`, that file's total; `left live`, what this file was left
+holding at that cut; `added`, the assertions that trim contributed to the inherited set. Each
+shard's proof is its own path with `.verify.sh` appended.*
 
-**Three shard banners were stale at that cut; four are now.** The S220 shard's still says *"the
-live ledger when N ≥ 221"*; the S224 shard's still routes Sessions 225 and up to this file; the
-S227 shard's does the same for Sessions 228 and up; and the S231 shard's own prediction that it
-would join them "at the sixth trim" has come true. All four were true at their own cut. The S220
-proof predates L5; the S224, S227 and S231 proofs have L5 but read their artifacts at their own
-trim commits, so none of the four can notice. **A shard banner is a snapshot of its own cut; this block is the
-authority.**
+The proof is
+[`SESSION_NOTES-pointer-collapse.verify.sh`](docs/architecture-history/SESSION_NOTES-pointer-collapse.verify.sh),
+and its assertions are lettered **C0–C6** rather than numbered: this is not a trim, they are not the
+`L`-series, and Session 245 had to record an `L14` collision to stop a later trim resurrecting a
+rejected assertion under a live name. **C6 holds this table against the WORKING TREE; no `L`-series
+assertion holds any PROSE against it** — which is the finding worth carrying forward on its own.
+Every shard proof resolves its prose operands from its own trim commit: the live file *and*
+`CLAUDE.md`, `README.md`, `BACKLOG.md` and `PROJECT_CONVENTIONS.md` are all read as they stood
+**then**. What the `L`-series does read from disk is the shards and the proof scripts, by `L7`,
+`L9` and `L10` — bytes, not claims. So the moment a trim lands, every
+prose copy this apparatus exists to keep in step stops being checked — this front matter, the block
+above that calls itself "the authority", and all four files `L8` reaches. Session 246 measured it,
+with a control: corrupt the live pointer block's routing clause and figures, or `CLAUDE.md`'s shard
+census, or `BACKLOG.md`'s, or `PROJECT_CONVENTIONS.md`'s, and all eight proofs stay green; edit an
+ancestor shard on disk and they go red. Session 245's gotcha 2 — that those four are read *live* —
+held only while its own trim was uncommitted. C6 closes this for the table above and nothing else.
+**The rest is the ninth trim's, and it is the largest hole this lineage has.**
 
-**The sweep found five more unread copies, and re-derived beats inherited.** `CLAUDE.md` told the
-fifth trim not to trust the fourth trim's list of copies. Re-running
-`git grep -l 'SESSION_NOTES-'` confirmed the same four FILES but found five further live
-count-carrying strings inside them that no assertion read: `CLAUDE.md`'s own section heading, its
-"three newer shards" parenthetical, its "L5 reads three copies … L8 reads four more … All six
-copies" census, `README.md`'s "write-once for all four shards" tail comment, and `BACKLOG.md`'s
-plain-language index row — which states the shard census a second time, in different words from the
-item it indexes. One of them was **already false before this trim ran**: `CLAUDE.md` said L8 covers
-"the two prose copies" three lines after saying it "reads four more", and the shipped `REACH` had
-four entries. All five are declared in **L8** now. **Sweep again at the sixth trim rather than
-trusting this list either.**
-
-**The four blocks below are frozen at the FOURTH, THIRD, SECOND and FIRST trims and describe THOSE
-cuts.** This trim falsified exactly three passages of the fourth trim's block — its claim about
-which sessions this live file holds, its whole routing paragraph, and its count of how many shard
-banners are stale — and rewrote all three as declared substitutions the proof checks by exact
-equality. Every other byte of that block is original, and the third, second and first trims' blocks
-are untouched. Each earlier proof reads its artifacts from the commit that added its own shard, so
-this trim cannot disturb any of them; all four were re-run green at this cut, and a session that
-doubts that should run them rather than reason about it.
-
-**Fourth trim (Session 231). Archived Sessions 227 → 225 — 3 record headings, 738 lines** into
-[`docs/architecture-history/SESSION_NOTES-S227-through-S225.md`](docs/architecture-history/SESSION_NOTES-S227-through-S225.md)
-— same shape, same newest-on-top order, frozen and byte-for-byte unedited. At that fourth cut
-this live file was left holding Sessions 231 → 228 — four sessions, the floor `CLAUDE.md`
-sets; the fifth trim above has since cut it again. Its proof is
-[`SESSION_NOTES-S227-through-S225.md.verify.sh`](docs/architecture-history/SESSION_NOTES-S227-through-S225.md.verify.sh):
-the eight assertions inherited from the third trim plus **L8** (the three copies of the shard set
-that no earlier proof could reach — `README.md`'s repo map, the shard-naming rule in
-`docs/methodology/PROJECT_CONVENTIONS.md`, and `BACKLOG.md`'s read-cap item, which the third trim's
-own sentence did not know was making the same claim — **and `CLAUDE.md`'s prose**, whose routing
-table L5 always parsed while its *"there are THREE"* count words were read by nothing) and **L9**
-(write-once enforced for
-**every** shard on disk, not only the newest — L7 has only ever guarded the shard it shipped with,
-so the S216 and S220 shards have never had any enforcement at all, and the S224 shard's lives only
-inside its own proof, which nothing obliges a session to run).
-
-**Four shards existed at that cut, and none was a prefix of any other.** The routing table that
-stood here named those four and sent every session from 228 up to this live file; the fifth trim
-falsified that last clause — Sessions 231 → 228 are in a shard now — and the table above replaces
-it. `grep` the shards; `Read` none. **Shards stay write-once** — a fifth trim wrote a fifth file;
-it did not append to one of those four.
-
-**Two shard banners were stale at that cut; three are now.** The S220 shard's still says *"the
-live ledger when N ≥ 221"*; the S224 shard's still routes Sessions 225 and up to this file; and
-the S227 shard's own prediction that it would join them "at the fifth trim" has come true. All
-three were true at their own cut. The S220 proof predates L5 and cannot notice; the S224 and S227
-proofs have L5 but read their artifacts at their own trim commits, so neither can notice either. **A shard banner is a snapshot of its own cut; this block is the authority.** What is
-no longer true is that `README.md` and `docs/methodology/PROJECT_CONVENTIONS.md` sit beyond every
-proof's reach: **L8 holds them — and `BACKLOG.md` with them**, a third copy that sentence never
-named, found by sweeping for the class instead of trusting the list. **Sweep again at the fifth
-trim rather than trusting this list either**; `git grep -l 'SESSION_NOTES-'` is the whole sweep and
-it takes a second. A fifth trim that leaves any of the four files L8 reads alone fails a proof
-instead of quietly shipping a lie.
-
-**The three blocks below are frozen at the THIRD, SECOND and FIRST trims and describe THOSE cuts.**
-This trim falsified exactly four passages of the third trim's block — its claim about which sessions
-this live file holds, its whole routing paragraph, the sentence putting `README.md` and
-`PROJECT_CONVENTIONS.md` beyond every proof's reach, and its parenthetical calling **L7** the only
-enforcement write-once has ever had, which **L9** has now made false — and rewrote all four as
-declared substitutions the proof checks by exact equality. Every other byte of that block is original, and the second and first trims' blocks
-are untouched. Each earlier proof reads its artifacts from the commit that added its own shard, so
-this trim cannot disturb any of them; all three were re-run green at this cut, and a session that
-doubts that should run them rather than reason about it.
-
-**Third trim (Session 228). Archived Sessions 224 → 221 — 4 record headings, 891 lines** into
-[`docs/architecture-history/SESSION_NOTES-S224-through-S221.md`](docs/architecture-history/SESSION_NOTES-S224-through-S221.md)
-— same shape, same newest-on-top order, frozen and byte-for-byte unedited. At that third cut
-this live file was left holding Sessions 228 → 225 — four sessions, the floor `CLAUDE.md`
-sets; the fourth trim above has since cut it again. Its proof is
-[`SESSION_NOTES-S224-through-S221.md.verify.sh`](docs/architecture-history/SESSION_NOTES-S224-through-S221.md.verify.sh):
-the five inherited assertions plus **L5** (the table below, clause by clause — the numbers against
-the cut key, the filenames against what those files actually hold), **L6** (the shard's banner
-pinned byte-for-byte) and **L7** (that shard still being, on disk today, the bytes the proof was
-written about — which was, until the fourth trim's **L9** extended the same check to every older
-shard, the only enforcement `write-once` had ever had).
-
-**Three shards existed at that cut, and none was a prefix of any other.** The routing table that
-stood here named those three and sent every session from 225 up to this live file; the fourth trim
-falsified that last clause — Sessions 227 → 225 are in a shard now — and the table above replaces
-it. `grep` the shards; `Read` none. **Shards stay write-once** — a fourth trim wrote a fourth file;
-it did not append to one of those three.
-
-**A copy of that table inside a write-once file goes stale at the next cut and cannot be repaired.**
-The S220 shard's banner still says *"the live ledger when N ≥ 221"*, which this trim falsified; its
-proof predates L5 and will never notice. Treat every shard banner as a snapshot of its own cut. Two
-further copies were named here as outside every proof — `README.md`'s repo map and the shard-naming
-rule in `docs/methodology/PROJECT_CONVENTIONS.md` — and a trim that left either alone shipped a lie.
-There was a third nobody had named: `BACKLOG.md`'s read-cap item, carrying the same count. The
-fourth trim's **L8** checks all three.
-
-**The two blocks below are frozen at the SECOND and FIRST trims and describe THOSE cuts.** This
-trim falsified exactly two sentences of the second trim's block — its claim about which sessions
-this live file holds, and its whole routing paragraph — and rewrote both as declared substitutions
-the proof checks by exact equality. Every other byte of that block is original, and the first
-trim's block is untouched. Each earlier proof reads its artifacts from the commit that added its
-own shard, so this trim cannot disturb either; both were re-run green at this cut, and a session
-that doubts that should run them rather than reason about it.
-
-**Second trim (Session 224). Archived Sessions 220 → 217 — 5 record headings, 774 lines** into
-[`docs/architecture-history/SESSION_NOTES-S220-through-S217.md`](docs/architecture-history/SESSION_NOTES-S220-through-S217.md)
-— same shape, same newest-on-top order, frozen and byte-for-byte unedited. At that second cut
-this live file was left holding Sessions 224 → 221 — four sessions, the floor `CLAUDE.md`
-sets; the third trim above has since cut it again. Its proof is
-[`SESSION_NOTES-S220-through-S217.md.verify.sh`](docs/architecture-history/SESSION_NOTES-S220-through-S217.md.verify.sh):
-four inherited assertions plus an L4 pinning the cut point, its own key, its own `--self-test`.
-
-**Two shards existed at that cut, and neither was a prefix of the other.** The routing table that
-stood here named only those two and sent everything newer to this live file; the third trim
-falsified every clause of it, and the table above replaces it. `grep` the shards; `Read` none.
-**Shards are write-once** — a third trim writes a third file, it does not append.
-
-**The block immediately below is frozen at the FIRST trim and describes THAT cut, not this one.**
-This trim falsified exactly two of its sentences and rewrote both, as declared substitutions the
-proof checks by exact equality; every other byte of that block is original. They were: its claim
-that this live file holds Sessions 222 → 217, and its claim that Session 216's handoff evaluation
-"stayed here" — Session 217's record, which carries that evaluation, is now in the S220 shard. That
-block's own proof reads its artifacts from commit `a9510ca`, so this trim cannot disturb it; it
-still runs green today, and a session that doubts that should run it rather than reason about it.
-
-**Archived Sessions 216 → 1 — 206 record headings, 24,564 lines** into
-[`docs/architecture-history/SESSION_NOTES-through-S216.md`](docs/architecture-history/SESSION_NOTES-through-S216.md)
-— same format, same newest-on-top order, frozen, byte-for-byte unedited. At that first cut this
-live file was left holding Sessions 222 → 217; the second trim above has since cut it again.
-
-**`grep` that shard; never `Read` it.** It is 24,564 lines — an agent `Read` truncates at 2,000
-lines with no error and no missing-data marker, which is the defect this archive exists to remove.
-Nothing watches the shard for that (`methodology_dashboard.py`'s `READ_CAP_WATCHED` is an exact-path
-set holding only `SESSION_NOTES.md`, `CHANGELOG.md`, `HANDOFFS.md` and the backlog locations), so
-this paragraph is the only warning there is.
-
-**Losslessness is proved, not asserted.** Run
-[`docs/architecture-history/SESSION_NOTES-through-S216.md.verify.sh`](docs/architecture-history/SESSION_NOTES-through-S216.md.verify.sh)
-— it re-derives L0 (footer declaration), L1 (records-zone concatenation), L2 (zone pinning) and L3
-(record partition) from git, and exits non-zero on failure; `--self-test` proves the proof itself can
-fail. Do not trust this sentence, and do not trust a digest — run it. **The cut is by byte position,
-not by authorship:** Session 216's own handoff evaluation is filed inside Session 217's record,
-because this file files an evaluation under its author. Expect that seam at every trim boundary.
+**Cutting is by byte position, never by authorship.** This ledger files a handoff evaluation under
+its author, so Session N's evaluation of N−1 sits inside N's record and every cut so far has split
+one from its subject. Expect that seam at every boundary. What these five trims found, argued and
+rejected stays in their own blocks at the commits above; what they left BINDING is in `CLAUDE.md`'s
+two `SESSION_NOTES.md`-is-trimmed bullets, which no collapse touches. **`grep` the shards; `Read`
+none** — the first is 24,590 lines, an agent `Read` stops at 2,000 with no error and no marker, and
+nothing watches any of them.
 
 ---
 
