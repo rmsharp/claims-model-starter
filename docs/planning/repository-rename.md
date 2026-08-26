@@ -296,7 +296,7 @@ publishing.**
 
 | Group | Files | Lines | Why |
 |-------|-------|-------|-----|
-| `docs/architecture-history/**` | 21 | 418 | Frozen historical records. Includes `SESSION_NOTES-through-S216.md` (293 lines of the 418). **`grep` that file, never `Read` it** — it is 24,590 lines and an agent `Read` truncates at 2,000 with no marker. |
+| `docs/architecture-history/**` | 21 | 418 | Frozen historical records. Includes `SESSION_NOTES-through-S216.md` (293 lines of the 418). **`grep` that file, never `Read` it** — it is 24,590 lines / 3.9 MB, and a default agent `Read` of it is **refused outright** (`File content (3.9MB) exceeds maximum allowed size (256KB)`, zero content returned; measured Session 249). The *"truncates at 2,000 with no marker"* rationale this row carried until Session 249 was false — see `docs/planning/ledger-budgets-review.md` §1. |
 | `CHANGELOG.md` | 1 | 117 | Authoritative append-only ledger; every entry records what-was-true-then. |
 | `audits/**` | 2 | 12 | `2026-06-10-wiki-vs-code-accuracy-audit.md` (10), `2026-07-28-b2-import-readiness.md` (2). Dated findings. |
 | `PROJECT_LEARNINGS.md` | 1 | 2 | Learning #14's source attribution and #32's worked example. Both are records of past sessions. |

@@ -490,7 +490,7 @@ Independent unless noted. **Cost** in sessions. "Breaks" cites the mechanism.
   any cap-derived ceiling.
 - **Trim on a size *rate*.** `CLAUDE.md:81` already records the canonical rate rule as unsatisfiable at
   this density; at the measured 234.8 it is *more* so. A re-scaled rate rule is degenerate — the file's
-  whole dynamic range is `(2000 − 283)/234.8 ≈ 7.3` records.
+  whole dynamic range is `(2000 − 283)/234.8 ≈ 7.3` records. **[Session 249 — annotated, not rewritten]** that arithmetic takes 2,000 lines as the ceiling, which §1 of this document falsifies. The rejection stands on the degeneracy argument rather than on the figure; **recompute before citing the 7.3.**
 - **Move retired records out of the repository.** `L9`/`L10` read the working tree, so relocation is the
   one change this apparatus detects unconditionally; retiring them discards the losslessness guarantee
   that is the defence's strongest asset. The wiki is public, a separate objection.

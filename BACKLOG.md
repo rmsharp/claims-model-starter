@@ -497,6 +497,16 @@ three proofs are pinned byte-for-byte by `L10` and can never be corrected. A fut
 declare the cap in tokens or bytes, or not declare it at all — nothing in this repository can
 measure the agent harness, which is why the constant was hand-declared in the first place.
 
+**Three live files are past the real cap too, and two of them return NOTHING.** Measured Session 249
+by a default `Read`: `PROJECT_LEARNINGS.md` (272.5 KB) and `CHANGELOG.md` (626.4 KB) are **refused
+outright** — `exceeds maximum allowed size (256KB)`, zero content returned — while `SESSION_NOTES.md`
+and this file truncate with an announced notice. `CLAUDE.md`'s Learnings pointer directs every session
+to read `PROJECT_LEARNINGS.md` when a task resembles earlier work, and that instruction currently
+returns nothing at all. This **corrects** Session 248 §12.3, which derived "4.19x the cap" from a
+bytes-per-token ratio and therefore predicted truncation: the observed behaviour is refusal, which
+delivers none of the file rather than part of it. Not fixed here — Option A is the premise correction,
+and sizing these files is a decision for whoever rules on the §8 options.
+
 **The same false claim is repeated inside the write-once shards and their proofs, where it can
 never be repaired.** Those copies join the stale banners this project already documents as
 permanently-false-but-frozen. Enumerate them with
