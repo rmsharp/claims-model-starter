@@ -57,6 +57,8 @@ rows below it are the smaller residue that closing it exposed.
 | `sql_exec` — CLOSED | Historical marker, kept deliberately. Nothing to do. | Nothing to execute. |
 | The docs toolchain has no version ceiling | `pyproject.toml` bounds the tutorial site's theme from below only (`>=9.0`), so a major Material release could be resolved into the public site. Deliberately deferred when the renderer landed. Session 243 made such a bump fail as a red job instead of a silent unstyled publish; the ceiling would stop it being resolved at all. | Small — 2 lines + `uv lock`. Non-binding today: Material 10.x does not exist. |
 
+| `README.md`'s per-directory test counts have drifted | The repo map in `README.md` gives a test count per directory. Three of them are stale by a combined **131 tests**, measured against `pytest --collect-only` at Session 247: `data_agent_package/` says 207 and collects **257**; `eval/` says 94 and collects **157**; `test_llm_json_parity.py` says 16 and collects **34**. Every other row is exact, and the headline total was corrected to 1,338 in the same session. Filed, not fixed — the Session 247 deliverable was a live census guard over the ledger archives, and these are a different class (test counts, which that guard does not cover). | **Small**: three numerals. The measurement is done and is in the item below, so this is a paste. Worth asking whether it earns a derived check of its own rather than a fourth hand-typed number. |
+
 **Also standing, not an item below:** `tests/eval/README.md` has three stale statements (`:49`, `:51-52`, `:86`), unfixed for a seventh session. $0, no risk.
 
 ---
@@ -725,3 +727,40 @@ added the role≠frequency corpus case `claim_workqueue_triage` (live cycle_time
 `CycleTime` member (YAGNI — no corpus case needs it; a schema-`Literal` change with a
 larger blast radius); reopen only if such a case arises. See `CHANGELOG.md` and
 `tests/eval/PHASE_E_AGREEMENT_REPORT.md`.
+
+---
+
+### `README.md`'s per-directory test counts have drifted from the collected suite
+
+**Filed Session 247, while updating the same block for the census guard.** Not a regression and not
+caused by that guard: the drift predates it. Session 247 added one row and corrected the headline
+total from 1,313 to **1,338**, which is exact — `pytest --collect-only` reports **1,347** collected,
+of which 9 skip without live LLM credentials.
+
+The per-directory rows are a second, independent census in the same block, and three have drifted:
+
+| `README.md` row | claims | collects | delta |
+| --- | ---: | ---: | ---: |
+| `data_agent_package/` | 207 | **257** | +50 |
+| `eval/` | 94 | **157** | +63 |
+| `test_llm_json_parity.py` | 16 | **34** | +18 |
+
+Every other row is exact, including the three that sum into `agents/` (155 intake + 199 website +
+19 data = 373). The arithmetic closes: the claimed rows total 1,216 against 1,347 collected, and
+50 + 63 + 18 = 131 accounts for the whole difference. **The class was swept, not sampled** — every
+count in the block was re-measured, so this is the complete list rather than the first three found.
+
+**Verification:**
+
+```bash
+uv run pytest --collect-only -q --no-cov 2>/dev/null | command grep '::' \
+  | sed 's|^tests/||' | awk -F'/' '{print ($2==""? "ROOT:"$1 : $1"/")}' \
+  | sed 's/::.*//' | sort | uniq -c | sort -rn
+```
+
+**The open question is whether to fix the numerals or derive them.** Three numerals is a two-minute
+paste that will drift again — this is the fourth surface in this repository to state a count nobody
+derives, after the shard census, the size figures and the span sentences. `tests/test_session_notes_census.py`
+now covers the shard census only; a sibling check that composes these rows from a collection pass
+would close the class instead of the instance. That is a design call, not a typo fix, which is why
+this is filed rather than done.
