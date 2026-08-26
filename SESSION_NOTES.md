@@ -406,6 +406,18 @@ because this file files an evaluation under its author. Expect that seam at ever
 
 ## ACTIVE TASK
 
+### What Session 246 Did
+**Deliverable:** Collapse the **five oldest pointer blocks** in this file's front matter (the fifth,
+fourth, third, second and first trims — ~176 lines) into one short table of cut keys and proof
+paths. Operator ruling, 2026-08-25: option **(a)** of Session 245's what's-next #1. **Not a trim** —
+no record moves, no shard is written, no record is edited in the collapse commit.
+**Started:** 2026-08-25 (UTC).
+**Status:** Session claimed. Work beginning.
+
+**Load-bearing premise to be DERIVED, not inherited:** Session 245 asserted that "each earlier proof
+reads its artifacts at its own commit, so compressing them disturbs nothing." That sentence is the
+whole justification for (a) and no assertion reads it. It is verified before any byte is cut.
+
 ### What Session 245 Did
 **Deliverable:** The **eighth lossless trim** of `SESSION_NOTES.md`. Sessions 241 → 239 — 3 record
 headings, 721 lines — archived into
