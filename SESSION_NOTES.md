@@ -499,6 +499,59 @@ first in this repository to ship its mutants as tests rather than behind a flag.
    ruling, but the amendment's directory-test *form* is the template.
 5. **The two delivered plans under `docs/planning/`**, then **the docs toolchain version ceiling**.
 
+**OPERATOR ASSIGNMENT, received after this close-out was committed (2026-08-26).** The next
+session's deliverable is set and supersedes the ordering above: **defend AND challenge the current
+ledger budgets.** Prompted by a measurement in this session's report — 3 of the last 10 sessions
+were lossless trims, 5 of 10 were ledger-apparatus work, and the last 3 consecutively were.
+
+**The deliverable is an analysis document with a recommendation and options to rule on, written to
+`docs/planning/`. It is a planning session: write it, commit it, close out. Do not re-tune a single
+budget in the same session** (`SESSION_RUNNER.md` FM #18).
+
+**What "the budgets" are, precisely** — do not argue against a paraphrase:
+
+| budget | value | where declared |
+| --- | --- | --- |
+| agent read cap | **2,000 lines** | external harness behaviour, not a project choice |
+| trim trigger | **> 1,500 lines** (75% of the cap) | `CLAUDE.md` retention rule |
+| trim target | **≤ 1,050 lines** | same |
+| retention floor | **never fewer than 4 records** | same |
+| record density | **~184 lines/record** (measured) | same bullet's rationale |
+| shards | **write-once**, one new file per trim | `PROJECT_CONVENTIONS.md` |
+| every trim ships a proof | inherited assertion set + ≥1 new, with mutants | the lineage |
+
+**Derive the load-bearing premise FIRST, before arguing either side** ([#192](PROJECT_LEARNINGS.md)).
+**Every one of those numbers is a fraction of the 2,000-line read cap, and nothing in this repository
+has re-derived that cap since Session 222.** If it has changed, or if the `grep`-never-`Read`
+discipline already makes truncation unreachable in practice, then the trigger, the target and the
+floor are all downstream of a premise nobody has tested — which is exactly the shape of the finding
+Session 246 produced about the proofs. Measure it; do not quote Session 222.
+
+**The single most important evidence for the DEFENCE, and it is not yet gathered:** has a *plain
+run* of any shard proof ever gone red on a real defect — as opposed to a `--self-test` catching its
+own mutant, or an adversarial review catching what the proof missed? Sweep the records for it. If
+the answer is "often", the budgets are cheap insurance and the tax is the point. If the answer is
+"never", the value rests on prevention-by-construction and on the defects found while *building*
+each proof, which is a real but very different argument — and one that would justify a different
+cadence rather than the same one.
+
+**Both sides deserve their strongest form:**
+- **Defence:** the ledger is this project's institutional memory; every trim has found real defects
+  (S242 found 15 in a green, self-tested trim; S246 found 6 more); losslessness is provable only
+  because the discipline is strict; a 24,590-line file silently truncating at 2,000 lines with no
+  marker is a genuine data-integrity failure, not a hypothetical.
+- **Challenge:** 3 of the last 10 sessions and 3 of the last 3; nine proofs totalling ~11,000 lines
+  guarding a ledger of ~1,600; each trim manufactures the prose-drift problem the next session then
+  builds machinery to police; the floor and the target were measured **converging** at S245, which
+  is a system telling you its parameters are wrong; and the read cap is avoidable by discipline
+  (`grep`, never `Read`) that is already mandatory.
+- **Do not stop at "keep" vs "abandon".** The interesting options are in between: raise the trigger
+  and target, raise the floor, trim on a size *rate* rather than a level, stop shipping a new
+  assertion per trim, or move retired records out of the repo entirely.
+
+**Bias to correct for:** Session 247's closing report leaned toward the challenge side on a single
+measurement. Argue the defence at least as hard, and let the evidence decide.
+
 **Key files:**
 - `tests/test_session_notes_census.py` — **the deliverable, and the place to start.** Its module
   header carries why each ruling was taken, the measured scan widths, the published neuter loop, and
