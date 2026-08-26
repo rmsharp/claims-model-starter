@@ -115,7 +115,7 @@ tests/
   test_vocab_guard.py                   # Literal-derived vocabulary/enum guard (6 tests)
   test_wiki_no_line_citations.py        # wiki fragile-citation guard (3 tests)
 docs/planning/                          # active (not-yet-archived) plans
-docs/architecture-history/              # archived plans (concept-era + delivered): architecture-plan.md + 17 others + initial_purpose.txt
+docs/architecture-history/              # archived plans (concept-era + delivered): architecture-plan.md + 19 others + initial_purpose.txt
   SESSION_NOTES-through-S216.md         # frozen SESSION_NOTES records, Sessions 216->1 (grep it; do not Read it)
   SESSION_NOTES-through-S216.md.verify.sh  # re-runnable proof that the first trim was byte-for-byte lossless
   SESSION_NOTES-S220-through-S217.md    # frozen SESSION_NOTES records, Sessions 220->217 (grep it; do not Read it)
@@ -130,9 +130,11 @@ docs/architecture-history/              # archived plans (concept-era + delivere
   SESSION_NOTES-S235-through-S232.md.verify.sh  # same, for the sixth trim; adds L12 (every size figure the trim states, held against a measurement)
   SESSION_NOTES-S238-through-S236.md    # frozen SESSION_NOTES records, Sessions 238->236 (grep it; do not Read it)
   SESSION_NOTES-S238-through-S236.md.verify.sh  # same, for the seventh trim; adds L13 (the shard's own filename and every declared span sentence, held against the record ids)
+  SESSION_NOTES-S241-through-S239.md    # frozen SESSION_NOTES records, Sessions 241->239 (grep it; do not Read it)
+  SESSION_NOTES-S241-through-S239.md.verify.sh  # same, for the eighth trim; adds L14 (every ANCESTOR shard's span and size figure, in the four files no earlier proof reached)
 SESSION_RUNNER.md                       # per-session operating procedure
 SAFEGUARDS.md                           # commit discipline and blast-radius rules
-SESSION_NOTES.md                        # session-by-session continuity log (newest 4 sessions; older in the seven shards above)
+SESSION_NOTES.md                        # session-by-session continuity log (newest 4 sessions; older in the eight shards above)
 ```
 
 ## Getting started
