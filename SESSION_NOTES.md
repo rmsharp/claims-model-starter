@@ -281,6 +281,12 @@ nothing watches any of them.
 
 ## ACTIVE TASK
 
+### What Session 249 Did
+**Deliverable:** **Option A of [`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md) §8** — correct the false read-cap premise at its live sites, state the method rather than the number (§1.5), and record in the live copies that the frozen occurrences can never be repaired. (IN PROGRESS)
+**Started:** 2026-08-26 (UTC)
+**Status:** Session claimed. Work beginning.
+**Operator ruling:** *"A"* — Option A only. D, E and F are separate sessions. **No trim this session** (§9 sequencing: A lands BEFORE the ninth trim, never during it; `SESSION_RUNNER.md` FM #18).
+
 ### What Session 248 Did
 **Deliverable:** [`docs/planning/ledger-budgets-review.md`](docs/planning/ledger-budgets-review.md) —
 an analysis that **defends AND challenges the current ledger budgets**, derives the load-bearing
