@@ -407,10 +407,256 @@ because this file files an evaluation under its author. Expect that seam at ever
 ## ACTIVE TASK
 
 ### What Session 245 Did
-**Deliverable:** The **eighth lossless trim** of `SESSION_NOTES.md` (IN PROGRESS) — the live file is
-1,642 lines, over `CLAUDE.md`'s 1,500-line trigger, which Session 244 measured and predicted.
-**Started:** 2026-08-25 (UTC).
-**Status:** Session claimed. Work beginning. Nothing trimmed yet; this commit contains only this stub.
+**Deliverable:** The **eighth lossless trim** of `SESSION_NOTES.md`. Sessions 241 → 239 — 3 record
+headings, 721 lines — archived into
+[`docs/architecture-history/SESSION_NOTES-S241-through-S239.md`](docs/architecture-history/SESSION_NOTES-S241-through-S239.md)
+(792 lines), leaving the live file at **1,014 lines / 4 records**. Its proof adds **L14**, which
+holds every ANCESTOR shard's span and size figure — the seventh trim's bequest — against those
+shards measured at their own git add-commits. No other work was started.
+
+**Started / completed:** 2026-08-25 (UTC). **Commits: three** — `9330203` (Phase 1B claim, alone),
+the trim (alone, no record edit), and this close-out. **Operator this session:** *"SESSION_NOTES.md
+trim"*.
+
+#### The numbers, and why the cut is where it is
+
+| measurement | value |
+| --- | --- |
+| live file before (at the claim commit) | **1,648** lines — over `CLAUDE.md`'s **1,500** trigger |
+| live file after | **1,014** lines — under the **1,050** target |
+| records retained | **4** (245, 244, 243, 242) — exactly the floor; 5 would have landed at 1,231 |
+| archived | 3 headings, 721 lines |
+| shard total | 792 lines |
+| front matter | 408 lines (321 before + 97 pointer − 10 from four declared substitutions) |
+
+Retaining five records was arithmetically impossible under the target (1,239 lines), so four is not
+a preference here — it is the only value that satisfies both bounds. **That is new, and it is the
+finding of this session that outlives L14.**
+
+**The target and the floor are converging, and the ninth trim is where they meet.** The front matter
+is now **397 lines** and it is the part that grows: each trim adds a pointer block and reclaims only
+about ten lines from its predecessor's.
+
+| block | lines | | block | lines |
+| --- | ---: | --- | --- | ---: |
+| eighth (this cut) | 97 | | fourth | 44 |
+| seventh | 71 | | third | 34 |
+| sixth | 57 | | second | 21 |
+| fifth | 58 | | first | 19 |
+
+Projected for the ninth trim: front matter ~495 (408 + an ~97-line block − ~10 of substitutions),
+retained = a ~6-line claim stub plus three full records (this cut's three totalled 600; the mean
+record is 220). That lands at **~1,101–1,248 lines against a 1,050 target while holding the
+four-record floor** — over, by between 51 and 198 lines. No trim has ever reclaimed that much.
+
+The mechanism that fixes it is available and precedented: the five oldest blocks total **176 lines**
+and could be collapsed into one short table of cut keys and proof paths, via declared substitutions
+exactly like the four this cut used. Each earlier proof reads its artifacts at its own commit, so
+compressing them disturbs nothing. **But that is a deliverable, not a side effect of a trim** — and
+the alternative readings (raise the target, drop the floor to three) are operator calls. The
+question is written out in what's-next #1 rather than described, which is [#184](PROJECT_LEARNINGS.md).
+
+#### L14, and the hole it closes
+
+`L12` (sizes) and `L13` (spans) measure the two files in hand, so both are scoped to their own cut
+**by construction**. The moment the next trim lands, the shard they guarded becomes an ancestor and
+its figures fall out of every assertion's reach — permanently. Seven trims' worth had accumulated.
+
+**`L14/set` is the arm that matters**, and it is the reason this is a fix rather than a patch: it
+holds the shards the declared literals name against `ROUTING`'s derived ancestor set, so the ninth
+trim **cannot inherit this declaration unchanged and be green** once `SESSION_NOTES-S241-through-S239.md`
+becomes an ancestor. That is the state every previous trim shipped in.
+
+#### Six things were measured and found wrong before they shipped — three of them mine
+
+**Read this section as the session's real content.** The trim itself is mechanical; what took the
+time is that a proof about typed numbers kept catching its author typing numbers.
+
+1. **The bequest's count, and then two of my own.** Session 242 left *"sixteen true statements"*.
+   My hand count said **28 literals / 36 figures**. My first mechanical scan said **31 / 44** and
+   shipped GREEN through all eight proofs. An adversarial review's independent scan then found
+   **45** occurrences against the 44 I had declared — the missed one an aside in
+   `PROJECT_CONVENTIONS.md`, *"since 216→1 sit in the earlier file"*, nowhere near the list it
+   belongs to. **Four counts were typed before one was derived.** That is why the fix is not the
+   45th literal but **`L14/complete`**, which scans all four files and fails unless every ancestor
+   figure occurrence falls inside a declared literal. L14 proves its list complete instead of
+   asserting it. Learning #186; [#126](PROJECT_LEARNINGS.md) mechanised.
+2. **A file census with no commit attached.** S242's block says the sweep *"returns nineteen files
+   … and the seven shards with their seven proofs"* — 19 at its parent `f26233a`, **21** at its own
+   commit `e7d5b03`; two numbers in one sentence. I drafted *"returns 23 files"* and nearly shipped
+   the mirror image; the published form now states 23-at-this-commit **and** 21-at-its-parent.
+   Learning #188.
+3. **An ungreppable quotation, four trims old.** Every pointer block quotes the S220 banner as *"the
+   live ledger when N ≥ 221"*. That banner wraps after "the", so `grep -F` finds nothing — which in
+   a write-once lineage reads as *the shard was edited*. Now quoted as the contiguous substring.
+   Learning #189.
+4. **Two count copies I introduced myself.** My first `CLAUDE.md` edit stated *"31 declared literals
+   carrying 44 figures"* twice — a count in a declared file that **nothing reads**, which is the
+   exact defect L14 exists for, written by the session writing L14. Both removed; the count now
+   lives only in the pointer block, where `L14/census` derives it.
+5. **A false superlative in the shard banner.** It claimed this cut splits an evaluation from its
+   subject across two shards *"for the first time"*. A scripted pass over all eight shards counts
+   **six** prior cases — one at every trim since the second — and this cut adds the seventh and
+   eighth. The S220 banner said so first and every banner since has repeated it. **No assertion can
+   derive a superlative**, which is worth knowing about what the fifteen assertions do not cover.
+6. **`README.md`'s archive count, pre-existing.** *"architecture-plan.md + 17 others"*;
+   `git ls-files` measures **19**. True when written, false since. Corrected in this commit as an
+   adjacent fix to a file already in the diff, and NOT wired to any assertion — it is not about the
+   shard set, and inventing reach for it would be scope, not rigour.
+
+#### Verification
+
+| check | result |
+| --- | --- |
+| all **eight** shard proofs | **GREEN**, re-run after the trim commit with `L7` live |
+| `--self-test` | **95/95 mutants caught** |
+| neuter loop (whole assertion) | complete, on the committed artifacts: **L14 alone catches M86–M95**; full table in the proof header |
+| arm sweep (one `if` at a time) | **NOT DONE — see gotcha 1.** The header says so instead of publishing a stale table |
+| every declared literal unique in its file | **32/32 L14, 8/8 L13, 11/11 L12** — verified independently of the proof |
+| cross-assertion substring overlap | **none** |
+| `L0`-`L13` logic vs the seventh proof | identical but for the declared L13/census strengthening and one message string (`ast.unparse` diff) |
+| records added by the trim commit | **0** — `L3 ADDED` proves no record edit was bundled |
+| `CHANGELOG.md` entry | **none owed** — documentation/project-state only; `PROJECT_CONVENTIONS.md` §2 names `SESSION_NOTES.md` and `BACKLOG.md` explicitly. Directory test, no judgement call. |
+| suite | not re-run — no `src/`, `packages/`, `scripts/` or `tests/` file touched |
+
+### Session 244 Handoff Evaluation (by Session 245)
+
+**Score: 8/10 — and unlike the last one, this is at arm's length.** Session 244 scored its
+predecessor while having written it in the same conversation and said so. I did not write S244's
+record; this evaluation has no such conflict.
+
+- **Its central prediction was exactly right, to the line.** *"This file is **1,642** lines … over
+  the **1,500** trigger already, so unlike the last two sessions there is no arithmetic to get
+  wrong: Session 245's Phase 0 reads over the trigger and is the eighth trim."* Phase 0 measured
+  **1,642**. Three sessions running had mis-projected this figure; S244 measured it with `wc -l`
+  after writing its record, and that one habit removed the whole class.
+- **Its instructions were complete and every one of them was load-bearing.** ≤1,050, the 4-record
+  floor, two commits, re-derive the copy list, and L14 already named. I followed all five and
+  needed no clarification on any.
+- **Gotcha 2 was used continuously** — all shard proofs must be re-run by any session editing
+  `BACKLOG.md`, `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`. I edited all four; the
+  verbatim `for f in …` loop ran perhaps thirty times this session.
+- **Gotcha 7 was load-bearing and invisible** — *"`grep` is a `ugrep --ignore-files` wrapper; use
+  `command grep` or `git grep` for anything load-bearing."* Every sweep in this session was a
+  count. Without that line the counts would have been quietly wrong, which is the exact defect the
+  session was built to remove.
+- **−2, and it is the one that cost real work: the bequest's SIZE was wrong by roughly a factor of
+  three.** *"sixteen true statements nothing derives"* — measured, 45. That number was the scoping
+  estimate for this session's whole deliverable, and I designed the first draft of L14 around it;
+  the hand enumeration that followed inherited its shape and was also wrong. **A bequest that names
+  work should name how it was counted, or say it was not.** Learning #186.
+- **A smaller miss it could not have seen:** its *"aim ~1,035"* is now the wrong target shape. The
+  binding constraint has stopped being "don't overshoot" and become "the floor and the target are
+  converging" — see what's-next #1.
+- **ROI: strongly positive.** Reading it cost two minutes and saved the entire orientation.
+
+### Session 245 Self-Assessment
+
+**Score: 7/10.** The deliverable is complete, lossless and proved, and `L14/set` + `L14/complete`
+close a *class* rather than an instance — the ninth trim cannot inherit this declaration unchanged
+and stay green. What holds it at 7 is that **a session whose entire subject is "never state a number
+you did not derive" stated four such numbers itself**, and that one measurement the standard demands
+is not finished.
+
+**+** **The class-fix, not the instance-fix.** The bequest asked for 16 literals. Declaring 45 would
+have satisfied it and left the next trim in the same hole. `L14/set` binds coverage to a derived
+ancestor set and `L14/complete` proves the literal list exhaustive; M95 exists specifically because
+`L14/complete` briefly stole `L14/set`'s only mutant and the arm I called "the one that matters
+most" cannot be the one without a mutant of its own.
+**+** **I ran an adversarial review and acted on all twelve findings** rather than defending any.
+Six were mine, including the banner superlative and the 44-vs-45. Every one was re-verified by me
+with a command before I touched anything — the review's numbers were right, but that was checked.
+**+** **I caught the mirror image of the defect I was criticising.** Having documented that S242's
+*"nineteen files"* was its parent's measurement, I had drafted *"returns 23 files"* — true only at
+this commit. Running `git grep` at both revisions caught it; the published form states both.
+**+** **`L12` caught me and I let it.** The banner grew, the shard went 785 → 792, and four files
+still said 785. The right response was not to retype the figure in five places but to derive it
+once and substitute it, which is what shipped.
+**+** **I measured what I could have asserted:** every seam claim, the six stale banners, the
+uniqueness of all 51 declared literals, cross-assertion substring overlap, and the `L0`–`L13` logic
+diff against the seventh proof.
+
+**−** **44 declared against 45 present, shipped green.** The proof exists to stop typed counts and
+its first version contained one. No mutant could see it, because every arm it had checked a literal
+that *was* declared. Found by review, not by me.
+**−** **THE PER-ARM SWEEP IS NOT DONE**, and the lineage's own standard is that a green
+`--self-test` whose mutants never exercise a new arm is the same lie as a green run. I have the
+whole-assertion neuter loop, complete and measured on the committed artifacts; I do not have the
+per-arm one for the final revision. I stated that in the proof header rather than publishing a stale
+table, which is the honest response to an unfinished measurement — but it is unfinished.
+**−** **I invalidated my own sweep by rebuilding the artifacts underneath it, then misread the
+wreckage as a result.** Sixty arms reported "no uniquely-catching mutant"; they were assertion
+errors exiting 1, which the harness scored identically to "caught". Learnings #190 and #191.
+**−** **I put a load-bearing harness in a scratchpad shared with subagents** and a review agent
+overwrote it mid-run.
+**−** **A false superlative in the banner**, wrong by six, in prose no assertion can reach.
+
+**Against the bar:** S244's contribution was a rule that had never been tested against the case in
+front of it. S245's is one level up — **an assertion class that goes blind by construction the
+moment its subject ages**, which is why the fix had to be a set-membership arm and a completeness
+scan rather than more literals.
+
+**What's next.**
+
+1. **A QUESTION, and it is the first thing to settle — the retention rule's target and floor are
+   converging.** Not a preference: at this cut, five records was 1,239 lines against a 1,050 target,
+   so four was the *only* satisfying value. The front matter is **408 lines** and it is the half
+   that grows — a trim adds an ~90-line pointer block and reclaims ~10 from its predecessor's. The
+   ninth trim projects to **~1,101–1,248 lines while holding the four-record floor**, over by 51 to
+   198. **The question, written out rather than described ([#184](PROJECT_LEARNINGS.md)): do you
+   want (a) the ninth trim to collapse the five oldest pointer blocks — 176 lines — into one short
+   table of cut keys and proof paths, via declared substitutions exactly like the four this cut
+   used; (b) the target raised from 1,050; or (c) the floor dropped from four to three?** (a) is
+   available, precedented and disturbs no earlier proof, and is my recommendation — but it is a
+   deliverable of its own, and (b) and (c) are rule changes only you can make.
+2. **Run the per-arm sweep on this proof before trusting it.** The command and the two traps are in
+   the proof header under `*** THE PER-ARM SWEEP IS OUTSTANDING`. Neuter one failure-emitting
+   statement at a time — `out.append(...)` → `pass`, `return [...]` → **`return []`** (type-
+   preserving; the non-preserving form silently reports 60 arms as unreachable) — freeze the
+   artifacts for the whole run, and assert the exit code is 0 or 2. Publish the table as a result.
+3. **The `post-merge` hook** — still the oldest unblocked item, unchanged from S244's list. Diff
+   `ORIG_HEAD..HEAD`, guard the squash case (`$1 = 1`). Its open question is unchanged too:
+   `.githooks/` is not `.github/workflows/`, so whether it earns a `CHANGELOG.md` entry is not
+   settled by the S244 amendment.
+4. **The two delivered plans under `docs/planning/`**, then **the docs toolchain version ceiling**.
+5. **The ninth trim's own new assertion is already named and MEASURED, unlike the one I inherited:**
+   `README.md` carries one `.verify.sh` comment line per shard, and **exactly one of the eight is
+   read by anything** — this trim's own, via `L8/required`. Deleting any of the other seven leaves
+   all eight proofs green, because `SHARD_NAME`'s negative lookahead deliberately makes a
+   `.verify.sh` line not count toward the shard-name set. That is `L14`'s hole one field over. It is
+   **not** closed here because those lines carry descriptive prose, not a derivable figure, so
+   closing it means seven more hand-declared `L8` strings rather than a derivation — measured,
+   priced and declined, not overlooked. Decide it rather than rediscover it.
+
+**Key files:**
+- `docs/architecture-history/SESSION_NOTES-S241-through-S239.md.verify.sh` — **the proof, and the
+  place to start.** Its header carries the full rationale for `L14`, the measured neuter table, the
+  outstanding-sweep notice, and the assertion this trim considered and REJECTED (an `L15` over the
+  file census) with the measurement that killed it.
+- `SESSION_NOTES.md` front matter — the pointer block is **the authority** on routing and on every
+  count. `L14/census` reads it; nothing reads a second copy, and that is deliberate.
+- `PROJECT_LEARNINGS.md` — **191 learnings**; #186–#191 are this session's. `CLAUDE.md:99` updated.
+
+**Gotchas:**
+1. **The per-arm sweep is outstanding — see what's-next #2.** The header says so; do not read the
+   published neuter table as covering it.
+2. **All EIGHT shard proofs must be re-run by any session editing `BACKLOG.md`,
+   `PROJECT_CONVENTIONS.md`, `README.md` or `CLAUDE.md`** — `L8`, `L12`, `L13` and now `L14` all
+   read those four live. `for f in docs/architecture-history/*.verify.sh; do bash "$f"; done`.
+3. **`L14` reads ancestor shards at their OWN add-commits, never the working tree.** Deliberate: L9
+   proves disk == add-commit, so reading disk would make L14 silently depend on L9 holding.
+4. **Do not put a load-bearing harness in the session scratchpad.** Subagents share it; one
+   overwrote this session's arm-sweep script mid-run.
+5. **Do not touch the artifacts while a mutation sweep runs**, and check its exit code — 0 or 2,
+   never 1. Learnings #190, #191.
+6. **`grep` is a `ugrep --ignore-files` wrapper.** `command grep` or `git grep` for any count.
+   Inherited from S244 and load-bearing in every sweep this session ran.
+7. **A superlative is unreachable by every assertion here.** "first", "only", "never before" in a
+   banner or pointer block is checked by nothing. This cut shipped one and a review caught it.
+8. **`gh issue list` is empty and that is expected** — `BACKLOG.md` governs, at **16 items**
+   (unchanged this session).
+9. **Verify the push count rather than quoting one**: `git fetch && git rev-list --count
+   origin/master..master`.
 
 ### What Session 244 Did
 **Deliverable:** **Operator ruling (B), executed.** `docs/methodology/PROJECT_CONVENTIONS.md` §2's
